@@ -10,47 +10,264 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ==========================================
+// 0. A ESTRUTURA MESTRE (O PULO DO GATO)
+// ==========================================
+
+model Organization {
+  id           String   @id @default(cuid())
+  name         String   // Nome Fantasia da Unidade/Empresa
+  slug         String   @unique // Para URLs amigáveis ex: totten.com/clinica-aracaju
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  // Relações com o restante do sistema
+  admins            Admin[]
+  settings          Settings?
+  link_bio          LinkBio?
+  message_templates MessageTemplate[]
+  clients           Client[]
+  categories        Category[]
+  services          Service[]
+  packages          Package[]
+  appointments      Appointment[]
+
+  @@map("organizations")
+}
+
+// ==========================================
+// 1. ADMIN (USUÁRIO DO SISTEMA)
+// ==========================================
+
 model Admin {
-  id       String @id @default(cuid())
-  email    String @unique
-  password String
+  id           String   @id @default(cuid())
+  display_name String?  
+  email        String   @unique
+  password     String
+  
+  // Um Admin pode gerenciar várias organizações (filiais)
+  organizations Organization[] 
+
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
 
   @@map("admins")
 }
 
+// ==========================================
+// 2. CONFIGURAÇÕES E PERSONALIZAÇÃO
+// ==========================================
+
+model Settings {
+  id               String   @id @default(cuid())
+  company_name     String   // Razão Social
+  document         String?  // CNPJ ou CPF
+  responsible_name String?  
+  phone_landline   String?  
+  phone_whatsapp   String   
+  email_admin      String?  
+  
+  opening_time     String   @default("08:00")
+  closing_time     String   @default("19:00")
+
+  organization_id  String   @unique
+  organization     Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  updated_at       DateTime @updatedAt
+
+  @@map("settings")
+}
+
+model MessageTemplate {
+  id              String   @id @default(cuid())
+  type            String   // CONFIRMATION, REMINDER, PACKAGE_END
+  content         String   @db.Text
+  
+  organization_id String
+  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@unique([type, organization_id])
+  @@map("message_templates")
+}
+
+model LinkBio {
+  id                String   @id @default(cuid())
+  profile_image_url String?
+  bio_text          String?  @db.Text
+  theme_color_light String   @default("#ffffff")
+  theme_color_dark  String   @default("#000000")
+  font_family       String   @default("Inter")
+  social_links      Json?    
+
+  organization_id   String   @unique
+  organization      Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@map("link_bio")
+}
+
+// ==========================================
+// 3. CLIENTE (ISOLADO POR ORGANIZAÇÃO)
+// ==========================================
+
 model Client {
-  id              String    @id @default(cuid())
-  name            String
-  cpf             String    @unique
-  phone_whatsapp  String
-  created_at      DateTime  @default(now())
+  id             String    @id @default(cuid())
+  name           String
+  cpf            String    // Removido @unique global, agora a unicidade é por Org
+  phone_whatsapp String
+  email          String?
+  birth_date     DateTime? 
+  
+  // Endereço
+  zip_code       String?   
+  city           String?
+  street         String?   
+  number         String?   
+  
+  organization_id String
+  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
-  packages Package[]
+  packages     Package[]
+  appointments Appointment[]
 
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+
+  @@unique([cpf, organization_id]) // O CPF só é único dentro daquela empresa específica
   @@map("clients")
 }
 
-model Package {
-  id             String    @id @default(cuid())
-  client_id      String
-  total_sessions Int
-  used_sessions  Int       @default(0)
-  active         Boolean   @default(true)
-  created_at     DateTime  @default(now())
+// ==========================================
+// 4. SERVIÇOS E CATEGORIAS
+// ==========================================
 
-  client   Client    @relation(fields: [client_id], references: [id], onDelete: Cascade)
-  checkIns CheckIn[]
+model Category {
+  id              String   @id @default(cuid())
+  name            String   
+  
+  organization_id String
+  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  services        Service[]
+
+  @@map("categories")
+}
+
+model Service {
+  id              String    @id @default(cuid())
+  name            String
+  description     String?   @db.Text
+  duration        Int       // Em minutos
+  price           Decimal   
+  
+  category_id     String
+  category        Category  @relation(fields: [category_id], references: [id])
+  
+  organization_id String
+  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  appointments    Appointment[]
+  packages        Package[]
+
+  @@map("services")
+}
+
+// ==========================================
+// 5. PACOTES E VOUCHERS
+// ==========================================
+
+model Package {
+  id              String    @id @default(cuid())
+  name            String    
+  total_sessions  Int
+  used_sessions   Int       @default(0)
+  price           Decimal   
+  active          Boolean   @default(true)
+  
+  client_id       String
+  client          Client    @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  
+  service_id      String
+  service         Service   @relation(fields: [service_id], references: [id])
+  
+  organization_id String
+  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  appointments    Appointment[]
+  vouchers        Voucher[]
+
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
 
   @@map("packages")
 }
 
-model CheckIn {
+model Voucher {
   id         String   @id @default(cuid())
-  client_id  String
+  issue_date DateTime @default(now())
+  image_url  String?  
+  
   package_id String
-  date_time  DateTime @default(now())
+  package    Package  @relation(fields: [package_id], references: [id], onDelete: Cascade)
 
-  package Package @relation(fields: [package_id], references: [id], onDelete: Cascade)
+  @@map("vouchers")
+}
+
+// ==========================================
+// 6. AGENDA E CHECK-IN (ISOLADOS)
+// ==========================================
+
+enum AppointmentStatus {
+  PENDENTE
+  CONFIRMADO
+  REALIZADO
+  CANCELADO
+}
+
+enum PaymentMethod {
+  DINHEIRO
+  PIX
+  CARTAO_CREDITO
+  CARTAO_DEBITO
+  OUTRO
+}
+
+model Appointment {
+  id              String            @id @default(cuid())
+  date_time       DateTime          
+  status          AppointmentStatus @default(PENDENTE)
+  payment_method  PaymentMethod?    
+  has_charge      Boolean           @default(false) 
+  session_number  Int?              
+  observations    String?           @db.Text
+  
+  client_id       String
+  client          Client            @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  
+  service_id      String
+  service         Service           @relation(fields: [service_id], references: [id])
+  
+  package_id      String?           
+  package         Package?          @relation(fields: [package_id], references: [id])
+  
+  organization_id String
+  organization    Organization      @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  check_in        CheckIn?          
+
+  created_at      DateTime          @default(now())
+  updated_at      DateTime          @updatedAt
+
+  @@index([organization_id, date_time])
+  @@index([client_id, date_time])
+  @@map("appointments")
+}
+
+model CheckIn {
+  id             String   @id @default(cuid())
+  date_time      DateTime @default(now()) 
+
+  appointment_id String   @unique 
+  appointment    Appointment @relation(fields: [appointment_id], references: [id], onDelete: Cascade)
 
   @@map("check_ins")
 }
