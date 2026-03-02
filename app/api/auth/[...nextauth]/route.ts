@@ -35,6 +35,13 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Usuário não encontrado");
         }
 
+        // 🔥 BLOQUEIA SE E-MAIL NÃO VERIFICADO
+        if (!admin.email_verified) {
+          throw new Error(
+            "E-mail não verificado. Verifique sua caixa de entrada.",
+          );
+        }
+
         // Valida a senha
         const isValidPassword = await bcrypt.compare(
           credentials.password,

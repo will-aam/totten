@@ -3,6 +3,8 @@
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
+import { sendVerificationEmail } from "@/lib/email";
+import { randomBytes } from "crypto";
 
 export type ActionState = {
   error: string;
@@ -34,6 +36,9 @@ export async function registerAdmin(
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // 🔥 GERA TOKEN DE VERIFICAÇÃO
+    const verificationToken = randomBytes(32).toString("hex");
+
     const baseSlug = companyName
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
@@ -50,28 +55,35 @@ export async function registerAdmin(
             create: {
               company_name: companyName,
               document: document,
-              phone_landline: contactPhone, // Salva o telefone
-              phone_whatsapp: "", // Será configurado depois
+              phone_landline: contactPhone,
+              phone_whatsapp: "",
             },
           },
         },
       });
 
+      // 🔥 CRIA ADMIN COM CONTA INATIVA
       await tx.admin.create({
         data: {
           display_name: displayName,
           email: email,
           password: hashedPassword,
+          email_verified: false, // 🔥 INATIVO
+          verification_token: verificationToken, // 🔥 TOKEN
           organizations: {
             connect: { id: org.id },
           },
         },
       });
     });
+
+    // 🔥 ENVIA E-MAIL DE CONFIRMAÇÃO
+    await sendVerificationEmail(email, verificationToken);
   } catch (error) {
     console.error("Erro no registro:", error);
     return { error: "Ocorreu um erro ao criar a conta. Tente novamente." };
   }
 
-  redirect("/admin/login");
+  // 🔥 REDIRECIONA PARA PÁGINA DE AVISO
+  redirect("/admin/check-email");
 }

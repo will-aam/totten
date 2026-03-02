@@ -41,16 +41,21 @@ model Organization {
 // ==========================================
 
 model Admin {
-  id           String  @id @default(cuid())
-  display_name String?
-  email        String  @unique
+  id           String    @id @default(cuid())
+  display_name String?  
+  email        String    @unique
   password     String
-
+  
+  // 🔥 NOVOS CAMPOS
+  email_verified Boolean  @default(false)
+  verification_token String? @unique
+  reset_token    String?  @unique
+  
   // Um Admin pode gerenciar várias organizações (filiais)
-  organizations Organization[]
+  organizations Organization[] 
 
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
 
   @@map("admins")
 }
