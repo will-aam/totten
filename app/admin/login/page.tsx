@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/card";
 import { toast } from "sonner";
 
-export default function AdminLoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
@@ -28,7 +28,6 @@ export default function AdminLoginPage() {
   const verified = searchParams.get("verified");
   const error = searchParams.get("error");
 
-  // 🔥 CORRIGIDO: useEffect ao invés de useState
   useEffect(() => {
     if (verified === "true") {
       toast.success("E-mail verificado! Você já pode fazer login.");
@@ -53,7 +52,6 @@ export default function AdminLoginPage() {
       });
 
       if (result?.error) {
-        // Trata mensagens de erro específicas
         if (result.error.includes("E-mail não verificado")) {
           toast.error(
             "Você precisa verificar seu e-mail primeiro. Verifique sua caixa de entrada.",
@@ -120,7 +118,6 @@ export default function AdminLoginPage() {
                 <Label htmlFor="password" className="text-card-foreground">
                   Senha
                 </Label>
-                {/* 🔥 LINK ESQUECI A SENHA */}
                 <Link
                   href="/admin/forgot-password"
                   className="text-xs text-primary hover:underline"
@@ -149,11 +146,10 @@ export default function AdminLoginPage() {
               {loading ? "Entrando..." : "Entrar"}
             </Button>
 
-            {/* Link para a página de Registro */}
             <div className="mt-4 text-center text-sm text-muted-foreground">
               Ainda não tem uma conta?{" "}
               <Link
-                href="/register"
+                href="/admin/register"
                 className="font-medium text-primary hover:underline"
               >
                 Crie uma conta
@@ -163,5 +159,20 @@ export default function AdminLoginPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// 🔥 COMPONENTE PRINCIPAL COM SUSPENSE
+export default function AdminLoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-svh items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }
