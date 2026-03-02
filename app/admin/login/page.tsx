@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react"; // 🔥 MUDANÇA 1
-import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Heart, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,37 +15,56 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { toast } from "sonner";
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+
+  // 🔥 DETECTA MENSAGENS DA URL
+  const verified = searchParams.get("verified");
+  const error = searchParams.get("error");
+
+  // Mostra toast quando a página carrega
+  useState(() => {
+    if (verified === "true") {
+      toast.success("E-mail verificado! Você já pode fazer login.");
+    }
+    if (error === "invalid_token") {
+      toast.error("Link de verificação inválido ou expirado.");
+    }
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
 
     try {
-      // 🔥 MUDANÇA 2: Troca o fetch() pelo signIn() do NextAuth
       const result = await signIn("credentials", {
         email,
         password,
-        redirect: false, // Não redireciona automaticamente
+        redirect: false,
       });
 
       if (result?.error) {
-        // 🔥 MUDANÇA 3: Trata erro do NextAuth
-        setError("E-mail ou senha inválidos");
+        // Trata mensagens de erro específicas
+        if (result.error.includes("E-mail não verificado")) {
+          toast.error(
+            "Você precisa verificar seu e-mail primeiro. Verifique sua caixa de entrada.",
+          );
+        } else {
+          toast.error("E-mail ou senha inválidos");
+        }
       } else if (result?.ok) {
-        // 🔥 MUDANÇA 4: Sucesso! Redireciona
+        toast.success("Login realizado com sucesso!");
         router.push("/admin/dashboard");
-        router.refresh(); // Força reload da sessão
+        router.refresh();
       }
     } catch {
-      setError("Erro de conexão. Tente novamente.");
+      toast.error("Erro de conexão. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -89,13 +108,23 @@ export default function AdminLoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={loading}
                 className="bg-muted text-foreground focus-visible:ring-primary"
               />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="password" className="text-card-foreground">
-                Senha
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-card-foreground">
+                  Senha
+                </Label>
+                {/* 🔥 LINK ESQUECI A SENHA */}
+                <Link
+                  href="/admin/forgot-password"
+                  className="text-xs text-primary hover:underline"
+                >
+                  Esqueceu a senha?
+                </Link>
+              </div>
               <Input
                 id="password"
                 type="password"
@@ -103,15 +132,10 @@ export default function AdminLoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                disabled={loading}
                 className="bg-muted text-foreground focus-visible:ring-primary"
               />
             </div>
-
-            {error && (
-              <p className="text-sm font-medium text-destructive bg-destructive/10 p-2 rounded-md text-center">
-                {error}
-              </p>
-            )}
 
             <Button
               type="submit"
