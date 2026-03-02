@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -10,44 +11,94 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Building, Info, Repeat } from "lucide-react";
+import { Building, Info, Repeat, Loader2, Save } from "lucide-react";
+import { toast } from "sonner";
+import { useSession } from "next-auth/react";
 
 export function GeneralSettings() {
-  // Estado para controlar se é CPF ou CNPJ
+  const { data: session } = useSession();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [docType, setDocType] = useState<"CNPJ" | "CPF">("CNPJ");
 
   const [formData, setFormData] = useState({
-    companyName: "Totten Tecnologia LTDA",
-    tradeName: "Totten",
-    document: "00.000.000/0001-00",
-    contactPhone: "(00) 0000-0000",
+    companyName: "",
+    tradeName: "",
+    document: "",
+    contactPhone: "",
   });
 
-  // Esses dados viriam do banco de dados global da empresa
-  const whatsappFromMessages = "(00) 90000-0000";
-  const emailFromSecurity = "admin@totten.com";
+  // 🔥 CACHE: Armazena CPF e CNPJ separadamente
+  const [cpfCache, setCpfCache] = useState("");
+  const [cnpjCache, setCnpjCache] = useState("");
 
-  // Função mágica para formatar CPF e CNPJ enquanto digita
+  const [whatsappFromMessages, setWhatsappFromMessages] = useState("");
+  const [emailFromSecurity, setEmailFromSecurity] = useState("");
+
+  // Busca os dados do banco quando o componente carrega
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch("/api/settings");
+        if (res.ok) {
+          const data = await res.json();
+          setFormData({
+            companyName: data.companyName || "",
+            tradeName: data.tradeName || "",
+            document: data.document || "",
+            contactPhone: data.contactPhone || "",
+          });
+          setWhatsappFromMessages(data.whatsapp || "");
+          setEmailFromSecurity(session?.user?.email || "");
+
+          // 🔥 Detecta automaticamente se é CPF ou CNPJ
+          const cleanDoc = data.document?.replace(/\D/g, "") || "";
+          if (cleanDoc.length > 0) {
+            if (cleanDoc.length <= 11) {
+              setDocType("CPF");
+              setCpfCache(data.document); // Salva no cache
+            } else {
+              setDocType("CNPJ");
+              setCnpjCache(data.document); // Salva no cache
+            }
+          }
+        } else {
+          toast.error("Erro ao carregar configurações");
+        }
+      } catch (error) {
+        console.error("Erro ao buscar configurações:", error);
+        toast.error("Erro de conexão");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSettings();
+  }, [session]);
+
+  // Função para formatar CPF e CNPJ enquanto digita
   const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let v = e.target.value.replace(/\D/g, ""); // Remove tudo que não for número
+    let v = e.target.value.replace(/\D/g, "");
 
     if (docType === "CPF") {
-      v = v.slice(0, 11); // Limita aos 11 dígitos do CPF
+      v = v.slice(0, 11);
       v = v.replace(/(\d{3})(\d)/, "$1.$2");
       v = v.replace(/(\d{3})(\d)/, "$1.$2");
       v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
       setFormData({ ...formData, document: v });
+      setCpfCache(v); // 🔥 Salva no cache enquanto digita
     } else {
-      v = v.slice(0, 14); // Limita aos 14 dígitos do CNPJ
+      v = v.slice(0, 14);
       v = v.replace(/^(\d{2})(\d)/, "$1.$2");
       v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
       v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
       v = v.replace(/(\d{4})(\d)/, "$1-$2");
       setFormData({ ...formData, document: v });
+      setCnpjCache(v); // 🔥 Salva no cache enquanto digita
     }
   };
 
-  // Função mágica para formatar Telefone enquanto digita
+  // Função para formatar Telefone enquanto digita
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let v = e.target.value.replace(/\D/g, "");
 
@@ -61,15 +112,60 @@ export function GeneralSettings() {
     setFormData({ ...formData, contactPhone: v.slice(0, 15) });
   };
 
-  // Alternar entre CPF e CNPJ (e limpar o campo para não bugar a formatação)
+  // 🔥 ALTERNAR ENTRE CPF E CNPJ (COM CACHE INTELIGENTE)
   const toggleDocType = () => {
-    setDocType(docType === "CNPJ" ? "CPF" : "CNPJ");
-    setFormData({ ...formData, document: "" });
+    if (docType === "CNPJ") {
+      // Mudando de CNPJ → CPF
+      setDocType("CPF");
+      // Restaura o CPF do cache (se existir)
+      setFormData({ ...formData, document: cpfCache });
+    } else {
+      // Mudando de CPF → CNPJ
+      setDocType("CNPJ");
+      // Restaura o CNPJ do cache (se existir)
+      setFormData({ ...formData, document: cnpjCache });
+    }
   };
+
+  // Salva as alterações no banco
+  const handleSave = async () => {
+    setSaving(true);
+
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        toast.success("Configurações salvas com sucesso!");
+      } else {
+        toast.error(data.error || "Erro ao salvar");
+      }
+    } catch (error) {
+      console.error("Erro ao salvar:", error);
+      toast.error("Erro de conexão");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <Card className="border-0 bg-transparent shadow-none md:border md:bg-card md:shadow-sm">
+        <CardContent className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="border-0 bg-transparent shadow-none md:border md:bg-card md:shadow-sm">
-      {/* Removemos o espaçamento lateral (padding) no mobile, mas mantemos no desktop (md:px-6) */}
       <CardHeader className="px-0 pt-0 md:pt-6 md:px-6">
         <CardTitle className="flex items-center gap-2 text-card-foreground">
           <Building className="h-5 w-5 text-primary" />
@@ -80,9 +176,8 @@ export function GeneralSettings() {
         </CardDescription>
       </CardHeader>
 
-      {/* Mesma lógica de remover padding lateral no mobile para ocupar a tela toda */}
       <CardContent className="grid gap-6 px-0 pb-0 md:pb-6 md:px-6">
-        {/* Nomes da Empresa */}
+        {/* 🔥 NOME DE EXIBIÇÃO (VISÍVEL PARA CLIENTES) */}
         <div className="grid gap-2">
           <Label htmlFor="tradeName" className="font-medium">
             Nome de Exibição (Visível para os clientes)
@@ -93,13 +188,16 @@ export function GeneralSettings() {
             onChange={(e) =>
               setFormData({ ...formData, tradeName: e.target.value })
             }
-            placeholder="Ex: Minha Empresa"
+            placeholder="Ex: Clínica Bem-Estar"
           />
+          <p className="text-xs text-muted-foreground">
+            Este nome aparece na sidebar, totem e mensagens para os clientes.
+          </p>
         </div>
 
+        {/* RAZÃO SOCIAL / NOME COMPLETO + DOCUMENTO */}
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="grid gap-2">
-            {/* A MÁGICA DO LABEL: Altera entre Razão Social e Nome Completo dinamicamente */}
             <Label htmlFor="companyName">
               {docType === "CNPJ" ? "Razão Social" : "Nome Completo"}
             </Label>
@@ -108,6 +206,11 @@ export function GeneralSettings() {
               value={formData.companyName}
               onChange={(e) =>
                 setFormData({ ...formData, companyName: e.target.value })
+              }
+              placeholder={
+                docType === "CNPJ"
+                  ? "Ex: Clínica Bem-Estar LTDA"
+                  : "Ex: Maria da Silva"
               }
             />
           </div>
@@ -134,11 +237,11 @@ export function GeneralSettings() {
           </div>
         </div>
 
-        {/* Informações de Contato (Centralizadas) */}
+        {/* Informações de Contato */}
         <div className="grid sm:grid-cols-3 gap-4 pt-6 mt-2 border-t border-border">
-          {/* Telefone Fixo/Contato */}
+          {/* Telefone Fixo */}
           <div className="grid gap-2">
-            <Label htmlFor="contactPhone">Telefone Fixo / Recados</Label>
+            <Label htmlFor="contactPhone">Contato</Label>
             <Input
               id="contactPhone"
               value={formData.contactPhone}
@@ -147,7 +250,7 @@ export function GeneralSettings() {
             />
           </div>
 
-          {/* WhatsApp (Apenas Leitura - Informativo) */}
+          {/* WhatsApp (Apenas Leitura) */}
           <div className="grid gap-2">
             <Label htmlFor="whatsapp" className="text-muted-foreground">
               WhatsApp Principal
@@ -164,7 +267,7 @@ export function GeneralSettings() {
             </p>
           </div>
 
-          {/* E-mail (Apenas Leitura - Informativo) */}
+          {/* E-mail (Apenas Leitura) */}
           <div className="grid gap-2">
             <Label htmlFor="email" className="text-muted-foreground">
               E-mail Administrativo
@@ -180,6 +283,23 @@ export function GeneralSettings() {
               Altere na aba "Acesso"
             </p>
           </div>
+        </div>
+
+        {/* 🔥 BOTÃO DE SALVAR */}
+        <div className="flex justify-end pt-4 border-t border-border">
+          <Button onClick={handleSave} disabled={saving} className="min-w-32">
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Salvar Alterações
+              </>
+            )}
+          </Button>
         </div>
       </CardContent>
     </Card>

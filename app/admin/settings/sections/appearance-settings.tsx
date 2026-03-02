@@ -85,12 +85,12 @@ export function AppearanceSettings() {
         </CardHeader>
         <CardContent className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
-            {/* <p className="text-sm font-medium text-foreground">
+            <p className="text-sm font-medium text-foreground">
               Taxa única de customização:{" "}
               <span className="text-primary font-bold text-base ml-1">
                 R$ 15,00
               </span>
-            </p> */}
+            </p>
             <p className="text-xs text-muted-foreground mt-1 max-w-100">
               Nossa equipe extrai a paleta de cores da sua logomarca e aplica
               nos botões, menus e no Totten de autoatendimento.
