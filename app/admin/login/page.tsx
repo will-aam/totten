@@ -17,6 +17,9 @@ import {
 } from "@/components/ui/card";
 import { toast } from "sonner";
 
+// 🔥 FORÇA RENDERIZAÇÃO APENAS NO CLIENTE
+export const dynamic = "force-dynamic";
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -24,7 +27,6 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // 🔥 DETECTA MENSAGENS DA URL
   const verified = searchParams.get("verified");
   const error = searchParams.get("error");
 
@@ -73,7 +75,6 @@ function LoginForm() {
 
   return (
     <div className="relative flex min-h-svh items-center justify-center bg-background p-4">
-      {/* Botão de Voltar para o Totem */}
       <Link
         href="/totem/idle"
         className="absolute top-6 left-6 md:top-8 md:left-8 flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group"
@@ -162,12 +163,11 @@ function LoginForm() {
   );
 }
 
-// 🔥 COMPONENTE PRINCIPAL COM SUSPENSE
 export default function AdminLoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-svh items-center justify-center">
+        <div className="flex min-h-svh items-center justify-center bg-background">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
         </div>
       }
