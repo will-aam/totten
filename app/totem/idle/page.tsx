@@ -91,7 +91,7 @@ export default function TotemIdlePage() {
           </Link>
           <p className="mt-4 text-xs md:text-sm text-muted-foreground animate-pulse text-center">
             {status === "unauthenticated"
-              ? "⚠️ Faça login para acessar"
+              ? "Faça login para acessar"
               : "Toque para registrar sua presença"}
           </p>
         </div>
