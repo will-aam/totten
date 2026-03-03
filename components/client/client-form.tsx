@@ -19,6 +19,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   User,
   CreditCard,
@@ -31,8 +37,12 @@ import {
   MapPin,
   ChevronDown,
   Sparkles,
+  CalendarIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 // Máscaras
 function formatCpfInput(value: string): string {
@@ -85,13 +95,12 @@ export function ClientForm() {
     cpf: "",
     phone_whatsapp: "",
     email: "",
-    birth_date: "",
+    birth_date: undefined as Date | undefined,
     zip_code: "",
     street: "",
     number: "",
     city: "",
-    // 🔥 Pacote (se vazio = não vincula)
-    service_id: "",
+    service_id: "none",
     total_sessions: "10",
   });
 
@@ -118,7 +127,8 @@ export function ClientForm() {
 
   // Calcula o preço do pacote automaticamente
   const calculatePackagePrice = (): number => {
-    if (!form.service_id || !form.total_sessions) return 0;
+    if (!form.service_id || form.service_id === "none" || !form.total_sessions)
+      return 0;
 
     const service = services.find((s) => s.id === form.service_id);
     if (!service) return 0;
@@ -152,8 +162,8 @@ export function ClientForm() {
       errs.email = "Formato inválido";
     }
 
-    // 🔥 Valida pacote SE um serviço foi selecionado
-    if (form.service_id) {
+    // Valida pacote SE um serviço foi selecionado
+    if (form.service_id && form.service_id !== "none") {
       if (!form.total_sessions || Number(form.total_sessions) < 1) {
         errs.total_sessions = "Mín. 1 sessão";
       }
@@ -178,7 +188,9 @@ export function ClientForm() {
           cpf: form.cpf,
           phone_whatsapp: form.phone_whatsapp,
           email: form.email || null,
-          birth_date: form.birth_date || null,
+          birth_date: form.birth_date
+            ? format(form.birth_date, "yyyy-MM-dd")
+            : null,
           zip_code: form.zip_code || null,
           city: form.city || null,
           street: form.street || null,
@@ -194,8 +206,8 @@ export function ClientForm() {
         return;
       }
 
-      // 2. 🔥 Se selecionou um serviço, cria o pacote
-      if (form.service_id) {
+      // 2. Se selecionou um serviço (diferente de "none"), cria o pacote
+      if (form.service_id && form.service_id !== "none") {
         const packageRes = await fetch("/api/packages/templates", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -215,7 +227,7 @@ export function ClientForm() {
       }
 
       toast.success(
-        form.service_id
+        form.service_id && form.service_id !== "none"
           ? "Cliente e pacote cadastrados com sucesso!"
           : "Cliente cadastrado com sucesso!",
       );
@@ -348,18 +360,42 @@ export function ClientForm() {
                         htmlFor="birth_date"
                         className="flex items-center gap-2 text-foreground font-medium"
                       >
-                        <CalendarDays className="h-4 w-4 text-muted-foreground" />{" "}
+                        <CalendarDays className="h-4 w-4 text-muted-foreground" />
                         Nascimento
                       </Label>
-                      <Input
-                        id="birth_date"
-                        type="date"
-                        value={form.birth_date}
-                        onChange={(e) =>
-                          setForm({ ...form, birth_date: e.target.value })
-                        }
-                        className="bg-muted/50 border-border/50 h-11 block w-full"
-                      />
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "justify-start text-left font-normal bg-muted/50 h-11",
+                              !form.birth_date && "text-muted-foreground",
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {form.birth_date ? (
+                              format(form.birth_date, "PPP", { locale: ptBR })
+                            ) : (
+                              <span>Selecione a data</span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={form.birth_date}
+                            onSelect={(date) =>
+                              setForm({ ...form, birth_date: date })
+                            }
+                            initialFocus
+                            locale={ptBR}
+                            defaultMonth={new Date(2000, 0)}
+                            captionLayout="dropdown-buttons"
+                            fromYear={1920}
+                            toYear={new Date().getFullYear()}
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </div>
 
                     <div className="flex flex-col gap-2">
@@ -367,7 +403,7 @@ export function ClientForm() {
                         htmlFor="email"
                         className="flex items-center gap-2 text-foreground font-medium"
                       >
-                        <Mail className="h-4 w-4 text-muted-foreground" />{" "}
+                        <Mail className="h-4 w-4 text-muted-foreground" />
                         E-mail
                       </Label>
                       <Input
@@ -391,7 +427,7 @@ export function ClientForm() {
                   {/* ENDEREÇO */}
                   <div className="flex flex-col gap-2">
                     <Label className="flex items-center gap-2 text-foreground font-medium mb-1 mt-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />{" "}
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
                       Endereço
                     </Label>
                     <div className="grid grid-cols-3 gap-3">
@@ -452,7 +488,7 @@ export function ClientForm() {
             </CardTitle>
           </CardHeader>
           <CardContent className="px-0 pb-0 md:pb-6 md:px-6 flex flex-col gap-4">
-            {/* 🔥 SELECT DE SERVIÇO (SEM CHECKBOX) */}
+            {/* SELECT DE SERVIÇO */}
             <div className="flex flex-col gap-2">
               <Label className="text-foreground font-medium">
                 Tipo de Serviço
@@ -483,8 +519,7 @@ export function ClientForm() {
                       </div>
                     ) : (
                       <>
-                        {/* 🔥 OPÇÃO VAZIA = NÃO VINCULA */}
-                        <SelectItem value="">
+                        <SelectItem value="none">
                           <span className="text-muted-foreground">
                             Sem pacote inicial
                           </span>
@@ -513,8 +548,8 @@ export function ClientForm() {
               )}
             </div>
 
-            {/* 🔥 CAMPOS DE PACOTE (SÓ APARECEM SE SELECIONOU UM SERVIÇO) */}
-            {form.service_id && (
+            {/* CAMPOS DE PACOTE (SÓ APARECEM SE SELECIONOU UM SERVIÇO) */}
+            {form.service_id && form.service_id !== "none" && (
               <div className="flex flex-col gap-4 animate-in slide-in-from-top-2">
                 {/* QUANTIDADE DE SESSÕES */}
                 <div className="flex flex-col gap-2">
@@ -538,7 +573,7 @@ export function ClientForm() {
                   )}
                 </div>
 
-                {/* 🔥 PREVIEW DO PACOTE */}
+                {/* PREVIEW DO PACOTE */}
                 {selectedService && form.total_sessions && (
                   <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 space-y-2">
                     <div className="flex items-center gap-2 text-primary text-sm font-medium">
@@ -560,8 +595,9 @@ export function ClientForm() {
                         Total: {formatCurrency(packagePrice)}
                       </p>
                       {Number(form.total_sessions) >= 5 && (
-                        <p className="text-xs text-green-600 font-medium">
-                          ✓ Desconto aplicado
+                        <p className="text-xs text-green-600 font-medium flex items-center gap-1">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Desconto aplicado
                         </p>
                       )}
                     </div>
