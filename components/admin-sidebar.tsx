@@ -1,7 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 import {
   Bird,
   LayoutDashboard,
@@ -19,6 +21,7 @@ import {
   UserCog,
   Award,
   Link2,
+  Loader2,
 } from "lucide-react";
 import {
   Sidebar,
@@ -45,15 +48,25 @@ import { cn } from "@/lib/utils";
 
 // Itens fixos do menu principal
 const navItems = [
-  { title: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-  { title: "Clientes", href: "/admin/clients", icon: Users },
-  { title: "Serviços", href: "/admin/services", icon: UserCog },
-  { title: "Histórico Check-in", href: "/admin/history", icon: ClipboardList },
-  { title: "Vouchers", href: "/admin/vouchers", icon: Award },
-  { title: "Link na Bio", href: "/admin/link-bio", icon: Link2 },
+  {
+    title: "Dashboard",
+    href: "/admin/dashboard",
+    icon: LayoutDashboard,
+    active: true,
+  },
+  { title: "Clientes", href: "/admin/clients", icon: Users, active: true },
+  { title: "Serviços", href: "/admin/services", icon: UserCog, active: true },
+  {
+    title: "Histórico Check-in",
+    href: "/admin/history",
+    icon: ClipboardList,
+    active: true,
+  },
+  { title: "Vouchers", href: "/admin/vouchers", icon: Award, active: true },
+  { title: "Link na Bio", href: "/admin/link-bio", icon: Link2, active: false }, // 🔒 BLOQUEADO
 ];
 
-// Sub-itens da Agenda (Novo Agendamento removido pois já está na página)
+// Sub-itens da Agenda
 const agendaSubItems = [
   { title: "Calendário", href: "/admin/agenda", active: true },
   { title: "Agendamentos Recorrentes", href: "#", active: false },
@@ -75,13 +88,49 @@ const financeSubItems = [
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { data: session } = useSession();
   const { setOpenMobile } = useSidebar();
+  const [clinicName, setClinicName] = useState("Totten");
+  const [loading, setLoading] = useState(true);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const supportPhone = "5579998752198";
   const supportMessage = encodeURIComponent(
     "Olá! Preciso de ajuda com o sistema Totten.",
   );
   const whatsappUrl = `https://wa.me/${supportPhone}?text=${supportMessage}`;
+
+  // 🔥 Busca o nome da clínica
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch("/api/settings/public");
+        if (res.ok) {
+          const data = await res.json();
+          setClinicName(data.tradeName);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar configurações:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSettings();
+  }, []);
+
+  // 🔥 Função de logout
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await signOut({ redirect: false });
+      router.push("/totem/idle");
+    } catch (error) {
+      console.error("Erro ao sair:", error);
+      setLoggingOut(false);
+    }
+  };
 
   return (
     <Sidebar>
@@ -94,9 +143,15 @@ export function AdminSidebar() {
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
             <Bird className="h-5 w-5" />
           </div>
-          <h2 className="font-inter text-xl font-bold text-sidebar-foreground tracking-tight">
-            Totten
-          </h2>
+          {loading ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            </div>
+          ) : (
+            <h2 className="font-inter text-xl font-bold text-sidebar-foreground tracking-tight">
+              {clinicName}
+            </h2>
+          )}
         </Link>
       </SidebarHeader>
 
@@ -110,14 +165,30 @@ export function AdminSidebar() {
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith(item.href)}
-                    className="hover:bg-muted/50"
+                    asChild={item.active}
+                    isActive={pathname.startsWith(item.href) && item.active}
+                    className={cn(
+                      "hover:bg-muted/50",
+                      !item.active && "opacity-50 cursor-not-allowed",
+                    )}
                   >
-                    <Link href={item.href} onClick={() => setOpenMobile(false)}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
+                    {item.active ? (
+                      <Link
+                        href={item.href}
+                        onClick={() => setOpenMobile(false)}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    ) : (
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-2">
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </div>
+                        <Lock className="h-3 w-3 opacity-50" />
+                      </div>
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -227,8 +298,8 @@ export function AdminSidebar() {
               <span className="text-sm font-medium leading-none mb-1">
                 Administrador
               </span>
-              <span className="text-[10px] text-muted-foreground leading-none">
-                admin@totten.com
+              <span className="text-[10px] text-muted-foreground leading-none truncate max-w-35">
+                {session?.user?.email || "admin@totten.com"}
               </span>
             </div>
           </div>
@@ -260,13 +331,21 @@ export function AdminSidebar() {
           </SidebarMenuItem>
           <SidebarMenuItem className="mt-1">
             <SidebarMenuButton
-              asChild
+              onClick={handleLogout}
+              disabled={loggingOut}
               className="text-destructive hover:text-destructive hover:bg-destructive/10"
             >
-              <Link href="/admin/login">
-                <LogOut className="h-4 w-4" />
-                <span>Sair</span>
-              </Link>
+              {loggingOut ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Saindo...</span>
+                </>
+              ) : (
+                <>
+                  <LogOut className="h-4 w-4" />
+                  <span>Sair</span>
+                </>
+              )}
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

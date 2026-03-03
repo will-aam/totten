@@ -1,63 +1,58 @@
-import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 
-export default withAuth(
-  function middleware(req) {
-    const token = req.nextauth.token;
-    const path = req.nextUrl.pathname;
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
 
-    // 🔥 Se está tentando acessar /admin ou /totem SEM token
-    if (!token && (path.startsWith("/admin") || path.startsWith("/totem"))) {
-      // Exceto as rotas públicas de admin
-      if (
-        path === "/admin/login" ||
-        path === "/admin/register" ||
-        path === "/admin/forgot-password" ||
-        path === "/check-email"
-      ) {
-        return NextResponse.next();
-      }
+  // 🔥 ROTAS PÚBLICAS (não precisam de autenticação)
+  const publicPaths = [
+    "/",
+    "/totem/idle",
+    "/totem/check-in",
+    "/totem/success",
+    "/totem/error",
+    "/admin/login",
+    "/admin/register",
+    "/admin/forgot-password",
+    "/check-email",
+    "/verify-email",
+    "/api/auth",
+    "/api/totem",
+    "/api/settings/public",
+  ];
 
-      // Redireciona para login
-      return NextResponse.redirect(new URL("/admin/login", req.url));
-    }
+  // Verifica se a rota é pública
+  const isPublicPath = publicPaths.some((path) => pathname.startsWith(path));
 
+  if (isPublicPath) {
     return NextResponse.next();
-  },
-  {
-    callbacks: {
-      authorized: ({ token, req }) => {
-        const path = req.nextUrl.pathname;
+  }
 
-        // 🔥 ROTAS PÚBLICAS (não precisa de autenticação)
-        const publicRoutes = [
-          "/",
-          "/admin/login",
-          "/admin/register",
-          "/admin/forgot-password",
-          "/check-email",
-          "/verify-email",
-          "/api/auth",
-        ];
+  // 🔒 ROTAS PROTEGIDAS: Verifica se tem token de autenticação
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
 
-        // Se é rota pública, permite
-        if (publicRoutes.some((route) => path.startsWith(route))) {
-          return true;
-        }
+  // Se não tem token e está tentando acessar rota protegida
+  if (!token && pathname.startsWith("/admin")) {
+    const url = new URL("/admin/login", request.url);
+    url.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(url);
+  }
 
-        // Para rotas protegidas, exige token
-        return !!token;
-      },
-    },
-  },
-);
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: [
-    // Protege /admin e /totem
-    "/admin/:path*",
-    "/totem/:path*",
-    // Mas exclui arquivos estáticos e API pública
-    "/((?!_next/static|_next/image|favicon.ico|api/auth/signin|api/auth/callback).*)",
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    "/((?!_next/static|_next/image|favicon.ico).*)",
   ],
 };
