@@ -1,17 +1,38 @@
-// app/totem/idle/page.tsx
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Heart, Lock } from "lucide-react";
+import { Heart, Lock, Loader2 } from "lucide-react";
 
 export default function TotemIdlePage() {
+  const [clinicName, setClinicName] = useState("Totten");
+  const [loading, setLoading] = useState(true);
+
+  // 🔥 Busca o nome da clínica ao carregar a página
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch("/api/settings/public");
+        if (res.ok) {
+          const data = await res.json();
+          setClinicName(data.tradeName);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar configurações:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSettings();
+  }, []);
+
   return (
-    /* h-dvh garante que a tela ocupe exatamente 100% da área visível, sem rolagem */
     <div className="relative flex h-dvh w-full flex-col items-center justify-between p-6 pb-12 overflow-hidden bg-background">
-      {/* 1. Topo: Espaçador discreto ou logo secundária se quiser */}
+      {/* 1. Topo: Espaçador */}
       <div className="h-10 w-full" />
 
-      {/* 2. Centro: Conteúdo Principal (Logo + Botão) */}
+      {/* 2. Centro: Conteúdo Principal */}
       <div className="flex flex-col items-center gap-8 w-full max-w-sm animate-in fade-in zoom-in duration-700">
         {/* Logo / Clinic Name */}
         <div className="flex flex-col items-center gap-4">
@@ -19,13 +40,20 @@ export default function TotemIdlePage() {
             <Heart className="h-10 w-10 md:h-12 md:w-12 text-primary-foreground" />
           </div>
           <div className="space-y-1 text-center">
-            {" "}
-            <h1 className="font-serif text-5xl font-bold tracking-tight text-foreground md:text-6xl">
-              Totten
-            </h1>
-            <p className="text-base md:text-lg text-muted-foreground leading-relaxed">
-              Sua jornada de bem-estar começa aqui.
-            </p>
+            {loading ? (
+              <div className="flex items-center justify-center gap-2 py-3">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : (
+              <>
+                <h1 className="font-serif text-5xl font-bold tracking-tight text-foreground md:text-6xl">
+                  {clinicName}
+                </h1>
+                <p className="text-base md:text-lg text-muted-foreground leading-relaxed">
+                  Sua jornada de bem-estar começa aqui.
+                </p>
+              </>
+            )}
           </div>
         </div>
 
@@ -33,7 +61,7 @@ export default function TotemIdlePage() {
         <div className="w-full px-4 pt-4">
           <Link
             href="/totem/check-in"
-            className="flex h-20 w-full items-center justify-center rounded-2xl bg-primary text-xl font-bold text-primary-foreground hover:scale-[1.02] active:scale-95 md:h-24 md:text-2xl"
+            className="flex h-20 w-full items-center justify-center rounded-2xl bg-primary text-xl font-bold text-primary-foreground hover:scale-[1.02] active:scale-95 transition-transform md:h-24 md:text-2xl shadow-lg"
           >
             Fazer Check-in
           </Link>
@@ -43,7 +71,7 @@ export default function TotemIdlePage() {
         </div>
       </div>
 
-      {/* 3. Rodapé: Cadeado fixo, mas visível */}
+      {/* 3. Rodapé: Cadeado */}
       <div className="w-full flex justify-center items-center">
         <Link
           href="/admin/login"

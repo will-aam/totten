@@ -14,10 +14,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-// 🔥 TODO: Pegar o slug da organização de forma dinâmica
-// Por enquanto, vamos usar um valor fixo
-const ORG_SLUG = "totten"; // Alterar para pegar dinamicamente
-
 type Package = {
   id: string;
   name: string;
@@ -50,9 +46,7 @@ export default function TotemCheckInPage() {
 
     setLoading(true);
     try {
-      const res = await fetch(
-        `/api/totem/search-client?cpf=${digits}&org=${ORG_SLUG}`,
-      );
+      const res = await fetch(`/api/totem/search-client?cpf=${digits}`);
 
       if (res.status === 404) {
         router.push("/totem/error?type=CPF_NOT_FOUND");
@@ -96,7 +90,6 @@ export default function TotemCheckInPage() {
         body: JSON.stringify({
           client_id: clientId,
           package_id: packageId,
-          org_slug: ORG_SLUG,
         }),
       });
 

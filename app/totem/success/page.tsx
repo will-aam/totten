@@ -1,4 +1,3 @@
-// app/totem/success/page.tsx
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
@@ -10,6 +9,7 @@ function SuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [countdown, setCountdown] = useState(5);
+  const [clinicName, setClinicName] = useState("Totten");
 
   const name = searchParams.get("name") || "Cliente";
   const used = Number(searchParams.get("used") || 0);
@@ -19,6 +19,23 @@ function SuccessContent() {
     hour: "2-digit",
     minute: "2-digit",
   });
+
+  // 🔥 Busca o nome da clínica
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch("/api/settings/public");
+        if (res.ok) {
+          const data = await res.json();
+          setClinicName(data.tradeName);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar configurações:", error);
+      }
+    };
+
+    fetchSettings();
+  }, []);
 
   // Efeito 1: Apenas diminui o contador de 1 em 1 segundo
   useEffect(() => {
@@ -39,9 +56,7 @@ function SuccessContent() {
   }, [countdown, router]);
 
   return (
-    // Container principal: ocupa a tela toda e centraliza
     <div className="flex min-h-dvh w-full items-center justify-center bg-background p-4 sm:p-6 md:p-8">
-      {/* Card de Sucesso Elegante */}
       <div className="relative flex w-full max-w-lg flex-col items-center gap-8 rounded-3xl bg-card p-8 shadow-xl border border-border sm:p-12 text-center">
         {/* Ícone de Sucesso */}
         <div className="flex h-24 w-24 items-center justify-center rounded-full bg-primary/20 mt-4 sm:mt-0">
@@ -67,7 +82,6 @@ function SuccessContent() {
           <p className="mb-3 text-lg font-semibold text-foreground">
             {`Sessão ${used} de ${total} concluída!`}
           </p>
-          {/* Barra de progresso usando a cor primária (rose) */}
           <Progress
             value={progress}
             className="h-4 bg-muted [&>div]:bg-primary"
@@ -79,7 +93,15 @@ function SuccessContent() {
           </p>
         </div>
 
-        {/* Contagem regressiva suave */}
+        {/* Nome da clínica no rodapé */}
+        <div className="mt-4 pt-4 border-t border-border/50 w-full">
+          <p className="text-sm font-semibold text-foreground">{clinicName}</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Obrigada pela confiança! 💆‍♀️
+          </p>
+        </div>
+
+        {/* Contagem regressiva */}
         <p className="text-sm font-medium text-muted-foreground animate-pulse mt-2">
           {`Retornando em ${countdown} ${countdown === 1 ? "segundo" : "segundos"}...`}
         </p>

@@ -1,32 +1,26 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// GET - Busca cliente pelo CPF (sem autenticação - acesso público do totem)
+// GET - Busca cliente pelo CPF
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const cpf = searchParams.get("cpf");
-    const org_slug = searchParams.get("org");
 
-    if (!cpf || !org_slug) {
-      return NextResponse.json(
-        { error: "CPF e organização são obrigatórios" },
-        { status: 400 },
-      );
+    if (!cpf) {
+      return NextResponse.json({ error: "CPF é obrigatório" }, { status: 400 });
     }
 
     // Remove pontuação do CPF
     const cleanCpf = cpf.replace(/\D/g, "");
 
-    // Busca a organização pelo slug
-    const organization = await prisma.organization.findUnique({
-      where: { slug: org_slug },
-    });
+    // 🔥 Busca a primeira (e única) organização do sistema
+    const organization = await prisma.organization.findFirst();
 
     if (!organization) {
       return NextResponse.json(
-        { error: "Organização não encontrada" },
-        { status: 404 },
+        { error: "Sistema não configurado" },
+        { status: 500 },
       );
     }
 
@@ -41,7 +35,7 @@ export async function GET(request: Request) {
           where: {
             active: true,
             used_sessions: {
-              lt: prisma.package.fields.total_sessions, // Ainda tem sessões disponíveis
+              lt: prisma.package.fields.total_sessions,
             },
           },
           include: {

@@ -1,25 +1,23 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// POST - Registra check-in (sem autenticação - acesso público do totem)
+// POST - Registra check-in
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { client_id, package_id, org_slug } = body;
+    const { client_id, package_id } = body;
 
-    if (!client_id || !package_id || !org_slug) {
+    if (!client_id || !package_id) {
       return NextResponse.json({ error: "Dados incompletos" }, { status: 400 });
     }
 
-    // Busca a organização
-    const organization = await prisma.organization.findUnique({
-      where: { slug: org_slug },
-    });
+    // 🔥 Busca a primeira (e única) organização do sistema
+    const organization = await prisma.organization.findFirst();
 
     if (!organization) {
       return NextResponse.json(
-        { error: "Organização não encontrada" },
-        { status: 404 },
+        { error: "Sistema não configurado" },
+        { status: 500 },
       );
     }
 
