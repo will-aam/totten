@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 
-// Importando os nossos componentes
 import {
   DailyAgendaGrid,
   Appointment,
@@ -33,10 +32,14 @@ import { AppointmentDetailsModal } from "@/components/agenda/appointment-details
 import { ScheduleSettingsModal } from "@/components/agenda/schedule-settings-modal";
 
 export default function AgendaPage() {
+  // TODO FUTURO:
+  // Pegar o organizationId a partir da sessão do admin logado
+  const organizationId = "cmm9qg8yj0003cg1ol9a8n9l5";
+
   // Estado da data SELECIONADA (aquela que mostra a grade)
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  // Estado da semana VISÍVEL na "Tira da Semana" (começa no domingo da data atual)
+  // Estado da semana VISÍVEL na "Tira da Semana"
   const [weekStart, setWeekStart] = useState(
     startOfWeek(new Date(), { weekStartsOn: 0 }),
   );
@@ -51,14 +54,10 @@ export default function AgendaPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
 
-  // Horário configurado da agenda (estado local por enquanto)
+  // Horário configurado da agenda (carregado do Prisma)
   const [openingTime, setOpeningTime] = useState("08:00");
   const [closingTime, setClosingTime] = useState("19:00");
-
-  // TODO FUTURO:
-  // Pegar o organizationId a partir da sessão do admin logado
-  // ou a partir de um contexto global da clínica selecionada.
-  const organizationId = "cmm9qg8yj0003cg1ol9a8n9l5";
+  const [loadingSettings, setLoadingSettings] = useState(true);
 
   // Helpers para converter "08:00" -> 8
   const openingHourNumber = Number(openingTime.split(":")[0]) || 8;
@@ -84,7 +83,36 @@ export default function AgendaPage() {
   const nextWeek = () => setWeekStart(addDays(weekStart, 7));
   const prevWeek = () => setWeekStart(subDays(weekStart, 7));
 
-  // Carrega agendamentos sempre que a data mudar (e quando tivermos organizationId)
+  // Carrega horários de funcionamento a partir das Settings (Prisma)
+  useEffect(() => {
+    async function loadSettings() {
+      if (!organizationId) return;
+
+      setLoadingSettings(true);
+      try {
+        const res = await fetch(
+          `/api/settings/public?organizationId=${organizationId}`,
+        );
+
+        if (!res.ok) {
+          console.error("Falha ao carregar configurações públicas");
+          return;
+        }
+
+        const data = await res.json();
+        if (data.openingTime) setOpeningTime(data.openingTime);
+        if (data.closingTime) setClosingTime(data.closingTime);
+      } catch (error) {
+        console.error("Erro ao carregar configurações públicas:", error);
+      } finally {
+        setLoadingSettings(false);
+      }
+    }
+
+    loadSettings();
+  }, [organizationId]);
+
+  // Carrega agendamentos sempre que a data mudar
   useEffect(() => {
     async function loadAppointments() {
       if (!organizationId) {
@@ -123,9 +151,9 @@ export default function AgendaPage() {
       <AdminHeader title="Agenda Diária" />
 
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-5xl mx-auto w-full pb-24 md:pb-6">
-        {/* CABEÇALHO DA AGENDA (Navegação Inteligente) */}
+        {/* CABEÇALHO DA AGENDA */}
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 border-b border-border/50 pb-6">
-          {/* LADO ESQUERDO: Título Clicável que abre o Calendário Mensal */}
+          {/* LADO ESQUERDO: Título + calendário popover */}
           <Popover>
             <PopoverTrigger asChild>
               <div className="flex items-center gap-3 sm:gap-4 cursor-pointer hover:bg-muted/50 p-2 -ml-2 rounded-2xl transition-colors group w-fit">
@@ -146,7 +174,9 @@ export default function AgendaPage() {
                       : `Você tem ${appointments.length} agendamentos.`}
                   </p>
                   <p className="text-[11px] text-muted-foreground/80 mt-0.5">
-                    Funcionamento: {openingTime} às {closingTime}
+                    {loadingSettings
+                      ? "Carregando horário de funcionamento..."
+                      : `Funcionamento: ${openingTime} às ${closingTime}`}
                   </p>
                 </div>
               </div>
@@ -170,9 +200,9 @@ export default function AgendaPage() {
             </PopoverContent>
           </Popover>
 
-          {/* LADO DIREITO: Tira da Semana (Week Strip), Botão Configurar e Novo */}
+          {/* LADO DIREITO: tira da semana + configurar + novo */}
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
-            {/* Tira da Semana */}
+            {/* Tira da semana */}
             <div className="flex items-center w-full sm:w-auto justify-between sm:justify-center bg-muted/20 sm:bg-transparent rounded-2xl sm:rounded-none p-1 sm:p-0 border sm:border-0 border-border/50">
               <Button
                 variant="ghost"
@@ -233,7 +263,7 @@ export default function AgendaPage() {
               </Button>
             </div>
 
-            {/* BOTÃO CONFIGURAR HORÁRIO (ícone apenas) */}
+            {/* Botão Configurar horário (ícone) */}
             <Button
               variant="outline"
               size="icon"
@@ -244,7 +274,7 @@ export default function AgendaPage() {
               <Settings2 className="h-4 w-4" />
             </Button>
 
-            {/* BOTÃO NOVO */}
+            {/* Botão Novo */}
             <Button
               className="rounded-xl sm:rounded-full shadow-sm shrink-0 w-full sm:w-auto h-12 sm:h-10 font-semibold"
               onClick={() => setIsNewModalOpen(true)}
@@ -255,7 +285,7 @@ export default function AgendaPage() {
           </div>
         </div>
 
-        {/* --- A GRADE DA AGENDA --- */}
+        {/* Grade da agenda */}
         <DailyAgendaGrid
           appointments={appointments}
           onAppointmentClick={(appt) => setSelectedAppointment(appt)}
@@ -264,7 +294,7 @@ export default function AgendaPage() {
         />
       </div>
 
-      {/* --- MODAL: NOVO AGENDAMENTO --- */}
+      {/* Modal: Novo agendamento */}
       <NewAppointmentModal
         open={isNewModalOpen}
         onOpenChange={setIsNewModalOpen}
@@ -277,7 +307,7 @@ export default function AgendaPage() {
         }}
       />
 
-      {/* --- MODAL: DETALHES DO AGENDAMENTO --- */}
+      {/* Modal: Detalhes do agendamento */}
       <AppointmentDetailsModal
         open={!!selectedAppointment}
         onOpenChange={(open) => {
@@ -286,7 +316,7 @@ export default function AgendaPage() {
         appointment={selectedAppointment}
       />
 
-      {/* --- MODAL: CONFIGURAÇÃO DE HORÁRIO --- */}
+      {/* Modal: Configuração de horário */}
       <ScheduleSettingsModal
         open={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
@@ -294,9 +324,35 @@ export default function AgendaPage() {
           openingTime,
           closingTime,
         }}
-        onSave={({ openingTime: newOpening, closingTime: newClosing }) => {
+        onSave={async ({
+          openingTime: newOpening,
+          closingTime: newClosing,
+        }) => {
+          // Atualiza no estado imediatamente (para feedback)
           setOpeningTime(newOpening);
           setClosingTime(newClosing);
+
+          // Persiste no Prisma via API
+          try {
+            const res = await fetch("/api/settings/hours", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                organizationId,
+                openingTime: newOpening,
+                closingTime: newClosing,
+              }),
+            });
+
+            if (!res.ok) {
+              console.error("Falha ao salvar horários no backend");
+              // Opcional: você pode mostrar um toast de erro aqui
+            }
+          } catch (error) {
+            console.error("Erro ao salvar horários no backend:", error);
+          }
         }}
       />
     </>
