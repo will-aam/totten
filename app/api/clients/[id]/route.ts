@@ -172,3 +172,73 @@ export async function POST(
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }
+
+// PUT - Atualiza dados do cliente
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const admin = await getCurrentAdmin();
+
+    if (!admin) {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    }
+
+    const { id } = await params;
+    const body = await request.json();
+
+    const client = await prisma.client.findFirst({
+      where: {
+        id: id,
+        organization_id: admin.organizationId,
+      },
+    });
+
+    if (!client) {
+      return NextResponse.json(
+        { error: "Cliente não encontrado" },
+        { status: 404 },
+      );
+    }
+
+    // Se CPF mudou, valida duplicidade na organização
+    if (body.cpf && body.cpf !== client.cpf) {
+      const existing = await prisma.client.findFirst({
+        where: {
+          cpf: body.cpf,
+          organization_id: admin.organizationId,
+          NOT: { id },
+        },
+        select: { id: true },
+      });
+
+      if (existing) {
+        return NextResponse.json(
+          { error: "Já existe outro cliente com este CPF." },
+          { status: 400 },
+        );
+      }
+    }
+
+    const updated = await prisma.client.update({
+      where: { id },
+      data: {
+        name: body.name ?? client.name,
+        cpf: body.cpf ?? client.cpf,
+        phone_whatsapp: body.phone_whatsapp ?? client.phone_whatsapp,
+        email: body.email ?? client.email,
+        birth_date: body.birth_date ?? client.birth_date,
+        zip_code: body.zip_code ?? client.zip_code,
+        city: body.city ?? client.city,
+        street: body.street ?? client.street,
+        number: body.number ?? client.number,
+      },
+    });
+
+    return NextResponse.json({ client: updated });
+  } catch (error) {
+    console.error("Erro ao atualizar cliente:", error);
+    return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
+  }
+}

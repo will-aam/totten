@@ -2,7 +2,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { mutate } from "swr";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,7 +51,6 @@ function formatPhoneInput(value: string) {
 }
 
 export function ClientContact({ client, activePackage }: ClientContactProps) {
-  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -96,13 +94,17 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
           email: editEmail,
         }),
       });
-      if (res.ok) {
-        toast.success("Contato atualizado!");
-        setIsEditing(false);
-        mutate(`/api/clients/${client.id}`);
+
+      if (!res.ok) {
+        const payload = await res.json();
+        throw new Error(payload?.error || "Erro ao salvar.");
       }
-    } catch {
-      toast.error("Erro ao salvar.");
+
+      toast.success("Contato atualizado!");
+      setIsEditing(false);
+      mutate(`/api/clients/${client.id}`);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar.");
     } finally {
       setSaving(false);
     }
@@ -218,10 +220,8 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
       </CardHeader>
 
       <CardContent className="px-0 pb-0 md:pb-6 md:px-6 flex flex-col gap-5">
-        {/* A MÁGICA VISUAL ACONTECE AQUI */}
         {isEditing ? (
           <div className="flex flex-col sm:flex-row gap-3 animate-in fade-in zoom-in-95 duration-200">
-            {/* Input WhatsApp substituindo o botão */}
             <div className="relative flex-1">
               <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
                 <MessageCircle className="h-5 w-5 text-[#25D366]" />
@@ -235,7 +235,6 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
               />
             </div>
 
-            {/* Input E-mail substituindo o botão */}
             <div className="relative flex-1">
               <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
                 <Mail className="h-5 w-5 text-primary" />
