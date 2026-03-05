@@ -57,11 +57,9 @@ export default function TotemCheckInPage() {
   const [showConfirmTime, setShowConfirmTime] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
 
-  // Pega o slug da organização pela URL (?slug=xxx ou ?organization=xxx)
   const organizationSlug =
     searchParams.get("slug") || searchParams.get("organization") || "";
 
-  // 1️⃣ Busca cliente pelo CPF no Totem (nova rota /api/totem/search)
   const handleConfirm = async () => {
     const digits = cpf.replace(/\D/g, "");
     if (digits.length !== 11) return;
@@ -119,7 +117,6 @@ export default function TotemCheckInPage() {
     }
   };
 
-  // 2️⃣ Se usuário escolher um agendamento
   const handleSelectAppointment = (appt: AppointmentOption) => {
     const now = new Date();
     const apptTime = new Date(appt.date_time);
@@ -131,11 +128,9 @@ export default function TotemCheckInPage() {
       return;
     }
 
-    // dentro da janela, faz check-in direto
     handleCheckIn(appt);
   };
 
-  // 3️⃣ Realiza o check-in final com appointment_id
   const handleCheckIn = async (appt: AppointmentOption) => {
     setCheckingIn(true);
     try {
@@ -171,10 +166,13 @@ export default function TotemCheckInPage() {
     <>
       <div className="flex min-h-dvh w-full items-center justify-center bg-background p-4 sm:p-6 md:p-8">
         <div className="relative flex w-full max-w-lg flex-col items-center gap-8 rounded-3xl bg-card p-6 shadow-xl border border-border sm:p-10 md:p-12">
-          {/* Botão Voltar */}
           <div className="absolute top-6 left-6 sm:top-8 sm:left-8">
             <Link
-              href="/totem/idle"
+              href={
+                organizationSlug
+                  ? `/totem/idle?slug=${organizationSlug}`
+                  : "/totem/idle"
+              }
               className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground group"
             >
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted group-hover:bg-[#D9C6BF]/30 transition-colors">
@@ -184,7 +182,6 @@ export default function TotemCheckInPage() {
             </Link>
           </div>
 
-          {/* Textos de Cabeçalho */}
           <div className="mt-12 text-center sm:mt-4">
             <h1 className="font-serif text-3xl font-bold text-foreground md:text-5xl">
               Check-in
@@ -194,7 +191,6 @@ export default function TotemCheckInPage() {
             </p>
           </div>
 
-          {/* O teclado numérico */}
           <div className="w-full max-w-sm">
             <CpfKeypad
               value={cpf}
@@ -213,7 +209,6 @@ export default function TotemCheckInPage() {
         </div>
       </div>
 
-      {/* Modal de Seleção de Serviço */}
       <Dialog open={showSelection} onOpenChange={setShowSelection}>
         <DialogContent className="w-[95vw] max-w-md">
           <DialogHeader>
@@ -256,7 +251,6 @@ export default function TotemCheckInPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal de Confirmação de Horário */}
       <Dialog open={showConfirmTime} onOpenChange={setShowConfirmTime}>
         <DialogContent className="w-[95vw] max-w-md">
           <DialogHeader>

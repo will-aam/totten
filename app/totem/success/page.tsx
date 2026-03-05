@@ -12,6 +12,8 @@ function SuccessContent() {
   const [countdown, setCountdown] = useState(5);
   const [clinicName, setClinicName] = useState("Totten");
 
+  const slug = searchParams.get("slug") || "";
+
   const name = searchParams.get("name") || "Cliente";
   const used = Number(searchParams.get("used") || 0);
   const total = Number(searchParams.get("total") || 10);
@@ -25,10 +27,12 @@ function SuccessContent() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await fetch("/api/settings/public");
+        const res = await fetch(
+          slug ? `/api/settings/public?slug=${slug}` : "/api/settings/public",
+        );
         if (res.ok) {
           const data = await res.json();
-          setClinicName(data.tradeName);
+          setClinicName(data.tradeName || data.companyName || "Totten");
         }
       } catch (error) {
         console.error("Erro ao buscar configurações:", error);
@@ -36,9 +40,8 @@ function SuccessContent() {
     };
 
     fetchSettings();
-  }, []);
+  }, [slug]);
 
-  // Efeito 1: Apenas diminui o contador de 1 em 1 segundo
   useEffect(() => {
     if (countdown <= 0) return;
 
@@ -49,22 +52,19 @@ function SuccessContent() {
     return () => clearInterval(interval);
   }, [countdown]);
 
-  // Efeito 2: Escuta o contador e, quando chegar a 0, redireciona
   useEffect(() => {
     if (countdown === 0) {
-      router.push("/totem/idle");
+      router.push(slug ? `/totem/idle?slug=${slug}` : "/totem/idle");
     }
-  }, [countdown, router]);
+  }, [countdown, router, slug]);
 
   return (
     <div className="flex min-h-dvh w-full items-center justify-center bg-background p-4 sm:p-6 md:p-8">
       <div className="relative flex w-full max-w-lg flex-col items-center gap-8 rounded-3xl bg-card p-8 shadow-xl border border-border sm:p-12 text-center">
-        {/* Ícone de Sucesso */}
         <div className="flex h-24 w-24 items-center justify-center rounded-full bg-primary/20 mt-4 sm:mt-0">
           <CheckCircle2 className="h-14 w-14 text-primary" />
         </div>
 
-        {/* Nome da Cliente */}
         <div>
           <p className="text-lg text-muted-foreground">Bem-vinda,</p>
           <h1 className="font-serif text-4xl font-bold text-foreground md:text-5xl mt-1">
@@ -72,13 +72,11 @@ function SuccessContent() {
           </h1>
         </div>
 
-        {/* Horário do Check-in */}
         <p className="text-muted-foreground">
           {"Check-in realizado às "}
           <span className="font-semibold text-foreground">{time}</span>
         </p>
 
-        {/* Barra de Progresso do Pacote */}
         <div className="w-full rounded-2xl border border-border bg-background p-6 shadow-sm">
           <p className="mb-3 text-lg font-semibold text-foreground">
             {`Sessão ${used} de ${total} concluída!`}
@@ -94,7 +92,6 @@ function SuccessContent() {
           </p>
         </div>
 
-        {/* Nome da clínica no rodapé */}
         <div className="mt-4 pt-4 border-t border-border/50 w-full">
           <p className="text-sm font-semibold text-foreground">{clinicName}</p>
           <p className="text-xs text-muted-foreground mt-1">
@@ -102,9 +99,10 @@ function SuccessContent() {
           </p>
         </div>
 
-        {/* Contagem regressiva */}
         <p className="text-sm font-medium text-muted-foreground animate-pulse mt-2">
-          {`Retornando em ${countdown} ${countdown === 1 ? "segundo" : "segundos"}...`}
+          {`Retornando em ${countdown} ${
+            countdown === 1 ? "segundo" : "segundos"
+          }...`}
         </p>
       </div>
     </div>

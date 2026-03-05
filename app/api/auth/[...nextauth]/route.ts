@@ -16,7 +16,6 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Credenciais inválidas");
         }
 
-        // Busca admin com suas organizações
         const admin = await prisma.admin.findUnique({
           where: { email: credentials.email },
           include: {
@@ -26,7 +25,7 @@ export const authOptions: NextAuthOptions = {
                 name: true,
                 slug: true,
               },
-              take: 1, // Pega a primeira organização do admin
+              take: 1,
             },
           },
         });
@@ -35,14 +34,12 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Usuário não encontrado");
         }
 
-        // 🔥 BLOQUEIA SE E-MAIL NÃO VERIFICADO
         if (!admin.email_verified) {
           throw new Error(
             "E-mail não verificado. Verifique sua caixa de entrada.",
           );
         }
 
-        // Valida a senha
         const isValidPassword = await bcrypt.compare(
           credentials.password,
           admin.password,
@@ -52,33 +49,33 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Senha incorreta");
         }
 
-        // Retorna dados que vão para a sessão
         return {
           id: admin.id,
           email: admin.email,
           name: admin.display_name || admin.email,
           organizationId: admin.organizations[0].id,
           organizationName: admin.organizations[0].name,
+          organizationSlug: admin.organizations[0].slug,
         };
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
-      // Injeta organizationId no token JWT na primeira vez
       if (user) {
         token.id = user.id;
         token.organizationId = (user as any).organizationId;
         token.organizationName = (user as any).organizationName;
+        token.organizationSlug = (user as any).organizationSlug;
       }
       return token;
     },
     async session({ session, token }) {
-      // Injeta organizationId na sessão disponível no client/server
       if (token) {
         session.user.id = token.id as string;
         session.user.organizationId = token.organizationId as string;
         session.user.organizationName = token.organizationName as string;
+        session.user.organizationSlug = token.organizationSlug as string;
       }
       return session;
     },
@@ -88,7 +85,7 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 dias
+    maxAge: 30 * 24 * 60 * 60,
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
