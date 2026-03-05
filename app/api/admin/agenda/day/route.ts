@@ -22,7 +22,6 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Converte YYYY-MM-DD para Date
     const [year, month, day] = dateParam.split("-").map(Number);
     const target = new Date(year, month - 1, day);
 
@@ -44,23 +43,21 @@ export async function GET(req: NextRequest) {
         client: true,
         service: true,
         package: true,
+        check_in: true,
       },
       orderBy: {
         date_time: "asc",
       },
     });
 
-    // Mapeia Appointment (Prisma) -> Appointment (DailyAgendaGrid)
     const mapped = appointments.map((appt) => {
       const date = new Date(appt.date_time);
       const hours = String(date.getHours()).padStart(2, "0");
       const minutes = String(date.getMinutes()).padStart(2, "0");
       const time = `${hours}:${minutes}`;
 
-      // Duração em minutos – uso service.duration como base
       const duration = Number(appt.service.duration ?? 60);
 
-      // Texto de sessão/pacote
       let sessionInfo = "Avulsa";
       if (appt.package) {
         const current = appt.session_number ?? 1;
@@ -69,8 +66,7 @@ export async function GET(req: NextRequest) {
 
       const hasCharge = appt.has_charge;
 
-      // Cores por tipo de atendimento (simples por enquanto)
-      let color = "bg-blue-100 border-blue-300 text-blue-900"; // default/avulso
+      let color = "bg-blue-100 border-blue-300 text-blue-900";
       if (appt.package_id) {
         color = "bg-emerald-100 border-emerald-300 text-emerald-900";
       }
@@ -89,6 +85,8 @@ export async function GET(req: NextRequest) {
         phone: appt.client.phone_whatsapp,
         color,
         hasCharge,
+        status: appt.status,
+        checkInTime: appt.check_in?.date_time ?? null,
       };
     });
 

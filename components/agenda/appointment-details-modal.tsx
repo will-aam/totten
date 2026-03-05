@@ -60,12 +60,68 @@ export function AppointmentDetailsModal({
 
   if (!appointment) return null;
 
+  const formatTime = (dt?: string | Date | null) => {
+    if (!dt) return null;
+    const date = typeof dt === "string" ? new Date(dt) : dt;
+    return date.toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   const calculateEndTime = (start: string, duration: number) => {
     const [h, m] = start.split(":").map(Number);
     const date = new Date();
     date.setHours(h, m + duration);
-    return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
+    return `${date.getHours().toString().padStart(2, "0")}:${date
+      .getMinutes()
+      .toString()
+      .padStart(2, "0")}`;
   };
+
+  const getCheckInDiff = () => {
+    if (!appointment.checkInTime) return null;
+
+    const checkInDate = new Date(appointment.checkInTime);
+    const [h, m] = appointment.time.split(":").map(Number);
+
+    // Usa a data do check-in para compor o horário agendado do mesmo dia
+    const scheduled = new Date(checkInDate);
+    scheduled.setHours(h, m, 0, 0);
+
+    const diffMinutes = Math.round(
+      (checkInDate.getTime() - scheduled.getTime()) / 60000,
+    );
+
+    const abs = Math.abs(diffMinutes);
+
+    if (abs <= 5) {
+      return {
+        label: "No horário",
+        minutes: 0,
+        variant: "secondary" as const,
+        className: "bg-emerald-100 text-emerald-700 border-emerald-200",
+      };
+    }
+
+    if (diffMinutes < 0) {
+      return {
+        label: "Antecipado",
+        minutes: abs,
+        variant: "secondary" as const,
+        className: "bg-amber-100 text-amber-700 border-amber-200",
+      };
+    }
+
+    return {
+      label: "Atrasado",
+      minutes: abs,
+      variant: "secondary" as const,
+      className: "bg-rose-100 text-rose-700 border-rose-200",
+    };
+  };
+
+  const checkInDiff = getCheckInDiff();
 
   const handleWhatsApp = () => {
     const firstName = appointment.clientName.split(" ")[0];
@@ -121,7 +177,6 @@ export function AppointmentDetailsModal({
           </div>
         </DialogHeader>
 
-        {/* MÁGICA DA RESPONSIVIDADE: min-h-0 permite que o flex encolha e não empurre o rodapé pra fora */}
         <div className="flex flex-col gap-4 py-2 overflow-y-auto px-1 -mx-1 [&::-webkit-scrollbar]:hidden min-h-0">
           <div className="bg-muted/30 border border-border/50 rounded-xl p-3 flex flex-col gap-2.5">
             <div className="flex justify-between items-center">
@@ -136,15 +191,42 @@ export function AppointmentDetailsModal({
                 {appointment.sessionInfo}
               </Badge>
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-sm text-foreground">
-              <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span className="font-medium">
-                {appointment.time} até{" "}
-                {calculateEndTime(appointment.time, appointment.duration)}
-                <span className="text-muted-foreground font-normal ml-1">
-                  ({appointment.duration} min)
+
+            <div className="flex flex-col gap-1 text-sm text-foreground">
+              <span className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="font-medium">
+                  {appointment.time} até{" "}
+                  {calculateEndTime(appointment.time, appointment.duration)}
+                  <span className="text-muted-foreground font-normal ml-1">
+                    ({appointment.duration} min)
+                  </span>
                 </span>
               </span>
+
+              {appointment.checkInTime && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                  <Clock className="h-3.5 w-3.5" />
+                  Check-in realizado às{" "}
+                  <strong className="text-foreground">
+                    {formatTime(appointment.checkInTime)}
+                  </strong>
+                  {checkInDiff && (
+                    <Badge
+                      variant={checkInDiff.variant}
+                      className={cn(
+                        "ml-2 text-[10px] border",
+                        checkInDiff.className,
+                      )}
+                    >
+                      {checkInDiff.label}
+                      {checkInDiff.minutes > 0
+                        ? ` • ${checkInDiff.minutes} min`
+                        : ""}
+                    </Badge>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -245,7 +327,6 @@ export function AppointmentDetailsModal({
           </Button>
         </div>
 
-        {/* Rodapé fixo - Usa flex-col-reverse para que o botão principal (Remarcar) fique em cima do Cancelar no celular */}
         <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 mt-2 pt-4 border-t border-border/50 shrink-0">
           <Button
             variant="ghost"

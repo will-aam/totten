@@ -1,126 +1,104 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// POST - Registra check-in
+// POST - Registra check-in pelo appointment_id
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { client_id, package_id } = body;
+    const { appointment_id } = body;
 
-    if (!client_id || !package_id) {
-      return NextResponse.json({ error: "Dados incompletos" }, { status: 400 });
-    }
-
-    // 🔥 Busca a primeira (e única) organização do sistema
-    const organization = await prisma.organization.findFirst();
-
-    if (!organization) {
+    if (!appointment_id) {
       return NextResponse.json(
-        { error: "Sistema não configurado" },
-        { status: 500 },
+        { error: "appointment_id é obrigatório" },
+        { status: 400 },
       );
     }
 
-    // Busca o pacote e valida
-    const packageData = await prisma.package.findFirst({
-      where: {
-        id: package_id,
-        client_id: client_id,
-        organization_id: organization.id,
-        active: true,
-      },
+    // Busca o agendamento + cliente + serviço + pacote
+    const appt = await prisma.appointment.findUnique({
+      where: { id: appointment_id },
       include: {
         client: true,
         service: true,
+        package: true,
+        organization: true,
       },
     });
 
-    if (!packageData) {
+    if (!appt) {
       return NextResponse.json(
-        { error: "Pacote não encontrado ou inativo" },
+        { error: "Agendamento não encontrado" },
         { status: 404 },
       );
     }
 
-    // Verifica se ainda há sessões disponíveis
-    if (packageData.used_sessions >= packageData.total_sessions) {
+    if (appt.status === "REALIZADO") {
       return NextResponse.json(
-        { error: "Pacote já foi totalmente utilizado" },
+        { error: "Este agendamento já foi realizado." },
         { status: 400 },
       );
     }
 
-    // Verifica se já fez check-in hoje neste pacote
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const checkInToday = await prisma.checkIn.findFirst({
+    // Verifica se já existe check-in para esse agendamento
+    const existingCheckIn = await prisma.checkIn.findFirst({
       where: {
-        client_id: client_id,
-        package_id: package_id,
-        organization_id: organization.id,
-        date_time: {
-          gte: today,
-          lt: tomorrow,
-        },
+        appointment_id: appt.id,
       },
     });
 
-    if (checkInToday) {
+    if (existingCheckIn) {
       return NextResponse.json(
-        { error: "Você já fez check-in hoje neste pacote" },
+        { error: "Check-in já registrado para este agendamento." },
         { status: 400 },
       );
     }
 
-    // Inicia transação: registra check-in e incrementa sessões usadas
     const result = await prisma.$transaction(async (tx) => {
       // Cria o check-in
       const checkIn = await tx.checkIn.create({
         data: {
-          client_id: client_id,
-          package_id: package_id,
-          organization_id: organization.id,
+          appointment_id: appt.id,
+          client_id: appt.client_id,
+          package_id: appt.package_id ?? null,
+          organization_id: appt.organization_id,
         },
       });
 
-      // Incrementa sessões usadas
-      const updatedPackage = await tx.package.update({
-        where: { id: package_id },
-        data: {
-          used_sessions: {
-            increment: 1,
-          },
-        },
-      });
+      if (appt.package_id) {
+        const pacote = await tx.package.findUnique({
+          where: { id: appt.package_id },
+        });
 
-      return { checkIn, updatedPackage };
+        if (pacote && pacote.used_sessions < pacote.total_sessions) {
+          await tx.package.update({
+            where: { id: appt.package_id },
+            data: { used_sessions: { increment: 1 } },
+          });
+        }
+
+        await tx.appointment.update({
+          where: { id: appt.id },
+          data: { status: "REALIZADO" },
+        });
+      } else {
+        await tx.appointment.update({
+          where: { id: appt.id },
+          data: { status: "REALIZADO", has_charge: true },
+        });
+      }
+
+      return checkIn;
     });
-
-    // Calcula sessões restantes
-    const remainingSessions =
-      result.updatedPackage.total_sessions -
-      result.updatedPackage.used_sessions;
 
     return NextResponse.json({
       success: true,
-      message: "Check-in realizado com sucesso!",
-      checkIn: {
-        id: result.checkIn.id,
-        dateTime: result.checkIn.date_time,
-      },
-      package: {
-        name: packageData.name,
-        serviceName: packageData.service.name,
-        usedSessions: result.updatedPackage.used_sessions,
-        totalSessions: result.updatedPackage.total_sessions,
-        remainingSessions: remainingSessions,
-      },
-      client: {
-        name: packageData.client.name,
-      },
+      clientName: appt.client.name,
+      serviceName: appt.service.name,
+      time: new Date(appt.date_time).toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      checkInId: result.id,
     });
   } catch (error) {
     console.error("Erro ao fazer check-in:", error);

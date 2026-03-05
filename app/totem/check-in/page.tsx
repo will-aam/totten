@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { CpfKeypad, formatCpf } from "@/components/cpf-keypad";
+import { useRouter, useSearchParams } from "next/navigation";
+import { CpfKeypad } from "@/components/cpf-keypad";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -10,63 +10,106 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
-type Package = {
+type AppointmentOption = {
   id: string;
-  name: string;
-  serviceName: string;
-  totalSessions: number;
-  usedSessions: number;
-  remainingSessions: number;
-  price: number;
+  service_name: string;
+  date_time: string;
 };
 
-type ClientData = {
-  id: string;
-  name: string;
-  phone: string;
-  packages: Package[];
-};
+type SearchResponse =
+  | {
+      status: "FOUND";
+      appointment: {
+        id: string;
+        date_time: string;
+        service_name: string;
+        client_name: string;
+      };
+    }
+  | {
+      status: "NOT_FOUND";
+    }
+  | {
+      status: "MULTIPLE_FOUND";
+      clientName: string;
+      appointments: AppointmentOption[];
+    };
 
 export default function TotemCheckInPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [cpf, setCpf] = useState("");
   const [loading, setLoading] = useState(false);
-  const [clientData, setClientData] = useState<ClientData | null>(null);
-  const [showPackageSelection, setShowPackageSelection] = useState(false);
+
+  const [multipleAppointments, setMultipleAppointments] = useState<
+    AppointmentOption[]
+  >([]);
+  const [clientName, setClientName] = useState<string | null>(null);
+  const [showSelection, setShowSelection] = useState(false);
+
+  const [pendingAppointment, setPendingAppointment] =
+    useState<AppointmentOption | null>(null);
+  const [showConfirmTime, setShowConfirmTime] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
 
-  // 1️⃣ Busca cliente pelo CPF
+  // Pega o slug da organização pela URL (?slug=xxx ou ?organization=xxx)
+  const organizationSlug =
+    searchParams.get("slug") || searchParams.get("organization") || "";
+
+  // 1️⃣ Busca cliente pelo CPF no Totem (nova rota /api/totem/search)
   const handleConfirm = async () => {
     const digits = cpf.replace(/\D/g, "");
     if (digits.length !== 11) return;
 
+    if (!organizationSlug) {
+      router.push("/totem/error?type=ORG_NOT_FOUND");
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await fetch(`/api/totem/search-client?cpf=${digits}`);
+      const res = await fetch("/api/totem/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cpf: digits,
+          organizationSlug,
+        }),
+      });
 
-      if (res.status === 404) {
+      const data: SearchResponse = await res.json();
+
+      if (data.status === "NOT_FOUND") {
         router.push("/totem/error?type=CPF_NOT_FOUND");
         return;
       }
 
-      const data = await res.json();
-
-      if (data.packages.length === 0) {
-        router.push("/totem/error?type=NO_ACTIVE_PACKAGE");
+      if (data.status === "FOUND") {
+        const params = new URLSearchParams({
+          name: data.appointment.client_name,
+          service: data.appointment.service_name,
+          time: new Date(data.appointment.date_time).toLocaleTimeString(
+            "pt-BR",
+            {
+              hour: "2-digit",
+              minute: "2-digit",
+            },
+          ),
+        });
+        router.push(`/totem/success?${params.toString()}`);
         return;
       }
 
-      // Se tem apenas 1 pacote, faz check-in direto
-      if (data.packages.length === 1) {
-        await handleCheckIn(data.id, data.packages[0].id, data.name);
-      } else {
-        // Se tem múltiplos pacotes, mostra modal de seleção
-        setClientData(data);
-        setShowPackageSelection(true);
+      if (data.status === "MULTIPLE_FOUND") {
+        setClientName(data.clientName);
+        setMultipleAppointments(data.appointments);
+        setShowSelection(true);
+        return;
       }
     } catch (error) {
       console.error("Erro ao buscar cliente:", error);
@@ -76,20 +119,31 @@ export default function TotemCheckInPage() {
     }
   };
 
-  // 2️⃣ Realiza o check-in
-  const handleCheckIn = async (
-    clientId: string,
-    packageId: string,
-    clientName: string,
-  ) => {
+  // 2️⃣ Se usuário escolher um agendamento
+  const handleSelectAppointment = (appt: AppointmentOption) => {
+    const now = new Date();
+    const apptTime = new Date(appt.date_time);
+    const diffMinutes = Math.abs((now.getTime() - apptTime.getTime()) / 60000);
+
+    if (diffMinutes > 60) {
+      setPendingAppointment(appt);
+      setShowConfirmTime(true);
+      return;
+    }
+
+    // dentro da janela, faz check-in direto
+    handleCheckIn(appt);
+  };
+
+  // 3️⃣ Realiza o check-in final com appointment_id
+  const handleCheckIn = async (appt: AppointmentOption) => {
     setCheckingIn(true);
     try {
       const res = await fetch("/api/totem/check-in", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          client_id: clientId,
-          package_id: packageId,
+          appointment_id: appt.id,
         }),
       });
 
@@ -97,18 +151,13 @@ export default function TotemCheckInPage() {
 
       if (data.success) {
         const params = new URLSearchParams({
-          name: clientName,
-          used: String(data.package.usedSessions),
-          total: String(data.package.totalSessions),
+          name: data.clientName,
+          service: data.serviceName,
+          time: data.time,
         });
         router.push(`/totem/success?${params.toString()}`);
       } else {
-        const errorType = data.error.includes("já fez check-in")
-          ? "CHECKIN_DUPLICATE"
-          : data.error.includes("totalmente utilizado")
-            ? "PACKAGE_EXHAUSTED"
-            : "UNKNOWN";
-        router.push(`/totem/error?type=${errorType}`);
+        router.push("/totem/error?type=UNKNOWN");
       }
     } catch (error) {
       console.error("Erro ao fazer check-in:", error);
@@ -158,50 +207,42 @@ export default function TotemCheckInPage() {
           {loading && (
             <div className="flex items-center gap-2 text-sm font-medium text-primary">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Verificando pacotes...
+              Verificando agendamentos...
             </div>
           )}
         </div>
       </div>
 
-      {/* Modal de Seleção de Pacote */}
-      <Dialog
-        open={showPackageSelection}
-        onOpenChange={setShowPackageSelection}
-      >
+      {/* Modal de Seleção de Serviço */}
+      <Dialog open={showSelection} onOpenChange={setShowSelection}>
         <DialogContent className="w-[95vw] max-w-md">
           <DialogHeader>
             <DialogTitle className="text-center">
-              Olá, {clientData?.name}!
+              Olá, {clientName}!
             </DialogTitle>
             <p className="text-sm text-muted-foreground text-center mt-2">
-              Selecione o pacote para fazer check-in:
+              Qual procedimento vamos fazer agora?
             </p>
           </DialogHeader>
 
           <div className="flex flex-col gap-3 mt-4">
-            {clientData?.packages.map((pkg) => (
+            {multipleAppointments.map((appt) => (
               <Button
-                key={pkg.id}
-                onClick={() =>
-                  handleCheckIn(clientData.id, pkg.id, clientData.name)
-                }
+                key={appt.id}
+                onClick={() => handleSelectAppointment(appt)}
                 disabled={checkingIn}
                 variant="outline"
                 className="h-auto py-4 px-4 flex flex-col items-start gap-2 hover:border-primary hover:bg-primary/5"
               >
-                <div className="flex items-center justify-between w-full">
-                  <span className="font-semibold text-left">{pkg.name}</span>
-                  <Badge variant="secondary" className="text-xs">
-                    {pkg.remainingSessions} restantes
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between w-full text-xs text-muted-foreground">
-                  <span>{pkg.serviceName}</span>
-                  <span>
-                    {pkg.usedSessions}/{pkg.totalSessions} sessões
-                  </span>
-                </div>
+                <span className="font-semibold text-left">
+                  {appt.service_name}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {new Date(appt.date_time).toLocaleTimeString("pt-BR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
               </Button>
             ))}
           </div>
@@ -212,6 +253,52 @@ export default function TotemCheckInPage() {
               Registrando check-in...
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Confirmação de Horário */}
+      <Dialog open={showConfirmTime} onOpenChange={setShowConfirmTime}>
+        <DialogContent className="w-[95vw] max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center">Confirmar horário</DialogTitle>
+            <DialogDescription className="text-center">
+              Este serviço está agendado para{" "}
+              <strong>
+                {pendingAppointment
+                  ? new Date(pendingAppointment.date_time).toLocaleTimeString(
+                      "pt-BR",
+                      { hour: "2-digit", minute: "2-digit" },
+                    )
+                  : "--:--"}
+              </strong>
+              . Deseja fazer o check-in antecipado agora?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex gap-3 mt-4">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                setShowConfirmTime(false);
+                setPendingAppointment(null);
+              }}
+            >
+              Voltar
+            </Button>
+            <Button
+              className="w-full"
+              onClick={() => {
+                if (pendingAppointment) {
+                  handleCheckIn(pendingAppointment);
+                  setShowConfirmTime(false);
+                  setPendingAppointment(null);
+                }
+              }}
+            >
+              Confirmar
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </>

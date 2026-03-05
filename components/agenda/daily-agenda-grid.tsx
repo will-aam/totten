@@ -20,7 +20,9 @@ export interface Appointment {
   isRecurring: boolean;
   phone: string;
   color: string;
-  hasCharge?: boolean; // Novo campo de cobrança!
+  hasCharge?: boolean;
+  status?: string;
+  checkInTime?: string | Date | null;
 }
 
 interface DailyAgendaGridProps {
