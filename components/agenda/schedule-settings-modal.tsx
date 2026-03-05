@@ -116,11 +116,22 @@ export function ScheduleSettingsModal({
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter
+          className="
+            flex flex-col-reverse gap-2
+            sm:flex-row sm:justify-end sm:gap-3
+          "
+        >
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            className="w-full sm:w-auto"
+          >
             Cancelar
           </Button>
-          <Button onClick={handleConfirm}>Salvar</Button>
+          <Button onClick={handleConfirm} className="w-full sm:w-auto">
+            Salvar
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
