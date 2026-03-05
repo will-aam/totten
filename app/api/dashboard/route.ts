@@ -83,6 +83,7 @@ export async function GET() {
     }));
 
     return NextResponse.json({
+      organizationId: admin.organizationId,
       todayCheckInsCount,
       activeClientsCount,
       packagesEndingSoonCount,

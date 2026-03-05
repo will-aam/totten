@@ -90,30 +90,23 @@ export async function POST(req: NextRequest) {
     // 6. Realiza o check-in em transação para garantir consistência:
     //    a) Cria o CheckIn vinculado ao agendamento
     //    b) Atualiza o status do agendamento para REALIZADO
-    //    c) Se houver pacote, incrementa used_sessions (sem ultrapassar total_sessions)
-    //
-    // TODO Financeiro: quando o modelo de "conta a receber" for criado no schema,
-    // adicionar aqui a criação do registro financeiro dentro da mesma transação.
-    // Exemplo:
-    //   await tx.contaAReceber.create({ data: { valor: servico.price, ... } });
+    //    c) Se houver pacote: incrementa used_sessions (sem ultrapassar total_sessions)
+    //       Se for avulso: marca has_charge = true para sinalizar cobrança pendente
     await prisma.$transaction(async (tx) => {
-      // a) Cria o CheckIn
-      // Restrição do schema atual: CheckIn.package_id é obrigatório (não-nulo).
-      // Por isso, o check-in via Totem só é suportado para agendamentos vinculados
-      // a um pacote. Agendamentos avulsos (sem package_id) ainda terão o status
-      // atualizado para REALIZADO, mas não gerarão um registro de CheckIn.
-      // TODO: tornar package_id opcional no modelo CheckIn para suportar agendamentos avulsos.
-      if (agendamento.package_id) {
-        await tx.checkIn.create({
-          data: {
-            appointment_id: agendamento.id,
-            client_id: cliente.id,
-            package_id: agendamento.package_id,
-            organization_id: organizacao.id,
-          },
-        });
+      // a) Cria o CheckIn vinculado ao agendamento
+      //    - Se for sessão de pacote: inclui package_id
+      //    - Se for avulso: package_id permanece null
+      await tx.checkIn.create({
+        data: {
+          appointment_id: agendamento.id,
+          client_id: cliente.id,
+          package_id: agendamento.package_id ?? null,
+          organization_id: organizacao.id,
+        },
+      });
 
-        // c) Incrementa sessões usadas do pacote, respeitando o total máximo
+      if (agendamento.package_id) {
+        // c) Sessão de pacote: incrementa sessões usadas, respeitando o total máximo
         const pacote = await tx.package.findUnique({
           where: { id: agendamento.package_id },
         });
@@ -124,13 +117,19 @@ export async function POST(req: NextRequest) {
             data: { used_sessions: { increment: 1 } },
           });
         }
-      }
 
-      // b) Atualiza o status do agendamento para REALIZADO
-      await tx.appointment.update({
-        where: { id: agendamento.id },
-        data: { status: "REALIZADO" },
-      });
+        // b) Atualiza o status do agendamento para REALIZADO (sessão de pacote)
+        await tx.appointment.update({
+          where: { id: agendamento.id },
+          data: { status: "REALIZADO" },
+        });
+      } else {
+        // b+c) Agendamento avulso: marca REALIZADO e cobrança pendente em uma operação
+        await tx.appointment.update({
+          where: { id: agendamento.id },
+          data: { status: "REALIZADO", has_charge: true },
+        });
+      }
     });
 
     // 7. Retorna os dados do agendamento para o frontend do Totem

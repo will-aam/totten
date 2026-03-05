@@ -32,6 +32,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+import { PendingCheckInsCard } from "@/components/admin/pending-checkins-card";
+
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 type CheckIn = {
@@ -216,6 +218,11 @@ export default function AdminDashboardPage() {
             </>
           )}
         </div>
+
+        {/* Check-ins Pendentes de Vinculação */}
+        {data?.organizationId && (
+          <PendingCheckInsCard organizationId={data.organizationId} />
+        )}
 
         {/* Check-ins Recentes */}
         <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card mt-2 md:mt-0">
