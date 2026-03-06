@@ -153,12 +153,10 @@ model Client {
 model Category {
   id   String @id @default(cuid())
   name String
-
   organization_id String
   organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-
   services Service[]
-
+  active          Boolean   @default(true)
   @@map("categories")
 }
 
@@ -168,7 +166,7 @@ model Service {
   description String? @db.Text
   duration    Int // Em minutos
   price       Decimal
-
+active          Boolean   @default(true)
   category_id String
   category    Category @relation(fields: [category_id], references: [id])
 
@@ -194,7 +192,7 @@ model PackageTemplate {
   price          Decimal  // Preço de venda do pacote
   validity_days  Int?     // Dias para expirar (null = sem limite)
   is_active      Boolean  @default(true) // Se está disponível para venda
-
+  active          Boolean   @default(true)
   organization_id String
   organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
