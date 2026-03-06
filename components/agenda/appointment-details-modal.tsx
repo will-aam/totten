@@ -1,10 +1,3 @@
-// components/agenda/appointment-details-modal.tsx
-// Modal para exibir detalhes do agendamento, status, forma de pagamento, observações e ações rápidas como confirmar via WhatsApp, gerar recibo ou cancelar sessão.
-// Utiliza componentes de UI pré-existentes como Dialog, Button, Select, etc., e ícones da biblioteca lucide-react para uma interface intuitiva e funcional. O modal é responsivo e adaptado para diferentes tamanhos de tela.
-// O estado do modal é controlado externamente via props, permitindo integração fácil com a lista de agendamentos. A função handleWhatsApp gera uma mensagem personalizada com base no nome do cliente e se é a última sessão do pacote, facilitando a comunicação direta. O modal também destaca visualmente agendamentos com cobranças pendentes para rápida identificação.
-// Este componente é parte fundamental da experiência de gerenciamento de agendamentos, proporcionando uma visão detalhada e ações rápidas para cada sessão agendada.
-// O código inclui tratamento de formatação de horário, cálculo de tempo de check-in para indicar se o cliente chegou no horário, antecipado ou atrasado, e utiliza a biblioteca sonner para exibir notificações ao usuário.
-// O design é pensado para ser limpo e funcional, com uso de cores e badges para destacar informações importantes, garantindo que os administradores possam gerenciar seus agendamentos de forma eficiente e agradável.
 "use client";
 
 import { useState, useEffect } from "react";
@@ -36,99 +29,108 @@ import {
   CalendarClock,
   ReceiptText,
   AlertCircle,
+  Trash2,
+  Save,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import {
+  updateAppointment,
+  deleteAppointment,
+} from "@/app/actions/appointments";
 
 interface AppointmentDetailsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   appointment: any | null;
+  onRefresh?: () => void; // Prop para atualizar a agenda após salvar/deletar
 }
 
 export function AppointmentDetailsModal({
   open,
   onOpenChange,
   appointment,
+  onRefresh,
 }: AppointmentDetailsModalProps) {
   const [status, setStatus] = useState("a_confirmar");
   const [payment, setPayment] = useState("nenhum");
   const [obs, setObs] = useState("");
   const [hasCharge, setHasCharge] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (appointment) {
-      setStatus(appointment.status || "a_confirmar");
-      setPayment(appointment.payment || "nenhum");
-      setObs(appointment.obs || "");
+      // Normaliza o status vindo do banco para o valor do Select
+      const dbStatus = appointment.status?.toLowerCase();
+      setStatus(
+        dbStatus === "pendente" ? "a_confirmar" : dbStatus || "a_confirmar",
+      );
+
+      setPayment(appointment.paymentMethod?.toLowerCase() || "nenhum");
+      setObs(appointment.observations || "");
       setHasCharge(appointment.hasCharge || false);
     }
   }, [appointment]);
 
   if (!appointment) return null;
 
-  const formatTime = (dt?: string | Date | null) => {
-    if (!dt) return null;
-    const date = typeof dt === "string" ? new Date(dt) : dt;
-    return date.toLocaleTimeString("pt-BR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
   const calculateEndTime = (start: string, duration: number) => {
     const [h, m] = start.split(":").map(Number);
     const date = new Date();
     date.setHours(h, m + duration);
-    return `${date.getHours().toString().padStart(2, "0")}:${date
-      .getMinutes()
-      .toString()
-      .padStart(2, "0")}`;
+    return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
   };
 
-  const getCheckInDiff = () => {
-    if (!appointment.checkInTime) return null;
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const result = await updateAppointment(appointment.id, {
+        status,
+        paymentMethod: payment,
+        observations: obs,
+        hasCharge,
+      });
 
-    const checkInDate = new Date(appointment.checkInTime);
-    const [h, m] = appointment.time.split(":").map(Number);
-
-    // Usa a data do check-in para compor o horário agendado do mesmo dia
-    const scheduled = new Date(checkInDate);
-    scheduled.setHours(h, m, 0, 0);
-
-    const diffMinutes = Math.round(
-      (checkInDate.getTime() - scheduled.getTime()) / 60000,
-    );
-
-    const abs = Math.abs(diffMinutes);
-
-    if (abs <= 5) {
-      return {
-        label: "No horário",
-        minutes: 0,
-        variant: "secondary" as const,
-        className: "bg-emerald-100 text-emerald-700 border-emerald-200",
-      };
+      if (result.success) {
+        toast.success("Agendamento atualizado com sucesso!");
+        onRefresh?.();
+        onOpenChange(false);
+      } else {
+        toast.error(result.error || "Erro ao atualizar agendamento.");
+      }
+    } catch (error) {
+      toast.error("Erro inesperado ao salvar.");
+    } finally {
+      setIsSaving(false);
     }
-
-    if (diffMinutes < 0) {
-      return {
-        label: "Antecipado",
-        minutes: abs,
-        variant: "secondary" as const,
-        className: "bg-amber-100 text-amber-700 border-amber-200",
-      };
-    }
-
-    return {
-      label: "Atrasado",
-      minutes: abs,
-      variant: "secondary" as const,
-      className: "bg-rose-100 text-rose-700 border-rose-200",
-    };
   };
 
-  const checkInDiff = getCheckInDiff();
+  const handleDelete = async () => {
+    if (
+      !confirm(
+        "Tem certeza que deseja EXCLUIR este agendamento permanentemente?",
+      )
+    )
+      return;
+
+    setIsDeleting(true);
+    try {
+      const result = await deleteAppointment(appointment.id);
+      if (result.success) {
+        toast.success("Agendamento excluído com sucesso.");
+        onRefresh?.();
+        onOpenChange(false);
+      } else {
+        toast.error(result.error || "Erro ao excluir agendamento.");
+      }
+    } catch (error) {
+      toast.error("Erro inesperado ao excluir.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const handleWhatsApp = () => {
     const firstName = appointment.clientName.split(" ")[0];
@@ -155,32 +157,37 @@ export function AppointmentDetailsModal({
         )}
       >
         <DialogHeader className="mb-1 shrink-0 text-left">
-          <div className="flex flex-col gap-1.5">
-            <DialogTitle className="text-lg sm:text-xl font-bold flex flex-wrap items-center gap-2">
-              <User className="h-5 w-5 text-primary hidden sm:block" />
-              {appointment.clientName}
-              {hasCharge && (
-                <Badge
-                  variant="destructive"
-                  className="text-[10px] animate-pulse py-0 h-5"
-                >
-                  Pendente
-                </Badge>
-              )}
-            </DialogTitle>
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="flex justify-between items-start w-full">
+            <div className="flex flex-col gap-1.5">
+              <DialogTitle className="text-lg sm:text-xl font-bold flex flex-wrap items-center gap-2">
+                <User className="h-5 w-5 text-primary hidden sm:block" />
+                {appointment.clientName}
+                {hasCharge && (
+                  <Badge
+                    variant="destructive"
+                    className="text-[10px] animate-pulse py-0 h-5"
+                  >
+                    Pendente
+                  </Badge>
+                )}
+              </DialogTitle>
               <span className="text-muted-foreground font-medium text-xs sm:text-sm">
                 {appointment.service}
               </span>
-              {appointment.isRecurring && (
-                <Badge
-                  variant="secondary"
-                  className="bg-primary/10 text-primary border-primary/20 flex items-center gap-1 h-5 text-[9px] sm:text-[10px] py-0"
-                >
-                  <Repeat className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Pacote
-                </Badge>
-              )}
             </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-destructive transition-colors"
+              onClick={handleDelete}
+              disabled={isDeleting || isSaving}
+            >
+              {isDeleting ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Trash2 className="h-5 w-5" />
+              )}
+            </Button>
           </div>
         </DialogHeader>
 
@@ -189,7 +196,7 @@ export function AppointmentDetailsModal({
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2 text-sm text-foreground">
                 <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Hoje</span>
+                <span className="font-medium">Data do Atendimento</span>
               </div>
               <Badge
                 variant="outline"
@@ -198,42 +205,15 @@ export function AppointmentDetailsModal({
                 {appointment.sessionInfo}
               </Badge>
             </div>
-
-            <div className="flex flex-col gap-1 text-sm text-foreground">
-              <span className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span className="font-medium">
-                  {appointment.time} até{" "}
-                  {calculateEndTime(appointment.time, appointment.duration)}
-                  <span className="text-muted-foreground font-normal ml-1">
-                    ({appointment.duration} min)
-                  </span>
+            <div className="flex flex-wrap items-center gap-2 text-sm text-foreground">
+              <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="font-medium">
+                {appointment.time} até{" "}
+                {calculateEndTime(appointment.time, appointment.duration)}
+                <span className="text-muted-foreground font-normal ml-1">
+                  ({appointment.duration} min)
                 </span>
               </span>
-
-              {appointment.checkInTime && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                  <Clock className="h-3.5 w-3.5" />
-                  Check-in realizado às{" "}
-                  <strong className="text-foreground">
-                    {formatTime(appointment.checkInTime)}
-                  </strong>
-                  {checkInDiff && (
-                    <Badge
-                      variant={checkInDiff.variant}
-                      className={cn(
-                        "ml-2 text-[10px] border",
-                        checkInDiff.className,
-                      )}
-                    >
-                      {checkInDiff.label}
-                      {checkInDiff.minutes > 0
-                        ? ` • ${checkInDiff.minutes} min`
-                        : ""}
-                    </Badge>
-                  )}
-                </div>
-              )}
             </div>
           </div>
 
@@ -246,15 +226,13 @@ export function AppointmentDetailsModal({
                 <SelectTrigger
                   className={cn(
                     "h-10 sm:h-9 text-sm",
-                    status === "confirmado"
-                      ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 font-semibold"
-                      : "",
+                    status === "confirmado" &&
+                      "border-emerald-500 bg-emerald-500/10 text-emerald-700 font-semibold",
                   )}
                 >
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="nenhum">Nenhum</SelectItem>
                   <SelectItem value="a_confirmar">A Confirmar</SelectItem>
                   <SelectItem value="confirmado">Confirmado</SelectItem>
                   <SelectItem value="atrasou">Atrasou</SelectItem>
@@ -306,7 +284,7 @@ export function AppointmentDetailsModal({
               className={cn(
                 "w-full h-10 sm:h-11",
                 !hasCharge &&
-                  "border-dashed border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive",
+                  "border-dashed border-destructive/50 text-destructive hover:bg-destructive/10",
               )}
               onClick={() => setHasCharge(!hasCharge)}
             >
@@ -319,6 +297,7 @@ export function AppointmentDetailsModal({
             <Button
               variant="secondary"
               className="w-full h-10 sm:h-11 bg-primary/10 text-primary hover:bg-primary/20"
+              disabled
             >
               <ReceiptText className="mr-2 h-4 w-4 shrink-0" />
               <span className="truncate">Gerar Recibo</span>
@@ -338,20 +317,27 @@ export function AppointmentDetailsModal({
           <Button
             variant="ghost"
             className="text-destructive hover:text-destructive hover:bg-destructive/10 w-full sm:w-auto"
-            onClick={() => onOpenChange(false)}
+            onClick={() => setStatus("cancelado")}
           >
             <CalendarX2 className="mr-2 h-4 w-4 shrink-0" /> Cancelar Sessão
           </Button>
 
+          <div className="flex-1" />
+
           <Button
-            variant="outline"
-            className="w-full sm:w-auto h-11 sm:h-10"
-            onClick={() => {
-              toast.info("Modo de edição/remarcação ativado.");
-              onOpenChange(false);
-            }}
+            className="w-full sm:w-auto h-11 sm:h-10 font-bold"
+            onClick={handleSave}
+            disabled={isSaving || isDeleting}
           >
-            <CalendarClock className="mr-2 h-4 w-4 shrink-0" /> Remarcar
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" /> Salvar Alterações
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
