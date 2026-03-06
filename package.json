@@ -10,6 +10,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@dnd-kit/react": "^0.3.2",
     "@hookform/resolvers": "^3.9.1",
     "@prisma/client": "^6.4.1",
     "@radix-ui/react-accordion": "1.2.12",
@@ -60,6 +61,7 @@
     "react-dom": "19.2.4",
     "react-hook-form": "^7.54.1",
     "react-resizable-panels": "^2.1.7",
+    "react-to-print": "^3.3.0",
     "recharts": "2.15.0",
     "resend": "^6.9.3",
     "sonner": "^1.7.1",

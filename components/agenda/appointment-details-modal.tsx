@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useReactToPrint } from "react-to-print";
 import {
   Dialog,
   DialogContent,
@@ -8,6 +9,17 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -32,6 +44,7 @@ import {
   Trash2,
   Save,
   Loader2,
+  Printer,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -39,12 +52,13 @@ import {
   updateAppointment,
   deleteAppointment,
 } from "@/app/actions/appointments";
+import { ThermalReceipt } from "./thermal-receipt";
 
 interface AppointmentDetailsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   appointment: any | null;
-  onRefresh?: () => void; // Prop para atualizar a agenda após salvar/deletar
+  onRefresh?: () => void;
 }
 
 export function AppointmentDetailsModal({
@@ -58,16 +72,39 @@ export function AppointmentDetailsModal({
   const [obs, setObs] = useState("");
   const [hasCharge, setHasCharge] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [settings, setSettings] = useState<any>(null);
 
+  const componentRef = useRef<HTMLDivElement>(null);
+
+  // Hook de Impressão configurado conforme v3 da biblioteca
+  const handlePrint = useReactToPrint({
+    contentRef: componentRef,
+    documentTitle: `Recibo_${appointment?.clientName || "Cliente"}`,
+  });
+
+  // Carrega configurações da organização para o cabeçalho do recibo
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const res = await fetch("/api/settings/public");
+        if (res.ok) {
+          const data = await res.json();
+          setSettings(data);
+        }
+      } catch (e) {
+        console.error("Erro ao carregar settings", e);
+      }
+    }
+    if (open) loadSettings();
+  }, [open]);
+
+  // Sincroniza os estados internos com os dados do agendamento clicado
   useEffect(() => {
     if (appointment) {
-      // Normaliza o status vindo do banco para o valor do Select
       const dbStatus = appointment.status?.toLowerCase();
       setStatus(
         dbStatus === "pendente" ? "a_confirmar" : dbStatus || "a_confirmar",
       );
-
       setPayment(appointment.paymentMethod?.toLowerCase() || "nenhum");
       setObs(appointment.observations || "");
       setHasCharge(appointment.hasCharge || false);
@@ -76,6 +113,46 @@ export function AppointmentDetailsModal({
 
   if (!appointment) return null;
 
+  // Trava para evitar edição de cobrança em atendimentos já quitados/confirmados
+  const isFinalized = status === "confirmado" || status === "realizado";
+
+  const handleSave = async (overriddenStatus?: string) => {
+    setIsSaving(true);
+    try {
+      const result = await updateAppointment(appointment.id, {
+        status: overriddenStatus || status,
+        paymentMethod: payment,
+        observations: obs,
+        hasCharge,
+      });
+
+      if (result.success) {
+        toast.success("Alterações salvas!");
+        onRefresh?.();
+        onOpenChange(false);
+      } else {
+        toast.error("Erro ao salvar.");
+      }
+    } catch (error) {
+      toast.error("Erro inesperado.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      const result = await deleteAppointment(appointment.id);
+      if (result.success) {
+        toast.success("Excluído com sucesso.");
+        onRefresh?.();
+        onOpenChange(false);
+      }
+    } catch (error) {
+      toast.error("Erro ao excluir.");
+    }
+  };
+
   const calculateEndTime = (start: string, duration: number) => {
     const [h, m] = start.split(":").map(Number);
     const date = new Date();
@@ -83,261 +160,191 @@ export function AppointmentDetailsModal({
     return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
   };
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      const result = await updateAppointment(appointment.id, {
-        status,
-        paymentMethod: payment,
-        observations: obs,
-        hasCharge,
-      });
-
-      if (result.success) {
-        toast.success("Agendamento atualizado com sucesso!");
-        onRefresh?.();
-        onOpenChange(false);
-      } else {
-        toast.error(result.error || "Erro ao atualizar agendamento.");
-      }
-    } catch (error) {
-      toast.error("Erro inesperado ao salvar.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (
-      !confirm(
-        "Tem certeza que deseja EXCLUIR este agendamento permanentemente?",
-      )
-    )
-      return;
-
-    setIsDeleting(true);
-    try {
-      const result = await deleteAppointment(appointment.id);
-      if (result.success) {
-        toast.success("Agendamento excluído com sucesso.");
-        onRefresh?.();
-        onOpenChange(false);
-      } else {
-        toast.error(result.error || "Erro ao excluir agendamento.");
-      }
-    } catch (error) {
-      toast.error("Erro inesperado ao excluir.");
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const handleWhatsApp = () => {
-    const firstName = appointment.clientName.split(" ")[0];
-    const isLastSession = appointment.sessionInfo?.match(/Sessão (\d+) de \1/i);
-    const message = isLastSession
-      ? `Olá ${firstName}! 🎉 Passando para lembrar que hoje às ${appointment.time} temos a nossa última massagem do pacote! Te espero lá. 💆‍♀️✨`
-      : `Olá ${firstName}! Passando para confirmar nossa sessão amanhã às ${appointment.time}. Podemos confirmar? 💆‍♀️✨`;
-
-    window.open(
-      `https://wa.me/${appointment.phone}?text=${encodeURIComponent(message)}`,
-      "_blank",
-    );
-    toast.success("Abrindo o WhatsApp...");
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          "w-[95vw] sm:max-w-125 p-4 sm:p-6 rounded-2xl transition-colors duration-300 flex flex-col max-h-[90dvh]",
-          hasCharge
-            ? "border-2 border-destructive shadow-[0_0_15px_rgba(239,68,68,0.15)]"
-            : "",
+          "w-[95vw] sm:max-w-125 p-4 sm:p-6 rounded-2xl flex flex-col max-h-[90dvh]",
+          hasCharge ? "border-2 border-destructive shadow-lg" : "",
         )}
       >
-        <DialogHeader className="mb-1 shrink-0 text-left">
-          <div className="flex justify-between items-start w-full">
-            <div className="flex flex-col gap-1.5">
-              <DialogTitle className="text-lg sm:text-xl font-bold flex flex-wrap items-center gap-2">
-                <User className="h-5 w-5 text-primary hidden sm:block" />
-                {appointment.clientName}
-                {hasCharge && (
-                  <Badge
-                    variant="destructive"
-                    className="text-[10px] animate-pulse py-0 h-5"
-                  >
-                    Pendente
-                  </Badge>
-                )}
-              </DialogTitle>
-              <span className="text-muted-foreground font-medium text-xs sm:text-sm">
-                {appointment.service}
-              </span>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-muted-foreground hover:text-destructive transition-colors"
-              onClick={handleDelete}
-              disabled={isDeleting || isSaving}
-            >
-              {isDeleting ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Trash2 className="h-5 w-5" />
-              )}
-            </Button>
+        {/* Componente Invisível que será impresso */}
+        <ThermalReceipt
+          ref={componentRef}
+          appointment={appointment}
+          settings={settings}
+        />
+
+        <DialogHeader className="flex flex-row justify-between items-start">
+          <div className="flex flex-col gap-1">
+            <DialogTitle className="text-lg font-bold flex items-center gap-2">
+              <User className="h-5 w-5 text-primary" />
+              {appointment.clientName}
+            </DialogTitle>
+            <span className="text-muted-foreground text-sm">
+              {appointment.service}
+            </span>
           </div>
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <Trash2 className="h-5 w-5" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Excluir permanentemente?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta ação removerá o agendamento do banco de dados e não pode
+                  ser desfeita.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Voltar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  className="bg-destructive text-white"
+                >
+                  Sim, Excluir
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4 py-2 overflow-y-auto px-1 -mx-1 [&::-webkit-scrollbar]:hidden min-h-0">
-          <div className="bg-muted/30 border border-border/50 rounded-xl p-3 flex flex-col gap-2.5">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2 text-sm text-foreground">
-                <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Data do Atendimento</span>
+        <div className="flex flex-col gap-4 overflow-y-auto py-2 pr-1">
+          <div className="bg-muted/30 p-3 rounded-xl flex flex-col gap-2">
+            <div className="flex justify-between items-center text-sm font-medium">
+              <div className="flex items-center gap-2">
+                <CalendarDays className="h-4 w-4" /> Atendimento
               </div>
-              <Badge
-                variant="outline"
-                className="font-bold bg-background text-[10px] sm:text-xs"
-              >
-                {appointment.sessionInfo}
+              <Badge variant="outline">
+                {appointment.sessionInfo || "Avulso"}
               </Badge>
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-sm text-foreground">
-              <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span className="font-medium">
-                {appointment.time} até{" "}
-                {calculateEndTime(appointment.time, appointment.duration)}
-                <span className="text-muted-foreground font-normal ml-1">
-                  ({appointment.duration} min)
-                </span>
-              </span>
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              {appointment.time} até{" "}
+              {calculateEndTime(appointment.time, appointment.duration)}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs text-muted-foreground">
-                Status do Agendamento
-              </Label>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Status</Label>
               <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger
                   className={cn(
-                    "h-10 sm:h-9 text-sm",
                     status === "confirmado" &&
-                      "border-emerald-500 bg-emerald-500/10 text-emerald-700 font-semibold",
+                      "bg-emerald-50 border-emerald-200 text-emerald-700",
                   )}
                 >
-                  <SelectValue placeholder="Selecione..." />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="a_confirmar">A Confirmar</SelectItem>
                   <SelectItem value="confirmado">Confirmado</SelectItem>
                   <SelectItem value="atrasou">Atrasou</SelectItem>
-                  <SelectItem value="não_comparecimento">
-                    Não Comparec.
-                  </SelectItem>
                   <SelectItem value="cancelado">Cancelado</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs text-muted-foreground">
-                Forma de Pagamento
-              </Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Pagamento</Label>
               <Select value={payment} onValueChange={setPayment}>
-                <SelectTrigger className="h-10 sm:h-9 text-sm">
-                  <SelectValue placeholder="Selecione..." />
+                <SelectTrigger>
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="nenhum">Não informado</SelectItem>
                   <SelectItem value="pix">Pix</SelectItem>
                   <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                  <SelectItem value="cartao_credito">
-                    Cartão de Crédito
-                  </SelectItem>
-                  <SelectItem value="cartao_debito">
-                    Cartão de Débito
-                  </SelectItem>
-                  <SelectItem value="transferencia">Transferência</SelectItem>
+                  <SelectItem value="cartao_credito">Crédito</SelectItem>
+                  <SelectItem value="cartao_debito">Débito</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label className="text-xs text-muted-foreground">Observações</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Observações</Label>
             <Textarea
-              placeholder="Ex: Alergia a óleo de amêndoas..."
-              className="resize-none min-h-15 sm:min-h-20 bg-muted/20 text-sm"
               value={obs}
               onChange={(e) => setObs(e.target.value)}
+              className="bg-muted/20 resize-none h-20"
             />
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:grid sm:grid-cols-2 gap-2 sm:gap-3 mt-1">
+          <div className="grid grid-cols-2 gap-3">
             <Button
               variant={hasCharge ? "destructive" : "outline"}
-              className={cn(
-                "w-full h-10 sm:h-11",
-                !hasCharge &&
-                  "border-dashed border-destructive/50 text-destructive hover:bg-destructive/10",
-              )}
+              disabled={isFinalized}
               onClick={() => setHasCharge(!hasCharge)}
             >
-              <AlertCircle className="mr-2 h-4 w-4 shrink-0" />
-              <span className="truncate">
-                {hasCharge ? "Remover Cobrança" : "Adicionar Cobrança"}
-              </span>
+              <AlertCircle className="mr-2 h-4 w-4" />
+              {hasCharge ? "Cobrança Ativa" : "Sem Cobrança"}
             </Button>
 
             <Button
               variant="secondary"
-              className="w-full h-10 sm:h-11 bg-primary/10 text-primary hover:bg-primary/20"
-              disabled
+              className="bg-primary/10 text-primary hover:bg-primary/20 font-bold"
+              onClick={() => {
+                handlePrint();
+                toast.success("Preparando para imprimir...");
+              }}
             >
-              <ReceiptText className="mr-2 h-4 w-4 shrink-0" />
-              <span className="truncate">Gerar Recibo</span>
+              <Printer className="mr-2 h-4 w-4" /> Recibo
             </Button>
           </div>
-
-          <Button
-            className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-sm h-12 text-sm sm:text-base mt-2 shrink-0"
-            onClick={handleWhatsApp}
-          >
-            <MessageCircle className="mr-2 h-5 w-5 shrink-0" />
-            Confirmar via WhatsApp
-          </Button>
         </div>
 
-        <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 mt-2 pt-4 border-t border-border/50 shrink-0">
-          <Button
-            variant="ghost"
-            className="text-destructive hover:text-destructive hover:bg-destructive/10 w-full sm:w-auto"
-            onClick={() => setStatus("cancelado")}
-          >
-            <CalendarX2 className="mr-2 h-4 w-4 shrink-0" /> Cancelar Sessão
-          </Button>
+        <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 pt-4 border-t mt-auto">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                className="text-destructive w-full sm:w-auto"
+              >
+                <CalendarX2 className="mr-2 h-4 w-4" /> Cancelar Sessão
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Cancelar atendimento?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  O registro ficará na agenda marcado com um traço de cancelado.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Sair</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => handleSave("cancelado")}
+                  className="bg-destructive text-white"
+                >
+                  Confirmar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           <div className="flex-1" />
 
           <Button
-            className="w-full sm:w-auto h-11 sm:h-10 font-bold"
-            onClick={handleSave}
-            disabled={isSaving || isDeleting}
+            onClick={() => handleSave()}
+            disabled={isSaving}
+            className="w-full sm:w-auto bg-primary"
           >
             {isSaving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...
-              </>
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
             ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" /> Salvar Alterações
-              </>
+              <Save className="mr-2 h-4 w-4" />
             )}
+            Salvar Alterações
           </Button>
         </DialogFooter>
       </DialogContent>
