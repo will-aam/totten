@@ -1,13 +1,3 @@
-// Rota da API do Totem: POST /api/totem/search
-//
-// Esta rota é chamada pelo Totem de autoatendimento quando o cliente digita o CPF.
-//
-// Contrato:
-//   - Frontend envia: { cpf: string, organizationSlug: string }
-//   - Se existir agendamento hoje: responde { status: "FOUND", appointment: { ... } }
-//   - Se não existir: responde { status: "NOT_FOUND" }
-//   - Se existir mais de um: responde { status: "MULTIPLE_FOUND", appointments: [...] }
-
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -99,8 +89,10 @@ export async function POST(req: NextRequest) {
     }
 
     const agendamento = agendamentos[0];
+    let packageInfo = null;
 
     await prisma.$transaction(async (tx) => {
+      // Cria o registro de CheckIn
       await tx.checkIn.create({
         data: {
           appointment_id: agendamento.id,
@@ -110,23 +102,25 @@ export async function POST(req: NextRequest) {
         },
       });
 
+      // LÓGICA DE PACOTE
       if (agendamento.package_id) {
-        const pacote = await tx.package.findUnique({
+        const pacote = await tx.package.update({
           where: { id: agendamento.package_id },
+          data: { used_sessions: { increment: 1 } },
         });
 
-        if (pacote && pacote.used_sessions < pacote.total_sessions) {
-          await tx.package.update({
-            where: { id: agendamento.package_id },
-            data: { used_sessions: { increment: 1 } },
-          });
-        }
+        packageInfo = {
+          used: pacote.used_sessions,
+          total: pacote.total_sessions,
+        };
 
         await tx.appointment.update({
           where: { id: agendamento.id },
           data: { status: "REALIZADO" },
         });
-      } else {
+      }
+      // LÓGICA DE ATENDIMENTO AVULSO
+      else {
         await tx.appointment.update({
           where: { id: agendamento.id },
           data: { status: "REALIZADO", has_charge: true },
@@ -142,6 +136,7 @@ export async function POST(req: NextRequest) {
         service_name: agendamento.service.name,
         client_name: cliente.name,
         package_id: agendamento.package_id ?? null,
+        package_info: packageInfo, // Agora o frontend recebe dados reais ou null
       },
     });
   } catch (error) {

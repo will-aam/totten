@@ -1,22 +1,15 @@
+// app/api/totem/check-in/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// POST - Registra check-in pelo appointment_id + organizationSlug
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { appointment_id, organizationSlug } = body;
 
-    if (!appointment_id) {
+    if (!appointment_id || !organizationSlug) {
       return NextResponse.json(
-        { error: "appointment_id é obrigatório" },
-        { status: 400 },
-      );
-    }
-
-    if (!organizationSlug) {
-      return NextResponse.json(
-        { error: "organizationSlug é obrigatório" },
+        { error: "Dados obrigatórios ausentes" },
         { status: 400 },
       );
     }
@@ -38,21 +31,13 @@ export async function POST(request: Request) {
         client: true,
         service: true,
         package: true,
-        organization: true,
       },
     });
 
-    if (!appt) {
+    if (!appt || appt.organization_id !== org.id) {
       return NextResponse.json(
-        { error: "Agendamento não encontrado" },
+        { error: "Agendamento inválido" },
         { status: 404 },
-      );
-    }
-
-    if (appt.organization_id !== org.id) {
-      return NextResponse.json(
-        { error: "Agendamento não pertence a esta organização" },
-        { status: 403 },
       );
     }
 
@@ -64,17 +49,18 @@ export async function POST(request: Request) {
     }
 
     const existingCheckIn = await prisma.checkIn.findFirst({
-      where: {
-        appointment_id: appt.id,
-      },
+      where: { appointment_id: appt.id },
     });
 
     if (existingCheckIn) {
       return NextResponse.json(
-        { error: "Check-in já registrado para este agendamento." },
+        { error: "Check-in já registrado." },
         { status: 400 },
       );
     }
+
+    // Variável para armazenar info do pacote se houver
+    let packageInfo = null;
 
     const result = await prisma.$transaction(async (tx) => {
       const checkIn = await tx.checkIn.create({
@@ -87,16 +73,16 @@ export async function POST(request: Request) {
       });
 
       if (appt.package_id) {
-        const pacote = await tx.package.findUnique({
+        // Incrementa e já retorna o pacote atualizado
+        const pacote = await tx.package.update({
           where: { id: appt.package_id },
+          data: { used_sessions: { increment: 1 } },
         });
 
-        if (pacote && pacote.used_sessions < pacote.total_sessions) {
-          await tx.package.update({
-            where: { id: appt.package_id },
-            data: { used_sessions: { increment: 1 } },
-          });
-        }
+        packageInfo = {
+          used: pacote.used_sessions,
+          total: pacote.total_sessions,
+        };
 
         await tx.appointment.update({
           where: { id: appt.id },
@@ -121,6 +107,7 @@ export async function POST(request: Request) {
         minute: "2-digit",
       }),
       checkInId: result.id,
+      package_info: packageInfo, // Envia dados atualizados ou null para o frontend
     });
   } catch (error) {
     console.error("Erro ao fazer check-in:", error);

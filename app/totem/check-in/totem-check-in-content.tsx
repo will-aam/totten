@@ -1,4 +1,3 @@
-// app/totem/check-in/totem-check-in-content.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -29,6 +28,7 @@ type SearchResponse =
         date_time: string;
         service_name: string;
         client_name: string;
+        package_info?: { used: number; total: number } | null;
       };
     }
   | {
@@ -71,11 +71,6 @@ export default function TotemCheckInContent() {
     const digits = cpf.replace(/\D/g, "");
     if (digits.length !== 11) return;
 
-    if (!organizationSlug) {
-      router.push("/totem/error?type=ORG_NOT_FOUND");
-      return;
-    }
-
     setLoading(true);
     try {
       const res = await fetch("/api/totem/search", {
@@ -100,13 +95,20 @@ export default function TotemCheckInContent() {
           service: data.appointment.service_name,
           time: new Date(data.appointment.date_time).toLocaleTimeString(
             "pt-BR",
-            {
-              hour: "2-digit",
-              minute: "2-digit",
-            },
+            { hour: "2-digit", minute: "2-digit" },
           ),
           slug: organizationSlug,
         });
+
+        // 🔥 Passa info de pacote se existir
+        if (data.appointment.package_info) {
+          params.append("used", data.appointment.package_info.used.toString());
+          params.append(
+            "total",
+            data.appointment.package_info.total.toString(),
+          );
+        }
+
         router.push(`/totem/success?${params.toString()}`);
         return;
       }
@@ -160,6 +162,13 @@ export default function TotemCheckInContent() {
           time: data.time,
           slug: organizationSlug,
         });
+
+        // 🔥 Passa info de pacote se a API de check-in retornar
+        if (data.package_info) {
+          params.append("used", data.package_info.used.toString());
+          params.append("total", data.package_info.total.toString());
+        }
+
         router.push(`/totem/success?${params.toString()}`);
       } else {
         router.push(`/totem/error?type=UNKNOWN&slug=${organizationSlug}`);
@@ -173,52 +182,51 @@ export default function TotemCheckInContent() {
   };
 
   return (
-    <>
-      <div className="flex min-h-dvh w-full items-center justify-center bg-background p-4 sm:p-6 md:p-8">
-        <div className="relative flex w-full max-w-lg flex-col items-center gap-8 rounded-3xl bg-card p-6 shadow-xl border border-border sm:p-10 md:p-12">
-          <div className="absolute top-6 left-6 sm:top-8 sm:left-8">
-            <Link
-              href={
-                organizationSlug
-                  ? `/totem/idle?slug=${organizationSlug}`
-                  : "/totem/idle"
-              }
-              className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground group"
-            >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted group-hover:bg-[#D9C6BF]/30 transition-colors">
-                <ArrowLeft className="h-5 w-5" />
-              </div>
-              <span className="hidden font-medium sm:inline">Voltar</span>
-            </Link>
-          </div>
-
-          <div className="mt-12 text-center sm:mt-4">
-            <h1 className="font-serif text-3xl font-bold text-foreground md:text-5xl">
-              Check-in
-            </h1>
-            <p className="mt-3 text-sm text-muted-foreground md:text-base leading-relaxed">
-              Digite seu CPF para registrar sua presença
-            </p>
-          </div>
-
-          <div className="w-full max-w-sm">
-            <CpfKeypad
-              value={cpf}
-              onChange={setCpf}
-              onConfirm={handleConfirm}
-              disabled={loading}
-            />
-          </div>
-
-          {loading && (
-            <div className="flex items-center gap-2 text-sm font-medium text-primary">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Verificando agendamentos...
+    <div className="flex min-h-dvh w-full items-center justify-center bg-background p-4 sm:p-6 md:p-8">
+      <div className="relative flex w-full max-w-lg flex-col items-center gap-8 rounded-3xl bg-card p-6 shadow-xl border border-border sm:p-10 md:p-12">
+        <div className="absolute top-6 left-6 sm:top-8 sm:left-8">
+          <Link
+            href={
+              organizationSlug
+                ? `/totem/idle?slug=${organizationSlug}`
+                : "/totem/idle"
+            }
+            className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground group"
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted group-hover:bg-[#D9C6BF]/30 transition-colors">
+              <ArrowLeft className="h-5 w-5" />
             </div>
-          )}
+            <span className="hidden font-medium sm:inline">Voltar</span>
+          </Link>
         </div>
+
+        <div className="mt-12 text-center sm:mt-4">
+          <h1 className="font-serif text-3xl font-bold text-foreground md:text-5xl">
+            Check-in
+          </h1>
+          <p className="mt-3 text-sm text-muted-foreground md:text-base leading-relaxed">
+            Digite seu CPF para registrar sua presença
+          </p>
+        </div>
+
+        <div className="w-full max-w-sm">
+          <CpfKeypad
+            value={cpf}
+            onChange={setCpf}
+            onConfirm={handleConfirm}
+            disabled={loading}
+          />
+        </div>
+
+        {loading && (
+          <div className="flex items-center gap-2 text-sm font-medium text-primary">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Verificando agendamentos...
+          </div>
+        )}
       </div>
 
+      {/* DIÁLOGOS DE SELEÇÃO E CONFIRMAÇÃO OMITIDOS PARA BREVIDADE, MAS DEVEM PERMANECER IGUAIS */}
       <Dialog open={showSelection} onOpenChange={setShowSelection}>
         <DialogContent className="w-[95vw] max-w-md">
           <DialogHeader>
@@ -229,7 +237,6 @@ export default function TotemCheckInContent() {
               Qual procedimento vamos fazer agora?
             </p>
           </DialogHeader>
-
           <div className="flex flex-col gap-3 mt-4">
             {multipleAppointments.map((appt) => (
               <Button
@@ -237,7 +244,7 @@ export default function TotemCheckInContent() {
                 onClick={() => handleSelectAppointment(appt)}
                 disabled={checkingIn}
                 variant="outline"
-                className="h-auto py-4 px-4 flex flex-col items-start gap-2 hover:border-primary hover:bg-primary/5"
+                className="h-auto py-4 px-4 flex flex-col items-start gap-2 hover:border-primary"
               >
                 <span className="font-semibold text-left">
                   {appt.service_name}
@@ -251,13 +258,6 @@ export default function TotemCheckInContent() {
               </Button>
             ))}
           </div>
-
-          {checkingIn && (
-            <div className="flex items-center justify-center gap-2 text-sm font-medium text-primary mt-4">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Registrando check-in...
-            </div>
-          )}
         </DialogContent>
       </Dialog>
 
@@ -275,36 +275,28 @@ export default function TotemCheckInContent() {
                     )
                   : "--:--"}
               </strong>
-              . Deseja fazer o check-in antecipado agora?
+              . Deseja fazer o check-in antecipado?
             </DialogDescription>
           </DialogHeader>
-
           <div className="flex gap-3 mt-4">
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => {
-                setShowConfirmTime(false);
-                setPendingAppointment(null);
-              }}
+              onClick={() => setShowConfirmTime(false)}
             >
               Voltar
             </Button>
             <Button
               className="w-full"
-              onClick={() => {
-                if (pendingAppointment) {
-                  handleCheckIn(pendingAppointment);
-                  setShowConfirmTime(false);
-                  setPendingAppointment(null);
-                }
-              }}
+              onClick={() =>
+                pendingAppointment && handleCheckIn(pendingAppointment)
+              }
             >
               Confirmar
             </Button>
           </div>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }

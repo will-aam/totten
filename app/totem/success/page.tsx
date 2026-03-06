@@ -1,10 +1,9 @@
-// app/totem/success/page.tsx
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Sparkles } from "lucide-react";
 
 function SuccessContent() {
   const searchParams = useSearchParams();
@@ -13,17 +12,22 @@ function SuccessContent() {
   const [clinicName, setClinicName] = useState("Totten");
 
   const slug = searchParams.get("slug") || "";
-
   const name = searchParams.get("name") || "Cliente";
-  const used = Number(searchParams.get("used") || 0);
-  const total = Number(searchParams.get("total") || 10);
-  const progress = Math.round((used / total) * 100);
+
+  // Lógica de Pacote
+  const usedParam = searchParams.get("used");
+  const totalParam = searchParams.get("total");
+  const isPackage = !!(totalParam && Number(totalParam) > 0);
+
+  const used = Number(usedParam || 0);
+  const total = Number(totalParam || 0);
+  const progress = total > 0 ? Math.round((used / total) * 100) : 0;
+
   const time = new Date().toLocaleTimeString("pt-BR", {
     hour: "2-digit",
     minute: "2-digit",
   });
 
-  // 🔥 Busca o nome da clínica
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -38,17 +42,14 @@ function SuccessContent() {
         console.error("Erro ao buscar configurações:", error);
       }
     };
-
     fetchSettings();
   }, [slug]);
 
   useEffect(() => {
     if (countdown <= 0) return;
-
     const interval = setInterval(() => {
       setCountdown((prev) => prev - 1);
     }, 1000);
-
     return () => clearInterval(interval);
   }, [countdown]);
 
@@ -77,20 +78,36 @@ function SuccessContent() {
           <span className="font-semibold text-foreground">{time}</span>
         </p>
 
-        <div className="w-full rounded-2xl border border-border bg-background p-6 shadow-sm">
-          <p className="mb-3 text-lg font-semibold text-foreground">
-            {`Sessão ${used} de ${total} concluída!`}
-          </p>
-          <Progress
-            value={progress}
-            className="h-4 bg-muted [&>div]:bg-primary"
-          />
-          <p className="mt-3 text-sm font-medium text-muted-foreground">
-            {total - used > 0
-              ? `${total - used} sessões restantes neste pacote`
-              : "Parabéns! Pacote concluído!"}
-          </p>
-        </div>
+        {isPackage ? (
+          /* VISUAL PARA QUEM TEM PACOTE */
+          <div className="w-full rounded-2xl border border-border bg-background p-6 shadow-sm">
+            <p className="mb-3 text-lg font-semibold text-foreground">
+              {`Sessão ${used} de ${total} concluída!`}
+            </p>
+            <Progress
+              value={progress}
+              className="h-4 bg-muted [&>div]:bg-primary"
+            />
+            <p className="mt-3 text-sm font-medium text-muted-foreground">
+              {total - used > 0
+                ? `${total - used} sessões restantes neste pacote`
+                : "Parabéns! Pacote concluído!"}
+            </p>
+          </div>
+        ) : (
+          /* VISUAL PARA ATENDIMENTO AVULSO */
+          <div className="w-full rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-6">
+            <div className="flex items-center justify-center gap-2 mb-2 text-primary">
+              <Sparkles className="h-5 w-5" />
+              <span className="font-bold uppercase tracking-wider text-sm">
+                Atendimento Avulso
+              </span>
+            </div>
+            <p className="text-muted-foreground text-sm">
+              Sua sessão foi confirmada. Aproveite o seu momento de cuidado!
+            </p>
+          </div>
+        )}
 
         <div className="mt-4 pt-4 border-t border-border/50 w-full">
           <p className="text-sm font-semibold text-foreground">{clinicName}</p>
@@ -114,9 +131,7 @@ export default function TotemSuccessPage() {
     <Suspense
       fallback={
         <div className="flex min-h-dvh items-center justify-center bg-background p-6">
-          <p className="text-muted-foreground font-medium animate-pulse">
-            Carregando dados do check-in...
-          </p>
+          <p className="animate-pulse">Carregando...</p>
         </div>
       }
     >
