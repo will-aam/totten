@@ -7,7 +7,7 @@ export async function sendVerificationEmail(email: string, token: string) {
 
   try {
     await resend.emails.send({
-      from: "Totten <onboarding@totten.com.br>",
+      from: "Totten <noreply@send.totten.com.br>",
       to: email,
       subject: "✅ Confirme seu e-mail - Totten",
       html: `
@@ -45,7 +45,7 @@ export async function sendPasswordResetEmail(
 ) {
   try {
     await resend.emails.send({
-      from: "Totten <onboarding@totten.com.br>",
+      from: "Totten <noreply@send.totten.com.br>",
       to: email,
       subject: "🔑 Nova senha temporária - Totten",
       html: `
