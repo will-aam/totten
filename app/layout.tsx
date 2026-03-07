@@ -1,9 +1,10 @@
+// app/layout.tsx
 import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
-import { SessionProvider } from "@/components/session-provider"; // 🔥 LINHA NOVA 1
+import { SessionProvider } from "@/components/session-provider";
 import "./globals.css";
 
 const inter = Inter({
@@ -15,11 +16,19 @@ const playfair = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-playfair",
 });
-
 export const metadata: Metadata = {
   title: "Totten - Sistema de Gestão",
   description:
     "Sistema de gestão de check-ins e pacotes de sessões para empresas.",
+  manifest: "/site.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Totten",
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export const viewport: Viewport = {
