@@ -1,9 +1,12 @@
+// componentes/agenda/daily-agenda-grid.tsx
+// Componente de grade de agenda diária com funcionalidade de arrastar e soltar para reagendamento
 "use client";
 
 import React, { useState } from "react";
 import {
   DndContext,
   PointerSensor,
+  TouchSensor, // 🔥 Adicionado o TouchSensor
   useSensor,
   useSensors,
   DragEndEvent,
@@ -15,14 +18,7 @@ import {
   restrictToFirstScrollableAncestor,
 } from "@dnd-kit/modifiers";
 import { Button } from "@/components/ui/button";
-import {
-  MessageCircle,
-  Repeat,
-  Clock,
-  AlertCircle,
-  Ban,
-  Loader2,
-} from "lucide-react";
+import { MessageCircle, Clock, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { updateAppointmentDateTime } from "@/app/actions/appointments";
@@ -83,6 +79,8 @@ function DraggableAppointmentCard({
     transform: transform ? `translate3d(0, ${transform.y}px, 0)` : undefined,
     zIndex: isDragging ? 50 : 10,
     opacity: isDragging ? 0.8 : undefined,
+    // 🔥 touchAction: none impede que a página role quando o usuário tenta arrastar o card
+    touchAction: "none",
   };
 
   const calculateEndTime = (start: string, duration: number) => {
@@ -139,7 +137,7 @@ function DraggableAppointmentCard({
             variant="ghost"
             onPointerDown={(e) => e.stopPropagation()} // Importante: impede o drag ao clicar no botão
             onClick={onWhatsApp}
-            className="h-8 w-8 rounded-full bg-white/40 hover:bg-white/80 text-emerald-700 shrink-0 shadow-sm"
+            className="h-8 w-8 rounded-full bg-white/40 hover:bg-white/80 text-emerald-700 shrink-0 shadow-sm z-50"
           >
             <MessageCircle className="h-4 w-4" />
           </Button>
@@ -168,9 +166,17 @@ export function DailyAgendaGrid({
 }: DailyAgendaGridProps) {
   const [isMoving, setIsMoving] = useState(false);
 
+  // 🔥 Sensores otimizados para funcionar tanto no PC quanto no Mobile
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 }, // Evita drag acidental em cliques simples
+      activationConstraint: { distance: 8 }, // PC: precisa mover 8px para iniciar o drag
+    }),
+    useSensor(TouchSensor, {
+      // Mobile: O usuário precisa segurar o dedo por 250ms E não mover mais que 5px (para não confundir com scroll)
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
     }),
   );
 
@@ -284,7 +290,7 @@ export function DailyAgendaGrid({
         <div className="overflow-y-auto max-h-150 relative w-full scroll-smooth">
           <div className="flex relative min-w-150" ref={setDroppableRef}>
             {/* Linha do Tempo */}
-            <div className="w-20 shrink-0 border-r border-border/50 bg-muted/5 relative z-20">
+            <div className="w-20 shrink-0 border-r border-border/50 bg-muted/5 relative z-20 pointer-events-none">
               {HOURS_ARRAY.map((hour) => (
                 <div
                   key={hour}
