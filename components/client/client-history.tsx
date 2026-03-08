@@ -10,9 +10,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { CalendarCheck } from "lucide-react";
-import type { CheckIn } from "@/lib/data";
+// Importa a tipagem correta exportada pelo page.tsx
+import type { CheckInType } from "@/app/admin/clients/[id]/page";
 
-function MobileCheckInItem({ checkIn }: { checkIn: CheckIn }) {
+function MobileCheckInItem({ checkIn }: { checkIn: CheckInType }) {
   const date = new Date(checkIn.date_time);
   const formattedDate = date.toLocaleDateString("pt-BR", {
     day: "2-digit",
@@ -46,7 +47,7 @@ function MobileCheckInItem({ checkIn }: { checkIn: CheckIn }) {
   );
 }
 
-export function ClientHistory({ checkIns }: { checkIns: CheckIn[] }) {
+export function ClientHistory({ checkIns }: { checkIns: CheckInType[] }) {
   return (
     <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card mt-2 md:mt-0">
       <CardHeader className="px-0 pt-0 md:pt-6 md:px-6 pb-3 md:pb-6">

@@ -8,11 +8,6 @@ import { AdminHeader } from "@/components/admin-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { User } from "lucide-react";
-import type {
-  Client as ClientType,
-  Package as PackageType,
-  CheckIn,
-} from "@/lib/data";
 
 // Importando os nossos novos blocos arquiteturais
 import { ClientHeader } from "@/components/client/client-header";
@@ -20,12 +15,50 @@ import { ClientContact } from "@/components/client/client-contact";
 import { ClientPackage } from "@/components/client/client-package";
 import { ClientHistory } from "@/components/client/client-history";
 
+// 🔥 Tipos locais definidos com base no retorno real do banco de dados (Prisma)
+export type ClientType = {
+  id: string;
+  name: string;
+  cpf: string;
+  phone_whatsapp: string;
+  email?: string | null;
+  birth_date?: string | null;
+  zip_code?: string | null;
+  city?: string | null;
+  street?: string | null;
+  number?: string | null;
+  created_at?: string;
+};
+
+export type PackageType = {
+  id: string;
+  name: string;
+  total_sessions: number;
+  used_sessions: number;
+  price: number | string;
+  active: boolean;
+  client_id: string;
+  service_id: string;
+  organization_id: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CheckInType = {
+  id: string;
+  date_time: string;
+  appointment_id?: string | null;
+  client_id?: string | null;
+  package_id?: string | null;
+  organization_id: string;
+};
+
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 interface ClientDetailData {
   client: ClientType;
   packages: PackageType[];
-  checkIns: CheckIn[];
+  checkIns: CheckInType[];
   activePackage: PackageType | null;
 }
 
@@ -84,20 +117,24 @@ export default function ClientDetailPage({
 
       <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 max-w-5xl mx-auto w-full pb-24 md:pb-6">
         {/* Bloco 1: Cabeçalho */}
-        <ClientHeader client={client} />
+        {/* Ignorando alertas temporários de tipagem das props enquanto não alteramos os componentes filhos */}
+        <ClientHeader client={client as any} />
 
         {/* Bloco 2: Grid Principal */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-          <ClientContact client={client} activePackage={activePackage} />
+          <ClientContact
+            client={client as any}
+            activePackage={activePackage as any}
+          />
           <ClientPackage
             clientId={id}
             clientName={client.name}
-            activePackage={activePackage}
+            activePackage={activePackage as any}
           />
         </div>
 
         {/* Bloco 3: Histórico */}
-        <ClientHistory checkIns={checkIns} />
+        <ClientHistory checkIns={checkIns as any} />
       </div>
     </>
   );

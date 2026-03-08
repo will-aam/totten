@@ -24,8 +24,10 @@ import {
 } from "@/components/ui/select";
 import { Package, Plus, Award, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import type { Package as PackageType } from "@/lib/data";
 import { PackageVoucher } from "./package-voucher";
+
+// 🔥 Importa a tipagem correta exportada pelo page.tsx (sem depender do mock)
+import type { PackageType } from "@/app/admin/clients/[id]/page";
 
 interface PackageTemplate {
   id: string;
@@ -53,7 +55,7 @@ export function ClientPackage({
   const [templateId, setTemplateId] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
-  // 1. Carrega apenas os templates ativos do catálogo
+  // Carrega apenas os templates ativos do catálogo
   useEffect(() => {
     const loadTemplates = async () => {
       try {
@@ -150,7 +152,6 @@ export function ClientPackage({
               <div className="flex flex-col gap-4 py-4">
                 <div className="flex flex-col gap-2">
                   <Label>Plano Disponível</Label>
-                  {/* 🔥 A Mágica do Shadcn UI acontece aqui */}
                   <Select
                     value={templateId}
                     onValueChange={setTemplateId}

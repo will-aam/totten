@@ -7,7 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Pencil, Check, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import type { Client as ClientType } from "@/lib/data";
+
+// 🔥 Tipo substituído para não depender mais do arquivo mockado (lib/data)
+export type ClientHeaderType = {
+  id: string;
+  name: string;
+  cpf: string;
+};
 
 function formatCpf(value: string) {
   const d = value.replace(/\D/g, "").slice(0, 11);
@@ -17,14 +23,15 @@ function formatCpf(value: string) {
   return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
 }
 
-export function ClientHeader({ client }: { client: ClientType }) {
+export function ClientHeader({ client }: { client: ClientHeaderType }) {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const [editName, setEditName] = useState(client.name);
   const [editCpf, setEditCpf] = useState(client.cpf);
 
-  const initial = client.name.charAt(0).toUpperCase();
+  // Se o nome vier vazio por algum motivo, não quebra a tela
+  const initial = client.name ? client.name.charAt(0).toUpperCase() : "?";
 
   const handleSave = async () => {
     // 🔥 VALIDAÇÕES RÍGIDAS AQUI

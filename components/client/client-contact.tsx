@@ -21,14 +21,29 @@ import {
   X,
   Loader2,
   Share2,
-  UserX, // 🔥 Novo ícone para "Inativar Cliente"
+  UserX,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { Client as ClientType, Package as PackageType } from "@/lib/data";
+
+// 🔥 Tipos substituídos para não depender mais do arquivo mockado (lib/data)
+export type ClientContactType = {
+  id: string;
+  name: string;
+  cpf: string;
+  phone_whatsapp: string;
+  email?: string | null;
+};
+
+export type ActivePackageType = {
+  id: string;
+  name: string;
+  total_sessions: number;
+  used_sessions: number;
+};
 
 interface ClientContactProps {
-  client: ClientType;
-  activePackage: PackageType | null;
+  client: ClientContactType;
+  activePackage: ActivePackageType | null;
 }
 
 function formatPhoneInput(value: string) {
@@ -42,7 +57,8 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const clientEmail = (client as any).email || "";
+  // Removido o "(client as any)" pois agora a tipagem está correta
+  const clientEmail = client.email || "";
   const [editPhone, setEditPhone] = useState(client.phone_whatsapp || "");
   const [editEmail, setEditEmail] = useState(clientEmail);
 
@@ -69,7 +85,6 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
   }, []);
 
   const handleSave = async () => {
-    // 🔥 VALIDAÇÕES RÍGIDAS AQUI
     const cleanPhone = editPhone.replace(/\D/g, "");
     if (cleanPhone.length < 10) {
       toast.error("O WhatsApp é obrigatório. Informe DDD + número.");
@@ -187,7 +202,6 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
                 <Pencil className="h-4 w-4" />
               </Button>
 
-              {/* 🔥 Botão de Inativar Cliente (Estático / Desabilitado por enquanto) */}
               <Button
                 size="icon"
                 variant="ghost"
