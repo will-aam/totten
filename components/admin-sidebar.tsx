@@ -46,7 +46,7 @@ import {
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 
-// Itens fixos do menu principal
+// 🔥 Menu principal atualizado (Calendário adicionado após Serviços)
 const navItems = [
   {
     title: "Dashboard",
@@ -57,6 +57,12 @@ const navItems = [
   { title: "Clientes", href: "/admin/clients", icon: Users, active: true },
   { title: "Serviços", href: "/admin/services", icon: UserCog, active: true },
   {
+    title: "Calendário",
+    href: "/admin/agenda",
+    icon: CalendarDays,
+    active: true,
+  },
+  {
     title: "Histórico Check-in",
     href: "/admin/history",
     icon: ClipboardList,
@@ -66,9 +72,8 @@ const navItems = [
   { title: "Link na Bio", href: "/admin/link-bio", icon: Link2, active: false }, // 🔒 BLOQUEADO
 ];
 
-// Sub-itens da Agenda
+// 🔥 Sub-itens da Agenda (Calendário removido daqui)
 const agendaSubItems = [
-  { title: "Calendário", href: "/admin/agenda", active: true },
   { title: "Agendamentos Recorrentes", href: "#", active: false },
   { title: "Bloqueio de Horário", href: "#", active: false },
   { title: "Lista de Espera", href: "#", active: false },
@@ -101,7 +106,6 @@ export function AdminSidebar() {
   );
   const whatsappUrl = `https://wa.me/${supportPhone}?text=${supportMessage}`;
 
-  // 🔥 Busca o nome da clínica
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -120,7 +124,6 @@ export function AdminSidebar() {
     fetchSettings();
   }, []);
 
-  // 🔥 Função de logout
   const handleLogout = async () => {
     setLoggingOut(true);
     try {
@@ -203,11 +206,7 @@ export function AdminSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {/* Agenda */}
-              <Collapsible
-                asChild
-                defaultOpen={pathname.startsWith("/admin/agenda")}
-                className="group/collapsible w-full"
-              >
+              <Collapsible asChild className="group/collapsible w-full">
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton className="hover:bg-muted/50">
