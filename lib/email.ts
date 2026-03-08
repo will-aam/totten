@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import crypto from "crypto";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -80,4 +81,8 @@ export async function sendPasswordResetEmail(
     console.error("Erro ao enviar e-mail:", error);
     return { success: false, error };
   }
+}
+
+export function generateRandomPassword() {
+  return crypto.randomBytes(8).toString("base64").slice(0, 10);
 }
