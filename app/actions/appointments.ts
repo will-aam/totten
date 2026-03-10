@@ -99,8 +99,8 @@ export async function updateAppointment(
     observations: string;
     hasCharge: boolean;
   },
-  updateAll: boolean = false, // 🔥 NOVO
-  recurrenceId?: string | null, // 🔥 NOVO
+  updateAll: boolean = false,
+  recurrenceId?: string | null,
 ) {
   try {
     const admin = await requireAuth();
@@ -127,8 +127,8 @@ export async function updateAppointment(
       data.paymentMethod === "nenhum"
         ? null
         : paymentMap[data.paymentMethod] || null;
-
     let finalHasCharge = data.hasCharge;
+
     if (
       finalStatus === AppointmentStatus.REALIZADO &&
       finalPaymentMethod !== null
@@ -136,38 +136,69 @@ export async function updateAppointment(
       finalHasCharge = false;
     if (finalStatus === AppointmentStatus.CANCELADO) finalHasCharge = false;
 
-    // 🔥 LOGICA DE ATUALIZAÇÃO EM MASSA
-    if (updateAll && recurrenceId) {
-      await prisma.appointment.updateMany({
-        where: {
-          recurrence_id: recurrenceId,
-          organization_id: admin.organizationId,
-          status: { not: AppointmentStatus.REALIZADO }, // Segurança: não altera o que já foi feito
-        },
-        data: {
-          status: finalStatus,
-          payment_method: finalPaymentMethod,
-          observations: data.observations,
-          has_charge: finalHasCharge,
-        },
-      });
-    } else {
-      await prisma.appointment.update({
-        where: { id, organization_id: admin.organizationId },
-        data: {
-          status: finalStatus,
-          payment_method: finalPaymentMethod,
-          observations: data.observations,
-          has_charge: finalHasCharge,
-        },
-      });
-    }
+    const currentAppt = await prisma.appointment.findUnique({
+      where: { id, organization_id: admin.organizationId },
+      select: { package_id: true, status: true },
+    });
+
+    if (!currentAppt)
+      return { success: false, error: "Agendamento não encontrado." };
+
+    const isMarkingAsDone =
+      finalStatus === AppointmentStatus.REALIZADO &&
+      currentAppt.status !== AppointmentStatus.REALIZADO;
+
+    await prisma.$transaction(async (tx) => {
+      if (updateAll && recurrenceId) {
+        // 1. Atualiza a série
+        const updateResult = await tx.appointment.updateMany({
+          where: {
+            recurrence_id: recurrenceId,
+            organization_id: admin.organizationId,
+            status: { not: AppointmentStatus.REALIZADO },
+          },
+          data: {
+            status: finalStatus,
+            payment_method: finalPaymentMethod,
+            has_charge: finalHasCharge,
+            observations: data.observations, // ✅ Adicionado
+          },
+        });
+
+        // 2. Se marcar a série como realizada, desconta o número exato de afetados
+        if (isMarkingAsDone && currentAppt.package_id) {
+          await tx.package.update({
+            where: { id: currentAppt.package_id },
+            data: { used_sessions: { increment: updateResult.count } }, // ✅ Desconto dinâmico
+          });
+        }
+      } else {
+        // Atualização individual (Mantida)
+        await tx.appointment.update({
+          where: { id, organization_id: admin.organizationId },
+          data: {
+            status: finalStatus,
+            observations: data.observations,
+            payment_method: finalPaymentMethod,
+            has_charge: finalHasCharge,
+          },
+        });
+
+        if (isMarkingAsDone && currentAppt.package_id) {
+          await tx.package.update({
+            where: { id: currentAppt.package_id },
+            data: { used_sessions: { increment: 1 } },
+          });
+        }
+      }
+    });
 
     revalidatePath("/admin/agenda");
+    revalidatePath("/admin/packages");
     return { success: true };
   } catch (error) {
-    console.error("Erro ao atualizar:", error);
-    return { success: false, error: "Erro ao salvar alterações." };
+    console.error(error);
+    return { success: false, error: "Erro ao atualizar agendamento." };
   }
 }
 
