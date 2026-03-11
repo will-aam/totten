@@ -114,6 +114,7 @@ export function ServiceForm() {
           description: form.description || null,
           duration: Number(form.duration),
           price: Number(form.price),
+          // Os campos inativos não são enviados para a API por enquanto
         }),
       });
 
@@ -167,7 +168,7 @@ export function ServiceForm() {
               )}
             </div>
 
-            {/* 🔥 Categoria com Select Inteligente */}
+            {/* Categoria com Select Inteligente */}
             <div className="flex flex-col gap-2">
               <Label
                 htmlFor="category"
@@ -216,7 +217,7 @@ export function ServiceForm() {
             </CardTitle>
           </CardHeader>
           <CardContent className="px-0 pb-0 md:pb-6 md:px-6 flex flex-col gap-5">
-            {/* 🔥 Duração - Agora busca da API */}
+            {/* Duração */}
             <div className="flex flex-col gap-2">
               <Label htmlFor="duration" className="text-foreground font-medium">
                 Duração Estimada *
@@ -262,14 +263,17 @@ export function ServiceForm() {
               )}
             </div>
 
-            {/* Cor na Agenda */}
-            <div className="flex flex-col gap-2">
+            {/* 🔥 Cor na Agenda (INATIVO) */}
+            <div className="flex flex-col gap-2 opacity-60 pointer-events-none select-none">
               <Label
                 htmlFor="color"
                 className="flex items-center gap-2 text-foreground font-medium"
               >
                 <Palette className="h-4 w-4 text-muted-foreground" />
                 Cor na Agenda
+                <span className="ml-auto text-[10px] font-bold tracking-wider uppercase bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
+                  Em breve
+                </span>
               </Label>
               <div className="flex items-center gap-3">
                 <div className="relative h-11 w-11 rounded-full overflow-hidden border-2 border-border shadow-sm shrink-0">
@@ -277,10 +281,11 @@ export function ServiceForm() {
                     type="color"
                     id="color"
                     value={form.color}
+                    disabled
                     onChange={(e) =>
                       setForm({ ...form, color: e.target.value })
                     }
-                    className="absolute -top-2 -left-2 h-16 w-16 cursor-pointer"
+                    className="absolute -top-2 -left-2 h-16 w-16 cursor-not-allowed"
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -326,14 +331,17 @@ export function ServiceForm() {
               )}
             </div>
 
-            {/* Custo de Insumo */}
-            <div className="flex flex-col gap-2">
+            {/* 🔥 Custo de Insumo (INATIVO) */}
+            <div className="flex flex-col gap-2 opacity-60 pointer-events-none select-none">
               <Label
                 htmlFor="cost"
                 className="flex items-center gap-2 text-foreground font-medium"
               >
                 <TrendingDown className="h-4 w-4 text-destructive" />
                 Custo de Material (R$)
+                <span className="ml-auto text-[10px] font-bold tracking-wider uppercase bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
+                  Em breve
+                </span>
               </Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
@@ -345,8 +353,9 @@ export function ServiceForm() {
                   step="0.01"
                   placeholder="0,00"
                   value={form.cost}
+                  disabled
                   onChange={(e) => setForm({ ...form, cost: e.target.value })}
-                  className="bg-muted/50 border-border/50 h-11 pl-9"
+                  className="bg-muted/50 border-border/50 h-11 pl-9 cursor-not-allowed"
                 />
               </div>
               <p className="text-[11px] text-muted-foreground">
@@ -357,13 +366,16 @@ export function ServiceForm() {
         </Card>
       </div>
 
-      {/* BLOCO 4: Configurações Extras (Switch) */}
-      <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card">
+      {/* 🔥 BLOCO 4: Configurações Extras (Switch INATIVO) */}
+      <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card opacity-60 pointer-events-none select-none">
         <CardContent className="px-0 pt-0 md:p-6 flex items-center justify-between">
           <div className="flex flex-col gap-1 pr-4">
             <Label className="flex items-center gap-2 text-foreground font-medium text-base">
               <Globe className="h-5 w-5 text-primary" />
               Disponível no Agendamento Online
+              <span className="ml-2 text-[10px] font-bold tracking-wider uppercase bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
+                Em breve
+              </span>
             </Label>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Permite que os clientes vejam e agendem este serviço sozinhos pela
@@ -372,6 +384,7 @@ export function ServiceForm() {
           </div>
           <Switch
             checked={form.isOnline}
+            disabled
             onCheckedChange={(checked) =>
               setForm({ ...form, isOnline: checked })
             }
