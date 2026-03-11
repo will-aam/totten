@@ -1,10 +1,11 @@
+// app/actions/package-templates.ts
 "use server";
 
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
-// 🔥 FUNÇÃO AUXILIAR: Converte Decimal do Prisma em Number para o Next.js
+// Função auxiliar para limpar dados sensíveis/decimais
 function sanitizePackage(pkg: any) {
   if (!pkg) return null;
   return {
@@ -21,7 +22,7 @@ export async function updatePackageTemplate(
     total_sessions?: number;
     price?: number;
     validity_days?: number | null;
-    active?: boolean; // 🔥 Campo sincronizado com o banco
+    active?: boolean;
   },
 ) {
   try {
@@ -34,15 +35,12 @@ export async function updatePackageTemplate(
         description: data.description,
         total_sessions: data.total_sessions,
         price: data.price,
-        validity_days: data.validity_days,
-        active: data.active, // 🔥 Agora grava o status corretamente
+        validity_days: data.validity_days, // ✅ Sincronizado com o Prisma
+        active: data.active,
       },
     });
 
-    // Atualiza o cache das páginas que usam pacotes
     revalidatePath("/admin/services");
-    revalidatePath("/admin/clients/new");
-
     return { success: true, package: sanitizePackage(updated) };
   } catch (error) {
     console.error("Erro ao atualizar pacote:", error);
@@ -50,6 +48,7 @@ export async function updatePackageTemplate(
   }
 }
 
+// 🔥 ESTA É A FUNÇÃO QUE O TS NÃO ESTAVA ACHANDO
 export async function togglePackageTemplateStatus(
   id: string,
   currentStatus: boolean,
@@ -63,7 +62,6 @@ export async function togglePackageTemplateStatus(
     });
 
     revalidatePath("/admin/services");
-    revalidatePath("/admin/clients/new");
 
     return { success: true, package: sanitizePackage(updated) };
   } catch (error) {

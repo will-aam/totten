@@ -1,3 +1,4 @@
+// app/api/package-templates/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
@@ -19,7 +20,8 @@ export async function GET(req: NextRequest) {
         total_sessions: true,
         price: true,
         service_id: true,
-        active: true, // 🔥 Garantindo que o status volte para o front
+        active: true,
+        validity_days: true, // ✅ AGORA A API DEVOLVE A VALIDADE
       },
       orderBy: { created_at: "desc" },
     });
@@ -40,14 +42,8 @@ export async function POST(request: Request) {
     const admin = await requireAuth();
     const body = await request.json();
 
-    // 🔥 Capturamos 'active' ou 'is_active' (para evitar erro se o front mandar diferente)
-    const { name, total_sessions, price, service_id, is_active, active } = body;
-    const finalActiveStatus =
-      active !== undefined
-        ? active
-        : is_active !== undefined
-          ? is_active
-          : true;
+    const { name, total_sessions, price, service_id, validity_days, active } =
+      body;
 
     if (!name || !total_sessions || !price || !service_id) {
       return NextResponse.json({ error: "Dados incompletos" }, { status: 400 });
@@ -59,7 +55,12 @@ export async function POST(request: Request) {
         total_sessions: Number(total_sessions),
         price: Number(price),
         service_id,
-        active: finalActiveStatus, // 🔥 Agora salvamos o status correto
+        // ✅ Salva como número se existir, ou null se estiver vazio
+        validity_days:
+          validity_days !== "" && validity_days !== null
+            ? Number(validity_days)
+            : null,
+        active: active ?? true,
         organization_id: admin.organizationId,
       },
     });

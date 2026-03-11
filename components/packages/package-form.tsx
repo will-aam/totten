@@ -1,3 +1,4 @@
+// components/packages/package-form.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -98,7 +99,8 @@ export function PackageForm() {
           description: form.description || null,
           total_sessions: Number(form.total_sessions),
           price: Number(form.price),
-          validity_days: form.validity_days ? Number(form.validity_days) : null,
+          validity_days:
+            form.validity_days !== "" ? Number(form.validity_days) : null,
           active: form.active, // 🔥 Enviando o campo correto
           service_id: form.service_id, // 🔥 Enviando a amarração
         }),

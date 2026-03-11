@@ -1,3 +1,4 @@
+// app/api/packages/templates/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin } from "@/lib/auth";

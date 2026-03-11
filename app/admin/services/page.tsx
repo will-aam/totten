@@ -12,7 +12,16 @@ import { Badge } from "@/components/ui/badge";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { DurationManager } from "@/components/service-durations/duration-manager";
 import { cn } from "@/lib/utils"; // <-- IMPORTAÇÃO ADICIONADA AQUI
-import { Plus, Cog, Package, Tags, Clock, Loader2, Layers } from "lucide-react";
+import {
+  Plus,
+  Cog,
+  Package,
+  Tags,
+  Clock,
+  Loader2,
+  Layers,
+  CalendarDays,
+} from "lucide-react";
 
 // Importação dos Modais
 import { ServiceEditModal } from "@/components/services/service-edit-modal";
@@ -202,7 +211,7 @@ function ServicesTabs() {
           </Card>
         </TabsContent>
 
-        {/* LISTA DE PACOTES */}
+        {/* LISTA DE PACOTES - app/admin/services/page.tsx */}
         <TabsContent value="packages" className="mt-0 outline-none">
           <CardContent className="p-6">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -217,7 +226,7 @@ function ServicesTabs() {
                       : "bg-card shadow-sm",
                   )}
                 >
-                  <h3 className="font-semibold">
+                  <h3 className="font-semibold text-foreground">
                     {pkg.name} {!pkg.active && "(Inativo)"}
                   </h3>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
@@ -225,6 +234,13 @@ function ServicesTabs() {
                       <Layers className="h-3 w-3" /> {pkg.total_sessions}{" "}
                       sessões
                     </span>
+                    {/* ✅ AGORA APARECE AQUI: */}
+                    {pkg.validity_days && (
+                      <span className="flex items-center gap-1">
+                        <CalendarDays className="h-3 w-3" /> {pkg.validity_days}{" "}
+                        dias
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center justify-between pt-2 border-t border-border/50">
                     <span className="text-sm font-bold">

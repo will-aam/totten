@@ -1,3 +1,4 @@
+// components/packages/package-details-modal.tsx
 "use client";
 
 import { useState, useEffect } from "react";

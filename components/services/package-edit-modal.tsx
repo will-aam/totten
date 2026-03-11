@@ -64,7 +64,7 @@ export function PackageEditModal({
 
   const handleSave = async () => {
     if (!formData.name || !formData.total_sessions || !formData.price) {
-      toast.error("Preencha os campos obrigatórios (Nome, Sessões e Preço).");
+      toast.error("Preencha os campos obrigatórios.");
       return;
     }
 
@@ -77,11 +77,11 @@ export function PackageEditModal({
         price: parseFloat(formData.price),
         validity_days: formData.validity_days
           ? parseInt(formData.validity_days)
-          : null,
+          : null, // ✅ Salva como número
       });
 
       if (res.success) {
-        toast.success("Pacote atualizado com sucesso!");
+        toast.success("Pacote atualizado!");
         onSuccess();
         onOpenChange(false);
       } else {
@@ -109,7 +109,7 @@ export function PackageEditModal({
         onOpenChange(false);
       }
     } catch (error) {
-      toast.error("Erro ao alterar o estado do pacote.");
+      toast.error("Erro ao mudar estado.");
     } finally {
       setLoading(false);
     }
@@ -117,30 +117,33 @@ export function PackageEditModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-125">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Editar Pacote</DialogTitle>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="pkg-name">Nome do Pacote</Label>
+            <Label htmlFor="pkg-validity" className="flex items-center gap-2">
+              <CalendarDays className="h-3 w-3" /> Validade (dias)
+            </Label>
             <Input
-              id="pkg-name"
-              value={formData.name}
+              id="pkg-validity"
+              type="number"
+              placeholder="Ex: 90"
+              value={formData.validity_days} // ✅ Vinculado ao estado
               onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
+                setFormData({ ...formData, validity_days: e.target.value })
               }
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="pkg-sessions" className="flex items-center gap-2">
+              <Label className="flex items-center gap-2">
                 <Layers className="h-3 w-3" /> Sessões
               </Label>
               <Input
-                id="pkg-sessions"
                 type="number"
                 value={formData.total_sessions}
                 onChange={(e) =>
@@ -149,9 +152,8 @@ export function PackageEditModal({
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="pkg-price">Preço Total (R$)</Label>
+              <Label>Preço Total (R$)</Label>
               <Input
-                id="pkg-price"
                 type="number"
                 step="0.01"
                 value={formData.price}
@@ -163,11 +165,10 @@ export function PackageEditModal({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="pkg-validity" className="flex items-center gap-2">
+            <Label className="flex items-center gap-2">
               <CalendarDays className="h-3 w-3" /> Validade (dias)
             </Label>
             <Input
-              id="pkg-validity"
               type="number"
               placeholder="Opcional"
               value={formData.validity_days}
@@ -178,9 +179,8 @@ export function PackageEditModal({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="pkg-desc">Descrição</Label>
+            <Label>Descrição</Label>
             <Textarea
-              id="pkg-desc"
               value={formData.description}
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
@@ -190,7 +190,7 @@ export function PackageEditModal({
           </div>
         </div>
 
-        <DialogFooter className="flex flex-col sm:flex-row gap-2">
+        <DialogFooter className="gap-2">
           <Button
             type="button"
             variant="outline"
@@ -212,9 +212,7 @@ export function PackageEditModal({
               </>
             )}
           </Button>
-
           <div className="flex-1" />
-
           <Button onClick={handleSave} disabled={loading}>
             {loading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
