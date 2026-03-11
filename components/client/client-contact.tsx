@@ -5,6 +5,13 @@ import { mutate } from "swr";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label"; // 🔥 Importado
+import { Calendar } from "@/components/ui/calendar"; // 🔥 Importado
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"; // 🔥 Importado
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,16 +28,26 @@ import {
   X,
   Loader2,
   Share2,
+  CalendarIcon,
+  MapPin,
 } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
-// 🔥 Tipos substituídos para não depender mais do arquivo mockado (lib/data)
+// 🔥 Tipos atualizados com os campos que faltavam da Ficha Completa
 export type ClientContactType = {
   id: string;
   name: string;
   cpf: string;
   phone_whatsapp: string;
   email?: string | null;
+  birth_date?: string | null;
+  zip_code?: string | null;
+  city?: string | null;
+  street?: string | null;
+  number?: string | null;
 };
 
 export type ActivePackageType = {
@@ -45,6 +62,7 @@ interface ClientContactProps {
   activePackage: ActivePackageType | null;
 }
 
+// Máscaras de formatação
 function formatPhoneInput(value: string) {
   const d = value.replace(/\D/g, "").slice(0, 11);
   if (d.length <= 2) return `(${d}`;
@@ -52,14 +70,33 @@ function formatPhoneInput(value: string) {
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
 }
 
+function formatCepInput(value: string) {
+  const d = value.replace(/\D/g, "").slice(0, 8);
+  if (d.length <= 5) return d;
+  return `${d.slice(0, 5)}-${d.slice(5)}`;
+}
+
+// 🔥 Evita o bug comum de datas do banco de dados (que costumam vir no fuso UTC e podem pular para o dia anterior)
+function parseDate(dateStr: string | null | undefined) {
+  if (!dateStr) return undefined;
+  const pureDate = dateStr.split("T")[0]; // "1990-05-15"
+  return new Date(`${pureDate}T12:00:00`); // Força a hora para o meio-dia
+}
+
 export function ClientContact({ client, activePackage }: ClientContactProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Removido o "(client as any)" pois agora a tipagem está correta
-  const clientEmail = client.email || "";
+  // Estados de Edição da Ficha Completa
   const [editPhone, setEditPhone] = useState(client.phone_whatsapp || "");
-  const [editEmail, setEditEmail] = useState(clientEmail);
+  const [editEmail, setEditEmail] = useState(client.email || "");
+  const [editBirthDate, setEditBirthDate] = useState<Date | undefined>(
+    parseDate(client.birth_date),
+  );
+  const [editZipCode, setEditZipCode] = useState(client.zip_code || "");
+  const [editCity, setEditCity] = useState(client.city || "");
+  const [editStreet, setEditStreet] = useState(client.street || "");
+  const [editNumber, setEditNumber] = useState(client.number || "");
 
   const [templates, setTemplates] = useState({
     msgUpdate:
@@ -82,6 +119,30 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
       }
     }
   }, []);
+
+  // Garante que o modo de edição não fica com dados antigos se a API for revalidada no fundo
+  useEffect(() => {
+    if (!isEditing) {
+      setEditPhone(client.phone_whatsapp || "");
+      setEditEmail(client.email || "");
+      setEditBirthDate(parseDate(client.birth_date));
+      setEditZipCode(client.zip_code || "");
+      setEditCity(client.city || "");
+      setEditStreet(client.street || "");
+      setEditNumber(client.number || "");
+    }
+  }, [client, isEditing]);
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setEditPhone(client.phone_whatsapp || "");
+    setEditEmail(client.email || "");
+    setEditBirthDate(parseDate(client.birth_date));
+    setEditZipCode(client.zip_code || "");
+    setEditCity(client.city || "");
+    setEditStreet(client.street || "");
+    setEditNumber(client.number || "");
+  };
 
   const handleSave = async () => {
     const cleanPhone = editPhone.replace(/\D/g, "");
@@ -106,18 +167,25 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
           name: client.name,
           cpf: client.cpf,
           phone_whatsapp: editPhone,
-          email: editEmail,
+          email: editEmail || null,
+          birth_date: editBirthDate
+            ? format(editBirthDate, "yyyy-MM-dd")
+            : null,
+          zip_code: editZipCode || null,
+          city: editCity || null,
+          street: editStreet || null,
+          number: editNumber || null,
         }),
       });
 
       if (!res.ok) {
         const payload = await res.json();
-        throw new Error(payload?.error || "Erro ao salvar.");
+        throw new Error(payload?.error || "Erro ao salvar a ficha.");
       }
 
-      toast.success("Contato atualizado!");
+      toast.success("Ficha do cliente atualizada com sucesso!");
       setIsEditing(false);
-      mutate(`/api/clients/${client.id}`);
+      mutate(`/api/clients/${client.id}`); // Atualiza os dados no ecrã automaticamente
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Erro ao salvar.");
     } finally {
@@ -154,24 +222,38 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
   };
 
   const handleEmail = () => {
-    window.open(`mailto:${clientEmail}`, "_self");
+    if (!client.email) {
+      toast.error("Este cliente não possui e-mail cadastrado.");
+      return;
+    }
+    window.open(`mailto:${client.email}`, "_self");
   };
+
+  // Formatação bonita para apresentação do endereço
+  const addressParts = [];
+  if (client.street)
+    addressParts.push(
+      `${client.street}${client.number ? `, ${client.number}` : ""}`,
+    );
+  if (client.city) addressParts.push(client.city);
+  if (client.zip_code) addressParts.push(client.zip_code);
+  const addressDisplay = addressParts.join(" - ");
 
   return (
     <Card className="md:col-span-2 border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card">
       <CardHeader className="px-0 pt-0 md:pt-6 md:px-6 pb-3 md:pb-6 flex flex-row items-center justify-between">
         <CardTitle className="text-lg flex items-center gap-2 text-foreground">
-          <Share2 className="h-5 w-5 text-primary" /> Contato e Mensagens
+          <Share2 className="h-5 w-5 text-primary" /> Ficha e Contato
         </CardTitle>
 
         <div className="flex items-center gap-1">
           {isEditing ? (
             <div className="flex gap-1">
               <Button
-                onClick={() => setIsEditing(false)}
+                onClick={handleCancel}
                 variant="ghost"
                 size="icon"
-                className="rounded-full h-8 w-8"
+                className="rounded-full h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -180,7 +262,7 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
                 disabled={saving}
                 variant="ghost"
                 size="icon"
-                className="rounded-full h-8 w-8 text-[#25D366]"
+                className="rounded-full h-8 w-8 text-[#25D366] hover:bg-[#25D366]/10"
               >
                 {saving ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -190,126 +272,262 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
               </Button>
             </div>
           ) : (
-            <>
-              <Button
-                onClick={() => setIsEditing(true)}
-                size="icon"
-                variant="ghost"
-                className="text-muted-foreground hover:text-primary rounded-full h-8 w-8"
-                title="Editar contato"
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
-            </>
+            <Button
+              onClick={() => setIsEditing(true)}
+              size="icon"
+              variant="ghost"
+              className="text-muted-foreground hover:text-primary rounded-full h-8 w-8"
+              title="Completar / Editar ficha"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
           )}
         </div>
       </CardHeader>
 
       <CardContent className="px-0 pb-0 md:pb-6 md:px-6 flex flex-col gap-5">
         {isEditing ? (
-          <div className="flex flex-col sm:flex-row gap-3 animate-in fade-in zoom-in-95 duration-200">
-            <div className="relative flex-1">
-              <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                <MessageCircle className="h-5 w-5 text-[#25D366]" />
+          <div className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
+            {/* DADOS DE CONTATO */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground">
+                  WhatsApp *
+                </Label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <MessageCircle className="h-4 w-4 text-[#25D366]" />
+                  </div>
+                  <Input
+                    value={editPhone}
+                    onChange={(e) =>
+                      setEditPhone(formatPhoneInput(e.target.value))
+                    }
+                    placeholder="(00) 00000-0000"
+                    className="pl-9 h-10 bg-muted/30 focus-visible:ring-[#25D366]/50"
+                  />
+                </div>
               </div>
-              <Input
-                value={editPhone}
-                onChange={(e) => setEditPhone(formatPhoneInput(e.target.value))}
-                placeholder="(00) 00000-0000"
-                className="pl-12 rounded-full h-12 text-base border-[#25D366]/40 focus-visible:ring-[#25D366]/50 bg-muted/30 shadow-sm transition-all"
-                autoFocus
-              />
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground">
+                  E-mail
+                </Label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <Mail className="h-4 w-4 text-primary" />
+                  </div>
+                  <Input
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    placeholder="cliente@email.com"
+                    className="pl-9 h-10 bg-muted/30"
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="relative flex-1">
-              <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                <Mail className="h-5 w-5 text-primary" />
+            {/* NASCIMENTO E CEP */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground">
+                  Nascimento
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal h-10 bg-muted/30",
+                        !editBirthDate && "text-muted-foreground",
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {editBirthDate
+                        ? format(editBirthDate, "dd/MM/yyyy")
+                        : "Selecionar data"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={editBirthDate}
+                      onSelect={setEditBirthDate}
+                      locale={ptBR}
+                      captionLayout="dropdown"
+                      fromYear={1930}
+                      toYear={new Date().getFullYear()}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
-              <Input
-                value={editEmail}
-                onChange={(e) => setEditEmail(e.target.value)}
-                placeholder="cliente@email.com"
-                className="pl-12 rounded-full h-12 text-base border-primary/30 focus-visible:ring-primary/50 bg-muted/30 shadow-sm transition-all"
-              />
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground">
+                  CEP
+                </Label>
+                <Input
+                  value={editZipCode}
+                  onChange={(e) =>
+                    setEditZipCode(formatCepInput(e.target.value))
+                  }
+                  placeholder="00000-000"
+                  className="h-10 bg-muted/30 font-mono"
+                />
+              </div>
+            </div>
+
+            {/* ENDEREÇO */}
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
+              <div className="space-y-1.5 sm:col-span-5">
+                <Label className="text-xs font-semibold text-muted-foreground">
+                  Cidade
+                </Label>
+                <Input
+                  value={editCity}
+                  onChange={(e) => setEditCity(e.target.value)}
+                  placeholder="Sua cidade"
+                  className="h-10 bg-muted/30"
+                />
+              </div>
+              <div className="space-y-1.5 sm:col-span-5">
+                <Label className="text-xs font-semibold text-muted-foreground">
+                  Rua / Logradouro
+                </Label>
+                <Input
+                  value={editStreet}
+                  onChange={(e) => setEditStreet(e.target.value)}
+                  placeholder="Ex: Avenida Central"
+                  className="h-10 bg-muted/30"
+                />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label className="text-xs font-semibold text-muted-foreground">
+                  Número
+                </Label>
+                <Input
+                  value={editNumber}
+                  onChange={(e) => setEditNumber(e.target.value)}
+                  placeholder="Ex: 123"
+                  className="h-10 bg-muted/30"
+                />
+              </div>
             </div>
           </div>
         ) : (
-          <div className="flex flex-col sm:flex-row gap-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button className="bg-[#25D366] text-white hover:bg-[#128C7E] rounded-full flex-1 h-12 text-base shadow-sm transition-all">
-                  <MessageCircle className="mr-2 h-5 w-5" /> WhatsApp
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-70">
-                <DropdownMenuLabel>Qual mensagem enviar?</DropdownMenuLabel>
-                <DropdownMenuSeparator />
+          <div className="flex flex-col gap-6 animate-in fade-in duration-300">
+            {/* 1. BOTÕES DE AÇÃO */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button className="bg-[#25D366] text-white hover:bg-[#128C7E] rounded-full flex-1 h-12 text-base shadow-sm transition-all">
+                    <MessageCircle className="mr-2 h-5 w-5" /> WhatsApp
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-70">
+                  <DropdownMenuLabel>Qual mensagem enviar?</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => handleSendWhatsApp(templates.msgUpdate)}
+                    className="cursor-pointer py-2"
+                  >
+                    <div className="flex flex-col gap-1">
+                      <span className="font-medium text-sm">
+                        Atualização (Check-in)
+                      </span>
+                      <span className="text-[10px] text-muted-foreground line-clamp-1">
+                        Olá {client.name.split(" ")[0]}, seu check-in...
+                      </span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleSendWhatsApp(templates.msgWelcome)}
+                    className="cursor-pointer py-2"
+                  >
+                    <div className="flex flex-col gap-1">
+                      <span className="font-medium text-sm">
+                        Boas-vindas (Novo)
+                      </span>
+                      <span className="text-[10px] text-muted-foreground line-clamp-1">
+                        Que alegria ter você aqui...
+                      </span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleSendWhatsApp(templates.msgRenewal)}
+                    className="cursor-pointer py-2"
+                  >
+                    <div className="flex flex-col gap-1">
+                      <span className="font-medium text-sm">
+                        Renovação de Pacote
+                      </span>
+                      <span className="text-[10px] text-muted-foreground line-clamp-1">
+                        Você concluiu a última sessão...
+                      </span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleSendWhatsApp(templates.msgReminder)}
+                    className="cursor-pointer py-2"
+                  >
+                    <div className="flex flex-col gap-1">
+                      <span className="font-medium text-sm">
+                        Lembrete de Agenda
+                      </span>
+                      <span className="text-[10px] text-muted-foreground line-clamp-1">
+                        Passando para lembrar do nosso...
+                      </span>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-                <DropdownMenuItem
-                  onClick={() => handleSendWhatsApp(templates.msgUpdate)}
-                  className="cursor-pointer py-2"
-                >
-                  <div className="flex flex-col gap-1">
-                    <span className="font-medium text-sm">
-                      Atualização (Check-in)
-                    </span>
-                    <span className="text-[10px] text-muted-foreground line-clamp-1">
-                      Olá {client.name.split(" ")[0]}, seu check-in...
-                    </span>
-                  </div>
-                </DropdownMenuItem>
+              <Button
+                variant="outline"
+                onClick={handleEmail}
+                className="rounded-full flex-1 h-12 text-base border-primary/20 shadow-sm transition-all hover:bg-primary/5"
+              >
+                <Mail className="mr-2 h-5 w-5 text-primary" /> E-mail
+              </Button>
+            </div>
 
-                <DropdownMenuItem
-                  onClick={() => handleSendWhatsApp(templates.msgWelcome)}
-                  className="cursor-pointer py-2"
-                >
-                  <div className="flex flex-col gap-1">
-                    <span className="font-medium text-sm">
-                      Boas-vindas (Novo)
-                    </span>
-                    <span className="text-[10px] text-muted-foreground line-clamp-1">
-                      Que alegria ter você aqui...
-                    </span>
-                  </div>
-                </DropdownMenuItem>
-
-                <DropdownMenuItem
-                  onClick={() => handleSendWhatsApp(templates.msgRenewal)}
-                  className="cursor-pointer py-2"
-                >
-                  <div className="flex flex-col gap-1">
-                    <span className="font-medium text-sm">
-                      Renovação de Pacote
-                    </span>
-                    <span className="text-[10px] text-muted-foreground line-clamp-1">
-                      Você concluiu a última sessão...
-                    </span>
-                  </div>
-                </DropdownMenuItem>
-
-                <DropdownMenuItem
-                  onClick={() => handleSendWhatsApp(templates.msgReminder)}
-                  className="cursor-pointer py-2"
-                >
-                  <div className="flex flex-col gap-1">
-                    <span className="font-medium text-sm">
-                      Lembrete de Agenda
-                    </span>
-                    <span className="text-[10px] text-muted-foreground line-clamp-1">
-                      Passando para lembrar do nosso...
-                    </span>
-                  </div>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <Button
-              variant="outline"
-              onClick={handleEmail}
-              className="rounded-full flex-1 h-12 text-base border-primary/20 shadow-sm transition-all hover:bg-primary/5"
-            >
-              <Mail className="mr-2 h-5 w-5 text-primary" /> E-mail
-            </Button>
+            {/* 2. INFORMAÇÕES VISUAIS DA FICHA COMPLETA */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-5 border-t border-border/40">
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
+                  <MessageCircle className="h-3 w-3" /> WhatsApp
+                </span>
+                <span className="text-sm font-medium text-foreground">
+                  {client.phone_whatsapp || "Não informado"}
+                </span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
+                  <Mail className="h-3 w-3" /> E-mail
+                </span>
+                <span className="text-sm font-medium text-foreground">
+                  {client.email || "Não informado"}
+                </span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
+                  <CalendarIcon className="h-3 w-3" /> Nascimento
+                </span>
+                <span className="text-sm font-medium text-foreground">
+                  {client.birth_date
+                    ? format(parseDate(client.birth_date)!, "dd/MM/yyyy")
+                    : "Não informada"}
+                </span>
+              </div>
+              <div className="flex flex-col gap-1 sm:col-span-2">
+                <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
+                  <MapPin className="h-3 w-3" /> Endereço
+                </span>
+                <span className="text-sm font-medium text-foreground">
+                  {addressDisplay || "Não informado"}
+                </span>
+              </div>
+            </div>
           </div>
         )}
       </CardContent>
