@@ -9,7 +9,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -73,14 +72,21 @@ export function PendingCheckInsCard() {
     refreshInterval: 30000,
   });
 
+  // 🔥 Se estiver carregando e não tivermos dados, fica 100% invisível (evita o pulo na tela)
+  if (isLoading && !data) {
+    return null;
+  }
+
   const pendingCheckIns: PendingCheckIn[] = data?.pendingCheckIns ?? [];
 
-  if (!isLoading && pendingCheckIns.length === 0) {
+  // 🔥 Se carregou e a lista está vazia, continua invisível
+  if (pendingCheckIns.length === 0) {
     return null;
   }
 
   return (
-    <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/20 shadow-sm">
+    // 🔥 Adicionada animação para caso ele precise aparecer na tela
+    <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/20 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
           <AlertCircle className="h-5 w-5" />
@@ -91,18 +97,11 @@ export function PendingCheckInsCard() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <div className="space-y-3">
-            <Skeleton className="h-12 rounded-lg" />
-            <Skeleton className="h-12 rounded-lg" />
-          </div>
-        ) : (
-          <div className="divide-y divide-border/50">
-            {pendingCheckIns.map((checkIn) => (
-              <PendingCheckInItem key={checkIn.id} checkIn={checkIn} />
-            ))}
-          </div>
-        )}
+        <div className="divide-y divide-border/50">
+          {pendingCheckIns.map((checkIn) => (
+            <PendingCheckInItem key={checkIn.id} checkIn={checkIn} />
+          ))}
+        </div>
       </CardContent>
     </Card>
   );
