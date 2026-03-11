@@ -419,7 +419,7 @@ export function AppointmentDetailsModal({
           <Button
             onClick={() => handleSave()}
             disabled={isSaving}
-            className="w-full sm:w-auto bg-primary text-white rounded-2xl h-12 px-10 font-black shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+            className="w-full sm:w-auto bg-primary text-black rounded-2xl h-12 px-10 font-black "
           >
             {isSaving ? (
               <Loader2 className="h-5 w-5 animate-spin" />

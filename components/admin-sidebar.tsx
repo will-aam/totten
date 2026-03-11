@@ -46,7 +46,7 @@ import {
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 
-// 🔥 Menu principal atualizado (Calendário adicionado após Serviços)
+// 🔥 Menu principal atualizado (Agendamento adicionado após Serviços)
 const navItems = [
   {
     title: "Dashboard",
@@ -57,7 +57,7 @@ const navItems = [
   { title: "Clientes", href: "/admin/clients", icon: Users, active: true },
   { title: "Serviços", href: "/admin/services", icon: UserCog, active: true },
   {
-    title: "Calendário",
+    title: "Agendamento",
     href: "/admin/agenda",
     icon: CalendarDays,
     active: true,
@@ -72,12 +72,12 @@ const navItems = [
   { title: "Link na Bio", href: "/admin/link-bio", icon: Link2, active: false }, // 🔒 BLOQUEADO
 ];
 
-// 🔥 Sub-itens da Agenda (Recorrência ATIVADA!)
+// 🔥 Sub-itens da Agenda (Lembretes ATIVADO!)
 const agendaSubItems = [
   { title: "Agendamentos Recorrentes", href: "/admin/recurring", active: true },
+  { title: "Confirmações e Lembretes", href: "/admin/reminders", active: true },
   { title: "Bloqueio de Horário", href: "#", active: false },
   { title: "Lista de Espera", href: "#", active: false },
-  { title: "Confirmações e Lembretes", href: "#", active: false },
   { title: "Fichas de Anamnese", href: "#", active: false },
 ];
 

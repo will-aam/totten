@@ -474,7 +474,7 @@ export function NewAppointmentModal({
           </Button>
           <Button
             onClick={handleSave}
-            className="rounded-2xl px-10 h-12 shadow-lg shadow-primary/20 flex gap-2 font-bold"
+            className="rounded-2xl px-10 h-12 flex gap-2 font-bold"
             disabled={saving}
           >
             {saving ? (
