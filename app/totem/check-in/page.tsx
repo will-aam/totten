@@ -1,3 +1,5 @@
+/* app/totem/check-in/page.tsx */
+
 "use client";
 
 import { Suspense } from "react";

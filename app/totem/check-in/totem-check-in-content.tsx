@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react"; // 🔥 Importamos a sessão
 import { CpfKeypad } from "@/components/cpf-keypad";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -42,7 +43,7 @@ type SearchResponse =
 
 export default function TotemCheckInContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const { status } = useSession(); // 🔥 Obtemos o status da sessão
 
   const [cpf, setCpf] = useState("");
   const [loading, setLoading] = useState(false);
@@ -58,14 +59,12 @@ export default function TotemCheckInContent() {
   const [showConfirmTime, setShowConfirmTime] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
 
-  const organizationSlug =
-    searchParams.get("slug") || searchParams.get("organization") || "";
-
+  // 🔥 Nova Lógica de Proteção: Usa a sessão em vez do slug
   useEffect(() => {
-    if (!organizationSlug) {
+    if (status === "unauthenticated") {
       router.replace("/totem/error?type=ORG_NOT_FOUND");
     }
-  }, [organizationSlug, router]);
+  }, [status, router]);
 
   const handleConfirm = async () => {
     const digits = cpf.replace(/\D/g, "");
@@ -78,14 +77,14 @@ export default function TotemCheckInContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           cpf: digits,
-          organizationSlug,
+          // 🔥 Não enviamos mais o slug
         }),
       });
 
       const data: SearchResponse = await res.json();
 
       if (data.status === "NOT_FOUND") {
-        router.push(`/totem/error?type=CPF_NOT_FOUND&slug=${organizationSlug}`);
+        router.push(`/totem/error?type=CPF_NOT_FOUND`);
         return;
       }
 
@@ -97,7 +96,6 @@ export default function TotemCheckInContent() {
             "pt-BR",
             { hour: "2-digit", minute: "2-digit" },
           ),
-          slug: organizationSlug,
         });
 
         if (data.appointment.package_info) {
@@ -120,7 +118,7 @@ export default function TotemCheckInContent() {
       }
     } catch (error) {
       console.error("Erro ao buscar cliente:", error);
-      router.push(`/totem/error?type=UNKNOWN&slug=${organizationSlug}`);
+      router.push(`/totem/error?type=UNKNOWN`);
     } finally {
       setLoading(false);
     }
@@ -148,7 +146,7 @@ export default function TotemCheckInContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           appointment_id: appt.id,
-          organizationSlug,
+          // 🔥 Não enviamos mais o slug
         }),
       });
 
@@ -159,7 +157,6 @@ export default function TotemCheckInContent() {
           name: data.clientName,
           service: data.serviceName,
           time: data.time,
-          slug: organizationSlug,
         });
 
         if (data.package_info) {
@@ -169,28 +166,25 @@ export default function TotemCheckInContent() {
 
         router.push(`/totem/success?${params.toString()}`);
       } else {
-        router.push(`/totem/error?type=UNKNOWN&slug=${organizationSlug}`);
+        router.push(`/totem/error?type=UNKNOWN`);
       }
     } catch (error) {
       console.error("Erro ao fazer check-in:", error);
-      router.push(`/totem/error?type=UNKNOWN&slug=${organizationSlug}`);
+      router.push(`/totem/error?type=UNKNOWN`);
     } finally {
       setCheckingIn(false);
     }
   };
 
+  // Se a sessão estiver carregando, mostra uma tela vazia para evitar piscar o componente
+  if (status === "loading") {
+    return <div className="min-h-svh bg-background" />;
+  }
+
   return (
     <div className="flex min-h-svh flex-col bg-background p-4 sm:p-8">
-      {/* 🔥 BOTÃO DE VOLTAR: 
-        No mobile é absolute top/left (flutua sobre a tela).
-        No desktop (sm:static sm:self-start) ele fica no topo à esquerda empurrando o resto do conteúdo de forma segura.
-      */}
       <Link
-        href={
-          organizationSlug
-            ? `/totem/idle?slug=${organizationSlug}`
-            : "/totem/idle"
-        }
+        href="/totem/idle" // 🔥 URL limpa
         className="absolute top-4 left-4 sm:static sm:self-start flex w-fit items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group z-10"
       >
         <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-transparent sm:bg-muted/50 hover:bg-muted transition-colors">
@@ -199,9 +193,6 @@ export default function TotemCheckInContent() {
         <span className="hidden sm:inline font-medium">Voltar</span>
       </Link>
 
-      {/* 🔥 CONTEÚDO PRINCIPAL: 
-        Usa flex-1 para preencher todo o espaço restante e centraliza o miolo verticalmente e horizontalmente.
-      */}
       <div className="flex flex-1 items-center justify-center w-full mt-16 sm:mt-0">
         <div className="flex w-full max-w-sm flex-col items-center gap-8">
           <div className="text-center">

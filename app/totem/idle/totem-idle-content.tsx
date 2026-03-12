@@ -1,3 +1,4 @@
+// app/totem/idle/totem-idle-content.tsx
 "use client";
 
 import { useState, useEffect } from "react";

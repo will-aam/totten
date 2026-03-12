@@ -1,3 +1,4 @@
+// app/totem/idle/page.tsx
 "use client";
 
 import { Suspense } from "react";

@@ -1,17 +1,28 @@
+// app/api/totem/search/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentAdmin } from "@/lib/auth"; // 🔥 Import da autenticação da sessão
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { cpf, organizationSlug } = body as {
-      cpf?: string;
-      organizationSlug?: string;
-    };
+    // 🔒 1. Valida a sessão do totem (o tablet precisa estar logado na clínica)
+    const admin = await getCurrentAdmin();
 
-    if (!cpf || !organizationSlug) {
+    if (!admin || !admin.organizationId) {
       return NextResponse.json(
-        { error: "CPF e organizationSlug são obrigatórios." },
+        { error: "Não autorizado. Totem não está autenticado." },
+        { status: 401 },
+      );
+    }
+
+    const body = await req.json();
+
+    // 🔥 2. Não recebemos mais o organizationSlug do front-end
+    const { cpf } = body as { cpf?: string };
+
+    if (!cpf) {
+      return NextResponse.json(
+        { error: "CPF é obrigatório." },
         { status: 400 },
       );
     }
@@ -27,21 +38,11 @@ export async function POST(req: NextRequest) {
       new Set([cpf.trim(), cpfLimpo, cpfFormatado]),
     );
 
-    const organizacao = await prisma.organization.findUnique({
-      where: { slug: organizationSlug },
-    });
-
-    if (!organizacao) {
-      return NextResponse.json(
-        { error: "Organização não encontrada." },
-        { status: 404 },
-      );
-    }
-
+    // 🔥 3. Busca o cliente usando DIRETAMENTE o ID da organização da sessão
     const cliente = await prisma.client.findFirst({
       where: {
         cpf: { in: cpfCandidates },
-        organization_id: organizacao.id,
+        organization_id: admin.organizationId,
       },
     });
 
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest) {
     const agendamentos = await prisma.appointment.findMany({
       where: {
         client_id: cliente.id,
-        organization_id: organizacao.id,
+        organization_id: admin.organizationId, // 🔥 Usa o ID da sessão
         date_time: {
           gte: inicioDoDia,
           lte: fimDoDia,
@@ -91,6 +92,7 @@ export async function POST(req: NextRequest) {
     const agendamento = agendamentos[0];
     let packageInfo = null;
 
+    // Se só tem 1 agendamento, já faz o check-in automático
     await prisma.$transaction(async (tx) => {
       // Cria o registro de CheckIn
       await tx.checkIn.create({
@@ -98,7 +100,7 @@ export async function POST(req: NextRequest) {
           appointment_id: agendamento.id,
           client_id: cliente.id,
           package_id: agendamento.package_id ?? null,
-          organization_id: organizacao.id,
+          organization_id: admin.organizationId, // 🔥 Usa o ID da sessão
         },
       });
 
