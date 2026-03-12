@@ -160,3 +160,55 @@ export async function createManualPackageCheckIn(packageId: string) {
     return { success: false, error: "Falha ao processar registro." };
   }
 }
+/**
+ * Exclui um check-in e reverte o consumo no pacote do cliente.
+ */
+export async function deleteCheckIn(checkInId: string) {
+  try {
+    const admin = await requireAuth();
+
+    // 1. Busca os detalhes do check-in para saber o que reverter
+    const checkIn = await prisma.checkIn.findUnique({
+      where: { id: checkInId, organization_id: admin.organizationId },
+    });
+
+    if (!checkIn) return { success: false, error: "Check-in não encontrado." };
+
+    // 2. Executa a reversão em uma transação
+    await prisma.$transaction(async (tx) => {
+      // A. Se estava vinculado a um pacote, devolve a sessão
+      if (checkIn.package_id) {
+        await tx.package.update({
+          where: { id: checkIn.package_id },
+          data: {
+            used_sessions: { decrement: 1 },
+            active: true, // Garante que o pacote volte a ficar ativo caso estivesse zerado
+          },
+        });
+      }
+
+      // B. Se estava vinculado a um agendamento, volta o status para 'CONFIRMADO'
+      if (checkIn.appointment_id) {
+        await tx.appointment.update({
+          where: { id: checkIn.appointment_id },
+          data: { status: "CONFIRMADO" },
+        });
+      }
+
+      // C. Deleta o registro de check-in
+      await tx.checkIn.delete({
+        where: { id: checkInId },
+      });
+    });
+
+    // Revalida as páginas para atualizar os dados na tela
+    revalidatePath("/admin/history");
+    revalidatePath("/admin/packages");
+    revalidatePath("/admin/dashboard");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao excluir check-in:", error);
+    return { success: false, error: "Falha ao excluir o registro." };
+  }
+}

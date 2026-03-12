@@ -1,4 +1,3 @@
-// app/admin/history/page.tsx
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -18,10 +17,12 @@ import { HistoryFilters } from "@/components/history/history-filters";
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export default function AdminHistoryPage() {
-  const { data: checkIns, isLoading } = useSWR<EnrichedCheckIn[]>(
-    "/api/history",
-    fetcher,
-  );
+  // 🔥 Capturamos o 'mutate' para permitir atualização reativa da lista
+  const {
+    data: checkIns,
+    isLoading,
+    mutate,
+  } = useSWR<EnrichedCheckIn[]>("/api/history", fetcher);
 
   // ESTADOS DOS FILTROS
   const [filterMode, setFilterMode] = useState<"month" | "range">("month");
@@ -57,7 +58,6 @@ export default function AdminHistoryPage() {
       const ciDate = new Date(ci.date_time);
       ciDate.setHours(0, 0, 0, 0);
 
-      // Se estiver na aba de Visão Mensal
       if (filterMode === "month") {
         return (
           ciDate.getMonth() === currentDate.getMonth() &&
@@ -65,7 +65,6 @@ export default function AdminHistoryPage() {
         );
       }
 
-      // Se estiver na aba de Período Específico
       if (filterMode === "range") {
         if (dateFrom) {
           const from = new Date(dateFrom);
@@ -89,7 +88,6 @@ export default function AdminHistoryPage() {
       <AdminHeader title="Histórico" />
 
       <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 max-w-6xl mx-auto w-full pb-24 md:pb-6 relative">
-        {/* FILTROS COMPONENTIZADOS E INTELIGENTES */}
         <HistoryFilters
           filterMode={filterMode}
           setFilterMode={setFilterMode}
@@ -102,7 +100,6 @@ export default function AdminHistoryPage() {
           clearRangeFilters={clearRangeFilters}
         />
 
-        {/* CARD DOS RESULTADOS */}
         <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card">
           <CardHeader className="px-0 pt-0 md:pt-6 md:px-6 pb-4">
             <CardTitle className="flex items-center gap-2 text-lg text-card-foreground">
@@ -139,13 +136,13 @@ export default function AdminHistoryPage() {
                 </p>
               </div>
             ) : (
-              <HistoryTable data={filtered} />
+              // 🔥 Passamos a função 'mutate' para o onUpdate da tabela
+              <HistoryTable data={filtered} onUpdate={mutate} />
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* BOTÃO VOLTAR AO TOPO */}
       <button
         onClick={scrollToTop}
         className={cn(

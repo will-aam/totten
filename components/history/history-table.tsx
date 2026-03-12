@@ -1,4 +1,3 @@
-// components/history/history-table.tsx
 "use client";
 
 import { useState } from "react";
@@ -10,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ArrowUpDown, CalendarCheck } from "lucide-react";
+import { ArrowUpDown, Trash2, Loader2 } from "lucide-react"; // 🔥 Novos ícones
 import {
   ColumnDef,
   SortingState,
@@ -20,6 +19,18 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { deleteCheckIn } from "@/app/actions/packages"; // 🔥 Importando a action
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export interface EnrichedCheckIn {
   id: string;
@@ -30,7 +41,14 @@ export interface EnrichedCheckIn {
   client_cpf: string;
 }
 
-function MobileHistoryItem({ checkIn }: { checkIn: EnrichedCheckIn }) {
+// Atualizamos o Item Mobile para aceitar o clique de exclusão
+function MobileHistoryItem({
+  checkIn,
+  onDelete,
+}: {
+  checkIn: EnrichedCheckIn;
+  onDelete: (ci: EnrichedCheckIn) => void;
+}) {
   const date = new Date(checkIn.date_time);
   const formattedDate = date.toLocaleDateString("pt-BR", {
     day: "2-digit",
@@ -54,92 +72,148 @@ function MobileHistoryItem({ checkIn }: { checkIn: EnrichedCheckIn }) {
             {checkIn.client_name}
           </span>
           <span className="text-xs text-muted-foreground leading-none capitalize">
-            {formattedDate}
+            {formattedDate} às {formattedTime}
           </span>
         </div>
       </div>
-      <span className="text-sm font-medium text-foreground bg-muted px-2 py-1 rounded-md">
-        {formattedTime}
-      </span>
+
+      {/* Lixeira Mobile */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => onDelete(checkIn)}
+        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full"
+      >
+        <Trash2 className="h-4 w-4" />
+      </Button>
     </div>
   );
 }
 
-const columns: ColumnDef<EnrichedCheckIn>[] = [
-  {
-    accessorKey: "client_name",
-    header: ({ column }) => (
-      // REMOVIDO o -ml-4 e adicionado px-2 para dar espaço das bordas
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        className="px-2 hover:bg-muted hover:text-foreground text-muted-foreground font-semibold transition-colors rounded-full"
-      >
-        Cliente <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => (
-      // Adicionado px-2 aqui também para alinhar o conteúdo com o título
-      <div className="flex items-center gap-3 font-medium text-foreground px-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs">
-          {row.original.client_name.charAt(0).toUpperCase()}
-        </div>
-        {row.getValue("client_name")}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "client_cpf",
-    meta: { className: "hidden sm:table-cell" },
-    header: () => (
-      <span className="text-muted-foreground font-semibold">CPF</span>
-    ),
-    cell: ({ row }) => (
-      <span className="font-mono text-sm text-muted-foreground">
-        {row.getValue("client_cpf")}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "date_time",
-    header: ({ column }) => (
-      // REMOVIDO o -ml-4
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        className="px-2 hover:bg-muted hover:text-foreground text-muted-foreground font-semibold transition-colors rounded-full"
-      >
-        Data e Hora <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => {
-      const date = new Date(row.getValue("date_time"));
-      const formattedDate = date.toLocaleDateString("pt-BR", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      });
-      const formattedTime = date.toLocaleTimeString("pt-BR", {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-
-      return (
-        <div className="flex flex-col px-2">
-          <span className="font-medium text-foreground capitalize">
-            {formattedDate}
-          </span>
-          <span className="text-xs text-muted-foreground">{formattedTime}</span>
-        </div>
-      );
-    },
-  },
-];
-
-export function HistoryTable({ data }: { data: EnrichedCheckIn[] }) {
+export function HistoryTable({
+  data,
+  onUpdate,
+}: {
+  data: EnrichedCheckIn[];
+  onUpdate: () => void;
+}) {
   const [sorting, setSorting] = useState<SortingState>([
     { id: "date_time", desc: true },
   ]);
+
+  // Estado para o Modal de Exclusão
+  const [ciToDelete, setCiToDelete] = useState<EnrichedCheckIn | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleConfirmDelete = async () => {
+    if (!ciToDelete) return;
+
+    setDeleting(true);
+    try {
+      const result = await deleteCheckIn(ciToDelete.id);
+      if (result.success) {
+        toast.success("Check-in removido e saldo devolvido ao pacote.");
+        onUpdate(); // 🔥 ADICIONE ESTA LINHA AQUI
+      } else {
+        toast.error(result.error || "Erro ao remover check-in.");
+      }
+    } catch (error) {
+      toast.error("Erro na comunicação com o servidor.");
+    } finally {
+      setDeleting(false);
+      setCiToDelete(null);
+    }
+  };
+
+  const columns: ColumnDef<EnrichedCheckIn>[] = [
+    {
+      accessorKey: "client_name",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="px-2 hover:bg-muted hover:text-foreground text-muted-foreground font-semibold transition-colors rounded-full"
+        >
+          Cliente <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => (
+        <div className="flex items-center gap-3 font-medium text-foreground px-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs">
+            {row.original.client_name.charAt(0).toUpperCase()}
+          </div>
+          {row.getValue("client_name")}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "client_cpf",
+      meta: { className: "hidden sm:table-cell" },
+      header: () => (
+        <span className="text-muted-foreground font-semibold px-2">CPF</span>
+      ),
+      cell: ({ row }) => (
+        <span className="font-mono text-sm text-muted-foreground px-2">
+          {row.getValue("client_cpf")}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "date_time",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="px-2 hover:bg-muted hover:text-foreground text-muted-foreground font-semibold transition-colors rounded-full"
+        >
+          Data e Hora <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => {
+        const date = new Date(row.getValue("date_time"));
+        const formattedDate = date.toLocaleDateString("pt-BR", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        });
+        const formattedTime = date.toLocaleTimeString("pt-BR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+        return (
+          <div className="flex flex-col px-2">
+            <span className="font-medium text-foreground capitalize">
+              {formattedDate}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {formattedTime}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      id: "actions",
+      header: () => (
+        <div className="text-right px-4 text-muted-foreground font-semibold">
+          Ação
+        </div>
+      ),
+      cell: ({ row }) => (
+        <div className="text-right px-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCiToDelete(row.original)}
+            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-colors"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
 
   const table = useReactTable({
     data,
@@ -159,6 +233,7 @@ export function HistoryTable({ data }: { data: EnrichedCheckIn[] }) {
           <MobileHistoryItem
             key={row.id}
             checkIn={row.original as EnrichedCheckIn}
+            onDelete={setCiToDelete}
           />
         ))}
       </div>
@@ -219,6 +294,7 @@ export function HistoryTable({ data }: { data: EnrichedCheckIn[] }) {
         </div>
       </div>
 
+      {/* Paginação */}
       {table.getPageCount() > 1 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-border pt-4 mt-4">
           <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
@@ -247,6 +323,42 @@ export function HistoryTable({ data }: { data: EnrichedCheckIn[] }) {
           </div>
         </div>
       )}
+
+      {/* 🔥 MODAL DE CONFIRMAÇÃO (Shadcn UI) */}
+      <AlertDialog
+        open={!!ciToDelete}
+        onOpenChange={(open) => !open && setCiToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover Check-in?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação irá excluir o registro de presença de{" "}
+              {ciToDelete?.client_name}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleConfirmDelete();
+              }}
+              disabled={deleting}
+              className="bg-destructive hover:bg-destructive/90 text-white"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Excluindo...
+                </>
+              ) : (
+                "Confirmar Exclusão"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
