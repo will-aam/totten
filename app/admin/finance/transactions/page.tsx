@@ -26,9 +26,9 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -38,11 +38,13 @@ import {
   Pencil,
   Trash2,
   MoreVertical,
+  Repeat,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   getFullTransactions,
   deleteTransaction,
+  updateTransactionStatus, // 🔥 Importamos a nova Action rápida
 } from "@/app/actions/transactions";
 import { toast } from "sonner";
 import { TransactionStatus } from "@/types/finance";
@@ -68,9 +70,8 @@ export default function TransactionsPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Estados de Controle (Deletar e Editar)
-  const [deletingTransactionId, setDeletingTransactionId] = useState<
-    string | null
-  >(null);
+  const [deletingTx, setDeletingTx] = useState<any | null>(null);
+  const [deleteFuture, setDeleteFuture] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<any | null>(
     null,
   );
@@ -107,12 +108,16 @@ export default function TransactionsPage() {
   }, [loadTransactions]);
 
   const confirmDelete = async () => {
-    if (!deletingTransactionId) return;
+    if (!deletingTx) return;
     setIsDeletingLoading(true);
     try {
-      const res = await deleteTransaction(deletingTransactionId);
+      const res = await deleteTransaction(deletingTx.originalId, deleteFuture);
       if (res.success) {
-        toast.success("Movimentação excluída com sucesso!");
+        toast.success(
+          deleteFuture
+            ? "Parcelas excluídas com sucesso!"
+            : "Movimentação excluída com sucesso!",
+        );
         loadTransactions();
       } else {
         toast.error(res.error || "Erro ao excluir.");
@@ -121,7 +126,26 @@ export default function TransactionsPage() {
       toast.error("Erro na conexão.");
     } finally {
       setIsDeletingLoading(false);
-      setDeletingTransactionId(null);
+      setDeletingTx(null);
+      setDeleteFuture(false);
+    }
+  };
+
+  // 🔥 Nova Função: Troca Rápida de Status
+  const handleStatusChange = async (
+    id: string,
+    newStatus: TransactionStatus,
+  ) => {
+    try {
+      const res = await updateTransactionStatus(id, newStatus);
+      if (res.success) {
+        toast.success("Status atualizado com sucesso!");
+        loadTransactions(); // Recarrega para refletir a cor nova
+      } else {
+        toast.error(res.error || "Erro ao atualizar status.");
+      }
+    } catch (error) {
+      toast.error("Erro de conexão ao alterar status.");
     }
   };
 
@@ -153,38 +177,82 @@ export default function TransactionsPage() {
     OUTRO: "Outros",
   };
 
-  const StatusBadge = ({ status }: { status: TransactionStatus }) => {
-    switch (status) {
-      case "PAGO":
-        return (
+  // 🔥 COMPONENTE ATUALIZADO: Badge Inteligente
+  const StatusBadge = ({ transaction }: { transaction: any }) => {
+    const isManual = transaction.isManual;
+    const status = transaction.status as TransactionStatus;
+
+    let badgeClasses = "";
+    let label = "";
+
+    if (status === "PAGO") {
+      badgeClasses =
+        "bg-emerald-100/50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400";
+      label = "Pago";
+    } else if (status === "PENDENTE") {
+      badgeClasses =
+        "bg-amber-100/50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400";
+      label = "Pendente";
+    } else if (status === "ATRASADO") {
+      badgeClasses =
+        "bg-rose-100/50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400";
+      label = "Atrasado";
+    } else {
+      return null;
+    }
+
+    const baseClasses =
+      "text-[10px] px-1.5 py-0 h-4 transition-colors select-none";
+
+    // Se NÃO for editável (gerado pela agenda)
+    if (!isManual) {
+      return (
+        <Badge
+          variant="secondary"
+          className={cn(baseClasses, badgeClasses, "border-none")}
+        >
+          {label}
+        </Badge>
+      );
+    }
+
+    // Se FOR editável (manual) -> Ganha Borda e Menu de Clique
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger className="outline-none focus:outline-none">
           <Badge
             variant="secondary"
-            className="bg-emerald-100/50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 border-none text-[10px] px-1.5 py-0 h-4"
+            className={cn(
+              baseClasses,
+              badgeClasses,
+              // Dica visual de que é clicável (Borda sutil e hover)
+              "cursor-pointer border border-foreground/15 hover:border-foreground/30 hover:opacity-80",
+            )}
+          >
+            {label}
+          </Badge>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="end"
+          className="min-w-30 rounded-xl border border-border/40 shadow-sm p-1 bg-background"
+        >
+          <DropdownMenuItem
+            className="text-xs font-semibold justify-center cursor-pointer rounded-lg text-emerald-600 focus:bg-emerald-50 focus:text-emerald-700 dark:focus:bg-emerald-900/20 dark:text-emerald-400"
+            onClick={() => handleStatusChange(transaction.originalId, "PAGO")}
           >
             Pago
-          </Badge>
-        );
-      case "PENDENTE":
-        return (
-          <Badge
-            variant="secondary"
-            className="bg-amber-100/50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 border-none text-[10px] px-1.5 py-0 h-4"
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="text-xs font-semibold justify-center cursor-pointer rounded-lg text-amber-600 focus:bg-amber-50 focus:text-amber-700 dark:focus:bg-amber-900/20 dark:text-amber-400 mt-0.5"
+            onClick={() =>
+              handleStatusChange(transaction.originalId, "PENDENTE")
+            }
           >
             Pendente
-          </Badge>
-        );
-      case "ATRASADO":
-        return (
-          <Badge
-            variant="secondary"
-            className="bg-rose-100/50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400 border-none text-[10px] px-1.5 py-0 h-4"
-          >
-            Atrasado
-          </Badge>
-        );
-      default:
-        return null;
-    }
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
   };
 
   const filteredTransactions = transactions.filter(
@@ -196,7 +264,6 @@ export default function TransactionsPage() {
       <AdminHeader title="Extrato de Movimentações" />
 
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-5xl mx-auto w-full pb-24 md:pb-6">
-        {/* BARRA DE FILTROS SUPERIOR */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card p-4 rounded-2xl border border-border/50 shadow-sm">
           <div className="flex items-center gap-2 w-full md:w-auto">
             <Calendar className="h-5 w-5 text-muted-foreground hidden sm:block" />
@@ -219,7 +286,6 @@ export default function TransactionsPage() {
                 ))}
               </SelectContent>
             </Select>
-
             <Select
               value={selectedYear.toString()}
               onValueChange={(val) => setSelectedYear(Number(val))}
@@ -240,7 +306,6 @@ export default function TransactionsPage() {
               </SelectContent>
             </Select>
           </div>
-
           <div className="flex items-center gap-2 w-full md:w-auto">
             <Filter className="h-5 w-5 text-muted-foreground hidden sm:block" />
             <Select
@@ -271,7 +336,6 @@ export default function TransactionsPage() {
           </div>
         </div>
 
-        {/* LISTA DE TRANSAÇÕES */}
         <div className="flex flex-col w-full">
           {isLoading ? (
             <div className="flex justify-center items-center py-20">
@@ -294,7 +358,6 @@ export default function TransactionsPage() {
                     key={transaction.id}
                     className="flex items-center justify-between py-4 border-b border-border/50 last:border-0 hover:bg-muted/10 transition-colors px-1 sm:px-2 rounded-lg group"
                   >
-                    {/* LADO ESQUERDO: Ícone e Infos */}
                     <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 pr-2">
                       <div
                         className={cn(
@@ -312,12 +375,20 @@ export default function TransactionsPage() {
                       </div>
 
                       <div className="flex flex-col min-w-0">
-                        <span className="text-sm font-semibold text-foreground leading-tight mb-1 truncate">
+                        <span className="text-sm font-semibold text-foreground leading-tight mb-1 truncate flex items-center gap-2">
                           {transaction.description}
+                          {transaction.installment && (
+                            <Badge
+                              variant="secondary"
+                              className="text-[10px] h-4 px-1.5 py-0 flex items-center gap-1 bg-primary/10 text-primary hover:bg-primary/20 border-none"
+                            >
+                              <Repeat className="h-3 w-3" />
+                              {transaction.installment}
+                            </Badge>
+                          )}
                         </span>
                         <span className="text-xs text-muted-foreground leading-none flex flex-wrap items-center gap-1.5 mt-0.5">
                           <span>{formatDate(transaction.date)}</span>
-
                           {transaction.paymentMethod && (
                             <>
                               <span>•</span>
@@ -327,7 +398,6 @@ export default function TransactionsPage() {
                               </span>
                             </>
                           )}
-
                           {transaction.clientName && (
                             <>
                               <span>•</span>
@@ -340,9 +410,7 @@ export default function TransactionsPage() {
                       </div>
                     </div>
 
-                    {/* LADO DIREITO: Valores e Ações/Badge */}
                     <div className="flex items-center gap-3 sm:gap-4 shrink-0">
-                      {/* Valores e Status */}
                       <div className="flex flex-col items-end gap-1.5">
                         <span
                           className={cn(
@@ -355,10 +423,11 @@ export default function TransactionsPage() {
                           {isIncome ? "+" : "-"}{" "}
                           {formatCurrency(transaction.amount)}
                         </span>
-                        <StatusBadge status={transaction.status} />
+
+                        {/* 🔥 Injetamos a transação inteira no Badge Inteligente */}
+                        <StatusBadge transaction={transaction} />
                       </div>
 
-                      {/* HIERARQUIA DE AÇÕES: Menu de Três Pontinhos (Apenas Manuais) */}
                       <div className="flex items-center justify-end w-8 sm:w-10">
                         {transaction.isManual ? (
                           <DropdownMenu>
@@ -381,20 +450,13 @@ export default function TransactionsPage() {
                                   setEditingTransaction(transaction)
                                 }
                               >
-                                <Pencil className="h-4 w-4" />
-                                Editar
+                                <Pencil className="h-4 w-4" /> Editar
                               </DropdownMenuItem>
-
                               <DropdownMenuItem
                                 className="gap-2 cursor-pointer rounded-xl text-rose-500 focus:bg-rose-500/10 focus:text-rose-600 dark:focus:bg-rose-900/20 dark:focus:text-rose-400 font-medium transition-colors mt-0.5"
-                                onClick={() =>
-                                  setDeletingTransactionId(
-                                    transaction.originalId,
-                                  )
-                                }
+                                onClick={() => setDeletingTx(transaction)}
                               >
-                                <Trash2 className="h-4 w-4" />
-                                Excluir
+                                <Trash2 className="h-4 w-4" /> Excluir
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -411,19 +473,45 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO (Separado do loop para melhor performance) */}
+      {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO */}
       <AlertDialog
-        open={!!deletingTransactionId}
-        onOpenChange={(open) => !open && setDeletingTransactionId(null)}
+        open={!!deletingTx}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeletingTx(null);
+            setDeleteFuture(false);
+          }
+        }}
       >
         <AlertDialogContent className="rounded-3xl border-none shadow-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-xl">
               Excluir Movimentação?
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              Você está prestes a excluir esta transação. Essa ação atualizará o
-              seu caixa e não pode ser desfeita.
+            <AlertDialogDescription className="space-y-4">
+              <p>
+                Você está prestes a excluir esta transação. Essa ação atualizará
+                o seu caixa e não pode ser desfeita.
+              </p>
+
+              {deletingTx?.recurrence_id && (
+                <label className="flex items-start gap-3 p-4 border border-border/50 rounded-xl bg-muted/20 cursor-pointer hover:bg-muted/30 transition-colors">
+                  <Checkbox
+                    checked={deleteFuture}
+                    onCheckedChange={(checked) => setDeleteFuture(!!checked)}
+                    className="mt-1 shadow-none"
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold text-foreground">
+                      Excluir parcelas futuras também
+                    </span>
+                    <span className="text-xs text-muted-foreground mt-0.5">
+                      Esta transação e todas as repetições criadas após ela
+                      serão excluídas.
+                    </span>
+                  </div>
+                </label>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -451,7 +539,7 @@ export default function TransactionsPage() {
           isOpen={!!editingTransaction}
           onClose={() => {
             setEditingTransaction(null);
-            loadTransactions(); // Recarrega a lista após fechar o modal e salvar
+            loadTransactions();
           }}
           type={editingTransaction.type === "RECEITA" ? "INCOME" : "EXPENSE"}
           initialData={{
@@ -460,7 +548,8 @@ export default function TransactionsPage() {
             amount: editingTransaction.amount,
             date: editingTransaction.date,
             status: editingTransaction.status,
-            paymentMethodId: undefined, // Métodos de pgto precisam ser re-selecionados
+            paymentMethodId: undefined,
+            recurrence_id: editingTransaction.recurrence_id,
           }}
         />
       )}

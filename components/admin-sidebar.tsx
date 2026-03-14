@@ -85,6 +85,7 @@ const agendaSubItems = [
 
 const financeSubItems = [
   { title: "Dashboard", href: "/admin/finance/dashboard", active: true },
+  { title: "Extrato", href: "/admin/finance/transactions", active: true },
   {
     title: "Meios de Pagamento",
     href: "/admin/finance/payment-methods",
@@ -95,7 +96,6 @@ const financeSubItems = [
     href: "/admin/packages",
     active: true,
   },
-  { title: "Extrato", href: "/admin/finance/transactions", active: true },
   { title: "Relatórios", href: "/admin/finance/reports", active: true },
 ];
 

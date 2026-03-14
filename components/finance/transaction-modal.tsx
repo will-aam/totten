@@ -21,14 +21,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox"; // 🔥 Importamos o Checkbox
 import {
   TransactionType,
   TransactionStatus,
   OrganizationPaymentMethod,
 } from "@/types/finance";
-import { ArrowDownCircle, ArrowUpCircle, Loader2 } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, Loader2, Repeat } from "lucide-react";
 import { cn } from "@/lib/utils";
-// 🔥 Importamos a função de update também
 import {
   createTransaction,
   updateTransaction,
@@ -40,7 +41,6 @@ interface TransactionModalProps {
   isOpen: boolean;
   onClose: () => void;
   type: "INCOME" | "EXPENSE";
-  // 🔥 Adicionamos os dados iniciais opcionais para o modo de Edição
   initialData?: {
     id: string;
     description: string;
@@ -48,6 +48,7 @@ interface TransactionModalProps {
     date: string;
     status: TransactionStatus;
     paymentMethodId?: string;
+    recurrence_id?: string | null;
   } | null;
 }
 
@@ -66,6 +67,14 @@ export function TransactionModal({
   const [status, setStatus] = useState<TransactionStatus>("PAGO");
   const [paymentMethodId, setPaymentMethodId] = useState<string>("none");
 
+  // Estados para Criação de Recorrência
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [frequency, setFrequency] = useState("MONTHLY");
+  const [duration, setDuration] = useState<number | "">("");
+
+  // 🔥 Estado para Edição de Recorrência (Lote)
+  const [updateFuture, setUpdateFuture] = useState(false);
+
   const [paymentMethods, setPaymentMethods] = useState<
     OrganizationPaymentMethod[]
   >([]);
@@ -81,20 +90,24 @@ export function TransactionModal({
       };
       loadMethods();
 
-      // 🔥 Se for edição, preenche com os dados que vieram, senão zera tudo.
       if (initialData) {
         setDescription(initialData.description);
         setAmount(initialData.amount);
-        // Garante que a data vem no formato YYYY-MM-DD para o input type="date"
         setDate(initialData.date.split("T")[0]);
         setStatus(initialData.status);
         setPaymentMethodId(initialData.paymentMethodId || "none");
+        setIsRecurring(false);
+        setUpdateFuture(false); // Reseta ao abrir
       } else {
         setDescription("");
         setAmount("");
         setDate(new Date().toISOString().split("T")[0]);
         setStatus("PAGO");
         setPaymentMethodId("none");
+        setIsRecurring(false);
+        setFrequency("MONTHLY");
+        setDuration("");
+        setUpdateFuture(false);
       }
     }
   }, [isOpen, initialData]);
@@ -102,8 +115,17 @@ export function TransactionModal({
   const handleSave = () => {
     if (!description || !amount || !date) return;
 
+    if (isRecurring && (!duration || Number(duration) <= 1)) {
+      toast({
+        title: "Erro",
+        description: "Se for repetir, informe ao menos 2 vezes.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     startTransition(async () => {
-      const payload = {
+      const payload: any = {
         type: isIncome
           ? ("RECEITA" as TransactionType)
           : ("DESPESA" as TransactionType),
@@ -115,17 +137,31 @@ export function TransactionModal({
           paymentMethodId === "none" ? undefined : paymentMethodId,
       };
 
-      // 🔥 Se tiver ID, atualiza. Se não, cria.
+      if (isRecurring) {
+        payload.isRecurring = true;
+        payload.frequency = frequency;
+        payload.duration = Number(duration);
+      }
+
+      // 🔥 Passamos a flag de atualização pro Backend
+      if (isEditing) {
+        payload.updateFuture = updateFuture;
+      }
+
       const result = isEditing
-        ? await updateTransaction(initialData.id, payload)
+        ? await updateTransaction(initialData!.id, payload)
         : await createTransaction(payload);
 
       if (result.success) {
         toast({
           title: "Sucesso",
           description: isEditing
-            ? "Movimentação atualizada!"
-            : "Movimentação registrada!",
+            ? updateFuture
+              ? "Lote atualizado!"
+              : "Atualizada!"
+            : isRecurring
+              ? "Lançamentos programados!"
+              : "Registrada!",
         });
         onClose();
       } else {
@@ -177,10 +213,10 @@ export function TransactionModal({
                 </SheetTitle>
                 <SheetDescription>
                   {isEditing
-                    ? "Atualize os dados desta movimentação."
+                    ? "Atualize os dados."
                     : isIncome
-                      ? "Registe uma nova entrada financeira."
-                      : "Registe uma nova saída ou custo."}
+                      ? "Registe uma entrada."
+                      : "Registe uma saída ou custo."}
                 </SheetDescription>
               </div>
             </div>
@@ -224,7 +260,9 @@ export function TransactionModal({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 disabled={isPending}
-                placeholder={isIncome ? "Ex: Venda de Produto" : "Ex: Aluguel"}
+                placeholder={
+                  isIncome ? "Ex: Venda de Produto" : "Ex: Conta de Luz"
+                }
                 className="h-12 rounded-xl bg-muted/30 border-none"
               />
             </div>
@@ -252,7 +290,7 @@ export function TransactionModal({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl">
-                    <SelectItem value="PAGO">Pago / Realizado</SelectItem>
+                    <SelectItem value="PAGO">Pago</SelectItem>
                     <SelectItem value="PENDENTE">Pendente</SelectItem>
                   </SelectContent>
                 </Select>
@@ -270,9 +308,7 @@ export function TransactionModal({
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
-                  <SelectItem value="none">
-                    Nenhum / Dinheiro em mãos
-                  </SelectItem>
+                  <SelectItem value="none">---</SelectItem>
                   {paymentMethods
                     .filter((pm) => pm.isActive)
                     .map((pm) => (
@@ -283,6 +319,94 @@ export function TransactionModal({
                 </SelectContent>
               </Select>
             </div>
+
+            {/* BLOCO DE RECORRÊNCIA (CRIAÇÃO) */}
+            {!isEditing && (
+              <div className="pt-2 border-t border-border/50">
+                <div className="flex items-center justify-between bg-muted/20 p-4 rounded-xl border border-border/50">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-background rounded-full border shadow-sm">
+                      <Repeat className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex flex-col">
+                      <Label className="text-base font-semibold cursor-pointer">
+                        Repetir movimentação
+                      </Label>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={isRecurring}
+                    onCheckedChange={setIsRecurring}
+                    disabled={isPending}
+                  />
+                </div>
+
+                {isRecurring && (
+                  <div className="grid grid-cols-2 gap-4 mt-4 p-4 bg-muted/10 rounded-xl border border-border/30">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Intervalo</Label>
+                      <Select
+                        value={frequency}
+                        onValueChange={setFrequency}
+                        disabled={isPending}
+                      >
+                        <SelectTrigger className="h-10 rounded-lg bg-background border-border/50">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="MONTHLY">Mensal</SelectItem>
+                          <SelectItem value="WEEKLY">Semanal</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs">Repetir quantas vezes?</Label>
+                      <Input
+                        type="number"
+                        min="2"
+                        max="60"
+                        value={duration}
+                        onChange={(e) =>
+                          setDuration(
+                            e.target.value === "" ? "" : Number(e.target.value),
+                          )
+                        }
+                        disabled={isPending}
+                        placeholder="Ex: 12"
+                        className={cn(
+                          "h-10 rounded-lg bg-background border-border/50",
+                          hideNumberArrows,
+                        )}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 🔥 BLOCO DE EDIÇÃO EM LOTE (Só mostra se for edição de conta recorrente) */}
+            {isEditing && initialData?.recurrence_id && (
+              <div className="pt-2 border-t border-border/50">
+                <label className="flex items-start gap-3 p-4 border border-border/50 rounded-xl bg-muted/20 cursor-pointer hover:bg-muted/30 transition-colors">
+                  <Checkbox
+                    checked={updateFuture}
+                    onCheckedChange={(checked) => setUpdateFuture(!!checked)}
+                    disabled={isPending}
+                    className="mt-1 shadow-none"
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold text-foreground">
+                      Aplicar nas parcelas futuras
+                    </span>
+                    <span className="text-xs text-muted-foreground mt-0.5">
+                      As alterações de nome e valor serão aplicadas nas
+                      repetições seguintes a esta.
+                    </span>
+                  </div>
+                </label>
+              </div>
+            )}
           </div>
         </div>
 
@@ -298,10 +422,10 @@ export function TransactionModal({
             </Button>
             <Button
               className={cn(
-                "flex-1 h-12 rounded-xl text-white font-bold",
+                "flex-1 h-12 rounded-xl font-bold",
                 isIncome
-                  ? "bg-emerald-600 hover:bg-emerald-700"
-                  : "bg-rose-600 hover:bg-rose-700",
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                  : "bg-rose-600 hover:bg-rose-700 text-white",
               )}
               onClick={handleSave}
               disabled={isSaveDisabled}
@@ -310,6 +434,8 @@ export function TransactionModal({
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : isEditing ? (
                 "Salvar Alterações"
+              ) : isRecurring ? (
+                "Programar Lançamentos"
               ) : (
                 "Salvar"
               )}

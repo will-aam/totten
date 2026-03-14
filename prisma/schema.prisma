@@ -309,6 +309,10 @@ model Transaction {
   date              DateTime
   status            TransactionStatus @default(PAGO)
   
+  // 🔥 NOVOS CAMPOS PARA RECORRÊNCIA E PARCELAMENTO (Opcionais)
+  recurrence_id     String?           // ID único que agrupa todas as parcelas da mesma conta
+  installment       String?           // Ex: "1/12", "2/12" ou "Fixo" para contínuas
+
   // Relações opcionais (Para sabermos de onde veio o dinheiro)
   client_id         String?
   payment_method_id String?
@@ -327,5 +331,6 @@ model Transaction {
   organization      Organization               @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@index([organization_id, date])
+  @@index([recurrence_id]) // 🔥 Novo índice: deixa a busca por parcelas muito mais rápida
   @@map("transactions")
 }

@@ -23,7 +23,7 @@ async function getAdminOrg() {
   return admin.organizations[0].id;
 }
 
-// --- 1. CRIAR TRANSAÇÃO MANUAL ---
+// --- 1. CRIAR TRANSAÇÃO MANUAL (AGORA COM SUPORTE A RECORRÊNCIA) ---
 export async function createTransaction(data: {
   type: TransactionType;
   description: string;
@@ -31,25 +31,58 @@ export async function createTransaction(data: {
   date: string;
   status: TransactionStatus;
   paymentMethodId?: string;
+  isRecurring?: boolean;
+  frequency?: string;
+  duration?: number;
 }) {
   try {
     const organizationId = await getAdminOrg();
 
-    const transaction = await prisma.transaction.create({
-      data: {
-        type: data.type,
-        description: data.description,
-        amount: data.amount,
-        date: new Date(data.date + "T12:00:00Z"),
-        status: data.status,
-        payment_method_id: data.paymentMethodId || null,
-        organization_id: organizationId,
-      },
-    });
+    if (data.isRecurring && data.duration && data.duration > 1) {
+      const recurrenceId = `rec_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+      const transactionsToCreate = [];
+
+      for (let i = 0; i < data.duration; i++) {
+        const txDate = new Date(data.date + "T12:00:00Z");
+        if (data.frequency === "WEEKLY") {
+          txDate.setDate(txDate.getDate() + i * 7);
+        } else {
+          txDate.setMonth(txDate.getMonth() + i);
+        }
+
+        transactionsToCreate.push({
+          type: data.type,
+          description: data.description,
+          amount: data.amount,
+          date: txDate,
+          status: i === 0 ? data.status : "PENDENTE",
+          payment_method_id: data.paymentMethodId || null,
+          organization_id: organizationId,
+          recurrence_id: recurrenceId,
+          installment: `${i + 1}/${data.duration}`,
+        });
+      }
+
+      await prisma.transaction.createMany({
+        data: transactionsToCreate,
+      });
+    } else {
+      await prisma.transaction.create({
+        data: {
+          type: data.type,
+          description: data.description,
+          amount: data.amount,
+          date: new Date(data.date + "T12:00:00Z"),
+          status: data.status,
+          payment_method_id: data.paymentMethodId || null,
+          organization_id: organizationId,
+        },
+      });
+    }
 
     revalidatePath("/admin/finance/dashboard");
     revalidatePath("/admin/finance/transactions");
-    return { success: true, id: transaction.id };
+    return { success: true };
   } catch (error) {
     console.error("Erro ao criar transação:", error);
     return { success: false, error: "Falha ao registrar movimentação." };
@@ -66,13 +99,22 @@ export async function updateTransaction(
     date: string;
     status: TransactionStatus;
     paymentMethodId?: string;
+    updateFuture?: boolean; // 🔥 Habilitamos a edição em lote
   },
 ) {
   try {
     const organizationId = await getAdminOrg();
 
-    await prisma.transaction.update({
+    // 1. Acha a transação atual para saber de onde partir
+    const currentTx = await prisma.transaction.findUnique({
       where: { id, organization_id: organizationId },
+    });
+
+    if (!currentTx) throw new Error("Transação não encontrada.");
+
+    // 2. Atualiza a transação que o usuário clicou (Atualiza tudo)
+    await prisma.transaction.update({
+      where: { id },
       data: {
         type: data.type,
         description: data.description,
@@ -82,6 +124,23 @@ export async function updateTransaction(
         payment_method_id: data.paymentMethodId || null,
       },
     });
+
+    // 3. Lógica Mágica: Se marcou para atualizar o futuro
+    if (data.updateFuture && currentTx.recurrence_id) {
+      await prisma.transaction.updateMany({
+        where: {
+          organization_id: organizationId,
+          recurrence_id: currentTx.recurrence_id,
+          date: { gt: currentTx.date }, // Apenas as parcelas com data MAIOR que a atual
+        },
+        data: {
+          description: data.description,
+          amount: data.amount,
+          payment_method_id: data.paymentMethodId || null,
+          // Atenção: NÃO mexemos na "date" e nem no "status" das futuras!
+        },
+      });
+    }
 
     revalidatePath("/admin/finance/dashboard");
     revalidatePath("/admin/finance/transactions");
@@ -93,13 +152,31 @@ export async function updateTransaction(
 }
 
 // --- 3. EXCLUIR TRANSAÇÃO MANUAL ---
-export async function deleteTransaction(id: string) {
+export async function deleteTransaction(id: string, deleteFuture?: boolean) {
   try {
     const organizationId = await getAdminOrg();
 
-    await prisma.transaction.delete({
+    const currentTx = await prisma.transaction.findUnique({
       where: { id, organization_id: organizationId },
     });
+
+    if (!currentTx) throw new Error("Transação não encontrada.");
+
+    // Se pediu para apagar o futuro também
+    if (deleteFuture && currentTx.recurrence_id) {
+      await prisma.transaction.deleteMany({
+        where: {
+          organization_id: organizationId,
+          recurrence_id: currentTx.recurrence_id,
+          date: { gte: currentTx.date }, // Deleta a atual (gte) e as maiores que ela (futuras)
+        },
+      });
+    } else {
+      // Deleta apenas a selecionada
+      await prisma.transaction.delete({
+        where: { id },
+      });
+    }
 
     revalidatePath("/admin/finance/dashboard");
     revalidatePath("/admin/finance/transactions");
@@ -185,6 +262,8 @@ export async function getFullTransactions(month: number, year: number) {
       status: t.status,
       clientName: t.client?.name,
       paymentMethod: t.payment_method?.type || undefined,
+      recurrence_id: t.recurrence_id,
+      installment: t.installment,
     }));
 
     // Retorna tudo ordenado (mais recentes primeiro)
@@ -194,5 +273,27 @@ export async function getFullTransactions(month: number, year: number) {
   } catch (error) {
     console.error("Erro ao buscar extrato:", error);
     return [];
+  }
+}
+// --- 5. ATUALIZAÇÃO RÁPIDA DE STATUS (INLINE) ---
+export async function updateTransactionStatus(
+  id: string,
+  status: TransactionStatus,
+) {
+  try {
+    const organizationId = await getAdminOrg();
+
+    // Atualiza apenas o status da transação específica
+    await prisma.transaction.update({
+      where: { id, organization_id: organizationId },
+      data: { status },
+    });
+
+    revalidatePath("/admin/finance/dashboard");
+    revalidatePath("/admin/finance/transactions");
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao atualizar status:", error);
+    return { success: false, error: "Falha ao atualizar o status." };
   }
 }
