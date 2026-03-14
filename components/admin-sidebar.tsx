@@ -82,19 +82,19 @@ const agendaSubItems = [
 ];
 
 const financeSubItems = [
-  {
-    title: "Pacotes e Planos",
-    href: "/admin/packages",
-    active: true,
-  },
   { title: "Dashboard", href: "/admin/finance/dashboard", active: true },
-  { title: "Extrato", href: "/admin/finance/transactions", active: true },
   {
     title: "Meios de Pagamento",
     href: "/admin/finance/payment-methods",
     active: true,
   },
-  { title: "Relatórios", href: "#", active: false },
+  {
+    title: "Pacotes e Planos",
+    href: "/admin/packages",
+    active: true,
+  },
+  { title: "Extrato", href: "/admin/finance/transactions", active: true },
+  { title: "Relatórios", href: "/admin/finance/reports", active: true },
 ];
 
 export function AdminSidebar() {

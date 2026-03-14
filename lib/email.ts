@@ -86,3 +86,74 @@ export async function sendPasswordResetEmail(
 export function generateRandomPassword() {
   return crypto.randomBytes(8).toString("base64").slice(0, 10);
 }
+export async function sendClosingReportEmail(
+  email: string,
+  monthStr: string,
+  yearStr: string,
+  data: {
+    receitas: number;
+    despesas: number;
+    saldo: number;
+    agendamentos: number;
+  },
+) {
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
+
+  const colorSaldo = data.saldo >= 0 ? "#10b981" : "#ef4444"; // Verde se positivo, Vermelho se negativo
+
+  try {
+    await resend.emails.send({
+      from: "Totten <noreply@totten.com.br>", // Dica: use o e-mail verificado no Resend
+      to: email,
+      subject: `📊 Fechamento Mensal - ${monthStr}/${yearStr}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e4e4e7; border-radius: 12px;">
+          <h1 style="color: #18181b; text-align: center;">Fechamento Mensal</h1>
+          <p style="text-align: center; color: #71717a; font-size: 16px;">Resumo financeiro de ${monthStr} de ${yearStr}</p>
+          
+          <div style="background: #f4f4f5; padding: 24px; border-radius: 12px; margin: 24px 0;">
+            <table style="width: 100%; font-size: 16px; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 12px 0; color: #71717a; border-bottom: 1px solid #e4e4e7;">Total de Receitas:</td>
+                <td style="padding: 12px 0; text-align: right; color: #10b981; font-weight: bold; border-bottom: 1px solid #e4e4e7;">
+                  ${formatCurrency(data.receitas)}
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 12px 0; color: #71717a; border-bottom: 1px solid #e4e4e7;">Total de Despesas:</td>
+                <td style="padding: 12px 0; text-align: right; color: #ef4444; font-weight: bold; border-bottom: 1px solid #e4e4e7;">
+                  - ${formatCurrency(data.despesas)}
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 12px 0; color: #71717a;">Atendimentos (Agenda):</td>
+                <td style="padding: 12px 0; text-align: right; font-weight: bold;">
+                  ${data.agendamentos}
+                </td>
+              </tr>
+            </table>
+            
+            <div style="background: white; border-radius: 8px; padding: 16px; margin-top: 24px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+              <p style="color: #71717a; font-size: 14px; margin: 0 0 4px 0;">Saldo do Mês</p>
+              <h2 style="color: ${colorSaldo}; margin: 0; font-size: 28px;">${formatCurrency(data.saldo)}</h2>
+            </div>
+          </div>
+          
+          <p style="color: #a1a1aa; font-size: 12px; text-align: center; margin-top: 30px;">
+            Este é um e-mail automático gerado pelo seu sistema Totten.<br>
+            Você pode acessar o painel completo para ver os detalhes de cada transação.
+          </p>
+        </div>
+      `,
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao enviar relatório por e-mail:", error);
+    return { success: false, error };
+  }
+}
