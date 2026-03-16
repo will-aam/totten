@@ -53,9 +53,14 @@ export async function GET(req: NextRequest) {
 
     const mapped = appointments.map((appt) => {
       const date = new Date(appt.date_time);
-      const hours = String(date.getHours()).padStart(2, "0");
-      const minutes = String(date.getMinutes()).padStart(2, "0");
-      const time = `${hours}:${minutes}`;
+      
+      // FORÇANDO O FUSO HORÁRIO DO BRASIL PARA EXIBIR A HORA CORRETA
+      const timeFormatter = new Intl.DateTimeFormat('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      const time = timeFormatter.format(date);
 
       const duration = Number(appt.service.duration ?? 60);
 
