@@ -103,7 +103,8 @@ export function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
-  const { setOpenMobile } = useSidebar();
+  // 🔥 isMobile extraído do hook
+  const { setOpenMobile, isMobile } = useSidebar();
   const [clinicName, setClinicName] = useState("Totten");
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -273,60 +274,88 @@ export function AdminSidebar() {
               </Collapsible>
 
               {/* Financeiro */}
-              <Collapsible
-                asChild
-                className="group/collapsible w-full"
-                open={openModule === "finance"}
-                onOpenChange={(open) => setOpenModule(open ? "finance" : null)}
-              >
+              {isMobile ? (
+                // NO MOBILE: É apenas um botão direto para o Dashboard
                 <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton className="hover:bg-muted/50">
-                      <div className="flex items-center justify-between w-full">
-                        <div className="flex items-center gap-2">
-                          <Wallet className="h-4 w-4" />
-                          <span>Financeiro</span>
-                        </div>
-                        <ChevronRight className="h-3 w-3 text-muted-foreground/50 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith("/admin/finance")}
+                    className="hover:bg-muted/50"
+                  >
+                    <Link
+                      href="/admin/finance/dashboard"
+                      onClick={() => setOpenMobile(false)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Wallet className="h-4 w-4" />
+                        <span>Financeiro</span>
                       </div>
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub className="border-l border-border ml-4 mt-1">
-                      {financeSubItems.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton
-                            asChild={subItem.active}
-                            isActive={
-                              pathname.startsWith(subItem.href) &&
-                              subItem.active
-                            }
-                            className={cn(
-                              "py-2",
-                              !subItem.active &&
-                                "opacity-50 cursor-not-allowed",
-                            )}
-                          >
-                            {subItem.active ? (
-                              <Link
-                                href={subItem.href}
-                                onClick={() => setOpenMobile(false)}
-                              >
-                                <span className="text-xs">{subItem.title}</span>
-                              </Link>
-                            ) : (
-                              <div className="flex items-center justify-between w-full">
-                                <span className="text-xs">{subItem.title}</span>
-                                <Lock className="h-2.5 w-2.5 opacity-50" />
-                              </div>
-                            )}
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
+                    </Link>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
-              </Collapsible>
+              ) : (
+                // NO DESKTOP: Continua sendo o Collapsible (gaveta expansível)
+                <Collapsible
+                  asChild
+                  className="group/collapsible w-full"
+                  open={openModule === "finance"}
+                  onOpenChange={(open) =>
+                    setOpenModule(open ? "finance" : null)
+                  }
+                >
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton className="hover:bg-muted/50">
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center gap-2">
+                            <Wallet className="h-4 w-4" />
+                            <span>Financeiro</span>
+                          </div>
+                          <ChevronRight className="h-3 w-3 text-muted-foreground/50 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                        </div>
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub className="border-l border-border ml-4 mt-1">
+                        {financeSubItems.map((subItem) => (
+                          <SidebarMenuSubItem key={subItem.title}>
+                            <SidebarMenuSubButton
+                              asChild={subItem.active}
+                              isActive={
+                                pathname.startsWith(subItem.href) &&
+                                subItem.active
+                              }
+                              className={cn(
+                                "py-2",
+                                !subItem.active &&
+                                  "opacity-50 cursor-not-allowed",
+                              )}
+                            >
+                              {subItem.active ? (
+                                <Link
+                                  href={subItem.href}
+                                  onClick={() => setOpenMobile(false)}
+                                >
+                                  <span className="text-xs">
+                                    {subItem.title}
+                                  </span>
+                                </Link>
+                              ) : (
+                                <div className="flex items-center justify-between w-full">
+                                  <span className="text-xs">
+                                    {subItem.title}
+                                  </span>
+                                  <Lock className="h-2.5 w-2.5 opacity-50" />
+                                </div>
+                              )}
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
