@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { Bird, ArrowLeft, Repeat, Check, X } from "lucide-react";
+import { ArrowLeft, Repeat, Check, X } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 const initialState: ActionState = { error: "" };
@@ -123,9 +123,6 @@ export default function RegisterPage() {
 
       <div className="w-full max-w-xl mt-8 sm:mt-0">
         <div className="text-center mb-10">
-          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <Bird className="h-8 w-8" />
-          </div>
           <h1 className="font-serif text-3xl sm:text-4xl text-foreground mb-3">
             Totten
           </h1>

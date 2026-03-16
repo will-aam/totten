@@ -1,11 +1,12 @@
+// components/admin-sidebar.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
+import Image from "next/image"; // 🔥 Importação para usar a logo
 import {
-  Bird,
   LayoutDashboard,
   Users,
   ClipboardList,
@@ -23,7 +24,7 @@ import {
   Link2,
   ShelvingUnit,
   Loader2,
-} from "lucide-react";
+} from "lucide-react"; // Bird removido daqui
 import {
   Sidebar,
   SidebarContent,
@@ -47,7 +48,7 @@ import {
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 
-// Menu principal
+// ... (navItems, agendaSubItems e financeSubItems permanecem iguais)
 const navItems = [
   {
     title: "Dashboard",
@@ -70,11 +71,10 @@ const navItems = [
     active: true,
   },
   { title: "Vouchers", href: "/admin/vouchers", icon: Award, active: true },
-  { title: "Estoque", href: "#", icon: ShelvingUnit, active: false }, // 🔒 BLOQUEADO
-  { title: "Link na Bio", href: "/admin/link-bio", icon: Link2, active: false }, // 🔒 BLOQUEADO
+  { title: "Estoque", href: "#", icon: ShelvingUnit, active: false },
+  { title: "Link na Bio", href: "/admin/link-bio", icon: Link2, active: false },
 ];
 
-// Sub-itens da Agenda
 const agendaSubItems = [
   { title: "Agendamentos Recorrentes", href: "/admin/recurring", active: true },
   { title: "Confirmações e Lembretes", href: "/admin/reminders", active: true },
@@ -122,7 +122,7 @@ export function AdminSidebar() {
         const res = await fetch("/api/settings/public");
         if (res.ok) {
           const data = await res.json();
-          setClinicName(data.tradeName);
+          setClinicName(data.tradeName || "Totten");
         }
       } catch (error) {
         console.error("Erro ao buscar configurações:", error);
@@ -153,15 +153,23 @@ export function AdminSidebar() {
           className="flex items-center gap-3"
           onClick={() => setOpenMobile(false)}
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-            <Bird className="h-5 w-5" />
+          {/* 🔥 Container limpo, sem sombras ou fundos coloridos */}
+          <div className="flex h-9 w-9 items-center justify-center shrink-0">
+            <Image
+              src="/totten.png"
+              alt="Logo"
+              width={36}
+              height={36}
+              className="rounded-full object-cover" // Apenas o corte circular na imagem
+              priority
+            />
           </div>
           {loading ? (
             <div className="flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin text-primary" />
             </div>
           ) : (
-            <h2 className="font-inter text-xl font-bold text-sidebar-foreground tracking-tight">
+            <h2 className="font-inter text-xl font-bold text-sidebar-foreground tracking-tight truncate">
               {clinicName}
             </h2>
           )}
@@ -215,7 +223,6 @@ export function AdminSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {/* Agenda */}
               <Collapsible
                 asChild
                 className="group/collapsible w-full"
@@ -271,7 +278,6 @@ export function AdminSidebar() {
                 </SidebarMenuItem>
               </Collapsible>
 
-              {/* Financeiro */}
               {isMobile ? (
                 <SidebarMenuItem>
                   <SidebarMenuButton

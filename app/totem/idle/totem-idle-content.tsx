@@ -4,8 +4,9 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { useRouter } from "next/navigation"; // 🔥 Removido useSearchParams
-import { Bird, Lock, LayoutDashboard } from "lucide-react";
+import { useRouter } from "next/navigation";
+import Image from "next/image"; // 🔥 Importação para usar as imagens da pasta public
+import { Lock, LayoutDashboard } from "lucide-react"; // Removido o Bird
 
 export default function TotemIdleContent() {
   const { data: session, status } = useSession();
@@ -17,7 +18,6 @@ export default function TotemIdleContent() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        // 🔥 Removida a dependência da slug na URL
         const res = await fetch("/api/settings/public");
         if (res.ok) {
           const data = await res.json();
@@ -30,14 +30,12 @@ export default function TotemIdleContent() {
       }
     };
 
-    // Só busca se a sessão já terminou de carregar
     if (status !== "loading") {
       fetchSettings();
     }
   }, [status]);
 
   const handleCheckInClick = (e: React.MouseEvent) => {
-    // 🔥 Agora a validação é baseada puramente na sessão do tablet
     if (status !== "authenticated") {
       e.preventDefault();
       router.push("/totem/error?type=ORG_NOT_FOUND");
@@ -58,9 +56,14 @@ export default function TotemIdleContent() {
 
       <div className="flex flex-col items-center gap-8 w-full max-w-sm animate-in fade-in zoom-in duration-700">
         <div className="flex flex-col items-center gap-4">
-          <div className="flex h-20 w-20 md:h-24 md:w-24 items-center justify-center rounded-full bg-primary">
-            <Bird className="h-10 w-10 md:h-12 md:w-12 text-primary-foreground" />
-          </div>
+          {/* 🔥 Logo com corte circular perfeito, sem fundo/borda */}
+          <Image
+            src="/totten.png"
+            alt="Totten Logo"
+            width={128} // Mantendo o tamanho definido anteriormente
+            height={128}
+            className="rounded-full overflow-hidden aspect-square h-24 w-24 md:h-32 md:w-32 object-cover animate-pulse-slow" // 🔥 Classes cruciais: rounded-full, overflow-hidden, aspect-square, object-cover
+          />
 
           <div className="space-y-1 text-center min-h-15 flex items-center justify-center w-full">
             {loading || status === "loading" ? (
@@ -75,7 +78,6 @@ export default function TotemIdleContent() {
 
         <div className="w-full px-4 pt-4">
           <Link
-            // 🔥 URL limpa, sem repassar slug
             href="/totem/check-in"
             onClick={handleCheckInClick}
             className="flex h-20 w-full items-center justify-center rounded-2xl bg-primary text-xl font-bold text-primary-foreground hover:scale-[1.02] active:scale-95 transition-transform md:h-24 md:text-2xl shadow-lg"

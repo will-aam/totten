@@ -5,7 +5,8 @@ import { useState, useEffect, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Bird, ArrowLeft } from "lucide-react";
+import Image from "next/image"; // 🔥 Importação para a logo
+import { ArrowLeft, Eye, EyeOff } from "lucide-react"; // Removido o Bird
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +21,7 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const verified = searchParams.get("verified");
   const error = searchParams.get("error");
@@ -69,7 +71,6 @@ function LoginForm() {
 
   return (
     <div className="flex min-h-svh flex-col bg-background p-4 sm:p-8 overflow-hidden">
-      {/* 🔥 BOTÃO DE VOLTAR - Mesma lógica do Check-in */}
       <Link
         href="/totem/idle"
         className="absolute top-4 left-4 sm:static sm:self-start flex w-fit items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group z-10"
@@ -80,12 +81,18 @@ function LoginForm() {
         <span className="hidden sm:inline font-medium">Voltar</span>
       </Link>
 
-      {/* 🔥 CONTEÚDO CENTRALIZADO - O flex-1 segura a altura e impede scroll inútil */}
       <div className="flex flex-1 items-center justify-center w-full">
         <div className="w-full max-w-sm">
           <div className="text-center mb-10">
-            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <Bird className="h-8 w-8" />
+            <div className="flex flex-col items-center gap-4">
+              <Image
+                src="/totten.png"
+                alt="Totten Logo"
+                width={80}
+                height={80}
+                className="rounded-full overflow-hidden aspect-square h-24 w-24 md:h-32 md:w-32 object-cover animate-pulse-slow"
+                priority
+              />
             </div>
             <h1 className="font-serif text-3xl sm:text-4xl text-foreground mb-3">
               Totten
@@ -124,16 +131,30 @@ function LoginForm() {
                   Esqueceu a senha?
                 </Link>
               </div>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Sua senha"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={loading}
-                className="h-12 sm:h-11 bg-muted/50 border-transparent hover:border-border focus-visible:bg-transparent text-base sm:text-sm"
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Sua senha"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={loading}
+                  className="h-12 sm:h-11 bg-muted/50 border-transparent hover:border-border focus-visible:bg-transparent text-base sm:text-sm pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
             </div>
 
             <div className="pt-2">
