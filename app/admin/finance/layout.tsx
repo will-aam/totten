@@ -19,7 +19,7 @@ const mobileNavItems = [
     label: "Pagamentos",
     icon: CreditCard,
   },
-  { id: "/admin/packages", label: "Pacotes", icon: Package }, // Ajustado para a sua rota atual!
+  { id: "/admin/finance/packages", label: "Pacotes", icon: Package },
   { id: "/admin/finance/reports", label: "Relatórios", icon: FileText },
 ];
 

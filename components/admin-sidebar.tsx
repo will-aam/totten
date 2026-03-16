@@ -93,7 +93,7 @@ const financeSubItems = [
   },
   {
     title: "Pacotes e Planos",
-    href: "/admin/packages",
+    href: "/admin/finance/packages",
     active: true,
   },
   { title: "Relatórios", href: "/admin/finance/reports", active: true },
