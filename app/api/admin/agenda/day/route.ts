@@ -23,11 +23,9 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const [year, month, day] = dateParam.split("-").map(Number);
-    const target = new Date(year, month - 1, day);
-
-    const from = startOfDay(target);
-    const to = endOfDay(target);
+    // FORÇANDO OS LIMITES DO DIA PARA O FUSO DO BRASIL (UTC-3)
+    const from = new Date(`${dateParam}T00:00:00.000-03:00`);
+    const to = new Date(`${dateParam}T23:59:59.999-03:00`);
 
     const appointments = await prisma.appointment.findMany({
       where: {
@@ -53,9 +51,14 @@ export async function GET(req: NextRequest) {
 
     const mapped = appointments.map((appt) => {
       const date = new Date(appt.date_time);
-      const hours = String(date.getHours()).padStart(2, "0");
-      const minutes = String(date.getMinutes()).padStart(2, "0");
-      const time = `${hours}:${minutes}`;
+      
+      // FORÇANDO O FUSO HORÁRIO DO BRASIL PARA EXIBIR A HORA CORRETA
+      const timeFormatter = new Intl.DateTimeFormat('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      const time = timeFormatter.format(date);
 
       const duration = Number(appt.service.duration ?? 60);
 
