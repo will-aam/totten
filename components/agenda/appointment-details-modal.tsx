@@ -36,7 +36,6 @@ import {
   Clock,
   CalendarDays,
   User,
-  CalendarX2,
   Trash2,
   Save,
   Loader2,
@@ -50,7 +49,6 @@ import {
   deleteAppointment,
 } from "@/app/actions/appointments";
 import { ThermalReceipt } from "./thermal-receipt";
-// 🔥 Importamos a action para buscar os meios de pagamento e a tipagem
 import { getPaymentMethods } from "@/app/actions/payment-methods";
 import { OrganizationPaymentMethod } from "@/types/finance";
 
@@ -74,7 +72,6 @@ export function AppointmentDetailsModal({
   const [isSaving, setIsSaving] = useState(false);
   const [settings, setSettings] = useState<any>(null);
 
-  // 🔥 Estado para guardar os meios de pagamento cadastrados
   const [paymentMethods, setPaymentMethods] = useState<
     OrganizationPaymentMethod[]
   >([]);
@@ -95,7 +92,6 @@ export function AppointmentDetailsModal({
           setSettings(data);
         }
 
-        // 🔥 Busca os meios de pagamento reais do banco
         const methodsData = await getPaymentMethods();
         setPaymentMethods(methodsData as OrganizationPaymentMethod[]);
       } catch (e) {
@@ -112,7 +108,6 @@ export function AppointmentDetailsModal({
         dbStatus === "pendente" ? "a_confirmar" : dbStatus || "a_confirmar",
       );
 
-      // 🔥 Ajustado para usar o valor exato que vem do banco (sem jogar pra minúsculo)
       const currentPayment =
         appointment.paymentMethod || appointment.payment_method || "nenhum";
       setPayment(currentPayment);
@@ -137,7 +132,7 @@ export function AppointmentDetailsModal({
         appointment.id,
         {
           status: targetStatus,
-          paymentMethod: payment === "nenhum" ? null : payment, // 🔥 Manda null se for nenhum
+          paymentMethod: payment === "nenhum" ? null : payment,
           observations: obs,
           hasCharge: targetStatus === "cancelado" ? false : hasCharge,
         },
@@ -190,8 +185,8 @@ export function AppointmentDetailsModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          "w-[95vw] sm:max-w-125 p-4 sm:p-6 rounded-3xl flex flex-col max-h-[90dvh] [&>button]:hidden border-none shadow-2xl",
-          hasCharge ? "ring-2 ring-destructive shadow-destructive/20" : "",
+          "w-[95vw] sm:max-w-125 p-4 sm:p-6 rounded-3xl flex flex-col max-h-[90dvh] [&>button]:hidden bg-background border border-border/20", // Removido shadow-2xl, mantido border sutil
+          hasCharge ? "ring-2 ring-destructive" : "", // Removido sombra do erro
         )}
       >
         <ThermalReceipt
@@ -225,51 +220,6 @@ export function AppointmentDetailsModal({
               )}
             </div>
           </div>
-
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded-xl transition-colors"
-              >
-                <Trash2 className="h-5 w-5" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent className="rounded-4xl border-none p-6 shadow-2xl">
-              <AlertDialogHeader>
-                <AlertDialogTitle className="text-xl font-bold">
-                  Excluir Agendamento?
-                </AlertDialogTitle>
-                <AlertDialogDescription className="text-base">
-                  {isRecurrent
-                    ? "Este agendamento faz parte de uma série recorrente. Como deseja proceder?"
-                    : "Isso apagará este agendamento permanentemente sem deixar histórico."}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter className="flex flex-col sm:flex-row gap-2 mt-4">
-                <AlertDialogCancel className="rounded-2xl border-none bg-muted hover:bg-muted/80">
-                  Voltar
-                </AlertDialogCancel>
-
-                {isRecurrent && (
-                  <AlertDialogAction
-                    onClick={() => handleDelete(true)}
-                    className="bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-2xl border-none font-bold"
-                  >
-                    Excluir Toda a Série
-                  </AlertDialogAction>
-                )}
-
-                <AlertDialogAction
-                  onClick={() => handleDelete(false)}
-                  className="bg-destructive text-white hover:bg-destructive/90 rounded-2xl font-bold shadow-lg shadow-destructive/20"
-                >
-                  {isRecurrent ? "Apenas Este" : "Sim, excluir"}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
         </DialogHeader>
 
         <div className="flex flex-col gap-5 overflow-y-auto py-4 pr-1">
@@ -280,7 +230,7 @@ export function AppointmentDetailsModal({
               </div>
               <Badge
                 variant={status === "cancelado" ? "destructive" : "outline"}
-                className="rounded-lg border-none bg-background/50"
+                className="rounded-lg border-none bg-background"
               >
                 {status === "cancelado"
                   ? "Cancelado"
@@ -305,7 +255,9 @@ export function AppointmentDetailsModal({
                 <SelectTrigger className="rounded-2xl h-12 bg-muted/20 border-none font-semibold">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl border-none shadow-2xl">
+                <SelectContent className="rounded-2xl border border-border/50 bg-background">
+                  {" "}
+                  {/* Removido shadow */}
                   <SelectItem value="a_confirmar" className="rounded-lg">
                     A Confirmar
                   </SelectItem>
@@ -330,11 +282,12 @@ export function AppointmentDetailsModal({
                 <SelectTrigger className="rounded-2xl h-12 bg-muted/20 border-none font-semibold">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl border-none shadow-2xl">
+                <SelectContent className="rounded-2xl border border-border/50 bg-background">
+                  {" "}
+                  {/* Removido shadow */}
                   <SelectItem value="nenhum" className="rounded-lg">
                     Aguardando...
                   </SelectItem>
-                  {/* 🔥 Renderização dinâmica dos métodos de pagamento */}
                   {paymentMethods
                     .filter((pm) => pm.isActive)
                     .map((pm) => (
@@ -390,34 +343,48 @@ export function AppointmentDetailsModal({
         </div>
 
         <DialogFooter className="flex flex-col-reverse sm:flex-row gap-3 pt-6 border-t border-border/40 mt-auto">
-          {status !== "realizado" && status !== "cancelado" && (
+          {status !== "realizado" && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
                   variant="ghost"
                   className="text-destructive hover:bg-destructive/5 font-bold w-full sm:w-auto rounded-2xl h-12"
                 >
-                  <CalendarX2 className="mr-2 h-5 w-5" /> Cancelar Sessão
+                  <Trash2 className="mr-2 h-5 w-5" /> Excluir Sessão
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent className="rounded-4xl border-none shadow-2xl">
+              <AlertDialogContent className="rounded-4xl border border-border/50 p-6 bg-background">
+                {" "}
+                {/* Removido shadow-2xl */}
                 <AlertDialogHeader>
                   <AlertDialogTitle className="text-xl font-bold">
-                    Confirmar Cancelamento?
+                    Excluir Agendamento?
                   </AlertDialogTitle>
                   <AlertDialogDescription className="text-base">
-                    O histórico será mantido com o status de cancelado.
+                    {isRecurrent
+                      ? "Este agendamento faz parte de uma série recorrente. Como deseja proceder?"
+                      : "Isso apagará este agendamento permanentemente sem deixar histórico."}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter className="flex gap-2">
-                  <AlertDialogCancel className="rounded-2xl border-none bg-muted">
+                <AlertDialogFooter className="flex flex-col sm:flex-row gap-2 mt-4">
+                  <AlertDialogCancel className="rounded-2xl border border-none bg-muted hover:bg-muted/80">
                     Voltar
                   </AlertDialogCancel>
+
+                  {isRecurrent && (
+                    <AlertDialogAction
+                      onClick={() => handleDelete(true)}
+                      className="bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-2xl border-none font-bold"
+                    >
+                      Excluir Toda a Série
+                    </AlertDialogAction>
+                  )}
+
                   <AlertDialogAction
-                    onClick={() => handleSave("cancelado")}
+                    onClick={() => handleDelete(false)}
                     className="bg-destructive text-white hover:bg-destructive/90 rounded-2xl font-bold"
                   >
-                    Confirmar
+                    {isRecurrent ? "Apenas Este" : "Sim, excluir"}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -429,7 +396,7 @@ export function AppointmentDetailsModal({
           <Button
             onClick={() => handleSave()}
             disabled={isSaving}
-            className="w-full sm:w-auto bg-primary text-black rounded-2xl h-12 px-10 font-black "
+            className="w-full sm:w-auto bg-primary text-black rounded-2xl h-12 px-10 font-black"
           >
             {isSaving ? (
               <Loader2 className="h-5 w-5 animate-spin" />

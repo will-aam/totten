@@ -35,8 +35,7 @@ import {
   Minus,
   Plus,
   Package as PackageIcon,
-  Sparkles,
-} from "lucide-react";
+} from "lucide-react"; // Sparkles removido daqui
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { createAppointment } from "@/app/actions/appointments";
@@ -47,7 +46,7 @@ interface NewAppointmentModalProps {
   onCreated?: () => void;
   openingTime?: string;
   closingTime?: string;
-  initialDate?: Date; // 🔥 NOVO: Recebe a data que estava selecionada na tela por trás
+  initialDate?: Date;
 }
 
 type ClientOption = { id: string; name: string };
@@ -168,7 +167,7 @@ export function NewAppointmentModal({
       const saldo = activePackage.total_sessions - activePackage.used_sessions;
       if (isRecurring && repeatCount > saldo) {
         setRepeatCount(saldo > 1 ? saldo : 2);
-        if (saldo < 2) setIsRecurring(false); // Se só tem 1, não dá pra repetir
+        if (saldo < 2) setIsRecurring(false);
       }
     }
   }, [usePackage, activePackage, isRecurring, repeatCount]);
@@ -182,7 +181,6 @@ export function NewAppointmentModal({
       setRepeatCount(2);
       setTime(undefined);
     } else {
-      // 🔥 O PULO DO GATO: Atualiza a data do modal sempre que ele abrir
       setDate(initialDate || new Date());
     }
   }, [open, initialDate]);
@@ -232,7 +230,7 @@ export function NewAppointmentModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[95vh] overflow-y-auto rounded-3xl border-none shadow-2xl">
+      <DialogContent className="sm:max-w-md max-h-[95vh] overflow-y-auto rounded-3xl border border-border/50 bg-background">
         <DialogHeader className="space-y-3">
           <div className="mx-auto bg-primary/10 p-3 rounded-full w-fit">
             <CalendarClock className="h-6 w-6 text-primary" />
@@ -262,7 +260,7 @@ export function NewAppointmentModal({
                   }
                 />
               </SelectTrigger>
-              <SelectContent className="rounded-2xl border-none shadow-xl">
+              <SelectContent className="rounded-2xl border border-border/50 bg-background">
                 {clients.map((c) => (
                   <SelectItem key={c.id} value={c.id} className="rounded-lg">
                     {c.name}
@@ -278,7 +276,7 @@ export function NewAppointmentModal({
               className={cn(
                 "flex items-center justify-between p-4 rounded-2xl border-2 transition-all duration-300",
                 usePackage
-                  ? "bg-primary/5 border-primary shadow-sm"
+                  ? "bg-primary/5 border-primary"
                   : "bg-muted/20 border-transparent",
               )}
             >
@@ -333,7 +331,7 @@ export function NewAppointmentModal({
               >
                 <SelectValue placeholder="Selecione o serviço..." />
               </SelectTrigger>
-              <SelectContent className="rounded-2xl border-none shadow-xl">
+              <SelectContent className="rounded-2xl border border-border/50 bg-background">
                 {services.map((s) => (
                   <SelectItem key={s.id} value={s.id} className="rounded-lg">
                     {s.name}
@@ -360,7 +358,7 @@ export function NewAppointmentModal({
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="w-auto p-0 border-none shadow-2xl rounded-3xl"
+                  className="w-auto p-0 border border-border/50 bg-background rounded-3xl"
                   align="start"
                 >
                   <Calendar
@@ -384,7 +382,7 @@ export function NewAppointmentModal({
                   <Clock className="mr-2 h-4 w-4 text-primary" />
                   <SelectValue placeholder="Hora" />
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl border-none shadow-xl max-h-48">
+                <SelectContent className="rounded-2xl border border-border/50 bg-background max-h-48">
                   {TIME_SLOTS.map((slot) => (
                     <SelectItem key={slot} value={slot} className="rounded-lg">
                       {slot}
@@ -400,7 +398,7 @@ export function NewAppointmentModal({
             className={cn(
               "border-2 rounded-3xl p-4 transition-all duration-500",
               isRecurring
-                ? "border-primary/30 bg-primary/2 shadow-inner"
+                ? "border-primary/30 bg-primary/2"
                 : "border-muted/30 bg-muted/5",
             )}
           >
@@ -439,7 +437,7 @@ export function NewAppointmentModal({
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2 bg-background border shadow-sm rounded-2xl p-1">
+                  <div className="flex items-center gap-2 bg-background border border-border/50 rounded-2xl p-1">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -468,30 +466,28 @@ export function NewAppointmentModal({
           </div>
         </div>
 
-        <DialogFooter className="mt-2 sm:justify-between gap-3">
+        <DialogFooter className="sm:justify-between gap-3 flex flex-col sm:flex-row">
+          {/* Botão Cancelar padronizado: h-12, rounded-2xl, font-bold, porém com variant "outline" e cor neutra */}
           <Button
-            variant="ghost"
+            variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={saving}
-            className="rounded-2xl text-muted-foreground hover:bg-muted active:scale-[0.98] transition-all"
+            className="w-full sm:w-auto rounded-2xl h-12 font-bold border border-border/50 bg-muted/30 hover:bg-muted transition-all"
           >
             Cancelar
           </Button>
+
+          {/* Botão Principal padronizado: h-12, font-bold, sem ícones */}
           <Button
             onClick={handleSave}
-            className="rounded-2xl px-10 h-12 flex gap-2 font-bold active:scale-[0.98] transition-all"
+            className="w-full sm:w-auto bg-primary text-primary-foreground rounded-2xl h-12 px-10 font-bold active:scale-[0.98] transition-all"
             disabled={saving}
           >
-            {saving ? (
-              "Processando..."
-            ) : (
-              <>
-                {isRecurring ? <Sparkles className="h-4 w-4" /> : null}
-                {isRecurring
-                  ? `Agendar ${repeatCount} Sessões`
-                  : "Confirmar Agendamento"}
-              </>
-            )}
+            {saving
+              ? "Processando..."
+              : isRecurring
+                ? `Agendar ${repeatCount} Sessões`
+                : "Confirmar Agendamento"}
           </Button>
         </DialogFooter>
       </DialogContent>

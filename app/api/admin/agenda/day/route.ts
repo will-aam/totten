@@ -51,12 +51,12 @@ export async function GET(req: NextRequest) {
 
     const mapped = appointments.map((appt) => {
       const date = new Date(appt.date_time);
-      
+
       // FORÇANDO O FUSO HORÁRIO DO BRASIL PARA EXIBIR A HORA CORRETA
-      const timeFormatter = new Intl.DateTimeFormat('pt-BR', {
-        timeZone: 'America/Sao_Paulo',
-        hour: '2-digit',
-        minute: '2-digit'
+      const timeFormatter = new Intl.DateTimeFormat("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        hour: "2-digit",
+        minute: "2-digit",
       });
       const time = timeFormatter.format(date);
 
@@ -96,11 +96,10 @@ export async function GET(req: NextRequest) {
         observations: appt.observations ?? "",
         paymentMethod: appt.payment_method ?? "nenhum",
         price: Number(rawPrice),
-
-        // 🔥 INFORMAÇÕES NOVAS PARA O GRID DA AGENDA (Arraste e Info de Pacote)
         date_time: appt.date_time.toISOString(),
         package_id: appt.package_id,
         session_number: appt.session_number,
+        recurrence_id: appt.recurrence_id,
         package: appt.package
           ? {
               total_sessions: appt.package.total_sessions,
