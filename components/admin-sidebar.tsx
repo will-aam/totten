@@ -103,7 +103,6 @@ export function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
-  // 🔥 isMobile extraído do hook
   const { setOpenMobile, isMobile } = useSidebar();
   const [clinicName, setClinicName] = useState("Totten");
   const [loading, setLoading] = useState(true);
@@ -275,7 +274,6 @@ export function AdminSidebar() {
 
               {/* Financeiro */}
               {isMobile ? (
-                // NO MOBILE: É apenas um botão direto para o Dashboard
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
@@ -294,7 +292,6 @@ export function AdminSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ) : (
-                // NO DESKTOP: Continua sendo o Collapsible (gaveta expansível)
                 <Collapsible
                   asChild
                   className="group/collapsible w-full"
