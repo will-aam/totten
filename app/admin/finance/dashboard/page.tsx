@@ -7,6 +7,7 @@ import { FinanceHeader } from "@/components/finance/finance-header";
 import { FinanceSecondaryIndicators } from "@/components/finance/finance-secondary-indicators";
 import { FinanceSummaryCards } from "@/components/finance/finance-summary-cards";
 import { RecentTransactionsList } from "@/components/finance/recent-transactions-list";
+import { FinanceSpeedDial } from "@/components/finance/finance-speed-dial"; // <-- Importação do Speed Dial
 import { ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getFinanceDashboardData } from "@/app/actions/finance-dashboard";
@@ -106,13 +107,20 @@ export default function FinanceDashboardPage() {
         )}
       </div>
 
+      {/* REVEZAMENTO INTELIGENTE: SPEED DIAL vs ARROW UP */}
+
+      {/* 1. Speed Dial: Esconde-se quando showScrollTop é verdadeiro */}
+      <FinanceSpeedDial isHidden={showScrollTop} onSuccess={loadDashboard} />
+
+      {/* 2. Arrow Up: Só aparece quando showScrollTop é verdadeiro */}
       <button
         onClick={scrollToTop}
         className={cn(
-          "fixed bottom-20 md:bottom-8 right-4 md:right-8 p-3 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 z-50",
+          "fixed bottom-24 md:bottom-8 right-4 md:right-8 p-3.5 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 z-50",
           showScrollTop
             ? "translate-y-0 opacity-100"
-            : "translate-y-10 opacity-0 pointer-events-none",
+            : "translate-y-10 opacity-0 pointer-events-none md:translate-y-0 md:opacity-100 md:pointer-events-auto",
+          // Nota de Sênior: no desktop (md:), o ArrowUp obedece a lógica padrão, já que o Speed Dial não existe no desktop.
         )}
       >
         <ArrowUp className="h-5 w-5" strokeWidth={2.5} />

@@ -7,9 +7,9 @@ import {
   ArrowRightLeft,
   CreditCard,
   Package,
-  FileText,
 } from "lucide-react";
 
+// Menu inferior com as 4 opções principais
 const mobileNavItems = [
   { id: "/admin/finance/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "/admin/finance/transactions", label: "Extrato", icon: ArrowRightLeft },
@@ -19,7 +19,6 @@ const mobileNavItems = [
     icon: CreditCard,
   },
   { id: "/admin/finance/packages", label: "Pacotes", icon: Package },
-  { id: "/admin/finance/reports", label: "Relatórios", icon: FileText },
 ];
 
 export default function FinanceLayout({
@@ -30,16 +29,30 @@ export default function FinanceLayout({
   const pathname = usePathname();
   const router = useRouter();
 
+  // 🔥 LISTA DE ROTAS ONDE O MENU INFERIOR GERAL NÃO DEVE APARECER
+  // Removemos pacotes daqui. Agora apenas Relatórios esconde a barra.
+  const hideBottomNavRoutes = ["/admin/finance/reports"];
+
+  // Verifica se a rota atual está dentro da nossa lista de exceções
+  const shouldHideBottomNav = hideBottomNavRoutes.includes(pathname);
+
   return (
     <>
-      <div className="w-full pb-24 md:pb-6">{children}</div>
-      <div className="md:hidden">
-        <MobileBottomNav
-          items={mobileNavItems}
-          activeId={pathname}
-          onChange={(value) => router.push(value)}
-        />
+      <div
+        className={shouldHideBottomNav ? "w-full pb-6" : "w-full pb-24 md:pb-6"}
+      >
+        {children}
       </div>
+
+      {!shouldHideBottomNav && (
+        <div className="md:hidden">
+          <MobileBottomNav
+            items={mobileNavItems}
+            activeId={pathname}
+            onChange={(value) => router.push(value)}
+          />
+        </div>
+      )}
     </>
   );
 }

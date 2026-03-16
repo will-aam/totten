@@ -2,8 +2,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { MinusCircle, PlusCircle } from "lucide-react";
+import { MinusCircle, PlusCircle, FileText } from "lucide-react";
 import { TransactionModal } from "@/components/finance/transaction-modal";
 import {
   Select,
@@ -12,6 +13,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface FinanceHeaderProps {
   onSuccess?: () => void;
@@ -75,14 +82,14 @@ export function FinanceHeader({
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto mt-2 lg:mt-0">
-          {/* 🔥 FILTROS DE MÊS E ANO - MINIMALISTAS E ELEGANTES */}
-          <div className="flex items-center justify-start gap-1 w-full sm:w-auto mb-2 sm:mb-0">
+        <div className="flex flex-row items-center justify-between w-full lg:w-auto mt-2 lg:mt-0 gap-2">
+          {/* 🔥 FILTROS DE MÊS E ANO */}
+          <div className="flex items-center justify-start gap-1 shrink-0">
             <Select
               value={selectedMonth.toString()}
               onValueChange={(val) => onMonthChange(Number(val))}
             >
-              <SelectTrigger className="h-10 w-31.25 border-none bg-transparent shadow-none focus:ring-0 font-bold text-base sm:text-lg px-2 hover:text-primary transition-colors">
+              <SelectTrigger className="h-10 w-28 sm:w-32 border-none bg-transparent shadow-none focus:ring-0 font-bold text-base sm:text-lg px-2 hover:text-primary transition-colors">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rounded-xl">
@@ -102,7 +109,7 @@ export function FinanceHeader({
               value={selectedYear.toString()}
               onValueChange={(val) => onYearChange(Number(val))}
             >
-              <SelectTrigger className="h-10 w-21.25 border-none bg-transparent shadow-none focus:ring-0 font-bold text-base sm:text-lg px-2 hover:text-primary transition-colors">
+              <SelectTrigger className="h-10 w-20 sm:w-24 border-none bg-transparent shadow-none focus:ring-0 font-bold text-base sm:text-lg px-2 hover:text-primary transition-colors">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rounded-xl">
@@ -119,26 +126,58 @@ export function FinanceHeader({
             </Select>
           </div>
 
-          {/* Oculta o separador vertical no mobile para não poluir */}
-          <div className="h-8 w-px bg-border/50 hidden sm:block mx-2" />
+          {/* Separador vertical apenas no desktop */}
+          <div className="h-8 w-px bg-border/50 hidden sm:block mx-1" />
 
-          {/* BOTÕES DE AÇÃO */}
-          <Button
-            variant="outline"
-            className="w-full sm:w-auto text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200 dark:text-rose-500 dark:border-rose-900 dark:hover:bg-rose-950/50 justify-center h-11 sm:h-10 rounded-xl"
-            onClick={handleNewExpense}
-          >
-            <MinusCircle className="mr-2 h-4 w-4" />
-            Despesa
-          </Button>
+          {/* 🔥 BOTÕES DE AÇÃO */}
+          <TooltipProvider delayDuration={200}>
+            <div className="flex flex-row items-center justify-end gap-2 sm:gap-3">
+              {/* DESPESA - Escondido no Mobile (hidden md:flex) */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="hidden md:flex text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200 dark:text-rose-500 dark:border-rose-900 dark:hover:bg-rose-950/50 h-11 w-11 sm:h-10 sm:w-10 rounded-xl shrink-0 transition-transform active:scale-95"
+                    onClick={handleNewExpense}
+                  >
+                    <MinusCircle className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  <p>Adicionar Despesa</p>
+                </TooltipContent>
+              </Tooltip>
 
-          <Button
-            className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white justify-center h-11 sm:h-10 rounded-xl"
-            onClick={handleNewIncome}
-          >
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Receita
-          </Button>
+              {/* RECEITA - Escondido no Mobile (hidden md:flex) */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    className="hidden md:flex bg-emerald-600 hover:bg-emerald-700 text-white h-11 w-11 sm:h-10 sm:w-10 rounded-xl shrink-0 transition-transform active:scale-95"
+                    onClick={handleNewIncome}
+                  >
+                    <PlusCircle className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  <p>Adicionar Receita</p>
+                </TooltipContent>
+              </Tooltip>
+
+              {/* RELATÓRIOS - Agora com Texto visível no Mobile e Desktop */}
+              <Button
+                variant="outline"
+                asChild
+                className="h-11 sm:h-10 px-3 sm:px-4 rounded-xl shrink-0 border-border/50 text-muted-foreground hover:text-foreground transition-transform active:scale-95 flex items-center gap-2"
+              >
+                <Link href="/admin/finance/reports">
+                  <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="font-medium text-sm">Relatórios</span>
+                </Link>
+              </Button>
+            </div>
+          </TooltipProvider>
         </div>
       </div>
 

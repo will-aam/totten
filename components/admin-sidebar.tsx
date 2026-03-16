@@ -96,7 +96,6 @@ const financeSubItems = [
     href: "/admin/finance/packages",
     active: true,
   },
-  { title: "Relatórios", href: "/admin/finance/reports", active: true },
 ];
 
 export function AdminSidebar() {
