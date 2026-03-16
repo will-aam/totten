@@ -232,9 +232,6 @@ export function NewAppointmentModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md max-h-[95vh] overflow-y-auto rounded-3xl border border-border/50 bg-background">
         <DialogHeader className="space-y-3">
-          <div className="mx-auto bg-primary/10 p-3 rounded-full w-fit">
-            <CalendarClock className="h-6 w-6 text-primary" />
-          </div>
           <DialogTitle className="text-center text-xl font-bold">
             Novo Agendamento
           </DialogTitle>
