@@ -23,11 +23,9 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const [year, month, day] = dateParam.split("-").map(Number);
-    const target = new Date(year, month - 1, day);
-
-    const from = startOfDay(target);
-    const to = endOfDay(target);
+    // FORÇANDO OS LIMITES DO DIA PARA O FUSO DO BRASIL (UTC-3)
+    const from = new Date(`${dateParam}T00:00:00.000-03:00`);
+    const to = new Date(`${dateParam}T23:59:59.999-03:00`);
 
     const appointments = await prisma.appointment.findMany({
       where: {
