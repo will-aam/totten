@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import Image from "next/image"; // 🔥 Importação para usar a logo
+import Image from "next/image";
 import {
   LayoutDashboard,
   Users,
@@ -24,7 +24,8 @@ import {
   Link2,
   ShelvingUnit,
   Loader2,
-} from "lucide-react"; // Bird removido daqui
+  FileText,
+} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -48,7 +49,6 @@ import {
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 
-// ... (navItems, agendaSubItems e financeSubItems permanecem iguais)
 const navItems = [
   {
     title: "Dashboard",
@@ -73,6 +73,12 @@ const navItems = [
   { title: "Vouchers", href: "/admin/vouchers", icon: Award, active: true },
   { title: "Estoque", href: "#", icon: ShelvingUnit, active: false },
   { title: "Link na Bio", href: "/admin/link-bio", icon: Link2, active: false },
+  {
+    title: "Fichas de Anamnese",
+    href: "#",
+    icon: FileText,
+    active: false,
+  },
 ];
 
 const agendaSubItems = [
@@ -80,7 +86,6 @@ const agendaSubItems = [
   { title: "Confirmações e Lembretes", href: "/admin/reminders", active: true },
   { title: "Bloqueio de Horário", href: "#", active: false },
   { title: "Lista de Espera", href: "#", active: false },
-  { title: "Fichas de Anamnese", href: "#", active: false },
 ];
 
 const financeSubItems = [
@@ -153,14 +158,13 @@ export function AdminSidebar() {
           className="flex items-center gap-3"
           onClick={() => setOpenMobile(false)}
         >
-          {/* 🔥 Container limpo, sem sombras ou fundos coloridos */}
-          <div className="flex h-9 w-9 items-center justify-center shrink-0">
+          <div className="flex h-9 w-9 items-center justify-center shrink-0 bg-white rounded-full">
             <Image
               src="/totten.png"
               alt="Logo"
               width={36}
               height={36}
-              className="rounded-full object-cover" // Apenas o corte circular na imagem
+              className="rounded-full object-cover"
               priority
             />
           </div>
@@ -184,7 +188,7 @@ export function AdminSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
+                <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild={item.active}
                     isActive={pathname.startsWith(item.href) && item.active}
@@ -363,7 +367,7 @@ export function AdminSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4 border-t flex flex-col gap-4">
+      <SidebarFooter className="p-4 border-t flex flex-col gap-3">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -383,47 +387,47 @@ export function AdminSidebar() {
             <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
           </button>
         </div>
+
         <div className="h-px bg-border/50 w-full" />
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild className="hover:text-primary">
-              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-                <Headset className="h-4 w-4" />
-                <span>Suporte</span>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem className="mt-1">
-            <SidebarMenuButton
-              asChild
-              isActive={pathname.startsWith("/admin/settings")}
-            >
-              <Link href="/admin/settings" onClick={() => setOpenMobile(false)}>
-                <Settings className="h-4 w-4" />
-                <span>Configurações</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem className="mt-1">
-            <SidebarMenuButton
-              onClick={handleLogout}
-              disabled={loggingOut}
-              className="text-destructive hover:text-destructive hover:bg-destructive/10"
-            >
-              {loggingOut ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Saindo...</span>
-                </>
-              ) : (
-                <>
-                  <LogOut className="h-4 w-4" />
-                  <span>Sair</span>
-                </>
-              )}
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+
+        {/* Linha unificada: Suporte, Configurações e Sair */}
+        <div className="flex w-full items-center gap-1">
+          {/* Botão Suporte (Apenas ícone) */}
+          <SidebarMenuButton
+            asChild
+            tooltip="Suporte"
+            className="flex-1 justify-center bg-transparent hover:bg-transparent text-muted-foreground hover:text-primary"
+          >
+            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+              <Headset className="h-4 w-4" />
+            </a>
+          </SidebarMenuButton>
+
+          {/* Botão Configurações (Apenas ícone) */}
+          <SidebarMenuButton
+            asChild
+            tooltip="Configurações"
+            className="flex-1 justify-center bg-transparent hover:bg-transparent"
+          >
+            <Link href="/admin/settings" onClick={() => setOpenMobile(false)}>
+              <Settings className="h-4 w-4" />
+            </Link>
+          </SidebarMenuButton>
+
+          {/* Botão Sair (Ícone + Texto) */}
+          <SidebarMenuButton
+            onClick={handleLogout}
+            disabled={loggingOut}
+            className="flex-2 justify-center text-destructive hover:text-destructive hover:bg-destructive/10"
+          >
+            {loggingOut ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <LogOut className="h-4 w-4" />
+            )}
+            <span>Sair</span>
+          </SidebarMenuButton>
+        </div>
       </SidebarFooter>
     </Sidebar>
   );
