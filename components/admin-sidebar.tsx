@@ -71,14 +71,14 @@ const navItems = [
     active: true,
   },
   { title: "Vouchers", href: "/admin/vouchers", icon: Award, active: true },
-  { title: "Estoque", href: "#", icon: ShelvingUnit, active: false },
-  { title: "Link na Bio", href: "/admin/link-bio", icon: Link2, active: false },
   {
     title: "Fichas de Anamnese",
     href: "#",
     icon: FileText,
     active: false,
   },
+  { title: "Estoque", href: "#", icon: ShelvingUnit, active: false },
+  { title: "Link na Bio", href: "/admin/link-bio", icon: Link2, active: false },
 ];
 
 const agendaSubItems = [
