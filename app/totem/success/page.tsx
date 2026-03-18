@@ -112,7 +112,7 @@ function SuccessContent() {
         <div className="mt-4 pt-4 border-t border-border/50 w-full">
           <p className="text-sm font-semibold text-foreground">{clinicName}</p>
           <p className="text-xs text-muted-foreground mt-1">
-            Obrigada pela confiança! 💆‍♀️
+            Obrigada pela confiança!
           </p>
         </div>
 

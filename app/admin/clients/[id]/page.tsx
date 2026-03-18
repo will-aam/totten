@@ -9,13 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { User } from "lucide-react";
 
-// Importando os nossos novos blocos arquiteturais
+// Importando os nossos blocos arquiteturais
 import { ClientHeader } from "@/components/client/client-header";
 import { ClientContact } from "@/components/client/client-contact";
 import { ClientPackage } from "@/components/client/client-package";
 import { ClientHistory } from "@/components/client/client-history";
 
-// 🔥 Tipos locais definidos com base no retorno real do banco de dados (Prisma)
+import { ClientAnamnesis } from "@/components/client/client-anamnesis";
+
 export type ClientType = {
   id: string;
   name: string;
@@ -117,7 +118,6 @@ export default function ClientDetailPage({
 
       <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 max-w-5xl mx-auto w-full pb-24 md:pb-6">
         {/* Bloco 1: Cabeçalho */}
-        {/* Ignorando alertas temporários de tipagem das props enquanto não alteramos os componentes filhos */}
         <ClientHeader client={client as any} />
 
         {/* Bloco 2: Grid Principal */}
@@ -133,7 +133,10 @@ export default function ClientDetailPage({
           />
         </div>
 
-        {/* Bloco 3: Histórico */}
+        {/* Bloco 3: Anamneses (NOVO!) */}
+        <ClientAnamnesis clientId={id} />
+
+        {/* Bloco 4: Histórico */}
         <ClientHistory checkIns={checkIns as any} />
       </div>
     </>

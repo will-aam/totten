@@ -73,9 +73,9 @@ const navItems = [
   { title: "Vouchers", href: "/admin/vouchers", icon: Award, active: true },
   {
     title: "Fichas de Anamnese",
-    href: "#",
+    href: "/admin/anamnesis",
     icon: FileText,
-    active: false,
+    active: true,
   },
   { title: "Estoque", href: "#", icon: ShelvingUnit, active: false },
   { title: "Link na Bio", href: "/admin/link-bio", icon: Link2, active: false },

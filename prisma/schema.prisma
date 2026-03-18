@@ -27,6 +27,8 @@ model Organization {
   services          Service[]
   settings          Settings?
   admins            Admin[]           @relation("AdminToOrganization")
+  anamnesis_templates AnamnesisTemplate[]
+  anamnesis_responses AnamnesisResponse[]
 
   @@map("organizations")
 }
@@ -109,6 +111,7 @@ model Client {
   organization    Organization  @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   packages        Package[]
   transactions      Transaction[]
+  anamnesis_responses AnamnesisResponse[]
 
   @@unique([cpf, organization_id])
   @@map("clients")
@@ -333,4 +336,37 @@ model Transaction {
   @@index([organization_id, date])
   @@index([recurrence_id]) // 🔥 Novo índice: deixa a busca por parcelas muito mais rápida
   @@map("transactions")
+}
+
+model AnamnesisTemplate {
+  id              String       @id @default(cuid())
+  name            String       // Ex: "Ficha Nail Design", "Ficha Cílios"
+  fields          Json         // Estrutura dinâmica: [{label: "Alergia?", type: "boolean"}, ...]
+  organization_id String
+  active          Boolean      @default(true)
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @updatedAt
+
+  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  responses       AnamnesisResponse[]
+
+  @@map("anamnesis_templates")
+}
+
+model AnamnesisResponse {
+  id              String       @id @default(cuid())
+  template_id     String
+  client_id       String
+  organization_id String
+  content         Json         // Respostas enviadas pela cliente
+  signature       String?      @db.Text // Assinatura em Base64 (salvamos como texto longo)
+  signed_at       DateTime?    // Data exata da assinatura (bloqueia edição)
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @updatedAt
+
+  template        AnamnesisTemplate @relation(fields: [template_id], references: [id])
+  client          Client            @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  organization    Organization      @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@map("anamnesis_responses")
 }
