@@ -5,7 +5,8 @@ import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SessionProvider } from "@/components/session-provider";
-import { InstallPrompt } from "@/components/install-prompt"; // 🔥 LINHA NOVA: Importando o nosso banner
+import { InstallPrompt } from "@/components/install-prompt";
+import { SWRProvider } from "@/components/swr-provider"; // 🔥 LINHA NOVA: Importando o provedor do SWR
 import "./globals.css";
 
 const inter = Inter({
@@ -68,18 +69,21 @@ export default function RootLayout({
         className={`${inter.variable} ${playfair.variable} font-sans antialiased`}
       >
         <SessionProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="light"
-            enableSystem={false}
-            disableTransitionOnChange
-          >
-            <InstallPrompt />{" "}
-            {/* 🔥 LINHA NOVA: O banner de instalação entra aqui! */}
-            {children}
-            <Toaster position="top-right" richColors />
-            <Analytics />
-          </ThemeProvider>
+          <SWRProvider>
+            {" "}
+            {/* 🔥 LINHA NOVA: SWRProvider envolvendo a aplicação */}
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="light"
+              enableSystem={false}
+              disableTransitionOnChange
+            >
+              <InstallPrompt />
+              {children}
+              <Toaster position="top-right" richColors />
+              <Analytics />
+            </ThemeProvider>
+          </SWRProvider>
         </SessionProvider>
       </body>
     </html>

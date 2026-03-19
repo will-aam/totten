@@ -1,3 +1,4 @@
+// app/api/dashboard/kpis/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin } from "@/lib/auth";
@@ -43,10 +44,16 @@ export async function GET() {
     });
 
     // 3. Pacotes finalizando (2 ou menos sessões restantes)
+    // 🔥 OTIMIZAÇÃO: Trazemos para a memória APENAS os 2 números necessários
+    // em vez do objeto inteiro do pacote, mantendo a performance alta.
     const packagesEndingSoon = await prisma.package.findMany({
       where: {
         organization_id: admin.organizationId,
         active: true,
+      },
+      select: {
+        total_sessions: true,
+        used_sessions: true,
       },
     });
 
@@ -56,46 +63,14 @@ export async function GET() {
         pkg.total_sessions - pkg.used_sessions > 0,
     ).length;
 
-    // 4. Check-ins de HOJE (últimos 10 limitados pelo dia de hoje)
-    const recentCheckIns = await prisma.checkIn.findMany({
-      where: {
-        organization_id: admin.organizationId,
-        date_time: {
-          gte: today, // 🔥 Restringe para apenas mostrar check-ins de hoje em diante
-          lt: tomorrow,
-        },
-      },
-      include: {
-        client: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-      orderBy: {
-        date_time: "desc",
-      },
-      take: 10,
-    });
-
-    // 🔥 Correção do erro de TypeScript: Usando "?." para lidar com casos nulos
-    const formattedCheckIns = recentCheckIns.map((checkIn) => ({
-      id: checkIn.id,
-      client_id: checkIn.client?.id ?? "",
-      client_name: checkIn.client?.name ?? "Cliente Avulso",
-      date_time: checkIn.date_time,
-    }));
-
     return NextResponse.json({
       organizationId: admin.organizationId,
       todayCheckInsCount,
       activeClientsCount,
       packagesEndingSoonCount,
-      recentCheckIns: formattedCheckIns,
     });
   } catch (error) {
-    console.error("Erro ao buscar dados do dashboard:", error);
+    console.error("Erro ao buscar KPIs do dashboard:", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }

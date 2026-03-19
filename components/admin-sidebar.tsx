@@ -7,7 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
 import {
-  LayoutDashboard,
+  NotebookText,
   Users,
   ClipboardList,
   Settings,
@@ -51,9 +51,9 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   {
-    title: "Dashboard",
+    title: "Resumo Diário",
     href: "/admin/dashboard",
-    icon: LayoutDashboard,
+    icon: NotebookText,
     active: true,
   },
   { title: "Clientes", href: "/admin/clients", icon: Users, active: true },
