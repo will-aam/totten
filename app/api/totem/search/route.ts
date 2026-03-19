@@ -50,10 +50,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: "NOT_FOUND" });
     }
 
-    const inicioDoDia = new Date();
-    inicioDoDia.setHours(0, 0, 0, 0);
-    const fimDoDia = new Date();
-    fimDoDia.setHours(23, 59, 59, 999);
+    // 🔥 CORREÇÃO DE FUSO HORÁRIO (Timezone UTC-3)
+    const now = new Date();
+
+    // Força a extração do ano, mês e dia com base no fuso de Brasília
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Sao_Paulo",
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+    });
+
+    const parts = formatter.formatToParts(now);
+    const brYear = Number(parts.find((p) => p.type === "year")?.value);
+    const brMonth = Number(parts.find((p) => p.type === "month")?.value) - 1; // Mês no JS começa em 0
+    const brDay = Number(parts.find((p) => p.type === "day")?.value);
+
+    // Cria os limites já convertidos para UTC para o Prisma buscar com precisão
+    // 00:00 BRT = 03:00 UTC
+    const inicioDoDia = new Date(Date.UTC(brYear, brMonth, brDay, 3, 0, 0, 0));
+
+    // 23:59 BRT = 02:59 UTC do dia seguinte (o Date.UTC entende 26 horas e vira o dia automaticamente)
+    const fimDoDia = new Date(
+      Date.UTC(brYear, brMonth, brDay, 26, 59, 59, 999),
+    );
 
     const agendamentos = await prisma.appointment.findMany({
       where: {

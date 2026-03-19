@@ -1,3 +1,4 @@
+// app/admin/finance/receivables/page.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -31,34 +32,36 @@ import {
   getPendingReceivables,
   processReceivablePayment,
 } from "@/app/actions/transactions";
+import { getPaymentMethods } from "@/app/actions/payment-methods"; // 🔥 Importamos a busca de pagamentos
+import { OrganizationPaymentMethod } from "@/types/finance"; // 🔥 Importamos a tipagem
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-// Opções padrão de pagamento do sistema
-const PAYMENT_METHODS = [
-  { value: "PIX", label: "Pix" },
-  { value: "CARTAO_CREDITO", label: "Cartão de Crédito" },
-  { value: "CARTAO_DEBITO", label: "Cartão de Débito" },
-  { value: "DINHEIRO", label: "Dinheiro" },
-  { value: "OUTRO", label: "Outros" },
-];
-
 export default function ReceivablesPage() {
   const [receivables, setReceivables] = useState<any[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<
+    OrganizationPaymentMethod[]
+  >([]); // 🔥 Estado para as formas de pagamento
   const [isLoading, setIsLoading] = useState(true);
 
   // Controle do Modal de Pagamento
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<string>("PIX");
+  const [paymentMethodId, setPaymentMethodId] = useState<string>(""); // 🔥 Agora guardamos o ID da forma selecionada
   const [isProcessing, setIsProcessing] = useState(false);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await getPendingReceivables();
-      setReceivables(data);
+      // 🔥 Buscamos as pendências e os métodos de pagamento simultaneamente
+      const [receivablesData, methodsData] = await Promise.all([
+        getPendingReceivables(),
+        getPaymentMethods(),
+      ]);
+
+      setReceivables(receivablesData);
+      setPaymentMethods(methodsData as OrganizationPaymentMethod[]);
     } catch (error) {
-      toast.error("Erro ao carregar contas a receber.");
+      toast.error("Erro ao carregar dados.");
     } finally {
       setIsLoading(false);
     }
@@ -70,19 +73,30 @@ export default function ReceivablesPage() {
 
   const handleConfirmPayment = async () => {
     if (!selectedItem) return;
+    if (!paymentMethodId) {
+      toast.error("Por favor, selecione uma forma de pagamento.");
+      return;
+    }
+
+    // Encontra o método completo selecionado para pegar o Tipo (para a agenda) e o ID (para o financeiro)
+    const selectedMethod = paymentMethods.find(
+      (pm) => pm.id === paymentMethodId,
+    );
+    if (!selectedMethod) return;
 
     setIsProcessing(true);
     try {
       const res = await processReceivablePayment(
         selectedItem.id,
         selectedItem.sourceType,
-        paymentMethod,
+        selectedMethod.type, // Enum usado no agendamento
+        selectedMethod.id, // ID usado na transação manual
       );
 
       if (res.success) {
         toast.success("Pagamento registrado com sucesso!");
-        setSelectedItem(null);
-        loadData(); // Recarrega a lista para remover o item pago
+        handleCloseModal();
+        loadData(); // Recarrega a lista
       } else {
         toast.error(res.error || "Erro ao registrar pagamento.");
       }
@@ -91,6 +105,11 @@ export default function ReceivablesPage() {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleCloseModal = () => {
+    setSelectedItem(null);
+    setPaymentMethodId(""); // Limpa a seleção ao fechar
   };
 
   const formatCurrency = (value: number) => {
@@ -208,7 +227,7 @@ export default function ReceivablesPage() {
       {/* MODAL DE PAGAMENTO */}
       <Dialog
         open={!!selectedItem}
-        onOpenChange={(open) => !open && setSelectedItem(null)}
+        onOpenChange={(open) => !open && handleCloseModal()}
       >
         <DialogContent className="rounded-3xl sm:max-w-md border-border/50 shadow-2xl">
           <DialogHeader>
@@ -228,20 +247,26 @@ export default function ReceivablesPage() {
               <label className="text-sm font-medium text-foreground">
                 Forma de Pagamento
               </label>
-              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+              <Select
+                value={paymentMethodId}
+                onValueChange={setPaymentMethodId}
+              >
                 <SelectTrigger className="h-12 rounded-xl bg-muted/30 border-border/50">
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
-                  {PAYMENT_METHODS.map((method) => (
-                    <SelectItem
-                      key={method.value}
-                      value={method.value}
-                      className="rounded-lg py-2.5"
-                    >
-                      {method.label}
-                    </SelectItem>
-                  ))}
+                  {/* 🔥 Renderizamos apenas as opções ATIVAS cadastradas na organização */}
+                  {paymentMethods
+                    .filter((pm) => pm.isActive)
+                    .map((method) => (
+                      <SelectItem
+                        key={method.id}
+                        value={method.id}
+                        className="rounded-lg py-2.5"
+                      >
+                        {method.name}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -250,7 +275,7 @@ export default function ReceivablesPage() {
           <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
-              onClick={() => setSelectedItem(null)}
+              onClick={handleCloseModal}
               className="rounded-xl border-border/50"
               disabled={isProcessing}
             >
