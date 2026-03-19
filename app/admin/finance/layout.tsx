@@ -7,12 +7,14 @@ import {
   ArrowRightLeft,
   CreditCard,
   Package,
+  Wallet, // 🔥 Importamos o ícone novo aqui
 } from "lucide-react";
 
-// Menu inferior com as 4 opções principais
+// Menu inferior com as opções principais (agora com 5 itens)
 const mobileNavItems = [
   { id: "/admin/finance/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "/admin/finance/transactions", label: "Extrato", icon: ArrowRightLeft },
+  { id: "/admin/finance/receivables", label: "A Receber", icon: Wallet }, // 🔥 Nova rota adicionada
   {
     id: "/admin/finance/payment-methods",
     label: "Pagamentos",
@@ -30,7 +32,6 @@ export default function FinanceLayout({
   const router = useRouter();
 
   // 🔥 LISTA DE ROTAS ONDE O MENU INFERIOR GERAL NÃO DEVE APARECER
-  // Removemos pacotes daqui. Agora apenas Relatórios esconde a barra.
   const hideBottomNavRoutes = ["/admin/finance/reports"];
 
   // Verifica se a rota atual está dentro da nossa lista de exceções

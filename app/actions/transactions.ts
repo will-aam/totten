@@ -297,3 +297,101 @@ export async function updateTransactionStatus(
     return { success: false, error: "Falha ao atualizar o status." };
   }
 }
+// --- 6. BUSCAR CONTAS A RECEBER (PENDENTES) ---
+export async function getPendingReceivables() {
+  try {
+    const organizationId = await getAdminOrg();
+
+    // 1. Buscar agendamentos realizados mas não pagos (sem payment_method)
+    const pendingAppointments = await prisma.appointment.findMany({
+      where: {
+        organization_id: organizationId,
+        status: "REALIZADO",
+        payment_method: null,
+      },
+      include: { service: true, client: true },
+      orderBy: { date_time: "asc" },
+    });
+
+    // 2. Buscar transações manuais de receita marcadas como PENDENTE
+    const pendingTransactions = await prisma.transaction.findMany({
+      where: {
+        organization_id: organizationId,
+        type: "RECEITA",
+        status: "PENDENTE",
+      },
+      include: { client: true },
+      orderBy: { date: "asc" },
+    });
+
+    // Formatar os dados para o frontend unificado
+    const formattedAppointments = pendingAppointments.map((a) => ({
+      id: a.id,
+      sourceType: "APPOINTMENT" as const,
+      description: a.service.name,
+      amount: Number(a.service.price),
+      date: a.date_time.toISOString(),
+      clientName: a.client.name,
+    }));
+
+    const formattedTransactions = pendingTransactions.map((t) => ({
+      id: t.id,
+      sourceType: "TRANSACTION" as const,
+      description: t.description,
+      amount: Number(t.amount),
+      date: t.date.toISOString(),
+      clientName: t.client?.name || "Sem cliente",
+    }));
+
+    // Retorna tudo ordenado por data (os mais antigos primeiro para cobrar logo)
+    return [...formattedAppointments, ...formattedTransactions].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+    );
+  } catch (error) {
+    console.error("Erro ao buscar contas a receber:", error);
+    return [];
+  }
+}
+
+// --- 7. DAR BAIXA EM UM RECEBIMENTO ---
+export async function processReceivablePayment(
+  id: string,
+  sourceType: "APPOINTMENT" | "TRANSACTION",
+  paymentMethod: string, // Pode ser o Enum do PaymentMethod ou ID da organização
+  paymentMethodId?: string, // Usado caso seja transação manual para manter relação com OrganizationPaymentMethod
+) {
+  try {
+    const organizationId = await getAdminOrg();
+
+    if (sourceType === "APPOINTMENT") {
+      // Atualiza o agendamento
+      await prisma.appointment.update({
+        where: { id, organization_id: organizationId },
+        data: {
+          payment_method: paymentMethod as any, // Cast para o Enum PaymentMethod
+          has_charge: false, // Como foi pago, não há mais cobrança pendente
+        },
+      });
+      revalidatePath("/admin/agenda");
+    } else {
+      // Atualiza a transação manual
+      await prisma.transaction.update({
+        where: { id, organization_id: organizationId },
+        data: {
+          status: "PAGO",
+          payment_method_id: paymentMethodId || null,
+        },
+      });
+    }
+
+    revalidatePath("/admin/finance/dashboard");
+    revalidatePath("/admin/finance/transactions");
+    // Futura rota que vamos criar no passo 2
+    revalidatePath("/admin/finance/receivables");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao dar baixa em recebimento:", error);
+    return { success: false, error: "Falha ao processar pagamento." };
+  }
+}
