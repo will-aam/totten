@@ -1,3 +1,4 @@
+// app/admin/clients/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -8,7 +9,7 @@ import { toast } from "sonner";
 import { AdminHeader } from "@/components/admin-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useDebounce } from "@/hooks/use-debounce";
 import {
   Table,
   TableBody,
@@ -25,9 +26,9 @@ import {
   ChevronRight,
   Trash2,
   UserMinus,
+  UserCheck,
 } from "lucide-react";
 
-// 🔥 Importando o AlertDialog do shadcn/ui
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,6 +39,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
 
 type Client = {
   id: string;
@@ -46,103 +48,155 @@ type Client = {
   phone_whatsapp: string;
   activePackageName?: string | null;
   hasHistory?: boolean;
+  hasAnamnesis?: boolean;
+  active: boolean;
+};
+
+type ApiResponse = {
+  data: Client[];
+  total: number;
+  page: number;
+  totalPages: number;
 };
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 8;
 
 function ClientMobileItem({
   client,
   onClick,
-  onDelete,
+  onActionClick,
 }: {
   client: Client;
   onClick: () => void;
-  onDelete: (c: Client, e: React.MouseEvent) => void;
+  onActionClick: (c: Client, e: React.MouseEvent) => void;
 }) {
   const initial = client.name.charAt(0).toUpperCase();
 
   return (
     <div
-      onClick={onClick}
-      className="flex items-center justify-between py-3 px-2 -mx-2 border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors active:scale-[0.98] cursor-pointer"
+      onClick={client.active ? onClick : undefined}
+      className={cn(
+        "flex items-center justify-between py-3 px-2 -mx-2 border-b border-border/50 last:border-0 transition-colors",
+        client.active
+          ? "hover:bg-muted/30 active:scale-[0.98] cursor-pointer"
+          : "opacity-60 bg-muted/10 cursor-not-allowed grayscale-[0.2]",
+      )}
     >
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold shadow-sm border border-primary/20">
+        {/* Avatar com borda azul se tiver anamnese */}
+        <div
+          className={cn(
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-bold shadow-sm border-2",
+            client.active && client.hasAnamnesis
+              ? "border-blue-500 bg-none-500/10 text-blue-600"
+              : client.active
+                ? "bg-primary/10 text-primary border-primary/20"
+                : "bg-muted-foreground/10 text-muted-foreground border-muted-foreground/20",
+          )}
+        >
           {initial}
         </div>
         <div className="flex flex-col">
-          <span className="text-sm font-semibold text-foreground leading-none mb-1.5 flex items-center gap-1.5">
+          <span className="text-sm font-semibold text-foreground leading-none mb-1.5">
             {client.name}
           </span>
+
           <span className="text-xs text-muted-foreground leading-none font-mono">
             {client.cpf}
           </span>
         </div>
       </div>
       <div className="flex items-center gap-2 text-muted-foreground/50">
-        {client.activePackageName && (
+        {client.activePackageName && client.active && (
           <span className="text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-md truncate max-w-25">
             {client.activePackageName}
           </span>
         )}
 
         <button
-          onClick={(e) => onDelete(client, e)}
-          className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-colors active:scale-95"
-          title={client.hasHistory ? "Desativar Cliente" : "Excluir Cliente"}
+          onClick={(e) => onActionClick(client, e)}
+          className={cn(
+            "p-2 rounded-full transition-all active:scale-95",
+            client.active
+              ? "text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:bg-destructive/20"
+              : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10 active:bg-emerald-500/20",
+          )}
+          title={
+            !client.active
+              ? "Reativar Cliente"
+              : client.hasHistory
+                ? "Desativar Cliente"
+                : "Excluir Cliente"
+          }
         >
-          {client.hasHistory ? (
+          {!client.active ? (
+            <UserCheck className="h-4 w-4" />
+          ) : client.hasHistory ? (
             <UserMinus className="h-4 w-4" />
           ) : (
             <Trash2 className="h-4 w-4" />
           )}
         </button>
-        <ChevronRight className="h-5 w-5 shrink-0" />
+        <ChevronRight
+          className={cn("h-5 w-5 shrink-0", !client.active && "hidden")}
+        />
       </div>
     </div>
   );
 }
 
 export default function AdminClientsPage() {
-  const {
-    data: clients,
-    isLoading,
-    mutate,
-  } = useSWR<Client[]>("/api/clients", fetcher);
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const debouncedSearch = useDebounce(search, 500);
 
-  // 🔥 Estados para controlar o modal do shadcn/ui
+  const apiUrl = `/api/clients?page=${page}&limit=${ITEMS_PER_PAGE}${
+    debouncedSearch ? `&q=${encodeURIComponent(debouncedSearch)}` : ""
+  }`;
+
+  const {
+    data: apiResponse,
+    isLoading,
+    mutate,
+  } = useSWR<ApiResponse>(apiUrl, fetcher);
+
+  const clients = apiResponse?.data || [];
+  const totalPages = apiResponse?.totalPages || 1;
+  const totalClients = apiResponse?.total || 0;
+
   const [clientToProcess, setClientToProcess] = useState<Client | null>(null);
 
-  const filtered = (clients || []).filter((c) => {
-    const term = search.toLowerCase();
-    return (
-      c.name.toLowerCase().includes(term) ||
-      c.cpf.includes(term) ||
-      (c.phone_whatsapp && c.phone_whatsapp.includes(term))
-    );
-  });
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
-  const paginated = filtered.slice(
-    (page - 1) * ITEMS_PER_PAGE,
-    page * ITEMS_PER_PAGE,
-  );
-
-  // 🔥 Agora apenas abre o modal e guarda quem foi clicado
-  const handleDeleteClick = (client: Client, e: React.MouseEvent) => {
+  const handleActionClick = (client: Client, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setClientToProcess(client);
   };
 
-  // 🔥 Função que efetivamente faz a chamada à API quando confirmado no modal
   const confirmProcess = async () => {
     if (!clientToProcess) return;
+
+    if (!clientToProcess.active) {
+      try {
+        const res = await fetch(`/api/clients/${clientToProcess.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ active: true }),
+        });
+
+        if (!res.ok) throw new Error("Erro ao reativar");
+
+        toast.success("Cliente reativado com sucesso!");
+        mutate();
+      } catch (error) {
+        toast.error("Erro ao reativar o cliente.");
+      } finally {
+        setClientToProcess(null);
+      }
+      return;
+    }
 
     const actionText = clientToProcess.hasHistory ? "desativar" : "excluir";
 
@@ -157,11 +211,15 @@ export default function AdminClientsPage() {
           ? "Cliente desativado com sucesso!"
           : "Cliente excluído com sucesso!",
       );
-      mutate();
+
+      if (!clientToProcess.hasHistory && clients.length === 1 && page > 1) {
+        setPage(page - 1);
+      } else {
+        mutate();
+      }
     } catch (error) {
       toast.error(`Erro ao ${actionText} o cliente.`);
     } finally {
-      // Fecha o modal ao terminar
       setClientToProcess(null);
     }
   };
@@ -194,173 +252,209 @@ export default function AdminClientsPage() {
           </Button>
         </div>
 
-        <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card">
-          <CardHeader className="px-0 pt-0 md:pt-6 md:px-6">
-            <CardTitle className="flex items-center gap-2 text-card-foreground">
-              <Users className="h-5 w-5 text-primary" />
+        {/* Área de Conteúdo sem Card envoltório */}
+        <div className="flex flex-col gap-4">
+          {/* Título da Seção */}
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-semibold text-foreground tracking-tight">
               Todos os Clientes
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-0 pb-0 md:pb-6 md:px-6">
-            {isLoading ? (
-              <div className="flex flex-col gap-4">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-4">
-                    <Skeleton className="h-10 w-10 rounded-full shrink-0 md:rounded-md" />
-                    <div className="flex flex-col gap-2 w-full">
-                      <Skeleton className="h-4 w-32" />
-                      <Skeleton className="h-3 w-20" />
-                    </div>
+            </h2>
+          </div>
+
+          {isLoading ? (
+            <div className="flex flex-col gap-4">
+              {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4">
+                  <Skeleton className="h-10 w-10 rounded-full shrink-0 md:rounded-md" />
+                  <div className="flex flex-col gap-2 w-full">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-20" />
                   </div>
+                </div>
+              ))}
+            </div>
+          ) : clients.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/30 rounded-lg border border-dashed border-border">
+              <Users className="h-10 w-10 text-muted-foreground/40" />
+              <p className="mt-4 text-sm font-medium text-muted-foreground">
+                {search
+                  ? "Nenhum cliente encontrado para essa busca."
+                  : "Nenhum cliente cadastrado ainda."}
+              </p>
+              {!search && (
+                <Button
+                  asChild
+                  className="mt-4 rounded-full md:rounded-md"
+                  size="sm"
+                >
+                  <Link href="/admin/clients/new">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Cadastrar Primeiro Cliente
+                  </Link>
+                </Button>
+              )}
+            </div>
+          ) : (
+            <>
+              {/* Visualização Mobile */}
+              <div className="flex flex-col md:hidden">
+                {clients.map((client) => (
+                  <ClientMobileItem
+                    key={client.id}
+                    client={client}
+                    onClick={() => router.push(`/admin/clients/${client.id}`)}
+                    onActionClick={handleActionClick}
+                  />
                 ))}
               </div>
-            ) : filtered.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/30 rounded-lg border border-dashed border-border">
-                <Users className="h-10 w-10 text-muted-foreground/40" />
-                <p className="mt-4 text-sm font-medium text-muted-foreground">
-                  {search
-                    ? "Nenhum cliente encontrado para essa busca."
-                    : "Nenhum cliente cadastrado ainda."}
-                </p>
-                {!search && (
-                  <Button
-                    asChild
-                    className="mt-4 rounded-full md:rounded-md"
-                    size="sm"
-                  >
-                    <Link href="/admin/clients/new">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Cadastrar Primeiro Cliente
-                    </Link>
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <>
-                <div className="flex flex-col md:hidden">
-                  {paginated.map((client) => (
-                    <ClientMobileItem
-                      key={client.id}
-                      client={client}
-                      onClick={() => router.push(`/admin/clients/${client.id}`)}
-                      onDelete={handleDeleteClick} // 🔥 Usa a nova função
-                    />
-                  ))}
-                </div>
 
-                <div className="hidden md:block overflow-x-auto rounded-md border border-border">
-                  <Table>
-                    <TableHeader className="bg-muted/50">
-                      <TableRow>
-                        <TableHead className="text-muted-foreground font-semibold">
-                          Cliente
-                        </TableHead>
-                        <TableHead className="text-muted-foreground font-semibold">
-                          CPF
-                        </TableHead>
-                        <TableHead className="text-muted-foreground font-semibold">
-                          WhatsApp
-                        </TableHead>
-                        <TableHead className="text-center text-muted-foreground font-semibold">
-                          Plano / Pacote
-                        </TableHead>
-                        <TableHead className="text-center text-muted-foreground font-semibold w-24">
-                          Ações
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {paginated.map((client) => (
-                        <TableRow
-                          key={client.id}
-                          onClick={() =>
-                            router.push(`/admin/clients/${client.id}`)
+              {/* Visualização Desktop */}
+              <div className="hidden md:block overflow-x-auto rounded-md border border-border">
+                <Table>
+                  <TableHeader className="bg-muted/50">
+                    <TableRow>
+                      <TableHead className="text-muted-foreground font-semibold">
+                        Cliente
+                      </TableHead>
+                      <TableHead className="text-muted-foreground font-semibold">
+                        CPF
+                      </TableHead>
+                      <TableHead className="text-muted-foreground font-semibold">
+                        WhatsApp
+                      </TableHead>
+                      <TableHead className="text-center text-muted-foreground font-semibold">
+                        Plano / Pacote
+                      </TableHead>
+                      <TableHead className="text-center text-muted-foreground font-semibold w-24">
+                        Ações
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {clients.map((client) => (
+                      <TableRow
+                        key={client.id}
+                        onClick={() => {
+                          if (client.active) {
+                            router.push(`/admin/clients/${client.id}`);
                           }
-                          className="hover:bg-muted/30 transition-colors cursor-pointer"
-                        >
-                          <TableCell className="font-medium text-foreground">
-                            <div className="flex items-center gap-3">
-                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs">
-                                {client.name.charAt(0).toUpperCase()}
-                              </div>
-                              {client.name}
+                        }}
+                        className={cn(
+                          "transition-colors",
+                          client.active
+                            ? "hover:bg-muted/30 cursor-pointer"
+                            : "opacity-60 bg-muted/10 cursor-not-allowed grayscale-[0.2]",
+                        )}
+                      >
+                        <TableCell className="font-medium text-foreground">
+                          <div className="flex items-center gap-3">
+                            {/* Avatar com borda azul se tiver anamnese */}
+                            <div
+                              className={cn(
+                                "flex h-8 w-8 items-center justify-center rounded-full font-bold text-xs border-2",
+                                client.active && client.hasAnamnesis
+                                  ? "border-blue-500 bg-blue-500/10 text-blue-600"
+                                  : client.active
+                                    ? "bg-primary/10 text-primary border-primary/20"
+                                    : "bg-muted-foreground/10 text-muted-foreground border-muted-foreground/20",
+                              )}
+                            >
+                              {client.name.charAt(0).toUpperCase()}
                             </div>
-                          </TableCell>
-                          <TableCell className="font-mono text-sm text-muted-foreground">
-                            {client.cpf}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {client.phone_whatsapp}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {client.activePackageName ? (
-                              <span className="inline-flex items-center px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-semibold">
-                                {client.activePackageName}
+                            <div className="flex flex-col">
+                              <span className="font-semibold">
+                                {client.name}
                               </span>
-                            ) : (
-                              <span className="text-muted-foreground/50">
-                                -
-                              </span>
-                            )}
-                          </TableCell>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-mono text-sm text-muted-foreground">
+                          <div className="flex flex-col">
+                            <span>{client.cpf}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {client.phone_whatsapp}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {client.activePackageName && client.active ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-semibold">
+                              {client.activePackageName}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground/50">-</span>
+                          )}
+                        </TableCell>
 
-                          <TableCell className="text-center">
-                            <button
-                              onClick={(e) => handleDeleteClick(client, e)} // 🔥 Usa a nova função
-                              className="inline-flex p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-colors active:scale-95"
-                              title={
-                                client.hasHistory
+                        <TableCell className="text-center">
+                          <button
+                            onClick={(e) => handleActionClick(client, e)}
+                            className={cn(
+                              "inline-flex p-2 rounded-full transition-all active:scale-95",
+                              client.active
+                                ? "text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:bg-destructive/20"
+                                : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10 active:bg-emerald-500/20",
+                            )}
+                            title={
+                              !client.active
+                                ? "Reativar Cliente"
+                                : client.hasHistory
                                   ? "Desativar Cliente"
                                   : "Excluir Cliente"
-                              }
-                            >
-                              {client.hasHistory ? (
-                                <UserMinus className="h-5 w-5" />
-                              ) : (
-                                <Trash2 className="h-5 w-5" />
-                              )}
-                            </button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                            }
+                          >
+                            {!client.active ? (
+                              <UserCheck className="h-5 w-5" />
+                            ) : client.hasHistory ? (
+                              <UserMinus className="h-5 w-5" />
+                            ) : (
+                              <Trash2 className="h-5 w-5" />
+                            )}
+                          </button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
 
-                {totalPages > 1 && (
-                  <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-border pt-4">
-                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                      {`Mostrando ${(page - 1) * ITEMS_PER_PAGE + 1}-${Math.min(page * ITEMS_PER_PAGE, filtered.length)} de ${filtered.length}`}
-                    </p>
-                    <div className="flex gap-2 w-full sm:w-auto">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={page === 1}
-                        onClick={() => setPage((p) => p - 1)}
-                        className="text-foreground w-full sm:w-auto rounded-full md:rounded-md"
-                      >
-                        Anterior
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={page === totalPages}
-                        onClick={() => setPage((p) => p + 1)}
-                        className="text-foreground w-full sm:w-auto rounded-full md:rounded-md"
-                      >
-                        Próximo
-                      </Button>
-                    </div>
+              {/* Paginação */}
+              {totalPages > 1 && (
+                <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-border pt-4">
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                    {`Mostrando ${(page - 1) * ITEMS_PER_PAGE + 1}-${Math.min(
+                      page * ITEMS_PER_PAGE,
+                      totalClients,
+                    )} de ${totalClients}`}
+                  </p>
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page === 1}
+                      onClick={() => setPage((p) => p - 1)}
+                      className="text-foreground w-full sm:w-auto rounded-full md:rounded-md"
+                    >
+                      Anterior
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page === totalPages}
+                      onClick={() => setPage((p) => p + 1)}
+                      className="text-foreground w-full sm:w-auto rounded-full md:rounded-md"
+                    >
+                      Próximo
+                    </Button>
                   </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
-      {/* 🔥 Modal de Confirmação Shadcn/ui */}
       <AlertDialog
         open={!!clientToProcess}
         onOpenChange={(open) => !open && setClientToProcess(null)}
@@ -368,27 +462,38 @@ export default function AdminClientsPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {clientToProcess?.hasHistory
-                ? "Desativar Cliente"
-                : "Excluir Cliente"}
+              {!clientToProcess?.active
+                ? "Reativar Cliente"
+                : clientToProcess?.hasHistory
+                  ? "Desativar Cliente"
+                  : "Excluir Cliente"}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {clientToProcess?.hasHistory
-                ? `Tem certeza que deseja desativar o cliente ${clientToProcess.name}? Ele não aparecerá mais nas listas, mas seu histórico (agendamentos e pacotes) será mantido para consultas futuras.`
-                : `Tem certeza que deseja excluir o cliente ${clientToProcess?.name} definitivamente? Esta ação não pode ser desfeita e os dados serão removidos do banco.`}
+              {!clientToProcess?.active
+                ? `O cliente ${clientToProcess?.name} voltará a aparecer nas listas e poderá agendar sessões novamente.`
+                : clientToProcess?.hasHistory
+                  ? `Tem certeza que deseja desativar o cliente ${clientToProcess.name}? Ele não aparecerá mais nas listas, mas seu histórico será mantido.`
+                  : `Tem certeza que deseja excluir o cliente ${clientToProcess?.name} definitivamente? Esta ação não pode ser desfeita.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmProcess}
-              className={
-                clientToProcess?.hasHistory
-                  ? "bg-orange-600 hover:bg-orange-700 text-white"
-                  : "bg-destructive hover:bg-destructive/90"
-              }
+              className={cn(
+                "text-white",
+                !clientToProcess?.active
+                  ? "bg-emerald-600 hover:bg-emerald-700"
+                  : clientToProcess?.hasHistory
+                    ? "bg-orange-600 hover:bg-orange-700"
+                    : "bg-destructive hover:bg-destructive/90",
+              )}
             >
-              {clientToProcess?.hasHistory ? "Sim, desativar" : "Sim, excluir"}
+              {!clientToProcess?.active
+                ? "Sim, reativar"
+                : clientToProcess?.hasHistory
+                  ? "Sim, desativar"
+                  : "Sim, excluir"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

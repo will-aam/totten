@@ -1,3 +1,4 @@
+// app/api/clients/[id]/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin } from "@/lib/auth";
@@ -65,6 +66,7 @@ export async function GET(
         street: client.street,
         number: client.number,
         created_at: client.created_at,
+        active: client.active, // 🔥 O front precisa saber se ele está inativo
       },
       packages: client.packages,
       checkIns: client.check_ins,
@@ -94,7 +96,6 @@ export async function DELETE(
         id: id,
         organization_id: admin.organizationId,
       },
-      // 🔥 Conta o histórico do cliente antes de tomar qualquer decisão
       include: {
         _count: {
           select: {
@@ -113,7 +114,7 @@ export async function DELETE(
       );
     }
 
-    // 🔥 Lógica de Exclusão Inteligente
+    // Lógica de Exclusão Inteligente
     const hasHistory =
       client._count.appointments > 0 ||
       client._count.check_ins > 0 ||
@@ -138,6 +139,7 @@ export async function DELETE(
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -217,7 +219,7 @@ export async function POST(
         price: priceValue,
         client_id: id,
         organization_id: admin.organizationId,
-        service_id, // ✅ obrigatório no schema
+        service_id,
       },
     });
 
@@ -286,6 +288,7 @@ export async function PUT(
         city: body.city ?? client.city,
         street: body.street ?? client.street,
         number: body.number ?? client.number,
+        active: body.active !== undefined ? body.active : client.active, // 🔥 Permite reativar ou inativar o cliente via API de edição
       },
     });
 

@@ -1,9 +1,10 @@
+// app/api/clients/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin } from "@/lib/auth";
 
-// GET - Lista todos os clientes ativos da organização
-export async function GET() {
+// GET - Lista clientes com Paginação Server-Side, Busca e Clientes Inativos
+export async function GET(request: Request) {
   try {
     const admin = await getCurrentAdmin();
 
@@ -11,52 +12,78 @@ export async function GET() {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    const clients = await prisma.client.findMany({
-      where: {
-        organization_id: admin.organizationId,
-        active: true, // 🔥 Garante que só vamos listar clientes ativos
-      },
-      orderBy: {
-        name: "asc",
-      },
-      select: {
-        id: true,
-        name: true,
-        cpf: true,
-        phone_whatsapp: true,
-        email: true,
-        birth_date: true,
-        created_at: true,
-        packages: {
-          where: { active: true },
-          select: {
-            id: true,
-            name: true,
-            used_sessions: true,
-            total_sessions: true,
+    // 🔥 Puxando parâmetros de paginação e busca da URL
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "10", 10);
+    const search = searchParams.get("q") || "";
+    const skip = (page - 1) * limit;
+
+    // Construindo a query de forma dinâmica
+    const whereClause: any = {
+      organization_id: admin.organizationId,
+      // 🔥 Removido o active: true para trazer os inativos também
+    };
+
+    if (search) {
+      whereClause.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { cpf: { contains: search } },
+        { phone_whatsapp: { contains: search } },
+      ];
+    }
+
+    // 🔥 Faz as duas requisições em paralelo (contagem total e os dados) para alta performance
+    const [totalCount, clients] = await Promise.all([
+      prisma.client.count({ where: whereClause }),
+      prisma.client.findMany({
+        where: whereClause,
+        orderBy: {
+          name: "asc",
+        },
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          name: true,
+          cpf: true,
+          phone_whatsapp: true,
+          email: true,
+          birth_date: true,
+          created_at: true,
+          active: true, // Precisamos saber se está ativo para pintar de cinza no front
+          packages: {
+            where: { active: true },
+            select: {
+              id: true,
+              name: true,
+              used_sessions: true,
+              total_sessions: true,
+            },
+          },
+          _count: {
+            select: {
+              appointments: true,
+              check_ins: true,
+              packages: true,
+              anamnesis_responses: true, // 🔥 Conta as respostas de anamnese
+            },
           },
         },
-        // 🔥 Conta as relações para sabermos se o cliente tem histórico
-        _count: {
-          select: {
-            appointments: true,
-            check_ins: true,
-            packages: true,
-          },
-        },
-      },
-    });
+      }),
+    ]);
 
     const formattedClients = clients.map((client) => {
       const activePkg = client.packages.find(
         (pkg) => pkg.used_sessions < pkg.total_sessions,
       );
 
-      // 🔥 Lógica Inteligente: Se tem agendamento, check-in ou pacote = tem histórico!
       const hasHistory =
         client._count.appointments > 0 ||
         client._count.check_ins > 0 ||
         client._count.packages > 0;
+
+      const hasAnamnesis = client._count.anamnesis_responses > 0;
 
       return {
         id: client.id,
@@ -66,19 +93,26 @@ export async function GET() {
         email: client.email,
         birth_date: client.birth_date,
         created_at: client.created_at,
+        active: client.active,
         activePackageName: activePkg ? activePkg.name : null,
-        hasHistory, // 🔥 Passamos esta info para o Frontend decidir qual botão mostrar
+        hasHistory,
+        hasAnamnesis, // 🔥 Enviando para a tabela exibir o ícone
       };
     });
 
-    return NextResponse.json(formattedClients);
+    return NextResponse.json({
+      data: formattedClients,
+      total: totalCount,
+      page,
+      totalPages: Math.ceil(totalCount / limit) || 1,
+    });
   } catch (error) {
     console.error("Erro ao buscar clientes:", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }
 
-// POST - Cria um novo cliente
+// POST - Cria um novo cliente (Inalterado)
 export async function POST(request: Request) {
   try {
     const admin = await getCurrentAdmin();
@@ -117,7 +151,6 @@ export async function POST(request: Request) {
     });
 
     if (existingClient) {
-      // Se ele existir mas estiver inativo, não deixamos criar de novo para evitar conflito.
       return NextResponse.json(
         { error: "Este CPF já está cadastrado na organização" },
         { status: 409 },
@@ -136,7 +169,7 @@ export async function POST(request: Request) {
         street: street || null,
         number: number || null,
         organization_id: admin.organizationId,
-        active: true, // 🔥 Garante que nasce ativo
+        active: true,
       },
     });
 
