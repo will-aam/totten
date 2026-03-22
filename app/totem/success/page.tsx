@@ -98,7 +98,6 @@ function SuccessContent() {
           /* VISUAL PARA ATENDIMENTO AVULSO */
           <div className="w-full rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-6">
             <div className="flex items-center justify-center gap-2 mb-2 text-primary">
-              <Sparkles className="h-5 w-5" />
               <span className="font-bold uppercase tracking-wider text-sm">
                 Atendimento Avulso
               </span>

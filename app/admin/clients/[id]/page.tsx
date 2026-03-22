@@ -70,7 +70,7 @@ export default function ClientDetailPage({
     return (
       <>
         <AdminHeader title="Perfil do Cliente" />
-        <div className="flex flex-col gap-6 p-4 md:p-6 max-w-5xl mx-auto w-full">
+        <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full">
           <Skeleton className="h-10 w-10 rounded-full" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Skeleton className="h-64 md:col-span-2 rounded-xl" />
@@ -106,7 +106,7 @@ export default function ClientDetailPage({
       <AdminHeader title="Perfil do Cliente" />
 
       {/* Adicionamos 'relative' aqui para caso o botão precise de contexto */}
-      <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 max-w-5xl mx-auto w-full pb-24 md:pb-6 relative">
+      <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative">
         {/* Bloco 1: Cabeçalho */}
         <ClientHeader client={client} />
 

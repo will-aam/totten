@@ -438,7 +438,7 @@ export function ClientForm() {
               {selectedTemplate && (
                 <div className="bg-primary/5 p-4 rounded-2xl border border-primary/20 space-y-3 animate-in fade-in zoom-in-95 duration-200">
                   <div className="flex items-center gap-2 text-primary font-bold text-sm">
-                    <Sparkles className="h-4 w-4" /> Resumo Selecionado
+                    Resumo Selecionado
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm font-bold text-foreground">

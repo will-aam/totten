@@ -98,7 +98,7 @@ const financeSubItems = [
   },
   {
     title: "Pacotes e Planos",
-    href: "/admin/finance/packages",
+    href: "/admin/packages",
     active: true,
   },
 ];

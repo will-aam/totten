@@ -264,7 +264,7 @@ export function PackageForm() {
         <CardContent className="px-0 pt-0 md:p-6 flex items-center justify-between">
           <div className="flex flex-col gap-1 pr-4">
             <Label className="flex items-center gap-2 text-base font-medium">
-              <Sparkles className="h-5 w-5 text-primary" /> Pacote Ativo
+              Pacote Ativo
             </Label>
             <p className="text-sm text-muted-foreground">
               Disponível para venda imediatamente após salvar.

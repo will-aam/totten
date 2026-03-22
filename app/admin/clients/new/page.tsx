@@ -5,14 +5,12 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { ClientForm } from "@/components/client/client-form";
 
-// Como tiramos o form daqui, esta página pode ser um Server Component (Muito mais rápido!)
 export default function NewClientPage() {
   return (
     <>
       <AdminHeader title="Novo Cliente" />
 
-      <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 max-w-5xl mx-auto w-full pb-24 md:pb-6">
-        {/* Cabeçalho da Página */}
+      <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 border-b border-border/50 pb-4 md:pb-6">
           <Button
             asChild
@@ -34,7 +32,6 @@ export default function NewClientPage() {
           </div>
         </div>
 
-        {/* COMPONENTE DO FORMULÁRIO INJETADO AQUI */}
         <ClientForm />
       </div>
     </>

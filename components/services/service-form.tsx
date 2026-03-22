@@ -144,7 +144,6 @@ export function ServiceForm() {
       <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card">
         <CardHeader className="px-0 pt-0 md:pt-6 md:px-6 pb-4">
           <CardTitle className="text-lg flex items-center gap-2 text-foreground">
-            <Sparkles className="h-5 w-5 text-primary" />
             Informações do Serviço
           </CardTitle>
           <CardDescription>

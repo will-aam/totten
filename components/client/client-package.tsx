@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Package, Plus, Award, Loader2 } from "lucide-react";
+import { Package, Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { PackageVoucher } from "./package-voucher";
 import { cn } from "@/lib/utils";
@@ -254,7 +254,7 @@ export function ClientPackage({
             <div className="flex flex-col gap-5 p-5 rounded-xl border border-border/40 md:bg-muted/10">
               <div className="flex flex-col gap-1">
                 <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-                  <Award className="h-3 w-3" /> Sessões Realizadas
+                  Sessões Realizadas
                 </span>
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-4xl font-black text-primary leading-none">
@@ -285,7 +285,7 @@ export function ClientPackage({
                   variant="outline"
                   className="w-full rounded-xl border-primary/20 text-primary select-none transition-transform duration-100 ease-out hover:bg-transparent active:scale-95 active:bg-primary/10 h-10"
                 >
-                  <Award className="mr-2 h-4 w-4" /> Comprovante Final
+                  Comprovante Final
                 </Button>
               )}
             </div>
