@@ -1,7 +1,7 @@
 // app/admin/clients/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useSWR from "swr";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -27,6 +27,7 @@ import {
   Trash2,
   UserMinus,
   UserCheck,
+  ArrowUp, // 🔥 Import do ícone ArrowUp
 } from "lucide-react";
 
 import {
@@ -153,6 +154,9 @@ export default function AdminClientsPage() {
   const [page, setPage] = useState(1);
   const debouncedSearch = useDebounce(search, 500);
 
+  // 🔥 Novo Estado para o botão de Scroll
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
   const apiUrl = `/api/clients?page=${page}&limit=${ITEMS_PER_PAGE}${
     debouncedSearch ? `&q=${encodeURIComponent(debouncedSearch)}` : ""
   }`;
@@ -168,6 +172,20 @@ export default function AdminClientsPage() {
   const totalClients = apiResponse?.total || 0;
 
   const [clientToProcess, setClientToProcess] = useState<Client | null>(null);
+
+  // 🔥 Efeito para controlar a visibilidade do botão ArrowUp
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 200);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const handleActionClick = (client: Client, e: React.MouseEvent) => {
     e.preventDefault();
@@ -227,7 +245,7 @@ export default function AdminClientsPage() {
   return (
     <>
       <AdminHeader title="Clientes" />
-      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-6xl mx-auto w-full pb-24 md:pb-6">
+      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-6xl mx-auto w-full pb-24 md:pb-6 relative">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full sm:max-w-md">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -454,6 +472,20 @@ export default function AdminClientsPage() {
           )}
         </div>
       </div>
+
+      {/* 🔥 Botão ArrowUp */}
+      <button
+        onClick={scrollToTop}
+        className={cn(
+          "fixed bottom-20 md:bottom-8 right-4 md:right-8 p-3 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 z-50",
+          showScrollTop
+            ? "translate-y-0 opacity-100"
+            : "translate-y-10 opacity-0 pointer-events-none",
+        )}
+        aria-label="Voltar ao topo"
+      >
+        <ArrowUp className="h-5 w-5" strokeWidth={2.5} />
+      </button>
 
       <AlertDialog
         open={!!clientToProcess}

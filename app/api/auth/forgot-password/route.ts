@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     if (!email) {
       return NextResponse.json(
         { error: "E-mail é obrigatório" },
-        { status: 400 },
+        { status: 400 }, // <-- Correção feita aqui, removidas as aspas ''
       );
     }
 

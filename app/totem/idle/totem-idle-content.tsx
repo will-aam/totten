@@ -100,7 +100,7 @@ export default function TotemIdleContent() {
           {status === "authenticated" ? (
             <>
               <LayoutDashboard className="h-4 w-4 transition-transform group-hover:scale-110" />
-              <span className="text-[10px] uppercase tracking-widest font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="text-[10px] uppercase tracking-widest font-medium opacity-110">
                 Ir para Dashboard
               </span>
             </>

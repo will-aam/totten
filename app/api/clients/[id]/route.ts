@@ -2,12 +2,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin } from "@/lib/auth";
-import type { Client, Package, CheckIn } from "@prisma/client";
-
-type ClientWithRelations = Client & {
-  packages: Package[];
-  check_ins: CheckIn[];
-};
 
 export async function GET(
   _request: Request,
@@ -22,25 +16,15 @@ export async function GET(
 
     const { id } = await params;
 
-    const client = (await prisma.client.findFirst({
+    // 🔥 FASE 4: OTIMIZAÇÃO MAX!
+    // Removemos os 'includes' pesados. A página agora carrega instantaneamente,
+    // e os componentes filhos (Histórico, Pacotes) buscam os dados deles separadamente.
+    const client = await prisma.client.findFirst({
       where: {
         id: id,
         organization_id: admin.organizationId,
       },
-      include: {
-        packages: {
-          orderBy: {
-            created_at: "desc",
-          },
-        },
-        check_ins: {
-          orderBy: {
-            date_time: "desc",
-          },
-          take: 10,
-        },
-      },
-    })) as ClientWithRelations | null;
+    });
 
     if (!client) {
       return NextResponse.json(
@@ -48,10 +32,6 @@ export async function GET(
         { status: 404 },
       );
     }
-
-    const activePackage = client.packages.find(
-      (pkg: Package) => pkg.used_sessions < pkg.total_sessions,
-    );
 
     return NextResponse.json({
       client: {
@@ -66,11 +46,8 @@ export async function GET(
         street: client.street,
         number: client.number,
         created_at: client.created_at,
-        active: client.active, // 🔥 O front precisa saber se ele está inativo
+        active: client.active, // 🔥 Essencial para o frontend saber se bloqueia a edição
       },
-      packages: client.packages,
-      checkIns: client.check_ins,
-      activePackage: activePackage || null,
     });
   } catch (error) {
     console.error("Erro ao buscar cliente:", error);
@@ -114,21 +91,18 @@ export async function DELETE(
       );
     }
 
-    // Lógica de Exclusão Inteligente
     const hasHistory =
       client._count.appointments > 0 ||
       client._count.check_ins > 0 ||
       client._count.packages > 0;
 
     if (hasHistory) {
-      // Tem histórico: Fazemos o SOFT DELETE (Desativar)
       await prisma.client.update({
         where: { id: id },
         data: { active: false },
       });
       return NextResponse.json({ success: true, action: "deactivated" });
     } else {
-      // Não tem histórico: Fazemos o HARD DELETE (Apagar do banco)
       await prisma.client.delete({
         where: { id: id },
       });
@@ -276,19 +250,31 @@ export async function PUT(
       }
     }
 
+    // 🔥 CORREÇÃO DO BUG: Convertendo a string para um DateTime válido antes de salvar!
+    let formattedBirthDate = client.birth_date;
+    if (body.birth_date !== undefined) {
+      if (body.birth_date === null) {
+        formattedBirthDate = null;
+      } else {
+        // O front envia "YYYY-MM-DD". Concatenamos "T12:00:00Z" para criar o ISO exato.
+        formattedBirthDate = new Date(`${body.birth_date}T12:00:00Z`);
+      }
+    }
+
+    // Usamos '!== undefined' para permitir salvar campos vazios/null intencionalmente
     const updated = await prisma.client.update({
       where: { id },
       data: {
         name: body.name ?? client.name,
         cpf: body.cpf ?? client.cpf,
         phone_whatsapp: body.phone_whatsapp ?? client.phone_whatsapp,
-        email: body.email ?? client.email,
-        birth_date: body.birth_date ?? client.birth_date,
-        zip_code: body.zip_code ?? client.zip_code,
-        city: body.city ?? client.city,
-        street: body.street ?? client.street,
-        number: body.number ?? client.number,
-        active: body.active !== undefined ? body.active : client.active, // 🔥 Permite reativar ou inativar o cliente via API de edição
+        email: body.email !== undefined ? body.email : client.email,
+        birth_date: formattedBirthDate,
+        zip_code: body.zip_code !== undefined ? body.zip_code : client.zip_code,
+        city: body.city !== undefined ? body.city : client.city,
+        street: body.street !== undefined ? body.street : client.street,
+        number: body.number !== undefined ? body.number : client.number,
+        active: body.active !== undefined ? body.active : client.active,
       },
     });
 

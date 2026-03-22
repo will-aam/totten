@@ -1,3 +1,4 @@
+// components/client/client-contact.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -5,13 +6,7 @@ import { mutate } from "swr";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label"; // 🔥 Importado
-import { Calendar } from "@/components/ui/calendar"; // 🔥 Importado
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"; // 🔥 Importado
+import { Label } from "@/components/ui/label";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,10 +28,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
-// 🔥 Tipos atualizados com os campos que faltavam da Ficha Completa
 export type ClientContactType = {
   id: string;
   name: string;
@@ -50,19 +43,11 @@ export type ClientContactType = {
   number?: string | null;
 };
 
-export type ActivePackageType = {
-  id: string;
-  name: string;
-  total_sessions: number;
-  used_sessions: number;
-};
-
 interface ClientContactProps {
   client: ClientContactType;
-  activePackage: ActivePackageType | null;
 }
 
-// Máscaras de formatação
+// Máscaras de Input
 function formatPhoneInput(value: string) {
   const d = value.replace(/\D/g, "").slice(0, 11);
   if (d.length <= 2) return `(${d}`;
@@ -76,23 +61,36 @@ function formatCepInput(value: string) {
   return `${d.slice(0, 5)}-${d.slice(5)}`;
 }
 
-// 🔥 Evita o bug comum de datas do banco de dados (que costumam vir no fuso UTC e podem pular para o dia anterior)
-function parseDate(dateStr: string | null | undefined) {
-  if (!dateStr) return undefined;
-  const pureDate = dateStr.split("T")[0]; // "1990-05-15"
-  return new Date(`${pureDate}T12:00:00`); // Força a hora para o meio-dia
+// 🔥 Nova máscara para a Data de Nascimento (DD/MM/AAAA)
+function formatDateInput(value: string) {
+  const d = value.replace(/\D/g, "").slice(0, 8);
+  if (d.length <= 2) return d;
+  if (d.length <= 4) return `${d.slice(0, 2)}/${d.slice(2)}`;
+  return `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4, 8)}`;
 }
 
-export function ClientContact({ client, activePackage }: ClientContactProps) {
+function parseDate(dateStr: string | null | undefined) {
+  if (!dateStr) return undefined;
+  const pureDate = dateStr.split("T")[0];
+  return new Date(`${pureDate}T12:00:00`);
+}
+
+function initDateStr(dateStr?: string | null) {
+  if (!dateStr) return "";
+  const d = parseDate(dateStr);
+  return d ? format(d, "dd/MM/yyyy") : "";
+}
+
+export function ClientContact({ client }: ClientContactProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Estados de Edição da Ficha Completa
   const [editPhone, setEditPhone] = useState(client.phone_whatsapp || "");
   const [editEmail, setEditEmail] = useState(client.email || "");
-  const [editBirthDate, setEditBirthDate] = useState<Date | undefined>(
-    parseDate(client.birth_date),
-  );
+  
+  // 🔥 Data agora é controlada como string para facilitar a digitação da usuária
+  const [editBirthDate, setEditBirthDate] = useState(initDateStr(client.birth_date));
+  
   const [editZipCode, setEditZipCode] = useState(client.zip_code || "");
   const [editCity, setEditCity] = useState(client.city || "");
   const [editStreet, setEditStreet] = useState(client.street || "");
@@ -120,12 +118,11 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
     }
   }, []);
 
-  // Garante que o modo de edição não fica com dados antigos se a API for revalidada no fundo
   useEffect(() => {
     if (!isEditing) {
       setEditPhone(client.phone_whatsapp || "");
       setEditEmail(client.email || "");
-      setEditBirthDate(parseDate(client.birth_date));
+      setEditBirthDate(initDateStr(client.birth_date));
       setEditZipCode(client.zip_code || "");
       setEditCity(client.city || "");
       setEditStreet(client.street || "");
@@ -137,7 +134,7 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
     setIsEditing(false);
     setEditPhone(client.phone_whatsapp || "");
     setEditEmail(client.email || "");
-    setEditBirthDate(parseDate(client.birth_date));
+    setEditBirthDate(initDateStr(client.birth_date));
     setEditZipCode(client.zip_code || "");
     setEditCity(client.city || "");
     setEditStreet(client.street || "");
@@ -158,6 +155,22 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
       return;
     }
 
+    // 🔥 Validação e Formatação da Data de Nascimento (DD/MM/AAAA para YYYY-MM-DD)
+    let formattedBirthDate = null;
+    if (editBirthDate.length === 10) {
+      const [day, month, year] = editBirthDate.split("/");
+      formattedBirthDate = `${year}-${month}-${day}`;
+      
+      const d = new Date(`${formattedBirthDate}T12:00:00Z`);
+      if (isNaN(d.getTime()) || d.getFullYear() > new Date().getFullYear() || d.getFullYear() < 1900) {
+        toast.error("A data de nascimento informada é inválida.");
+        return;
+      }
+    } else if (editBirthDate.length > 0 && editBirthDate.length < 10) {
+      toast.error("A data de nascimento está incompleta. Use DD/MM/AAAA.");
+      return;
+    }
+
     setSaving(true);
     try {
       const res = await fetch(`/api/clients/${client.id}`, {
@@ -168,9 +181,7 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
           cpf: client.cpf,
           phone_whatsapp: editPhone,
           email: editEmail || null,
-          birth_date: editBirthDate
-            ? format(editBirthDate, "yyyy-MM-dd")
-            : null,
+          birth_date: formattedBirthDate, // Envia para o banco já no formato correto
           zip_code: editZipCode || null,
           city: editCity || null,
           street: editStreet || null,
@@ -185,7 +196,7 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
 
       toast.success("Ficha do cliente atualizada com sucesso!");
       setIsEditing(false);
-      mutate(`/api/clients/${client.id}`); // Atualiza os dados no ecrã automaticamente
+      mutate(`/api/clients/${client.id}`);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Erro ao salvar.");
     } finally {
@@ -194,14 +205,11 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
   };
 
   const formatMessage = (template: string) => {
-    const totalSessoes = activePackage?.total_sessions || 10;
-    const usadas = activePackage?.used_sessions || 0;
     const nomeCurto = client.name.split(" ")[0];
-
     return template
       .replace(/{nome}/g, nomeCurto)
-      .replace(/{usadas}/g, usadas.toString())
-      .replace(/{total}/g, totalSessoes.toString())
+      .replace(/{usadas}/g, "-")
+      .replace(/{total}/g, "-")
       .replace(/{horario}/g, "09:00");
   };
 
@@ -229,7 +237,6 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
     window.open(`mailto:${client.email}`, "_self");
   };
 
-  // Formatação bonita para apresentação do endereço
   const addressParts = [];
   if (client.street)
     addressParts.push(
@@ -243,7 +250,8 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
     <Card className="md:col-span-2 border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card">
       <CardHeader className="px-0 pt-0 md:pt-6 md:px-6 pb-3 md:pb-6 flex flex-row items-center justify-between">
         <CardTitle className="text-lg flex items-center gap-2 text-foreground">
-          <Share2 className="h-5 w-5 text-primary" /> Ficha e Contato
+          <Share2 className="h-5 w-5 text-primary" strokeWidth={1.5} />
+          Contato e Ficha
         </CardTitle>
 
         <div className="flex items-center gap-1">
@@ -253,7 +261,7 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
                 onClick={handleCancel}
                 variant="ghost"
                 size="icon"
-                className="rounded-full h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                className="rounded-full h-8 w-8 text-muted-foreground select-none transition-transform duration-100 ease-out hover:bg-transparent active:scale-90 active:brightness-90"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -262,7 +270,7 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
                 disabled={saving}
                 variant="ghost"
                 size="icon"
-                className="rounded-full h-8 w-8 text-[#25D366] hover:bg-[#25D366]/10"
+                className="rounded-full h-8 w-8 text-[#25D366] select-none transition-transform duration-100 ease-out hover:bg-transparent active:scale-90 active:brightness-90"
               >
                 {saving ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -276,7 +284,7 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
               onClick={() => setIsEditing(true)}
               size="icon"
               variant="ghost"
-              className="text-muted-foreground hover:text-primary rounded-full h-8 w-8"
+              className="text-muted-foreground rounded-full h-8 w-8 select-none transition-transform duration-100 ease-out hover:bg-transparent hover:text-muted-foreground active:scale-90 active:text-primary active:brightness-90"
               title="Completar / Editar ficha"
             >
               <Pencil className="h-4 w-4" />
@@ -333,33 +341,20 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
                 <Label className="text-xs font-semibold text-muted-foreground">
                   Nascimento
                 </Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal h-10 bg-muted/30",
-                        !editBirthDate && "text-muted-foreground",
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {editBirthDate
-                        ? format(editBirthDate, "dd/MM/yyyy")
-                        : "Selecionar data"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={editBirthDate}
-                      onSelect={setEditBirthDate}
-                      locale={ptBR}
-                      captionLayout="dropdown"
-                      fromYear={1930}
-                      toYear={new Date().getFullYear()}
-                    />
-                  </PopoverContent>
-                </Popover>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  {/* 🔥 Agora é um Input simples com máscara */}
+                  <Input
+                    value={editBirthDate}
+                    onChange={(e) =>
+                      setEditBirthDate(formatDateInput(e.target.value))
+                    }
+                    placeholder="DD/MM/AAAA"
+                    className="pl-9 h-10 bg-muted/30"
+                  />
+                </div>
               </div>
 
               <div className="space-y-1.5">
@@ -420,8 +415,12 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
             <div className="flex flex-col sm:flex-row gap-3">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button className="bg-[#25D366] text-white hover:bg-[#128C7E] rounded-full flex-1 h-12 text-base shadow-sm transition-all">
-                    <MessageCircle className="mr-2 h-5 w-5" /> WhatsApp
+                  <Button
+                    variant="outline"
+                    className="rounded-full flex-1 h-12 text-base border-[#25D366]/20 select-none transition-transform duration-100 ease-out hover:bg-transparent active:scale-95 active:bg-[#25D366]/10"
+                  >
+                    <MessageCircle className="mr-2 h-5 w-5 text-[#25D366]" />{" "}
+                    WhatsApp
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-70">
@@ -429,7 +428,7 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => handleSendWhatsApp(templates.msgUpdate)}
-                    className="cursor-pointer py-2"
+                    className="cursor-pointer py-2 select-none transition-colors hover:bg-transparent focus:bg-muted/50 data-highlighted:bg-muted/50"
                   >
                     <div className="flex flex-col gap-1">
                       <span className="font-medium text-sm">
@@ -442,7 +441,7 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => handleSendWhatsApp(templates.msgWelcome)}
-                    className="cursor-pointer py-2"
+                    className="cursor-pointer py-2 select-none transition-colors hover:bg-transparent focus:bg-muted/50 data-highlighted:bg-muted/50"
                   >
                     <div className="flex flex-col gap-1">
                       <span className="font-medium text-sm">
@@ -455,7 +454,7 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => handleSendWhatsApp(templates.msgRenewal)}
-                    className="cursor-pointer py-2"
+                    className="cursor-pointer py-2 select-none transition-colors hover:bg-transparent focus:bg-muted/50 data-highlighted:bg-muted/50"
                   >
                     <div className="flex flex-col gap-1">
                       <span className="font-medium text-sm">
@@ -468,7 +467,7 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => handleSendWhatsApp(templates.msgReminder)}
-                    className="cursor-pointer py-2"
+                    className="cursor-pointer py-2 select-none transition-colors hover:bg-transparent focus:bg-muted/50 data-highlighted:bg-muted/50"
                   >
                     <div className="flex flex-col gap-1">
                       <span className="font-medium text-sm">
@@ -481,14 +480,6 @@ export function ClientContact({ client, activePackage }: ClientContactProps) {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-
-              <Button
-                variant="outline"
-                onClick={handleEmail}
-                className="rounded-full flex-1 h-12 text-base border-primary/20 shadow-sm transition-all hover:bg-primary/5"
-              >
-                <Mail className="mr-2 h-5 w-5 text-primary" /> E-mail
-              </Button>
             </div>
 
             {/* 2. INFORMAÇÕES VISUAIS DA FICHA COMPLETA */}
