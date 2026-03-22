@@ -205,8 +205,8 @@ export default function AdminDashboardPage() {
   return (
     <>
       <AdminHeader title="Resumo Diário" />
-      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-6xl mx-auto w-full pb-24 md:pb-6 relative">
-        {/* CARDS */}
+      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative">
+        {" "}
         <div className="flex overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scroll-smooth md:grid md:grid-cols-3 md:overflow-visible md:pb-0 md:px-0 md:mx-0 gap-4 [&::-webkit-scrollbar]:hidden">
           {isLoadingKpis ? (
             <>
@@ -240,9 +240,7 @@ export default function AdminDashboardPage() {
             </>
           )}
         </div>
-
         <PendingCheckInsCard />
-
         {/* LISTA DE CHECK-INS RECENTES */}
         <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card mt-2 md:mt-0">
           <CardHeader className="px-0 pt-0 md:pt-6 md:px-6">

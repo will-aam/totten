@@ -136,7 +136,7 @@ export default function RecurringAppointmentsPage() {
     <>
       <AdminHeader title="Gestão de Recorrências" />
 
-      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-6xl mx-auto w-full pb-24 md:pb-6 relative">
+      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative">
         {/* Cabeçalho da Página e Filtro */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="flex flex-col gap-2">
