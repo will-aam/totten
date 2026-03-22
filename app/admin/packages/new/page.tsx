@@ -10,7 +10,7 @@ export default function NewPackagePage() {
     <>
       <AdminHeader title="Novo Pacote" />
 
-      <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 max-w-4xl mx-auto w-full pb-24 md:pb-6">
+      <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 border-b border-border/50 pb-4 md:pb-6">
           <Button
             asChild
@@ -18,7 +18,6 @@ export default function NewPackagePage() {
             size="icon"
             className="rounded-full h-10 w-10 shrink-0"
           >
-            {/* O botão voltar aponta para a aba de pacotes */}
             <Link href="/admin/services?tab=packages">
               <ArrowLeft className="h-5 w-5 text-muted-foreground" />
             </Link>
@@ -33,7 +32,6 @@ export default function NewPackagePage() {
           </div>
         </div>
 
-        {/* COMPONENTE DO FORMULÁRIO INJETADO AQUI */}
         <PackageForm />
       </div>
     </>

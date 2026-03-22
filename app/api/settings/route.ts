@@ -1,33 +1,24 @@
+// app/api/settings/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin } from "@/lib/auth";
 
-// GET - Busca as configurações da organização
 export async function GET() {
   try {
     const admin = await getCurrentAdmin();
-
-    if (!admin) {
+    if (!admin)
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
 
-    // Busca as configurações da organização do admin
     const settings = await prisma.settings.findUnique({
-      where: {
-        organization_id: admin.organizationId,
-      },
+      where: { organization_id: admin.organizationId },
     });
 
-    if (!settings) {
-      return NextResponse.json(
-        { error: "Configurações não encontradas" },
-        { status: 404 },
-      );
-    }
+    if (!settings)
+      return NextResponse.json({ error: "Não encontrado" }, { status: 404 });
 
     return NextResponse.json({
       companyName: settings.company_name,
-      tradeName: settings.trade_name || "", // 🔥 ADICIONADO
+      tradeName: settings.trade_name || "",
       document: settings.document || "",
       contactPhone: settings.phone_landline || "",
       whatsapp: settings.phone_whatsapp || "",
@@ -36,42 +27,64 @@ export async function GET() {
       closingTime: settings.closing_time,
     });
   } catch (error) {
-    console.error("Erro ao buscar configurações:", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }
 
-// PUT - Atualiza as configurações
 export async function PUT(request: Request) {
   try {
     const admin = await getCurrentAdmin();
-
-    if (!admin) {
+    if (!admin)
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
 
     const body = await request.json();
-    const { companyName, tradeName, document, contactPhone } = body;
+    const {
+      companyName,
+      tradeName,
+      document,
+      contactPhone,
+      openingTime,
+      closingTime,
+    } = body;
 
-    // 🔥 ATUALIZA APENAS O SETTINGS (NÃO mexe mais na Organization)
-    await prisma.settings.update({
-      where: {
+    // 1. Primeiro, buscamos se já existe um settings ou pegamos dados da organização
+    // Isso garante que se for a PRIMEIRA vez, tenhamos um nome padrão para o company_name
+    const existingSettings = await prisma.settings.findUnique({
+      where: { organization_id: admin.organizationId },
+      include: { organization: true },
+    });
+
+    // 2. Montamos o objeto de atualização APENAS com o que foi enviado
+    // Se o campo for undefined, o Prisma simplesmente ignora e mantém o que está no banco
+    const updateData: any = {};
+    if (companyName !== undefined) updateData.company_name = companyName;
+    if (tradeName !== undefined) updateData.trade_name = tradeName;
+    if (document !== undefined) updateData.document = document;
+    if (contactPhone !== undefined) updateData.phone_landline = contactPhone;
+    if (openingTime !== undefined) updateData.opening_time = openingTime;
+    if (closingTime !== undefined) updateData.closing_time = closingTime;
+
+    // 3. Executamos o upsert com segurança
+    await prisma.settings.upsert({
+      where: { organization_id: admin.organizationId },
+      update: updateData,
+      create: {
         organization_id: admin.organizationId,
-      },
-      data: {
-        company_name: companyName,
-        trade_name: tradeName, // 🔥 ADICIONADO
-        document: document,
-        phone_landline: contactPhone,
+        // Se estiver criando do zero e não veio no body, usa o nome da organização como fallback
+        company_name:
+          companyName || existingSettings?.organization.name || "Minha Empresa",
+        trade_name: tradeName || "",
+        document: document || "",
+        phone_landline: contactPhone || "",
+        phone_whatsapp: body.whatsapp || "", // Campo obrigatório no seu schema
+        opening_time: openingTime || "08:00",
+        closing_time: closingTime || "19:00",
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      message: "Configurações atualizadas com sucesso",
-    });
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Erro ao atualizar configurações:", error);
+    console.error("Erro ao atualizar settings:", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }

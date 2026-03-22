@@ -1,7 +1,7 @@
 // components/agenda/monthly-agenda-grid.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
   format,
   startOfMonth,
@@ -11,11 +11,18 @@ import {
   eachDayOfInterval,
   isSameMonth,
   isSameDay,
+  isToday as isDateToday,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Appointment } from "./daily-agenda-grid";
-import { Clock, User } from "lucide-react";
+import {
+  Clock,
+  User,
+  Package as PackageIcon,
+  ChevronRight,
+} from "lucide-react";
+import { Button } from "../ui/button";
 
 interface MonthlyAgendaGridProps {
   appointments: Appointment[];
@@ -32,72 +39,68 @@ export function MonthlyAgendaGrid({
 }: MonthlyAgendaGridProps) {
   const [activeDate, setActiveDate] = useState<Date>(currentDate || new Date());
 
-  useEffect(() => {
-    if (currentDate) {
-      if (isSameMonth(currentDate, new Date())) {
-        setActiveDate(new Date());
-      } else {
-        setActiveDate(startOfMonth(currentDate));
-      }
-    }
-  }, [currentDate]);
+  // 🔥 OTIMIZAÇÃO: Agrupa todos os agendamentos do mês por data uma única vez
+  const groupedData = useMemo(() => {
+    const groups: Record<string, Appointment[]> = {};
+    appointments.forEach((appt) => {
+      const dateKey = format(
+        new Date(appt.date_time || new Date()),
+        "yyyy-MM-dd",
+      );
+      if (!groups[dateKey]) groups[dateKey] = [];
+      groups[dateKey].push(appt);
+    });
+    return groups;
+  }, [appointments]);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);
-  const startDate = startOfWeek(monthStart, { weekStartsOn: 0 }); // Domingo
+  const startDate = startOfWeek(monthStart, { weekStartsOn: 0 });
   const endDate = endOfWeek(monthEnd, { weekStartsOn: 0 });
 
-  const calendarDays = eachDayOfInterval({
-    start: startDate,
-    end: endDate,
-  });
+  const calendarDays = eachDayOfInterval({ start: startDate, end: endDate });
+  const weekDaysHeaders = ["D", "S", "T", "Q", "Q", "S", "S"];
 
-  const weekDaysHeaders = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-
-  const activeDayAppointments = appointments.filter((appt) =>
-    isSameDay(new Date(appt.date_time || new Date()), activeDate),
+  // Dados para a Timeline Mobile
+  const activeDayKey = format(activeDate, "yyyy-MM-dd");
+  const activeDayAppointments = [...(groupedData[activeDayKey] || [])].sort(
+    (a, b) => a.time.localeCompare(b.time),
   );
-  activeDayAppointments.sort((a, b) => a.time.localeCompare(b.time));
 
-  const MAX_APPTS_PER_DAY = 8;
-
-  // 🔥 Limite de agendamentos no Desktop antes de mostrar o "+X"
-  const MAX_DESKTOP_APPTS = 7;
+  const MAX_APPTS_PER_DAY = 8; // Sua regra de negócio para o anel completo
+  const MAX_DESKTOP_APPTS = 5;
 
   return (
-    <>
+    <div className="h-full flex flex-col animate-in fade-in duration-500">
       {/* ========================================== */}
-      {/* VISÃO MOBILE: Calendário Limpo + Linha do Tempo */}
+      {/* VISÃO MOBILE (Com o seu Anel de Volume)    */}
       {/* ========================================== */}
-      <div className="flex flex-col h-full md:hidden">
-        {/* Calendário Superior */}
-        <div className="bg-card rounded-3xl border border-border/50 shadow-sm p-4 mb-4 shrink-0">
-          <div className="grid grid-cols-7 mb-2">
-            {weekDaysHeaders.map((day) => (
+      <div className="flex flex-col h-full md:hidden gap-4">
+        <div className="bg-card rounded-3xl border border-border/50 shadow-sm p-5 shrink-0">
+          <div className="grid grid-cols-7 mb-4">
+            {weekDaysHeaders.map((day, i) => (
               <div
-                key={`mob-header-${day}`}
-                className="text-center text-[10px] font-black uppercase tracking-wider text-muted-foreground"
+                key={`mob-h-${i}`}
+                className="text-center text-[10px] font-black uppercase text-muted-foreground/40"
               >
-                {day.charAt(0)}
+                {day}
               </div>
             ))}
           </div>
 
-          <div className="grid grid-cols-7 gap-y-2 gap-x-1">
+          <div className="grid grid-cols-7 gap-y-4 gap-x-2">
             {calendarDays.map((day) => {
+              const dateKey = format(day, "yyyy-MM-dd");
+              const dayAppts = groupedData[dateKey] || [];
               const isCurrentMonth = isSameMonth(day, monthStart);
               const isActive = isSameDay(day, activeDate);
-              const isToday = isSameDay(day, new Date());
+              const isToday = isDateToday(day);
 
-              const dayAppts = appointments.filter((appt) =>
-                isSameDay(new Date(appt.date_time || new Date()), day),
-              );
-
+              // 🔥 LÓGICA DO SEU ANEL DE VOLUME (SVG)
               const fillPercentage = Math.min(
                 (dayAppts.length / MAX_APPTS_PER_DAY) * 100,
                 100,
               );
-
               const radius = 16;
               const circ = 2 * Math.PI * radius;
               const dash = (fillPercentage / 100) * circ;
@@ -106,11 +109,12 @@ export function MonthlyAgendaGrid({
                 <button
                   key={`mob-day-${day.toISOString()}`}
                   onClick={() => setActiveDate(day)}
-                  className="relative aspect-square flex items-center justify-center rounded-full transition-all"
+                  className="relative aspect-square flex items-center justify-center group"
                 >
+                  {/* O ANEL SVG VOLTOU! */}
                   {dayAppts.length > 0 && !isActive && (
                     <svg
-                      className="absolute inset-0 w-full h-full p-0.5 -rotate-90 pointer-events-none"
+                      className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none p-0.5"
                       viewBox="0 0 36 36"
                     >
                       <circle
@@ -118,7 +122,7 @@ export function MonthlyAgendaGrid({
                         cy="18"
                         r={radius}
                         stroke="currentColor"
-                        strokeWidth="3"
+                        strokeWidth="2.5"
                         fill="none"
                         className="text-primary/10"
                       />
@@ -127,10 +131,11 @@ export function MonthlyAgendaGrid({
                         cy="18"
                         r={radius}
                         stroke="currentColor"
-                        strokeWidth="3"
+                        strokeWidth="2.5"
                         fill="none"
-                        className="text-primary transition-all duration-1000 ease-out"
+                        className="text-primary transition-all duration-700 ease-out"
                         strokeDasharray={`${dash} ${circ}`}
+                        strokeLinecap="round"
                       />
                     </svg>
                   )}
@@ -141,9 +146,9 @@ export function MonthlyAgendaGrid({
                       isActive
                         ? "bg-primary text-primary-foreground shadow-lg scale-110"
                         : isToday
-                          ? "text-primary font-black"
+                          ? "text-primary ring-1 ring-primary/30"
                           : !isCurrentMonth
-                            ? "text-muted-foreground/40"
+                            ? "text-muted-foreground/30"
                             : "text-foreground",
                     )}
                   >
@@ -155,74 +160,70 @@ export function MonthlyAgendaGrid({
           </div>
         </div>
 
-        {/* Linha do Tempo Inferior (Timeline) */}
-        <div className="flex-1 bg-card rounded-3xl border border-border/50 shadow-sm p-4 overflow-hidden flex flex-col">
-          <h3 className="text-sm font-black text-muted-foreground mb-4 uppercase tracking-wider flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-primary" />
-            {format(activeDate, "EEEE, dd 'de' MMM", { locale: ptBR })}
-          </h3>
+        {/* Timeline do Dia Selecionado (Otimizada) */}
+        <div className="flex-1 bg-card rounded-3xl border border-border/50 shadow-sm p-5 overflow-hidden flex flex-col">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-xs font-black text-foreground uppercase tracking-widest flex items-center gap-2">
+              <span className="w-1.5 h-4 bg-primary rounded-full" />
+              {format(activeDate, "EEEE, dd 'de' MMM", { locale: ptBR })}
+            </h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onDayClick?.(activeDate)}
+              className="text-primary font-bold text-[10px] h-7 px-2 uppercase tracking-tighter"
+            >
+              Ver dia completo <ChevronRight className="ml-1 h-3 w-3" />
+            </Button>
+          </div>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 flex flex-col">
+          <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3">
             {activeDayAppointments.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground opacity-60">
-                <Clock className="w-8 h-8 mb-2 opacity-50" />
-                <p className="text-sm font-medium">Dia livre!</p>
-                <p className="text-xs">Nenhum agendamento.</p>
+              <div className="py-10 flex flex-col items-center text-muted-foreground/40">
+                <Clock className="w-8 h-8 mb-2 stroke-1" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-center">
+                  Nenhum atendimento
+                  <br />
+                  neste dia
+                </p>
               </div>
             ) : (
-              <div className="flex flex-col pb-4">
-                {activeDayAppointments.map((appt, idx) => (
-                  <div
-                    key={appt.id}
-                    className="flex gap-4 relative group cursor-pointer"
-                    onClick={() => onAppointmentClick(appt)}
-                  >
-                    {idx !== activeDayAppointments.length - 1 && (
-                      <div className="absolute left-9.75op-6 -bottom-6 w-0.5 bg-border/50 group-hover:bg-primary/30 transition-colors" />
-                    )}
-
-                    <div className="flex items-start gap-3 w-14 shrink-0 pt-1">
-                      <span className="text-xs font-bold text-foreground">
-                        {appt.time}
-                      </span>
-                      <div className="w-2.5 h-2.5 rounded-full bg-primary mt-1 shadow-[0_0_0_3px_var(--bg-card)] shrink-0 z-10" />
-                    </div>
-
-                    <div
-                      className={cn(
-                        "flex-1 mb-4 rounded-2xl p-3 border transition-all active:scale-[0.98]",
-                        appt.color ||
-                          "bg-blue-100 border-blue-200 text-blue-900",
-                      )}
-                    >
-                      <div className="font-bold text-sm mb-0.5 line-clamp-1 flex items-center gap-1.5">
-                        <User className="w-3.5 h-3.5 opacity-70" />
-                        {appt.clientName}
-                      </div>
-                      <div className="text-xs font-medium opacity-80 line-clamp-1">
-                        {appt.service}
-                      </div>
-                      <div className="mt-2 text-[10px] font-black uppercase tracking-wider opacity-60 bg-black/5 w-fit px-2 py-0.5 rounded-md">
-                        {appt.sessionInfo}
-                      </div>
-                    </div>
+              activeDayAppointments.map((appt) => (
+                <div
+                  key={appt.id}
+                  onClick={() => onAppointmentClick(appt)}
+                  className={cn(
+                    "flex items-center gap-4 p-3 rounded-2xl border border-border/30 transition-all active:scale-[0.97]",
+                    appt.color,
+                  )}
+                >
+                  <div className="flex flex-col items-center justify-center w-11 shrink-0 border-r border-black/5 pr-3">
+                    <span className="text-[11px] font-black">{appt.time}</span>
                   </div>
-                ))}
-              </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-black truncate">
+                      {appt.clientName}
+                    </p>
+                    <p className="text-[9px] font-bold opacity-70 truncate uppercase tracking-tighter">
+                      {appt.service}
+                    </p>
+                  </div>
+                </div>
+              ))
             )}
           </div>
         </div>
       </div>
 
       {/* ========================================== */}
-      {/* VISÃO DESKTOP: Grade Clássica (Pílulas) */}
+      {/* VISÃO DESKTOP (Grid Fluida)                */}
       {/* ========================================== */}
       <div className="hidden md:flex flex-col bg-card rounded-3xl border border-border/50 overflow-hidden shadow-sm h-full">
-        <div className="grid grid-cols-7 bg-muted/20 border-b border-border/50">
-          {weekDaysHeaders.map((day) => (
+        <div className="grid grid-cols-7 bg-muted/30 border-b border-border/50">
+          {weekDaysHeaders.map((day, i) => (
             <div
-              key={`desk-header-${day}`}
-              className="text-center py-3 text-xs font-bold uppercase text-muted-foreground border-r border-border/50 last:border-r-0"
+              key={`desk-h-${i}`}
+              className="text-center py-3 text-[10px] font-black uppercase text-muted-foreground/60"
             >
               {day}
             </div>
@@ -231,35 +232,34 @@ export function MonthlyAgendaGrid({
 
         <div className="grid grid-cols-7 auto-rows-fr flex-1">
           {calendarDays.map((day, idx) => {
+            const dateKey = format(day, "yyyy-MM-dd");
+            const dayAppts = groupedData[dateKey] || [];
             const isCurrentMonth = isSameMonth(day, monthStart);
-            const isToday = isSameDay(day, new Date());
+            const isToday = isDateToday(day);
 
-            const dayAppointments = appointments.filter((appt) =>
-              isSameDay(new Date(appt.date_time || new Date()), day),
-            );
-            dayAppointments.sort((a, b) => a.time.localeCompare(b.time));
-
-            // 🔥 Regra do +X (Separa os visíveis dos ocultos)
-            const visibleAppts = dayAppointments.slice(0, MAX_DESKTOP_APPTS);
-            const hiddenCount = dayAppointments.length - MAX_DESKTOP_APPTS;
+            const visibleAppts = [...dayAppts]
+              .sort((a, b) => a.time.localeCompare(b.time))
+              .slice(0, MAX_DESKTOP_APPTS);
+            const hiddenCount = dayAppts.length - MAX_DESKTOP_APPTS;
 
             return (
               <div
                 key={`desk-day-${day.toISOString()}`}
                 onClick={() => onDayClick?.(day)}
                 className={cn(
-                  "min-h-30 p-2 border-r border-b border-border/50 flex flex-col gap-1 relative group cursor-pointer hover:bg-muted/10 transition-colors",
+                  "min-h-30 p-2 border-r border-b border-border/40 flex flex-col gap-1.5 relative group cursor-pointer transition-colors",
                   (idx + 1) % 7 === 0 && "border-r-0",
-                  !isCurrentMonth && "bg-muted/5 opacity-60",
-                  isToday && "bg-primary/5",
+                  !isCurrentMonth && "bg-muted/3 opacity-40 grayscale",
+                  isToday && "bg-primary/3",
+                  isCurrentMonth && "hover:bg-muted/10",
                 )}
               >
-                <div className="flex justify-between items-center px-1 mb-1">
+                <div className="flex justify-between items-center mb-1">
                   <span
                     className={cn(
-                      "text-sm font-semibold flex items-center justify-center h-7 w-7 rounded-full",
+                      "text-xs font-black h-6 w-6 flex items-center justify-center rounded-full",
                       isToday
-                        ? "bg-primary text-primary-foreground shadow-md"
+                        ? "bg-primary text-primary-foreground shadow-sm"
                         : isCurrentMonth
                           ? "text-foreground"
                           : "text-muted-foreground",
@@ -269,8 +269,7 @@ export function MonthlyAgendaGrid({
                   </span>
                 </div>
 
-                {/* 🔥 Removido o overflow-y-auto, agora ele corta (overflow-hidden) */}
-                <div className="flex flex-col gap-1 flex-1 overflow-hidden pr-0.5 pb-1">
+                <div className="flex flex-col gap-1 overflow-hidden">
                   {visibleAppts.map((appt) => (
                     <div
                       key={appt.id}
@@ -279,31 +278,20 @@ export function MonthlyAgendaGrid({
                         onAppointmentClick(appt);
                       }}
                       className={cn(
-                        "text-[10px] leading-tight px-1.5 py-1.5 rounded-md truncate cursor-pointer transition-transform hover:scale-[1.02] border shadow-sm",
+                        "text-[9px] font-bold leading-none px-2 py-1.5 rounded-lg truncate border shadow-sm transition-transform hover:scale-[1.03]",
                         appt.color ||
                           "bg-blue-100 border-blue-200 text-blue-900",
                       )}
-                      title={`${appt.time} - ${appt.clientName} (${appt.service})`}
                     >
-                      <span className="font-bold opacity-80 mr-1">
+                      <span className="opacity-70 mr-1 font-black">
                         {appt.time}
                       </span>
-                      <span className="font-semibold">
-                        {appt.clientName.split(" ")[0]}
-                      </span>
+                      {appt.clientName.split(" ")[0]}
                     </div>
                   ))}
-
-                  {/* 🔥 Botão "+X mais" que redireciona para a visão do dia */}
                   {hiddenCount > 0 && (
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDayClick?.(day);
-                      }}
-                      className="text-[10px] font-bold text-center text-muted-foreground hover:text-primary hover:bg-primary/10 mt-1 py-1 rounded-md cursor-pointer transition-colors"
-                    >
-                      +{hiddenCount} mais
+                    <div className="text-[9px] font-black text-center text-primary/70 bg-primary/5 py-1 rounded-md mt-0.5 border border-primary/10">
+                      + {hiddenCount} mais
                     </div>
                   )}
                 </div>
@@ -312,6 +300,6 @@ export function MonthlyAgendaGrid({
           })}
         </div>
       </div>
-    </>
+    </div>
   );
 }

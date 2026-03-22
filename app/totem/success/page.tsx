@@ -67,7 +67,7 @@ function SuccessContent() {
         </div>
 
         <div>
-          <p className="text-lg text-muted-foreground">Bem-vinda,</p>
+          <p className="text-lg text-muted-foreground">Bem-vindo(a),</p>
           <h1 className="font-serif text-4xl font-bold text-foreground md:text-5xl mt-1">
             {name}
           </h1>
