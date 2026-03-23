@@ -1,11 +1,19 @@
+// app/admin/history/page.tsx
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import useSWR from "swr";
 import { AdminHeader } from "@/components/admin-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ClipboardList, CalendarCheck, ArrowUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  ClipboardList,
+  ArrowUp,
+  CalendarCheck,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import {
@@ -13,29 +21,32 @@ import {
   type EnrichedCheckIn,
 } from "@/components/history/history-table";
 import { HistoryFilters } from "@/components/history/history-filters";
+import { useDebounce } from "@/hooks/use-debounce"; // 🔥 Seu hook de otimização
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
+// Tipagem da resposta da nossa API Otimizada
+type HistoryResponse = {
+  data: EnrichedCheckIn[];
+  total: number;
+  page: number;
+  totalPages: number;
+};
+
 export default function AdminHistoryPage() {
-  // 🔥 Capturamos o 'mutate' para permitir atualização reativa da lista
-  const {
-    data: checkIns,
-    isLoading,
-    mutate,
-  } = useSWR<EnrichedCheckIn[]>("/api/history", fetcher);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 500); // Aguarda 500ms após parar de digitar
 
-  // ESTADOS DOS FILTROS
-  const [filterMode, setFilterMode] = useState<"month" | "range">("month");
-
-  // Estado Aba 1
-  const [currentDate, setCurrentDate] = useState(new Date());
-
-  // Estados Aba 2
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
 
-  // Estado Voltar ao Topo
   const [showScrollTop, setShowScrollTop] = useState(false);
+
+  // Zera a página quando qualquer filtro mudar
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, dateFrom, dateTo]);
 
   useEffect(() => {
     const handleScroll = () => setShowScrollTop(window.scrollY > 200);
@@ -45,115 +56,142 @@ export default function AdminHistoryPage() {
 
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
-  const clearRangeFilters = () => {
+  const clearFilters = () => {
+    setSearch("");
     setDateFrom(undefined);
     setDateTo(undefined);
+    setPage(1);
   };
 
-  // A MÁGICA: Aplica o filtro de acordo com a Aba selecionada
-  const filtered = useMemo(() => {
-    if (!checkIns) return [];
+  // 🔥 SWR CONECTADO COM PAGINAÇÃO NO SERVIDOR
+  const query = new URLSearchParams({
+    page: page.toString(),
+    limit: "15", // Mostra 15 registros por página
+  });
 
-    return checkIns.filter((ci) => {
-      const ciDate = new Date(ci.date_time);
-      ciDate.setHours(0, 0, 0, 0);
+  if (debouncedSearch) query.append("q", debouncedSearch);
+  if (dateFrom) query.append("from", dateFrom.toISOString());
+  if (dateTo) query.append("to", dateTo.toISOString());
 
-      if (filterMode === "month") {
-        return (
-          ciDate.getMonth() === currentDate.getMonth() &&
-          ciDate.getFullYear() === currentDate.getFullYear()
-        );
-      }
+  const {
+    data: response,
+    isLoading,
+    mutate,
+  } = useSWR<HistoryResponse>(`/api/history?${query.toString()}`, fetcher);
 
-      if (filterMode === "range") {
-        if (dateFrom) {
-          const from = new Date(dateFrom);
-          from.setHours(0, 0, 0, 0);
-          if (ciDate < from) return false;
-        }
-        if (dateTo) {
-          const to = new Date(dateTo);
-          to.setHours(23, 59, 59, 999);
-          if (ciDate > to) return false;
-        }
-        return true;
-      }
-
-      return true;
-    });
-  }, [checkIns, filterMode, currentDate, dateFrom, dateTo]);
+  const checkIns = response?.data || [];
+  const total = response?.total || 0;
+  const totalPages = response?.totalPages || 1;
 
   return (
     <>
       <AdminHeader title="Histórico" />
 
-      <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 max-w-6xl mx-auto w-full pb-24 md:pb-6 relative">
+      {/* 🔥 AQUI ESTÁ O AJUSTE: max-w-400 aplicado! */}
+      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-12 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
+        {/* Componente de Filtros Clean */}
         <HistoryFilters
-          filterMode={filterMode}
-          setFilterMode={setFilterMode}
-          currentDate={currentDate}
-          setCurrentDate={setCurrentDate}
+          search={search}
+          setSearch={setSearch}
           dateFrom={dateFrom}
           setDateFrom={setDateFrom}
           dateTo={dateTo}
           setDateTo={setDateTo}
-          clearRangeFilters={clearRangeFilters}
+          clearFilters={clearFilters}
         />
 
-        <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card">
-          <CardHeader className="px-0 pt-0 md:pt-6 md:px-6 pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg text-card-foreground">
-              <ClipboardList className="h-5 w-5 text-primary" />
-              {filterMode === "month"
-                ? "Extrato de Presenças"
-                : "Resultado da Busca"}
-              <span className="ml-auto text-xs font-semibold bg-muted px-2 py-1 rounded-full text-muted-foreground">
-                {filtered.length}{" "}
-                {filtered.length === 1 ? "registro" : "registros"}
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-0 pb-0 md:pb-6 md:px-6">
-            {isLoading ? (
-              <div className="flex flex-col gap-4">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-4">
-                    <Skeleton className="h-10 w-10 rounded-full shrink-0" />
-                    <div className="flex flex-col gap-2 w-full">
-                      <Skeleton className="h-4 w-32" />
-                      <Skeleton className="h-3 w-20" />
-                    </div>
+        {/* Título de Seção "Solto" na tela */}
+        <div className="flex items-center justify-between pt-2">
+          <h2 className="text-xl font-black text-foreground flex items-center gap-2">
+            <ClipboardList className="h-6 w-6 text-primary" />
+            Extrato de Presenças
+          </h2>
+          {!isLoading && (
+            <span className="text-[11px] font-bold bg-muted/60 text-muted-foreground px-3 py-1.5 rounded-full uppercase tracking-wider">
+              {total} {total === 1 ? "Registro" : "Registros"}
+            </span>
+          )}
+        </div>
+
+        {/* Área da Tabela */}
+        <div>
+          {isLoading ? (
+            <div className="flex flex-col gap-4 bg-card p-6 rounded-3xl border border-border/50">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4">
+                  <Skeleton className="h-12 w-12 rounded-2xl shrink-0 bg-muted/50" />
+                  <div className="flex flex-col gap-2 w-full">
+                    <Skeleton className="h-5 w-40 bg-muted/50" />
+                    <Skeleton className="h-3 w-24 bg-muted/50" />
                   </div>
-                ))}
+                </div>
+              ))}
+            </div>
+          ) : checkIns.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center bg-card rounded-4xl border border-dashed border-border/60 shadow-sm">
+              <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                <CalendarCheck className="h-8 w-8 text-muted-foreground" />
               </div>
-            ) : filtered.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/30 rounded-xl border border-dashed border-border mt-2">
-                <CalendarCheck className="h-10 w-10 text-muted-foreground/40" />
-                <p className="mt-4 text-sm font-medium text-muted-foreground px-4">
-                  {filterMode === "month"
-                    ? `Nenhum check-in registrado em ${currentDate.toLocaleString("pt-BR", { month: "long" })}.`
-                    : "Nenhum check-in encontrado para as datas selecionadas."}
-                </p>
-              </div>
-            ) : (
-              // 🔥 Passamos a função 'mutate' para o onUpdate da tabela
-              <HistoryTable data={filtered} onUpdate={mutate} />
-            )}
-          </CardContent>
-        </Card>
+              <p className="text-base font-bold text-foreground">
+                Nenhum check-in encontrado
+              </p>
+              <p className="text-sm font-medium text-muted-foreground mt-1 max-w-sm">
+                Tente ajustar os filtros de busca ou verifique o período
+                selecionado.
+              </p>
+            </div>
+          ) : (
+            <div className="animate-in slide-in-from-bottom-2 duration-500">
+              {/* A Tabela (Que já tem design de Card internamente) */}
+              <HistoryTable data={checkIns} onUpdate={mutate} />
+
+              {/* Controles de Paginação Premium */}
+              {totalPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 bg-card p-4 rounded-2xl border border-border/50 shadow-sm">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-center sm:text-left w-full sm:w-auto">
+                    Página {page} de {totalPages}
+                  </p>
+
+                  <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                    <Button
+                      variant="outline"
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      className="rounded-xl h-10 font-bold bg-background shadow-sm hover:bg-muted"
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      onClick={() =>
+                        setPage((p) => Math.min(totalPages, p + 1))
+                      }
+                      disabled={page === totalPages}
+                      className="rounded-xl h-10 font-bold bg-background shadow-sm hover:bg-muted"
+                    >
+                      Próxima <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
+      {/* Botão de Subir */}
       <button
         onClick={scrollToTop}
         className={cn(
-          "fixed bottom-20 md:bottom-8 right-4 md:right-8 p-3 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 z-50",
+          "fixed bottom-20 md:bottom-8 right-4 md:right-8 p-3.5 flex items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg hover:scale-105 active:scale-95 transition-all duration-300 z-50",
           showScrollTop
             ? "translate-y-0 opacity-100"
-            : "translate-y-10 opacity-0 pointer-events-none",
+            : "translate-y-16 opacity-0 pointer-events-none",
         )}
         aria-label="Voltar ao topo"
       >
-        <ArrowUp className="h-5 w-5" strokeWidth={2.5} />
+        <ArrowUp className="h-5 w-5" strokeWidth={3} />
       </button>
     </>
   );

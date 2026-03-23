@@ -137,3 +137,16 @@
 *::-webkit-scrollbar {
   display: none; /* Oculta no Chrome, Safari e Opera */
 }
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* Mágica do Tema Animado */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}

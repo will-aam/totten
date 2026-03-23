@@ -1,9 +1,10 @@
+// app/admin/settings/page.tsx
 "use client";
 
 import { useState } from "react";
 import { AdminHeader } from "@/components/admin-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MobileBottomNav } from "@/components/mobile-bottom-nav"; // <-- Nosso novo componente
+import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 
 // Seções
 import { GeneralSettings } from "./sections/general-settings";
@@ -38,59 +39,94 @@ export default function AdminSettingsPage() {
   return (
     <>
       <AdminHeader title="Configurações do Sistema" />
-      {/* pb-24 adicionado para o botão "Salvar" não ficar escondido atrás da barra inferior no mobile */}
-      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-5xl mx-auto w-full pb-24 md:pb-6 relative">
+
+      {/* 🔥 1. LARGURA FLUIDA: Trocamos max-w-5xl por max-w-400 para acompanhar monitores grandes */}
+      {/* Adicionado min-h para empurrar o botão de salvar sempre pro fundo */}
+      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-32 md:pb-12 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
         {/* Usamos value e onValueChange para controlar as Tabs programaticamente */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          {/* Menu Desktop: visível apenas a partir de telas médias (hidden md:grid) */}
-          <TabsList className="hidden md:grid w-full grid-cols-5 bg-muted">
-            <TabsTrigger value="general" className="flex gap-2">
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="w-full flex-1 flex flex-col"
+        >
+          {/* 🔥 2. MENU DESKTOP PREMIUM: Arredondado, h-14, fundo suave */}
+          <TabsList className="hidden md:grid w-full grid-cols-5 bg-muted/40 h-14 rounded-2xl p-1 border border-border/50 shadow-sm">
+            <TabsTrigger
+              value="general"
+              className="flex gap-2 rounded-xl font-bold h-full data-[state=active]:shadow-sm transition-all"
+            >
               <Building className="h-4 w-4" /> Geral
             </TabsTrigger>
-            <TabsTrigger value="appearance" className="flex gap-2">
+            <TabsTrigger
+              value="appearance"
+              className="flex gap-2 rounded-xl font-bold h-full data-[state=active]:shadow-sm transition-all"
+            >
               <Palette className="h-4 w-4" /> Aparência
             </TabsTrigger>
-            <TabsTrigger value="messages" className="flex gap-2">
+            <TabsTrigger
+              value="messages"
+              className="flex gap-2 rounded-xl font-bold h-full data-[state=active]:shadow-sm transition-all"
+            >
               <MessageSquare className="h-4 w-4" /> Mensagens
             </TabsTrigger>
-            <TabsTrigger value="notifications" className="flex gap-2">
+            <TabsTrigger
+              value="notifications"
+              className="flex gap-2 rounded-xl font-bold h-full data-[state=active]:shadow-sm transition-all"
+            >
               <Bell className="h-4 w-4" /> Notificações
             </TabsTrigger>
-            <TabsTrigger value="security" className="flex gap-2">
+            <TabsTrigger
+              value="security"
+              className="flex gap-2 rounded-xl font-bold h-full data-[state=active]:shadow-sm transition-all"
+            >
               <ShieldCheck className="h-4 w-4" /> Acesso
             </TabsTrigger>
           </TabsList>
 
-          <div className="mt-6">
-            <TabsContent value="general">
+          <div className="mt-6 flex-1">
+            <TabsContent
+              value="general"
+              className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500"
+            >
               <GeneralSettings />
             </TabsContent>
-            <TabsContent value="appearance">
+            <TabsContent
+              value="appearance"
+              className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500"
+            >
               <AppearanceSettings />
             </TabsContent>
-            <TabsContent value="messages">
+            <TabsContent
+              value="messages"
+              className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500"
+            >
               <MessageSettings />
             </TabsContent>
-            <TabsContent value="notifications">
+            <TabsContent
+              value="notifications"
+              className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500"
+            >
               <NotificationsSettings />
             </TabsContent>
-            <TabsContent value="security">
+            <TabsContent
+              value="security"
+              className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500"
+            >
               <SecuritySettings />
             </TabsContent>
           </div>
         </Tabs>
 
-        <div className="flex justify-end border-t border-border pt-4 mt-4">
-          <Button className="flex gap-2 shadow-sm hover:scale-[1.02] transition-transform w-full md:w-auto">
-            <Save className="h-4 w-4" />
-            Salvar todas as alterações
+        {/* 🔥 3. BOTÃO DE SALVAR PADRONIZADO: h-12, rounded-2xl, shadow-lg */}
+        <div className="flex justify-end border-t border-border/40 pt-6 mt-4">
+          <Button className="rounded-2xl h-12 px-8 font-black shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all w-full md:w-auto">
+            <Save className="mr-2 h-5 w-5" />
+            Salvar Alterações
           </Button>
         </div>
       </div>
 
-      {/* Menu Mobile: Passamos a lista de botões e o estado ativo. 
-        Quando o componente de baixo avisa que clicou, nós mudamos a aba ativa.
-      */}
+      {/* Menu Mobile */}
       <MobileBottomNav
         items={mobileNavItems}
         activeId={activeTab}

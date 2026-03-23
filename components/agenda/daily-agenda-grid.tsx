@@ -1,4 +1,4 @@
-// componentes/agenda/daily-agenda-grid.tsx
+// components/agenda/daily-agenda-grid.tsx
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -24,10 +24,9 @@ import { Button } from "@/components/ui/button";
 import {
   MessageCircle,
   Clock,
-  AlertCircle,
   Loader2,
-  Repeat,
   Package as PackageIcon,
+  Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -48,6 +47,8 @@ export interface Appointment {
   color: string;
   hasCharge?: boolean;
   status?: string;
+  payment_method?: string | null; // 🔥 ADD PARA TRAVAR ARRASTE
+  paymentMethod?: string | null; // 🔥 ADD PARA TRAVAR ARRASTE
   date_time?: Date;
   package_id?: string | null;
   session_number?: number | null;
@@ -60,7 +61,7 @@ export interface Appointment {
 interface DailyAgendaGridProps {
   appointments: Appointment[];
   onAppointmentClick: (appointment: Appointment) => void;
-  onRefresh: () => void; // 🔥 NOVO: Para avisar o pai que deve recarregar os dados
+  onRefresh: () => void;
   startHour?: number;
   endHour?: number;
 }
@@ -71,27 +72,22 @@ const cleanPhone = (phone: string) => {
   return digits.startsWith("55") ? digits : `55${digits}`;
 };
 
-// --- SUB-COMPONENTE: CARD ESTÁTICO (USADO NO DRAG E NO OVERLAY) ---
+// --- SUB-COMPONENTE: CARD ESTÁTICO ---
 function AppointmentCardContent({
   appt,
   isOverlay = false,
   isCancelled = false,
+  isLocked = false,
 }: {
   appt: Appointment;
   isOverlay?: boolean;
   isCancelled?: boolean;
+  isLocked?: boolean;
 }) {
-  const calculateEndTime = (start: string, duration: number) => {
-    const [h, m] = start.split(":").map(Number);
-    const date = new Date();
-    date.setHours(h, m + duration);
-    return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
-  };
-
   return (
     <div
       className={cn(
-        "h-full w-full rounded-xl border p-3 flex flex-col shadow-sm group overflow-hidden transition-all",
+        "h-full w-full rounded-xl border p-3 flex flex-col shadow-sm group overflow-hidden transition-all relative",
         appt.color,
         appt.hasCharge && !isCancelled && "border-2 border-destructive",
         isCancelled && "opacity-40 grayscale-[0.8] border-dashed",
@@ -102,6 +98,9 @@ function AppointmentCardContent({
       <div className="flex justify-between items-start w-full">
         <div className="flex flex-col truncate pr-2">
           <div className="flex items-center gap-2">
+            {isLocked && !isOverlay && (
+              <Lock className="h-3 w-3 text-muted-foreground/50 shrink-0" />
+            )}
             <span
               className={cn(
                 "font-bold text-sm md:text-base truncate",
@@ -149,13 +148,19 @@ function DraggableAppointmentCard({
   onClick: () => void;
   onWhatsApp: (e: React.MouseEvent) => void;
 }) {
+  // 🔥 LÓGICA DE BLOQUEIO (Pago ou Realizado ou Cancelado)
+  const isCancelled = appt.status?.toUpperCase() === "CANCELADO";
+  const isRealizado = appt.status?.toUpperCase() === "REALIZADO";
+  const paymentMethod = appt.payment_method || appt.paymentMethod;
+  const isPaid = !!paymentMethod && paymentMethod !== "nenhum";
+
+  const isLocked = isCancelled || isRealizado || isPaid;
+
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: appt.id,
     data: appt,
+    disabled: isLocked, // 🔥 TRAVA O ARRASTE AQUI!
   });
-
-  const isCancelled =
-    appt.status === "CANCELADO" || appt.status === "cancelado";
 
   const style: React.CSSProperties = {
     position: "absolute",
@@ -163,7 +168,7 @@ function DraggableAppointmentCard({
     height: `${height}px`,
     left: "8px",
     right: "16px",
-    zIndex: isDragging ? 0 : 10, // Esconde o original enquanto arrasta
+    zIndex: isDragging ? 0 : 10,
     opacity: isDragging ? 0 : 1,
     touchAction: "none",
   };
@@ -172,9 +177,11 @@ function DraggableAppointmentCard({
     <div
       ref={setNodeRef}
       style={style}
-      {...listeners}
-      {...attributes}
-      className="cursor-grab active:cursor-grabbing"
+      {...(!isLocked ? listeners : {})}
+      {...(!isLocked ? attributes : {})}
+      className={cn(
+        !isLocked ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
+      )}
       onClick={(e) => {
         if (e.defaultPrevented) return;
         onClick();
@@ -194,7 +201,11 @@ function DraggableAppointmentCard({
           <MessageCircle className="h-4 w-4" />
         </Button>
       </div>
-      <AppointmentCardContent appt={appt} isCancelled={isCancelled} />
+      <AppointmentCardContent
+        appt={appt}
+        isCancelled={isCancelled}
+        isLocked={isLocked}
+      />
     </div>
   );
 }
@@ -244,7 +255,6 @@ export function DailyAgendaGrid({
     const minutesFromStart = (newTop / HOUR_HEIGHT) * 60;
     const totalMinutes = startHour * 60 + minutesFromStart;
 
-    // Snap de 15 minutos
     const snappedMinutes = Math.round(totalMinutes / 15) * 15;
     const h = Math.floor(snappedMinutes / 60);
     const m = snappedMinutes % 60;
@@ -290,7 +300,7 @@ export function DailyAgendaGrid({
 
       if (result.success) {
         toast.success(`Movido para ${timeString}`);
-        onRefresh(); // 🔥 AQUI ESTÁ A MÁGICA: Atualiza o SWR sem F5
+        onRefresh();
       } else {
         toast.error(result.error || "Erro ao mover.");
       }
@@ -327,12 +337,18 @@ export function DailyAgendaGrid({
         modifiers={[restrictToVerticalAxis, restrictToFirstScrollableAncestor]}
       >
         <div className="overflow-y-auto max-h-175 relative w-full scroll-smooth custom-scrollbar">
-          <div className="flex relative min-w-150" ref={setDroppableRef}>
+          <div className="flex relative min-w-75" ref={setDroppableRef}>
             {/* COLUNA DE HORAS */}
             <div className="w-20 shrink-0 border-r border-border/50 bg-muted/5 relative z-20 pointer-events-none">
               {HOURS_ARRAY.map((hour) => (
                 <div key={hour} className="h-24 relative flex justify-center">
-                  <span className="absolute -top-3 bg-card px-2 text-[10px] font-black text-muted-foreground/60 uppercase tracking-tighter">
+                  {/* 🔥 BUGFIX: O primeiro horário recebe top-1 para não ser cortado! */}
+                  <span
+                    className={cn(
+                      "absolute bg-card px-2 text-[10px] font-black text-muted-foreground/60 uppercase tracking-tighter",
+                      hour === startHour ? "top-1" : "-top-3",
+                    )}
+                  >
                     {hour.toString().padStart(2, "0")}:00
                   </span>
                 </div>
@@ -346,7 +362,6 @@ export function DailyAgendaGrid({
                   key={`grid-${hour}`}
                   className="h-24 border-b border-border/10 w-full relative"
                 >
-                  {/* Linhas de 15 min para ajudar no visual */}
                   <div className="absolute top-1/4 w-full border-t border-dashed border-border/5 opacity-40" />
                   <div className="absolute top-2/4 w-full border-t border-dotted border-border/10 opacity-60" />
                   <div className="absolute top-3/4 w-full border-t border-dashed border-border/5 opacity-40" />
@@ -393,8 +408,8 @@ export function DailyAgendaGrid({
         >
           {activeAppt && (
             <div className="relative w-[calc(100%-40px)] ml-4">
-              {/* Tooltip de tempo real */}
-              <div className="absolute -left-24 top-0 bg-primary text-primary-foreground text-[10px] font-black px-2 py-1 rounded shadow-lg animate-in zoom-in-50">
+              {/* 🔥 BUGFIX MOBILE: Tooltip agora fica NO TOPO do card arrastado e não esconde para a esquerda */}
+              <div className="absolute -top-8 left-2 bg-primary text-primary-foreground text-xs font-black px-3 py-1 rounded-full shadow-xl animate-in zoom-in-50 z-50">
                 {dragTime}
               </div>
               <div
