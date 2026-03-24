@@ -47,8 +47,8 @@ export interface Appointment {
   color: string;
   hasCharge?: boolean;
   status?: string;
-  payment_method?: string | null; // 🔥 ADD PARA TRAVAR ARRASTE
-  paymentMethod?: string | null; // 🔥 ADD PARA TRAVAR ARRASTE
+  payment_method?: string | null;
+  paymentMethod?: string | null;
   date_time?: Date;
   package_id?: string | null;
   session_number?: number | null;
@@ -66,13 +66,11 @@ interface DailyAgendaGridProps {
   endHour?: number;
 }
 
-// --- AUXILIAR: LIMPEZA DE TELEFONE ---
 const cleanPhone = (phone: string) => {
   const digits = phone.replace(/\D/g, "");
   return digits.startsWith("55") ? digits : `55${digits}`;
 };
 
-// --- SUB-COMPONENTE: CARD ESTÁTICO ---
 function AppointmentCardContent({
   appt,
   isOverlay = false,
@@ -114,7 +112,8 @@ function AppointmentCardContent({
             {appt.service}
           </span>
         </div>
-        {!isCancelled && !isOverlay && (
+        {/* 🔥 REGRA: Se está cancelado OU bloqueado (realizado/pago) OU é o overlay sendo arrastado, NÃO mostra o botão de zap estático */}
+        {!isCancelled && !isLocked && !isOverlay && (
           <div className="h-7 w-7 rounded-full bg-white/40 flex items-center justify-center text-emerald-700">
             <MessageCircle className="h-4 w-4" />
           </div>
@@ -134,7 +133,6 @@ function AppointmentCardContent({
   );
 }
 
-// --- SUB-COMPONENTE: WRAPPER ARRASTÁVEL ---
 function DraggableAppointmentCard({
   appt,
   top,
@@ -148,7 +146,6 @@ function DraggableAppointmentCard({
   onClick: () => void;
   onWhatsApp: (e: React.MouseEvent) => void;
 }) {
-  // 🔥 LÓGICA DE BLOQUEIO (Pago ou Realizado ou Cancelado)
   const isCancelled = appt.status?.toUpperCase() === "CANCELADO";
   const isRealizado = appt.status?.toUpperCase() === "REALIZADO";
   const paymentMethod = appt.payment_method || appt.paymentMethod;
@@ -159,7 +156,7 @@ function DraggableAppointmentCard({
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: appt.id,
     data: appt,
-    disabled: isLocked, // 🔥 TRAVA O ARRASTE AQUI!
+    disabled: isLocked,
   });
 
   const style: React.CSSProperties = {
@@ -187,20 +184,24 @@ function DraggableAppointmentCard({
         onClick();
       }}
     >
-      <div className="absolute top-2 right-2 z-50">
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onWhatsApp(e);
-          }}
-          className="h-8 w-8 rounded-full bg-white/60 hover:bg-white text-emerald-700 shadow-sm opacity-0 group-hover:opacity-100 md:opacity-100 transition-opacity"
-        >
-          <MessageCircle className="h-4 w-4" />
-        </Button>
-      </div>
+      {/* 🔥 REGRA: Se está bloqueado (realizado, pago ou cancelado), esconde o botão flutuante de WhatsApp! */}
+      {!isLocked && (
+        <div className="absolute top-2 right-2 z-50">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onWhatsApp(e);
+            }}
+            className="h-8 w-8 rounded-full bg-white/60 hover:bg-white text-emerald-700 shadow-sm opacity-0 group-hover:opacity-100 md:opacity-100 transition-opacity"
+          >
+            <MessageCircle className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
       <AppointmentCardContent
         appt={appt}
         isCancelled={isCancelled}
@@ -210,7 +211,6 @@ function DraggableAppointmentCard({
   );
 }
 
-// --- COMPONENTE PRINCIPAL ---
 export function DailyAgendaGrid({
   appointments,
   onAppointmentClick,
@@ -322,7 +322,7 @@ export function DailyAgendaGrid({
   );
 
   return (
-    <div className="bg-card border border-border/50 rounded-2xl shadow-sm overflow-hidden flex flex-col relative">
+    <div className="bg-card border border-border/50 rounded-2xl shadow-sm overflow-hidden flex flex-col relative select-none">
       {isMoving && (
         <div className="absolute inset-0 bg-background/40 z-100 flex items-center justify-center backdrop-blur-[2px]">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -342,7 +342,6 @@ export function DailyAgendaGrid({
             <div className="w-20 shrink-0 border-r border-border/50 bg-muted/5 relative z-20 pointer-events-none">
               {HOURS_ARRAY.map((hour) => (
                 <div key={hour} className="h-24 relative flex justify-center">
-                  {/* 🔥 BUGFIX: O primeiro horário recebe top-1 para não ser cortado! */}
                   <span
                     className={cn(
                       "absolute bg-card px-2 text-[10px] font-black text-muted-foreground/60 uppercase tracking-tighter",
@@ -360,7 +359,7 @@ export function DailyAgendaGrid({
               {HOURS_ARRAY.map((hour) => (
                 <div
                   key={`grid-${hour}`}
-                  className="h-24 border-b border-border/10 w-full relative"
+                  className="h-24 border-b border-border/10 w-full relative pointer-events-none"
                 >
                   <div className="absolute top-1/4 w-full border-t border-dashed border-border/5 opacity-40" />
                   <div className="absolute top-2/4 w-full border-t border-dotted border-border/10 opacity-60" />
@@ -398,7 +397,7 @@ export function DailyAgendaGrid({
           </div>
         </div>
 
-        {/* 🔥 INDICADOR VISUAL DURANTE O ARRASTE */}
+        {/* INDICADOR VISUAL DURANTE O ARRASTE */}
         <DragOverlay
           dropAnimation={{
             sideEffects: defaultDropAnimationSideEffects({
@@ -408,8 +407,7 @@ export function DailyAgendaGrid({
         >
           {activeAppt && (
             <div className="relative w-[calc(100%-40px)] ml-4">
-              {/* 🔥 BUGFIX MOBILE: Tooltip agora fica NO TOPO do card arrastado e não esconde para a esquerda */}
-              <div className="absolute -top-8 left-2 bg-primary text-primary-foreground text-xs font-black px-3 py-1 rounded-full shadow-xl animate-in zoom-in-50 z-50">
+              <div className="absolute -top-8 left-2 bg-primary text-primary-foreground text-xs font-black px-3 py-1 rounded-full shadow-xl animate-in zoom-in-50 z-50 pointer-events-none">
                 {dragTime}
               </div>
               <div

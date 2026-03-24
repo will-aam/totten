@@ -6,14 +6,7 @@ import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Clock, Loader2, Plus, Trash2, Timer, Zap } from "lucide-react";
+import { Clock, Loader2, Plus, Trash2, Timer } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +26,10 @@ const formatDurationDisplay = (minutes: number) => {
   return `${h}h ${m}min`;
 };
 
+// Classe para remover setinhas do input number
+const noSpinClass =
+  "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
+
 export function DurationManager() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -43,7 +40,6 @@ export function DurationManager() {
 
   const [isCustomLabel, setIsCustomLabel] = useState(false);
 
-  // 🔥 OTIMIZAÇÃO: Usando SWR para gerenciar a lista com cache e auto-revalidação
   const {
     data: durations,
     mutate,
@@ -97,10 +93,9 @@ export function DurationManager() {
       });
 
       if (res.ok) {
-        toast.success("Duração cadastrada com sucesso!");
+        toast.success("Duração cadastrada!");
         setForm({ label: "", hours: "", minutes: "" });
         setIsCustomLabel(false);
-        // 🔥 Atualiza a lista localmente sem recarregar a página
         mutate();
       } else {
         const errorData = await res.json();
@@ -114,7 +109,6 @@ export function DurationManager() {
   };
 
   const handleDelete = async (id: string) => {
-    // Usamos o mutate otimista: removemos da lista antes mesmo da resposta do banco
     const updatedDurations = durations?.filter((d) => d.id !== id);
 
     try {
@@ -123,7 +117,7 @@ export function DurationManager() {
         {
           loading: "Removendo...",
           success: () => {
-            mutate(updatedDurations, false); // Atualiza cache local
+            mutate(updatedDurations, false);
             return "Duração removida!";
           },
           error: "Erro ao remover.",
@@ -136,144 +130,146 @@ export function DurationManager() {
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in duration-500">
-      {/* FORMULÁRIO DE CADASTRO */}
-      <Card className="border-border/50 overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1" />
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Plus className="h-5 w-5 text-primary" />
+      {/* FORMULÁRIO DE CADASTRO - Aberto e Integrado */}
+      <div className="flex flex-col gap-6 pb-8 border-b border-border/40">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-xl font-bold tracking-tight text-foreground">
             Nova Opção de Tempo
-          </CardTitle>
-          <CardDescription>
-            Defina intervalos de tempo personalizados para seus serviços.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Nome Exibido
-              </Label>
-              <Input
-                placeholder="Ex: 1h 30min"
-                value={form.label}
-                onChange={(e) => {
-                  setForm({ ...form, label: e.target.value });
-                  setIsCustomLabel(true);
-                }}
-                className="h-11 bg-muted/30 focus-visible:ring-primary/20"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 md:col-span-2">
-              <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Horas
-                </Label>
-                <div className="relative">
-                  <Input
-                    type="number"
-                    value={form.hours}
-                    onChange={(e) => handleTimeChange("hours", e.target.value)}
-                    className="h-11 pl-10 bg-muted/30 [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                  <Clock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground/50" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Minutos
-                </Label>
-                <div className="relative">
-                  <Input
-                    type="number"
-                    value={form.minutes}
-                    onChange={(e) =>
-                      handleTimeChange("minutes", e.target.value)
-                    }
-                    className="h-11 pl-10 bg-muted/30 [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                  <Timer className="absolute left-3 top-3 h-5 w-5 text-muted-foreground/50" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-6 border-t border-border/50">
-            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-              Resultado:{" "}
-              <span className="text-foreground">{form.label || "---"}</span>
-              <span className="text-xs opacity-50">
-                ({calculateMinutes()} min)
-              </span>
-            </div>
-
-            <Button
-              onClick={handleAdd}
-              disabled={saving}
-              className="w-full sm:w-auto rounded-full px-8 shadow-md"
-            >
-              {saving ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <>Salvar Duração</>
-              )}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* LISTAGEM DE DURAÇÕES */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 px-1">
-          <Clock className="h-5 w-5 text-primary" />
-          <h2 className="text-xl font-bold tracking-tight">
-            Tempos Configurados
           </h2>
+          <p className="text-sm text-muted-foreground">
+            Defina intervalos de tempo para seus serviços.
+          </p>
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold text-muted-foreground">
+              Nome Exibido
+            </Label>
+            <Input
+              placeholder="Ex: 1h 30min"
+              value={form.label}
+              onChange={(e) => {
+                setForm({ ...form, label: e.target.value });
+                setIsCustomLabel(true);
+              }}
+              className="h-11 rounded-xl bg-muted/30 border-0 focus-visible:ring-1 focus-visible:ring-primary shadow-none"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 md:col-span-2">
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground">
+                Horas
+              </Label>
+              <div className="relative">
+                <Input
+                  type="number"
+                  value={form.hours}
+                  onChange={(e) => handleTimeChange("hours", e.target.value)}
+                  className={cn(
+                    "h-11 pl-9 rounded-xl bg-muted/30 border-0 shadow-none focus-visible:ring-1 focus-visible:ring-primary",
+                    noSpinClass,
+                  )}
+                />
+                <Clock className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground/50" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground">
+                Minutos
+              </Label>
+              <div className="relative">
+                <Input
+                  type="number"
+                  value={form.minutes}
+                  onChange={(e) => handleTimeChange("minutes", e.target.value)}
+                  className={cn(
+                    "h-11 pl-9 rounded-xl bg-muted/30 border-0 shadow-none focus-visible:ring-1 focus-visible:ring-primary",
+                    noSpinClass,
+                  )}
+                />
+                <Timer className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground/50" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            Resultado:{" "}
+            <span className="text-foreground font-medium">
+              {form.label || "---"}
+            </span>
+            <span className="text-xs opacity-60">
+              ({calculateMinutes()} min)
+            </span>
+          </div>
+
+          <Button
+            onClick={handleAdd}
+            disabled={saving}
+            className="w-full sm:w-auto rounded-xl px-6 h-11 active:scale-95 transition-transform"
+          >
+            {saving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              "Salvar Duração"
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* LISTAGEM DE DURAÇÕES */}
+      <div className="flex flex-col gap-4">
+        <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+          <Clock className="h-5 w-5 text-primary" />
+          Tempos Configurados
+        </h2>
+
         {isLoading ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className="h-24 w-full bg-muted/50 animate-pulse rounded-2xl border"
+                className="h-16 w-full bg-muted/30 animate-pulse rounded-xl"
               />
             ))}
           </div>
         ) : !durations || durations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 bg-muted/20 border border-dashed rounded-3xl">
-            <Clock className="h-12 w-12 text-muted-foreground/30 mb-2" />
+          <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/20 rounded-xl border border-dashed border-border">
             <p className="text-sm text-muted-foreground">
               Nenhuma duração cadastrada.
             </p>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {durations.map((duration) => (
               <div
                 key={duration.id}
-                className="group flex items-center justify-between p-4 rounded-2xl border border-border/60 bg-card hover:border-primary/40 hover:shadow-sm transition-all"
+                className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-muted/10 select-none transition-all active:scale-[0.98] active:bg-muted/30"
               >
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-primary/5 text-primary flex items-center justify-center border border-primary/10">
-                    <Timer className="h-6 w-6" strokeWidth={1.5} />
-                  </div>
+                <div className="flex items-center gap-3">
+                  <Timer
+                    className="h-4 w-4 text-muted-foreground"
+                    strokeWidth={2.5}
+                  />
                   <div>
-                    <h3 className="font-bold text-foreground leading-tight">
+                    <h3 className="font-semibold text-sm text-foreground">
                       {duration.label}
                     </h3>
-                    <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-tighter">
-                      {duration.minutes} minutos totais
+                    <p className="text-[11px] text-muted-foreground font-medium">
+                      {duration.minutes} minutos
                     </p>
                   </div>
                 </div>
 
+                {/* Botão de lixeira: Visível, cor neutra, vermelho no active */}
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => handleDelete(duration.id)}
-                  className="rounded-full opacity-0 group-hover:opacity-100 focus:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+                  className="text-muted-foreground hover:bg-transparent hover:text-muted-foreground active:bg-destructive/10 active:text-destructive active:scale-90 transition-all -mr-2"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
