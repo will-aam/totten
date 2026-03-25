@@ -1,7 +1,7 @@
 // app/admin/reminders/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import useSWR from "swr";
 import { AdminHeader } from "@/components/admin-header";
 import { Button } from "@/components/ui/button";
@@ -21,11 +21,10 @@ interface Reminder {
 }
 
 export default function RemindersPage() {
-  // 🔥 Lógica para calcular o "Amanhã" no fuso horário do usuário
-  const [dateQuery, setDateQuery] = useState<string>("");
-  const [formattedDate, setFormattedDate] = useState<string>("");
-
-  useEffect(() => {
+  // 🔥 OTIMIZAÇÃO DE RENDERIZAÇÃO: Calcula as datas de forma síncrona com useMemo
+  // Em vez de esperar o componente nascer, renderizar e depois acionar o useEffect,
+  // calculamos imediatamente. O SWR não vai mais esperar para disparar!
+  const { dateQuery, formattedDate } = useMemo(() => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
 
@@ -33,22 +32,18 @@ export default function RemindersPage() {
     const mm = String(tomorrow.getMonth() + 1).padStart(2, "0");
     const dd = String(tomorrow.getDate()).padStart(2, "0");
 
-    // Monta a data no formato YYYY-MM-DD para mandar pra API
-    setDateQuery(`${yyyy}-${mm}-${dd}`);
-
-    // Monta a data bonitinha pra exibir na tela
-    setFormattedDate(
-      tomorrow.toLocaleDateString("pt-BR", {
+    return {
+      dateQuery: `${yyyy}-${mm}-${dd}`,
+      formattedDate: tomorrow.toLocaleDateString("pt-BR", {
         weekday: "long",
         day: "2-digit",
         month: "long",
       }),
-    );
+    };
   }, []);
 
-  // Só faz a requisição quando já tem a data calculada
   const { data, isLoading } = useSWR<{ appointments: Reminder[] }>(
-    dateQuery ? `/api/admin/reminders?date=${dateQuery}` : null,
+    `/api/admin/reminders?date=${dateQuery}`,
     fetcher,
   );
 
@@ -71,26 +66,28 @@ export default function RemindersPage() {
     <>
       <AdminHeader title="Confirmações e Lembretes" />
 
-      {/* Espaçamento maximizado, sem cards */}
-      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-5xl mx-auto w-full pb-24 md:pb-6">
-        {/* Cabeçalho da Seção */}
-        <div className="flex flex-col gap-2 border-b border-border/50 pb-4">
-          <h2 className="text-2xl font-bold tracking-tight">
+      {/* 🔥 PADRÃO DE LARGURA: max-w-400 e min-h ajustado */}
+      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-12 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
+        {/* Cabeçalho da Seção (Solto) */}
+        <div className="flex flex-col gap-1 border-b border-border/40 pb-6">
+          <h2 className="text-2xl font-black tracking-tight text-foreground">
             Agenda de Amanhã
           </h2>
-          <p className="text-sm text-muted-foreground capitalize font-medium">
-            {!formattedDate ? "Carregando..." : formattedDate}
+          <p className="text-sm font-medium text-muted-foreground capitalize">
+            {formattedDate}
           </p>
         </div>
 
-        {/* Título e Contador */}
-        <div className="flex items-center gap-2 text-foreground font-semibold text-lg mt-2">
-          <Bell className="h-5 w-5 text-primary" />
-          Para Confirmar
+        {/* Título de Seção "Solto" na tela */}
+        <div className="flex items-center justify-between pt-2">
+          <h2 className="text-xl font-black text-foreground flex items-center gap-2">
+            <Bell className="h-6 w-6 text-primary" />
+            Para Confirmar
+          </h2>
           {!isLoading && data?.appointments && (
-            <span className="ml-auto text-xs font-bold bg-primary/10 px-2.5 py-1 rounded-full text-primary">
+            <span className="text-[11px] font-bold bg-muted/60 text-muted-foreground px-3 py-1.5 rounded-full uppercase tracking-wider">
               {data.appointments.length}{" "}
-              {data.appointments.length === 1 ? "cliente" : "clientes"}
+              {data.appointments.length === 1 ? "Cliente" : "Clientes"}
             </span>
           )}
         </div>
@@ -98,25 +95,30 @@ export default function RemindersPage() {
         {/* Container Principal Livre */}
         <div className="flex flex-col w-full">
           {isLoading ? (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-4">
               {[1, 2, 3, 4].map((i) => (
-                <Skeleton key={i} className="h-20 w-full rounded-2xl" />
+                <Skeleton
+                  key={i}
+                  className="h-24 w-full rounded-3xl bg-muted/50 border border-border/50"
+                />
               ))}
             </div>
           ) : !data?.appointments || data.appointments.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center bg-muted/20 rounded-3xl border border-dashed border-border/60 mt-4">
-              <CalendarCheck className="h-16 w-16 text-muted-foreground/30 mb-4" />
-              <h3 className="text-lg font-semibold text-foreground">
+            <div className="flex flex-col items-center justify-center py-16 text-center bg-card rounded-4xl border border-dashed border-border/60 shadow-sm mt-2">
+              <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                <CalendarCheck className="h-8 w-8 text-muted-foreground/50" />
+              </div>
+              <h3 className="text-lg font-bold text-foreground">
                 Agenda livre
               </h3>
-              <p className="text-sm text-muted-foreground max-w-sm mt-2">
+              <p className="text-sm font-medium text-muted-foreground max-w-sm mt-1 px-4">
                 Não há nenhum agendamento pendente ou confirmado para o dia de
                 amanhã.
               </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
-              {data.appointments.map((appt) => {
+            <div className="grid gap-3">
+              {data.appointments.map((appt, index) => {
                 const isConfirmed = appt.status === "CONFIRMADO";
                 const hasMessaged = messagedIds.has(appt.id);
 
@@ -124,25 +126,31 @@ export default function RemindersPage() {
                   <div
                     key={appt.id}
                     className={cn(
-                      "flex flex-col md:flex-row md:items-center justify-between p-4 md:p-5 rounded-2xl border transition-all gap-4 shadow-sm",
+                      "flex flex-col md:flex-row md:items-center justify-between p-5 rounded-3xl border transition-all gap-4 shadow-sm animate-in slide-in-from-bottom-2",
                       isConfirmed
-                        ? "bg-emerald-50/40 border-emerald-100"
-                        : "bg-card hover:border-primary/30",
+                        ? "bg-emerald-500/5 border-emerald-500/20"
+                        : "bg-card border-border/50 hover:border-primary/40 hover:shadow-md",
                     )}
+                    style={{ animationDelay: `${index * 40}ms` }}
                   >
+                    {/* Infos (Esquerda) */}
                     <div className="flex items-center gap-4">
                       {/* Bolinha do Horário */}
-                      <div className="flex flex-col items-center justify-center h-14 w-14 rounded-full bg-primary/10 text-primary font-bold shrink-0">
-                        <span className="text-[10px] text-primary/70 uppercase -mb-0.5 tracking-wider font-bold">
-                          Hora
-                        </span>
-                        <span className="leading-none text-base">
+                      <div
+                        className={cn(
+                          "flex flex-col items-center justify-center h-14 w-14 rounded-2xl font-bold shrink-0",
+                          isConfirmed
+                            ? "bg-emerald-500/20 text-emerald-700"
+                            : "bg-primary/10 text-primary",
+                        )}
+                      >
+                        <span className="leading-none text-[15px] mt-0.5">
                           {appt.time}
                         </span>
                       </div>
 
                       <div className="flex flex-col gap-0.5">
-                        <span className="font-bold text-base md:text-lg flex items-center gap-2">
+                        <span className="font-black text-base md:text-lg flex items-center gap-2 text-foreground leading-tight">
                           {appt.clientName}
                           {isConfirmed && (
                             <span
@@ -153,30 +161,34 @@ export default function RemindersPage() {
                             </span>
                           )}
                         </span>
-                        <span className="text-xs md:text-sm text-muted-foreground font-medium">
+                        <span className="text-xs md:text-sm text-muted-foreground font-medium mt-0.5">
                           {appt.serviceName}
                         </span>
                       </div>
                     </div>
 
-                    <Button
-                      onClick={() => handleSendWhatsApp(appt)}
-                      variant={hasMessaged ? "secondary" : "default"}
-                      size="lg"
-                      className={cn(
-                        "w-full md:w-auto rounded-xl shrink-0 transition-all font-bold",
-                        hasMessaged
-                          ? "bg-muted text-muted-foreground"
-                          : "bg-[#25D366] hover:bg-[#128C7E] text-white shadow-md hover:shadow-lg",
-                      )}
-                    >
-                      <MessageCircle className="h-5 w-5 mr-2" />
-                      {hasMessaged
-                        ? "Mensagem Enviada"
-                        : isConfirmed
-                          ? "Reenviar Lembrete"
-                          : "Confirmar Presença"}
-                    </Button>
+                    {/* Botão Whatsapp (Direita) */}
+                    <div className="flex justify-end w-full md:w-auto border-t md:border-none border-border/40 pt-4 md:pt-0">
+                      <Button
+                        onClick={() => handleSendWhatsApp(appt)}
+                        variant={hasMessaged ? "secondary" : "default"}
+                        className={cn(
+                          "w-full md:w-auto rounded-2xl h-11 px-5 shrink-0 transition-all font-bold text-sm",
+                          hasMessaged
+                            ? "bg-muted/50 text-muted-foreground border border-border/50"
+                            : isConfirmed
+                              ? "bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 shadow-none border-none"
+                              : "bg-[#25D366] hover:bg-[#128C7E] text-white shadow-lg shadow-[#25D366]/20 border-none",
+                        )}
+                      >
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        {hasMessaged
+                          ? "Mensagem Enviada"
+                          : isConfirmed
+                            ? "Reenviar Lembrete"
+                            : "Confirmar Presença"}
+                      </Button>
+                    </div>
                   </div>
                 );
               })}
