@@ -3,16 +3,64 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const admin = await requireAuth();
 
-    // 1. Busca todos os agendamentos que possuem um recurrence_id (fazem parte de uma série)
-    // Ordenamos por data para facilitar a descoberta do Início e Fim da série
+    // 1. Captura parâmetros de paginação e busca
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "15", 10);
+    const search = searchParams.get("q") || "";
+    const skip = (page - 1) * limit;
+
+    // 2. Constrói o filtro base (Somente da org atual e que tem recurrence_id)
+    const baseWhere: any = {
+      organization_id: admin.organizationId,
+      recurrence_id: { not: null },
+    };
+
+    // Adiciona filtro de texto se houver busca (Busca por Nome do Cliente ou Serviço)
+    if (search) {
+      baseWhere.OR = [
+        { client: { name: { contains: search, mode: "insensitive" } } },
+        { service: { name: { contains: search, mode: "insensitive" } } },
+      ];
+    }
+
+    // 3. OTIMIZAÇÃO: Primeiro, descobrimos quais são as Séries ÚNICAS que existem
+    // Isso é vital para não quebrar a paginação agrupando no JavaScript depois.
+    const distinctRecurrences = await prisma.appointment.findMany({
+      where: baseWhere,
+      distinct: ["recurrence_id"],
+      select: { recurrence_id: true },
+      // Note: Não podemos usar skip/take aqui de forma determinística sem um orderBy claro,
+      // mas como o número de SÉRIES ativas costuma ser gerenciável (ao contrário do número de agendamentos),
+      // pegamos as distintas e paginamos a lista em memória antes de buscar os detalhes.
+    });
+
+    const totalSeries = distinctRecurrences.length;
+
+    // Pagina os IDs das recorrências (Extrai apenas os IDs da página atual)
+    const paginatedRecurrenceIds = distinctRecurrences
+      .slice(skip, skip + limit)
+      .map((r) => r.recurrence_id as string);
+
+    // Se não houver séries nesta página, retorna vazio rápido
+    if (paginatedRecurrenceIds.length === 0) {
+      return NextResponse.json({
+        data: [],
+        total: totalSeries,
+        page,
+        totalPages: Math.ceil(totalSeries / limit) || 1,
+      });
+    }
+
+    // 4. Agora sim, busca TODOS os agendamentos SOMENTE das séries dessa página
     const appointments = await prisma.appointment.findMany({
       where: {
         organization_id: admin.organizationId,
-        recurrence_id: { not: null },
+        recurrence_id: { in: paginatedRecurrenceIds },
       },
       include: {
         client: { select: { id: true, name: true, phone_whatsapp: true } },
@@ -31,7 +79,7 @@ export async function GET() {
       },
     });
 
-    // 2. Agrupa os agendamentos pelo recurrence_id
+    // 5. Agrupa os agendamentos pelo recurrence_id
     const grouped: Record<string, typeof appointments> = {};
     for (const appt of appointments) {
       const rid = appt.recurrence_id as string;
@@ -41,7 +89,7 @@ export async function GET() {
 
     const now = new Date();
 
-    // 3. Monta o objeto final calculando os Alertas, Início, Fim e Padrão
+    // 6. Monta o objeto final calculando os Alertas, Início, Fim e Padrão
     const recurringSeries = Object.entries(grouped).map(
       ([recurrenceId, series]) => {
         const firstAppt = series[0];
@@ -104,7 +152,10 @@ export async function GET() {
           packageBalance,
           nextSession: nextSession ? nextSession.date_time : null,
           warnings,
-          status: remainingInSeries === 0 ? "FINALIZADA" : "ATIVA",
+          status:
+            remainingInSeries === 0
+              ? "FINALIZADA"
+              : ("ATIVA" as "ATIVA" | "FINALIZADA"),
         };
       },
     );
@@ -118,7 +169,13 @@ export async function GET() {
       return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
     });
 
-    return NextResponse.json({ series: recurringSeries });
+    // 7. Retorna a página exata com a formatação que o frontend de paginação espera
+    return NextResponse.json({
+      data: recurringSeries,
+      total: totalSeries,
+      page,
+      totalPages: Math.ceil(totalSeries / limit) || 1,
+    });
   } catch (error) {
     console.error("[GET /api/admin/recurring] Erro:", error);
     return NextResponse.json(

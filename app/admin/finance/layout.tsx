@@ -20,7 +20,7 @@ const mobileNavItems = [
     label: "Pagamentos",
     icon: CreditCard,
   },
-  { id: "/admin/finance/packages", label: "Pacotes", icon: Package },
+  { id: "/admin/packages", label: "Pacotes", icon: Package },
 ];
 
 export default function FinanceLayout({

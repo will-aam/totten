@@ -1,4 +1,4 @@
-// app/admin/finance/packages/page.tsx
+// app/admin/packages/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
