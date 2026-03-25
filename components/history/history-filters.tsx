@@ -85,7 +85,7 @@ export function HistoryFilters({
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Nome ou CPF..."
+              placeholder="Nome ou CPF (mín. 3 letras)..." // 🔥 UNICA MUDANÇA: Aviso ao usuário
               className="pl-10 rounded-2xl bg-card border-border/50 h-12 shadow-sm font-medium focus-visible:ring-primary/20"
             />
           </div>

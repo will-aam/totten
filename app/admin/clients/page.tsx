@@ -27,7 +27,7 @@ import {
   Trash2,
   UserMinus,
   UserCheck,
-  ArrowUp, // 🔥 Import do ícone ArrowUp
+  ArrowUp,
 } from "lucide-react";
 
 import {
@@ -154,12 +154,14 @@ export default function AdminClientsPage() {
   const [page, setPage] = useState(1);
   const debouncedSearch = useDebounce(search, 500);
 
-  // 🔥 Novo Estado para o botão de Scroll
+  // Estado para o botão de Scroll
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  const apiUrl = `/api/clients?page=${page}&limit=${ITEMS_PER_PAGE}${
-    debouncedSearch ? `&q=${encodeURIComponent(debouncedSearch)}` : ""
-  }`;
+  // 🔥 OTIMIZAÇÃO: Só envia o parâmetro 'q' se a busca tiver 3 ou mais caracteres
+  let apiUrl = `/api/clients?page=${page}&limit=${ITEMS_PER_PAGE}`;
+  if (debouncedSearch && debouncedSearch.trim().length >= 3) {
+    apiUrl += `&q=${encodeURIComponent(debouncedSearch.trim())}`;
+  }
 
   const {
     data: apiResponse,
@@ -173,7 +175,12 @@ export default function AdminClientsPage() {
 
   const [clientToProcess, setClientToProcess] = useState<Client | null>(null);
 
-  // 🔥 Efeito para controlar a visibilidade do botão ArrowUp
+  // Efeito para resetar a página se a busca mudar e atingir os 3 caracteres
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
+  // Efeito para controlar a visibilidade do botão ArrowUp
   useEffect(() => {
     const handleScroll = () => {
       setShowScrollTop(window.scrollY > 200);
@@ -254,7 +261,7 @@ export default function AdminClientsPage() {
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
-                setPage(1);
+                // Não precisamos mais resetar a página aqui pois o useEffect com debouncedSearch já faz isso
               }}
               className="bg-card pl-10 text-foreground rounded-full md:rounded-md shadow-sm border-border"
             />
@@ -296,11 +303,11 @@ export default function AdminClientsPage() {
             <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/30 rounded-lg border border-dashed border-border">
               <Users className="h-10 w-10 text-muted-foreground/40" />
               <p className="mt-4 text-sm font-medium text-muted-foreground">
-                {search
+                {search.length >= 3
                   ? "Nenhum cliente encontrado para essa busca."
                   : "Nenhum cliente cadastrado ainda."}
               </p>
-              {!search && (
+              {search.length < 3 && (
                 <Button
                   asChild
                   className="mt-4 rounded-full md:rounded-md"
@@ -473,7 +480,7 @@ export default function AdminClientsPage() {
         </div>
       </div>
 
-      {/* 🔥 Botão ArrowUp */}
+      {/* Botão ArrowUp */}
       <button
         onClick={scrollToTop}
         className={cn(

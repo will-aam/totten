@@ -119,7 +119,7 @@ export default function AdminSettingsPage() {
 
         {/* 🔥 3. BOTÃO DE SALVAR PADRONIZADO: h-12, rounded-2xl, shadow-lg */}
         <div className="flex justify-end border-t border-border/40 pt-6 mt-4">
-          <Button className="rounded-2xl h-12 px-8 font-black shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all w-full md:w-auto">
+          <Button className="rounded-2xl h-12 px-8 font-black  hover:scale-[1.02] active:scale-95 transition-all w-full md:w-auto">
             <Save className="mr-2 h-5 w-5" />
             Salvar Alterações
           </Button>

@@ -220,7 +220,7 @@ export default function PackagesPage() {
             className="min-w-[85vw] md:min-w-0"
           />
         </div>
-
+        {/* Adicionar otimização de busca limitando obrigatoriamente digitar 3 letrar só então fazer a requisição no banco de dados.  */}
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

@@ -489,7 +489,7 @@ export const NewAppointmentModal = memo(
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="rounded-2xl h-12 font-black bg-primary text-primary-foreground shadow-lg shadow-primary/20 w-full sm:w-2/3 active:scale-[0.98] transition-all"
+              className="rounded-2xl h-12 font-black bg-primary text-primary-foreground  w-full sm:w-2/3 active:scale-[0.98] transition-all"
             >
               {saving ? (
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />

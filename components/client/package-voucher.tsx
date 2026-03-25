@@ -1,22 +1,17 @@
+// components/client/package-voucher.tsx
 "use client";
 
 import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download, Share2, Heart, CheckCircle, Loader2 } from "lucide-react";
+import { Download, Share2, BadgeCheck, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface PackageVoucherProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  packageId: string; // 🔥 NOVO
+  packageId: string;
   clientName: string;
   packageName: string;
   totalSessions: number;
@@ -33,7 +28,7 @@ export function PackageVoucher({
   const cardRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
 
-  // 🔥 Registra voucher na API
+  // Registra voucher na API
   const registerVoucher = async () => {
     try {
       await fetch("/api/vouchers", {
@@ -57,7 +52,10 @@ export function PackageVoucher({
       const dataUrl = await toPng(cardRef.current, {
         quality: 1,
         pixelRatio: 3,
-        backgroundColor: "#ffffff",
+        backgroundColor:
+          getComputedStyle(document.documentElement)
+            .getPropertyValue("--background")
+            .trim() || "#ffffff",
         width: width,
         height: height,
         style: {
@@ -72,7 +70,7 @@ export function PackageVoucher({
         link.href = dataUrl;
         link.click();
         toast.success("Comprovante baixado com sucesso!");
-        await registerVoucher(); // 🔥 Registra na API
+        await registerVoucher();
       }
 
       if (action === "share") {
@@ -85,12 +83,10 @@ export function PackageVoucher({
             text: `Parabéns ${clientName.split(" ")[0]}! Você concluiu seu pacote conosco. 💆‍♀️✨`,
             files: [file],
           });
-          await registerVoucher(); // 🔥 Registra na API
+          await registerVoucher();
         } else {
           handleExport("download");
-          toast.info(
-            "Compartilhamento não suportado neste dispositivo. O arquivo foi baixado.",
-          );
+          toast.info("Compartilhamento não suportado. O arquivo foi baixado.");
         }
       }
     } catch (err) {
@@ -103,83 +99,87 @@ export function PackageVoucher({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] sm:max-w-md bg-background p-4 sm:p-6 rounded-3xl overflow-y-auto max-h-[90dvh]">
-        <DialogHeader className="text-center sm:text-left">
-          <DialogTitle>Comprovante de Conclusão</DialogTitle>
-          <DialogDescription>
-            Envie este mimo para a sua cliente via WhatsApp.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="w-[95vw] sm:max-w-md bg-background p-4 sm:p-6 rounded-3xl overflow-y-auto max-h-[90dvh] border-border">
+        {/* Título invisível para acessibilidade (exigência do Radix) */}
+        <DialogTitle className="sr-only">Comprovante de Conclusão</DialogTitle>
 
         <div className="flex flex-col items-center justify-center py-2 sm:py-4 w-full overflow-hidden">
+          {/* CARD DO COMPROVANTE - 100% Flat e com largura w-72 (suportada pelo Tailwind) */}
           <div
             ref={cardRef}
-            className="w-70 bg-[#FAF9F6] border-2 border-[#D9C6BF] p-5 rounded-2xl flex flex-col items-center text-center shadow-sm relative overflow-hidden shrink-0"
+            className="w-72 bg-card  p-5  flex flex-col items-center text-center relative overflow-hidden shrink-0"
           >
-            <div className="absolute -top-10 -right-10 text-[#D9C6BF]/20 pointer-events-none">
-              <Heart className="h-28 w-28 fill-current" />
+            {/* --- DECORAÇÕES DE FUNDO --- */}
+
+            {/* 1. Topo Direita (Principal) */}
+            <div className="absolute -top-10 -right-10 text-muted/20 pointer-events-none">
+              <BadgeCheck className="h-32 w-32 fill-current" />
             </div>
 
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#D9C6BF] text-white mb-3 z-10 shadow-md shrink-0">
-              <CheckCircle className="h-6 w-6" />
+            {/* 2. Baixo Esquerda (Secundária - Espelhada) */}
+            <div className="absolute -bottom-10 -left-10 text-muted/10 pointer-events-none rotate-180">
+              <BadgeCheck className="h-24 w-24 fill-current" />
             </div>
 
-            <h2 className="font-serif text-2xl font-bold text-[#4A3F35] mb-1 z-10 leading-tight">
+            {/* 3. Sparkle Sutil no Centro (Textura) */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-muted/5 pointer-events-none">
+              <BadgeCheck className="h-40 w-40" />
+            </div>
+
+            {/* --- CONTEÚDO --- */}
+
+            {/* Ícone Principal */}
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground mb-3 z-10 shrink-0">
+              <BadgeCheck className="h-6 w-6" />
+            </div>
+
+            {/* Títulos */}
+            <h2 className="font-serif text-2xl font-bold text-foreground mb-1 z-10 leading-tight">
               Parabéns!
             </h2>
-            <p className="text-xs text-[#7A6A5E] uppercase tracking-widest font-semibold mb-4 z-10">
+            <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold mb-4 z-10">
               Pacote Concluído
             </p>
 
-            <div className="w-full h-px bg-[#D9C6BF]/60 mb-4 z-10" />
+            <div className="w-full h-px bg-border mb-4 z-10" />
 
+            {/* Detalhes */}
             <div className="flex flex-col gap-1 w-full z-10">
-              <p className="text-xs text-[#7A6A5E]">Certificamos que</p>
-              <p className="text-lg font-bold text-[#4A3F35] leading-tight">
+              <p className="text-xs text-muted-foreground">Certificamos que</p>
+              <p className="text-lg font-bold text-foreground leading-tight">
                 {clientName}
               </p>
-              <p className="text-xs text-[#7A6A5E] mt-1.5">
+              <p className="text-xs text-muted-foreground mt-1.5">
                 finalizou com sucesso o
               </p>
-              <p className="text-sm font-semibold text-[#4A3F35] leading-snug px-2">
+              <p className="text-sm font-semibold text-foreground leading-snug px-2">
                 {packageName}
               </p>
 
-              <div className="mt-4 inline-flex mx-auto items-center gap-1.5 bg-[#4A3F35] text-white px-3 py-1.5 rounded-full text-xs font-medium shadow-sm">
-                <Heart className="h-3 w-3 text-[#D9C6BF]" />
+              {/* Badge de Sessões */}
+              <div className="mt-4 inline-flex mx-auto items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded-full text-xs font-medium">
                 {totalSessions} / {totalSessions} Sessões
               </div>
             </div>
 
-            <div className="mt-6 pt-3 w-full border-t border-dashed border-[#D9C6BF] z-10 flex justify-between items-center px-1">
-              <span className="font-serif font-bold text-[#4A3F35] text-sm">
+            {/* Footer */}
+            <div className="mt-6 pt-3 w-full border-t border-dashed border-border z-10 flex justify-between items-center px-1">
+              <span className="font-serif font-bold text-foreground text-sm">
                 Totten
               </span>
-              <span className="text-[10px] text-[#7A6A5E] font-medium">
+              <span className="text-[10px] text-muted-foreground font-medium">
                 {new Date().toLocaleDateString("pt-BR")}
               </span>
             </div>
           </div>
         </div>
 
+        {/* BOTÕES DE AÇÃO - Totalmente Flat */}
         <div className="flex flex-col gap-2 w-full mt-2">
-          <Button
-            variant="outline"
-            onClick={() => handleExport("download")}
-            disabled={isExporting}
-            className="w-full rounded-full border-primary/20 hover:bg-primary/5 h-10 text-xs sm:text-sm"
-          >
-            {isExporting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="mr-2 h-4 w-4" />
-            )}
-            Baixar Imagem
-          </Button>
           <Button
             onClick={() => handleExport("share")}
             disabled={isExporting}
-            className="w-full rounded-full shadow-sm h-10 text-xs sm:text-sm"
+            className="w-full rounded-full h-10 text-xs sm:text-sm active:scale-95 transition-transform"
           >
             {isExporting ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -187,6 +187,19 @@ export function PackageVoucher({
               <Share2 className="mr-2 h-4 w-4" />
             )}
             Compartilhar via WhatsApp
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleExport("download")}
+            disabled={isExporting}
+            className="w-full rounded-full border-border hover:bg-muted active:scale-95 transition-transform h-10 text-xs sm:text-sm"
+          >
+            {isExporting ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="mr-2 h-4 w-4" />
+            )}
+            Baixar Imagem
           </Button>
         </div>
       </DialogContent>
