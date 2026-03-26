@@ -1,5 +1,4 @@
 // components/finance/recent-transactions-list.tsx
-
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -16,36 +15,34 @@ interface RecentTransactionsListProps {
   data: Transaction[];
 }
 
+// 🔥 OTIMIZAÇÃO: Formatadores instanciados uma única vez fora do componente
+const currencyFormatter = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
+
+const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
+  day: "2-digit",
+  month: "short",
+});
+
+// Função auxiliar para evitar erros de tipagem com o Enum do Prisma
+function getPaymentMethodLabel(method: string | null | undefined): string {
+  if (!method) return "";
+  const m = method.toUpperCase();
+  if (m.includes("PIX")) return "Pix";
+  if (m.includes("CREDIT") || m.includes("CREDITO")) return "Crédito";
+  if (m.includes("DEBIT") || m.includes("DEBITO")) return "Débito";
+  if (m.includes("CASH") || m.includes("DINHEIRO")) return "Dinheiro";
+  return "Outros";
+}
+
 function TransactionListItem({ transaction }: { transaction: Transaction }) {
-  // AJUSTADO: Comparação com o Enum do Prisma
   const isIncome = transaction.type === "RECEITA";
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Intl.DateTimeFormat("pt-BR", {
-      day: "2-digit",
-      month: "short",
-    }).format(new Date(dateString));
-  };
-
-  // AJUSTADO: Mapeamento para os nomes exatos do seu Prisma
-  const paymentMethodMap: Record<PaymentMethod, string> = {
-    PIX: "Pix",
-    CARTAO_CREDITO: "Crédito",
-    CARTAO_DEBITO: "Débito",
-    DINHEIRO: "Dinheiro",
-    OUTRO: "Outros",
-  };
 
   const StatusBadge = ({ status }: { status: TransactionStatus }) => {
     switch (status) {
-      case "PAGO": // Ajustado de PAID para PAGO
+      case "PAGO":
         return (
           <Badge
             variant="secondary"
@@ -54,7 +51,7 @@ function TransactionListItem({ transaction }: { transaction: Transaction }) {
             Pago
           </Badge>
         );
-      case "PENDENTE": // Ajustado de PENDING para PENDENTE
+      case "PENDENTE":
         return (
           <Badge
             variant="secondary"
@@ -63,7 +60,7 @@ function TransactionListItem({ transaction }: { transaction: Transaction }) {
             Pendente
           </Badge>
         );
-      case "ATRASADO": // Ajustado de OVERDUE para ATRASADO
+      case "ATRASADO":
         return (
           <Badge
             variant="secondary"
@@ -100,13 +97,12 @@ function TransactionListItem({ transaction }: { transaction: Transaction }) {
             {transaction.description}
           </span>
           <span className="text-xs text-muted-foreground leading-none flex items-center gap-1.5 truncate">
-            {/* 1. Data (Sempre aparece) */}
-            <span>{formatDate(transaction.date)}</span>
+            <span>{dateFormatter.format(new Date(transaction.date))}</span>
 
             {transaction.paymentMethod && (
               <>
                 <span>•</span>
-                <span>{paymentMethodMap[transaction.paymentMethod]}</span>
+                <span>{getPaymentMethodLabel(transaction.paymentMethod)}</span>
               </>
             )}
 
@@ -129,7 +125,7 @@ function TransactionListItem({ transaction }: { transaction: Transaction }) {
               : "text-foreground",
           )}
         >
-          {isIncome ? "+" : "-"} {formatCurrency(transaction.amount)}
+          {isIncome ? "+" : "-"} {currencyFormatter.format(transaction.amount)}
         </span>
         <StatusBadge status={transaction.status} />
       </div>

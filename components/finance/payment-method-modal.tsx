@@ -1,5 +1,4 @@
 // components/finance/payment-method-modal.tsx
-
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
@@ -103,7 +102,6 @@ export function PaymentMethodModal({
     }
   }, [isOpen, method]);
 
-  // AJUSTADO: Agora retorna exatamente os valores do seu Enum no Prisma (Português)
   const deriveBaseType = (name: string): PaymentMethod => {
     const lower = name.toLowerCase();
     if (lower.includes("pix")) return "PIX";
@@ -123,7 +121,7 @@ export function PaymentMethodModal({
       const result = await upsertPaymentMethod({
         id: method?.id,
         name: selectedName,
-        type: deriveBaseType(selectedName), // Aqui a mágica do mapeamento acontece
+        type: deriveBaseType(selectedName),
         isActive,
         feePercentage: Number(feePercentage) || 0,
         feeFixed: Number(feeFixed) || 0,
@@ -187,15 +185,15 @@ export function PaymentMethodModal({
       open={isOpen}
       onOpenChange={(open) => !open && !isPending && onClose()}
     >
-      <SheetContent className="flex flex-col w-full sm:max-w-md p-0 overflow-hidden">
+      <SheetContent className="flex flex-col w-full sm:max-w-md p-0 overflow-hidden sm:rounded-l-4xl border-l-0">
         <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          <SheetHeader className="text-left">
+          <SheetHeader className="text-left mt-2">
             <div className="flex justify-between items-start">
-              <div>
-                <SheetTitle>
+              <div className="flex flex-col gap-1">
+                <SheetTitle className="text-2xl font-black text-foreground">
                   {isEditing ? "Editar Pagamento" : "Novo Pagamento"}
                 </SheetTitle>
-                <SheetDescription>
+                <SheetDescription className="font-medium text-muted-foreground">
                   Configure as taxas e prazos.
                 </SheetDescription>
               </div>
@@ -203,7 +201,7 @@ export function PaymentMethodModal({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-rose-500 hover:text-rose-600 hover:bg-rose-50"
+                  className="text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 rounded-2xl shrink-0"
                   onClick={handleDelete}
                   disabled={isPending}
                 >
@@ -214,12 +212,12 @@ export function PaymentMethodModal({
           </SheetHeader>
 
           <div className="flex flex-col gap-6 py-2">
-            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border/50">
+            <div className="flex items-center justify-between p-5 bg-card border border-border/50 rounded-3xl">
               <div className="space-y-0.5">
-                <Label className="text-base font-semibold">
+                <Label className="text-sm font-black uppercase tracking-widest text-foreground">
                   Status do Método
                 </Label>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs font-medium text-muted-foreground">
                   Se desativado, não aparece nas vendas.
                 </p>
               </div>
@@ -227,11 +225,14 @@ export function PaymentMethodModal({
                 checked={isActive}
                 onCheckedChange={setIsActive}
                 disabled={isPending}
+                className="data-[state=checked]:bg-primary"
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Meio de Pagamento *</Label>
+              <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                Meio de Pagamento *
+              </Label>
               <div className="flex items-center gap-2">
                 <Popover
                   open={openCombobox}
@@ -243,8 +244,8 @@ export function PaymentMethodModal({
                       role="combobox"
                       disabled={isPending}
                       className={cn(
-                        "flex-1 justify-between h-12 rounded-xl text-left font-normal",
-                        !selectedName && "text-muted-foreground",
+                        "flex-1 justify-between h-12 rounded-2xl text-left font-bold border-border/50 bg-card hover:bg-muted/50",
+                        !selectedName && "text-muted-foreground font-medium",
                       )}
                     >
                       <span className="truncate">
@@ -254,7 +255,7 @@ export function PaymentMethodModal({
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent
-                    className="w-[calc(100vw-3rem)] sm:w-80 p-0"
+                    className="w-[calc(100vw-3rem)] sm:w-80 p-0 rounded-2xl border-border/50 shadow-xl"
                     align="start"
                   >
                     <Command shouldFilter={false}>
@@ -262,6 +263,7 @@ export function PaymentMethodModal({
                         placeholder="Buscar ou digitar..."
                         value={search}
                         onValueChange={setSearch}
+                        className="h-11"
                       />
                       <CommandList>
                         <CommandGroup>
@@ -273,10 +275,11 @@ export function PaymentMethodModal({
                                 setSelectedName(name);
                                 setOpenCombobox(false);
                               }}
+                              className="font-medium"
                             >
                               <Check
                                 className={cn(
-                                  "mr-2 h-4 w-4",
+                                  "mr-2 h-4 w-4 text-primary",
                                   selectedName === name
                                     ? "opacity-100"
                                     : "opacity-0",
@@ -296,6 +299,7 @@ export function PaymentMethodModal({
                                   setSearch("");
                                   setOpenCombobox(false);
                                 }}
+                                className="font-bold text-primary"
                               >
                                 <PlusCircle className="mr-2 h-4 w-4" /> Criar "
                                 {search}"
@@ -313,7 +317,7 @@ export function PaymentMethodModal({
                     size="icon"
                     disabled={!selectedName || isPending}
                     onClick={handleClearSelection}
-                    className="h-12 w-12 shrink-0 rounded-xl text-rose-500"
+                    className="h-12 w-12 shrink-0 rounded-2xl border-border/50 text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 bg-card"
                   >
                     <Trash2 className="h-5 w-5" />
                   </Button>
@@ -323,7 +327,9 @@ export function PaymentMethodModal({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Taxa (%)</Label>
+                <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                  Taxa (%)
+                </Label>
                 <div className="relative">
                   <Input
                     type="number"
@@ -334,18 +340,23 @@ export function PaymentMethodModal({
                       )
                     }
                     disabled={isPending}
-                    className={cn("h-12 rounded-xl pr-8", hideNumberArrows)}
+                    className={cn(
+                      "h-12 rounded-2xl pr-8 bg-card border-border/50 font-bold focus-visible:ring-primary/20",
+                      hideNumberArrows,
+                    )}
                     placeholder="0.00"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-bold">
                     %
                   </span>
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Taxa Fixa (R$)</Label>
+                <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                  Taxa Fixa
+                </Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-bold">
                     R$
                   </span>
                   <Input
@@ -357,7 +368,10 @@ export function PaymentMethodModal({
                       )
                     }
                     disabled={isPending}
-                    className={cn("h-12 rounded-xl pl-8", hideNumberArrows)}
+                    className={cn(
+                      "h-12 rounded-2xl pl-10 bg-card border-border/50 font-bold focus-visible:ring-primary/20",
+                      hideNumberArrows,
+                    )}
                     placeholder="0.00"
                   />
                 </div>
@@ -365,7 +379,9 @@ export function PaymentMethodModal({
             </div>
 
             <div className="space-y-2">
-              <Label>Dias para receber</Label>
+              <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                Dias para receber
+              </Label>
               <Input
                 type="number"
                 value={daysToReceive}
@@ -375,30 +391,33 @@ export function PaymentMethodModal({
                   )
                 }
                 disabled={isPending}
-                className={cn("h-12 rounded-xl", hideNumberArrows)}
+                className={cn(
+                  "h-12 rounded-2xl bg-card border-border/50 font-bold focus-visible:ring-primary/20",
+                  hideNumberArrows,
+                )}
                 placeholder="0"
               />
             </div>
           </div>
         </div>
 
-        <div className="p-6 pt-4 border-t border-border/50 bg-background">
-          <SheetFooter className="flex-row gap-2">
+        <div className="p-6 pt-4 border-t border-border/40 bg-background">
+          <SheetFooter className="flex-row gap-3">
             <Button
               variant="outline"
-              className="flex-1 h-12 rounded-xl"
+              className="flex-1 h-12 rounded-2xl font-bold border-border/50 hover:bg-muted/50"
               onClick={onClose}
               disabled={isPending}
             >
               Cancelar
             </Button>
             <Button
-              className="flex-1 h-12 rounded-xl"
+              className="flex-1 h-12 rounded-2xl font-bold shadow-md shadow-primary/20"
               onClick={handleSave}
               disabled={isSaveDisabled}
             >
               {isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 "Salvar"
               )}

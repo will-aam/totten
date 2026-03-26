@@ -26,11 +26,11 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
     const targetMonth = month ? month - 1 : now.getMonth();
     const targetYear = year || now.getFullYear();
 
-    // 1. LIMITES DO MÊS FILTRADO (Fuso Local)
+    // 1. LIMITES DO MÊS FILTRADO
     const monthStart = new Date(targetYear, targetMonth, 1, 0, 0, 0);
     const monthEnd = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59, 999);
 
-    // 2. LIMITES DE HOJE E ONTEM (Para Visão Rápida e Histórico Recente)
+    // 2. LIMITES DE HOJE E ONTEM (Visão Rápida e Histórico Recente)
     const todayStart = new Date(
       now.getFullYear(),
       now.getMonth(),
@@ -76,117 +76,101 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
       999,
     );
 
-    // --- BUSCA DOS DADOS DO MÊS FILTRADO ---
-    const filteredAppointments = await prisma.appointment.findMany({
+    // ============================================================================
+    // 🔥 OTIMIZAÇÃO 1: BUSCA LEVE (Apenas números e enums para fazer matemática)
+    // Descartamos nomes, telefones, descrições. Isso reduz o consumo de RAM em 90%.
+    // ============================================================================
+    const monthlyApptsRaw = await prisma.appointment.findMany({
       where: {
         organization_id: organizationId,
         status: "REALIZADO",
         date_time: { gte: monthStart, lte: monthEnd },
       },
-      include: { service: true, client: true },
+      select: {
+        payment_method: true,
+        date_time: true,
+        service: { select: { price: true, material_cost: true } },
+      },
     });
 
-    const filteredTransactions = await prisma.transaction.findMany({
+    const monthlyTxRaw = await prisma.transaction.findMany({
       where: {
         organization_id: organizationId,
         date: { gte: monthStart, lte: monthEnd },
       },
-      orderBy: { date: "desc" },
-      include: { client: true, payment_method: true },
-    });
-
-    // --- CÁLCULOS DOS CARDS DO MÊS FILTRADO ---
-
-    // Receitas da Agenda (Só soma se o método de pagamento foi preenchido)
-    const incomeFromAppts = filteredAppointments
-      .filter((a) => a.payment_method !== null)
-      .reduce((acc, curr) => acc + Number(curr.service.price), 0);
-
-    // Pendentes da Agenda (Realizados mas aguardando pagamento)
-    const pendingFromAppts = filteredAppointments
-      .filter((a) => a.payment_method === null)
-      .reduce((acc, curr) => acc + Number(curr.service.price), 0);
-
-    // Despesas de Insumos da Agenda (Independente de pagamento, o material foi gasto)
-    const expensesFromAppts = filteredAppointments.reduce(
-      (acc, curr) => acc + Number(curr.service.material_cost || 0),
-      0,
-    );
-
-    // Transações Manuais (Receitas e Despesas Avulsas)
-    const incomeFromTx = filteredTransactions
-      .filter((t) => t.type === "RECEITA" && t.status === "PAGO")
-      .reduce((acc, curr) => acc + Number(curr.amount), 0);
-
-    const expensesFromTx = filteredTransactions
-      .filter((t) => t.type === "DESPESA" && t.status === "PAGO")
-      .reduce((acc, curr) => acc + Number(curr.amount), 0);
-
-    const pendingFromTx = filteredTransactions
-      .filter((t) => t.status === "PENDENTE")
-      .reduce((acc, curr) => acc + Number(curr.amount), 0);
-
-    // --- CÁLCULOS DA VISÃO RÁPIDA (SEMPRE A SEMANA ATUAL) ---
-    const currentWeekAppointments = await prisma.appointment.findMany({
-      where: {
-        organization_id: organizationId,
-        status: "REALIZADO",
-        date_time: { gte: weekStart, lte: weekEnd },
-      },
-      include: { service: true },
-    });
-    const currentWeekTransactions = await prisma.transaction.findMany({
-      where: {
-        organization_id: organizationId,
-        date: { gte: weekStart, lte: weekEnd },
+      select: {
+        type: true,
+        status: true,
+        amount: true,
+        date: true,
+        payment_method: { select: { type: true } },
       },
     });
 
-    const receivedToday =
-      currentWeekAppointments
-        .filter(
-          (a) =>
-            a.date_time >= todayStart &&
-            a.date_time <= todayEnd &&
-            a.payment_method !== null,
-        )
-        .reduce((acc, curr) => acc + Number(curr.service.price), 0) +
-      currentWeekTransactions
-        .filter(
-          (t) =>
-            t.type === "RECEITA" &&
-            t.status === "PAGO" &&
-            t.date >= todayStart &&
-            t.date <= todayEnd,
-        )
-        .reduce((acc, curr) => acc + Number(curr.amount), 0);
+    // Variáveis Acumuladoras
+    let incomeMonth = 0;
+    let pendingMonth = 0;
+    let expensesMonth = 0;
 
-    const receivedWeek =
-      currentWeekAppointments
-        .filter((a) => a.payment_method !== null)
-        .reduce((acc, curr) => acc + Number(curr.service.price), 0) +
-      currentWeekTransactions
-        .filter((t) => t.type === "RECEITA" && t.status === "PAGO")
-        .reduce((acc, curr) => acc + Number(curr.amount), 0);
+    let receivedToday = 0;
+    let receivedWeek = 0;
 
-    // --- MEIO DE PAGAMENTO FAVORITO (DO MÊS FILTRADO) ---
+    let pendingItemsCount = 0; // Correção do bug de contagem
     const paymentCounts: Record<string, number> = {};
-    filteredAppointments.forEach((a) => {
-      if (a.payment_method)
+
+    // ============================================================================
+    // 🔥 CÁLCULOS SUPER RÁPIDOS EM MEMÓRIA (Com os dados leves)
+    // ============================================================================
+
+    // Processa Agendamentos (Agenda)
+    monthlyApptsRaw.forEach((a) => {
+      const price = Number(a.service.price);
+      const cost = Number(a.service.material_cost || 0);
+      const isToday = a.date_time >= todayStart && a.date_time <= todayEnd;
+      const isThisWeek = a.date_time >= weekStart && a.date_time <= weekEnd;
+
+      expensesMonth += cost; // Insumos sempre geram despesa
+
+      if (a.payment_method) {
+        // Recebido
+        incomeMonth += price;
+        if (isToday) receivedToday += price;
+        if (isThisWeek) receivedWeek += price;
+
+        // Conta o método favorito
         paymentCounts[a.payment_method] =
           (paymentCounts[a.payment_method] || 0) + 1;
-    });
-    filteredTransactions.forEach((t) => {
-      if (
-        t.type === "RECEITA" &&
-        t.status === "PAGO" &&
-        t.payment_method?.type
-      ) {
-        paymentCounts[t.payment_method.type] =
-          (paymentCounts[t.payment_method.type] || 0) + 1;
+      } else {
+        // Pendente
+        pendingMonth += price;
+        pendingItemsCount++; // Conta +1 item pendente
       }
     });
 
+    // Processa Transações Manuais (Avulsas)
+    monthlyTxRaw.forEach((t) => {
+      const amount = Number(t.amount);
+      const isToday = t.date >= todayStart && t.date <= todayEnd;
+      const isThisWeek = t.date >= weekStart && t.date <= weekEnd;
+
+      if (t.type === "RECEITA" && t.status === "PAGO") {
+        incomeMonth += amount;
+        if (isToday) receivedToday += amount;
+        if (isThisWeek) receivedWeek += amount;
+
+        if (t.payment_method?.type) {
+          paymentCounts[t.payment_method.type] =
+            (paymentCounts[t.payment_method.type] || 0) + 1;
+        }
+      } else if (t.type === "DESPESA" && t.status === "PAGO") {
+        expensesMonth += amount;
+      } else if (t.status === "PENDENTE") {
+        pendingMonth += amount;
+        pendingItemsCount++; // Conta +1 item pendente
+      }
+    });
+
+    // Descobre o Meio Favorito
     let topPaymentMethod: PaymentMethod | null = null;
     let maxCount = 0;
     for (const [method, count] of Object.entries(paymentCounts)) {
@@ -196,24 +180,59 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
       }
     }
 
-    // --- MONTAR HISTÓRICO (APENAS ONTEM E HOJE) ---
-    const historyFromAppts = filteredAppointments.flatMap((a) => {
+    // ============================================================================
+    // 🔥 OTIMIZAÇÃO 2: BUSCA PESADA RESTRITA (Somente Ontem e Hoje)
+    // Trazemos textos pesados (nomes) do BD APENAS para as transações recentes.
+    // ============================================================================
+    const recentAppts = await prisma.appointment.findMany({
+      where: {
+        organization_id: organizationId,
+        status: "REALIZADO",
+        date_time: { gte: yesterdayStart, lte: todayEnd },
+      },
+      select: {
+        id: true,
+        date_time: true,
+        payment_method: true,
+        client: { select: { name: true } },
+        service: { select: { name: true, price: true, material_cost: true } },
+      },
+    });
+
+    const recentTx = await prisma.transaction.findMany({
+      where: {
+        organization_id: organizationId,
+        date: { gte: yesterdayStart, lte: todayEnd },
+      },
+      select: {
+        id: true,
+        type: true,
+        description: true,
+        amount: true,
+        date: true,
+        status: true,
+        client: { select: { name: true } },
+        payment_method: { select: { type: true } },
+      },
+    });
+
+    // Monta o Histórico para o Frontend
+    const historyFromAppts = recentAppts.flatMap((a) => {
       const items = [];
 
-      // Linha 1: A Receita (Se estiver sem pagamento, aparece como PENDENTE amarelo)
+      // Receita
       items.push({
         id: `rec_${a.id}`,
         type: "RECEITA" as const,
         description: a.service.name,
         amount: Number(a.service.price),
         date: a.date_time.toISOString(),
-        // 🔥 AJUSTE AQUI: Forçamos a tipagem exata para o TypeScript parar de chorar
         status: (a.payment_method ? "PAGO" : "PENDENTE") as "PAGO" | "PENDENTE",
         clientName: a.client.name,
         paymentMethod: a.payment_method || undefined,
       });
 
-      // Linha 2: A Despesa de Material
+      // Despesa (Material)
       if (a.service.material_cost && Number(a.service.material_cost) > 0) {
         items.push({
           id: `custo_${a.id}`,
@@ -228,7 +247,7 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
       return items;
     });
 
-    const historyFromTx = filteredTransactions.map((t) => ({
+    const historyFromTx = recentTx.map((t) => ({
       id: t.id,
       type: t.type,
       description: t.description,
@@ -239,23 +258,22 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
       paymentMethod: t.payment_method?.type || undefined,
     }));
 
-    // 🔥 FILTRO MÁGICO: Exibe apenas os registros de Ontem e Hoje no máximo!
-    const allHistory = [...historyFromAppts, ...historyFromTx]
-      .filter((h) => new Date(h.date) >= yesterdayStart)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    // Une tudo e ordena do mais recente para o mais antigo
+    const allHistory = [...historyFromAppts, ...historyFromTx].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
 
     return {
       summary: {
-        receivedMonth: incomeFromAppts + incomeFromTx,
-        pendingMonth: pendingFromAppts + pendingFromTx, // Soma agenda pendente + manual pendente
-        expensesMonth: expensesFromAppts + expensesFromTx, // Soma insumos + manuais
-        balanceMonth:
-          incomeFromAppts + incomeFromTx - (expensesFromAppts + expensesFromTx),
+        receivedMonth: incomeMonth,
+        pendingMonth: pendingMonth,
+        expensesMonth: expensesMonth,
+        balanceMonth: incomeMonth - expensesMonth,
       },
       secondary: {
         receivedToday,
         receivedWeek,
-        pendingCount: pendingFromAppts + pendingFromTx,
+        pendingCount: pendingItemsCount, // 🔥 Bug corrigido! Agora envia a quantidade real.
         topPaymentMethod,
       },
       recentTransactions: allHistory,

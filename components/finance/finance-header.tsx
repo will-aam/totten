@@ -83,7 +83,7 @@ export function FinanceHeader({
         </div>
 
         <div className="flex flex-row items-center justify-between w-full lg:w-auto mt-2 lg:mt-0 gap-2">
-          {/* 🔥 FILTROS DE MÊS E ANO */}
+          {/* 🔥 FILTROS DE MÊS E ANO - DESIGN ORIGINAL RESTAURADO */}
           <div className="flex items-center justify-start gap-1 shrink-0">
             <Select
               value={selectedMonth.toString()}
@@ -126,13 +126,11 @@ export function FinanceHeader({
             </Select>
           </div>
 
-          {/* Separador vertical apenas no desktop */}
           <div className="h-8 w-px bg-border/50 hidden sm:block mx-1" />
 
-          {/* 🔥 BOTÕES DE AÇÃO */}
+          {/* 🔥 BOTÕES DE AÇÃO - DESIGN ORIGINAL RESTAURADO */}
           <TooltipProvider delayDuration={200}>
             <div className="flex flex-row items-center justify-end gap-2 sm:gap-3">
-              {/* DESPESA - Escondido no Mobile (hidden md:flex) */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -149,7 +147,6 @@ export function FinanceHeader({
                 </TooltipContent>
               </Tooltip>
 
-              {/* RECEITA - Escondido no Mobile (hidden md:flex) */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -165,7 +162,6 @@ export function FinanceHeader({
                 </TooltipContent>
               </Tooltip>
 
-              {/* RELATÓRIOS - Agora com Texto visível no Mobile e Desktop */}
               <Button
                 variant="outline"
                 asChild
@@ -181,14 +177,17 @@ export function FinanceHeader({
         </div>
       </div>
 
-      <TransactionModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          if (onSuccess) onSuccess();
-        }}
-        type={transactionType}
-      />
+      {/* 🔥 OTIMIZAÇÃO: Modal só é montado quando necessário (Lazy Mount) */}
+      {isModalOpen && (
+        <TransactionModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            if (onSuccess) onSuccess();
+          }}
+          type={transactionType}
+        />
+      )}
     </>
   );
 }

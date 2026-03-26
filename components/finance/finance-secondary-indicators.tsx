@@ -1,115 +1,100 @@
 // components/finance/finance-secondary-indicators.tsx
-
-import { Card, CardContent } from "@/components/ui/card";
-import { PaymentMethod, SecondaryIndicators } from "@/types/finance";
+import { SecondaryIndicators } from "@/types/finance";
 import {
   AlertCircle,
   CalendarDays,
   CalendarRange,
   CreditCard,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface FinanceSecondaryIndicatorsProps {
   data: SecondaryIndicators;
 }
 
+// 🔥 OTIMIZAÇÃO: Formatador criado apenas uma vez
+const currencyFormatter = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
+
+// Função auxiliar para traduzir o PaymentMethod de forma segura
+function translatePaymentMethod(method: string | null): string {
+  if (!method) return "-";
+
+  const formatted = method.toUpperCase();
+  if (formatted.includes("CREDIT")) return "Cartão de Crédito";
+  if (formatted.includes("DEBIT")) return "Cartão de Débito";
+  if (formatted.includes("PIX")) return "Pix";
+  if (formatted.includes("CASH") || formatted.includes("DINHEIRO"))
+    return "Dinheiro";
+
+  return "Outros";
+}
+
 export function FinanceSecondaryIndicators({
   data,
 }: FinanceSecondaryIndicatorsProps) {
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
-  };
-
-  const paymentMethodMap: Record<PaymentMethod, string> = {
-    PIX: "Pix",
-    CREDIT_CARD: "Cartão de Crédito",
-    DEBIT_CARD: "Cartão de Débito",
-    CASH: "Dinheiro",
-    OTHER: "Outros",
-  };
-
-  // Classes padrão para o card fazer o efeito de snap no mobile e ter a largura ideal
+  // 🔥 Classes 100% Flat, sem fundos coloridos, sem sombras extravagantes
   const cardClasses =
-    "min-w-[85vw] md:min-w-0 snap-center shrink-0 shadow-none border-dashed";
+    "min-w-[85vw] md:min-w-0 snap-center shrink-0 border border-dashed bg-card rounded-2xl p-5 flex flex-row items-center gap-4 hover:border-primary/30 transition-colors";
 
   return (
-    <div className="flex overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scroll-smooth md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:pb-0 md:px-0 md:mx-0 gap-4 [&::-webkit-scrollbar]:hidden">
+    <div className="flex overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scroll-smooth md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:pb-0 md:px-0 md:mx-0 gap-3 [&::-webkit-scrollbar]:hidden">
       {/* Recebido Hoje */}
-      <Card className={cardClasses}>
-        <CardContent className="p-4 flex flex-row items-center gap-4">
-          <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-full shrink-0">
-            <CalendarDays className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs text-muted-foreground font-medium truncate">
-              Hoje
-            </p>
-            <p className="text-lg font-bold truncate">
-              {formatCurrency(data.receivedToday)}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className={cardClasses}>
+        {/* Ícone limpo, sem fundo */}
+        <CalendarDays className="h-7 w-7 text-emerald-500 shrink-0 stroke-[1.5]" />
+        <div className="min-w-0 flex-1 flex flex-col gap-0.5">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground truncate">
+            Recebido Hoje
+          </p>
+          <p className="text-xl font-black text-foreground truncate">
+            {currencyFormatter.format(data.receivedToday)}
+          </p>
+        </div>
+      </div>
 
       {/* Recebido na Semana */}
-      <Card className={cardClasses}>
-        <CardContent className="p-4 flex flex-row items-center gap-4">
-          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full shrink-0">
-            <CalendarRange className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs text-muted-foreground font-medium truncate">
-              Na Semana
-            </p>
-            <p className="text-lg font-bold truncate">
-              {formatCurrency(data.receivedWeek)}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className={cardClasses}>
+        <CalendarRange className="h-7 w-7 text-blue-500 shrink-0 stroke-[1.5]" />
+        <div className="min-w-0 flex-1 flex flex-col gap-0.5">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground truncate">
+            Recebido Semana
+          </p>
+          <p className="text-xl font-black text-foreground truncate">
+            {currencyFormatter.format(data.receivedWeek)}
+          </p>
+        </div>
+      </div>
 
       {/* Quantidade de Pendentes */}
-      <Card className={cardClasses}>
-        <CardContent className="p-4 flex flex-row items-center gap-4">
-          <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-full shrink-0">
-            <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs text-muted-foreground font-medium truncate">
-              Qtd. Pendentes
-            </p>
-            <p className="text-lg font-bold truncate">
-              {data.pendingCount}{" "}
-              <span className="text-sm font-normal text-muted-foreground">
-                itens
-              </span>
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className={cardClasses}>
+        <AlertCircle className="h-7 w-7 text-amber-500 shrink-0 stroke-[1.5]" />
+        <div className="min-w-0 flex-1 flex flex-col gap-0.5">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground truncate">
+            Pendentes Hoje
+          </p>
+          <p className="text-xl font-black text-foreground truncate flex items-baseline gap-1">
+            {data.pendingCount}
+            <span className="text-xs font-bold text-muted-foreground mb-0.5">
+              agendamentos
+            </span>
+          </p>
+        </div>
+      </div>
 
       {/* Meio mais usado */}
-      <Card className={cardClasses}>
-        <CardContent className="p-4 flex flex-row items-center gap-4">
-          <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-full shrink-0">
-            <CreditCard className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs text-muted-foreground font-medium truncate">
-              Meio Favorito
-            </p>
-            <p className="text-sm font-bold mt-1 truncate">
-              {data.topPaymentMethod
-                ? paymentMethodMap[data.topPaymentMethod]
-                : "-"}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className={cardClasses}>
+        <CreditCard className="h-7 w-7 text-purple-500 shrink-0 stroke-[1.5]" />
+        <div className="min-w-0 flex-1 flex flex-col gap-0.5">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground truncate">
+            Meio Favorito
+          </p>
+          <p className="text-base font-black text-foreground truncate leading-tight mt-1">
+            {translatePaymentMethod(data.topPaymentMethod as string | null)}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

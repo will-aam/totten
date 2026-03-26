@@ -5,15 +5,25 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { revalidatePath } from "next/cache";
-import { TransactionType, TransactionStatus } from "@prisma/client";
+import {
+  TransactionType,
+  TransactionStatus,
+  PaymentMethod,
+} from "@prisma/client";
 
+// 🔥 OTIMIZAÇÃO: Busca apenas o ID necessário para não encher a RAM
 async function getAdminOrg() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) throw new Error("Não autorizado");
 
   const admin = await prisma.admin.findUnique({
     where: { email: session.user.email },
-    include: { organizations: true },
+    select: {
+      organizations: {
+        select: { id: true },
+        take: 1,
+      },
+    },
   });
 
   if (!admin || admin.organizations.length === 0) {
@@ -23,7 +33,7 @@ async function getAdminOrg() {
   return admin.organizations[0].id;
 }
 
-// --- 1. CRIAR TRANSAÇÃO MANUAL (AGORA COM SUPORTE A RECORRÊNCIA) ---
+// --- 1. CRIAR TRANSAÇÃO MANUAL (COM RECORRÊNCIA) ---
 export async function createTransaction(data: {
   type: TransactionType;
   description: string;
@@ -39,7 +49,7 @@ export async function createTransaction(data: {
     const organizationId = await getAdminOrg();
 
     if (data.isRecurring && data.duration && data.duration > 1) {
-      const recurrenceId = `rec_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+      const recurrenceId = `rec_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       const transactionsToCreate = [];
 
       for (let i = 0; i < data.duration; i++) {
@@ -99,20 +109,19 @@ export async function updateTransaction(
     date: string;
     status: TransactionStatus;
     paymentMethodId?: string;
-    updateFuture?: boolean; // 🔥 Habilitamos a edição em lote
+    updateFuture?: boolean;
   },
 ) {
   try {
     const organizationId = await getAdminOrg();
 
-    // 1. Acha a transação atual para saber de onde partir
     const currentTx = await prisma.transaction.findUnique({
       where: { id, organization_id: organizationId },
+      select: { recurrence_id: true, date: true }, // 🔥 OTIMIZAÇÃO: Trazendo só o que precisa
     });
 
     if (!currentTx) throw new Error("Transação não encontrada.");
 
-    // 2. Atualiza a transação que o usuário clicou (Atualiza tudo)
     await prisma.transaction.update({
       where: { id },
       data: {
@@ -125,19 +134,17 @@ export async function updateTransaction(
       },
     });
 
-    // 3. Lógica Mágica: Se marcou para atualizar o futuro
     if (data.updateFuture && currentTx.recurrence_id) {
       await prisma.transaction.updateMany({
         where: {
           organization_id: organizationId,
           recurrence_id: currentTx.recurrence_id,
-          date: { gt: currentTx.date }, // Apenas as parcelas com data MAIOR que a atual
+          date: { gt: currentTx.date },
         },
         data: {
           description: data.description,
           amount: data.amount,
           payment_method_id: data.paymentMethodId || null,
-          // Atenção: NÃO mexemos na "date" e nem no "status" das futuras!
         },
       });
     }
@@ -158,21 +165,20 @@ export async function deleteTransaction(id: string, deleteFuture?: boolean) {
 
     const currentTx = await prisma.transaction.findUnique({
       where: { id, organization_id: organizationId },
+      select: { recurrence_id: true, date: true }, // 🔥 OTIMIZAÇÃO
     });
 
     if (!currentTx) throw new Error("Transação não encontrada.");
 
-    // Se pediu para apagar o futuro também
     if (deleteFuture && currentTx.recurrence_id) {
       await prisma.transaction.deleteMany({
         where: {
           organization_id: organizationId,
           recurrence_id: currentTx.recurrence_id,
-          date: { gte: currentTx.date }, // Deleta a atual (gte) e as maiores que ela (futuras)
+          date: { gte: currentTx.date },
         },
       });
     } else {
-      // Deleta apenas a selecionada
       await prisma.transaction.delete({
         where: { id },
       });
@@ -192,39 +198,52 @@ export async function getFullTransactions(month: number, year: number) {
   try {
     const organizationId = await getAdminOrg();
 
-    // Limites do mês filtrado
     const targetMonth = month - 1;
     const monthStart = new Date(year, targetMonth, 1, 0, 0, 0);
     const monthEnd = new Date(year, targetMonth + 1, 0, 23, 59, 59, 999);
 
-    // 1. Agendamentos Realizados (Receitas e Insumos)
+    // 🔥 OTIMIZAÇÃO: Usar Select para puxar menos dados (Economia de tráfego)
     const appointments = await prisma.appointment.findMany({
       where: {
         organization_id: organizationId,
         status: "REALIZADO",
         date_time: { gte: monthStart, lte: monthEnd },
       },
-      include: { service: true, client: true },
+      select: {
+        id: true,
+        date_time: true,
+        payment_method: true,
+        client: { select: { name: true } },
+        service: { select: { name: true, price: true, material_cost: true } },
+      },
     });
 
-    // 2. Transações Manuais
     const manualTransactions = await prisma.transaction.findMany({
       where: {
         organization_id: organizationId,
         date: { gte: monthStart, lte: monthEnd },
       },
-      include: { client: true, payment_method: true },
+      select: {
+        id: true,
+        type: true,
+        description: true,
+        amount: true,
+        date: true,
+        status: true,
+        recurrence_id: true,
+        installment: true,
+        client: { select: { name: true } },
+        payment_method: { select: { type: true } },
+      },
     });
 
-    // 3. Mesclar tudo
     const historyFromAppts = appointments.flatMap((a) => {
       const items = [];
 
-      // Receita do Serviço
       items.push({
-        id: `rec_${a.id}`, // ID falso para UI
+        id: `rec_${a.id}`,
         originalId: a.id,
-        isManual: false, // Avisa o Front-end que não pode editar por aqui
+        isManual: false,
         type: "RECEITA" as const,
         description: a.service.name,
         amount: Number(a.service.price),
@@ -234,12 +253,11 @@ export async function getFullTransactions(month: number, year: number) {
         paymentMethod: a.payment_method || undefined,
       });
 
-      // Despesa do Insumo
       if (a.service.material_cost && Number(a.service.material_cost) > 0) {
         items.push({
-          id: `custo_${a.id}`, // ID falso para UI
+          id: `custo_${a.id}`,
           originalId: a.id,
-          isManual: false, // Avisa o Front-end que não pode editar por aqui
+          isManual: false,
           type: "DESPESA" as const,
           description: `Insumos: ${a.service.name}`,
           amount: Number(a.service.material_cost),
@@ -254,7 +272,7 @@ export async function getFullTransactions(month: number, year: number) {
     const historyFromTx = manualTransactions.map((t) => ({
       id: t.id,
       originalId: t.id,
-      isManual: true, // Avisa o Front-end que esse PODE editar e excluir
+      isManual: true,
       type: t.type,
       description: t.description,
       amount: Number(t.amount),
@@ -266,7 +284,6 @@ export async function getFullTransactions(month: number, year: number) {
       installment: t.installment,
     }));
 
-    // Retorna tudo ordenado (mais recentes primeiro)
     return [...historyFromAppts, ...historyFromTx].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
     );
@@ -275,6 +292,7 @@ export async function getFullTransactions(month: number, year: number) {
     return [];
   }
 }
+
 // --- 5. ATUALIZAÇÃO RÁPIDA DE STATUS (INLINE) ---
 export async function updateTransactionStatus(
   id: string,
@@ -283,7 +301,6 @@ export async function updateTransactionStatus(
   try {
     const organizationId = await getAdminOrg();
 
-    // Atualiza apenas o status da transação específica
     await prisma.transaction.update({
       where: { id, organization_id: organizationId },
       data: { status },
@@ -297,34 +314,44 @@ export async function updateTransactionStatus(
     return { success: false, error: "Falha ao atualizar o status." };
   }
 }
+
 // --- 6. BUSCAR CONTAS A RECEBER (PENDENTES) ---
 export async function getPendingReceivables() {
   try {
     const organizationId = await getAdminOrg();
 
-    // 1. Buscar agendamentos realizados mas não pagos (sem payment_method)
+    // 🔥 OTIMIZAÇÃO: Buscando estritamente os dados necessários
     const pendingAppointments = await prisma.appointment.findMany({
       where: {
         organization_id: organizationId,
         status: "REALIZADO",
         payment_method: null,
       },
-      include: { service: true, client: true },
+      select: {
+        id: true,
+        date_time: true,
+        client: { select: { name: true } },
+        service: { select: { name: true, price: true } },
+      },
       orderBy: { date_time: "asc" },
     });
 
-    // 2. Buscar transações manuais de receita marcadas como PENDENTE
     const pendingTransactions = await prisma.transaction.findMany({
       where: {
         organization_id: organizationId,
         type: "RECEITA",
         status: "PENDENTE",
       },
-      include: { client: true },
+      select: {
+        id: true,
+        date: true,
+        description: true,
+        amount: true,
+        client: { select: { name: true } },
+      },
       orderBy: { date: "asc" },
     });
 
-    // Formatar os dados para o frontend unificado
     const formattedAppointments = pendingAppointments.map((a) => ({
       id: a.id,
       sourceType: "APPOINTMENT" as const,
@@ -343,7 +370,6 @@ export async function getPendingReceivables() {
       clientName: t.client?.name || "Sem cliente",
     }));
 
-    // Retorna tudo ordenado por data (os mais antigos primeiro para cobrar logo)
     return [...formattedAppointments, ...formattedTransactions].sort(
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
     );
@@ -357,24 +383,22 @@ export async function getPendingReceivables() {
 export async function processReceivablePayment(
   id: string,
   sourceType: "APPOINTMENT" | "TRANSACTION",
-  paymentMethod: string, // Pode ser o Enum do PaymentMethod ou ID da organização
-  paymentMethodId?: string, // Usado caso seja transação manual para manter relação com OrganizationPaymentMethod
+  paymentMethod: string,
+  paymentMethodId?: string,
 ) {
   try {
     const organizationId = await getAdminOrg();
 
     if (sourceType === "APPOINTMENT") {
-      // Atualiza o agendamento
       await prisma.appointment.update({
         where: { id, organization_id: organizationId },
         data: {
-          payment_method: paymentMethod as any, // Cast para o Enum PaymentMethod
-          has_charge: false, // Como foi pago, não há mais cobrança pendente
+          payment_method: paymentMethod as PaymentMethod, // Cast seguro para Enum
+          has_charge: false,
         },
       });
       revalidatePath("/admin/agenda");
     } else {
-      // Atualiza a transação manual
       await prisma.transaction.update({
         where: { id, organization_id: organizationId },
         data: {
@@ -386,7 +410,6 @@ export async function processReceivablePayment(
 
     revalidatePath("/admin/finance/dashboard");
     revalidatePath("/admin/finance/transactions");
-    // Futura rota que vamos criar no passo 2
     revalidatePath("/admin/finance/receivables");
 
     return { success: true };

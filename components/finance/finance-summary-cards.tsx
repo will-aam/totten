@@ -1,6 +1,4 @@
 // components/finance/finance-summary-cards.tsx
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FinanceSummary } from "@/types/finance";
 import { ArrowDownCircle, ArrowUpCircle, Clock, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -9,99 +7,92 @@ interface FinanceSummaryCardsProps {
   data: FinanceSummary;
 }
 
-export function FinanceSummaryCards({ data }: FinanceSummaryCardsProps) {
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
-  };
+// 🔥 OTIMIZAÇÃO: Formatador instanciado UMA ÚNICA VEZ fora do componente
+const currencyFormatter = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
 
-  // Classe base para garantir que o card ocupe 85% da tela no mobile e faça o "snap" (parada)
+export function FinanceSummaryCards({ data }: FinanceSummaryCardsProps) {
+  // Classe base 100% Flat: Sem sombras, sem fundos coloridos, bordas neutras.
   const cardClasses =
-    "min-w-[85vw] md:min-w-0 snap-center shrink-0 flex flex-col justify-between shadow-sm border-border";
+    "min-w-[85vw] md:min-w-0 snap-center shrink-0 flex flex-col justify-between bg-card border border-border/50 rounded-2xl p-6 hover:border-primary/30 transition-colors";
 
   return (
     <div className="flex overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scroll-smooth md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:pb-0 md:px-0 md:mx-0 gap-4 [&::-webkit-scrollbar]:hidden">
       {/* Card: Total Recebido */}
-      <Card className={cardClasses}>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
+      <div className={cardClasses}>
+        <div className="flex flex-row items-center justify-between">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
             Recebido no Mês
-          </CardTitle>
-          <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-full">
-            <ArrowUpCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+          </h3>
+          {/* Ícone puro, sem background ou container colorido */}
+          <ArrowUpCircle className="h-6 w-6 text-emerald-500 stroke-[1.5]" />
+        </div>
+        <div className="mt-5 flex flex-col gap-0.5">
+          <div className="text-2xl font-black text-foreground tracking-tighter truncate">
+            {currencyFormatter.format(data.receivedMonth)}
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold text-foreground tracking-tight">
-            {formatCurrency(data.receivedMonth)}
-          </div>
-          <p className="mt-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-            Valores já pagos
+          <p className="text-[11px] font-bold text-muted-foreground/60 uppercase tracking-tight">
+            Valores liquidados
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Card: Total Pendente */}
-      <Card className={cardClasses}>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
+      <div className={cardClasses}>
+        <div className="flex flex-row items-center justify-between">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
             Pendente no Mês
-          </CardTitle>
-          <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-full">
-            <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          </h3>
+          <Clock className="h-6 w-6 text-amber-500 stroke-[1.5]" />
+        </div>
+        <div className="mt-5 flex flex-col gap-0.5">
+          {/* Cor de destaque apenas no número para facilitar a leitura rápida */}
+          <div className="text-2xl font-black text-foreground tracking-tighter truncate">
+            {currencyFormatter.format(data.pendingMonth)}
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold text-foreground tracking-tight">
-            {formatCurrency(data.pendingMonth)}
-          </div>
-          <p className="mt-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+          <p className="text-[11px] font-bold text-muted-foreground/60 uppercase tracking-tight">
             Aguardando pagamento
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Card: Despesas */}
-      <Card className={cardClasses}>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
+      <div className={cardClasses}>
+        <div className="flex flex-row items-center justify-between">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
             Despesas do Mês
-          </CardTitle>
-          <div className="p-2 bg-rose-100 dark:bg-rose-900/30 rounded-full">
-            <ArrowDownCircle className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+          </h3>
+          <ArrowDownCircle className="h-6 w-6 text-rose-500 stroke-[1.5]" />
+        </div>
+        <div className="mt-5 flex flex-col gap-0.5">
+          <div className="text-2xl font-black text-foreground tracking-tighter truncate">
+            {currencyFormatter.format(data.expensesMonth)}
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold text-foreground tracking-tight">
-            {formatCurrency(data.expensesMonth)}
-          </div>
-          <p className="mt-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-            Custos operacionais
+          <p className="text-[11px] font-bold text-muted-foreground/60 uppercase tracking-tight">
+            Custos e saídas
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Card: Saldo */}
-      <Card className={cardClasses}>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
+      <div className={cardClasses}>
+        <div className="flex flex-row items-center justify-between">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
             Saldo do Mês
-          </CardTitle>
-          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-            <Wallet className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          </h3>
+          <Wallet className="h-6 w-6 text-blue-500 stroke-[1.5]" />
+        </div>
+        <div className="mt-5 flex flex-col gap-0.5">
+          <div className="text-2xl font-black text-foreground tracking-tighter truncate">
+            {currencyFormatter.format(data.balanceMonth)}
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold text-foreground tracking-tight">
-            {formatCurrency(data.balanceMonth)}
-          </div>
-          <p className="mt-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-            Recebido - Despesas
+          <p className="text-[11px] font-bold text-muted-foreground/60 uppercase tracking-tight">
+            Resultado líquido
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

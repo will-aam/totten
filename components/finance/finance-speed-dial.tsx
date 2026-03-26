@@ -1,6 +1,7 @@
+// components/finance/finance-speed-dial.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, MinusCircle, PlusCircle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TransactionModal } from "@/components/finance/transaction-modal";
@@ -32,10 +33,13 @@ export function FinanceSpeedDial({
     setIsOpen(false);
   };
 
-  // Se esconder o botão por causa do scroll, fechamos o menu expandido
-  if (isHidden && isOpen) {
-    setIsOpen(false);
-  }
+  // 🔥 Correção de Performance do React:
+  // Nunca altere estados soltos no corpo do componente. Sempre use useEffect.
+  useEffect(() => {
+    if (isHidden && isOpen) {
+      setIsOpen(false);
+    }
+  }, [isHidden, isOpen]);
 
   return (
     <>
@@ -60,7 +64,8 @@ export function FinanceSpeedDial({
           {/* Botão de Despesa */}
           <button
             onClick={handleNewExpense}
-            className="flex items-center justify-center h-12 w-12 rounded-full bg-rose-600 text-white hover:bg-rose-700 active:scale-90 transition-transform"
+            aria-label="Nova Despesa"
+            className="flex items-center justify-center h-14 w-14 rounded-3xl bg-rose-600 text-white hover:bg-rose-700 active:scale-95 transition-all border-none"
           >
             <MinusCircle className="h-6 w-6" />
           </button>
@@ -68,7 +73,8 @@ export function FinanceSpeedDial({
           {/* Botão de Receita */}
           <button
             onClick={handleNewIncome}
-            className="flex items-center justify-center h-12 w-12 rounded-full bg-emerald-600 text-white hover:bg-emerald-700 active:scale-90 transition-transform"
+            aria-label="Nova Receita"
+            className="flex items-center justify-center h-14 w-14 rounded-3xl bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95 transition-all border-none"
           >
             <PlusCircle className="h-6 w-6" />
           </button>
@@ -77,8 +83,9 @@ export function FinanceSpeedDial({
         {/* Botão Flutuante Principal (+ ou X) */}
         <button
           onClick={() => setIsOpen(!isOpen)}
+          aria-label="Menu Financeiro"
           className={cn(
-            "flex items-center justify-center h-14 w-14 rounded-full transition-transform active:scale-95 duration-300",
+            "flex items-center justify-center h-14 w-14 rounded-3xl transition-all active:scale-95 duration-300 border-none",
             isOpen
               ? "bg-slate-800 text-white rotate-90"
               : "bg-primary text-primary-foreground rotate-0",
@@ -88,14 +95,20 @@ export function FinanceSpeedDial({
         </button>
       </div>
 
-      <TransactionModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          if (onSuccess) onSuccess();
-        }}
-        type={transactionType}
-      />
+      {/* 🔥 OTIMIZAÇÃO DE BANCO DE DADOS (Lazy Mount):
+          O modal só passa a existir no código quando a variável isModalOpen for TRUE.
+          Isso impede que o modal dispare consultas no BD desnecessariamente quando a página carrega.
+      */}
+      {isModalOpen && (
+        <TransactionModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            if (onSuccess) onSuccess();
+          }}
+          type={transactionType}
+        />
+      )}
     </>
   );
 }

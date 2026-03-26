@@ -65,7 +65,8 @@ export default function FinanceDashboardPage() {
     <>
       <AdminHeader title="Financeiro" />
 
-      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative">
+      {/* PADRÃO DE LARGURA: max-w-400 e fade-in para entrada suave */}
+      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-12 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
         <FinanceHeader
           onSuccess={loadDashboard}
           selectedMonth={selectedMonth}
@@ -75,50 +76,63 @@ export default function FinanceDashboardPage() {
         />
 
         {isLoading ? (
-          <div className="space-y-8">
-            <div className="flex gap-4 overflow-hidden">
-              <Skeleton className="h-32 min-w-[85vw] md:min-w-0 md:flex-1 rounded-2xl" />
-              <Skeleton className="h-32 min-w-[85vw] md:min-w-0 md:flex-1 rounded-2xl md:block hidden" />
-              <Skeleton className="h-32 min-w-[85vw] md:min-w-0 md:flex-1 rounded-2xl lg:block hidden" />
+          // 🔥 ESQUELETO OTIMIZADO: Layout idêntico aos cards originais
+          <div className="flex flex-col gap-6 animate-pulse">
+            {/* Esqueleto dos Summary Cards (Receita, Despesa, Saldo) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Skeleton className="h-32 w-full rounded-3xl bg-muted/50 border border-border/50" />
+              <Skeleton className="h-32 w-full rounded-3xl bg-muted/50 border border-border/50 hidden md:block" />
+              <Skeleton className="h-32 w-full rounded-3xl bg-muted/50 border border-border/50 hidden md:block" />
             </div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <Skeleton className="h-20 rounded-xl" />
-              <Skeleton className="h-20 rounded-xl" />
-              <Skeleton className="h-20 rounded-xl" />
-              <Skeleton className="h-20 rounded-xl" />
+
+            {/* Esqueleto do Atalho */}
+            <Skeleton className="h-24 w-full rounded-3xl bg-muted/50 border border-border/50 hidden md:block" />
+
+            {/* Esqueleto dos Indicadores Secundários */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Skeleton className="h-24 w-full rounded-3xl bg-muted/50 border border-border/50" />
+              <Skeleton className="h-24 w-full rounded-3xl bg-muted/50 border border-border/50" />
+              <Skeleton className="h-24 w-full rounded-3xl bg-muted/50 border border-border/50" />
+              <Skeleton className="h-24 w-full rounded-3xl bg-muted/50 border border-border/50" />
+            </div>
+
+            {/* Esqueleto da Lista */}
+            <div className="flex flex-col gap-3 mt-4">
+              <Skeleton className="h-20 w-full rounded-3xl bg-muted/50 border border-border/50" />
+              <Skeleton className="h-20 w-full rounded-3xl bg-muted/50 border border-border/50" />
             </div>
           </div>
         ) : (
-          <>
+          <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-2 duration-500">
             {summaryData && <FinanceSummaryCards data={summaryData} />}
 
-            {/* 🔥 Banner de Atalho: escondido no mobile (hidden) e bloco a partir de tablet/desktop (md:block) */}
+            {/* Banner de Atalho: Minimalista e Flat */}
             <Link
               href="/admin/finance/receivables"
-              className="hidden md:block mt-2 md:mt-0 outline-none focus:ring-2 focus:ring-emerald-500 rounded-2xl"
+              className="hidden md:block outline-none rounded-2xl focus-visible:ring-2 focus-visible:ring-primary/20"
             >
-              <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/50 rounded-2xl p-4 flex items-center justify-between hover:bg-emerald-100/50 dark:hover:bg-emerald-900/30 transition-colors shadow-sm cursor-pointer group">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 group-hover:scale-105 transition-transform">
-                    <Wallet className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-emerald-900 dark:text-emerald-300 text-base md:text-lg leading-tight">
+              <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/50 rounded-2xl p-5 flex items-center justify-between hover:bg-emerald-100/50 dark:hover:bg-emerald-900/30 transition-colors shadow-sm group">
+                <div className="flex items-center gap-5">
+                  {/* Ícone sem fundo, apenas a cor aplicada ao traço */}
+                  <Wallet className="h-8 w-8 text-emerald-500 shrink-0 stroke-[1.5]" />
+
+                  <div className="flex flex-col">
+                    <h3 className="text-base font-black text-foreground tracking-tight uppercase text-[13px]">
                       Contas a Receber
                     </h3>
-                    <p className="text-sm text-emerald-700 dark:text-emerald-500 font-medium mt-0.5">
+                    <p className="text-sm font-medium text-muted-foreground">
                       Dê baixa rápida em agendamentos pendentes
                     </p>
                   </div>
                 </div>
-                <div className="h-10 w-10 flex items-center justify-center rounded-full bg-white dark:bg-black/20 text-emerald-600 shadow-sm group-hover:translate-x-1 transition-transform">
-                  <ArrowRight className="h-5 w-5" />
-                </div>
+
+                {/* Seta discreta, sem círculo de fundo */}
+                <ArrowRight className="h-6 w-6 text-emerald-900 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all stroke-[2.5]" />
               </div>
             </Link>
 
-            <div className="mt-2 md:mt-0">
-              <h3 className="text-sm font-medium text-muted-foreground mb-3 px-1">
+            <div className="flex flex-col gap-3">
+              <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">
                 Visão Rápida (Semana Atual)
               </h3>
               {secondaryData && (
@@ -126,10 +140,13 @@ export default function FinanceDashboardPage() {
               )}
             </div>
 
-            <div className="mt-2 md:mt-0">
+            <div className="flex flex-col gap-3 mt-2">
+              <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">
+                Últimas Movimentações
+              </h3>
               <RecentTransactionsList data={recentTransactions} />
             </div>
-          </>
+          </div>
         )}
       </div>
 
@@ -139,13 +156,13 @@ export default function FinanceDashboardPage() {
       <button
         onClick={scrollToTop}
         className={cn(
-          "fixed bottom-24 md:bottom-8 right-4 md:right-8 p-3.5 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 z-50",
+          "fixed bottom-20 right-4 md:bottom-8 md:right-8 h-14 w-14 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 z-50",
           showScrollTop
-            ? "translate-y-0 opacity-100"
-            : "translate-y-10 opacity-0 pointer-events-none md:translate-y-0 md:opacity-100 md:pointer-events-auto",
+            ? "translate-y-0 opacity-100 hover:scale-110"
+            : "translate-y-16 opacity-0 pointer-events-none",
         )}
       >
-        <ArrowUp className="h-5 w-5" strokeWidth={2.5} />
+        <ArrowUp className="h-6 w-6" strokeWidth={2.5} />
       </button>
     </>
   );
