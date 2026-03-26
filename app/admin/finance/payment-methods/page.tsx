@@ -27,6 +27,12 @@ import { PaymentMethodModal } from "@/components/finance/payment-method-modal";
 import { getPaymentMethods } from "@/app/actions/payment-methods";
 import { Skeleton } from "@/components/ui/skeleton";
 
+// OTIMIZAÇÃO: Formatador global para evitar recriação a cada renderização da lista
+const currencyFormatter = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
+
 function PaymentMethodListItem({
   method,
   onClick,
@@ -35,7 +41,6 @@ function PaymentMethodListItem({
   onClick: () => void;
 }) {
   const getIcon = () => {
-    // AJUSTADO: Agora verifica os tipos exatos do seu Prisma em português
     switch (method.type) {
       case "PIX":
         return <QrCode className="h-5 w-5" />;
@@ -49,12 +54,6 @@ function PaymentMethodListItem({
     }
   };
 
-  const formatCurrency = (val: number) =>
-    new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(val);
-
   const getTaxString = () => {
     const p = Number(method.feePercentage);
     const f = Number(method.feeFixed);
@@ -62,7 +61,7 @@ function PaymentMethodListItem({
     if (p === 0 && f === 0) return "Sem taxa";
     const parts = [];
     if (p > 0) parts.push(`${p}%`);
-    if (f > 0) parts.push(formatCurrency(f));
+    if (f > 0) parts.push(currencyFormatter.format(f));
     return parts.join(" + ");
   };
 
@@ -144,7 +143,6 @@ export default function PaymentMethodsPage() {
     setIsLoading(true);
     try {
       const data = await getPaymentMethods();
-      // Não precisa mais do .map com Number(), a Action já resolveu!
       setMethods(data as OrganizationPaymentMethod[]);
     } catch (error) {
       console.error("Erro ao carregar pagamentos:", error);
@@ -177,7 +175,8 @@ export default function PaymentMethodsPage() {
     <>
       <AdminHeader title="Meios de Pagamento" />
 
-      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative">
+      {/* 🔥 OTIMIZAÇÃO ESTRUTURAL: max-w-400 e animate-in mantidos intocados como pedido */}
+      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
@@ -253,24 +252,27 @@ export default function PaymentMethodsPage() {
       <button
         onClick={scrollToTop}
         className={cn(
-          "fixed bottom-20 md:bottom-8 right-4 md:right-8 p-3 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 z-50",
+          "fixed bottom-20 right-4 md:bottom-8 md:right-8 h-14 w-14 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 z-50",
           showScrollTop
-            ? "translate-y-0 opacity-100"
-            : "translate-y-10 opacity-0 pointer-events-none",
+            ? "translate-y-0 opacity-100 hover:scale-110"
+            : "translate-y-16 opacity-0 pointer-events-none",
         )}
         aria-label="Voltar ao topo"
       >
-        <ArrowUp className="h-5 w-5" strokeWidth={2.5} />
+        <ArrowUp className="h-6 w-6" strokeWidth={2.5} />
       </button>
 
-      <PaymentMethodModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          loadData();
-        }}
-        method={selectedMethod}
-      />
+      {/* 🔥 OTIMIZAÇÃO: Lazy Mount do Modal */}
+      {isModalOpen && (
+        <PaymentMethodModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            loadData();
+          }}
+          method={selectedMethod}
+        />
+      )}
     </>
   );
 }

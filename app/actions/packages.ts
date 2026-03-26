@@ -8,16 +8,78 @@ import { revalidatePath } from "next/cache";
 
 /**
  * Busca todos os pacotes da organização e calcula os KPIs em tempo real.
- * Agora inclui o clientId para permitir navegação precisa.
+ * 🔥 OTIMIZADO: Agora suporta Paginação Server-Side e Busca Inteligente.
  */
-export async function getPackagesDashboardData() {
+export async function getPackagesDashboardData(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+}) {
   try {
     const admin = await requireAuth();
 
-    const packages = await prisma.package.findMany({
+    // Default parameters if not provided
+    const page = params?.page || 1;
+    const limit = params?.limit || 20;
+    const skip = (page - 1) * limit;
+
+    // 🔥 OTIMIZAÇÃO DE KPIs: Calculados DIRETAMENTE no banco de dados.
+    // Em vez de baixar 5.000 pacotes pro Node.js para contar quantos estão ativos,
+    // pedimos ao PostgreSQL que nos devolva apenas o número 5000. Super rápido!
+
+    // 1. Total Ativos
+    const activeCount = await prisma.package.count({
       where: {
         organization_id: admin.organizationId,
+        active: true,
       },
+    });
+
+    // 2. Próximos do Fim (Faltam 2 ou menos sessões para acabar)
+    // O Prisma não permite comparar duas colunas diretamente no 'where' simples (used_sessions >= total_sessions - 2)
+    // Então puxamos apenas essas duas colunas e contamos na RAM, mas apenas dos pacotes ATIVOS (muito mais leve).
+    const activePackagesForKpi = await prisma.package.findMany({
+      where: { organization_id: admin.organizationId, active: true },
+      select: { used_sessions: true, total_sessions: true },
+    });
+
+    let endingSoonCount = 0;
+    let totalPendingSessions = 0;
+
+    activePackagesForKpi.forEach((p) => {
+      totalPendingSessions += p.total_sessions - p.used_sessions;
+      if (
+        p.used_sessions >= p.total_sessions - 2 &&
+        p.used_sessions < p.total_sessions
+      ) {
+        endingSoonCount++;
+      }
+    });
+
+    // 🔥 CONSTRUÇÃO DO FILTRO DA LISTAGEM
+    const baseWhere: any = {
+      organization_id: admin.organizationId,
+    };
+
+    if (params?.search) {
+      // Busca pelo nome do cliente ou nome do pacote
+      const searchLower = params.search.toLowerCase();
+      baseWhere.OR = [
+        { client: { name: { contains: searchLower, mode: "insensitive" } } },
+        { service: { name: { contains: searchLower, mode: "insensitive" } } },
+      ];
+    }
+
+    // Busca a quantidade total de pacotes que combinam com o filtro para montar a paginação (ex: Página 1 de 5)
+    const totalPackages = await prisma.package.count({
+      where: baseWhere,
+    });
+
+    // 🔥 OTIMIZAÇÃO: Busca Apenas os pacotes daquela página específica
+    const packages = await prisma.package.findMany({
+      where: baseWhere,
+      skip,
+      take: limit,
       include: {
         client: { select: { name: true } },
         service: { select: { name: true } },
@@ -27,25 +89,11 @@ export async function getPackagesDashboardData() {
       },
     });
 
-    const activeCount = packages.filter((p) => p.active).length;
-
-    const endingSoonCount = packages.filter(
-      (p) =>
-        p.active &&
-        p.used_sessions >= p.total_sessions - 2 &&
-        p.used_sessions < p.total_sessions,
-    ).length;
-
-    const totalPendingSessions = packages.reduce(
-      (acc, p) => acc + (p.total_sessions - p.used_sessions),
-      0,
-    );
-
     return {
       success: true,
       packages: packages.map((p) => ({
         id: p.id,
-        clientId: p.client_id, // 🔥 Adicionado: Crucial para os botões "Agendar" e "Renovar"
+        clientId: p.client_id,
         clientName: p.client.name,
         packageName: p.service.name,
         usedSessions: p.used_sessions,
@@ -57,6 +105,10 @@ export async function getPackagesDashboardData() {
         endingSoon: endingSoonCount,
         totalPending: totalPendingSessions,
       },
+      // Dados para o Frontend montar os botões de "Anterior" e "Próxima"
+      total: totalPackages,
+      page,
+      totalPages: Math.ceil(totalPackages / limit) || 1,
     };
   } catch (error) {
     console.error("Erro ao carregar dashboard de pacotes:", error);
@@ -160,6 +212,7 @@ export async function createManualPackageCheckIn(packageId: string) {
     return { success: false, error: "Falha ao processar registro." };
   }
 }
+
 /**
  * Exclui um check-in e reverte o consumo no pacote do cliente.
  */

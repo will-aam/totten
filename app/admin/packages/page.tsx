@@ -1,7 +1,7 @@
 // app/admin/packages/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { AdminHeader } from "@/components/admin-header";
 import {
@@ -23,6 +23,8 @@ import {
   History,
   CheckCircle2,
   Loader2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PackageDetailsModal } from "@/components/packages/package-details-modal";
@@ -31,6 +33,7 @@ import {
   createManualPackageCheckIn,
 } from "@/app/actions/packages";
 import { toast } from "sonner";
+import { useDebounce } from "@/hooks/use-debounce"; // 🔥 Importamos o Debounce
 
 function KpiCard({
   title,
@@ -77,7 +80,7 @@ function PackageListItem({ pkg, onOpenDetails, onManualCheckIn }: any) {
   return (
     <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 py-4 border-b border-border/50 last:border-0 active:bg-muted/50 transition-colors px-2 -mx-2 rounded-xl">
       <div
-        className="flex items-center gap-3 min-w-0"
+        className="flex items-center gap-3 min-w-0 cursor-pointer"
         onClick={() => onOpenDetails(pkg)}
       >
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/5 text-primary font-bold border border-primary/10">
@@ -115,7 +118,7 @@ function PackageListItem({ pkg, onOpenDetails, onManualCheckIn }: any) {
         <Button
           variant="ghost"
           size="icon"
-          className="h-10 w-10 text-muted-foreground active:text-primary active:bg-primary/10 rounded-full"
+          className="h-10 w-10 text-muted-foreground hover:text-primary hover:bg-primary/10 active:text-primary active:bg-primary/10 rounded-full"
           onClick={() => onManualCheckIn(pkg)}
         >
           <CheckCircle2 className="h-5 w-5" />
@@ -130,6 +133,7 @@ export default function PackagesPage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<any>(null);
+
   const [packages, setPackages] = useState<any[]>([]);
   const [kpis, setKpis] = useState({
     active: 0,
@@ -137,24 +141,45 @@ export default function PackagesPage() {
     totalPending: 0,
   });
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
 
-  const loadData = async () => {
+  // 🔥 Estados de Paginação e Busca
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 500);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // 🔥 Reseta a página se a busca mudar
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
+  const loadData = useCallback(async () => {
     setLoading(true);
-    const result = await getPackagesDashboardData();
+
+    // Regra dos 3 caracteres para o banco de dados
+    const searchQuery =
+      debouncedSearch.trim().length >= 3 ? debouncedSearch.trim() : "";
+
+    const result = await getPackagesDashboardData({
+      page,
+      limit: 20,
+      search: searchQuery,
+    });
+
     if (result.success) {
       setPackages(result.packages || []);
       setKpis(result.kpis || { active: 0, endingSoon: 0, totalPending: 0 });
+      setTotalPages(result.totalPages || 1);
     }
     setLoading(false);
-  };
+  }, [page, debouncedSearch]);
 
   useEffect(() => {
     loadData();
     const handleScroll = () => setShowScrollTop(window.scrollY > 200);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [loadData]);
 
   const handleManualCheckIn = async (pkg: any) => {
     if (pkg.usedSessions >= pkg.totalSessions) {
@@ -170,10 +195,10 @@ export default function PackagesPage() {
       toast.loading("Registrando...", { id: "manual" });
       const res = await createManualPackageCheckIn(pkg.id);
       if (res.success) {
-        toast.success("Check-in registado com sucesso!", { id: "manual" });
+        toast.success("Check-in registrado com sucesso!", { id: "manual" });
         loadData();
       } else {
-        toast.error(res.error || "Erro ao registar.", { id: "manual" });
+        toast.error(res.error || "Erro ao registrar.", { id: "manual" });
       }
     } catch (e) {
       toast.error("Erro na conexão.", { id: "manual" });
@@ -185,15 +210,12 @@ export default function PackagesPage() {
     setDetailsOpen(true);
   };
 
-  const filteredPackages = packages.filter((p) =>
-    p.clientName.toLowerCase().includes(search.toLowerCase()),
-  );
-
   return (
     <>
       <AdminHeader title="Pacotes" />
 
-      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-6xl mx-auto w-full pb-24 relative">
+      {/* 🔥 OTIMIZAÇÃO ESTRUTURAL: max-w-400 e animate-in mantendo o layout original */}
+      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
         <div className="flex overflow-x-auto pb-4 -mx-4 px-4 gap-4 md:grid md:grid-cols-3 scrollbar-hide">
           <KpiCard
             title="Pacotes Ativos"
@@ -220,12 +242,12 @@ export default function PackagesPage() {
             className="min-w-[85vw] md:min-w-0"
           />
         </div>
-        {/* Adicionar otimização de busca limitando obrigatoriamente digitar 3 letrar só então fazer a requisição no banco de dados.  */}
+
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por cliente..."
+              placeholder="Buscar por cliente (mín. 3 letras)..."
               className="pl-9 h-12 bg-background rounded-2xl border-none shadow-sm focus-visible:ring-primary/20"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -255,12 +277,12 @@ export default function PackagesPage() {
               <div className="flex flex-col items-center py-20 gap-3">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                  Sincronizando banco...
+                  Buscando pacotes...
                 </span>
               </div>
-            ) : filteredPackages.length > 0 ? (
+            ) : packages.length > 0 ? (
               <div className="flex flex-col">
-                {filteredPackages.map((pkg) => (
+                {packages.map((pkg) => (
                   <PackageListItem
                     key={pkg.id}
                     pkg={pkg}
@@ -272,12 +294,43 @@ export default function PackagesPage() {
             ) : (
               <div className="py-20 text-center border-2 border-dashed border-muted rounded-4xl">
                 <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
-                  Nenhum pacote encontrado
+                  {search.length >= 3
+                    ? "Nenhum pacote encontrado na busca"
+                    : "Nenhum pacote ativo no momento"}
                 </p>
               </div>
             )}
           </CardContent>
         </Card>
+
+        {/* 🔥 CONTROLES DE PAGINAÇÃO */}
+        {totalPages > 1 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-2 bg-card p-4 rounded-3xl border border-border/50 shadow-sm">
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-center sm:text-left w-full sm:w-auto">
+              Página {page} de {totalPages}
+            </p>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1 || loading}
+                className="rounded-xl h-10 font-bold bg-background shadow-sm hover:bg-muted"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages || loading}
+                className="rounded-xl h-10 font-bold bg-background shadow-sm hover:bg-muted"
+              >
+                Próxima <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       <PackageDetailsModal
@@ -289,9 +342,9 @@ export default function PackagesPage() {
       <button
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         className={cn(
-          "fixed bottom-24 md:bottom-8 right-6 p-4 rounded-2xl bg-primary text-primary-foreground shadow-2xl active:scale-75 transition-all duration-300 z-50",
+          "fixed bottom-24 md:bottom-8 right-6 p-4 rounded-full bg-primary text-primary-foreground shadow-2xl active:scale-75 transition-all duration-300 z-50",
           showScrollTop
-            ? "translate-y-0 opacity-100"
+            ? "translate-y-0 opacity-100 hover:scale-105"
             : "translate-y-10 opacity-0 pointer-events-none",
         )}
       >

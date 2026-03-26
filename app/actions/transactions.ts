@@ -418,3 +418,160 @@ export async function processReceivablePayment(
     return { success: false, error: "Falha ao processar pagamento." };
   }
 }
+
+// --- 8. HISTÓRICO PAGINADO E BUSCA SERVER-SIDE ---
+export async function getPaginatedTransactions(params: {
+  month: number;
+  year: number;
+  type?: "RECEITA" | "DESPESA";
+  page: number;
+  limit: number;
+  search?: string;
+}) {
+  try {
+    const organizationId = await getAdminOrg();
+
+    const targetMonth = params.month - 1;
+    const monthStart = new Date(params.year, targetMonth, 1, 0, 0, 0);
+    const monthEnd = new Date(params.year, targetMonth + 1, 0, 23, 59, 59, 999);
+
+    const skip = (params.page - 1) * params.limit;
+
+    // Se houver busca, ignoramos o mês para pesquisar no histórico todo
+    const dateFilter = params.search
+      ? undefined
+      : { gte: monthStart, lte: monthEnd };
+
+    const commonApptWhere: any = {
+      organization_id: organizationId,
+      status: "REALIZADO",
+    };
+    if (dateFilter) commonApptWhere.date_time = dateFilter;
+
+    const commonTxWhere: any = {
+      organization_id: organizationId,
+    };
+    if (dateFilter) commonTxWhere.date = dateFilter;
+    if (params.type) commonTxWhere.type = params.type;
+
+    if (params.search) {
+      const searchLower = params.search.toLowerCase();
+
+      commonApptWhere.OR = [
+        { service: { name: { contains: searchLower, mode: "insensitive" } } },
+        { client: { name: { contains: searchLower, mode: "insensitive" } } },
+      ];
+
+      commonTxWhere.OR = [
+        { description: { contains: searchLower, mode: "insensitive" } },
+        { client: { name: { contains: searchLower, mode: "insensitive" } } },
+      ];
+    }
+
+    // OTIMIZAÇÃO: Promise.all rodando as duas consultas em paralelo, trazendo apenas as colunas necessárias
+    const [rawAppts, rawTxs] = await Promise.all([
+      prisma.appointment.findMany({
+        where: commonApptWhere,
+        select: {
+          id: true,
+          date_time: true,
+          payment_method: true,
+          client: { select: { name: true } },
+          service: { select: { name: true, price: true, material_cost: true } },
+        },
+      }),
+      prisma.transaction.findMany({
+        where: commonTxWhere,
+        select: {
+          id: true,
+          type: true,
+          description: true,
+          amount: true,
+          date: true,
+          status: true,
+          recurrence_id: true,
+          installment: true,
+          client: { select: { name: true } },
+          payment_method: { select: { type: true } },
+        },
+      }),
+    ]);
+
+    // Mesclando os dados com segurança
+    const historyFromAppts = rawAppts.flatMap((a) => {
+      const items = [];
+
+      // Receita
+      if (params.type !== "DESPESA") {
+        items.push({
+          id: `rec_${a.id}`,
+          originalId: a.id,
+          isManual: false,
+          type: "RECEITA" as const,
+          description: a.service.name,
+          amount: Number(a.service.price),
+          date: a.date_time.toISOString(),
+          status: (a.payment_method ? "PAGO" : "PENDENTE") as
+            | "PAGO"
+            | "PENDENTE",
+          clientName: a.client.name,
+          paymentMethod: a.payment_method || undefined,
+        });
+      }
+
+      // Despesa (Insumos)
+      if (
+        params.type !== "RECEITA" &&
+        a.service.material_cost &&
+        Number(a.service.material_cost) > 0
+      ) {
+        items.push({
+          id: `custo_${a.id}`,
+          originalId: a.id,
+          isManual: false,
+          type: "DESPESA" as const,
+          description: `Insumos: ${a.service.name}`,
+          amount: Number(a.service.material_cost),
+          date: a.date_time.toISOString(),
+          status: "PAGO" as const,
+          clientName: a.client.name,
+        });
+      }
+      return items;
+    });
+
+    const historyFromTx = rawTxs.map((t) => ({
+      id: t.id,
+      originalId: t.id,
+      isManual: true,
+      type: t.type,
+      description: t.description,
+      amount: Number(t.amount),
+      date: t.date.toISOString(),
+      status: t.status,
+      clientName: t.client?.name,
+      paymentMethod: t.payment_method?.type || undefined,
+      recurrence_id: t.recurrence_id,
+      installment: t.installment,
+    }));
+
+    // Une tudo e ordena
+    const allHistory = [...historyFromAppts, ...historyFromTx].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
+
+    // Aplica a paginação no array final
+    const total = allHistory.length;
+    const paginatedData = allHistory.slice(skip, skip + params.limit);
+
+    return {
+      data: paginatedData,
+      total,
+      page: params.page,
+      totalPages: Math.ceil(total / params.limit) || 1,
+    };
+  } catch (error) {
+    console.error("Erro ao buscar histórico paginado:", error);
+    throw error;
+  }
+}

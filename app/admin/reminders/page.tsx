@@ -173,12 +173,7 @@ export default function RemindersPage() {
                         onClick={() => handleSendWhatsApp(appt)}
                         variant={hasMessaged ? "secondary" : "default"}
                         className={cn(
-                          "w-full md:w-auto rounded-2xl h-11 px-5 shrink-0 transition-all font-bold text-sm",
-                          hasMessaged
-                            ? "bg-muted/50 text-muted-foreground border border-border/50"
-                            : isConfirmed
-                              ? "bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 shadow-none border-none"
-                              : "bg-[#25D366] hover:bg-[#128C7E] text-white shadow-lg shadow-[#25D366]/20 border-none",
+                          "w-full md:w-auto rounded-2xl h-11 px-5 shrink-0 transition-all font-bold text-sm over:bg-transparent active:scale-90 active:brightness-90",
                         )}
                       >
                         <MessageCircle className="h-4 w-4 mr-2" />

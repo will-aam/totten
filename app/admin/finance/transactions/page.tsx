@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { AdminHeader } from "@/components/admin-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input"; // 🔥 Import para o campo de busca
 import {
   Select,
   SelectContent,
@@ -39,16 +40,20 @@ import {
   Trash2,
   MoreVertical,
   Repeat,
+  Search,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  getFullTransactions,
+  getPaginatedTransactions, // 🔥 Usando a Action Paginada
   deleteTransaction,
-  updateTransactionStatus, // 🔥 Importamos a nova Action rápida
+  updateTransactionStatus,
 } from "@/app/actions/transactions";
 import { toast } from "sonner";
 import { TransactionStatus } from "@/types/finance";
 import { TransactionModal } from "@/components/finance/transaction-modal";
+import { useDebounce } from "@/hooks/use-debounce";
 
 const MONTHS = [
   { value: 1, label: "Janeiro" },
@@ -68,6 +73,12 @@ const MONTHS = [
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // 🔥 Estados de Paginação e Busca (Performance)
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearch = useDebounce(searchTerm, 500);
 
   // Estados de Controle (Deletar e Editar)
   const [deletingTx, setDeletingTx] = useState<any | null>(null);
@@ -91,17 +102,34 @@ export default function TransactionsPage() {
     (_, i) => startYear + i,
   );
 
+  // 🔥 Reseta a página se os filtros mudarem
+  useEffect(() => {
+    setPage(1);
+  }, [selectedMonth, selectedYear, filterType, debouncedSearch]);
+
   const loadTransactions = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await getFullTransactions(selectedMonth, selectedYear);
-      setTransactions(data);
+      const searchQuery =
+        debouncedSearch.trim().length >= 3 ? debouncedSearch.trim() : "";
+
+      const response = await getPaginatedTransactions({
+        month: selectedMonth,
+        year: selectedYear,
+        type: filterType === "ALL" ? undefined : filterType,
+        page,
+        limit: 20,
+        search: searchQuery,
+      });
+
+      setTransactions(response.data);
+      setTotalPages(response.totalPages);
     } catch (error) {
       toast.error("Erro ao carregar extrato.");
     } finally {
       setIsLoading(false);
     }
-  }, [selectedMonth, selectedYear]);
+  }, [selectedMonth, selectedYear, filterType, page, debouncedSearch]);
 
   useEffect(() => {
     loadTransactions();
@@ -131,7 +159,6 @@ export default function TransactionsPage() {
     }
   };
 
-  // 🔥 Nova Função: Troca Rápida de Status
   const handleStatusChange = async (
     id: string,
     newStatus: TransactionStatus,
@@ -140,7 +167,7 @@ export default function TransactionsPage() {
       const res = await updateTransactionStatus(id, newStatus);
       if (res.success) {
         toast.success("Status atualizado com sucesso!");
-        loadTransactions(); // Recarrega para refletir a cor nova
+        loadTransactions();
       } else {
         toast.error(res.error || "Erro ao atualizar status.");
       }
@@ -177,7 +204,6 @@ export default function TransactionsPage() {
     OUTRO: "Outros",
   };
 
-  // 🔥 COMPONENTE ATUALIZADO: Badge Inteligente
   const StatusBadge = ({ transaction }: { transaction: any }) => {
     const isManual = transaction.isManual;
     const status = transaction.status as TransactionStatus;
@@ -204,7 +230,6 @@ export default function TransactionsPage() {
     const baseClasses =
       "text-[10px] px-1.5 py-0 h-4 transition-colors select-none";
 
-    // Se NÃO for editável (gerado pela agenda)
     if (!isManual) {
       return (
         <Badge
@@ -216,7 +241,6 @@ export default function TransactionsPage() {
       );
     }
 
-    // Se FOR editável (manual) -> Ganha Borda e Menu de Clique
     return (
       <DropdownMenu>
         <DropdownMenuTrigger className="outline-none focus:outline-none">
@@ -225,7 +249,6 @@ export default function TransactionsPage() {
             className={cn(
               baseClasses,
               badgeClasses,
-              // Dica visual de que é clicável (Borda sutil e hover)
               "cursor-pointer border border-foreground/15 hover:border-foreground/30 hover:opacity-80",
             )}
           >
@@ -255,84 +278,99 @@ export default function TransactionsPage() {
     );
   };
 
-  const filteredTransactions = transactions.filter(
-    (t) => filterType === "ALL" || t.type === filterType,
-  );
-
   return (
     <>
       <AdminHeader title="Extrato de Movimentações" />
 
-      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-5xl mx-auto w-full pb-24 md:pb-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card p-4 rounded-2xl border border-border/50 shadow-sm">
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <Calendar className="h-5 w-5 text-muted-foreground hidden sm:block" />
-            <Select
-              value={selectedMonth.toString()}
-              onValueChange={(val) => setSelectedMonth(Number(val))}
-            >
-              <SelectTrigger className="h-10 w-full sm:w-32.5 rounded-xl font-medium bg-muted/30 border-none">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl">
-                {MONTHS.map((m) => (
-                  <SelectItem
-                    key={m.value}
-                    value={m.value.toString()}
-                    className="rounded-lg"
-                  >
-                    {m.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={selectedYear.toString()}
-              onValueChange={(val) => setSelectedYear(Number(val))}
-            >
-              <SelectTrigger className="h-10 w-full sm:w-25 rounded-xl font-medium bg-muted/30 border-none">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl">
-                {YEARS.map((y) => (
-                  <SelectItem
-                    key={y}
-                    value={y.toString()}
-                    className="rounded-lg"
-                  >
-                    {y}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <Filter className="h-5 w-5 text-muted-foreground hidden sm:block" />
-            <Select
-              value={filterType}
-              onValueChange={(val: any) => setFilterType(val)}
-            >
-              <SelectTrigger className="h-10 w-full sm:w-40 rounded-xl font-medium bg-muted/30 border-none">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl">
-                <SelectItem value="ALL" className="rounded-lg">
-                  Todas
-                </SelectItem>
-                <SelectItem
-                  value="RECEITA"
-                  className="rounded-lg text-emerald-600"
+      {/* 🔥 AJUSTE ESTRUTURAL: max-w-400 aplicado e animate-in */}
+      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
+        {/* Painel de Filtros e Busca */}
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card p-4 rounded-2xl border border-border/50 shadow-sm">
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              <Calendar className="h-5 w-5 text-muted-foreground hidden sm:block" />
+              <Select
+                value={selectedMonth.toString()}
+                onValueChange={(val) => setSelectedMonth(Number(val))}
+              >
+                <SelectTrigger className="h-10 w-full sm:w-32.5 rounded-xl font-medium bg-muted/30 border-none">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  {MONTHS.map((m) => (
+                    <SelectItem
+                      key={m.value}
+                      value={m.value.toString()}
+                      className="rounded-lg"
+                    >
+                      {m.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={selectedYear.toString()}
+                onValueChange={(val) => setSelectedYear(Number(val))}
+              >
+                <SelectTrigger className="h-10 w-full sm:w-25 rounded-xl font-medium bg-muted/30 border-none">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  {YEARS.map((y) => (
+                    <SelectItem
+                      key={y}
+                      value={y.toString()}
+                      className="rounded-lg"
+                    >
+                      {y}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Campo de Busca Livre e Tipo */}
+            <div className="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Buscar transação..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 h-10 rounded-xl bg-muted/30 border-none font-medium w-full focus-visible:ring-primary/20"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <Filter className="h-5 w-5 text-muted-foreground hidden sm:block" />
+                <Select
+                  value={filterType}
+                  onValueChange={(val: any) => setFilterType(val)}
                 >
-                  Receitas
-                </SelectItem>
-                <SelectItem
-                  value="DESPESA"
-                  className="rounded-lg text-rose-600"
-                >
-                  Despesas
-                </SelectItem>
-              </SelectContent>
-            </Select>
+                  <SelectTrigger className="h-10 w-full sm:w-40 rounded-xl font-medium bg-muted/30 border-none">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    <SelectItem value="ALL" className="rounded-lg">
+                      Todas
+                    </SelectItem>
+                    <SelectItem
+                      value="RECEITA"
+                      className="rounded-lg text-emerald-600"
+                    >
+                      Receitas
+                    </SelectItem>
+                    <SelectItem
+                      value="DESPESA"
+                      className="rounded-lg text-rose-600"
+                    >
+                      Despesas
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -341,16 +379,18 @@ export default function TransactionsPage() {
             <div className="flex justify-center items-center py-20">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : filteredTransactions.length === 0 ? (
+          ) : transactions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center bg-muted/10 rounded-2xl">
               <Filter className="h-12 w-12 text-muted-foreground/30 mb-4" />
               <p className="text-muted-foreground font-medium">
-                Nenhuma movimentação encontrada neste período.
+                {searchTerm.length >= 3
+                  ? "Nenhuma movimentação encontrada na busca."
+                  : "Nenhuma movimentação encontrada neste período."}
               </p>
             </div>
           ) : (
             <div className="flex flex-col w-full">
-              {filteredTransactions.map((transaction) => {
+              {transactions.map((transaction) => {
                 const isIncome = transaction.type === "RECEITA";
 
                 return (
@@ -424,7 +464,6 @@ export default function TransactionsPage() {
                           {formatCurrency(transaction.amount)}
                         </span>
 
-                        {/* 🔥 Injetamos a transação inteira no Badge Inteligente */}
                         <StatusBadge transaction={transaction} />
                       </div>
 
@@ -471,9 +510,37 @@ export default function TransactionsPage() {
             </div>
           )}
         </div>
+
+        {/* 🔥 CONTROLES DE PAGINAÇÃO */}
+        {totalPages > 1 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-2 bg-card p-4 rounded-2xl border border-border/50 shadow-sm">
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-center sm:text-left w-full sm:w-auto">
+              Página {page} de {totalPages}
+            </p>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1 || isLoading}
+                className="rounded-xl h-10 font-bold bg-background shadow-sm hover:bg-muted"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages || isLoading}
+                className="rounded-xl h-10 font-bold bg-background shadow-sm hover:bg-muted"
+              >
+                Próxima <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO */}
       <AlertDialog
         open={!!deletingTx}
         onOpenChange={(open) => {
@@ -533,7 +600,6 @@ export default function TransactionsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* MODAL DE EDIÇÃO */}
       {editingTransaction && (
         <TransactionModal
           isOpen={!!editingTransaction}

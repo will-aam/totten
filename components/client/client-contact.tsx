@@ -87,10 +87,12 @@ export function ClientContact({ client }: ClientContactProps) {
 
   const [editPhone, setEditPhone] = useState(client.phone_whatsapp || "");
   const [editEmail, setEditEmail] = useState(client.email || "");
-  
+
   // 🔥 Data agora é controlada como string para facilitar a digitação da usuária
-  const [editBirthDate, setEditBirthDate] = useState(initDateStr(client.birth_date));
-  
+  const [editBirthDate, setEditBirthDate] = useState(
+    initDateStr(client.birth_date),
+  );
+
   const [editZipCode, setEditZipCode] = useState(client.zip_code || "");
   const [editCity, setEditCity] = useState(client.city || "");
   const [editStreet, setEditStreet] = useState(client.street || "");
@@ -160,9 +162,13 @@ export function ClientContact({ client }: ClientContactProps) {
     if (editBirthDate.length === 10) {
       const [day, month, year] = editBirthDate.split("/");
       formattedBirthDate = `${year}-${month}-${day}`;
-      
+
       const d = new Date(`${formattedBirthDate}T12:00:00Z`);
-      if (isNaN(d.getTime()) || d.getFullYear() > new Date().getFullYear() || d.getFullYear() < 1900) {
+      if (
+        isNaN(d.getTime()) ||
+        d.getFullYear() > new Date().getFullYear() ||
+        d.getFullYear() < 1900
+      ) {
         toast.error("A data de nascimento informada é inválida.");
         return;
       }
