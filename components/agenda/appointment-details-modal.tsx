@@ -343,14 +343,14 @@ export const AppointmentDetailsModal = memo(
                     {isRecurrent && (
                       <AlertDialogAction
                         onClick={() => handleDelete(true)}
-                        className="bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-2xl border-none font-bold"
+                        className="bg-destructive/10 text-destructive rounded-2xl border-none font-bold"
                       >
                         Excluir Toda a Série
                       </AlertDialogAction>
                     )}
                     <AlertDialogAction
                       onClick={() => handleDelete(false)}
-                      className="bg-destructive text-white rounded-2xl font-bold"
+                      className="rounded-xl bg-destructive text-white hover:bg-destructive/90"
                     >
                       Sim, excluir
                     </AlertDialogAction>
