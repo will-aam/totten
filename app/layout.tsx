@@ -6,7 +6,8 @@ import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SessionProvider } from "@/components/session-provider";
 import { InstallPrompt } from "@/components/install-prompt";
-import { SWRProvider } from "@/components/swr-provider"; // 🔥 LINHA NOVA: Importando o provedor do SWR
+import { SWRProvider } from "@/components/swr-provider";
+import { PWAUpdater } from "@/components/pwa-updater";
 import "./globals.css";
 
 const inter = Inter({
@@ -40,7 +41,12 @@ export const metadata: Metadata = {
     locale: "pt_BR",
     type: "website",
   },
-  manifest: "/site.webmanifest",
+  // 🔥 ADIÇÕES: Cache Busting (Força o navegador a baixar os novos ícones)
+  manifest: "/site.webmanifest?v=2",
+  icons: {
+    icon: "/favicon.ico?v=2",
+    apple: "/apple-touch-icon.png?v=2",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -70,14 +76,13 @@ export default function RootLayout({
       >
         <SessionProvider>
           <SWRProvider>
-            {" "}
-            {/* 🔥 LINHA NOVA: SWRProvider envolvendo a aplicação */}
             <ThemeProvider
               attribute="class"
               defaultTheme="light"
               enableSystem={false}
               disableTransitionOnChange
             >
+              <PWAUpdater />
               <InstallPrompt />
               {children}
               <Toaster position="top-right" richColors />
