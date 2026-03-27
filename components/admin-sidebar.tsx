@@ -77,7 +77,7 @@ const navItems = [
     icon: FileText,
     active: true,
   },
-  { title: "Estoque", href: "#", icon: ShelvingUnit, active: false },
+  { title: "Estoque", href: "/admin/stock", icon: ShelvingUnit, active: true },
   { title: "Link na Bio", href: "/admin/link-bio", icon: Link2, active: false },
 ];
 

@@ -1,3 +1,4 @@
+// components/history/history-table.tsx
 "use client";
 
 import { useState } from "react";
