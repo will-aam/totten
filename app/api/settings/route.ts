@@ -1,4 +1,3 @@
-// app/api/settings/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin } from "@/lib/auth";
@@ -21,7 +20,7 @@ export async function GET() {
       tradeName: settings.trade_name || "",
       document: settings.document || "",
       contactPhone: settings.phone_landline || "",
-      whatsapp: settings.phone_whatsapp || "",
+      whatsapp: settings.phone_whatsapp || "", // Retorna como está no banco
       email: settings.email_admin || "",
       openingTime: settings.opening_time,
       closingTime: settings.closing_time,
@@ -43,40 +42,36 @@ export async function PUT(request: Request) {
       tradeName,
       document,
       contactPhone,
+      whatsapp, // 🔥 Agora extraímos o whatsapp do body
       openingTime,
       closingTime,
     } = body;
 
-    // 1. Primeiro, buscamos se já existe um settings ou pegamos dados da organização
-    // Isso garante que se for a PRIMEIRA vez, tenhamos um nome padrão para o company_name
     const existingSettings = await prisma.settings.findUnique({
       where: { organization_id: admin.organizationId },
       include: { organization: true },
     });
 
-    // 2. Montamos o objeto de atualização APENAS com o que foi enviado
-    // Se o campo for undefined, o Prisma simplesmente ignora e mantém o que está no banco
     const updateData: any = {};
     if (companyName !== undefined) updateData.company_name = companyName;
     if (tradeName !== undefined) updateData.trade_name = tradeName;
     if (document !== undefined) updateData.document = document;
     if (contactPhone !== undefined) updateData.phone_landline = contactPhone;
+    if (whatsapp !== undefined) updateData.phone_whatsapp = whatsapp; // 🔥 Corrigido: Agora atualiza no banco!
     if (openingTime !== undefined) updateData.opening_time = openingTime;
     if (closingTime !== undefined) updateData.closing_time = closingTime;
 
-    // 3. Executamos o upsert com segurança
     await prisma.settings.upsert({
       where: { organization_id: admin.organizationId },
       update: updateData,
       create: {
         organization_id: admin.organizationId,
-        // Se estiver criando do zero e não veio no body, usa o nome da organização como fallback
         company_name:
           companyName || existingSettings?.organization.name || "Minha Empresa",
         trade_name: tradeName || "",
         document: document || "",
         phone_landline: contactPhone || "",
-        phone_whatsapp: body.whatsapp || "", // Campo obrigatório no seu schema
+        phone_whatsapp: whatsapp || "", // 🔥 Usa a variável correta
         opening_time: openingTime || "08:00",
         closing_time: closingTime || "19:00",
       },

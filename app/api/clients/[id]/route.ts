@@ -1,4 +1,3 @@
-// app/api/clients/[id]/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin } from "@/lib/auth";
@@ -89,14 +88,32 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
+    // 🔥 Montamos dinamicamente os dados que serão atualizados
+    const updateData: any = {};
+    if (body.name !== undefined) updateData.name = body.name;
+    if (body.cpf !== undefined) updateData.cpf = body.cpf;
+    if (body.phone_whatsapp !== undefined)
+      updateData.phone_whatsapp = body.phone_whatsapp;
+    if (body.email !== undefined) updateData.email = body.email;
+    if (body.zip_code !== undefined) updateData.zip_code = body.zip_code;
+    if (body.city !== undefined) updateData.city = body.city;
+    if (body.street !== undefined) updateData.street = body.street;
+    if (body.number !== undefined) updateData.number = body.number;
+    if (body.active !== undefined) updateData.active = body.active;
+
+    // Converte a string de data ("YYYY-MM-DD") para objeto Date aceito pelo Prisma
+    if (body.birth_date !== undefined) {
+      updateData.birth_date = body.birth_date
+        ? new Date(`${body.birth_date}T12:00:00Z`)
+        : null;
+    }
+
     const client = await prisma.client.update({
       where: {
         id: id,
         organization_id: admin.organizationId,
       },
-      data: {
-        active: body.active, // Recebe true do front-end para reativar
-      },
+      data: updateData,
     });
 
     return NextResponse.json(client);
@@ -119,7 +136,6 @@ export async function DELETE(
 
     const { id } = await params;
 
-    // 🔥 Aqui está a correção: usando os nomes exatos das relações do schema.prisma
     const client = await prisma.client.findFirst({
       where: { id: id, organization_id: admin.organizationId },
       include: {
@@ -138,7 +154,6 @@ export async function DELETE(
       );
     }
 
-    // Verifica se o cliente possui algum vínculo que nos impeça de apagá-lo definitivamente
     const hasHistory =
       client.appointments.length > 0 ||
       client.check_ins.length > 0 ||
@@ -147,14 +162,12 @@ export async function DELETE(
       client.anamnesis_responses.length > 0;
 
     if (hasHistory) {
-      // Se tem histórico, fazemos apenas um "soft delete" (desativar)
       await prisma.client.update({
         where: { id: client.id },
         data: { active: false },
       });
       return NextResponse.json({ message: "Cliente desativado com sucesso" });
     } else {
-      // Se não tem histórico, podemos excluir fisicamente (hard delete)
       await prisma.client.delete({
         where: { id: client.id },
       });

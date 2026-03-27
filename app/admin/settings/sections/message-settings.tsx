@@ -1,7 +1,7 @@
+// app/admin/settings/sections/message-settings.tsx
 "use client";
 
 import { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -18,14 +18,12 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { MessageSquare, HelpCircle, Save, Loader2, Check } from "lucide-react";
+import { MessageSquare, HelpCircle, Save, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 export function MessageSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [phoneSaved, setPhoneSaved] = useState(false); // 🔥 Indicador visual
-  const [phone, setPhone] = useState("");
   const [showTip, setShowTip] = useState(false);
 
   // Estados para os diferentes templates
@@ -41,7 +39,6 @@ export function MessageSettings() {
         const res = await fetch("/api/settings/messages");
         if (res.ok) {
           const data = await res.json();
-          setPhone(data.phone || "");
           setMsgUpdate(
             data.msgUpdate ||
               "Olá, {nome}! Tudo bem? 💆‍♀️✨\n\nPassando para avisar que seu check-in foi registrado. Você já realizou {usadas} de {total} sessões do seu pacote.",
@@ -72,52 +69,7 @@ export function MessageSettings() {
     fetchMessages();
   }, []);
 
-  // 🔥 SALVA APENAS O WHATSAPP quando pressionar ENTER
-  const handlePhoneSave = async () => {
-    if (!phone.trim()) {
-      toast.error("Digite um número de WhatsApp");
-      return;
-    }
-
-    setPhoneSaved(false);
-
-    try {
-      const res = await fetch("/api/settings/messages", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phone,
-          msgUpdate,
-          msgWelcome,
-          msgRenewal,
-          msgReminder,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (data.success) {
-        setPhoneSaved(true);
-        toast.success("Número de WhatsApp salvo!");
-        setTimeout(() => setPhoneSaved(false), 2000);
-      } else {
-        toast.error(data.error || "Erro ao salvar");
-      }
-    } catch (error) {
-      console.error("Erro ao salvar WhatsApp:", error);
-      toast.error("Erro de conexão");
-    }
-  };
-
-  // 🔥 Detecta quando o usuário pressiona ENTER no campo de telefone
-  const handlePhoneKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handlePhoneSave();
-    }
-  };
-
-  // 🔥 Salva TUDO (WhatsApp + Templates)
+  // 🔥 Salva TUDO
   const handleSaveAll = async () => {
     setSaving(true);
 
@@ -126,7 +78,6 @@ export function MessageSettings() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          phone,
           msgUpdate,
           msgWelcome,
           msgRenewal,
@@ -168,77 +119,48 @@ export function MessageSettings() {
             <div>
               <CardTitle className="flex items-center gap-2 text-card-foreground">
                 <MessageSquare className="h-5 w-5 text-primary" />
-                Configurações de WhatsApp
+                Modelos de Mensagens
               </CardTitle>
               <CardDescription className="mt-1.5">
-                Defina o seu número e personalize os textos que o sistema
-                enviará aos seus clientes.
+                Personalize os textos que o sistema enviará aos seus clientes.
               </CardDescription>
             </div>
 
-            {/* Botão de Salvar Global da Seção */}
-            <Button
-              onClick={handleSaveAll}
-              disabled={saving}
-              className="shrink-0"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Salvar Tudo
-                </>
-              )}
-            </Button>
+            {/* Grupo de Botões */}
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                variant="outline"
+                onClick={() =>
+                  toast.info("Recurso de criar novos modelos em breve!")
+                }
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Modelo
+              </Button>
+              <Button onClick={handleSaveAll} disabled={saving}>
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Salvar
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </CardHeader>
 
         <CardContent className="grid gap-6 px-0 pb-0 md:pb-6 md:px-6">
-          {/* 🔥 Número de WhatsApp com Enter para salvar */}
-          <div className="grid gap-2 border-b pb-6">
-            <Label htmlFor="phone" className="text-foreground font-medium">
-              Seu Número de WhatsApp (Remetente)
-            </Label>
-            <div className="flex gap-2">
-              <div className="relative flex-1 max-w-xs">
-                <Input
-                  id="phone"
-                  placeholder="Ex: 5511999999999"
-                  value={phone}
-                  onChange={(e) => {
-                    setPhone(e.target.value);
-                    setPhoneSaved(false);
-                  }}
-                  onKeyDown={handlePhoneKeyDown}
-                  className="bg-muted pr-10"
-                />
-                {phoneSaved && (
-                  <Check className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500 animate-in fade-in zoom-in" />
-                )}
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground flex items-center gap-2">
-              <HelpCircle className="h-3.5 w-3.5 text-primary" />
-              <span>
-                Pressione{" "}
-                <kbd className="px-1.5 py-0.5 bg-muted border rounded text-[10px]">
-                  Enter
-                </kbd>{" "}
-                após digitar para salvar rapidamente.
-              </span>
-            </p>
-          </div>
-
           {/* Templates de Mensagem com Accordion */}
           <div>
             <div className="mb-4 flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <Label className="text-foreground font-medium text-base">
-                  Modelos de Mensagens (Templates)
+                  Mensagens Padrão do Sistema
                 </Label>
                 <button
                   type="button"

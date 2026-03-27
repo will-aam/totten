@@ -1,4 +1,3 @@
-// components/client/client-contact.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -61,7 +60,7 @@ function formatCepInput(value: string) {
   return `${d.slice(0, 5)}-${d.slice(5)}`;
 }
 
-// 🔥 Nova máscara para a Data de Nascimento (DD/MM/AAAA)
+// Máscara para a Data de Nascimento (DD/MM/AAAA)
 function formatDateInput(value: string) {
   const d = value.replace(/\D/g, "").slice(0, 8);
   if (d.length <= 2) return d;
@@ -88,7 +87,6 @@ export function ClientContact({ client }: ClientContactProps) {
   const [editPhone, setEditPhone] = useState(client.phone_whatsapp || "");
   const [editEmail, setEditEmail] = useState(client.email || "");
 
-  // 🔥 Data agora é controlada como string para facilitar a digitação da usuária
   const [editBirthDate, setEditBirthDate] = useState(
     initDateStr(client.birth_date),
   );
@@ -109,15 +107,24 @@ export function ClientContact({ client }: ClientContactProps) {
   });
 
   useEffect(() => {
-    const savedTemplates = localStorage.getItem("whatsapp_templates");
-    if (savedTemplates) {
+    const fetchTemplates = async () => {
       try {
-        const parsed = JSON.parse(savedTemplates);
-        setTemplates((prev) => ({ ...prev, ...parsed }));
+        const res = await fetch("/api/settings/messages");
+        if (res.ok) {
+          const data = await res.json();
+          setTemplates((prev) => ({
+            msgUpdate: data.msgUpdate || prev.msgUpdate,
+            msgWelcome: data.msgWelcome || prev.msgWelcome,
+            msgRenewal: data.msgRenewal || prev.msgRenewal,
+            msgReminder: data.msgReminder || prev.msgReminder,
+          }));
+        }
       } catch (e) {
         console.error("Erro ao carregar templates do WhatsApp", e);
       }
-    }
+    };
+
+    fetchTemplates();
   }, []);
 
   useEffect(() => {
@@ -157,7 +164,6 @@ export function ClientContact({ client }: ClientContactProps) {
       return;
     }
 
-    // 🔥 Validação e Formatação da Data de Nascimento (DD/MM/AAAA para YYYY-MM-DD)
     let formattedBirthDate = null;
     if (editBirthDate.length === 10) {
       const [day, month, year] = editBirthDate.split("/");
@@ -187,7 +193,7 @@ export function ClientContact({ client }: ClientContactProps) {
           cpf: client.cpf,
           phone_whatsapp: editPhone,
           email: editEmail || null,
-          birth_date: formattedBirthDate, // Envia para o banco já no formato correto
+          birth_date: formattedBirthDate,
           zip_code: editZipCode || null,
           city: editCity || null,
           street: editStreet || null,
@@ -214,35 +220,40 @@ export function ClientContact({ client }: ClientContactProps) {
     const nomeCurto = client.name.split(" ")[0];
     return template
       .replace(/{nome}/g, nomeCurto)
-      .replace(/{usadas}/g, "-")
+      .replace(/{usadas}/g, "-") // Neste contexto genérico não temos o pacote ativo
       .replace(/{total}/g, "-")
       .replace(/{horario}/g, "09:00");
   };
 
+  // 🔥 Nova função blindada usando o objeto URL nativo
   const handleSendWhatsApp = (templateText: string) => {
-    const cleanPhone = client.phone_whatsapp?.replace(/\D/g, "");
+    if (!client.phone_whatsapp) {
+      toast.error("O cliente não possui um número de WhatsApp cadastrado.");
+      return;
+    }
 
-    if (!cleanPhone || cleanPhone.length < 10) {
-      toast.error(
-        "O cliente não possui um número de WhatsApp válido cadastrado.",
-      );
+    const rawPhone = client.phone_whatsapp.replace(/\D/g, "");
+    let targetPhone = rawPhone;
+
+    if (!rawPhone.startsWith("55") || rawPhone.length < 12) {
+      targetPhone = `55${rawPhone}`;
+    }
+
+    if (targetPhone.length < 12) {
+      toast.error("O número de WhatsApp cadastrado parece inválido.");
       return;
     }
 
     const message = formatMessage(templateText);
-    const whatsappUrl = `https://api.whatsapp.com/send?phone=55${cleanPhone}&text=${encodeURIComponent(message)}`;
 
-    window.open(whatsappUrl, "_blank");
+    // O objeto URL constrói e codifica a URL de forma 100% segura para qualquer emoji
+    // Ele não "quebra" emojis complexos no meio do caminho.
+    const url = new URL("https://api.whatsapp.com/send");
+    url.searchParams.set("phone", targetPhone);
+    url.searchParams.set("text", message);
+
+    window.open(url.toString(), "_blank");
   };
-
-  const handleEmail = () => {
-    if (!client.email) {
-      toast.error("Este cliente não possui e-mail cadastrado.");
-      return;
-    }
-    window.open(`mailto:${client.email}`, "_self");
-  };
-
   const addressParts = [];
   if (client.street)
     addressParts.push(
@@ -302,7 +313,6 @@ export function ClientContact({ client }: ClientContactProps) {
       <CardContent className="px-0 pb-0 md:pb-6 md:px-6 flex flex-col gap-5">
         {isEditing ? (
           <div className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
-            {/* DADOS DE CONTATO */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-muted-foreground">
@@ -341,7 +351,6 @@ export function ClientContact({ client }: ClientContactProps) {
               </div>
             </div>
 
-            {/* NASCIMENTO E CEP */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-muted-foreground">
@@ -351,7 +360,6 @@ export function ClientContact({ client }: ClientContactProps) {
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                     <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  {/* 🔥 Agora é um Input simples com máscara */}
                   <Input
                     value={editBirthDate}
                     onChange={(e) =>
@@ -378,7 +386,6 @@ export function ClientContact({ client }: ClientContactProps) {
               </div>
             </div>
 
-            {/* ENDEREÇO */}
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
               <div className="space-y-1.5 sm:col-span-5">
                 <Label className="text-xs font-semibold text-muted-foreground">
@@ -417,7 +424,6 @@ export function ClientContact({ client }: ClientContactProps) {
           </div>
         ) : (
           <div className="flex flex-col gap-6 animate-in fade-in duration-300">
-            {/* 1. BOTÕES DE AÇÃO */}
             <div className="flex flex-col sm:flex-row gap-3">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -429,7 +435,7 @@ export function ClientContact({ client }: ClientContactProps) {
                     WhatsApp
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-70">
+                <DropdownMenuContent align="start" className="w-72">
                   <DropdownMenuLabel>Qual mensagem enviar?</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -441,7 +447,9 @@ export function ClientContact({ client }: ClientContactProps) {
                         Atualização (Check-in)
                       </span>
                       <span className="text-[10px] text-muted-foreground line-clamp-1">
-                        Olá {client.name.split(" ")[0]}, seu check-in...
+                        {templates.msgUpdate
+                          ? templates.msgUpdate.substring(0, 40) + "..."
+                          : "Enviando atualização..."}
                       </span>
                     </div>
                   </DropdownMenuItem>
@@ -454,7 +462,9 @@ export function ClientContact({ client }: ClientContactProps) {
                         Boas-vindas (Novo)
                       </span>
                       <span className="text-[10px] text-muted-foreground line-clamp-1">
-                        Que alegria ter você aqui...
+                        {templates.msgWelcome
+                          ? templates.msgWelcome.substring(0, 40) + "..."
+                          : "Mensagem de boas-vindas..."}
                       </span>
                     </div>
                   </DropdownMenuItem>
@@ -467,7 +477,9 @@ export function ClientContact({ client }: ClientContactProps) {
                         Renovação de Pacote
                       </span>
                       <span className="text-[10px] text-muted-foreground line-clamp-1">
-                        Você concluiu a última sessão...
+                        {templates.msgRenewal
+                          ? templates.msgRenewal.substring(0, 40) + "..."
+                          : "Aviso de renovação..."}
                       </span>
                     </div>
                   </DropdownMenuItem>
@@ -480,7 +492,9 @@ export function ClientContact({ client }: ClientContactProps) {
                         Lembrete de Agenda
                       </span>
                       <span className="text-[10px] text-muted-foreground line-clamp-1">
-                        Passando para lembrar do nosso...
+                        {templates.msgReminder
+                          ? templates.msgReminder.substring(0, 40) + "..."
+                          : "Lembrete de horário..."}
                       </span>
                     </div>
                   </DropdownMenuItem>
@@ -488,7 +502,6 @@ export function ClientContact({ client }: ClientContactProps) {
               </DropdownMenu>
             </div>
 
-            {/* 2. INFORMAÇÕES VISUAIS DA FICHA COMPLETA */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-5 border-t border-border/40">
               <div className="flex flex-col gap-1">
                 <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">

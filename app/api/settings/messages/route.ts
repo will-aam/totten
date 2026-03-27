@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin } from "@/lib/auth";
 
-// GET - Busca templates de mensagem e WhatsApp
+// GET - Busca templates de mensagem
 export async function GET() {
   try {
     const admin = await getCurrentAdmin();
@@ -11,7 +11,7 @@ export async function GET() {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    // Busca configurações (para pegar o WhatsApp)
+    // Busca configurações (para pegar o WhatsApp remetente, caso algum outro lugar ainda use)
     const settings = await prisma.settings.findUnique({
       where: { organization_id: admin.organizationId },
     });
@@ -21,7 +21,6 @@ export async function GET() {
       where: { organization_id: admin.organizationId },
     });
 
-    // Converte array de templates em objeto
     const templatesMap: Record<string, string> = {};
     templates.forEach((t) => {
       templatesMap[t.type] = t.content;
@@ -40,7 +39,7 @@ export async function GET() {
   }
 }
 
-// PUT - Atualiza templates e WhatsApp
+// PUT - Atualiza APENAS os templates (O WhatsApp agora fica na aba Geral)
 export async function PUT(request: Request) {
   try {
     const admin = await getCurrentAdmin();
@@ -50,16 +49,9 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const { phone, msgUpdate, msgWelcome, msgRenewal, msgReminder } = body;
+    const { msgUpdate, msgWelcome, msgRenewal, msgReminder } = body;
 
     await prisma.$transaction(async (tx) => {
-      // 1. Atualiza o número de WhatsApp no Settings
-      await tx.settings.update({
-        where: { organization_id: admin.organizationId },
-        data: { phone_whatsapp: phone },
-      });
-
-      // 2. Atualiza ou cria cada template
       const templates = [
         { type: "CHECK_IN", content: msgUpdate },
         { type: "WELCOME", content: msgWelcome },
@@ -68,6 +60,9 @@ export async function PUT(request: Request) {
       ];
 
       for (const template of templates) {
+        // Ignora se a mensagem não foi enviada no payload
+        if (template.content === undefined) continue;
+
         await tx.messageTemplate.upsert({
           where: {
             type_organization_id: {

@@ -1,3 +1,4 @@
+// app/admin/settings/sections/general-settings.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -26,16 +27,13 @@ export function GeneralSettings() {
     tradeName: "",
     document: "",
     contactPhone: "",
+    whatsapp: "",
   });
 
-  // 🔥 CACHE: Armazena CPF e CNPJ separadamente
   const [cpfCache, setCpfCache] = useState("");
   const [cnpjCache, setCnpjCache] = useState("");
-
-  const [whatsappFromMessages, setWhatsappFromMessages] = useState("");
   const [emailFromSecurity, setEmailFromSecurity] = useState("");
 
-  // Busca os dados do banco quando o componente carrega
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -47,19 +45,18 @@ export function GeneralSettings() {
             tradeName: data.tradeName || "",
             document: data.document || "",
             contactPhone: data.contactPhone || "",
+            whatsapp: data.whatsapp || "",
           });
-          setWhatsappFromMessages(data.whatsapp || "");
           setEmailFromSecurity(session?.user?.email || "");
 
-          // 🔥 Detecta automaticamente se é CPF ou CNPJ
           const cleanDoc = data.document?.replace(/\D/g, "") || "";
           if (cleanDoc.length > 0) {
             if (cleanDoc.length <= 11) {
               setDocType("CPF");
-              setCpfCache(data.document); // Salva no cache
+              setCpfCache(data.document);
             } else {
               setDocType("CNPJ");
-              setCnpjCache(data.document); // Salva no cache
+              setCnpjCache(data.document);
             }
           }
         } else {
@@ -76,32 +73,9 @@ export function GeneralSettings() {
     fetchSettings();
   }, [session]);
 
-  // Função para formatar CPF e CNPJ enquanto digita
-  const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let v = e.target.value.replace(/\D/g, "");
-
-    if (docType === "CPF") {
-      v = v.slice(0, 11);
-      v = v.replace(/(\d{3})(\d)/, "$1.$2");
-      v = v.replace(/(\d{3})(\d)/, "$1.$2");
-      v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-      setFormData({ ...formData, document: v });
-      setCpfCache(v); // 🔥 Salva no cache enquanto digita
-    } else {
-      v = v.slice(0, 14);
-      v = v.replace(/^(\d{2})(\d)/, "$1.$2");
-      v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
-      v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
-      v = v.replace(/(\d{4})(\d)/, "$1-$2");
-      setFormData({ ...formData, document: v });
-      setCnpjCache(v); // 🔥 Salva no cache enquanto digita
-    }
-  };
-
-  // Função para formatar Telefone enquanto digita
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let v = e.target.value.replace(/\D/g, "");
-
+  // 🔥 MÁSCARA INTELIGENTE PARA TELEFONE (BR)
+  const formatPhone = (value: string) => {
+    let v = value.replace(/\D/g, "");
     if (v.length <= 10) {
       v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
       v = v.replace(/(\d{4})(\d)/g, "$1-$2");
@@ -109,28 +83,50 @@ export function GeneralSettings() {
       v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
       v = v.replace(/(\d{5})(\d)/g, "$1-$2");
     }
-    setFormData({ ...formData, contactPhone: v.slice(0, 15) });
+    return v.slice(0, 15); // Limita ao tamanho máximo de (XX) XXXXX-XXXX
   };
 
-  // 🔥 ALTERNAR ENTRE CPF E CNPJ (COM CACHE INTELIGENTE)
+  const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let v = e.target.value.replace(/\D/g, "");
+    if (docType === "CPF") {
+      v = v.slice(0, 11);
+      v = v.replace(/(\d{3})(\d)/, "$1.$2");
+      v = v.replace(/(\d{3})(\d)/, "$1.$2");
+      v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+      setFormData({ ...formData, document: v });
+      setCpfCache(v);
+    } else {
+      v = v.slice(0, 14);
+      v = v.replace(/^(\d{2})(\d)/, "$1.$2");
+      v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
+      v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
+      v = v.replace(/(\d{4})(\d)/, "$1-$2");
+      setFormData({ ...formData, document: v });
+      setCnpjCache(v);
+    }
+  };
+
+  // Aplica a máscara nos inputs
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, contactPhone: formatPhone(e.target.value) });
+  };
+
+  const handleWhatsappChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, whatsapp: formatPhone(e.target.value) });
+  };
+
   const toggleDocType = () => {
     if (docType === "CNPJ") {
-      // Mudando de CNPJ → CPF
       setDocType("CPF");
-      // Restaura o CPF do cache (se existir)
       setFormData({ ...formData, document: cpfCache });
     } else {
-      // Mudando de CPF → CNPJ
       setDocType("CNPJ");
-      // Restaura o CNPJ do cache (se existir)
       setFormData({ ...formData, document: cnpjCache });
     }
   };
 
-  // Salva as alterações no banco
   const handleSave = async () => {
     setSaving(true);
-
     try {
       const res = await fetch("/api/settings", {
         method: "PUT",
@@ -139,7 +135,6 @@ export function GeneralSettings() {
       });
 
       const data = await res.json();
-
       if (data.success) {
         toast.success("Configurações salvas com sucesso!");
       } else {
@@ -153,7 +148,6 @@ export function GeneralSettings() {
     }
   };
 
-  // Loading state
   if (loading) {
     return (
       <Card className="border-0 bg-transparent shadow-none md:border md:bg-card md:shadow-sm">
@@ -177,7 +171,6 @@ export function GeneralSettings() {
       </CardHeader>
 
       <CardContent className="grid gap-6 px-0 pb-0 md:pb-6 md:px-6">
-        {/* 🔥 NOME DE EXIBIÇÃO (VISÍVEL PARA CLIENTES) */}
         <div className="grid gap-2">
           <Label htmlFor="tradeName" className="font-medium">
             Nome de Exibição (Visível para os clientes)
@@ -195,7 +188,6 @@ export function GeneralSettings() {
           </p>
         </div>
 
-        {/* RAZÃO SOCIAL / NOME COMPLETO + DOCUMENTO */}
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="grid gap-2">
             <Label htmlFor="companyName">
@@ -237,37 +229,35 @@ export function GeneralSettings() {
           </div>
         </div>
 
-        {/* Informações de Contato */}
         <div className="grid sm:grid-cols-3 gap-4 pt-6 mt-2 border-t border-border">
-          {/* Telefone Fixo */}
+          {/* Telefone Fixo/Contato Secundário */}
           <div className="grid gap-2">
-            <Label htmlFor="contactPhone">Contato</Label>
+            <Label htmlFor="contactPhone">Telefone Fixo / Outro</Label>
             <Input
               id="contactPhone"
               value={formData.contactPhone}
               onChange={handlePhoneChange}
-              placeholder="(00) 00000-0000"
+              placeholder="(00) 0000-0000"
+              maxLength={15}
             />
           </div>
 
-          {/* WhatsApp (Apenas Leitura) */}
+          {/* WhatsApp Principal com Prefixo Visual */}
           <div className="grid gap-2">
-            <Label htmlFor="whatsapp" className="text-muted-foreground">
-              WhatsApp Principal
-            </Label>
-            <Input
-              id="whatsapp"
-              value={whatsappFromMessages}
-              disabled
-              className="bg-muted text-muted-foreground cursor-not-allowed"
-            />
-            <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-              <Info className="h-3 w-3 shrink-0" />
-              Altere na aba "Mensagens"
-            </p>
+            <Label htmlFor="whatsapp">WhatsApp Principal</Label>
+            <div className="flex gap-2">
+              <Input
+                id="whatsapp"
+                value={formData.whatsapp}
+                onChange={handleWhatsappChange}
+                placeholder="(00) 00000-0000"
+                maxLength={15}
+                className="flex-1"
+              />
+            </div>
           </div>
 
-          {/* E-mail (Apenas Leitura) */}
+          {/* E-mail */}
           <div className="grid gap-2">
             <Label htmlFor="email" className="text-muted-foreground">
               E-mail Administrativo
@@ -280,12 +270,11 @@ export function GeneralSettings() {
             />
             <p className="text-[10px] text-muted-foreground flex items-center gap-1">
               <Info className="h-3 w-3 shrink-0" />
-              Altere na aba "Acesso"
+              Altere na aba "Segurança"
             </p>
           </div>
         </div>
 
-        {/* 🔥 BOTÃO DE SALVAR */}
         <div className="flex justify-end pt-4 border-t border-border">
           <Button onClick={handleSave} disabled={saving} className="min-w-32">
             {saving ? (

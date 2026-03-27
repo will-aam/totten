@@ -1,4 +1,3 @@
-// components/client/whatsapp-button.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -27,7 +26,6 @@ export function WhatsAppButton({
   totalSessions = 10,
 }: WhatsAppButtonProps) {
   const [templates, setTemplates] = useState({
-    phone: "",
     msgUpdate:
       "Olá, {nome}! Tudo bem? 💆‍♀️✨\n\nPassando para avisar que seu check-in foi registrado. Você já realizou {usadas} de {total} sessões do seu pacote.",
     msgWelcome:
@@ -38,49 +36,64 @@ export function WhatsAppButton({
       "Oi, {nome}! Passando para lembrar do nosso horário agendado para amanhã às {horario}. \n\nPodemos confirmar sua presença? 👍",
   });
 
-  // Carrega as configurações do LocalStorage quando o componente monta
+  // Busca os dados frescos do Banco de Dados!
   useEffect(() => {
-    const savedTemplates = localStorage.getItem("whatsapp_templates");
-    if (savedTemplates) {
+    const fetchTemplates = async () => {
       try {
-        const parsed = JSON.parse(savedTemplates);
-        setTemplates((prev) => ({ ...prev, ...parsed }));
+        const res = await fetch("/api/settings/messages");
+        if (res.ok) {
+          const data = await res.json();
+          setTemplates((prev) => ({
+            msgUpdate: data.msgUpdate || prev.msgUpdate,
+            msgWelcome: data.msgWelcome || prev.msgWelcome,
+            msgRenewal: data.msgRenewal || prev.msgRenewal,
+            msgReminder: data.msgReminder || prev.msgReminder,
+          }));
+        }
       } catch (e) {
         console.error("Erro ao carregar templates do WhatsApp", e);
       }
-    }
+    };
+
+    fetchTemplates();
   }, []);
 
-  // Limpa o número de telefone (remove espaços, parênteses e traços)
-  const cleanPhone = (phone: string) => {
-    return phone.replace(/\D/g, "");
-  };
-
-  // Função mágica que troca as variáveis pelo texto real
   const formatMessage = (template: string) => {
+    const nomeCurto = clientName ? clientName.split(" ")[0] : "";
     return template
-      .replace(/{nome}/g, clientName.split(" ")[0]) // Pega só o primeiro nome
+      .replace(/{nome}/g, nomeCurto)
       .replace(/{usadas}/g, usedSessions.toString())
       .replace(/{total}/g, totalSessions.toString())
-      .replace(/{horario}/g, "09:00"); // Horário fixo por enquanto, até termos a agenda
+      .replace(/{horario}/g, "09:00");
   };
 
+  // 🔥 Nova função blindada usando o objeto URL nativo
   const handleSend = (templateText: string) => {
-    const message = formatMessage(templateText);
-    const targetPhone = cleanPhone(clientPhone);
-
-    // Se o cliente não tiver telefone cadastrado, não faz nada
-    if (!targetPhone) {
-      alert("Este cliente não tem um número de WhatsApp cadastrado válido.");
+    if (!clientPhone) {
+      alert("Este cliente não tem um número de WhatsApp cadastrado.");
       return;
     }
 
-    // Formata a URL do WhatsApp com o texto codificado (para aceitar espaços e quebras de linha)
-    // Usamos api.whatsapp.com para funcionar tanto no PC quanto no celular
-    const whatsappUrl = `https://api.whatsapp.com/send?phone=55${targetPhone}&text=${encodeURIComponent(message)}`;
+    const rawPhone = clientPhone.replace(/\D/g, "");
+    let targetPhone = rawPhone;
 
-    // Abre em uma nova aba
-    window.open(whatsappUrl, "_blank");
+    if (!rawPhone.startsWith("55") || rawPhone.length < 12) {
+      targetPhone = `55${rawPhone}`;
+    }
+
+    if (targetPhone.length < 12) {
+      alert("O número de WhatsApp cadastrado parece inválido.");
+      return;
+    }
+
+    const message = formatMessage(templateText);
+
+    // API nativa de URL do navegador (Imune a corrupção de caracteres)
+    const url = new URL("https://api.whatsapp.com/send");
+    url.searchParams.set("phone", targetPhone);
+    url.searchParams.set("text", message);
+
+    window.open(url.toString(), "_blank");
   };
 
   return (
