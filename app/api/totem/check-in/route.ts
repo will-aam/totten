@@ -1,7 +1,7 @@
 // app/api/totem/check-in/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentAdmin } from "@/lib/auth"; // 🔥 Import adicionado
+import { getCurrentAdmin } from "@/lib/auth";
 
 export async function POST(request: Request) {
   try {
@@ -16,8 +16,6 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-
-    // 🔥 2. Removido o organizationSlug do body
     const { appointment_id } = body;
 
     if (!appointment_id) {
@@ -36,7 +34,6 @@ export async function POST(request: Request) {
       },
     });
 
-    // 🔥 3. Verifica se o agendamento pertence à organização logada no tablet
     if (!appt || appt.organization_id !== admin.organizationId) {
       return NextResponse.json(
         { error: "Agendamento inválido" },
@@ -47,6 +44,17 @@ export async function POST(request: Request) {
     if (appt.status === "REALIZADO") {
       return NextResponse.json(
         { error: "Este agendamento já foi realizado." },
+        { status: 400 },
+      );
+    }
+
+    // 🔥 NOVO: Trava de segurança para pacotes inativos no Totem
+    if (appt.package && appt.package.active === false) {
+      return NextResponse.json(
+        {
+          error:
+            "Pacote encerrado ou inválido. Por favor, dirija-se à recepção.",
+        },
         { status: 400 },
       );
     }
@@ -62,7 +70,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Variável para armazenar info do pacote se houver
     let packageInfo = null;
 
     const result = await prisma.$transaction(async (tx) => {
@@ -71,12 +78,11 @@ export async function POST(request: Request) {
           appointment_id: appt.id,
           client_id: appt.client_id,
           package_id: appt.package_id ?? null,
-          organization_id: appt.organization_id, // Usamos do appt, já validado acima
+          organization_id: appt.organization_id,
         },
       });
 
       if (appt.package_id) {
-        // Incrementa e já retorna o pacote atualizado
         const pacote = await tx.package.update({
           where: { id: appt.package_id },
           data: { used_sessions: { increment: 1 } },
@@ -110,7 +116,7 @@ export async function POST(request: Request) {
         minute: "2-digit",
       }),
       checkInId: result.id,
-      package_info: packageInfo, // Envia dados atualizados ou null para o frontend
+      package_info: packageInfo,
     });
   } catch (error) {
     console.error("Erro ao fazer check-in:", error);

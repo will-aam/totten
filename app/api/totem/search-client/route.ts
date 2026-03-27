@@ -1,4 +1,5 @@
 // app/api/totem/search-client/route.ts
+// rota importada no arquivo app/totem/check-in/totem-check-in-content.tsx, a função dela é buscar os dados do cliente e seus pacotes ativos (se houver) a partir do CPF, para exibir no resumo do check-in e também validar se o cliente tem pacotes ativos com sessões restantes antes de permitir o check-in pelo totem.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin } from "@/lib/auth"; // 🔥 Import adicionado

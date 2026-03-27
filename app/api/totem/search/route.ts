@@ -1,4 +1,5 @@
 // app/api/totem/search/route.ts
+// rota importada no arquivo app/totem/check-in/totem-check-in-content.tsx, a função dela é buscar os dados do cliente e seu agendamento do dia a partir do CPF, para exibir no resumo do check-in e também validar se o cliente tem um agendamento válido para o dia antes de permitir o check-in pelo totem.
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin } from "@/lib/auth"; // 🔥 Import da autenticação da sessão
@@ -67,10 +68,7 @@ export async function POST(req: NextRequest) {
     const brDay = Number(parts.find((p) => p.type === "day")?.value);
 
     // Cria os limites já convertidos para UTC para o Prisma buscar com precisão
-    // 00:00 BRT = 03:00 UTC
     const inicioDoDia = new Date(Date.UTC(brYear, brMonth, brDay, 3, 0, 0, 0));
-
-    // 23:59 BRT = 02:59 UTC do dia seguinte (o Date.UTC entende 26 horas e vira o dia automaticamente)
     const fimDoDia = new Date(
       Date.UTC(brYear, brMonth, brDay, 26, 59, 59, 999),
     );
@@ -84,6 +82,12 @@ export async function POST(req: NextRequest) {
           lte: fimDoDia,
         },
         status: { in: ["PENDENTE", "CONFIRMADO"] },
+
+        // 🔥 A MÁGICA ACONTECE AQUI: Oculta agendamentos de pacotes inativos/arquivados
+        OR: [
+          { package_id: null }, // É um agendamento avulso
+          { package: { active: true } }, // Ou é um pacote, mas ele TEM que estar ativo
+        ],
       },
       include: {
         service: { select: { name: true } },
@@ -112,7 +116,7 @@ export async function POST(req: NextRequest) {
     const agendamento = agendamentos[0];
     let packageInfo = null;
 
-    // Se só tem 1 agendamento, já faz o check-in automático
+    // Se só tem 1 agendamento (válido!), já faz o check-in automático
     await prisma.$transaction(async (tx) => {
       // Cria o registro de CheckIn
       await tx.checkIn.create({
@@ -158,7 +162,7 @@ export async function POST(req: NextRequest) {
         service_name: agendamento.service.name,
         client_name: cliente.name,
         package_id: agendamento.package_id ?? null,
-        package_info: packageInfo, // Agora o frontend recebe dados reais ou null
+        package_info: packageInfo,
       },
     });
   } catch (error) {
