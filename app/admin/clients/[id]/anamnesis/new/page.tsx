@@ -1,7 +1,7 @@
 // app/admin/clients/[id]/anamnesis/new/page.tsx
 "use client";
 
-import { useState, useEffect, use } from "react"; // 🔥 Importamos o 'use' aqui
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -29,7 +30,6 @@ import {
   signAnamnesisResponse,
 } from "@/app/actions/anamnesis";
 
-// 🔥 Tipagem atualizada para Promise
 export default function NewClientAnamnesisPage({
   params,
 }: {
@@ -39,25 +39,27 @@ export default function NewClientAnamnesisPage({
   const { data: session } = useSession();
   const { toast } = useToast();
 
-  // 🔥 Desempacotando o params
   const resolvedParams = use(params);
   const clientId = resolvedParams.id;
 
   const [templates, setTemplates] = useState<any[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<any | null>(null);
 
-  // Estado para guardar as respostas: { "id_da_pergunta": "resposta" }
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [signature, setSignature] = useState<string | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
 
-  // Busca os templates da organização ao abrir a tela
+  // 🔥 OTIMIZAÇÃO: Isolar o ID para evitar que o useEffect rode em loop
+  // se o objeto session for atualizado pelo NextAuth em background.
+  const organizationId = session?.user?.organizationId;
+
   useEffect(() => {
     async function loadTemplates() {
-      if (session?.user?.organizationId) {
-        const result = await getAnamnesisTemplates(session.user.organizationId);
+      if (organizationId) {
+        const result = await getAnamnesisTemplates(organizationId);
         if (result.success && result.data) {
           setTemplates(result.data);
         }
@@ -65,12 +67,12 @@ export default function NewClientAnamnesisPage({
       }
     }
     loadTemplates();
-  }, [session]);
+  }, [organizationId]);
 
   const handleTemplateSelect = (templateId: string) => {
     const template = templates.find((t) => t.id === templateId);
     setSelectedTemplate(template || null);
-    setAnswers({}); // Reseta as respostas ao trocar de template
+    setAnswers({});
     setSignature(null);
   };
 
@@ -90,9 +92,12 @@ export default function NewClientAnamnesisPage({
       return;
     }
 
-    setIsSaving(true);
+    if (withSignature) {
+      setIsSaving(true);
+    } else {
+      setIsSavingDraft(true);
+    }
 
-    // Formata as respostas para salvar o label da pergunta junto com a resposta (facilita na hora de gerar o PDF)
     const formattedContent = selectedTemplate.fields.map((field: any) => ({
       fieldId: field.id,
       label: field.label,
@@ -100,11 +105,10 @@ export default function NewClientAnamnesisPage({
       value: answers[field.id] !== undefined ? answers[field.id] : null,
     }));
 
-    // 1. Salva a Ficha (Rascunho)
     const saveResult = await saveAnamnesisResponse({
       templateId: selectedTemplate.id,
       clientId,
-      organizationId: session?.user?.organizationId as string,
+      organizationId: organizationId as string,
       content: formattedContent,
     });
 
@@ -115,10 +119,10 @@ export default function NewClientAnamnesisPage({
         variant: "destructive",
       });
       setIsSaving(false);
+      setIsSavingDraft(false);
       return;
     }
 
-    // 2. Se tiver assinatura, tranca a ficha (Imutabilidade)
     if (withSignature && signature) {
       const signResult = await signAnamnesisResponse(
         saveResult.data.id,
@@ -136,6 +140,8 @@ export default function NewClientAnamnesisPage({
     }
 
     setIsSaving(false);
+    setIsSavingDraft(false);
+
     toast({
       title: "Sucesso!",
       description: withSignature
@@ -143,11 +149,9 @@ export default function NewClientAnamnesisPage({
         : "Rascunho da ficha salvo com sucesso.",
     });
 
-    // Volta para o perfil da cliente
     router.push(`/admin/clients/${clientId}`);
   };
 
-  // Função para renderizar o input dinâmico baseado no tipo
   const renderField = (field: any, index: number) => {
     if (field.type === "section_title") {
       return (
@@ -265,26 +269,62 @@ export default function NewClientAnamnesisPage({
     <>
       <AdminHeader title="Preencher Anamnese" />
 
-      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-4xl mx-auto w-full pb-32">
-        <div className="flex items-center gap-4 border-b border-border/50 pb-4">
-          <Button
-            asChild
-            variant="outline"
-            size="icon"
-            className="rounded-full h-10 w-10 shrink-0"
-          >
-            <Link href={`/admin/clients/${clientId}`}>
-              <ArrowLeft className="h-5 w-5 text-muted-foreground" />
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">
-              Nova Ficha da Cliente
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Selecione o modelo e preencha as respostas.
-            </p>
+      {/* 🔥 OTIMIZAÇÃO ESTRUTURAL APLICADA: max-w-400 no container principal */}
+      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-32 animate-in fade-in duration-500 min-h-[calc(100vh-100px)] relative">
+        {/* Cabeçalho Responsivo */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/50 pb-4">
+          <div className="flex items-center gap-4">
+            <Button
+              asChild
+              variant="outline"
+              size="icon"
+              className="rounded-full h-10 w-10 shrink-0"
+            >
+              <Link href={`/admin/clients/${clientId}`}>
+                <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+              </Link>
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">
+                Nova Ficha da Cliente
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Selecione o modelo e preencha as respostas.
+              </p>
+            </div>
           </div>
+
+          {/* Botões de Ação (Apenas Desktop) */}
+          {selectedTemplate && (
+            <div className="hidden md:flex items-center gap-3">
+              <Button
+                variant="outline"
+                className="h-10 rounded-xl font-bold"
+                onClick={() => handleSave(false)}
+                disabled={isSaving || isSavingDraft}
+              >
+                {isSavingDraft ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4 mr-2" />
+                )}
+                Rascunho
+              </Button>
+
+              <Button
+                className="h-10 rounded-xl font-bold shadow-md bg-primary hover:bg-primary/90 text-primary-foreground"
+                onClick={() => handleSave(true)}
+                disabled={isSaving || isSavingDraft || !signature}
+              >
+                {isSaving ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                )}
+                Finalizar
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Escolha do Template */}
@@ -315,7 +355,7 @@ export default function NewClientAnamnesisPage({
 
         {/* Formulário Dinâmico */}
         {selectedTemplate && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="space-y-6 animate-in slide-in-from-bottom-2 duration-500">
             <div className="space-y-4">
               {selectedTemplate.fields.map((field: any, index: number) =>
                 renderField(field, index),
@@ -340,33 +380,38 @@ export default function NewClientAnamnesisPage({
         )}
       </div>
 
-      {/* Footer Mobile/Desktop Fixo */}
+      {/* Botão Flutuante (Apenas Mobile) */}
       {selectedTemplate && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-lg border-t z-50">
-          <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-end gap-3">
-            <Button
-              variant="outline"
-              className="h-12 rounded-xl font-bold sm:w-auto w-full"
-              onClick={() => handleSave(false)}
-              disabled={isSaving}
-            >
-              <Save className="w-4 h-4 mr-2" />
-              Salvar como Rascunho
-            </Button>
+        <div className="md:hidden fixed bottom-20 right-4 flex flex-col gap-3 z-50 animate-in fade-in slide-in-from-bottom-8 duration-300">
+          <Button
+            variant="secondary"
+            size="icon"
+            className="h-12 w-12 rounded-full shadow-lg border border-border bg-background"
+            onClick={() => handleSave(false)}
+            disabled={isSaving || isSavingDraft}
+          >
+            {isSavingDraft ? (
+              <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
+            ) : (
+              <Save className="h-5 w-5 text-muted-foreground" />
+            )}
+          </Button>
 
-            <Button
-              className="h-12 rounded-xl font-bold shadow-lg sm:w-auto w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-              onClick={() => handleSave(true)}
-              disabled={isSaving || !signature}
-            >
-              {isSaving ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <CheckCircle2 className="w-4 h-4 mr-2" />
-              )}
-              Assinar e Finalizar
-            </Button>
-          </div>
+          <Button
+            size="icon"
+            className={cn(
+              "h-14 w-14 rounded-full shadow-xl transition-all duration-300",
+              !signature ? "opacity-50 grayscale" : "hover:scale-105",
+            )}
+            onClick={() => handleSave(true)}
+            disabled={isSaving || isSavingDraft || !signature}
+          >
+            {isSaving ? (
+              <Loader2 className="h-6 w-6 animate-spin" />
+            ) : (
+              <CheckCircle2 className="h-6 w-6" strokeWidth={2.5} />
+            )}
+          </Button>
         </div>
       )}
     </>

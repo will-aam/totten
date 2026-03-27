@@ -1,7 +1,7 @@
 // app/admin/clients/[id]/anamnesis/[responseId]/page.tsx
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useCallback } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -10,6 +10,7 @@ import {
   Printer,
   CheckCircle2,
   Clock,
+  PenTool,
 } from "lucide-react";
 
 import { AdminHeader } from "@/components/admin-header";
@@ -17,7 +18,24 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 
-import { getAnamnesisResponseById } from "@/app/actions/anamnesis";
+import { SignaturePad } from "@/components/ui/signature-pad";
+import {
+  getAnamnesisResponseById,
+  signAnamnesisResponse,
+} from "@/app/actions/anamnesis";
+
+// 🔥 OTIMIZAÇÃO: Formatador global instanciado apenas uma vez
+const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
+  day: "2-digit",
+  month: "long",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+const formatDate = (dateString: string) => {
+  return dateFormatter.format(new Date(dateString));
+};
 
 export default function AnamnesisDocumentPage({
   params,
@@ -33,31 +51,48 @@ export default function AnamnesisDocumentPage({
   const [response, setResponse] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadData() {
-      const result = await getAnamnesisResponseById(responseId);
-      if (result.success && result.data) {
-        setResponse(result.data);
-      } else {
-        toast({
-          title: "Erro",
-          description: result.error || "Falha ao carregar.",
-          variant: "destructive",
-        });
-      }
-      setIsLoading(false);
+  const [signature, setSignature] = useState<string | null>(null);
+  const [isSigning, setIsSigning] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    const result = await getAnamnesisResponseById(responseId);
+    if (result.success && result.data) {
+      setResponse(result.data);
+    } else {
+      toast({
+        title: "Erro",
+        description: result.error || "Falha ao carregar.",
+        variant: "destructive",
+      });
     }
-    loadData();
+    setIsLoading(false);
   }, [responseId, toast]);
 
-  const formatDate = (dateString: string) => {
-    return new Intl.DateTimeFormat("pt-BR", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(dateString));
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handleSign = async () => {
+    if (!signature) return;
+
+    setIsSigning(true);
+    const signResult = await signAnamnesisResponse(responseId, signature);
+    setIsSigning(false);
+
+    if (signResult.success) {
+      toast({
+        title: "Sucesso!",
+        description: "Ficha assinada e trancada com valor legal.",
+      });
+      loadData();
+    } else {
+      toast({
+        title: "Erro ao Assinar",
+        description: signResult.error,
+        variant: "destructive",
+      });
+    }
   };
 
   const renderValue = (type: string, value: any) => {
@@ -93,7 +128,7 @@ export default function AnamnesisDocumentPage({
     return <span className="font-semibold whitespace-pre-wrap">{value}</span>;
   };
 
-  if (isLoading) {
+  if (isLoading && !response) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh]">
         <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
@@ -119,21 +154,11 @@ export default function AnamnesisDocumentPage({
 
   return (
     <>
-      {/* 🔥 A MÁGICA DA IMPRESSÃO ACONTECE AQUI */}
       <style type="text/css" media="print">
         {`
-          /* 1. Margem 0 desativa a injeção da URL e Data do navegador na folha */
           @page { size: A4 portrait; margin: 0; }
-          
-          /* 2. Devolvemos a margem ao corpo do documento para o texto não encostar na borda */
           body { padding: 15mm !important; }
-
-          /* 3. Esconde qualquer header, navbar, sidebar ou botões à força */
-          header, nav, aside, .print-hidden { 
-            display: none !important; 
-          }
-
-          /* 4. Sobrescreve as variáveis do tema escuro para claro */
+          header, nav, aside, .print-hidden { display: none !important; }
           :root, html, html.dark, .dark, body {
             --background: #ffffff !important;
             --foreground: #09090b !important;
@@ -147,8 +172,6 @@ export default function AnamnesisDocumentPage({
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
-
-          /* 5. Estica o documento e tira a aparência de "quadro" (remove max-width e bordas) */
           .print-wrapper {
             max-width: 100% !important;
             width: 100% !important;
@@ -161,8 +184,6 @@ export default function AnamnesisDocumentPage({
             margin: 0 !important;
             padding: 0 !important;
           }
-
-          /* 🔥 NOVA REGRA: Força a assinatura a ser preta na impressão */
           .signature-img-print {
             filter: none !important;
             -webkit-filter: none !important;
@@ -171,15 +192,19 @@ export default function AnamnesisDocumentPage({
         `}
       </style>
 
-      {/* Ocultamos o Header do painel admin na impressão */}
       <div className="print-hidden">
         <AdminHeader title="Visualizar Ficha" />
       </div>
 
-      <div className="print-wrapper flex flex-col gap-6 p-4 md:p-6 max-w-4xl mx-auto w-full pb-24">
+      <div className="print-wrapper flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
         {/* Barra de Ações Superior (Oculta na impressão) */}
         <div className="print-hidden flex items-center justify-between border-b border-border/50 pb-4">
-          <Button asChild variant="outline" size="sm" className="rounded-xl">
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="rounded-xl font-bold h-10 px-4"
+          >
             <Link href={`/admin/clients/${clientId}`}>
               <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
             </Link>
@@ -188,99 +213,104 @@ export default function AnamnesisDocumentPage({
           <Button
             variant="outline"
             size="sm"
-            className="rounded-xl font-bold shadow-sm"
+            className="rounded-xl font-bold shadow-sm h-10 px-4"
             onClick={() => window.print()}
           >
             <Printer className="h-4 w-4 mr-2" /> Imprimir Documento
           </Button>
         </div>
 
-        {/* O Documento (A "Folha de Papel") */}
-        <div className="print-document bg-background border border-border/60 shadow-sm rounded-xl p-6 md:p-10">
+        {/* O Documento */}
+        <div className="print-document bg-background border border-border/60 shadow-sm rounded-4xl p-6 md:p-10">
           {/* Cabeçalho do Documento */}
           <div className="text-center mb-8 pb-6 border-b-2 border-primary/20 print:border-gray-300">
-            <h1 className="text-2xl font-bold uppercase tracking-wider mb-2">
+            <h1 className="text-2xl font-black uppercase tracking-widest mb-2 text-foreground">
               {response.template?.name || "Ficha de Anamnese"}
             </h1>
-            <p className="text-muted-foreground print:text-gray-600">
+            <p className="text-sm font-medium text-muted-foreground print:text-gray-600">
               Documento registrado em {formatDate(response.created_at)}
             </p>
 
-            <div className="mt-4 inline-flex items-center gap-2 print:hidden">
+            <div className="mt-4 inline-flex items-center gap-2 print-hidden">
               {response.signed_at ? (
-                <Badge className="bg-green-100 text-green-800 hover:bg-green-100 border-none px-3 py-1">
+                <Badge className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20 px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-xl">
                   <CheckCircle2 className="w-4 h-4 mr-1.5" /> Assinado
                   Legalmente
                 </Badge>
               ) : (
-                <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 border-none px-3 py-1">
+                <Badge className="bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/20 px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-xl">
                   <Clock className="w-4 h-4 mr-1.5" /> Rascunho Pendente
                 </Badge>
               )}
             </div>
           </div>
 
-          {/* Dados Dinâmicos do Cliente */}
-          <div className="mb-8 grid grid-cols-2 md:grid-cols-3 gap-4 bg-muted/20 p-5 rounded-xl print:bg-gray-50 print:border print:border-gray-200">
-            <div>
-              <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-1 print:text-gray-500">
+          {/* Dados do Cliente */}
+          <div className="mb-8 grid grid-cols-2 md:grid-cols-3 gap-4 bg-muted/30 p-6 rounded-3xl print:bg-gray-50 print:border print:border-gray-200">
+            <div className="flex flex-col gap-1">
+              <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest print:text-gray-500">
                 Cliente
               </p>
-              <p className="font-semibold text-base">{client.name}</p>
+              <p className="font-bold text-foreground text-sm sm:text-base truncate">
+                {client.name}
+              </p>
             </div>
 
             {client.cpf && (
-              <div>
-                <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-1 print:text-gray-500">
+              <div className="flex flex-col gap-1">
+                <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest print:text-gray-500">
                   CPF
                 </p>
-                <p className="font-semibold text-base">{client.cpf}</p>
+                <p className="font-bold text-foreground text-sm sm:text-base">
+                  {client.cpf}
+                </p>
               </div>
             )}
 
             {client.phone_whatsapp && (
-              <div>
-                <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-1 print:text-gray-500">
+              <div className="flex flex-col gap-1">
+                <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest print:text-gray-500">
                   WhatsApp
                 </p>
-                <p className="font-semibold text-base">
+                <p className="font-bold text-foreground text-sm sm:text-base">
                   {client.phone_whatsapp}
                 </p>
               </div>
             )}
 
             {client.email && (
-              <div className="md:col-span-2 print:col-span-1">
-                <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-1 print:text-gray-500">
+              <div className="md:col-span-2 print:col-span-1 flex flex-col gap-1">
+                <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest print:text-gray-500">
                   E-mail
                 </p>
-                <p className="font-semibold text-base">{client.email}</p>
+                <p className="font-bold text-foreground text-sm sm:text-base truncate">
+                  {client.email}
+                </p>
               </div>
             )}
           </div>
 
-          {/* Perguntas e Respostas */}
+          {/* Respostas */}
           <div className="space-y-6">
             {content.map((item, index) => {
               if (item.type === "section_title") {
                 return (
                   <div
                     key={index}
-                    className="pt-4 pb-2 border-b print:border-gray-200 print:break-after-avoid"
+                    className="pt-6 pb-2 border-b border-border/50 print:border-gray-200 print:break-after-avoid"
                   >
-                    <h3 className="text-lg font-bold text-primary print:text-black">
+                    <h3 className="text-lg font-black text-primary print:text-black tracking-tight">
                       {item.label}
                     </h3>
                   </div>
                 );
               }
-
               return (
                 <div
                   key={index}
-                  className="flex flex-col gap-1 print:break-inside-avoid"
+                  className="flex flex-col gap-1.5 print:break-inside-avoid"
                 >
-                  <p className="text-sm text-muted-foreground print:text-gray-600">
+                  <p className="text-sm font-semibold text-muted-foreground print:text-gray-600">
                     {item.label}
                   </p>
                   <div className="text-base text-foreground print:text-black">
@@ -291,37 +321,76 @@ export default function AnamnesisDocumentPage({
             })}
           </div>
 
-          {/* Área de Assinatura */}
+          {/* 🔥 LÓGICA DE ASSINATURA DINÂMICA */}
           {response.signature ? (
             <div className="mt-16 pt-8 border-t-2 border-dashed border-border print:border-gray-300 flex flex-col items-center print:break-inside-avoid">
-              <p className="text-sm text-muted-foreground mb-4 print:text-gray-600">
+              <p className="text-xs font-bold text-muted-foreground mb-4 uppercase tracking-widest print:text-gray-600">
                 Assinatura registrada eletronicamente em{" "}
                 {formatDate(response.signed_at)}
               </p>
-              <div className="bg-muted/10 border border-border/50 rounded-lg p-4 w-full max-w-md flex justify-center print:bg-transparent print:border-none">
+              <div className="bg-muted/10 border border-border/50 rounded-2xl p-4 w-full max-w-md flex justify-center print:bg-transparent print:border-none">
                 <img
                   src={response.signature}
                   alt="Assinatura do Cliente"
                   className="signature-img-print max-h-24 object-contain mix-blend-multiply dark:mix-blend-normal dark:invert"
                 />
               </div>
-              <div className="w-full max-w-sm border-t border-foreground print:border-black mt-2 text-center pt-2">
-                <p className="font-bold print:text-black">{client.name}</p>
-                <p className="text-xs text-muted-foreground mt-1 print:text-gray-500">
+              <div className="w-full max-w-sm border-t border-foreground/30 print:border-black mt-2 text-center pt-2">
+                <p className="font-black text-sm uppercase tracking-widest print:text-black mt-2">
+                  {client.name}
+                </p>
+                <p className="text-xs font-medium text-muted-foreground mt-1 print:text-gray-500">
                   CPF: {client.cpf || "Não informado"}
                 </p>
               </div>
             </div>
           ) : (
-            <div className="mt-16 pt-8 border-t border-dashed border-border print:border-gray-300 flex flex-col items-center text-center print:break-inside-avoid">
-              <p className="text-muted-foreground italic print:text-gray-500">
-                Este documento ainda não foi assinado pela cliente.
-              </p>
-              <div className="w-full max-w-sm border-t border-foreground print:border-black mt-16 text-center pt-2">
-                <p className="font-bold print:text-black">{client.name}</p>
-                <p className="text-xs text-muted-foreground mt-1 print:text-gray-500">
-                  Assinatura Manual
+            <div className="mt-12 pt-8 border-t-2 border-dashed border-border print:border-gray-300 w-full print:break-inside-avoid">
+              {/* 🔥 TELA DE ASSINATURA CORRIGIDA (Forçando display block e 100% width) */}
+              <div className="block w-full print-hidden">
+                <div className="space-y-4 p-5 border-2 border-primary/10 rounded-2xl bg-background shadow-sm w-full">
+                  <div className="flex items-center gap-2 mb-2">
+                    <PenTool className="w-5 h-5 text-primary" />
+                    <h3 className="text-xl font-bold">Assinatura da Cliente</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Solicite que a cliente assine no quadro abaixo usando o dedo
+                    ou caneta touch. Após assinar, o documento não poderá mais
+                    ser alterado.
+                  </p>
+
+                  <SignaturePad onSignatureChange={setSignature} />
+                </div>
+
+                <div className="flex justify-end mt-4">
+                  <Button
+                    onClick={handleSign}
+                    disabled={!signature || isSigning}
+                    className="w-full md:w-auto h-12 px-8 rounded-xl font-bold shadow-md bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    {isSigning ? (
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="w-5 h-5 mr-2" />
+                    )}
+                    Finalizar Assinatura
+                  </Button>
+                </div>
+              </div>
+
+              {/* 🖨️ INTERFACE DE IMPRESSÃO */}
+              <div className="hidden print:flex flex-col items-center w-full mt-8">
+                <p className="text-gray-500 italic text-xs font-bold mb-16">
+                  Este documento foi impresso sem assinatura digital.
                 </p>
+                <div className="w-full max-w-sm border-t border-black text-center pt-2">
+                  <p className="font-bold text-black uppercase text-sm mt-2">
+                    {client.name}
+                  </p>
+                  <p className="text-xs font-medium text-gray-500 mt-1">
+                    Assinatura Manual
+                  </p>
+                </div>
               </div>
             </div>
           )}
