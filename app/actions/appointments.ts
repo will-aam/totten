@@ -53,6 +53,16 @@ export async function createAppointment(
       if (!pkg || pkg.organization_id !== admin.organizationId) {
         return { success: false, error: "Pacote não encontrado." };
       }
+
+      // 🔥 NOVO: Bloqueia uso de pacotes arquivados na criação
+      if (!pkg.active) {
+        return {
+          success: false,
+          error:
+            "Este pacote está arquivado e não pode receber novos agendamentos.",
+        };
+      }
+
       const sessionsAvailable = pkg.total_sessions - pkg.used_sessions;
       if (sessionsAvailable < totalSessionsToCreate) {
         return {
@@ -96,7 +106,7 @@ export async function updateAppointment(
   id: string,
   data: {
     status: string;
-    paymentMethod: string | null; // Agora aceita o null enviado pelo modal
+    paymentMethod: string | null;
     observations: string;
     hasCharge: boolean;
   },
@@ -117,8 +127,6 @@ export async function updateAppointment(
 
     const finalStatus = statusMap[data.status] || AppointmentStatus.PENDENTE;
 
-    // O Modal de detalhes agora envia os métodos com os nomes reais do Prisma
-    // ex: "PIX", "CARTAO_CREDITO", então podemos fazer cast direto (ou null)
     const finalPaymentMethod = data.paymentMethod
       ? (data.paymentMethod as PaymentMethod)
       : null;
@@ -132,10 +140,10 @@ export async function updateAppointment(
       finalHasCharge = false;
     if (finalStatus === AppointmentStatus.CANCELADO) finalHasCharge = false;
 
-    // 🔥 Adicionado: Buscar o material_cost e o nome do serviço para a despesa
+    // 🔥 Adicionado o "package" no include para verificar o status dele
     const currentAppt = await prisma.appointment.findUnique({
       where: { id, organization_id: admin.organizationId },
-      include: { service: true, client: true },
+      include: { service: true, client: true, package: true },
     });
 
     if (!currentAppt)
@@ -145,9 +153,27 @@ export async function updateAppointment(
       finalStatus === AppointmentStatus.REALIZADO &&
       currentAppt.status !== AppointmentStatus.REALIZADO;
 
+    // 🔥 NOVO: Travas de Segurança caso o pacote tenha sido arquivado ou zerado
+    if (isMarkingAsDone && currentAppt.package) {
+      if (!currentAppt.package.active) {
+        return {
+          success: false,
+          error:
+            "Este pacote foi arquivado. Esta sessão foi invalidada e não pode receber baixa.",
+        };
+      }
+      if (
+        currentAppt.package.used_sessions >= currentAppt.package.total_sessions
+      ) {
+        return {
+          success: false,
+          error: "Este pacote já atingiu o limite total de sessões permitidas.",
+        };
+      }
+    }
+
     await prisma.$transaction(async (tx) => {
       if (updateAll && recurrenceId) {
-        // 1. Atualiza a série
         const updateResult = await tx.appointment.updateMany({
           where: {
             recurrence_id: recurrenceId,
@@ -162,7 +188,6 @@ export async function updateAppointment(
           },
         });
 
-        // 2. Desconta os pacotes da série
         if (isMarkingAsDone && currentAppt.package_id) {
           await tx.package.update({
             where: { id: currentAppt.package_id },
@@ -170,7 +195,6 @@ export async function updateAppointment(
           });
         }
       } else {
-        // 1. Atualiza o agendamento individual
         await tx.appointment.update({
           where: { id, organization_id: admin.organizationId },
           data: {
@@ -181,7 +205,6 @@ export async function updateAppointment(
           },
         });
 
-        // 2. Desconta o pacote individual
         if (isMarkingAsDone && currentAppt.package_id) {
           await tx.package.update({
             where: { id: currentAppt.package_id },
@@ -193,7 +216,7 @@ export async function updateAppointment(
 
     revalidatePath("/admin/agenda");
     revalidatePath("/admin/packages");
-    revalidatePath("/admin/finance/dashboard"); // 🔥 Avisa o Dashboard pra recalcular!
+    revalidatePath("/admin/finance/dashboard");
 
     return { success: true };
   } catch (error) {

@@ -6,7 +6,7 @@ import { format, addDays, isSameDay, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Appointment } from "./daily-agenda-grid";
-import { Clock, Package as PackageIcon } from "lucide-react";
+import { Clock, Package as PackageIcon, AlertTriangle } from "lucide-react"; // 🔥 Importamos o ícone de alerta
 
 interface WeeklyAgendaGridProps {
   appointments: Appointment[];
@@ -25,7 +25,6 @@ export function WeeklyAgendaGrid({
   startHour = 8,
   endHour = 19,
 }: WeeklyAgendaGridProps) {
-  // Estado para a linha de "Tempo Atual"
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
@@ -44,7 +43,6 @@ export function WeeklyAgendaGrid({
     [weekStart],
   );
 
-  // 🔥 OTIMIZAÇÃO: Agrupa agendamentos por dia uma única vez por render
   const groupedAppointments = useMemo(() => {
     const groups: Record<string, Appointment[]> = {};
     weekDays.forEach((day) => {
@@ -73,7 +71,6 @@ export function WeeklyAgendaGrid({
     };
   };
 
-  // Cálculo da linha de tempo atual
   const currentTimeTop = useMemo(() => {
     const h = now.getHours();
     const m = now.getMinutes();
@@ -107,7 +104,7 @@ export function WeeklyAgendaGrid({
 
           {/* COLUNAS DOS DIAS */}
           <div className="flex flex-1 relative">
-            {/* 🔥 LINHA DE TEMPO ATUAL (INDICADOR "NOW") */}
+            {/* LINHA DE TEMPO ATUAL */}
             {currentTimeTop !== null && (
               <div
                 className="absolute left-0 right-0 z-40 flex items-center pointer-events-none"
@@ -163,7 +160,6 @@ export function WeeklyAgendaGrid({
                         key={`grid-cell-${dateKey}-${hour}`}
                         className="h-24 border-b border-border/5 w-full relative"
                       >
-                        {/* Linha de meia hora (sutil) */}
                         <div className="absolute top-1/2 w-full border-t border-dotted border-border/5" />
                       </div>
                     ))}
@@ -171,8 +167,11 @@ export function WeeklyAgendaGrid({
                     {/* RENDERIZAÇÃO DOS CARDS */}
                     {dayAppointments.map((appt) => {
                       const isCancelled =
-                        appt.status === "CANCELADO" ||
-                        appt.status === "cancelado";
+                        appt.status?.toUpperCase() === "CANCELADO";
+
+                      // 🔥 NOVO: Checagem se o pacote está inativo
+                      const isPackageArchived =
+                        appt.package && appt.package.active === false;
 
                       return (
                         <div
@@ -182,14 +181,29 @@ export function WeeklyAgendaGrid({
                             "absolute left-0.5 right-0.5 rounded-lg p-1.5 cursor-pointer transition-all hover:scale-[1.03] hover:z-50 shadow-sm border flex flex-col justify-between group overflow-hidden",
                             appt.color,
                             isCancelled && "opacity-30 grayscale border-dashed",
+                            // 🔥 Bordinha vermelha se tiver arquivado (e não tiver sido cancelado)
+                            isPackageArchived &&
+                              !isCancelled &&
+                              "border border-destructive/80 opacity-80",
                           )}
                           style={getAppointmentStyle(appt)}
                         >
                           <div className="flex flex-col gap-0.5">
-                            <div className="text-[10px] font-black leading-none truncate flex items-center gap-1">
-                              {appt.package_id && (
+                            <div
+                              className={cn(
+                                "text-[10px] font-black leading-none truncate flex items-center gap-1",
+                                (isCancelled || isPackageArchived) &&
+                                  "line-through",
+                              )}
+                            >
+                              {/* 🔥 Muda o ícone se for pacote inativo */}
+                              {!isPackageArchived && appt.package_id && (
                                 <PackageIcon className="h-2.5 w-2.5" />
                               )}
+                              {isPackageArchived && !isCancelled && (
+                                <AlertTriangle className="h-2.5 w-2.5 text-destructive" />
+                              )}
+
                               {appt.clientName.split(" ")[0]}
                             </div>
                             <div className="text-[8px] font-bold opacity-70 truncate uppercase tracking-tighter">

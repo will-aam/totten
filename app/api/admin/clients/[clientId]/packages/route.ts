@@ -48,8 +48,9 @@ export async function GET(
         name: true,
         total_sessions: true,
         used_sessions: true,
-        price: true, // 🔥 Adicionado
-        active: true, // 🔥 Adicionado
+        price: true,
+        active: true,
+        service_id: true, // 🔥 Adicionado para garantir o auto-preenchimento no frontend
       },
       orderBy: {
         created_at: "desc",

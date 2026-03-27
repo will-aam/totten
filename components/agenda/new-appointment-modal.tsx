@@ -59,6 +59,7 @@ type ActivePackage = {
   total_sessions: number;
   used_sessions: number;
   service_id: string;
+  active?: boolean; // 🔥 Adicionado para tipagem da flag de inativo
 };
 
 function generateTimeSlots(openingTime: string, closingTime: string) {
@@ -98,7 +99,6 @@ export const NewAppointmentModal = memo(
     const [repeatCount, setRepeatCount] = useState(2);
     const [saving, setSaving] = useState(false);
 
-    // 🔥 ESTADOS ORIGINAIS RESTAURADOS PARA O PACOTE
     const [activePackage, setActivePackage] = useState<ActivePackage | null>(
       null,
     );
@@ -125,7 +125,6 @@ export const NewAppointmentModal = memo(
       ? servicesResponse
       : servicesResponse?.data || [];
 
-    // 🔥 1. O EXATO USEEFFECT ORIGINAL RESTAURADO PARA BUSCAR O PACOTE
     useEffect(() => {
       async function loadClientPackage() {
         if (!selectedClientId) {
@@ -138,19 +137,28 @@ export const NewAppointmentModal = memo(
           if (!res.ok) return;
           const data = await res.json();
 
-          // Garantia blindada: Pega o pacote onde quer que sua API o tenha colocado
           const pkg =
             data.activePackage ||
             data.client?.activePackage ||
             data.data?.activePackage ||
             null;
-          setActivePackage(pkg);
+
+          // 🔥 DEFESA DE FRONTEND: Só aceita exibir o pacote se ele for ativo E tiver saldo.
+          if (
+            pkg &&
+            pkg.active !== false &&
+            pkg.used_sessions < pkg.total_sessions
+          ) {
+            setActivePackage(pkg);
+          } else {
+            setActivePackage(null); // Esconde a opção de pacote se estiver arquivado
+            setUsePackage(false);
+          }
         } catch (error) {
           console.error("Erro ao buscar pacote:", error);
         }
       }
 
-      // Só chama se o modal estiver aberto para evitar fetch desnecessário
       if (open) {
         loadClientPackage();
       }
@@ -175,7 +183,7 @@ export const NewAppointmentModal = memo(
       ? activePackage.total_sessions - activePackage.used_sessions
       : 0;
 
-    // 🔥 2. AUTO-PREENCHIMENTO INTELIGENTE (Pacote -> Recorrência)
+    // AUTO-PREENCHIMENTO INTELIGENTE (Pacote -> Recorrência)
     useEffect(() => {
       if (usePackage && activePackage) {
         setSelectedServiceId(activePackage.service_id);
@@ -271,7 +279,7 @@ export const NewAppointmentModal = memo(
               </Select>
             </div>
 
-            {/* 🔥 PACOTE DA CLIENTE (Aparece dinamicamente se a cliente tiver pacote com saldo) */}
+            {/* PACOTE DA CLIENTE (Aparece dinamicamente se a cliente tiver pacote com saldo) */}
             {activePackage && (
               <div
                 className={cn(

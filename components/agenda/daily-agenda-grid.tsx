@@ -27,6 +27,7 @@ import {
   Loader2,
   Package as PackageIcon,
   Lock,
+  AlertTriangle, // 🔥 Adicionado
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -55,6 +56,7 @@ export interface Appointment {
   package?: {
     total_sessions: number;
     used_sessions: number;
+    active?: boolean; // 🔥 Tipagem adicionada aqui!
   } | null;
 }
 
@@ -82,13 +84,22 @@ function AppointmentCardContent({
   isCancelled?: boolean;
   isLocked?: boolean;
 }) {
+  // 🔥 Verifica se o pacote associado tá inativo
+  const isPackageArchived = appt.package && appt.package.active === false;
+
   return (
     <div
       className={cn(
         "h-full w-full rounded-xl border p-3 flex flex-col shadow-sm group overflow-hidden transition-all relative",
         appt.color,
-        appt.hasCharge && !isCancelled && "border-2 border-destructive",
+        appt.hasCharge &&
+          !isCancelled &&
+          !isPackageArchived &&
+          "border-2 border-destructive",
         isCancelled && "opacity-40 grayscale-[0.8] border-dashed",
+        isPackageArchived &&
+          !isCancelled &&
+          "border-2 border-destructive/80 opacity-80", // Borda de atenção
         isOverlay &&
           "shadow-2xl scale-105 rotate-1 border-primary/50 cursor-grabbing",
       )}
@@ -102,7 +113,7 @@ function AppointmentCardContent({
             <span
               className={cn(
                 "font-bold text-sm md:text-base truncate",
-                isCancelled && "line-through",
+                (isCancelled || isPackageArchived) && "line-through", // Risca o nome se o pacote morreu
               )}
             >
               {appt.clientName}
@@ -112,7 +123,6 @@ function AppointmentCardContent({
             {appt.service}
           </span>
         </div>
-        {/* 🔥 REGRA: Se está cancelado OU bloqueado (realizado/pago) OU é o overlay sendo arrastado, NÃO mostra o botão de zap estático */}
         {!isCancelled && !isLocked && !isOverlay && (
           <div className="h-7 w-7 rounded-full bg-white/40 flex items-center justify-center text-emerald-700">
             <MessageCircle className="h-4 w-4" />
@@ -124,9 +134,28 @@ function AppointmentCardContent({
         <span className="flex items-center gap-1">
           <Clock className="h-3 w-3" /> {appt.time}
         </span>
-        <span className="bg-white/30 px-1.5 rounded flex items-center gap-1">
-          {appt.package_id && <PackageIcon className="h-3 w-3" />}
-          {isCancelled ? "Cancelado" : appt.sessionInfo}
+
+        {/* 🔥 Mudança de tag se o pacote for arquivado */}
+        <span
+          className={cn(
+            "px-1.5 rounded flex items-center gap-1",
+            isPackageArchived && !isCancelled
+              ? "bg-destructive/10 text-destructive font-black"
+              : "bg-white/30",
+          )}
+        >
+          {!isPackageArchived && appt.package_id && (
+            <PackageIcon className="h-3 w-3" />
+          )}
+          {isPackageArchived && !isCancelled && (
+            <AlertTriangle className="h-3 w-3" />
+          )}
+
+          {isCancelled
+            ? "Cancelado"
+            : isPackageArchived
+              ? "Pacote Inativo"
+              : appt.sessionInfo}
         </span>
       </div>
     </div>
@@ -184,7 +213,6 @@ function DraggableAppointmentCard({
         onClick();
       }}
     >
-      {/* 🔥 REGRA: Se está bloqueado (realizado, pago ou cancelado), esconde o botão flutuante de WhatsApp! */}
       {!isLocked && (
         <div className="absolute top-2 right-2 z-50">
           <Button
@@ -272,6 +300,13 @@ export function DailyAgendaGrid({
     if (!active || Math.abs(delta.y) < 5) return;
 
     const appt = active.data.current as Appointment;
+
+    // 🔥 Desabilita drag and drop para pacotes arquivados
+    if (appt.package && appt.package.active === false) {
+      toast.error("Não é possível reagendar. Este pacote foi arquivado.");
+      return;
+    }
+
     const pos = calculatePosition(appt.time, appt.duration);
     const newTop = pos.top + delta.y;
     const minutesFromStart = (newTop / HOUR_HEIGHT) * 60;

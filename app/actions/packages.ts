@@ -265,3 +265,41 @@ export async function deleteCheckIn(checkInId: string) {
     return { success: false, error: "Falha ao excluir o registro." };
   }
 }
+/**
+ * Encerra/Arquiva um pacote manualmente antes da hora.
+ * Ideal para clientes que abandonaram o pacote ou que fizeram um acordo de renovação precoce.
+ */
+export async function archivePackage(packageId: string) {
+  try {
+    const admin = await requireAuth();
+
+    // Verifica se o pacote existe e pertence à organização
+    const pkg = await prisma.package.findUnique({
+      where: { id: packageId, organization_id: admin.organizationId },
+    });
+
+    if (!pkg) {
+      return { success: false, error: "Pacote não encontrado." };
+    }
+
+    if (!pkg.active) {
+      return { success: false, error: "Este pacote já está encerrado." };
+    }
+
+    // Inativa o pacote
+    await prisma.package.update({
+      where: { id: pkg.id },
+      data: { active: false },
+    });
+
+    // Revalida as páginas para atualizar as listas e o dashboard
+    revalidatePath("/admin/packages");
+    revalidatePath("/admin/dashboard");
+    revalidatePath(`/admin/clients/${pkg.client_id}`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao encerrar pacote:", error);
+    return { success: false, error: "Falha ao encerrar o pacote." };
+  }
+}

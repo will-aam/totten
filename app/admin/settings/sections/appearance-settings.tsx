@@ -115,7 +115,7 @@ export function AppearanceSettings() {
               {theme === "dark" && (
                 <CheckCircle2 className="absolute top-2 right-2 h-4 w-4 text-primary animate-in zoom-in" />
               )}
-              <div className="h-10 w-10 rounded-full bg-[#020817] border border-slate-800 shadow-sm" />
+              <div className="h-10 w-10 rounded-full bg-[#000000] border border-slate-800 shadow-sm" />
               <span className="mt-3 text-sm font-bold text-foreground">
                 Escuro
               </span>

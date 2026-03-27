@@ -41,6 +41,7 @@ import {
   Loader2,
   Printer,
   Repeat,
+  AlertTriangle, // 🔥 Adicionado ícone de alerta
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -124,20 +125,34 @@ export const AppointmentDetailsModal = memo(
     if (!appointment) return null;
     const isRecurrent = !!appointment.recurrence_id;
 
+    // 🔥 NOVO: Verifica se o pacote do agendamento foi arquivado (com base na prop que a API envia)
+    // Se sua API de agenda ainda não envia o "package.active", vamos considerar appointment.isPackageArchived (se você mapear no backend)
+    // Para garantir de forma burra: vamos checar a prop `appointment.package?.active === false`
+    const isPackageArchived =
+      appointment.package && appointment.package.active === false;
+
     const handleSave = async (
       targetStatus?: string,
       updateAllSeries = false,
     ) => {
+      // 🔥 NOVO: Defesa no botão de salvar
+      const finalStatus = targetStatus || status;
+      if (isPackageArchived && finalStatus !== "cancelado") {
+        toast.error(
+          "Este pacote foi arquivado. Você só pode excluir ou cancelar esta sessão.",
+        );
+        return;
+      }
+
       setIsSaving(true);
       try {
         const result = await updateAppointment(
           appointment.id,
           {
-            status: targetStatus || status,
+            status: finalStatus,
             paymentMethod: payment === "nenhum" ? null : payment,
             observations: obs,
-            hasCharge:
-              (targetStatus || status) === "cancelado" ? false : hasCharge,
+            hasCharge: finalStatus === "cancelado" ? false : hasCharge,
           },
           updateAllSeries,
           appointment.recurrence_id,
@@ -150,7 +165,7 @@ export const AppointmentDetailsModal = memo(
           onRefresh?.();
           onOpenChange(false);
         } else {
-          toast.error("Erro ao salvar.");
+          toast.error(result.error || "Erro ao salvar.");
         }
       } catch (error) {
         toast.error("Erro na conexão.");
@@ -179,9 +194,11 @@ export const AppointmentDetailsModal = memo(
         <DialogContent
           className={cn(
             "w-[95vw] sm:max-w-125 p-4 sm:p-6 rounded-3xl flex flex-col max-h-[90dvh] bg-background border border-border/20 transition-all duration-300",
-            hasCharge && status !== "cancelado"
+            hasCharge && status !== "cancelado" && !isPackageArchived
               ? "ring-2 ring-destructive border-destructive/50"
               : "",
+            isPackageArchived &&
+              "ring-2 ring-destructive/80 border-destructive/50", // Borda vermelha se o pacote tiver morto
           )}
         >
           <ThermalReceipt
@@ -191,10 +208,10 @@ export const AppointmentDetailsModal = memo(
           />
 
           <DialogHeader className="flex flex-row justify-between items-start">
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1 w-full">
               <DialogTitle className="text-xl font-black flex items-center gap-2">
-                <User className="h-5 w-5 text-primary" />
-                {appointment.clientName}
+                <User className="h-5 w-5 text-primary shrink-0" />
+                <span className="truncate">{appointment.clientName}</span>
               </DialogTitle>
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground text-sm font-medium">
@@ -212,19 +229,49 @@ export const AppointmentDetailsModal = memo(
             </div>
           </DialogHeader>
 
-          <div className="flex flex-col gap-5 overflow-y-auto py-4 pr-1">
-            <div className="bg-muted/30 p-4 rounded-2xl flex flex-col gap-3 border border-border/40">
+          <div className="flex flex-col gap-5 overflow-y-auto py-2 pr-1">
+            {/* 🔥 NOVO: Alerta de Pacote Arquivado */}
+            {isPackageArchived &&
+              status !== "cancelado" &&
+              status !== "realizado" && (
+                <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-2xl flex items-start gap-3 animate-in fade-in zoom-in-95">
+                  <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                  <div className="flex flex-col">
+                    <span className="text-sm font-black text-destructive uppercase tracking-tight">
+                      Atenção: Pacote Encerrado
+                    </span>
+                    <span className="text-xs font-medium text-destructive/80 mt-1">
+                      O pacote atrelado a este agendamento foi arquivado antes
+                      da hora. Esta sessão tornou-se inválida e você não pode
+                      mais dar baixa nela. Por favor, exclua ou cancele.
+                    </span>
+                  </div>
+                </div>
+              )}
+
+            <div
+              className={cn(
+                "bg-muted/30 p-4 rounded-2xl flex flex-col gap-3 border border-border/40",
+                isPackageArchived && "opacity-70 grayscale",
+              )}
+            >
               <div className="flex justify-between items-center text-sm font-bold uppercase tracking-tighter text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <CalendarDays className="h-4 w-4" /> Atendimento
                 </div>
                 <Badge
-                  variant={status === "cancelado" ? "destructive" : "outline"}
+                  variant={
+                    status === "cancelado" || isPackageArchived
+                      ? "destructive"
+                      : "outline"
+                  }
                   className="rounded-lg border-none bg-background"
                 >
                   {status === "cancelado"
                     ? "Cancelado"
-                    : appointment.sessionInfo || "Avulso"}
+                    : isPackageArchived
+                      ? "Pacote Inativo"
+                      : appointment.sessionInfo || "Avulso"}
                 </Badge>
               </div>
               <div className="text-2xl font-black text-primary flex items-baseline gap-1">
@@ -241,14 +288,27 @@ export const AppointmentDetailsModal = memo(
                 <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">
                   Status
                 </Label>
-                <Select value={status} onValueChange={setStatus}>
+                <Select
+                  value={status}
+                  onValueChange={setStatus}
+                  // 🔥 NOVO: Desabilita se o pacote tiver sido arquivado
+                >
                   <SelectTrigger className="rounded-2xl h-12 bg-muted/20 border-none font-semibold">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-2xl border-border/50 bg-background">
-                    <SelectItem value="a_confirmar">A Confirmar</SelectItem>
-                    <SelectItem value="confirmado">Confirmado</SelectItem>
-                    <SelectItem value="realizado">Realizado</SelectItem>
+                    <SelectItem
+                      value="a_confirmar"
+                      disabled={isPackageArchived}
+                    >
+                      A Confirmar
+                    </SelectItem>
+                    <SelectItem value="confirmado" disabled={isPackageArchived}>
+                      Confirmado
+                    </SelectItem>
+                    <SelectItem value="realizado" disabled={isPackageArchived}>
+                      Realizado
+                    </SelectItem>
                     <SelectItem value="cancelado">Cancelado</SelectItem>
                   </SelectContent>
                 </Select>
@@ -258,7 +318,11 @@ export const AppointmentDetailsModal = memo(
                 <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">
                   Pagamento
                 </Label>
-                <Select value={payment} onValueChange={setPayment}>
+                <Select
+                  value={payment}
+                  onValueChange={setPayment}
+                  disabled={isPackageArchived}
+                >
                   <SelectTrigger className="rounded-2xl h-12 bg-muted/20 border-none font-semibold">
                     <SelectValue />
                   </SelectTrigger>
@@ -296,7 +360,7 @@ export const AppointmentDetailsModal = memo(
                   !hasCharge && "bg-muted/20 border-none",
                 )}
                 onClick={() => setHasCharge(!hasCharge)}
-                disabled={status === "realizado"}
+                disabled={status === "realizado" || isPackageArchived} // 🔥 Desabilita cobrança pra pacote morto
               >
                 {hasCharge ? "Cobrança Ativa" : "Tudo Pago"}
               </Button>
@@ -361,12 +425,15 @@ export const AppointmentDetailsModal = memo(
 
             <div className="flex-1" />
 
+            {/* 🔥 NOVO: Esconde o botão de Salvar se o pacote foi arquivado e o status não é de cancelamento */}
             {!showSaveOptions ? (
               <Button
                 onClick={() =>
                   isRecurrent ? setShowSaveOptions(true) : handleSave()
                 }
-                disabled={isSaving}
+                disabled={
+                  isSaving || (isPackageArchived && status !== "cancelado")
+                }
                 className="rounded-2xl bg-primary text-primary-foreground h-12 px-8 font-bold w-full sm:w-auto"
               >
                 {isSaving ? (
@@ -381,12 +448,18 @@ export const AppointmentDetailsModal = memo(
               <div className="flex gap-2 w-full sm:w-auto animate-in slide-in-from-right-2">
                 <Button
                   onClick={() => handleSave(status, true)}
+                  disabled={
+                    isSaving || (isPackageArchived && status !== "cancelado")
+                  }
                   className="rounded-2xl h-12 bg-amber-600 text-white font-bold text-xs uppercase"
                 >
                   Toda a Série
                 </Button>
                 <Button
                   onClick={() => handleSave(status, false)}
+                  disabled={
+                    isSaving || (isPackageArchived && status !== "cancelado")
+                  }
                   className="rounded-2xl h-12 bg-primary text-white font-bold text-xs uppercase"
                 >
                   Só Este

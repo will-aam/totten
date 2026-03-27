@@ -18,9 +18,9 @@ import { cn } from "@/lib/utils";
 import { Appointment } from "./daily-agenda-grid";
 import {
   Clock,
-  User,
   Package as PackageIcon,
   ChevronRight,
+  AlertTriangle, // 🔥 Import do ícone
 } from "lucide-react";
 import { Button } from "../ui/button";
 
@@ -39,7 +39,6 @@ export function MonthlyAgendaGrid({
 }: MonthlyAgendaGridProps) {
   const [activeDate, setActiveDate] = useState<Date>(currentDate || new Date());
 
-  // 🔥 OTIMIZAÇÃO: Agrupa todos os agendamentos do mês por data uma única vez
   const groupedData = useMemo(() => {
     const groups: Record<string, Appointment[]> = {};
     appointments.forEach((appt) => {
@@ -61,19 +60,18 @@ export function MonthlyAgendaGrid({
   const calendarDays = eachDayOfInterval({ start: startDate, end: endDate });
   const weekDaysHeaders = ["D", "S", "T", "Q", "Q", "S", "S"];
 
-  // Dados para a Timeline Mobile
   const activeDayKey = format(activeDate, "yyyy-MM-dd");
   const activeDayAppointments = [...(groupedData[activeDayKey] || [])].sort(
     (a, b) => a.time.localeCompare(b.time),
   );
 
-  const MAX_APPTS_PER_DAY = 8; // Sua regra de negócio para o anel completo
+  const MAX_APPTS_PER_DAY = 8;
   const MAX_DESKTOP_APPTS = 5;
 
   return (
     <div className="h-full flex flex-col animate-in fade-in duration-500">
       {/* ========================================== */}
-      {/* VISÃO MOBILE (Com o seu Anel de Volume)    */}
+      {/* VISÃO MOBILE                               */}
       {/* ========================================== */}
       <div className="flex flex-col h-full md:hidden gap-4">
         <div className="bg-card rounded-3xl border border-border/50 shadow-sm p-5 shrink-0">
@@ -96,7 +94,6 @@ export function MonthlyAgendaGrid({
               const isActive = isSameDay(day, activeDate);
               const isToday = isDateToday(day);
 
-              // 🔥 LÓGICA DO SEU ANEL DE VOLUME (SVG)
               const fillPercentage = Math.min(
                 (dayAppts.length / MAX_APPTS_PER_DAY) * 100,
                 100,
@@ -111,7 +108,6 @@ export function MonthlyAgendaGrid({
                   onClick={() => setActiveDate(day)}
                   className="relative aspect-square flex items-center justify-center group"
                 >
-                  {/* O ANEL SVG VOLTOU! */}
                   {dayAppts.length > 0 && !isActive && (
                     <svg
                       className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none p-0.5"
@@ -160,7 +156,6 @@ export function MonthlyAgendaGrid({
           </div>
         </div>
 
-        {/* Timeline do Dia Selecionado (Otimizada) */}
         <div className="flex-1 bg-card rounded-3xl border border-border/50 shadow-sm p-5 overflow-hidden flex flex-col">
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-xs font-black text-foreground uppercase tracking-widest flex items-center gap-2">
@@ -188,35 +183,58 @@ export function MonthlyAgendaGrid({
                 </p>
               </div>
             ) : (
-              activeDayAppointments.map((appt) => (
-                <div
-                  key={appt.id}
-                  onClick={() => onAppointmentClick(appt)}
-                  className={cn(
-                    "flex items-center gap-4 p-3 rounded-2xl border border-border/30 transition-all active:scale-[0.97]",
-                    appt.color,
-                  )}
-                >
-                  <div className="flex flex-col items-center justify-center w-11 shrink-0 border-r border-black/5 pr-3">
-                    <span className="text-[11px] font-black">{appt.time}</span>
+              activeDayAppointments.map((appt) => {
+                const isCancelled = appt.status?.toUpperCase() === "CANCELADO";
+                // 🔥 Verifica pacote inativo
+                const isPackageArchived =
+                  appt.package && appt.package.active === false;
+
+                return (
+                  <div
+                    key={appt.id}
+                    onClick={() => onAppointmentClick(appt)}
+                    className={cn(
+                      "flex items-center gap-4 p-3 rounded-2xl border border-border/30 transition-all active:scale-[0.97]",
+                      appt.color,
+                      isCancelled && "opacity-40 grayscale border-dashed",
+                      isPackageArchived &&
+                        !isCancelled &&
+                        "border-2 border-destructive/80 opacity-80",
+                    )}
+                  >
+                    <div className="flex flex-col items-center justify-center w-11 shrink-0 border-r border-black/5 pr-3">
+                      <span className="text-[11px] font-black">
+                        {appt.time}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className={cn(
+                          "text-sm font-black truncate flex items-center gap-1.5",
+                          (isCancelled || isPackageArchived) && "line-through",
+                        )}
+                      >
+                        {isPackageArchived && !isCancelled && (
+                          <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
+                        )}
+                        {appt.clientName}
+                      </p>
+                      <p className="text-[9px] font-bold opacity-70 truncate uppercase tracking-tighter">
+                        {isPackageArchived && !isCancelled
+                          ? "Pacote Inativo"
+                          : appt.service}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-black truncate">
-                      {appt.clientName}
-                    </p>
-                    <p className="text-[9px] font-bold opacity-70 truncate uppercase tracking-tighter">
-                      {appt.service}
-                    </p>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
       </div>
 
       {/* ========================================== */}
-      {/* VISÃO DESKTOP (Grid Fluida)                */}
+      {/* VISÃO DESKTOP                              */}
       {/* ========================================== */}
       <div className="hidden md:flex flex-col bg-card rounded-3xl border border-border/50 overflow-hidden shadow-sm h-full">
         <div className="grid grid-cols-7 bg-muted/30 border-b border-border/50">
@@ -270,25 +288,56 @@ export function MonthlyAgendaGrid({
                 </div>
 
                 <div className="flex flex-col gap-1 overflow-hidden">
-                  {visibleAppts.map((appt) => (
-                    <div
-                      key={appt.id}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onAppointmentClick(appt);
-                      }}
-                      className={cn(
-                        "text-[9px] font-bold leading-none px-2 py-1.5 rounded-lg truncate border shadow-sm transition-transform hover:scale-[1.03]",
-                        appt.color ||
-                          "bg-blue-100 border-blue-200 text-blue-900",
-                      )}
-                    >
-                      <span className="opacity-70 mr-1 font-black">
-                        {appt.time}
-                      </span>
-                      {appt.clientName.split(" ")[0]}
-                    </div>
-                  ))}
+                  {visibleAppts.map((appt) => {
+                    const isCancelled =
+                      appt.status?.toUpperCase() === "CANCELADO";
+                    const isPackageArchived =
+                      appt.package && appt.package.active === false;
+
+                    return (
+                      <div
+                        key={appt.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onAppointmentClick(appt);
+                        }}
+                        className={cn(
+                          "text-[9px] font-bold leading-none px-2 py-1.5 rounded-lg truncate border shadow-sm transition-transform hover:scale-[1.03] flex items-center gap-1",
+                          appt.color ||
+                            "bg-blue-100 border-blue-200 text-blue-900",
+                          isCancelled && "opacity-40 grayscale border-dashed",
+                          isPackageArchived &&
+                            !isCancelled &&
+                            "border-destructive/80 opacity-80",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "opacity-70 mr-0.5 font-black",
+                            (isCancelled || isPackageArchived) &&
+                              "line-through",
+                          )}
+                        >
+                          {appt.time}
+                        </span>
+
+                        {/* 🔥 Ícone de alerta mini */}
+                        {isPackageArchived && !isCancelled && (
+                          <AlertTriangle className="h-2.5 w-2.5 text-destructive shrink-0" />
+                        )}
+
+                        <span
+                          className={cn(
+                            "truncate",
+                            (isCancelled || isPackageArchived) &&
+                              "line-through",
+                          )}
+                        >
+                          {appt.clientName.split(" ")[0]}
+                        </span>
+                      </div>
+                    );
+                  })}
                   {hiddenCount > 0 && (
                     <div className="text-[9px] font-black text-center text-primary/70 bg-primary/5 py-1 rounded-md mt-0.5 border border-primary/10">
                       + {hiddenCount} mais

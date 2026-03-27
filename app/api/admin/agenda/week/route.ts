@@ -110,6 +110,7 @@ export async function GET(req: NextRequest) {
           ? {
               total_sessions: appt.package.total_sessions,
               used_sessions: appt.package.used_sessions,
+              active: appt.package.active, // 🔥 O SEGREDO ESTÁ AQUI: Enviando a flag para o frontend
             }
           : null,
       };

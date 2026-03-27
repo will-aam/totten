@@ -20,7 +20,6 @@ import {
   AlertTriangle,
   CalendarClock,
   ArrowUp,
-  History,
   CheckCircle2,
   Loader2,
   ChevronLeft,
@@ -33,7 +32,7 @@ import {
   createManualPackageCheckIn,
 } from "@/app/actions/packages";
 import { toast } from "sonner";
-import { useDebounce } from "@/hooks/use-debounce"; // 🔥 Importamos o Debounce
+import { useDebounce } from "@/hooks/use-debounce";
 
 function KpiCard({
   title,
@@ -74,21 +73,83 @@ function KpiCard({
   );
 }
 
+// 🔥 NOVO: Componente de Bolinha Pulsante (Sonda)
+function StatusIndicator({
+  active,
+  isEndingSoon,
+}: {
+  active: boolean;
+  isEndingSoon: boolean;
+}) {
+  if (!active) {
+    return (
+      <span
+        className="flex h-2.5 w-2.5 rounded-full shrink-0 bg-muted-foreground opacity-50"
+        title="Arquivado"
+      />
+    );
+  }
+
+  const baseColor = isEndingSoon ? "bg-orange-500" : "bg-emerald-500";
+
+  return (
+    <div className="relative flex h-2.5 w-2.5">
+      <span
+        className={cn(
+          "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
+          baseColor,
+        )}
+      ></span>
+      <span
+        className={cn(
+          "relative inline-flex rounded-full h-2.5 w-2.5",
+          baseColor,
+        )}
+      ></span>
+    </div>
+  );
+}
+
 function PackageListItem({ pkg, onOpenDetails, onManualCheckIn }: any) {
   const isEndingSoon = pkg.usedSessions >= pkg.totalSessions - 2;
 
   return (
-    <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 py-4 border-b border-border/50 last:border-0 active:bg-muted/50 transition-colors px-2 -mx-2 rounded-xl">
+    <div
+      className={cn(
+        "grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 py-4 border-b border-border/50 last:border-0 active:bg-muted/50 transition-colors px-2 -mx-2 rounded-xl cursor-pointer hover:bg-muted/30",
+        !pkg.active && "opacity-60",
+      )}
+    >
       <div
-        className="flex items-center gap-3 min-w-0 cursor-pointer"
+        className="flex items-center gap-3 min-w-0"
         onClick={() => onOpenDetails(pkg)}
       >
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/5 text-primary font-bold border border-primary/10">
+        <div
+          className={cn(
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-bold border",
+            pkg.active
+              ? "bg-primary/5 text-primary border-primary/10"
+              : "bg-muted text-muted-foreground border-border",
+          )}
+        >
           {pkg.clientName.charAt(0)}
         </div>
         <div className="flex flex-col min-w-0">
-          <span className="text-sm font-semibold text-foreground truncate">
+          <span
+            className={cn(
+              "text-sm font-semibold truncate flex items-center gap-2",
+              pkg.active
+                ? "text-foreground"
+                : "text-muted-foreground line-through decoration-muted-foreground/50",
+            )}
+          >
             {pkg.clientName}
+            {/* 🔥 NOVO: Badge "Arquivado" para pacotes inativos */}
+            {!pkg.active && (
+              <span className="text-[9px] uppercase tracking-wider bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-sm not-line-through">
+                Arquivado
+              </span>
+            )}
           </span>
           <span className="text-[11px] text-muted-foreground truncate uppercase font-medium">
             {pkg.packageName}
@@ -96,7 +157,10 @@ function PackageListItem({ pkg, onOpenDetails, onManualCheckIn }: any) {
         </div>
       </div>
 
-      <div className="flex flex-col items-end w-16 sm:w-24">
+      <div
+        className="flex flex-col items-end w-16 sm:w-24"
+        onClick={() => onOpenDetails(pkg)}
+      >
         <span className="text-[13px] font-bold text-foreground">
           {pkg.usedSessions} / {pkg.totalSessions}
         </span>
@@ -105,24 +169,32 @@ function PackageListItem({ pkg, onOpenDetails, onManualCheckIn }: any) {
         </span>
       </div>
 
-      <div className="flex items-center justify-end w-12 gap-2">
-        <span
-          className={cn(
-            "flex h-2.5 w-2.5 rounded-full shrink-0",
-            isEndingSoon ? "bg-orange-500 animate-pulse" : "bg-emerald-500",
-          )}
-        />
+      <div
+        className="flex items-center justify-end w-8 sm:w-12 gap-2"
+        onClick={() => onOpenDetails(pkg)}
+      >
+        {/* 🔥 Usando o novo indicador pulsante */}
+        <StatusIndicator active={pkg.active} isEndingSoon={isEndingSoon} />
       </div>
 
       <div className="flex items-center gap-1">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-10 w-10 text-muted-foreground hover:text-primary hover:bg-primary/10 active:text-primary active:bg-primary/10 rounded-full"
-          onClick={() => onManualCheckIn(pkg)}
-        >
-          <CheckCircle2 className="h-5 w-5" />
-        </Button>
+        {/* 🔥 Só exibe o botão de Check-in Manual se o pacote estiver ativo */}
+        {pkg.active ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 text-muted-foreground hover:text-primary hover:bg-primary/10 active:text-primary active:bg-primary/10 rounded-full shrink-0"
+            onClick={(e) => {
+              e.stopPropagation(); // Evita abrir o modal ao clicar no botão
+              onManualCheckIn(pkg);
+            }}
+            title="Registrar Check-in Manual"
+          >
+            <CheckCircle2 className="h-5 w-5" />
+          </Button>
+        ) : (
+          <div className="h-10 w-10" /> // Espaçador para manter o alinhamento
+        )}
       </div>
     </div>
   );
@@ -142,24 +214,20 @@ export default function PackagesPage() {
   });
   const [loading, setLoading] = useState(true);
 
-  // 🔥 Estados de Paginação e Busca
+  // Estados de Paginação e Busca
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 500);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // 🔥 Reseta a página se a busca mudar
   useEffect(() => {
     setPage(1);
   }, [debouncedSearch]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
-
-    // Regra dos 3 caracteres para o banco de dados
     const searchQuery =
       debouncedSearch.trim().length >= 3 ? debouncedSearch.trim() : "";
-
     const result = await getPackagesDashboardData({
       page,
       limit: 20,
@@ -180,6 +248,14 @@ export default function PackagesPage() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, [loadData]);
+
+  // 🔥 NOVO: Quando o Modal fechar, recarregamos a tabela para atualizar se a dona tiver arquivado o pacote.
+  const handleModalClose = (isOpen: boolean) => {
+    setDetailsOpen(isOpen);
+    if (!isOpen) {
+      loadData();
+    }
+  };
 
   const handleManualCheckIn = async (pkg: any) => {
     if (pkg.usedSessions >= pkg.totalSessions) {
@@ -214,7 +290,6 @@ export default function PackagesPage() {
     <>
       <AdminHeader title="Pacotes" />
 
-      {/* 🔥 OTIMIZAÇÃO ESTRUTURAL: max-w-400 e animate-in mantendo o layout original */}
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
         <div className="flex overflow-x-auto pb-4 -mx-4 px-4 gap-4 md:grid md:grid-cols-3 scrollbar-hide">
           <KpiCard
@@ -296,14 +371,13 @@ export default function PackagesPage() {
                 <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
                   {search.length >= 3
                     ? "Nenhum pacote encontrado na busca"
-                    : "Nenhum pacote ativo no momento"}
+                    : "Nenhum pacote encontrado"}
                 </p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* 🔥 CONTROLES DE PAGINAÇÃO */}
         {totalPages > 1 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-2 bg-card p-4 rounded-3xl border border-border/50 shadow-sm">
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-center sm:text-left w-full sm:w-auto">
@@ -335,7 +409,7 @@ export default function PackagesPage() {
 
       <PackageDetailsModal
         open={detailsOpen}
-        onOpenChange={setDetailsOpen}
+        onOpenChange={handleModalClose}
         packageData={selectedPackage}
       />
 
