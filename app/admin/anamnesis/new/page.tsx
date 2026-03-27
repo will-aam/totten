@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import {
   ArrowLeft,
-  X, // Troquei Trash2 por X
+  X,
   Save,
   FileText,
   ListPlus,
@@ -67,8 +67,6 @@ export default function NewAnamnesisTemplatePage() {
     },
   ]);
   const [isSaving, setIsSaving] = useState(false);
-
-  // ... (Funções de estado e handlers permanecem iguais) ...
 
   const addField = () => {
     setFields([
@@ -211,7 +209,8 @@ export default function NewAnamnesisTemplatePage() {
     <>
       <AdminHeader title="Novo Fichário" />
 
-      <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 max-w-5xl mx-auto w-full pb-24 md:pb-6">
+      {/* 🔥 LARGURA PADRÃO APLICADA AQUI: max-w-400 e animate-in */}
+      <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-32 md:pb-6 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
         {/* Header Padrão */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 border-b border-border/50 pb-4 md:pb-6">
           <Button
@@ -220,7 +219,7 @@ export default function NewAnamnesisTemplatePage() {
             size="icon"
             className="rounded-full h-10 w-10 shrink-0"
           >
-            <Link href="/admin/clients">
+            <Link href="/admin/anamnesis">
               <ArrowLeft className="h-5 w-5 text-muted-foreground" />
             </Link>
           </Button>
@@ -250,7 +249,7 @@ export default function NewAnamnesisTemplatePage() {
 
         {/* Área de Perguntas */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between border-b pb-3 border-border/50">
+          <div className="flex items-center justify-between border-b pb-3 border-border/50 mt-4">
             <div className="flex items-center gap-2">
               <ListPlus className="h-5 w-5 text-primary" />
               <h2 className="font-semibold text-foreground">Perguntas</h2>
@@ -277,14 +276,11 @@ export default function NewAnamnesisTemplatePage() {
                   key={field.id}
                   className="group flex flex-col gap-3 p-4 rounded-xl bg-muted/30 border border-border/50 hover:border-border transition-all relative"
                 >
-                  {/* Container do Índice (Apenas Desktop) */}
                   <div className="absolute -left-3 top-4 hidden md:flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold shadow z-10">
                     {index + 1}
                   </div>
 
-                  {/* Grid Principal: Controla as linhas no Mobile vs Desktop */}
                   <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-3 items-start">
-                    {/* 1. Input da Pergunta */}
                     <div className="space-y-2 md:ml-4">
                       <Label className="text-xs text-muted-foreground font-medium">
                         {field.type === "section_title"
@@ -305,7 +301,6 @@ export default function NewAnamnesisTemplatePage() {
                       />
                     </div>
 
-                    {/* 2. Select de Tipo */}
                     <div className="w-full md:w-56 space-y-2">
                       <Label className="text-xs text-muted-foreground font-medium">
                         Tipo
@@ -335,10 +330,6 @@ export default function NewAnamnesisTemplatePage() {
                       </Select>
                     </div>
 
-                    {/* 3. Botão Excluir (X) */}
-                    {/* No Mobile: Fica alinhado à direita na mesma linha dos labels (usando absolute) ou flex order? 
-                        Melhor solução: Grid quebra linha. No mobile, botão fica no topo à direita sobrepondo levemente ou usando espaço negativo? 
-                        Vamos usar absolute no mobile e static no desktop para ficar perfeito. */}
                     <Button
                       variant="ghost"
                       size="icon"
@@ -349,7 +340,6 @@ export default function NewAnamnesisTemplatePage() {
                     </Button>
                   </div>
 
-                  {/* Área de Opções (Aparece condicionalmente abaixo) */}
                   {(field.type === "single_choice" ||
                     field.type === "multiple_choice") && (
                     <div className="md:ml-4 mt-1 p-3 bg-background rounded-lg border border-border/40 space-y-2">
@@ -399,21 +389,21 @@ export default function NewAnamnesisTemplatePage() {
             <Button
               variant="outline"
               onClick={addField}
-              className="w-full h-12 border-dashed border-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors rounded-xl"
+              className="w-full h-12 border-dashed border-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors rounded-xl mt-4"
             >
               <PlusCircle className="w-4 h-4 mr-2" /> Adicionar Nova Pergunta
             </Button>
           )}
         </div>
 
-        {/* Footer Desktop - AGORA IDÊNTICO AO MOBILE */}
-        <div className="hidden md:flex justify-end gap-3 pt-6 border-t border-border/50">
+        {/* Footer Desktop */}
+        <div className="hidden md:flex justify-end gap-3 pt-6 border-t border-border/50 mt-auto">
           <Button
             variant="outline"
             asChild
-            className="h-12 rounded-xl font-bold px-8" // Mesmo tamanho e estilo
+            className="h-12 rounded-xl font-bold px-8"
           >
-            <Link href="/admin/clients">Cancelar</Link>
+            <Link href="/admin/anamnesis">Cancelar</Link>
           </Button>
           <Button
             onClick={handleSave}
@@ -430,10 +420,10 @@ export default function NewAnamnesisTemplatePage() {
         </div>
       </div>
 
-      {/* Footer Mobile - Mantido o padrão */}
+      {/* Footer Mobile */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-lg border-t md:hidden z-50 grid grid-cols-2 gap-3">
         <Button variant="outline" asChild className="h-12 rounded-xl font-bold">
-          <Link href="/admin/clients">Cancelar</Link>
+          <Link href="/admin/anamnesis">Cancelar</Link>
         </Button>
         <Button
           onClick={handleSave}

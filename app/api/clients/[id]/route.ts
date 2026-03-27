@@ -74,3 +74,94 @@ export async function GET(
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }
+
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const admin = await getCurrentAdmin();
+
+    if (!admin) {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    }
+
+    const { id } = await params;
+    const body = await request.json();
+
+    const client = await prisma.client.update({
+      where: {
+        id: id,
+        organization_id: admin.organizationId,
+      },
+      data: {
+        active: body.active, // Recebe true do front-end para reativar
+      },
+    });
+
+    return NextResponse.json(client);
+  } catch (error) {
+    console.error("Erro ao atualizar cliente:", error);
+    return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const admin = await getCurrentAdmin();
+
+    if (!admin) {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    }
+
+    const { id } = await params;
+
+    // 🔥 Aqui está a correção: usando os nomes exatos das relações do schema.prisma
+    const client = await prisma.client.findFirst({
+      where: { id: id, organization_id: admin.organizationId },
+      include: {
+        appointments: true,
+        check_ins: true,
+        packages: true,
+        transactions: true,
+        anamnesis_responses: true,
+      },
+    });
+
+    if (!client) {
+      return NextResponse.json(
+        { error: "Cliente não encontrado" },
+        { status: 404 },
+      );
+    }
+
+    // Verifica se o cliente possui algum vínculo que nos impeça de apagá-lo definitivamente
+    const hasHistory =
+      client.appointments.length > 0 ||
+      client.check_ins.length > 0 ||
+      client.packages.length > 0 ||
+      client.transactions.length > 0 ||
+      client.anamnesis_responses.length > 0;
+
+    if (hasHistory) {
+      // Se tem histórico, fazemos apenas um "soft delete" (desativar)
+      await prisma.client.update({
+        where: { id: client.id },
+        data: { active: false },
+      });
+      return NextResponse.json({ message: "Cliente desativado com sucesso" });
+    } else {
+      // Se não tem histórico, podemos excluir fisicamente (hard delete)
+      await prisma.client.delete({
+        where: { id: client.id },
+      });
+      return NextResponse.json({ message: "Cliente excluído com sucesso" });
+    }
+  } catch (error) {
+    console.error("Erro ao excluir/desativar cliente:", error);
+    return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
+  }
+}

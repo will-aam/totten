@@ -1,7 +1,7 @@
 // app/admin/anamnesis/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import {
@@ -19,7 +19,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 
-// 🔥 Importando as novas funções que criamos no Passo 1
 import {
   getAllAnamnesisTemplates,
   toggleAnamnesisTemplateStatus,
@@ -32,22 +31,24 @@ export default function AnamnesisListPage() {
   const [templates, setTemplates] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    loadTemplates();
-  }, [session]);
+  // 🔥 OTIMIZAÇÃO: Isolar o ID para não causar loop infinito de requisições
+  const organizationId = session?.user?.organizationId;
 
-  const loadTemplates = async () => {
-    if (session?.user?.organizationId) {
+  // 🔥 OTIMIZAÇÃO: Estabilizar a função na memória com useCallback
+  const loadTemplates = useCallback(async () => {
+    if (organizationId) {
       setIsLoading(true);
-      const result = await getAllAnamnesisTemplates(
-        session.user.organizationId,
-      );
+      const result = await getAllAnamnesisTemplates(organizationId);
       if (result.success && result.data) {
         setTemplates(result.data);
       }
       setIsLoading(false);
     }
-  };
+  }, [organizationId]);
+
+  useEffect(() => {
+    loadTemplates();
+  }, [loadTemplates]);
 
   const handleToggleStatus = async (id: string, currentStatus: boolean) => {
     const actionText = currentStatus ? "arquivar" : "reativar";
@@ -65,7 +66,7 @@ export default function AnamnesisListPage() {
         title: "Sucesso",
         description: `Modelo ${currentStatus ? "arquivado" : "reativado"} com sucesso.`,
       });
-      loadTemplates(); // Recarrega a lista para atualizar a UI
+      loadTemplates();
     } else {
       toast({
         title: "Erro",
@@ -79,7 +80,8 @@ export default function AnamnesisListPage() {
     <>
       <AdminHeader title="Fichas de Anamnese" />
 
-      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-5xl mx-auto w-full pb-24">
+      {/* 🔥 OTIMIZAÇÃO ESTRUTURAL: max-w-400 e animate-in mantendo o layout original */}
+      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
         {/* Cabeçalho */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/50 pb-4">
           <div>
@@ -104,7 +106,7 @@ export default function AnamnesisListPage() {
 
         {/* Lista de Templates */}
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+          <div className="flex flex-col items-center justify-center py-20 text-muted-foreground flex-1">
             <Loader2 className="w-8 h-8 animate-spin mb-4 text-primary" />
             <p>Carregando modelos...</p>
           </div>
@@ -133,7 +135,6 @@ export default function AnamnesisListPage() {
             {templates.map((template) => (
               <Card
                 key={template.id}
-                // 🔥 Se estiver inativo, deixamos o card visualmente mais apagado
                 className={`group overflow-hidden rounded-2xl border-border/50 transition-all ${
                   template.active
                     ? "bg-muted/10 hover:bg-muted/30 hover:border-primary/30"
@@ -192,7 +193,6 @@ export default function AnamnesisListPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      // Muda a cor e o ícone dependendo do status atual
                       className={`flex-1 rounded-lg h-9 text-xs font-medium ${
                         template.active
                           ? "text-muted-foreground hover:text-amber-600 hover:bg-amber-50 hover:border-amber-200"

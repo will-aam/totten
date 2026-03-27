@@ -78,7 +78,11 @@ export function WeeklyAgendaGrid({
     const h = now.getHours();
     const m = now.getMinutes();
     if (h < startHour || h >= endHour) return null;
-    return (h - startHour) * HOUR_HEIGHT + (m / 60) * HOUR_HEIGHT;
+
+    const HEADER_OFFSET = 56;
+    return (
+      HEADER_OFFSET + (h - startHour) * HOUR_HEIGHT + (m / 60) * HOUR_HEIGHT
+    );
   }, [now, startHour, endHour]);
 
   return (

@@ -194,7 +194,7 @@ export function ThemeSettings({ data, onChange }: any) {
               <button
                 onClick={() => onChange({ ...data, font: "font-mono" })}
                 className={cn(
-                  "flex-1 text-sm py-2 rounded-md font-mono transition-colors",
+                  "flex-1 text-sm py-2 rounded-md transition-colors",
                   data.font === "font-mono"
                     ? "bg-background shadow-sm font-semibold"
                     : "hover:bg-background/50",
@@ -221,7 +221,7 @@ export function ThemeSettings({ data, onChange }: any) {
                     className="absolute -top-2 -left-2 h-12 w-12 cursor-pointer"
                   />
                 </div>
-                <span className="text-xs uppercase font-mono text-muted-foreground">
+                <span className="text-xs uppercase text-muted-foreground">
                   {data.textColor}
                 </span>
               </div>
@@ -242,7 +242,7 @@ export function ThemeSettings({ data, onChange }: any) {
                     className="absolute -top-2 -left-2 h-12 w-12 cursor-pointer"
                   />
                 </div>
-                <span className="text-xs uppercase font-mono text-muted-foreground">
+                <span className="text-xs uppercase text-muted-foreground">
                   {data.buttonBg}
                 </span>
               </div>
@@ -263,7 +263,7 @@ export function ThemeSettings({ data, onChange }: any) {
                     className="absolute -top-2 -left-2 h-12 w-12 cursor-pointer"
                   />
                 </div>
-                <span className="text-xs uppercase font-mono text-muted-foreground">
+                <span className="text-xs uppercase text-muted-foreground">
                   {data.buttonText}
                 </span>
               </div>

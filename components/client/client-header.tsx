@@ -122,7 +122,7 @@ export function ClientHeader({ client }: { client: ClientHeaderType }) {
                 value={editCpf}
                 onChange={(e) => setEditCpf(formatCpf(e.target.value))}
                 onKeyDown={handleKeyDown}
-                className="w-40 bg-transparent border-b border-primary/30 focus:border-primary text-sm font-mono text-muted-foreground outline-none transition-colors px-1 py-0.5 placeholder:text-muted-foreground/40 mt-1"
+                className="w-40 bg-transparent border-b border-primary/30 focus:border-primary text-sm text-muted-foreground outline-none transition-colors px-1 py-0.5 placeholder:text-muted-foreground/40 mt-1"
                 placeholder="000.000.000-00"
               />
             </div>
@@ -141,7 +141,7 @@ export function ClientHeader({ client }: { client: ClientHeaderType }) {
                   strokeWidth={2}
                 />
               </div>
-              <span className="text-sm font-mono text-muted-foreground/70 leading-none mt-2">
+              <span className="text-sm text-muted-foreground/70 leading-none mt-2">
                 {client.cpf}
               </span>
             </div>

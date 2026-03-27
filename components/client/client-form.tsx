@@ -263,7 +263,7 @@ export function ClientForm() {
                       setForm({ ...form, cpf: formatCpfInput(e.target.value) })
                     }
                     placeholder="000.000.000-00"
-                    className="h-11 bg-muted/30 font-mono"
+                    className="h-11 bg-muted/30"
                   />
                   {errors.cpf && (
                     <p className="text-xs text-destructive">{errors.cpf}</p>
@@ -358,7 +358,7 @@ export function ClientForm() {
                             })
                           }
                           placeholder="00000-000"
-                          className="h-11 bg-muted/30 font-mono"
+                          className="h-11 bg-muted/30"
                         />
                       </div>
                       <div className="space-y-2 sm:col-span-2">

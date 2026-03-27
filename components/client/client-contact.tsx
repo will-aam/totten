@@ -373,7 +373,7 @@ export function ClientContact({ client }: ClientContactProps) {
                     setEditZipCode(formatCepInput(e.target.value))
                   }
                   placeholder="00000-000"
-                  className="h-10 bg-muted/30 font-mono"
+                  className="h-10 bg-muted/30"
                 />
               </div>
             </div>

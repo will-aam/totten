@@ -104,7 +104,7 @@ function ClientMobileItem({
             {client.name}
           </span>
 
-          <span className="text-xs text-muted-foreground leading-none font-mono">
+          <span className="text-xs text-muted-foreground leading-none">
             {client.cpf}
           </span>
         </div>
@@ -394,7 +394,7 @@ export default function AdminClientsPage() {
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="font-mono text-sm text-muted-foreground">
+                        <TableCell className="text-muted-foreground">
                           <div className="flex flex-col">
                             <span>{client.cpf}</span>
                           </div>

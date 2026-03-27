@@ -132,7 +132,7 @@ export function ClientHistory({ clientId }: { clientId: string }) {
                     </span>
                   </div>
                 </div>
-                <span className="text-xs font-mono font-medium text-muted-foreground bg-muted/30 px-2.5 py-1 rounded-md">
+                <span className="text-xs font-medium text-muted-foreground bg-muted/30 px-2.5 py-1 rounded-md">
                   {formatTime(ci.date_time)}
                 </span>
               </div>
