@@ -17,18 +17,25 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get("limit") || "8", 10);
     const skip = (page - 1) * limit;
 
-    // Data de hoje (início e fim do dia)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    // 🔥 CORREÇÃO DO FUSO HORÁRIO (Forçando o fuso do Brasil UTC-3)
+    const now = new Date();
+    // Pega a data atual EXATAMENTE como é no Brasil (MM/DD/YYYY)
+    const todayStr = now.toLocaleDateString("en-US", {
+      timeZone: "America/Sao_Paulo",
+    });
+
+    // Início do dia no Brasil (00:00:00) convertido para o timestamp real
+    const startOfDay = new Date(`${todayStr} 00:00:00 GMT-0300`);
+
+    // Fim do dia no Brasil (Início do próximo dia)
+    const tomorrow = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
 
     // Busca apenas os check-ins daquela página
     const recentCheckIns = await prisma.checkIn.findMany({
       where: {
         organization_id: admin.organizationId,
         date_time: {
-          gte: today,
+          gte: startOfDay,
           lt: tomorrow,
         },
       },

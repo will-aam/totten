@@ -11,18 +11,25 @@ export async function GET() {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    // Data de hoje (início e fim do dia)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    // 🔥 CORREÇÃO DO FUSO HORÁRIO (Forçando o fuso do Brasil UTC-3)
+    const now = new Date();
+    // Pega a data atual EXATAMENTE como é no Brasil (MM/DD/YYYY)
+    const todayStr = now.toLocaleDateString("en-US", {
+      timeZone: "America/Sao_Paulo",
+    });
+
+    // Início do dia no Brasil (00:00:00) convertido para o timestamp real
+    const startOfDay = new Date(`${todayStr} 00:00:00 GMT-0300`);
+
+    // Fim do dia no Brasil (Início do próximo dia)
+    const tomorrow = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
 
     // 1. Check-ins de hoje
     const todayCheckInsCount = await prisma.checkIn.count({
       where: {
         organization_id: admin.organizationId,
         date_time: {
-          gte: today,
+          gte: startOfDay,
           lt: tomorrow,
         },
       },
@@ -44,8 +51,6 @@ export async function GET() {
     });
 
     // 3. Pacotes finalizando (2 ou menos sessões restantes)
-    // 🔥 OTIMIZAÇÃO: Trazemos para a memória APENAS os 2 números necessários
-    // em vez do objeto inteiro do pacote, mantendo a performance alta.
     const packagesEndingSoon = await prisma.package.findMany({
       where: {
         organization_id: admin.organizationId,
