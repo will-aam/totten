@@ -14,11 +14,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Loader2 } from "lucide-react"; // 🔥 Ícone de loading
+
+export interface NewStockItemData {
+  name: string;
+  quantity: number;
+  unit_cost: number;
+  isAutoDeduct: boolean;
+  createExpense: boolean;
+}
 
 interface NewStockItemModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: any) => void; // Por enquanto 'any', depois tipamos com o Prisma
+  onSave: (data: NewStockItemData) => Promise<void>; // 🔥 Agora é uma Promise para podermos aguardar
 }
 
 export function NewStockItemModal({
@@ -30,25 +39,29 @@ export function NewStockItemModal({
   const [quantity, setQuantity] = useState("");
   const [totalCost, setTotalCost] = useState("");
   const [isAutoDeduct, setIsAutoDeduct] = useState(false);
-  const [createExpense, setCreateExpense] = useState(false);
+  const [createExpense, setCreateExpense] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false); // 🔥 Estado de salvamento
 
   // Calcula o valor unitário dinamicamente para feedback visual
   const parsedQty = parseFloat(quantity) || 0;
   const parsedCost = parseFloat(totalCost) || 0;
   const unitCost = parsedQty > 0 ? parsedCost / parsedQty : 0;
 
-  const handleSave = () => {
-    // Aqui estamos mockando o envio. Depois chamaremos a Server Action.
+  const handleSave = async () => {
+    setIsSubmitting(true);
+
+    // 🔥 Removemos o ID Fake! O Banco de Dados quem cuida disso agora.
     const newItem = {
-      id: Math.random().toString(), // Mock ID
       name,
       quantity: parsedQty,
       unit_cost: unitCost,
       isAutoDeduct,
-      createExpense, // Flag para sabermos se devemos criar despesa no backend
+      createExpense,
     };
 
-    onSave(newItem);
+    await onSave(newItem); // Aguarda o banco salvar
+
+    setIsSubmitting(false);
     resetForm();
     onClose();
   };
@@ -62,7 +75,10 @@ export function NewStockItemModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => !open && !isSubmitting && onClose()}
+    >
       <DialogContent className="sm:max-w-106.25">
         <DialogHeader>
           <DialogTitle>Cadastro</DialogTitle>
@@ -80,6 +96,7 @@ export function NewStockItemModal({
               placeholder="Digite o nome..."
               value={name}
               onChange={(e) => setName(e.target.value)}
+              disabled={isSubmitting}
             />
           </div>
 
@@ -93,6 +110,7 @@ export function NewStockItemModal({
                 placeholder="Ex: 10"
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
+                disabled={isSubmitting}
               />
             </div>
             <div className="space-y-2">
@@ -104,6 +122,7 @@ export function NewStockItemModal({
                 placeholder="Ex: 150.00"
                 value={totalCost}
                 onChange={(e) => setTotalCost(e.target.value)}
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -131,7 +150,11 @@ export function NewStockItemModal({
                 Abater 1 a 1 automaticamente no Check-in.
               </p>
             </div>
-            <Switch checked={isAutoDeduct} onCheckedChange={setIsAutoDeduct} />
+            <Switch
+              checked={isAutoDeduct}
+              onCheckedChange={setIsAutoDeduct}
+              disabled={isSubmitting}
+            />
           </div>
 
           <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
@@ -144,19 +167,29 @@ export function NewStockItemModal({
             <Switch
               checked={createExpense}
               onCheckedChange={setCreateExpense}
+              disabled={isSubmitting}
             />
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
             Cancelar
           </Button>
           <Button
             onClick={handleSave}
-            disabled={!name || parsedQty <= 0 || parsedCost <= 0}
+            disabled={
+              !name || parsedQty <= 0 || parsedCost <= 0 || isSubmitting
+            }
           >
-            Salvar Insumo
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              "Salvar Insumo"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

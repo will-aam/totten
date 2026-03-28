@@ -33,9 +33,13 @@ import {
   Globe,
   Save,
   Loader2,
+  PackageOpen,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { CategorySelect } from "./category-select";
+import { getStockItems } from "@/app/actions/stock";
+import { cn } from "@/lib/utils";
 
 type Duration = {
   id: string;
@@ -43,11 +47,34 @@ type Duration = {
   minutes: number;
 };
 
+type StockItem = {
+  id: string;
+  name: string;
+  quantity: number;
+  unit_cost: number;
+  isAutoDeduct: boolean;
+};
+
+type SelectedStockItem = {
+  stock_item_id: string;
+  name: string;
+  unit_cost: number;
+  quantity_used: number;
+};
+
 export function ServiceForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [loadingDurations, setLoadingDurations] = useState(true);
+
   const [durations, setDurations] = useState<Duration[]>([]);
+  const [availableStockItems, setAvailableStockItems] = useState<StockItem[]>(
+    [],
+  );
+  const [selectedStockItems, setSelectedStockItems] = useState<
+    SelectedStockItem[]
+  >([]);
+
   const [form, setForm] = useState({
     name: "",
     category: "",
@@ -55,7 +82,8 @@ export function ServiceForm() {
     duration: "",
     color: "#D9C6BF",
     price: "",
-    cost: "", // Nosso campo de custo de material
+    cost: "",
+    trackStock: false,
     isOnline: true,
   });
 
@@ -76,8 +104,51 @@ export function ServiceForm() {
       }
     };
 
+    const fetchStock = async () => {
+      const res = await getStockItems();
+      if (res.success && res.data) {
+        setAvailableStockItems(res.data);
+      }
+    };
+
     fetchDurations();
+    fetchStock();
   }, []);
+
+  const handleAddStockItem = (id: string) => {
+    if (selectedStockItems.find((i) => i.stock_item_id === id)) return;
+
+    const item = availableStockItems.find((i) => i.id === id);
+    if (!item) return;
+
+    setSelectedStockItems((prev) => [
+      ...prev,
+      {
+        stock_item_id: item.id,
+        name: item.name,
+        unit_cost: item.unit_cost,
+        quantity_used: 1,
+      },
+    ]);
+  };
+
+  const handleUpdateStockQty = (id: string, qty: string) => {
+    const parsedQty = parseFloat(qty) || 0;
+    setSelectedStockItems((prev) =>
+      prev.map((i) =>
+        i.stock_item_id === id ? { ...i, quantity_used: parsedQty } : i,
+      ),
+    );
+  };
+
+  const handleRemoveStockItem = (id: string) => {
+    setSelectedStockItems((prev) => prev.filter((i) => i.stock_item_id !== id));
+  };
+
+  const calculatedMaterialCost = selectedStockItems.reduce(
+    (acc, item) => acc + item.quantity_used * item.unit_cost,
+    0,
+  );
 
   const validate = () => {
     const errs: Record<string, string> = {};
@@ -88,8 +159,8 @@ export function ServiceForm() {
     if (!form.price || Number(form.price) <= 0) {
       errs.price = "Preço deve ser maior que zero";
     }
-    // Opcional: validar se o custo é maior ou igual a zero (se preenchido)
-    if (form.cost && Number(form.cost) < 0) {
+
+    if (!form.trackStock && form.cost && Number(form.cost) < 0) {
       errs.cost = "O custo não pode ser negativo";
     }
 
@@ -117,8 +188,18 @@ export function ServiceForm() {
           description: form.description || null,
           duration: Number(form.duration),
           price: Number(form.price),
-          // 🔥 ENVIANDO O NOVO CAMPO PARA A API
-          material_cost: form.cost ? Number(form.cost) : null,
+          track_stock: form.trackStock,
+          material_cost: form.trackStock
+            ? null
+            : form.cost
+              ? Number(form.cost)
+              : null,
+          stock_items: form.trackStock
+            ? selectedStockItems.map((i) => ({
+                stock_item_id: i.stock_item_id,
+                quantity_used: i.quantity_used,
+              }))
+            : [],
         }),
       });
 
@@ -262,7 +343,6 @@ export function ServiceForm() {
               )}
             </div>
 
-            {/* 🔥 Cor na Agenda (INATIVO) */}
             <div className="flex flex-col gap-2 opacity-60 pointer-events-none select-none">
               <Label
                 htmlFor="color"
@@ -295,15 +375,15 @@ export function ServiceForm() {
           </CardContent>
         </Card>
 
-        {/* BLOCO 3: Financeiro */}
+        {/* BLOCO 3: Financeiro e Estoque */}
         <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card">
           <CardHeader className="px-0 pt-0 md:pt-6 md:px-6 pb-4">
             <CardTitle className="text-lg flex items-center gap-2 text-foreground">
               <DollarSign className="h-5 w-5 text-primary" />
-              Financeiro
+              Financeiro e Custos
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-0 pb-0 md:pb-6 md:px-6 flex flex-col gap-5">
+          <CardContent className="px-0 pb-0 md:pb-6 md:px-6 flex flex-col gap-6">
             <div className="flex flex-col gap-2">
               <Label htmlFor="price" className="text-foreground font-medium">
                 Preço de Venda (R$) *
@@ -319,7 +399,7 @@ export function ServiceForm() {
                   placeholder="0,00"
                   value={form.price}
                   onChange={(e) => setForm({ ...form, price: e.target.value })}
-                  className="bg-muted/50 border-border/50 h-11 pl-9 font-medium text-lg"
+                  className="bg-muted/50 border-border/50 h-11 pl-9 font-medium text-lg text-primary [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
                 />
               </div>
               {errors.price && (
@@ -329,46 +409,152 @@ export function ServiceForm() {
               )}
             </div>
 
-            {/* 🔥 Custo de Insumo (AGORA ATIVO!) */}
-            <div className="flex flex-col gap-2">
-              <Label
-                htmlFor="cost"
-                className="flex items-center gap-2 text-foreground font-medium"
-              >
-                <TrendingDown className="h-4 w-4 text-destructive" />
-                Custo de Material (R$)
-                {/* Removi o badge "Em breve" */}
-              </Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
-                  R$
-                </span>
-                <Input
-                  id="cost"
-                  type="number"
-                  step="0.01"
-                  placeholder="0,00"
-                  value={form.cost}
-                  onChange={(e) => setForm({ ...form, cost: e.target.value })}
-                  className="bg-muted/50 border-border/50 h-11 pl-9"
-                  // Removi o disabled e a opacidade
+            <div className="h-px w-full bg-border/50" />
+
+            {/* 🔥 MÓDULO HÍBRIDO DE CUSTO */}
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between border border-border p-3 rounded-lg bg-muted/20 hover:bg-muted/30 transition-colors">
+                <div className="flex flex-col gap-1 pr-4">
+                  <Label className="flex items-center gap-2 text-foreground font-medium cursor-pointer">
+                    <PackageOpen
+                      className={cn(
+                        "h-4 w-4",
+                        form.trackStock
+                          ? "text-blue-600"
+                          : "text-muted-foreground",
+                      )}
+                    />
+                    Baixa Inteligente
+                  </Label>
+                  <p className="text-[11px] text-muted-foreground leading-tight">
+                    Calcular custo automático usando itens reais do estoque.
+                  </p>
+                </div>
+                <Switch
+                  checked={form.trackStock}
+                  onCheckedChange={(checked) =>
+                    setForm({ ...form, trackStock: checked })
+                  }
                 />
               </div>
-              <p className="text-[11px] text-muted-foreground">
-                Gasto médio com cremes, óleos, descartáveis, etc. Será
-                descontado do seu lucro.
-              </p>
-              {errors.cost && (
-                <p className="text-xs font-medium text-destructive ml-1">
-                  {errors.cost}
-                </p>
+
+              {form.trackStock ? (
+                <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-top-2">
+                  <Select onValueChange={handleAddStockItem} value="">
+                    <SelectTrigger className="bg-muted/50 border-border/50 h-11 text-sm">
+                      <SelectValue placeholder="Buscar insumo do estoque..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableStockItems.map((item) => (
+                        <SelectItem
+                          key={item.id}
+                          value={item.id}
+                          disabled={selectedStockItems.some(
+                            (i) => i.stock_item_id === item.id,
+                          )}
+                        >
+                          {item.name} - R$ {item.unit_cost.toFixed(2)} / un
+                        </SelectItem>
+                      ))}
+                      {availableStockItems.length === 0 && (
+                        <div className="p-2 text-xs text-muted-foreground text-center">
+                          Nenhum insumo cadastrado.
+                        </div>
+                      )}
+                    </SelectContent>
+                  </Select>
+
+                  {selectedStockItems.length > 0 && (
+                    <div className="flex flex-col gap-2 mt-2 bg-muted/20 p-3 rounded-lg border border-border/50">
+                      {selectedStockItems.map((item) => (
+                        <div
+                          key={item.stock_item_id}
+                          className="flex items-center gap-2 bg-card p-2 rounded-md border border-border shadow-sm"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-foreground truncate">
+                              {item.name}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground">
+                              R$ {item.unit_cost.toFixed(2)} un.
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Input
+                              type="number"
+                              step="0.1"
+                              className="h-8 w-16 text-center text-xs p-1 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                              value={item.quantity_used}
+                              onChange={(e) =>
+                                handleUpdateStockQty(
+                                  item.stock_item_id,
+                                  e.target.value,
+                                )
+                              }
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              type="button"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                              onClick={() =>
+                                handleRemoveStockItem(item.stock_item_id)
+                              }
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-border border-dashed">
+                        <span className="text-xs font-medium text-muted-foreground">
+                          Custo Total Calculado:
+                        </span>
+                        <span className="text-sm font-bold text-blue-600">
+                          {new Intl.NumberFormat("pt-BR", {
+                            style: "currency",
+                            currency: "BRL",
+                          }).format(calculatedMaterialCost)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2 animate-in fade-in">
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                      R$
+                    </span>
+                    <Input
+                      id="cost"
+                      type="number"
+                      step="0.01"
+                      placeholder="0,00"
+                      value={form.cost}
+                      onChange={(e) =>
+                        setForm({ ...form, cost: e.target.value })
+                      }
+                      className="bg-muted/50 border-border/50 h-11 pl-9 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                    />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-tight">
+                    Digite manualmente o gasto médio (chute) para este serviço.
+                  </p>
+                  {errors.cost && (
+                    <p className="text-xs font-medium text-destructive ml-1">
+                      {errors.cost}
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* BLOCO 4: Configurações Extras (Switch INATIVO) */}
+      {/* BLOCO 4: Configurações Extras */}
       <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card opacity-60 pointer-events-none select-none">
         <CardContent className="px-0 pt-0 md:p-6 flex items-center justify-between">
           <div className="flex flex-col gap-1 pr-4">

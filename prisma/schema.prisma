@@ -8,27 +8,28 @@ datasource db {
 }
 
 model Organization {
-  id                String            @id @default(cuid())
-  name              String
-  slug              String            @unique
-  created_at        DateTime          @default(now())
-  updated_at        DateTime          @updatedAt
-  appointments      Appointment[]
-  categories        Category[]
-  check_ins         CheckIn[]
-  clients           Client[]
-  payment_methods   OrganizationPaymentMethod[]
-  transactions      Transaction[]
-  link_bio          LinkBio?
-  message_templates MessageTemplate[]
-  package_templates PackageTemplate[]
-  packages          Package[]
-  service_durations ServiceDuration[]
-  services          Service[]
-  settings          Settings?
-  admins            Admin[]           @relation("AdminToOrganization")
+  id                  String                      @id @default(cuid())
+  name                String
+  slug                String                      @unique
+  created_at          DateTime                    @default(now())
+  updated_at          DateTime                    @updatedAt
+  appointments        Appointment[]
+  categories          Category[]
+  check_ins           CheckIn[]
+  clients             Client[]
+  payment_methods     OrganizationPaymentMethod[]
+  transactions        Transaction[]
+  link_bio            LinkBio?
+  message_templates   MessageTemplate[]
+  package_templates   PackageTemplate[]
+  packages            Package[]
+  service_durations   ServiceDuration[]
+  services            Service[]
+  settings            Settings?
+  admins              Admin[]                     @relation("AdminToOrganization")
   anamnesis_templates AnamnesisTemplate[]
   anamnesis_responses AnamnesisResponse[]
+  stock_items         StockItem[]                 // 🔥 Relacionamento com Estoque adicionado
 
   @@map("organizations")
 }
@@ -92,25 +93,25 @@ model LinkBio {
 }
 
 model Client {
-  id              String        @id @default(cuid())
-  name            String
-  cpf             String
-  phone_whatsapp  String
-  email           String?
-  birth_date      DateTime?
-  zip_code        String?
-  city            String?
-  street          String?
-  number          String?
-  organization_id String
-  active          Boolean       @default(true) // 🔥 Adicione APENAS esta linha
-  created_at      DateTime      @default(now())
-  updated_at      DateTime      @updatedAt
-  appointments    Appointment[]
-  check_ins       CheckIn[]
-  organization    Organization  @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  packages        Package[]
-  transactions      Transaction[]
+  id                  String              @id @default(cuid())
+  name                String
+  cpf                 String
+  phone_whatsapp      String
+  email               String?
+  birth_date          DateTime?
+  zip_code            String?
+  city                String?
+  street              String?
+  number              String?
+  organization_id     String
+  active              Boolean             @default(true)
+  created_at          DateTime            @default(now())
+  updated_at          DateTime            @updatedAt
+  appointments        Appointment[]
+  check_ins           CheckIn[]
+  organization        Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  packages            Package[]
+  transactions        Transaction[]
   anamnesis_responses AnamnesisResponse[]
 
   @@unique([cpf, organization_id])
@@ -129,20 +130,22 @@ model Category {
 }
 
 model Service {
-  id                String            @id @default(cuid())
+  id                String             @id @default(cuid())
   name              String
   description       String?
   duration          Int
-  price             Decimal           @db.Decimal(10, 2)
-  material_cost     Decimal?          @db.Decimal(10, 2) // 🔥 NOVA COLUNA ADICIONADA AQUI
+  price             Decimal            @db.Decimal(10, 2)
+  material_cost     Decimal?           @db.Decimal(10, 2)
+  track_stock       Boolean            @default(false)    // 🔥 NOVA COLUNA: Ativa a Baixa Inteligente
   category_id       String
   organization_id   String
-  active            Boolean           @default(true)
+  active            Boolean            @default(true)
   appointments      Appointment[]
   package_templates PackageTemplate[]
   packages          Package[]
-  category          Category          @relation(fields: [category_id], references: [id])
-  organization      Organization      @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  stock_items       ServiceStockItem[]                    // 🔥 Relação com Insumos
+  category          Category           @relation(fields: [category_id], references: [id])
+  organization      Organization       @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@map("services")
 }
@@ -175,7 +178,7 @@ model Package {
   client_id       String
   service_id      String
   organization_id String
-  transactions      Transaction[]
+  transactions    Transaction[]
   created_at      DateTime      @default(now())
   updated_at      DateTime      @updatedAt
   appointments    Appointment[]
@@ -206,12 +209,12 @@ model Appointment {
   has_charge      Boolean           @default(false)
   session_number  Int?
   observations    String?
-  recurrence_id  String?
+  recurrence_id   String?
   client_id       String
   service_id      String
   package_id      String?
   organization_id String
-  transaction       Transaction?
+  transaction     Transaction?
   created_at      DateTime          @default(now())
   updated_at      DateTime          @updatedAt
   client          Client            @relation(fields: [client_id], references: [id], onDelete: Cascade)
@@ -220,8 +223,7 @@ model Appointment {
   service         Service           @relation(fields: [service_id], references: [id])
   check_in        CheckIn?
 
-
-@@index([organization_id, date_time])
+  @@index([organization_id, date_time])
   @@index([client_id, date_time])
   @@index([recurrence_id])
   @@map("appointments")
@@ -283,11 +285,10 @@ enum TransactionStatus {
   ATRASADO
 }
 
-// Tabela de Meios de Pagamento da Organização
 model OrganizationPaymentMethod {
   id              String        @id @default(cuid())
   name            String
-  type            PaymentMethod // Usa o seu Enum existente!
+  type            PaymentMethod
   isActive        Boolean       @default(true)
   feePercentage   Decimal       @default(0) @db.Decimal(10, 2)
   feeFixed        Decimal       @default(0) @db.Decimal(10, 2)
@@ -303,70 +304,101 @@ model OrganizationPaymentMethod {
   @@map("organization_payment_methods")
 }
 
-// Tabela de Transações (Receitas e Despesas)
 model Transaction {
-  id                String            @id @default(cuid())
+  id                String                     @id @default(cuid())
   type              TransactionType
   description       String
-  amount            Decimal           @db.Decimal(10, 2)
+  amount            Decimal                    @db.Decimal(10, 2)
   date              DateTime
-  status            TransactionStatus @default(PAGO)
+  status            TransactionStatus          @default(PAGO)
   
-  // 🔥 NOVOS CAMPOS PARA RECORRÊNCIA E PARCELAMENTO (Opcionais)
-  recurrence_id     String?           // ID único que agrupa todas as parcelas da mesma conta
-  installment       String?           // Ex: "1/12", "2/12" ou "Fixo" para contínuas
+  recurrence_id     String?
+  installment       String?
 
-  // Relações opcionais (Para sabermos de onde veio o dinheiro)
   client_id         String?
   payment_method_id String?
-  appointment_id    String?           @unique // 1 agendamento = 1 transação principal
+  appointment_id    String?                    @unique
   package_id        String?
+  stock_item_id     String?                    // 🔥 Nova Relação: Caso a despesa tenha vindo de uma compra de estoque
 
   organization_id   String
 
-  created_at        DateTime          @default(now())
-  updated_at        DateTime          @updatedAt
+  created_at        DateTime                   @default(now())
+  updated_at        DateTime                   @updatedAt
 
   client            Client?                    @relation(fields: [client_id], references: [id], onDelete: SetNull)
   payment_method    OrganizationPaymentMethod? @relation(fields: [payment_method_id], references: [id], onDelete: SetNull)
   appointment       Appointment?               @relation(fields: [appointment_id], references: [id], onDelete: SetNull)
   package           Package?                   @relation(fields: [package_id], references: [id], onDelete: SetNull)
+  stock_item        StockItem?                 @relation(fields: [stock_item_id], references: [id], onDelete: SetNull)
   organization      Organization               @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@index([organization_id, date])
-  @@index([recurrence_id]) // 🔥 Novo índice: deixa a busca por parcelas muito mais rápida
+  @@index([recurrence_id])
   @@map("transactions")
 }
 
 model AnamnesisTemplate {
-  id              String       @id @default(cuid())
-  name            String       // Ex: "Ficha Nail Design", "Ficha Cílios"
-  fields          Json         // Estrutura dinâmica: [{label: "Alergia?", type: "boolean"}, ...]
+  id              String              @id @default(cuid())
+  name            String
+  fields          Json
   organization_id String
-  active          Boolean      @default(true)
-  created_at      DateTime     @default(now())
-  updated_at      DateTime     @updatedAt
+  active          Boolean             @default(true)
+  created_at      DateTime            @default(now())
+  updated_at      DateTime            @updatedAt
 
-  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  organization    Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   responses       AnamnesisResponse[]
 
   @@map("anamnesis_templates")
 }
 
 model AnamnesisResponse {
-  id              String       @id @default(cuid())
+  id              String            @id @default(cuid())
   template_id     String
   client_id       String
   organization_id String
-  content         Json         // Respostas enviadas pela cliente
-  signature       String?      @db.Text // Assinatura em Base64 (salvamos como texto longo)
-  signed_at       DateTime?    // Data exata da assinatura (bloqueia edição)
-  created_at      DateTime     @default(now())
-  updated_at      DateTime     @updatedAt
+  content         Json
+  signature       String?           @db.Text
+  signed_at       DateTime?
+  created_at      DateTime          @default(now())
+  updated_at      DateTime          @updatedAt
 
   template        AnamnesisTemplate @relation(fields: [template_id], references: [id])
   client          Client            @relation(fields: [client_id], references: [id], onDelete: Cascade)
   organization    Organization      @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@map("anamnesis_responses")
+}
+
+// 🔥 --- NOVAS TABELAS DE ESTOQUE --- 🔥
+
+model StockItem {
+  id              String             @id @default(cuid())
+  name            String
+  quantity        Decimal            @db.Decimal(10, 3) // Permite fracionamento (ex: 0.500)
+  unit_cost       Decimal            @db.Decimal(10, 2)
+  isAutoDeduct    Boolean            @default(false)
+  organization_id String
+  created_at      DateTime           @default(now())
+  updated_at      DateTime           @updatedAt
+
+  organization    Organization       @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  services        ServiceStockItem[]
+  transactions    Transaction[]      // Vincula transações de compra a este insumo
+
+  @@map("stock_items")
+}
+
+model ServiceStockItem {
+  id              String    @id @default(cuid())
+  service_id      String
+  stock_item_id   String
+  quantity_used   Decimal   @db.Decimal(10, 3) // Quanto do insumo é gasto em 1 serviço
+
+  service         Service   @relation(fields: [service_id], references: [id], onDelete: Cascade)
+  stock_item      StockItem @relation(fields: [stock_item_id], references: [id], onDelete: Restrict)
+
+  @@unique([service_id, stock_item_id]) // Evita Insumo duplicado no mesmo serviço
+  @@map("service_stock_items")
 }

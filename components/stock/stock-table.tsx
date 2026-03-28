@@ -34,7 +34,6 @@ interface StockTableProps {
   onUpdateItem: (id: string, updates: Partial<StockItem>) => void;
 }
 
-// Classe utilitária para esconder as setas (spinners) de inputs numéricos
 const hideArrowsClass =
   "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
 
@@ -63,7 +62,6 @@ export function StockTable({ data, onUpdateItem }: StockTableProps) {
             className="flex items-center font-medium px-2 min-h-10"
             onDoubleClick={() => setEditingId(`${item.id}-name`)}
           >
-            {/* Ícone removido conforme solicitado - mantendo apenas o texto */}
             {isEditing ? (
               <Input
                 autoFocus
@@ -103,7 +101,7 @@ export function StockTable({ data, onUpdateItem }: StockTableProps) {
                 onUpdateItem(item.id, { isAutoDeduct: val === "auto" })
               }
             >
-              <SelectTrigger className="h-8 w-32.5 border-none bg-transparent hover:bg-muted focus:ring-0">
+              <SelectTrigger className="h-8 w-32 border-none bg-transparent hover:bg-muted focus:ring-0">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -135,14 +133,18 @@ export function StockTable({ data, onUpdateItem }: StockTableProps) {
               type="number"
               className={cn(
                 "h-8 w-24 border-transparent bg-transparent hover:border-border focus:bg-background transition-all",
-                hideArrowsClass, // 🔥 Remove as setinhas de HTML
+                hideArrowsClass,
               )}
               defaultValue={item.unit_cost}
-              onChange={(e) =>
+              // 🔥 CORREÇÃO SÊNIOR: onBlur em vez de onChange
+              onBlur={(e) =>
                 onUpdateItem(item.id, {
                   unit_cost: parseFloat(e.target.value) || 0,
                 })
               }
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.currentTarget.blur();
+              }}
             />
           </div>
         );
@@ -169,14 +171,18 @@ export function StockTable({ data, onUpdateItem }: StockTableProps) {
               className={cn(
                 "h-8 w-20 text-center border-transparent bg-transparent hover:border-border focus:bg-background transition-all",
                 item.isAutoDeduct && "opacity-50 pointer-events-none",
-                hideArrowsClass, // 🔥 Remove as setinhas de HTML
+                hideArrowsClass,
               )}
               defaultValue={item.quantity}
-              onChange={(e) =>
+              // 🔥 CORREÇÃO SÊNIOR: onBlur em vez de onChange
+              onBlur={(e) =>
                 onUpdateItem(item.id, {
                   quantity: parseFloat(e.target.value) || 0,
                 })
               }
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.currentTarget.blur();
+              }}
             />
           </div>
         );

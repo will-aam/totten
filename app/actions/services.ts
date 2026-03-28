@@ -11,7 +11,6 @@ function sanitizeService(service: any) {
   return {
     ...service,
     price: Number(service.price || 0),
-    // Garantimos que o custo de material também vire Number puro ou null
     material_cost: service.material_cost ? Number(service.material_cost) : null,
   };
 }
@@ -24,7 +23,9 @@ export async function createService(data: {
   price: number;
   duration: number;
   category_id: string;
-  material_cost?: number | null; // 🔥 Novo campo adicionado
+  material_cost?: number | null;
+  track_stock?: boolean; // 🔥 Nova Flag
+  stock_items?: { stock_item_id: string; quantity_used: number }[]; // 🔥 Lista de Insumos
 }) {
   try {
     const admin = await requireAuth();
@@ -36,9 +37,21 @@ export async function createService(data: {
         price: data.price,
         duration: data.duration,
         category_id: data.category_id,
-        material_cost: data.material_cost, // 🔥 Salva no banco
+        material_cost: data.material_cost,
+        track_stock: data.track_stock || false,
         organization_id: admin.organizationId,
         active: true,
+        // 🔥 Salva os insumos na criação se a baixa inteligente estiver ativa
+        ...(data.track_stock && data.stock_items && data.stock_items.length > 0
+          ? {
+              stock_items: {
+                create: data.stock_items.map((item) => ({
+                  stock_item_id: item.stock_item_id,
+                  quantity_used: item.quantity_used,
+                })),
+              },
+            }
+          : {}),
       },
     });
 
@@ -58,26 +71,58 @@ export async function updateService(
     price?: number;
     duration?: number;
     category_id?: string;
-    material_cost?: number | null; // 🔥 Novo campo adicionado
+    material_cost?: number | null;
+    track_stock?: boolean; // 🔥 Nova Flag
+    stock_items?: { stock_item_id: string; quantity_used: number }[]; // 🔥 Lista de Insumos
   },
 ) {
   try {
     const admin = await requireAuth();
 
-    const updated = await prisma.service.update({
+    // 1. Verifica se o serviço existe e pertence à organização (Segurança)
+    const existingService = await prisma.service.findFirst({
       where: { id, organization_id: admin.organizationId },
-      data: {
-        name: data.name,
-        description: data.description,
-        price: data.price,
-        duration: data.duration,
-        category_id: data.category_id,
-        material_cost: data.material_cost, // 🔥 Atualiza no banco
-      },
+    });
+
+    if (!existingService) {
+      return { success: false, error: "Serviço não encontrado." };
+    }
+
+    // 🔥 2. Transação: Limpa as conexões velhas e cria as novas
+    const updated = await prisma.$transaction(async (tx) => {
+      // Deleta as vinculações antigas de estoque deste serviço
+      await tx.serviceStockItem.deleteMany({
+        where: { service_id: id },
+      });
+
+      // Atualiza o serviço principal e vincula os novos insumos
+      return await tx.service.update({
+        where: { id },
+        data: {
+          name: data.name,
+          description: data.description,
+          price: data.price,
+          duration: data.duration,
+          category_id: data.category_id,
+          material_cost: data.material_cost,
+          track_stock: data.track_stock,
+          ...(data.track_stock &&
+          data.stock_items &&
+          data.stock_items.length > 0
+            ? {
+                stock_items: {
+                  create: data.stock_items.map((item) => ({
+                    stock_item_id: item.stock_item_id,
+                    quantity_used: item.quantity_used,
+                  })),
+                },
+              }
+            : {}),
+        },
+      });
     });
 
     revalidatePath("/admin/services");
-    // Retornamos o objeto limpo para evitar erros de serialização no Client Component
     return { success: true, service: sanitizeService(updated) };
   } catch (error) {
     console.error("Erro ao atualizar serviço:", error);

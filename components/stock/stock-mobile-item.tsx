@@ -22,20 +22,19 @@ const hideArrowsClass =
 
 export function StockMobileItem({ item, onUpdate }: StockMobileItemProps) {
   const [isEditingName, setIsEditingName] = useState(false);
-
   const total = item.unit_cost * item.quantity;
 
   return (
-    <div className="flex flex-col p-4 bg-card border border-border rounded-xl shadow-sm mb-3 transition-all active:scale-[0.99]">
-      {/* Cabeçalho: Nome com Double Click */}
+    <div className="flex flex-col p-5 bg-card border border-border rounded-2xl shadow-sm mb-4">
+      {/* Cabeçalho Limpo */}
       <div
-        className="mb-4 min-h-6"
+        className="mb-5 min-h-7"
         onDoubleClick={() => setIsEditingName(true)}
       >
         {isEditingName ? (
           <Input
             autoFocus
-            className="h-9"
+            className="h-10 text-base"
             defaultValue={item.name}
             onBlur={(e) => {
               onUpdate(item.id, { name: e.target.value });
@@ -44,20 +43,19 @@ export function StockMobileItem({ item, onUpdate }: StockMobileItemProps) {
             onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
           />
         ) : (
-          <h3 className="text-base font-bold text-foreground leading-tight">
+          <h3 className="text-lg font-bold text-foreground tracking-tight">
             {item.name}
           </h3>
         )}
-        <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider">
-          Dê dois cliques no nome para editar
+        <p className="text-[9px] text-muted-foreground/60 mt-1 uppercase font-medium">
+          Toque duas vezes para renomear
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        {/* Lado Esquerdo: Configurações */}
-        <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-6">
+        <div className="space-y-4">
           <div>
-            <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">
+            <label className="text-[10px] font-bold text-muted-foreground/80 uppercase mb-1.5 block tracking-widest">
               Tipo de Baixa
             </label>
             <Select
@@ -66,7 +64,7 @@ export function StockMobileItem({ item, onUpdate }: StockMobileItemProps) {
                 onUpdate(item.id, { isAutoDeduct: val === "auto" })
               }
             >
-              <SelectTrigger className="h-9 w-full bg-muted/50 border-none focus:ring-1">
+              <SelectTrigger className="h-10 w-full bg-muted/40 border-none focus:ring-1 text-sm font-medium">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -77,57 +75,60 @@ export function StockMobileItem({ item, onUpdate }: StockMobileItemProps) {
           </div>
 
           <div>
-            <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">
+            <label className="text-[10px] font-bold text-muted-foreground/80 uppercase mb-1.5 block tracking-widest">
               Custo Unitário
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
                 R$
               </span>
               <Input
                 type="number"
                 className={cn(
-                  "h-9 pl-9 bg-muted/50 border-none",
+                  "h-10 pl-9 bg-muted/40 border-none text-sm font-semibold",
                   hideArrowsClass,
                 )}
                 defaultValue={item.unit_cost}
-                onChange={(e) =>
+                // 🔥 CORREÇÃO SÊNIOR: onBlur em vez de onChange
+                onBlur={(e) =>
                   onUpdate(item.id, {
                     unit_cost: parseFloat(e.target.value) || 0,
                   })
                 }
+                onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
               />
             </div>
           </div>
         </div>
 
-        {/* Lado Direito: Quantidade e Total */}
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div>
-            <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">
-              Qtd. em Estoque
+            <label className="text-[10px] font-bold text-muted-foreground/80 uppercase mb-1.5 block tracking-widest">
+              Qtd. Atual
             </label>
             <Input
               type="number"
               step="0.1"
               disabled={item.isAutoDeduct}
               className={cn(
-                "h-9 text-center font-bold bg-muted/50 border-none",
-                item.isAutoDeduct && "opacity-40",
+                "h-10 text-center font-bold bg-muted/40 border-none text-base",
+                item.isAutoDeduct && "opacity-30 grayscale",
                 hideArrowsClass,
               )}
               defaultValue={item.quantity}
-              onChange={(e) =>
+              // 🔥 CORREÇÃO SÊNIOR: onBlur em vez de onChange
+              onBlur={(e) =>
                 onUpdate(item.id, { quantity: parseFloat(e.target.value) || 0 })
               }
+              onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
             />
           </div>
 
-          <div className="flex flex-col justify-end h-11 text-right">
-            <label className="text-[10px] font-semibold text-muted-foreground uppercase">
-              Valor Total
+          <div className="flex flex-col justify-end h-12 text-right">
+            <label className="text-[10px] font-bold text-muted-foreground/80 uppercase tracking-widest">
+              Subtotal
             </label>
-            <span className="text-lg font-black text-primary">
+            <span className="text-xl font-black text-primary">
               {new Intl.NumberFormat("pt-BR", {
                 style: "currency",
                 currency: "BRL",

@@ -1,4 +1,3 @@
-// app/admin/services/page.tsx
 "use client";
 
 import { Suspense, useState } from "react";
@@ -22,16 +21,27 @@ import {
   Layers,
   CalendarDays,
   TrendingDown,
+  PackageOpen, // 🔥 Importado ícone de pacote aberto
 } from "lucide-react";
 
-// Importação dos Modais
 import { ServiceEditModal } from "@/components/services/service-edit-modal";
 import { CategoryEditModal } from "@/components/services/category-edit-modal";
 import { PackageEditModal } from "@/components/services/package-edit-modal";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-// --- TIPOS ---
+// --- TIPOS ATUALIZADOS ---
+type ServiceStockItem = {
+  id: string;
+  stock_item_id: string;
+  quantity_used: number;
+  stock_item: {
+    id: string;
+    name: string;
+    unit_cost: number;
+  };
+};
+
 type Service = {
   id: string;
   name: string;
@@ -39,9 +49,11 @@ type Service = {
   duration: number;
   price: number;
   material_cost: number | null;
+  track_stock: boolean; // 🔥 Nova flag
   active: boolean;
   category_id: string;
   category: { id: string; name: string };
+  stock_items?: ServiceStockItem[]; // 🔥 Insumos vinculados
 };
 
 type PackageTemplate = {
@@ -216,12 +228,23 @@ function ServicesTabs() {
                       </span>
                     </div>
 
-                    {service.material_cost &&
-                    Number(service.material_cost) > 0 ? (
+                    {/* 🔥 MÁGICA HÍBRIDA DO ESTOQUE AQUI */}
+                    {service.track_stock ? (
+                      <div className="flex items-center justify-between bg-blue-500/10 rounded-lg p-2 -mx-2 -mb-2 mt-1 border border-blue-500/20">
+                        <span className="text-[11px] font-semibold text-blue-600 flex items-center gap-1.5">
+                          <PackageOpen className="h-3.5 w-3.5" />
+                          Baixa Inteligente
+                        </span>
+                        <span className="text-[11px] font-bold text-blue-700">
+                          {service.stock_items?.length || 0} Insumos
+                        </span>
+                      </div>
+                    ) : service.material_cost &&
+                      Number(service.material_cost) > 0 ? (
                       <div className="flex items-center justify-between bg-destructive/5 rounded-lg p-2 -mx-2 -mb-2 mt-1 border border-destructive/10">
                         <span className="text-[11px] font-medium text-destructive/80 flex items-center gap-1.5">
                           <TrendingDown className="h-3.5 w-3.5" />
-                          Custo de Insumo
+                          Custo Fixo (Chute)
                         </span>
                         <span className="text-[11px] font-bold text-destructive/90">
                           {formatCurrency(Number(service.material_cost))}
@@ -337,7 +360,6 @@ function ServicesTabs() {
                 Agrupe seus serviços para facilitar a busca.
               </p>
             </div>
-            {/* O botão "Nova Categoria" só vai funcionar se o Modal der suporte, senão vc implementa o link depois */}
           </div>
 
           {loadingCategories ? (
@@ -435,7 +457,6 @@ export default function ServicesCatalogPage() {
   return (
     <>
       <AdminHeader title="Catálogo e Configurações" />
-      {/* 🔥 MÁXIMA LARGURA FLUIDA (max-w-400) APLICADA AQUI */}
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-32 md:pb-6 relative">
         <Suspense
           fallback={
