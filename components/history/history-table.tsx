@@ -154,7 +154,7 @@ export function HistoryTable({
         <span className="text-muted-foreground font-semibold px-2">CPF</span>
       ),
       cell: ({ row }) => (
-        <span className="font-mono text-sm text-muted-foreground px-2">
+        <span className="font-semibold text-sm text-muted-foreground px-2">
           {row.getValue("client_cpf")}
         </span>
       ),

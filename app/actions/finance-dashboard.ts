@@ -66,19 +66,9 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
       59,
       999,
     );
-    const yesterdayStart = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate() - 1,
-      0,
-      0,
-      0,
-    );
 
     // ============================================================================
     // 🔥 O SEGREDO DO ERP: Ler apenas a Tabela Transaction!
-    // Como nosso Check-in agora gera as Transactions reais, não precisamos mais
-    // fazer cálculos "fantasmas" puxando dados de Agendamentos. O Caixa é Rei.
     // ============================================================================
     const monthlyTxRaw = await prisma.transaction.findMany({
       where: {
@@ -95,13 +85,12 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
     });
 
     // Para saber o que está PENDENTE, ainda precisamos olhar a Agenda
-    // (Pois pendentes ainda não geraram Transaction)
     const pendingApptsRaw = await prisma.appointment.findMany({
       where: {
         organization_id: organizationId,
         status: "REALIZADO",
         payment_method: null,
-        package_id: null, // Pacotes não geram pendência de pagamento
+        package_id: null,
         date_time: { gte: monthStart, lte: monthEnd },
       },
       select: {
@@ -128,7 +117,6 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
         if (isToday) receivedToday += amount;
         if (isThisWeek) receivedWeek += amount;
 
-        // Tenta pegar o meio de pagamento da transação
         if (t.payment_method?.type) {
           paymentCounts[t.payment_method.type] =
             (paymentCounts[t.payment_method.type] || 0) + 1;
@@ -136,7 +124,6 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
       } else if (t.type === "DESPESA" && t.status === "PAGO") {
         expensesMonth += amount;
       } else if (t.type === "RECEITA" && t.status === "PENDENTE") {
-        // 🔥 A CORREÇÃO ESTÁ AQUI: Agora ele soma as parcelas do pacote no KPI de "Pendentes"!
         pendingMonth += amount;
         pendingItemsCount++;
       }
@@ -159,13 +146,14 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
     }
 
     // ============================================================================
-    // 🔥 HISTÓRICO RECENTE (Apenas Transações Reais de Ontem e Hoje)
+    // 🔥 HISTÓRICO RECENTE (As 10 Últimas Movimentações do Mês)
     // ============================================================================
     const recentTx = await prisma.transaction.findMany({
       where: {
         organization_id: organizationId,
-        date: { gte: yesterdayStart, lte: todayEnd },
+        date: { gte: monthStart, lte: monthEnd }, // Dentro do mês atual
       },
+      take: 10, // 🔥 AQUI: Limita exatamente às 10 últimas
       select: {
         id: true,
         type: true,
@@ -178,7 +166,7 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
         appointment: {
           select: {
             client: { select: { name: true } },
-            payment_method: true, // Puxa o método caso seja uma receita de sessão
+            payment_method: true,
           },
         },
       },
@@ -192,9 +180,7 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
       amount: Number(t.amount),
       date: t.date.toISOString(),
       status: t.status,
-      // Pega o nome do cliente direto da transação ou do agendamento atrelado
       clientName: t.client?.name || t.appointment?.client.name || undefined,
-      // Pega o método de pagamento direto da transação ou do agendamento atrelado
       paymentMethod:
         t.payment_method?.type || t.appointment?.payment_method || undefined,
     }));
@@ -212,7 +198,7 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
         pendingCount: pendingItemsCount,
         topPaymentMethod,
       },
-      recentTransactions: allHistory,
+      recentTransactions: allHistory, // Retorna as 10 últimas perfeitamente
     };
   } catch (error) {
     console.error("Dashboard Error:", error);

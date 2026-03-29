@@ -1,7 +1,8 @@
 // app/admin/finance/dashboard/page.tsx
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
+import useSWR from "swr"; // 🔥 1. Importamos o SWR
 import { AdminHeader } from "@/components/admin-header";
 import { FinanceHeader } from "@/components/finance/finance-header";
 import { FinanceSecondaryIndicators } from "@/components/finance/finance-secondary-indicators";
@@ -11,53 +12,45 @@ import { FinanceSpeedDial } from "@/components/finance/finance-speed-dial";
 import { ArrowUp, Wallet, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getFinanceDashboardData } from "@/app/actions/finance-dashboard";
-import {
-  FinanceSummary,
-  SecondaryIndicators,
-  Transaction,
-} from "@/types/finance";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 
+// 🔥 2. Criamos o Fetcher que o SWR vai usar para conversar com sua Server Action
+const fetchDashboard = async ([_, month, year]: [string, number, number]) => {
+  return await getFinanceDashboardData(month, year);
+};
+
 export default function FinanceDashboardPage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
   // Filtros de Data
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
-  const [summaryData, setSummaryData] = useState<FinanceSummary | null>(null);
-  const [secondaryData, setSecondaryData] =
-    useState<SecondaryIndicators | null>(null);
-  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>(
-    [],
+  // =======================================================================
+  // 🔥 3. A MÁGICA DO CACHE: Substituímos o useEffect e os useStates por SWR!
+  // =======================================================================
+  const { data, isLoading, mutate } = useSWR(
+    ["finance-dashboard", selectedMonth, selectedYear], // A chave do cache (Muda se o mês mudar)
+    fetchDashboard,
+    {
+      keepPreviousData: true, // Evita a tela piscar/mostrar loading ao trocar de mês
+      dedupingInterval: 10000, // Se o componente renderizar 50x em 10 segundos, ele só vai no banco 1 vez!
+      revalidateOnFocus: true, // Se ela for no WhatsApp e voltar pro sistema, ele atualiza sozinho
+    },
   );
 
-  const loadDashboard = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await getFinanceDashboardData(selectedMonth, selectedYear);
-      if (data) {
-        setSummaryData(data.summary);
-        setSecondaryData(data.secondary);
-        setRecentTransactions(data.recentTransactions);
-      }
-    } catch (error) {
-      console.error("Erro ao carregar dashboard:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedMonth, selectedYear]);
+  // Extrai os dados do cache (ou deixa undefined se ainda não carregou)
+  const summaryData = data?.summary;
+  const secondaryData = data?.secondary;
+  const recentTransactions = data?.recentTransactions || [];
 
-  // Recarrega sempre que o mês ou o ano mudarem
+  // Controle de Scroll
   useEffect(() => {
-    loadDashboard();
-
     const handleScroll = () => setShowScrollTop(window.scrollY > 200);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [loadDashboard]);
+  }, []);
 
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
@@ -65,30 +58,26 @@ export default function FinanceDashboardPage() {
     <>
       <AdminHeader title="Financeiro" />
 
-      {/* PADRÃO DE LARGURA: max-w-400 e fade-in para entrada suave */}
-      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-12 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
+      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-[1400px] mx-auto w-full pb-24 md:pb-12 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
         <FinanceHeader
-          onSuccess={loadDashboard}
+          onSuccess={() => mutate()} // 🔥 Quando criar despesa/receita, avisa o SWR para atualizar o cache!
           selectedMonth={selectedMonth}
           selectedYear={selectedYear}
           onMonthChange={setSelectedMonth}
           onYearChange={setSelectedYear}
         />
 
-        {isLoading ? (
-          // 🔥 ESQUELETO OTIMIZADO: Layout idêntico aos cards originais
+        {/* Só mostra loading SE não tiver nada no cache ainda */}
+        {isLoading && !data ? (
           <div className="flex flex-col gap-6 animate-pulse">
-            {/* Esqueleto dos Summary Cards (Receita, Despesa, Saldo) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Skeleton className="h-32 w-full rounded-3xl bg-muted/50 border border-border/50" />
               <Skeleton className="h-32 w-full rounded-3xl bg-muted/50 border border-border/50 hidden md:block" />
               <Skeleton className="h-32 w-full rounded-3xl bg-muted/50 border border-border/50 hidden md:block" />
             </div>
 
-            {/* Esqueleto do Atalho */}
             <Skeleton className="h-24 w-full rounded-3xl bg-muted/50 border border-border/50 hidden md:block" />
 
-            {/* Esqueleto dos Indicadores Secundários */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Skeleton className="h-24 w-full rounded-3xl bg-muted/50 border border-border/50" />
               <Skeleton className="h-24 w-full rounded-3xl bg-muted/50 border border-border/50" />
@@ -96,7 +85,6 @@ export default function FinanceDashboardPage() {
               <Skeleton className="h-24 w-full rounded-3xl bg-muted/50 border border-border/50" />
             </div>
 
-            {/* Esqueleto da Lista */}
             <div className="flex flex-col gap-3 mt-4">
               <Skeleton className="h-20 w-full rounded-3xl bg-muted/50 border border-border/50" />
               <Skeleton className="h-20 w-full rounded-3xl bg-muted/50 border border-border/50" />
@@ -106,16 +94,13 @@ export default function FinanceDashboardPage() {
           <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-2 duration-500">
             {summaryData && <FinanceSummaryCards data={summaryData} />}
 
-            {/* Banner de Atalho: Minimalista e Flat */}
             <Link
               href="/admin/finance/receivables"
               className="hidden md:block outline-none rounded-2xl focus-visible:ring-2 focus-visible:ring-primary/20"
             >
               <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/50 rounded-2xl p-5 flex items-center justify-between hover:bg-emerald-100/50 dark:hover:bg-emerald-900/30 transition-colors shadow-sm group">
                 <div className="flex items-center gap-5">
-                  {/* Ícone sem fundo, apenas a cor aplicada ao traço */}
                   <Wallet className="h-8 w-8 text-emerald-500 shrink-0 stroke-[1.5]" />
-
                   <div className="flex flex-col">
                     <h3 className="text-base font-black text-foreground tracking-tight uppercase text-[13px]">
                       Contas a Receber
@@ -125,8 +110,6 @@ export default function FinanceDashboardPage() {
                     </p>
                   </div>
                 </div>
-
-                {/* Seta discreta, sem círculo de fundo */}
                 <ArrowRight className="h-6 w-6 text-emerald-900 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all stroke-[2.5]" />
               </div>
             </Link>
@@ -150,8 +133,7 @@ export default function FinanceDashboardPage() {
         )}
       </div>
 
-      {/* REVEZAMENTO INTELIGENTE: SPEED DIAL vs ARROW UP */}
-      <FinanceSpeedDial isHidden={showScrollTop} onSuccess={loadDashboard} />
+      <FinanceSpeedDial isHidden={showScrollTop} onSuccess={() => mutate()} />
 
       <button
         onClick={scrollToTop}
