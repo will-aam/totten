@@ -1,3 +1,4 @@
+// app/admin/stock/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -25,11 +26,23 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// 🔥 Importando as Server Actions reais
+// 🔥 Importando o AlertDialog do Shadcn UI
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 import {
   getStockItems,
   createStockItem,
   updateStockItem,
+  deleteStockItem,
 } from "@/app/actions/stock";
 
 export default function StockPage() {
@@ -40,7 +53,10 @@ export default function StockPage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 1. Buscar os dados ao carregar a página
+  // 🔥 Estado para controlar qual item está sendo excluído (Abre o Modal)
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+
+  // 1. Buscar os dados
   const fetchItems = async () => {
     setIsLoading(true);
     const res = await getStockItems();
@@ -63,18 +79,16 @@ export default function StockPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // 2. Atualizar item (Edição Inline com Optimistic UI)
+  // 2. Atualizar item
   const handleUpdateItem = async (id: string, updates: Partial<StockItem>) => {
-    // Atualiza visualmente primeiro (sensação de instantâneo)
     setItems((prev) =>
       prev.map((item) => (item.id === id ? { ...item, ...updates } : item)),
     );
 
-    // Manda para o banco em background
     const res = await updateStockItem(id, updates);
     if (!res.success) {
       toast.error(res.error || "Erro ao atualizar insumo.");
-      fetchItems(); // Se der erro, busca os dados reais novamente para reverter a tela
+      fetchItems();
     } else {
       toast.success("Estoque atualizado com sucesso!");
     }
@@ -85,13 +99,32 @@ export default function StockPage() {
     const res = await createStockItem(newItemData);
     if (res.success) {
       toast.success("Insumo cadastrado com sucesso!");
-      fetchItems(); // Recarrega a lista com o ID real do banco
+      fetchItems();
     } else {
       toast.error(res.error || "Erro ao cadastrar insumo.");
     }
   };
 
-  // Lógica de filtro e ordenação manual para o Mobile
+  // 🔥 4. CONFIRMAR A EXCLUSÃO (Rodada pelo botão "Sim, excluir" do Modal)
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+
+    const id = itemToDelete;
+    setItemToDelete(null); // Fecha o modal instantaneamente para UX fluida
+
+    // UI Otimista: Remove da tela antes mesmo do banco responder
+    const previousItems = [...items];
+    setItems(items.filter((item) => item.id !== id));
+
+    const res = await deleteStockItem(id);
+    if (res.success) {
+      toast.success("Insumo excluído com sucesso!");
+    } else {
+      toast.error(res.error || "Erro ao excluir insumo.");
+      setItems(previousItems); // Devolve para a tela se o banco barrar
+    }
+  };
+
   const filteredAndSortedItems = items
     .filter((item) => item.name.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => {
@@ -108,7 +141,6 @@ export default function StockPage() {
     <>
       <AdminHeader title="Estoque" />
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-350 mx-auto w-full pb-24 md:pb-6 relative">
-        {/* Barra de Busca e Botões */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full sm:max-w-md">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -159,7 +191,6 @@ export default function StockPage() {
           </div>
         </div>
 
-        {/* Título */}
         <div className="flex items-center gap-2">
           <PackageOpen className="h-5 w-5 text-primary" />
           <h2 className="text-xl font-semibold text-foreground tracking-tight">
@@ -167,7 +198,6 @@ export default function StockPage() {
           </h2>
         </div>
 
-        {/* Loading ou Conteúdo */}
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             <Loader2 className="h-8 w-8 animate-spin mb-4 text-primary" />
@@ -175,21 +205,21 @@ export default function StockPage() {
           </div>
         ) : (
           <>
-            {/* Desktop: Tabela */}
             <div className="hidden md:block">
               <StockTable
                 data={filteredAndSortedItems}
                 onUpdateItem={handleUpdateItem}
+                onDeleteItem={(id) => setItemToDelete(id)} // 🔥 Passa o ID para o Estado do Modal
               />
             </div>
 
-            {/* Mobile: Lista de Cards */}
             <div className="flex flex-col md:hidden">
               {filteredAndSortedItems.map((item) => (
                 <StockMobileItem
                   key={item.id}
                   item={item}
                   onUpdate={handleUpdateItem}
+                  onDelete={(id) => setItemToDelete(id)} // 🔥 Passa o ID para o Estado do Modal
                 />
               ))}
               {filteredAndSortedItems.length === 0 && (
@@ -219,6 +249,36 @@ export default function StockPage() {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveNewItem}
       />
+
+      {/* 🔥 MODAL DE CONFIRMAÇÃO DE EXCLUSÃO NATIVO DO SISTEMA */}
+      <AlertDialog
+        open={!!itemToDelete}
+        onOpenChange={(open) => !open && setItemToDelete(null)}
+      >
+        <AlertDialogContent className="rounded-3xl border border-border/50 p-6 bg-background sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold">
+              Excluir Insumo?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este insumo do seu estoque? Essa
+              ação não poderá ser desfeita. Se o insumo estiver atrelado a algum
+              serviço, a exclusão será bloqueada.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex flex-col sm:flex-row gap-2 mt-4">
+            <AlertDialogCancel className="rounded-2xl border-none bg-muted m-0">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90 font-bold m-0"
+            >
+              Sim, excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

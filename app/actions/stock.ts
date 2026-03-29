@@ -1,12 +1,12 @@
+// app/actions/stock.ts
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth"; // 🔥 Import correto baseado no seu arquivo
+import { requireAuth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
-// Função auxiliar super enxuta agora, usando a sua estrutura nativa
 async function getOrgId() {
-  const admin = await requireAuth(); // Já lança erro "Unauthorized" automaticamente se não tiver logado
+  const admin = await requireAuth();
 
   if (!admin.organizationId) {
     throw new Error("Organização não encontrada para este usuário.");
@@ -38,12 +38,13 @@ export async function getStockItems() {
   }
 }
 
+// 2. Criar Insumo e Opcionalmente Lançar Despesa
 export async function createStockItem(data: {
   name: string;
   quantity: number;
   unit_cost: number;
   isAutoDeduct: boolean;
-  createExpense: boolean; // Vem do Switch do Modal
+  createExpense: boolean;
 }) {
   try {
     const orgId = await getOrgId();
@@ -55,11 +56,12 @@ export async function createStockItem(data: {
           quantity: data.quantity,
           unit_cost: data.unit_cost,
           isAutoDeduct: data.isAutoDeduct,
-          was_expensed: data.createExpense, // 🔥 Salva a decisão da cliente
+          was_expensed: data.createExpense,
           organization_id: orgId,
         },
       });
 
+      // Se marcou "Lançar como despesa", já desconta do caixa!
       if (data.createExpense) {
         const totalCost = data.quantity * data.unit_cost;
         await tx.transaction.create({
@@ -70,13 +72,14 @@ export async function createStockItem(data: {
             date: new Date(),
             status: "PAGO",
             organization_id: orgId,
-            stock_item_id: newItem.id,
+            stock_item_id: newItem.id, // 🔥 Vinculamos a despesa ao insumo!
           },
         });
       }
     });
 
     revalidatePath("/admin/stock");
+    revalidatePath("/admin/finance/dashboard");
     return { success: true };
   } catch (error) {
     console.error("Erro ao criar insumo:", error);
@@ -84,7 +87,7 @@ export async function createStockItem(data: {
   }
 }
 
-// 3. Atualizar Insumo (Usado na edição inline)
+// 3. Atualizar Insumo (Regra do Passado Intacto: Não mexe nas transações!)
 export async function updateStockItem(
   id: string,
   data: {
@@ -97,7 +100,6 @@ export async function updateStockItem(
   try {
     const orgId = await getOrgId();
 
-    // Segurança: Garantir que o item pertence à organização logada
     const existing = await prisma.stockItem.findFirst({
       where: { id, organization_id: orgId },
     });
@@ -122,5 +124,60 @@ export async function updateStockItem(
   } catch (error) {
     console.error("Erro ao atualizar insumo:", error);
     return { success: false, error: "Erro ao atualizar insumo." };
+  }
+}
+
+// 4. EXCLUIR INSUMO (A Trava de Segurança Nível Sênior)
+export async function deleteStockItem(id: string) {
+  try {
+    const orgId = await getOrgId();
+
+    // Busca o insumo e verifica se ele está vinculado a algum serviço
+    const item = await prisma.stockItem.findUnique({
+      where: { id, organization_id: orgId },
+      include: {
+        services: true, // Traz os vínculos com a tabela ServiceStockItem
+      },
+    });
+
+    if (!item) return { success: false, error: "Insumo não encontrado." };
+
+    // 🔥 REGRA DE OURO: Se está amarrado a um serviço (check-in), BLOQUEIA!
+    if (item.services.length > 0) {
+      return {
+        success: false,
+        error:
+          "Este insumo faz parte de um Serviço. Remova-o do serviço antes de excluir, ou apenas zere a sua quantidade para preservar o histórico.",
+      };
+    }
+
+    // Se chegou aqui, é porque foi um cadastro errado e está "solto". Pode apagar!
+    await prisma.$transaction(async (tx) => {
+      // 1. Apaga a despesa de compra original (se ela existir) para devolver o dinheiro ao caixa virtual
+      await tx.transaction.deleteMany({
+        where: {
+          stock_item_id: id,
+          organization_id: orgId,
+          type: "DESPESA",
+        },
+      });
+
+      // 2. Apaga o insumo fisicamente do estoque
+      await tx.stockItem.delete({
+        where: { id },
+      });
+    });
+
+    revalidatePath("/admin/stock");
+    revalidatePath("/admin/finance/dashboard"); // Atualiza o dashboard pq revertemos uma despesa
+    revalidatePath("/admin/finance/transactions");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao excluir insumo:", error);
+    return {
+      success: false,
+      error: "Erro ao excluir insumo. Tente desvinculá-lo de serviços antes.",
+    };
   }
 }

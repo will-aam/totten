@@ -1,3 +1,4 @@
+// components/stock/stock-table.tsx
 "use client";
 
 import { useState } from "react";
@@ -9,16 +10,9 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown, PackageOpen } from "lucide-react";
+import { ArrowUpDown, PackageOpen, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 export type StockItem = {
@@ -26,18 +20,22 @@ export type StockItem = {
   name: string;
   quantity: number;
   unit_cost: number;
-  isAutoDeduct: boolean;
 };
 
 interface StockTableProps {
   data: StockItem[];
   onUpdateItem: (id: string, updates: Partial<StockItem>) => void;
+  onDeleteItem: (id: string) => void; // 🔥 Nova prop
 }
 
 const hideArrowsClass =
   "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
 
-export function StockTable({ data, onUpdateItem }: StockTableProps) {
+export function StockTable({
+  data,
+  onUpdateItem,
+  onDeleteItem,
+}: StockTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -85,35 +83,6 @@ export function StockTable({ data, onUpdateItem }: StockTableProps) {
       },
     },
     {
-      accessorKey: "isAutoDeduct",
-      header: () => (
-        <div className="text-center font-semibold text-muted-foreground px-2">
-          Tipo de Baixa
-        </div>
-      ),
-      cell: ({ row }) => {
-        const item = row.original;
-        return (
-          <div className="flex justify-center">
-            <Select
-              value={item.isAutoDeduct ? "auto" : "manual"}
-              onValueChange={(val) =>
-                onUpdateItem(item.id, { isAutoDeduct: val === "auto" })
-              }
-            >
-              <SelectTrigger className="h-8 w-32 border-none bg-transparent hover:bg-muted focus:ring-0">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="auto">Automática</SelectItem>
-                <SelectItem value="manual">Manual</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        );
-      },
-    },
-    {
       accessorKey: "unit_cost",
       header: ({ column }) => (
         <Button
@@ -121,7 +90,7 @@ export function StockTable({ data, onUpdateItem }: StockTableProps) {
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           className="hover:bg-muted font-semibold rounded-full px-2"
         >
-          Custo <ArrowUpDown className="ml-2 h-4 w-4" />
+          Custo Unitário <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
       cell: ({ row }) => {
@@ -131,12 +100,12 @@ export function StockTable({ data, onUpdateItem }: StockTableProps) {
             <span className="text-muted-foreground text-xs">R$</span>
             <Input
               type="number"
+              step="0.01"
               className={cn(
                 "h-8 w-24 border-transparent bg-transparent hover:border-border focus:bg-background transition-all",
                 hideArrowsClass,
               )}
               defaultValue={item.unit_cost}
-              // 🔥 CORREÇÃO SÊNIOR: onBlur em vez de onChange
               onBlur={(e) =>
                 onUpdateItem(item.id, {
                   unit_cost: parseFloat(e.target.value) || 0,
@@ -158,7 +127,7 @@ export function StockTable({ data, onUpdateItem }: StockTableProps) {
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           className="hover:bg-muted font-semibold rounded-full px-2"
         >
-          Qtd <ArrowUpDown className="ml-2 h-4 w-4" />
+          Quantidade <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
       cell: ({ row }) => {
@@ -169,12 +138,10 @@ export function StockTable({ data, onUpdateItem }: StockTableProps) {
               type="number"
               step="0.1"
               className={cn(
-                "h-8 w-20 text-center border-transparent bg-transparent hover:border-border focus:bg-background transition-all",
-                item.isAutoDeduct && "opacity-50 pointer-events-none",
+                "h-8 w-24 text-center border-transparent bg-transparent hover:border-border focus:bg-background transition-all",
                 hideArrowsClass,
               )}
               defaultValue={item.quantity}
-              // 🔥 CORREÇÃO SÊNIOR: onBlur em vez de onChange
               onBlur={(e) =>
                 onUpdateItem(item.id, {
                   quantity: parseFloat(e.target.value) || 0,
@@ -209,6 +176,25 @@ export function StockTable({ data, onUpdateItem }: StockTableProps) {
               currency: "BRL",
             }).format(total)}
           </span>
+        );
+      },
+    },
+    {
+      id: "actions",
+      header: () => <div className="w-10"></div>,
+      cell: ({ row }) => {
+        const item = row.original;
+        return (
+          <div className="flex justify-end px-2 group-hover:opacity-100 transition-opacity">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onDeleteItem(item.id)} // 🔥 Chama a ação
+              className="h-8 w-8 text-muted-foreground hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         );
       },
     },
