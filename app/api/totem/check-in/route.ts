@@ -25,12 +25,19 @@ export async function POST(request: Request) {
       );
     }
 
+    // 🔥 BUSCA O AGENDAMENTO COM O SERVIÇO E INSUMOS
     const appt = await prisma.appointment.findUnique({
       where: { id: appointment_id },
       include: {
         client: true,
-        service: true,
         package: true,
+        service: {
+          include: {
+            stock_items: {
+              include: { stock_item: true },
+            },
+          },
+        },
       },
     });
 
@@ -72,7 +79,9 @@ export async function POST(request: Request) {
 
     let packageInfo = null;
 
+    // 🔥 A GRANDE TRANSAÇÃO DO TOTEM
     const result = await prisma.$transaction(async (tx) => {
+      // 1. Cria o registro de Check-in
       const checkIn = await tx.checkIn.create({
         data: {
           appointment_id: appt.id,
@@ -82,6 +91,7 @@ export async function POST(request: Request) {
         },
       });
 
+      // 2. Atualiza Pacote e Agendamento
       if (appt.package_id) {
         const pacote = await tx.package.update({
           where: { id: appt.package_id },
@@ -104,6 +114,59 @@ export async function POST(request: Request) {
         });
       }
 
+      // 🔥 --- O CORAÇÃO DO SISTEMA FINANCEIRO E DE ESTOQUE --- 🔥
+      const service = appt.service;
+
+      if (service.track_stock && service.stock_items.length > 0) {
+        // FLUXO A e B: A Cliente Organizada / Híbrida (Tem Estoque)
+        for (const item of service.stock_items) {
+          const stockData = item.stock_item;
+          const usedQty = item.quantity_used;
+
+          // a) Baixa a quantidade física da prateleira (Sempre)
+          await tx.stockItem.update({
+            where: { id: stockData.id },
+            data: { quantity: { decrement: usedQty } },
+          });
+
+          // b) Regra de Caixa: Só gera despesa se NÃO marcou "Lançar como Despesa" na compra
+          if (!stockData.was_expensed) {
+            const costOfUsedQty = Number(usedQty) * Number(stockData.unit_cost);
+
+            if (costOfUsedQty > 0) {
+              await tx.transaction.create({
+                data: {
+                  type: "DESPESA",
+                  description: `Custo de Insumo (Totem): ${stockData.name}`,
+                  amount: costOfUsedQty,
+                  date: new Date(),
+                  status: "PAGO",
+                  organization_id: appt.organization_id,
+                  appointment_id: appt.id,
+                },
+              });
+            }
+          }
+        }
+      } else if (
+        !service.track_stock &&
+        service.material_cost &&
+        Number(service.material_cost) > 0
+      ) {
+        // FLUXO C: A Cliente Preguiçosa (O Chute Manual)
+        await tx.transaction.create({
+          data: {
+            type: "DESPESA",
+            description: `Custo Fixo de Material (Totem): ${service.name}`,
+            amount: service.material_cost,
+            date: new Date(),
+            status: "PAGO",
+            organization_id: appt.organization_id,
+            appointment_id: appt.id,
+          },
+        });
+      }
+
       return checkIn;
     });
 
@@ -119,7 +182,7 @@ export async function POST(request: Request) {
       package_info: packageInfo,
     });
   } catch (error) {
-    console.error("Erro ao fazer check-in:", error);
+    console.error("Erro ao fazer check-in no Totem:", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }

@@ -1,3 +1,4 @@
+// app/totem/check-in/totem-check-in-content.tsx
 "use client";
 
 import { useState, useEffect } from "react";

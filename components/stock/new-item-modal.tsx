@@ -14,20 +14,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react"; // 🔥 Ícone de loading
+import { Loader2 } from "lucide-react";
 
 export interface NewStockItemData {
   name: string;
   quantity: number;
   unit_cost: number;
-  isAutoDeduct: boolean;
+  isAutoDeduct: boolean; // Mantido na tipagem apenas para não quebrar o Back-end
   createExpense: boolean;
 }
 
 interface NewStockItemModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: NewStockItemData) => Promise<void>; // 🔥 Agora é uma Promise para podermos aguardar
+  onSave: (data: NewStockItemData) => Promise<void>;
 }
 
 export function NewStockItemModal({
@@ -38,9 +38,8 @@ export function NewStockItemModal({
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState("");
   const [totalCost, setTotalCost] = useState("");
-  const [isAutoDeduct, setIsAutoDeduct] = useState(false);
-  const [createExpense, setCreateExpense] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false); // 🔥 Estado de salvamento
+  const [createExpense, setCreateExpense] = useState(true); // 🔥 Vem marcado por padrão
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Calcula o valor unitário dinamicamente para feedback visual
   const parsedQty = parseFloat(quantity) || 0;
@@ -50,16 +49,15 @@ export function NewStockItemModal({
   const handleSave = async () => {
     setIsSubmitting(true);
 
-    // 🔥 Removemos o ID Fake! O Banco de Dados quem cuida disso agora.
     const newItem = {
       name,
       quantity: parsedQty,
       unit_cost: unitCost,
-      isAutoDeduct,
+      isAutoDeduct: false, // 🔥 Sempre false, a inteligência agora é do Serviço!
       createExpense,
     };
 
-    await onSave(newItem); // Aguarda o banco salvar
+    await onSave(newItem);
 
     setIsSubmitting(false);
     resetForm();
@@ -70,8 +68,7 @@ export function NewStockItemModal({
     setName("");
     setQuantity("");
     setTotalCost("");
-    setIsAutoDeduct(false);
-    setCreateExpense(false);
+    setCreateExpense(true); // 🔥 Volta pro padrão correto ao limpar o formulário
   };
 
   return (
@@ -140,28 +137,17 @@ export function NewStockItemModal({
             </div>
           )}
 
-          <div className="my-2 border-t" />
+          <div className="my-2 border-t border-border/50" />
 
-          {/* Toggles de Configuração */}
-          <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-            <div className="space-y-0.5">
-              <Label>Baixa Automática</Label>
-              <p className="text-[0.8rem] text-muted-foreground">
-                Abater 1 a 1 automaticamente no Check-in.
-              </p>
-            </div>
-            <Switch
-              checked={isAutoDeduct}
-              onCheckedChange={setIsAutoDeduct}
-              disabled={isSubmitting}
-            />
-          </div>
-
-          <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-            <div className="space-y-0.5">
-              <Label>Lançar como Despesa</Label>
-              <p className="text-[0.8rem] text-muted-foreground">
-                Criar uma saída no fluxo de caixa agora.
+          {/* 🔥 ÚNICO Toggle de Configuração Restante (O do Dinheiro) */}
+          <div className="flex flex-row items-center justify-between rounded-lg border border-border/50 p-3 shadow-sm bg-muted/20">
+            <div className="space-y-0.5 pr-4">
+              <Label className="text-base font-medium">
+                Lançar como Despesa
+              </Label>
+              <p className="text-[11px] text-muted-foreground leading-tight">
+                Criar uma saída no fluxo de caixa imediatamente com o valor da
+                compra.
               </p>
             </div>
             <Switch

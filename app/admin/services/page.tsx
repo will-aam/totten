@@ -244,7 +244,7 @@ function ServicesTabs() {
                       <div className="flex items-center justify-between bg-destructive/5 rounded-lg p-2 -mx-2 -mb-2 mt-1 border border-destructive/10">
                         <span className="text-[11px] font-medium text-destructive/80 flex items-center gap-1.5">
                           <TrendingDown className="h-3.5 w-3.5" />
-                          Custo Fixo (Chute)
+                          Custo Fixo
                         </span>
                         <span className="text-[11px] font-bold text-destructive/90">
                           {formatCurrency(Number(service.material_cost))}

@@ -1,12 +1,11 @@
 // app/api/totem/search/route.ts
-// rota importada no arquivo app/totem/check-in/totem-check-in-content.tsx, a função dela é buscar os dados do cliente e seu agendamento do dia a partir do CPF, para exibir no resumo do check-in e também validar se o cliente tem um agendamento válido para o dia antes de permitir o check-in pelo totem.
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentAdmin } from "@/lib/auth"; // 🔥 Import da autenticação da sessão
+import { getCurrentAdmin } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
-    // 🔒 1. Valida a sessão do totem (o tablet precisa estar logado na clínica)
+    // 🔒 1. Valida a sessão do totem
     const admin = await getCurrentAdmin();
 
     if (!admin || !admin.organizationId) {
@@ -17,8 +16,6 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-
-    // 🔥 2. Não recebemos mais o organizationSlug do front-end
     const { cpf } = body as { cpf?: string };
 
     if (!cpf) {
@@ -29,7 +26,6 @@ export async function POST(req: NextRequest) {
     }
 
     const cpfLimpo = cpf.replace(/\D/g, "");
-
     const cpfFormatado =
       cpfLimpo.length === 11
         ? cpfLimpo.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
@@ -39,7 +35,6 @@ export async function POST(req: NextRequest) {
       new Set([cpf.trim(), cpfLimpo, cpfFormatado]),
     );
 
-    // 🔥 3. Busca o cliente usando DIRETAMENTE o ID da organização da sessão
     const cliente = await prisma.client.findFirst({
       where: {
         cpf: { in: cpfCandidates },
@@ -51,10 +46,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: "NOT_FOUND" });
     }
 
-    // 🔥 CORREÇÃO DE FUSO HORÁRIO (Timezone UTC-3)
+    // 🔥 CORREÇÃO DE FUSO HORÁRIO
     const now = new Date();
-
-    // Força a extração do ano, mês e dia com base no fuso de Brasília
     const formatter = new Intl.DateTimeFormat("en-US", {
       timeZone: "America/Sao_Paulo",
       year: "numeric",
@@ -64,10 +57,9 @@ export async function POST(req: NextRequest) {
 
     const parts = formatter.formatToParts(now);
     const brYear = Number(parts.find((p) => p.type === "year")?.value);
-    const brMonth = Number(parts.find((p) => p.type === "month")?.value) - 1; // Mês no JS começa em 0
+    const brMonth = Number(parts.find((p) => p.type === "month")?.value) - 1;
     const brDay = Number(parts.find((p) => p.type === "day")?.value);
 
-    // Cria os limites já convertidos para UTC para o Prisma buscar com precisão
     const inicioDoDia = new Date(Date.UTC(brYear, brMonth, brDay, 3, 0, 0, 0));
     const fimDoDia = new Date(
       Date.UTC(brYear, brMonth, brDay, 26, 59, 59, 999),
@@ -76,21 +68,23 @@ export async function POST(req: NextRequest) {
     const agendamentos = await prisma.appointment.findMany({
       where: {
         client_id: cliente.id,
-        organization_id: admin.organizationId, // 🔥 Usa o ID da sessão
+        organization_id: admin.organizationId,
         date_time: {
           gte: inicioDoDia,
           lte: fimDoDia,
         },
         status: { in: ["PENDENTE", "CONFIRMADO"] },
-
-        // 🔥 A MÁGICA ACONTECE AQUI: Oculta agendamentos de pacotes inativos/arquivados
-        OR: [
-          { package_id: null }, // É um agendamento avulso
-          { package: { active: true } }, // Ou é um pacote, mas ele TEM que estar ativo
-        ],
+        OR: [{ package_id: null }, { package: { active: true } }],
       },
+      // 🔥 AQUI: Pedimos pro Prisma trazer o estoque junto com o serviço
       include: {
-        service: { select: { name: true } },
+        service: {
+          include: {
+            stock_items: {
+              include: { stock_item: true },
+            },
+          },
+        },
       },
       orderBy: {
         date_time: "asc",
@@ -101,6 +95,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: "NOT_FOUND" });
     }
 
+    // Se tiver mais de um, manda pro front-end escolher e chamar a rota oficial
     if (agendamentos.length > 1) {
       return NextResponse.json({
         status: "MULTIPLE_FOUND",
@@ -108,27 +103,30 @@ export async function POST(req: NextRequest) {
         appointments: agendamentos.map((appt) => ({
           id: appt.id,
           date_time: appt.date_time,
-          service_name: appt.service.name,
+          service_name: appt.service.name, // Acessa normalmente
         })),
       });
     }
 
+    // ==========================================================
+    // SE CHEGOU AQUI: O Cliente tem apenas 1 agendamento.
+    // Vamos fazer o AUTO CHECK-IN!
+    // ==========================================================
     const agendamento = agendamentos[0];
     let packageInfo = null;
 
-    // Se só tem 1 agendamento (válido!), já faz o check-in automático
     await prisma.$transaction(async (tx) => {
-      // Cria o registro de CheckIn
+      // 1. Cria o registro de CheckIn
       await tx.checkIn.create({
         data: {
           appointment_id: agendamento.id,
           client_id: cliente.id,
           package_id: agendamento.package_id ?? null,
-          organization_id: admin.organizationId, // 🔥 Usa o ID da sessão
+          organization_id: admin.organizationId,
         },
       });
 
-      // LÓGICA DE PACOTE
+      // 2. LÓGICA DE PACOTE OU AVULSO
       if (agendamento.package_id) {
         const pacote = await tx.package.update({
           where: { id: agendamento.package_id },
@@ -144,15 +142,69 @@ export async function POST(req: NextRequest) {
           where: { id: agendamento.id },
           data: { status: "REALIZADO" },
         });
-      }
-      // LÓGICA DE ATENDIMENTO AVULSO
-      else {
+      } else {
         await tx.appointment.update({
           where: { id: agendamento.id },
           data: { status: "REALIZADO", has_charge: true },
         });
       }
-    });
+
+      // 🔥 --- O CORAÇÃO DO SISTEMA FINANCEIRO E DE ESTOQUE (AUTO CHECK-IN) --- 🔥
+      const service = agendamento.service;
+
+      if (
+        service.track_stock &&
+        service.stock_items &&
+        service.stock_items.length > 0
+      ) {
+        // FLUXO A e B (Baixa Inteligente)
+        for (const item of service.stock_items) {
+          const stockData = item.stock_item;
+          const usedQty = item.quantity_used;
+
+          // a) Baixa a quantidade física
+          await tx.stockItem.update({
+            where: { id: stockData.id },
+            data: { quantity: { decrement: usedQty } },
+          });
+
+          // b) Regra de Caixa
+          if (!stockData.was_expensed) {
+            const costOfUsedQty = Number(usedQty) * Number(stockData.unit_cost);
+            if (costOfUsedQty > 0) {
+              await tx.transaction.create({
+                data: {
+                  type: "DESPESA",
+                  description: `Custo de Insumo (Totem): ${stockData.name}`,
+                  amount: costOfUsedQty,
+                  date: new Date(),
+                  status: "PAGO",
+                  organization_id: admin.organizationId,
+                  appointment_id: agendamento.id,
+                },
+              });
+            }
+          }
+        }
+      } else if (
+        !service.track_stock &&
+        service.material_cost &&
+        Number(service.material_cost) > 0
+      ) {
+        // FLUXO C (Chute Manual)
+        await tx.transaction.create({
+          data: {
+            type: "DESPESA",
+            description: `Custo Fixo de Material (Totem): ${service.name}`,
+            amount: service.material_cost,
+            date: new Date(),
+            status: "PAGO",
+            organization_id: admin.organizationId,
+            appointment_id: agendamento.id,
+          },
+        });
+      }
+    }); // Fim da transação
 
     return NextResponse.json({
       status: "FOUND",

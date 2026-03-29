@@ -540,7 +540,7 @@ export function ServiceForm() {
                     />
                   </div>
                   <p className="text-[11px] text-muted-foreground leading-tight">
-                    Digite manualmente o gasto médio (chute) para este serviço.
+                    Digite manualmente o gasto médio para este serviço.
                   </p>
                   {errors.cost && (
                     <p className="text-xs font-medium text-destructive ml-1">

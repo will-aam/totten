@@ -54,7 +54,7 @@ export async function createAppointment(
         return { success: false, error: "Pacote não encontrado." };
       }
 
-      // 🔥 NOVO: Bloqueia uso de pacotes arquivados na criação
+      // Bloqueia uso de pacotes arquivados na criação
       if (!pkg.active) {
         return {
           success: false,
@@ -126,11 +126,9 @@ export async function updateAppointment(
     };
 
     const finalStatus = statusMap[data.status] || AppointmentStatus.PENDENTE;
-
     const finalPaymentMethod = data.paymentMethod
       ? (data.paymentMethod as PaymentMethod)
       : null;
-
     let finalHasCharge = data.hasCharge;
 
     if (
@@ -140,10 +138,20 @@ export async function updateAppointment(
       finalHasCharge = false;
     if (finalStatus === AppointmentStatus.CANCELADO) finalHasCharge = false;
 
-    // 🔥 Adicionado o "package" no include para verificar o status dele
+    // 🔥 BUSCA O AGENDAMENTO COM O SERVIÇO E SEUS INSUMOS (SE HOUVER)
     const currentAppt = await prisma.appointment.findUnique({
       where: { id, organization_id: admin.organizationId },
-      include: { service: true, client: true, package: true },
+      include: {
+        client: true,
+        package: true,
+        service: {
+          include: {
+            stock_items: {
+              include: { stock_item: true },
+            },
+          },
+        },
+      },
     });
 
     if (!currentAppt)
@@ -153,7 +161,7 @@ export async function updateAppointment(
       finalStatus === AppointmentStatus.REALIZADO &&
       currentAppt.status !== AppointmentStatus.REALIZADO;
 
-    // 🔥 NOVO: Travas de Segurança caso o pacote tenha sido arquivado ou zerado
+    // 🔥 Travas de Segurança do Pacote
     if (isMarkingAsDone && currentAppt.package) {
       if (!currentAppt.package.active) {
         return {
@@ -172,9 +180,11 @@ export async function updateAppointment(
       }
     }
 
+    // 🔥 A GRANDE TRANSAÇÃO
     await prisma.$transaction(async (tx) => {
+      // Lógica de Atualização em Lote ou Individual
       if (updateAll && recurrenceId) {
-        const updateResult = await tx.appointment.updateMany({
+        await tx.appointment.updateMany({
           where: {
             recurrence_id: recurrenceId,
             organization_id: admin.organizationId,
@@ -189,9 +199,16 @@ export async function updateAppointment(
         });
 
         if (isMarkingAsDone && currentAppt.package_id) {
+          const updateResult = await tx.appointment.count({
+            where: {
+              recurrence_id: recurrenceId,
+              organization_id: admin.organizationId,
+              status: finalStatus,
+            },
+          });
           await tx.package.update({
             where: { id: currentAppt.package_id },
-            data: { used_sessions: { increment: updateResult.count } },
+            data: { used_sessions: { increment: updateResult } },
           });
         }
       } else {
@@ -212,10 +229,100 @@ export async function updateAppointment(
           });
         }
       }
-    });
+
+      // 🔥 --- O CORAÇÃO DO SISTEMA FINANCEIRO E DE ESTOQUE --- 🔥
+
+      const service = currentAppt.service;
+
+      // 1. GERAR RECEITA (Desacoplado da mudança de status)
+      // Se está realizado, não é pacote, tem método de pagamento...
+      const requiresRevenue =
+        finalStatus === AppointmentStatus.REALIZADO &&
+        !currentAppt.package_id &&
+        finalPaymentMethod !== null;
+
+      if (requiresRevenue) {
+        // Verifica se já não foi gerada uma receita antes (ex: se a recepção só estiver editando a observação)
+        const existingRevenue = await tx.transaction.findFirst({
+          where: { appointment_id: currentAppt.id, type: "RECEITA" },
+        });
+
+        if (!existingRevenue) {
+          await tx.transaction.create({
+            data: {
+              type: "RECEITA",
+              description: `Serviço Realizado: ${service.name} (${currentAppt.client.name})`,
+              amount: service.price,
+              date: new Date(),
+              status: "PAGO",
+              organization_id: admin.organizationId,
+              appointment_id: currentAppt.id,
+            },
+          });
+        }
+      }
+
+      // 2. GERAR DESPESA E BAIXAR ESTOQUE (Matriz de Decisão)
+      // Isso continua amarrado ao `isMarkingAsDone` para NUNCA baixar o estoque 2x
+      if (isMarkingAsDone) {
+        if (service.track_stock && service.stock_items.length > 0) {
+          // FLUXO A e B: A Cliente Organizada / Híbrida (Tem Estoque)
+
+          for (const item of service.stock_items) {
+            const stockData = item.stock_item;
+            const usedQty = item.quantity_used;
+
+            // a) Baixa a quantidade física da prateleira (Sempre)
+            await tx.stockItem.update({
+              where: { id: stockData.id },
+              data: { quantity: { decrement: usedQty } },
+            });
+
+            // b) Regra de Caixa: Só gera despesa se NÃO marcou "Lançar como Despesa" na compra
+            if (!stockData.was_expensed) {
+              const costOfUsedQty =
+                Number(usedQty) * Number(stockData.unit_cost);
+
+              if (costOfUsedQty > 0) {
+                await tx.transaction.create({
+                  data: {
+                    type: "DESPESA",
+                    description: `Custo de Insumo (Sessão): ${stockData.name}`,
+                    amount: costOfUsedQty,
+                    date: new Date(),
+                    status: "PAGO",
+                    organization_id: admin.organizationId,
+                    appointment_id: currentAppt.id,
+                  },
+                });
+              }
+            }
+          }
+        } else if (
+          !service.track_stock &&
+          service.material_cost &&
+          Number(service.material_cost) > 0
+        ) {
+          // FLUXO C: A Cliente Preguiçosa (O Chute Manual)
+
+          await tx.transaction.create({
+            data: {
+              type: "DESPESA",
+              description: `Custo Fixo de Material: ${service.name}`,
+              amount: service.material_cost,
+              date: new Date(),
+              status: "PAGO",
+              organization_id: admin.organizationId,
+              appointment_id: currentAppt.id,
+            },
+          });
+        }
+      }
+    }); // Fim da transaction
 
     revalidatePath("/admin/agenda");
     revalidatePath("/admin/packages");
+    revalidatePath("/admin/stock");
     revalidatePath("/admin/finance/dashboard");
 
     return { success: true };

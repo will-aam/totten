@@ -379,6 +379,7 @@ model StockItem {
   quantity        Decimal            @db.Decimal(10, 3) // Permite fracionamento (ex: 0.500)
   unit_cost       Decimal            @db.Decimal(10, 2)
   isAutoDeduct    Boolean            @default(false)
+  was_expensed    Boolean            @default(false) 
   organization_id String
   created_at      DateTime           @default(now())
   updated_at      DateTime           @updatedAt

@@ -38,34 +38,30 @@ export async function getStockItems() {
   }
 }
 
-// 2. Criar Insumo (e opcionalmente a Despesa Financeira)
 export async function createStockItem(data: {
   name: string;
   quantity: number;
   unit_cost: number;
   isAutoDeduct: boolean;
-  createExpense: boolean;
+  createExpense: boolean; // Vem do Switch do Modal
 }) {
   try {
     const orgId = await getOrgId();
 
-    // Transaction: Executa os comandos juntos. Se um falhar, faz rollback automático.
     await prisma.$transaction(async (tx) => {
-      // 1. Cria o Insumo no Estoque
       const newItem = await tx.stockItem.create({
         data: {
           name: data.name,
           quantity: data.quantity,
           unit_cost: data.unit_cost,
           isAutoDeduct: data.isAutoDeduct,
+          was_expensed: data.createExpense, // 🔥 Salva a decisão da cliente
           organization_id: orgId,
         },
       });
 
-      // 2. Cria a Transação Financeira SE a cliente ativou o toggle
       if (data.createExpense) {
         const totalCost = data.quantity * data.unit_cost;
-
         await tx.transaction.create({
           data: {
             type: "DESPESA",
@@ -74,13 +70,13 @@ export async function createStockItem(data: {
             date: new Date(),
             status: "PAGO",
             organization_id: orgId,
-            stock_item_id: newItem.id, // Vínculo com o estoque
+            stock_item_id: newItem.id,
           },
         });
       }
     });
 
-    revalidatePath("/admin/stock"); // Atualiza a página em cache
+    revalidatePath("/admin/stock");
     return { success: true };
   } catch (error) {
     console.error("Erro ao criar insumo:", error);
