@@ -135,6 +135,10 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
         }
       } else if (t.type === "DESPESA" && t.status === "PAGO") {
         expensesMonth += amount;
+      } else if (t.type === "RECEITA" && t.status === "PENDENTE") {
+        // 🔥 A CORREÇÃO ESTÁ AQUI: Agora ele soma as parcelas do pacote no KPI de "Pendentes"!
+        pendingMonth += amount;
+        pendingItemsCount++;
       }
     });
 

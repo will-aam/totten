@@ -1,4 +1,3 @@
-// components/client/client-package.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -6,8 +5,10 @@ import useSWR, { mutate } from "swr";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input"; // 🔥 Importamos o Input
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +29,8 @@ import { Package, Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { PackageVoucher } from "./package-voucher";
 import { cn } from "@/lib/utils";
+import { getPaymentMethods } from "@/app/actions/payment-methods";
+import { OrganizationPaymentMethod } from "@/types/finance";
 
 export type PackageType = {
   id: string;
@@ -63,7 +66,6 @@ export function ClientPackage({
   const { data: packages, isLoading: isLoadingPackages } = useSWR<
     PackageType[]
   >(`/api/admin/clients/${clientId}/packages`, fetcher);
-
   const activePackage =
     packages?.find(
       (pkg) => pkg.active && pkg.used_sessions < pkg.total_sessions,
@@ -75,8 +77,19 @@ export function ClientPackage({
   const [templateId, setTemplateId] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
+  // 🔥 ESTADOS FINANCEIROS
+  const [paymentMethods, setPaymentMethods] = useState<
+    OrganizationPaymentMethod[]
+  >([]);
+  const [payUpfront, setPayUpfront] = useState(false);
+  const [selectedMethod, setSelectedMethod] = useState<string>("");
+
+  // 🔥 NOVOS ESTADOS PARA PARCELAMENTO
+  const [generateInstallments, setGenerateInstallments] = useState(false);
+  const [installmentsCount, setInstallmentsCount] = useState<number>(2);
+
   useEffect(() => {
-    const loadTemplates = async () => {
+    const loadData = async () => {
       try {
         const res = await fetch("/api/package-templates?active=true");
         if (res.ok) {
@@ -84,11 +97,13 @@ export function ClientPackage({
           setTemplates(data);
           if (data.length > 0) setTemplateId(data[0].id);
         }
+        const methodsData = await getPaymentMethods();
+        setPaymentMethods(methodsData as OrganizationPaymentMethod[]);
       } catch (e) {
-        console.error("Erro ao carregar templates:", e);
+        console.error("Erro ao carregar dados:", e);
       }
     };
-    if (addPkgOpen) loadTemplates();
+    if (addPkgOpen) loadData();
   }, [addPkgOpen]);
 
   const progress = activePackage
@@ -96,7 +111,6 @@ export function ClientPackage({
         (activePackage.used_sessions / activePackage.total_sessions) * 100,
       )
     : 0;
-
   const isCompleted = activePackage
     ? activePackage.used_sessions >= activePackage.total_sessions
     : false;
@@ -104,6 +118,18 @@ export function ClientPackage({
   const handleAddPackage = async () => {
     if (!templateId) {
       toast.error("Selecione um pacote do catálogo");
+      return;
+    }
+    if (payUpfront && !selectedMethod) {
+      toast.error("Selecione a forma de pagamento.");
+      return;
+    }
+    if (
+      !payUpfront &&
+      generateInstallments &&
+      (installmentsCount < 2 || installmentsCount > 24)
+    ) {
+      toast.error("O número de parcelas deve ser entre 2 e 24.");
       return;
     }
 
@@ -120,16 +146,26 @@ export function ClientPackage({
           service_id: selectedTemplate.service_id,
           total_sessions: Number(selectedTemplate.total_sessions),
           price: Number(selectedTemplate.price),
+
+          // Enviamos as decisões pro Back-end
+          pay_upfront: payUpfront,
+          payment_method: payUpfront ? selectedMethod : null,
+          generate_installments: !payUpfront ? generateInstallments : false,
+          installments_count: installmentsCount,
         }),
       });
 
       if (res.ok) {
-        toast.success("Pacote vinculado com sucesso!");
+        toast.success("Pacote vendido com sucesso!");
         mutate(`/api/admin/clients/${clientId}/packages`);
         setAddPkgOpen(false);
+        // Reseta estados
+        setPayUpfront(false);
+        setGenerateInstallments(false);
+        setInstallmentsCount(2);
       } else {
         const data = await res.json();
-        toast.error(data.error || "Erro ao vincular pacote");
+        toast.error(data.error || "Erro ao vender pacote");
       }
     } catch (error) {
       toast.error("Erro de conexão");
@@ -142,7 +178,6 @@ export function ClientPackage({
 
   return (
     <>
-      {/* Mobile: Transparente e colado na tela. Desktop: Card padrão */}
       <Card className="md:col-span-1 border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card">
         <CardHeader className="px-0 pt-0 md:pt-6 md:px-6 pb-3 md:pb-6 flex flex-row items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2 text-foreground">
@@ -151,7 +186,6 @@ export function ClientPackage({
 
           <Dialog open={addPkgOpen} onOpenChange={setAddPkgOpen}>
             <DialogTrigger asChild>
-              {/* Botão Novo: Estilo outline, sem hover, efeito click ativo */}
               <Button
                 size="sm"
                 variant="outline"
@@ -170,19 +204,24 @@ export function ClientPackage({
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="flex flex-col gap-4 py-4">
+              <div className="flex flex-col gap-4 py-4 max-h-[60vh] overflow-y-auto px-1">
                 <div className="flex flex-col gap-2">
                   <Label>Plano Disponível</Label>
                   <Select
                     value={templateId}
-                    onValueChange={setTemplateId}
+                    onValueChange={(val) => {
+                      setTemplateId(val);
+                      // Dica UX: Seta o default de parcelas igual ao número de sessões do pacote
+                      const tpl = templates.find((t) => t.id === val);
+                      if (tpl) setInstallmentsCount(tpl.total_sessions);
+                    }}
                     disabled={templates.length === 0 || loading}
                   >
                     <SelectTrigger className="h-11 rounded-xl bg-muted/30">
                       <SelectValue
                         placeholder={
                           templates.length === 0
-                            ? "Nenhum pacote ativo no catálogo"
+                            ? "Nenhum pacote ativo"
                             : "Selecione um plano"
                         }
                       />
@@ -198,7 +237,6 @@ export function ClientPackage({
                 </div>
 
                 {currentTemplate && (
-                  // Resumo: Cores neutras/muted ao invés de amber
                   <div className="bg-muted/30 p-4 rounded-xl border border-border space-y-2 mt-2">
                     <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider">
                       Resumo do Plano
@@ -210,7 +248,9 @@ export function ClientPackage({
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Preço:</span>
+                      <span className="text-muted-foreground">
+                        Preço Total:
+                      </span>
                       <span className="font-bold text-primary">
                         {new Intl.NumberFormat("pt-BR", {
                           style: "currency",
@@ -220,6 +260,109 @@ export function ClientPackage({
                     </div>
                   </div>
                 )}
+
+                <div className="my-1 border-t border-border/50" />
+
+                {/* 🔥 BLOCO FINANCEIRO */}
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-row items-center justify-between rounded-xl border border-border/50 p-3 bg-muted/20">
+                    <div className="space-y-0.5 pr-4">
+                      <Label className="text-sm font-bold">
+                        Pagar Pacote à Vista?
+                      </Label>
+                      <p className="text-[11px] text-muted-foreground leading-tight">
+                        Registra o valor total no caixa agora. Desative para
+                        pagamento parcelado.
+                      </p>
+                    </div>
+                    <Switch
+                      checked={payUpfront}
+                      onCheckedChange={(val) => {
+                        setPayUpfront(val);
+                        if (val) setGenerateInstallments(false); // Reseta parcelamento se for à vista
+                      }}
+                      disabled={loading}
+                    />
+                  </div>
+
+                  {payUpfront && (
+                    <div className="flex flex-col gap-2 animate-in fade-in zoom-in-95 duration-200">
+                      <Label className="text-xs font-bold uppercase text-muted-foreground">
+                        Forma de Pagamento
+                      </Label>
+                      <Select
+                        value={selectedMethod}
+                        onValueChange={setSelectedMethod}
+                        disabled={loading}
+                      >
+                        <SelectTrigger className="h-11 rounded-xl">
+                          <SelectValue placeholder="Como o cliente está pagando?" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {paymentMethods
+                            .filter((pm) => pm.isActive)
+                            .map((pm) => (
+                              <SelectItem key={pm.id} value={pm.type}>
+                                {pm.name}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* 🔥 BLOCO DE PARCELAMENTO */}
+                  {!payUpfront && (
+                    <div className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
+                      <div className="flex flex-row items-center justify-between rounded-xl border border-border/50 p-3 bg-amber-500/10 dark:bg-amber-500/5">
+                        <div className="space-y-0.5 pr-4">
+                          <Label className="text-sm font-bold text-amber-700 dark:text-amber-500">
+                            Gerar Contas a Receber?
+                          </Label>
+                          <p className="text-[11px] text-amber-600/80 dark:text-amber-500/80 leading-tight">
+                            Cria parcelas mensais pendentes automaticamente no
+                            financeiro.
+                          </p>
+                        </div>
+                        <Switch
+                          checked={generateInstallments}
+                          onCheckedChange={setGenerateInstallments}
+                          disabled={loading}
+                        />
+                      </div>
+
+                      {generateInstallments && (
+                        <div className="flex flex-col gap-2">
+                          <Label className="text-xs font-bold uppercase text-muted-foreground">
+                            Quantidade de Parcelas
+                          </Label>
+                          <Input
+                            type="number"
+                            min={2}
+                            max={24}
+                            value={installmentsCount}
+                            onChange={(e) =>
+                              setInstallmentsCount(Number(e.target.value))
+                            }
+                            disabled={loading}
+                            className="h-11 rounded-xl w-32"
+                          />
+                          {currentTemplate && installmentsCount > 0 && (
+                            <p className="text-xs text-muted-foreground mt-1 font-medium">
+                              Serão geradas {installmentsCount} parcelas de{" "}
+                              {new Intl.NumberFormat("pt-BR", {
+                                style: "currency",
+                                currency: "BRL",
+                              }).format(
+                                currentTemplate.price / installmentsCount,
+                              )}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <DialogFooter>
@@ -250,7 +393,6 @@ export function ClientPackage({
               <Skeleton className="h-4 w-32 rounded" />
             </div>
           ) : activePackage ? (
-            // Conteúdo do pacote ativo: visual limpo, sem fundo colorido excessivo
             <div className="flex flex-col gap-5 p-5 rounded-xl border border-border/40 md:bg-muted/10">
               <div className="flex flex-col gap-1">
                 <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
@@ -265,9 +407,7 @@ export function ClientPackage({
                   </span>
                 </div>
               </div>
-
               <div className="space-y-2">
-                {/* Progress: Cor primária */}
                 <Progress
                   value={progress}
                   className="h-2.5 bg-primary/10 [&>div]:bg-primary"
@@ -278,19 +418,17 @@ export function ClientPackage({
                     : "🎉 Todas as sessões foram finalizadas!"}
                 </p>
               </div>
-
               {isCompleted && (
                 <Button
                   onClick={() => setVoucherOpen(true)}
                   variant="outline"
-                  className="w-full rounded-xl border-primary/20 text-primary select-none transition-transform duration-100 ease-out hover:bg-transparent active:scale-95 active:bg-primary/10 h-10"
+                  className="w-full rounded-xl border-primary/20 text-primary h-10"
                 >
                   Comprovante Final
                 </Button>
               )}
             </div>
           ) : (
-            // Estado vazio: visual limpo e integrado
             <div className="flex flex-col items-center justify-center text-center bg-muted/20 rounded-xl border border-dashed border-border p-6 py-10">
               <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
                 <Package
@@ -308,7 +446,6 @@ export function ClientPackage({
           )}
         </CardContent>
       </Card>
-
       {activePackage && (
         <PackageVoucher
           open={voucherOpen}

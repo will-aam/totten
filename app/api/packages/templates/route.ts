@@ -3,81 +3,31 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin } from "@/lib/auth";
 
-// GET - Lista todos os templates de pacotes disponíveis
-export async function GET() {
-  try {
-    const admin = await getCurrentAdmin();
-
-    if (!admin) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
-
-    // Busca todos os serviços que podem virar pacotes
-    const services = await prisma.service.findMany({
-      where: {
-        organization_id: admin.organizationId,
-      },
-      include: {
-        category: {
-          select: {
-            name: true,
-          },
-        },
-      },
-      orderBy: {
-        name: "asc",
-      },
-    });
-
-    // Retorna os serviços como templates de pacotes
-    // (cada serviço pode ser vendido em pacotes de N sessões)
-    const templates = services.map((service) => ({
-      id: service.id,
-      name: service.name,
-      description: service.description,
-      duration: service.duration,
-      price_per_session: service.price,
-      category: service.category.name,
-      // Sugestões de pacotes comuns
-      suggested_packages: [
-        { sessions: 5, total_price: Number(service.price) * 5 * 0.95 }, // 5% desc
-        { sessions: 10, total_price: Number(service.price) * 10 * 0.9 }, // 10% desc
-        { sessions: 20, total_price: Number(service.price) * 20 * 0.85 }, // 15% desc
-      ],
-    }));
-
-    return NextResponse.json(templates);
-  } catch (error) {
-    console.error("Erro ao buscar templates:", error);
-    return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
-  }
-}
-
-// POST - Cria um pacote personalizado para um cliente
 export async function POST(request: Request) {
   try {
     const admin = await getCurrentAdmin();
-
-    if (!admin) {
+    if (!admin || !admin.organizationId) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
     const body = await request.json();
-    const { client_id, service_id, total_sessions, price } = body;
+    const {
+      client_id,
+      service_id,
+      total_sessions,
+      price,
+      pay_upfront,
+      payment_method,
+      generate_installments,
+      installments_count,
+    } = body;
 
-    if (!client_id || !service_id || !total_sessions || !price) {
-      return NextResponse.json(
-        { error: "Todos os campos são obrigatórios" },
-        { status: 400 },
-      );
+    if (!client_id || !service_id || !total_sessions || price === undefined) {
+      return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
     }
 
-    // Verifica se o cliente pertence à organização
-    const client = await prisma.client.findFirst({
-      where: {
-        id: client_id,
-        organization_id: admin.organizationId,
-      },
+    const client = await prisma.client.findUnique({
+      where: { id: client_id, organization_id: admin.organizationId },
     });
 
     if (!client) {
@@ -87,12 +37,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Busca o serviço para pegar o nome
-    const service = await prisma.service.findFirst({
-      where: {
-        id: service_id,
-        organization_id: admin.organizationId,
-      },
+    const service = await prisma.service.findUnique({
+      where: { id: service_id, organization_id: admin.organizationId },
     });
 
     if (!service) {
@@ -102,38 +48,98 @@ export async function POST(request: Request) {
       );
     }
 
-    // Cria o pacote vinculado ao cliente
-    const pkg = await prisma.package.create({
-      data: {
-        name: `Pacote ${total_sessions}x - ${service.name}`,
-        total_sessions: Number(total_sessions),
-        used_sessions: 0,
-        price: Number(price),
-        client_id: client_id,
-        service_id: service_id,
-        organization_id: admin.organizationId,
-      },
-      include: {
-        service: {
-          select: {
-            name: true,
-            duration: true,
-          },
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Cria o pacote (O "Contrato" de sessões)
+      const novoPacote = await tx.package.create({
+        data: {
+          name: service.name,
+          total_sessions: total_sessions,
+          used_sessions: 0,
+          price: price,
+          client_id,
+          service_id,
+          organization_id: admin.organizationId,
+          active: true,
         },
-        client: {
-          select: {
-            name: true,
+      });
+
+      // 2. GERAR RECEITA À VISTA
+      if (pay_upfront && payment_method && Number(price) > 0) {
+        const orgPaymentMethod = await tx.organizationPaymentMethod.findFirst({
+          where: {
+            organization_id: admin.organizationId,
+            type: payment_method,
+            isActive: true,
           },
-        },
-      },
+        });
+
+        let netAmount = Number(price);
+        let feeDiscount = 0;
+
+        if (orgPaymentMethod) {
+          const feePercentage = Number(orgPaymentMethod.feePercentage);
+          const feeFixed = Number(orgPaymentMethod.feeFixed);
+          feeDiscount = netAmount * (feePercentage / 100) + feeFixed;
+          netAmount = netAmount - feeDiscount;
+        }
+
+        let txDescription = `Venda de Pacote: ${service.name} (${client.name})`;
+        if (feeDiscount > 0) {
+          txDescription += ` (Taxa abatida: R$ ${feeDiscount.toFixed(2).replace(".", ",")})`;
+        }
+
+        await tx.transaction.create({
+          data: {
+            type: "RECEITA",
+            description: txDescription,
+            amount: netAmount,
+            date: new Date(),
+            status: "PAGO",
+            organization_id: admin.organizationId,
+            client_id: client.id,
+            package_id: novoPacote.id,
+            payment_method_id: orgPaymentMethod?.id || null,
+          },
+        });
+      }
+
+      // 3. GERAR PARCELAS (CONTAS A RECEBER PENDENTE)
+      else if (
+        !pay_upfront &&
+        generate_installments &&
+        installments_count > 0 &&
+        Number(price) > 0
+      ) {
+        const amountPerInstallment = Number(price) / installments_count;
+        const baseDate = new Date();
+
+        for (let i = 0; i < installments_count; i++) {
+          // A primeira parcela vence hoje, a segunda no mês que vem, etc.
+          const dueDate = new Date(baseDate);
+          dueDate.setMonth(baseDate.getMonth() + i);
+
+          await tx.transaction.create({
+            data: {
+              type: "RECEITA",
+              description: `Parcela Pacote: ${service.name} (${client.name})`,
+              amount: amountPerInstallment,
+              date: dueDate,
+              status: "PENDENTE", // 🔥 Importante: Nasce pendente!
+              installment: `${i + 1}/${installments_count}`, // Ex: "1/4", "2/4"
+              organization_id: admin.organizationId,
+              client_id: client.id,
+              package_id: novoPacote.id,
+            },
+          });
+        }
+      }
+
+      return novoPacote;
     });
 
-    return NextResponse.json({
-      success: true,
-      package: pkg,
-    });
+    return NextResponse.json(result);
   } catch (error) {
-    console.error("Erro ao criar pacote:", error);
+    console.error("Erro ao vincular pacote:", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }

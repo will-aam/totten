@@ -15,7 +15,7 @@ interface RecentTransactionsListProps {
   data: Transaction[];
 }
 
-// 🔥 OTIMIZAÇÃO: Formatadores instanciados uma única vez fora do componente
+// 🔥 OTIMIZAÇÃO: Formatadores instanciados uma única vez
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
@@ -26,7 +26,6 @@ const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   month: "short",
 });
 
-// Função auxiliar para evitar erros de tipagem com o Enum do Prisma
 function getPaymentMethodLabel(method: string | null | undefined): string {
   if (!method) return "";
   const m = method.toUpperCase();
@@ -39,6 +38,34 @@ function getPaymentMethodLabel(method: string | null | undefined): string {
 
 function TransactionListItem({ transaction }: { transaction: Transaction }) {
   const isIncome = transaction.type === "RECEITA";
+
+  // =========================================================================
+  // 🔥 MAGIA DE FRONT-END: Limpando a String do Título para o Mobile
+  // =========================================================================
+  let displayTitle = transaction.description;
+  let taxDiscount = "";
+
+  // 1. Extrai o texto da taxa (ex: "(Taxa abatida: R$ 2,50)") e remove do título principal
+  const taxMatch = displayTitle.match(/\(Taxa abatida:\s*(R\$\s*[\d,.]+)\)/i);
+  if (taxMatch) {
+    taxDiscount = taxMatch[1]; // Pega só o "R$ 2,50"
+    displayTitle = displayTitle.replace(taxMatch[0], "").trim();
+  }
+
+  // 2. Remove o nome do cliente repetido em parênteses (ex: "(Maria Silva)")
+  if (transaction.clientName) {
+    // Escapa caracteres especiais do nome para não quebrar a Regex
+    const escapedName = transaction.clientName.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      "\\$&",
+    );
+    const nameRegex = new RegExp(`\\(\\s*${escapedName}\\s*\\)`, "i");
+    displayTitle = displayTitle
+      .replace(nameRegex, "")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+  }
+  // =========================================================================
 
   const StatusBadge = ({ status }: { status: TransactionStatus }) => {
     switch (status) {
@@ -76,7 +103,7 @@ function TransactionListItem({ transaction }: { transaction: Transaction }) {
 
   return (
     <div className="flex items-center justify-between py-3 md:py-4 border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors px-2 -mx-2 rounded-lg group">
-      <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 pr-4">
+      <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 pr-2">
         <div
           className={cn(
             "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-bold shadow-sm border transition-transform group-hover:scale-105",
@@ -93,16 +120,25 @@ function TransactionListItem({ transaction }: { transaction: Transaction }) {
         </div>
 
         <div className="flex flex-col min-w-0">
-          <span className="text-sm font-semibold text-foreground leading-tight mb-1 truncate">
-            {transaction.description}
+          {/* 🔥 truncate adicionado para garantir que corta com "..." se a tela for minúscula */}
+          <span
+            className="text-sm font-semibold text-foreground leading-tight mb-1 truncate"
+            title={displayTitle}
+          >
+            {displayTitle}
           </span>
+
           <span className="text-xs text-muted-foreground leading-none flex items-center gap-1.5 truncate">
-            <span>{dateFormatter.format(new Date(transaction.date))}</span>
+            <span className="shrink-0">
+              {dateFormatter.format(new Date(transaction.date))}
+            </span>
 
             {transaction.paymentMethod && (
               <>
                 <span>•</span>
-                <span>{getPaymentMethodLabel(transaction.paymentMethod)}</span>
+                <span className="shrink-0">
+                  {getPaymentMethodLabel(transaction.paymentMethod)}
+                </span>
               </>
             )}
 
@@ -116,10 +152,11 @@ function TransactionListItem({ transaction }: { transaction: Transaction }) {
         </div>
       </div>
 
-      <div className="flex flex-col items-end gap-1.5 shrink-0">
+      {/* Valores e Badges alinhados à direita */}
+      <div className="flex flex-col items-end gap-1 shrink-0">
         <span
           className={cn(
-            "text-sm font-bold",
+            "text-sm font-bold leading-none",
             isIncome
               ? "text-emerald-600 dark:text-emerald-400"
               : "text-foreground",
@@ -127,7 +164,17 @@ function TransactionListItem({ transaction }: { transaction: Transaction }) {
         >
           {isIncome ? "+" : "-"} {currencyFormatter.format(transaction.amount)}
         </span>
-        <StatusBadge status={transaction.status} />
+
+        {/* 🔥 Mostra a taxa de forma super discreta debaixo do valor */}
+        {taxDiscount && (
+          <span className="text-[9px] font-medium text-muted-foreground/80 leading-none">
+            - taxa {taxDiscount}
+          </span>
+        )}
+
+        <div className="mt-0.5">
+          <StatusBadge status={transaction.status} />
+        </div>
       </div>
     </div>
   );
