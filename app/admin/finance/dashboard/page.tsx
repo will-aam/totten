@@ -58,7 +58,7 @@ export default function FinanceDashboardPage() {
     <>
       <AdminHeader title="Financeiro" />
 
-      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-[1400px] mx-auto w-full pb-24 md:pb-12 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
+      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-350 mx-auto w-full pb-24 md:pb-12 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
         <FinanceHeader
           onSuccess={() => mutate()} // 🔥 Quando criar despesa/receita, avisa o SWR para atualizar o cache!
           selectedMonth={selectedMonth}

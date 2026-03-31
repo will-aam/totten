@@ -25,6 +25,7 @@ import {
   ShelvingUnit,
   Loader2,
   FileText,
+  StickyNote,
 } from "lucide-react";
 import {
   Sidebar,
@@ -78,6 +79,13 @@ const navItems = [
     active: true,
   },
   { title: "Estoque", href: "/admin/stock", icon: ShelvingUnit, active: true },
+  { title: "Clientes", href: "/admin/clients", icon: Users, active: true },
+  {
+    title: "Notas", // Nova opção
+    href: "/admin/notes",
+    icon: StickyNote,
+    active: true,
+  },
   // { title: "Link na Bio", href: "/admin/link-bio", icon: Link2, active: false },
 ];
 
