@@ -29,7 +29,8 @@ model Organization {
   admins              Admin[]                     @relation("AdminToOrganization")
   anamnesis_templates AnamnesisTemplate[]
   anamnesis_responses AnamnesisResponse[]
-  stock_items         StockItem[]                 // 🔥 Relacionamento com Estoque adicionado
+  stock_items         StockItem[]
+  client_notes        ClientNote[]
 
   @@map("organizations")
 }
@@ -109,6 +110,7 @@ model Client {
   updated_at          DateTime            @updatedAt
   appointments        Appointment[]
   check_ins           CheckIn[]
+  notes               ClientNote[]
   organization        Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   packages            Package[]
   transactions        Transaction[]
@@ -402,4 +404,22 @@ model ServiceStockItem {
 
   @@unique([service_id, stock_item_id]) // Evita Insumo duplicado no mesmo serviço
   @@map("service_stock_items")
+}
+// 🔥 --- NOVA TABELA DE ANOTAÇÕES DE CLIENTES --- 🔥
+model ClientNote {
+  id              String       @id @default(cuid())
+  text            String       @db.Text
+  date            DateTime     @default(now())
+  
+  client_id       String
+  organization_id String
+  
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @updatedAt
+
+  client          Client       @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@index([client_id, date]) // Índice para busca rápida ao abrir o chat
+  @@map("client_notes")
 }

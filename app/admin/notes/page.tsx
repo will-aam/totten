@@ -3,6 +3,7 @@
 import { useState } from "react";
 import useSWR from "swr";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useToast } from "@/hooks/use-toast";
 import { ClientListView } from "@/components/notes/client-list-view";
 import { ChatView } from "@/components/notes/chat-view";
 import { Note } from "@/components/notes/chat-bubble";
@@ -17,87 +18,130 @@ type Client = {
 };
 
 export default function AdminNotesPage() {
+  const { toast } = useToast();
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 500);
 
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
-  // Estado que armazena as notas temporariamente na memória (Protótipo)
-  const [localNotes, setLocalNotes] = useState<Record<string, Note[]>>({});
+  // Gatilho de busca com 2 letras, conforme você pediu
+  const shouldSearch = debouncedSearch.trim().length >= 2;
 
-  // Estado que armazena os clientes que já possuem alguma anotação
-  const [clientsWithNotes, setClientsWithNotes] = useState<Client[]>([]);
-
-  // Só faz requisição ao banco (API Real) se a busca tiver 3 ou mais caracteres
-  const shouldFetch = debouncedSearch.trim().length >= 3;
-  const { data: apiResponse } = useSWR<{ data: Client[] }>(
-    shouldFetch
+  // 1. Busca a lista de clientes:
+  // Se estiver pesquisando, vai na rota global de clientes.
+  // Se NÃO estiver pesquisando, vai na nossa rota nova que só traz quem tem anotações.
+  const { data: clientsResponse, mutate: mutateClients } = useSWR<{
+    data: Client[];
+  }>(
+    shouldSearch
       ? `/api/clients?q=${encodeURIComponent(debouncedSearch.trim())}&limit=10`
-      : null,
+      : `/api/admin/notes/clients`,
     fetcher,
   );
+  const displayClients = clientsResponse?.data || [];
 
-  const searchResults = apiResponse?.data || [];
+  // 2. Busca as notas APENAS do cliente selecionado (SWR faz cache e auto-atualiza)
+  const { data: notesResponse, mutate: mutateNotes } = useSWR<{ data: Note[] }>(
+    selectedClient ? `/api/admin/notes?clientId=${selectedClient.id}` : null,
+    fetcher,
+  );
+  const clientNotes = notesResponse?.data || [];
 
-  // Se estiver pesquisando, mostra resultados do BD. Se não, mostra o histórico local.
-  const displayClients = shouldFetch ? searchResults : clientsWithNotes;
+  // --- HANDLERS COM INTEGRAÇÃO REAL (API) E OPTIMISTIC UI ---
 
-  const handleSendNote = (text: string) => {
+  const handleSendNote = async (text: string) => {
     if (!selectedClient) return;
 
-    const newNote: Note = {
-      id: Math.random().toString(), // ID provisório
+    // Atualiza a tela instantaneamente (Optimistic UI)
+    const tempNote: Note = {
+      id: Math.random().toString(),
       text,
       date: new Date().toISOString(),
     };
+    const previousNotes = [...clientNotes];
+    mutateNotes({ data: [...previousNotes, tempNote] }, false);
 
-    setLocalNotes((prev) => ({
-      ...prev,
-      [selectedClient.id]: [...(prev[selectedClient.id] || []), newNote],
-    }));
+    try {
+      const res = await fetch("/api/admin/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientId: selectedClient.id, text }),
+      });
 
-    // Se o cliente não estava na lista inicial, adicionamos ele agora
-    setClientsWithNotes((prev) => {
-      if (prev.some((c) => c.id === selectedClient.id)) return prev;
-      return [selectedClient, ...prev];
-    });
+      if (!res.ok) throw new Error("Falha ao salvar");
+      mutateNotes(); // Revalida com o ID real gerado pelo banco
+      mutateClients(); // Atualiza a lista inicial para o cliente aparecer lá caso seja a 1ª nota
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar a anotação.",
+        variant: "destructive",
+      });
+      mutateNotes({ data: previousNotes }, false); // Reverte a tela em caso de erro
+    }
   };
 
-  // ATUALIZADO: Como o componente ChatBubble já pega o novo texto no Modal,
-  // aqui nós apenas recebemos a nota atualizada e salvamos no estado.
-  const handleEditNote = (updatedNote: Note) => {
+  const handleEditNote = async (updatedNote: Note) => {
     if (!selectedClient) return;
 
-    setLocalNotes((prev) => ({
-      ...prev,
-      [selectedClient.id]: prev[selectedClient.id].map((n) =>
-        n.id === updatedNote.id ? updatedNote : n,
-      ),
-    }));
+    const previousNotes = [...clientNotes];
+    mutateNotes(
+      {
+        data: previousNotes.map((n) =>
+          n.id === updatedNote.id ? updatedNote : n,
+        ),
+      },
+      false,
+    );
+
+    try {
+      const res = await fetch("/api/admin/notes", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          noteId: updatedNote.id,
+          text: updatedNote.text,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Falha ao editar");
+      mutateNotes();
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível editar a anotação.",
+        variant: "destructive",
+      });
+      mutateNotes({ data: previousNotes }, false);
+    }
   };
 
-  // ATUALIZADO: O modal de confirmação já foi tratado no ChatBubble.
-  // Aqui só executamos a deleção de fato nos dados.
-  const handleDeleteNote = (noteId: string) => {
+  const handleDeleteNote = async (noteId: string) => {
     if (!selectedClient) return;
 
-    setLocalNotes((prev) => {
-      const updatedNotes = prev[selectedClient.id].filter(
-        (n) => n.id !== noteId,
-      );
+    const previousNotes = [...clientNotes];
+    mutateNotes({ data: previousNotes.filter((n) => n.id !== noteId) }, false);
 
-      // Se apagou todas as notas, remove o cliente da lista inicial (para manter tudo limpo)
-      if (updatedNotes.length === 0) {
-        setClientsWithNotes((prevClients) =>
-          prevClients.filter((c) => c.id !== selectedClient.id),
-        );
-      }
+    try {
+      const res = await fetch(`/api/admin/notes?noteId=${noteId}`, {
+        method: "DELETE",
+      });
 
-      return {
-        ...prev,
-        [selectedClient.id]: updatedNotes,
-      };
-    });
+      if (!res.ok) throw new Error("Falha ao deletar");
+
+      toast({
+        description: "Anotação excluída com sucesso.",
+      });
+      mutateNotes();
+      mutateClients(); // Se foi a última nota, ele vai sumir da tela inicial
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível excluir a anotação.",
+        variant: "destructive",
+      });
+      mutateNotes({ data: previousNotes }, false);
+    }
   };
 
   // --- VISÃO 1: Lista e Pesquisa ---
@@ -108,7 +152,6 @@ export default function AdminNotesPage() {
         onSearchChange={setSearch}
         filteredClients={displayClients}
         onSelectClient={(id) => {
-          // Encontra o cliente clicado na lista e o define como selecionado
           const client = displayClients.find((c) => c.id === id);
           if (client) setSelectedClient(client);
         }}
@@ -120,10 +163,10 @@ export default function AdminNotesPage() {
   return (
     <ChatView
       clientName={selectedClient.name}
-      notes={localNotes[selectedClient.id] || []}
+      notes={clientNotes}
       onBack={() => {
         setSelectedClient(null);
-        setSearch(""); // Limpa a busca ao sair da nota
+        setSearch("");
       }}
       onSend={handleSendNote}
       onEdit={handleEditNote}
