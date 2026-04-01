@@ -26,6 +26,7 @@ import {
   Loader2,
   FileText,
   StickyNote,
+  Database,
 } from "lucide-react";
 import {
   Sidebar,
@@ -52,14 +53,6 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   {
-    title: "Resumo Diário",
-    href: "/admin/dashboard",
-    icon: NotebookText,
-    active: true,
-  },
-  { title: "Clientes", href: "/admin/clients", icon: Users, active: true },
-  { title: "Serviços", href: "/admin/services", icon: UserCog, active: true },
-  {
     title: "Agendamento",
     href: "/admin/agenda",
     icon: CalendarDays,
@@ -73,20 +66,19 @@ const navItems = [
   },
   { title: "Vouchers", href: "/admin/vouchers", icon: Award, active: true },
   {
-    title: "Fichas de Anamnese",
-    href: "/admin/anamnesis",
-    icon: FileText,
-    active: true,
-  },
-  { title: "Estoque", href: "/admin/stock", icon: ShelvingUnit, active: true },
-  { title: "Clientes", href: "/admin/clients", icon: Users, active: true },
-  {
-    title: "Notas", // Nova opção
+    title: "Notas",
     href: "/admin/notes",
     icon: StickyNote,
     active: true,
   },
   // { title: "Link na Bio", href: "/admin/link-bio", icon: Link2, active: false },
+];
+
+const cadastrosSubItems = [
+  { title: "Clientes", href: "/admin/clients", active: true },
+  { title: "Serviços", href: "/admin/services", active: true },
+  { title: "Fichas de Anamnese", href: "/admin/anamnesis", active: true },
+  { title: "Estoque", href: "/admin/stock", active: true },
 ];
 
 const agendaSubItems = [
@@ -111,6 +103,8 @@ const financeSubItems = [
   },
 ];
 
+type OpenModule = "cadastros" | "agenda" | "finance" | null;
+
 export function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -119,15 +113,24 @@ export function AdminSidebar() {
   const [clinicName, setClinicName] = useState("Totten");
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
-  const [openModule, setOpenModule] = useState<"agenda" | "finance" | null>(
-    null,
-  );
+  const [openModule, setOpenModule] = useState<OpenModule>(null);
 
   const supportPhone = "5579998752198";
   const supportMessage = encodeURIComponent(
     "Olá! Preciso de ajuda com o sistema Totten.",
   );
   const whatsappUrl = `https://wa.me/${supportPhone}?text=${supportMessage}`;
+
+  // Auto-abre o módulo correto baseado na rota atual
+  useEffect(() => {
+    if (cadastrosSubItems.some((i) => pathname.startsWith(i.href))) {
+      setOpenModule("cadastros");
+    } else if (agendaSubItems.some((i) => pathname.startsWith(i.href))) {
+      setOpenModule("agenda");
+    } else if (financeSubItems.some((i) => pathname.startsWith(i.href))) {
+      setOpenModule("finance");
+    }
+  }, [pathname]);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -195,6 +198,87 @@ export function AdminSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              {/* Resumo Diário (sempre primeiro) */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith("/admin/dashboard")}
+                  className="hover:bg-muted/50"
+                >
+                  <Link
+                    href="/admin/dashboard"
+                    onClick={() => setOpenMobile(false)}
+                  >
+                    <NotebookText className="h-4 w-4" />
+                    <span>Resumo Diário</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Cadastros (Collapsible) */}
+              <Collapsible
+                asChild
+                className="group/collapsible w-full"
+                open={openModule === "cadastros"}
+                onOpenChange={(open) =>
+                  setOpenModule(open ? "cadastros" : null)
+                }
+              >
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton
+                      isActive={cadastrosSubItems.some((i) =>
+                        pathname.startsWith(i.href),
+                      )}
+                      className="hover:bg-muted/50"
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-2">
+                          <Database className="h-4 w-4" />
+                          <span>Cadastros</span>
+                        </div>
+                        <ChevronRight className="h-3 w-3 text-muted-foreground/50 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                      </div>
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub className="border-l border-border ml-4 mt-1">
+                      {cadastrosSubItems.map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton
+                            asChild={subItem.active}
+                            isActive={
+                              pathname.startsWith(subItem.href) &&
+                              subItem.active
+                            }
+                            className={cn(
+                              "py-2",
+                              !subItem.active &&
+                                "opacity-50 cursor-not-allowed",
+                            )}
+                          >
+                            {subItem.active ? (
+                              <Link
+                                href={subItem.href}
+                                onClick={() => setOpenMobile(false)}
+                              >
+                                <span className="text-xs">{subItem.title}</span>
+                              </Link>
+                            ) : (
+                              <div className="flex items-center justify-between w-full">
+                                <span className="text-xs">{subItem.title}</span>
+                                <Lock className="h-2.5 w-2.5 opacity-50" />
+                              </div>
+                            )}
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+
+              {/* Demais itens do menu principal */}
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
@@ -243,7 +327,12 @@ export function AdminSidebar() {
               >
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton className="hover:bg-muted/50">
+                    <SidebarMenuButton
+                      isActive={agendaSubItems.some((i) =>
+                        pathname.startsWith(i.href),
+                      )}
+                      className="hover:bg-muted/50"
+                    >
                       <div className="flex items-center justify-between w-full">
                         <div className="flex items-center gap-2">
                           <CalendarDays className="h-4 w-4" />
@@ -319,7 +408,12 @@ export function AdminSidebar() {
                 >
                   <SidebarMenuItem>
                     <CollapsibleTrigger asChild>
-                      <SidebarMenuButton className="hover:bg-muted/50">
+                      <SidebarMenuButton
+                        isActive={financeSubItems.some((i) =>
+                          pathname.startsWith(i.href),
+                        )}
+                        className="hover:bg-muted/50"
+                      >
                         <div className="flex items-center justify-between w-full">
                           <div className="flex items-center gap-2">
                             <Wallet className="h-4 w-4" />
@@ -398,9 +492,7 @@ export function AdminSidebar() {
 
         <div className="h-px bg-border/50 w-full" />
 
-        {/* Linha unificada: Suporte, Configurações e Sair */}
         <div className="flex w-full items-center gap-1">
-          {/* Botão Suporte (Apenas ícone) */}
           <SidebarMenuButton
             asChild
             tooltip="Suporte"
@@ -411,7 +503,6 @@ export function AdminSidebar() {
             </a>
           </SidebarMenuButton>
 
-          {/* Botão Configurações (Apenas ícone) */}
           <SidebarMenuButton
             asChild
             tooltip="Configurações"
@@ -422,7 +513,6 @@ export function AdminSidebar() {
             </Link>
           </SidebarMenuButton>
 
-          {/* Botão Sair (Ícone + Texto) */}
           <SidebarMenuButton
             onClick={handleLogout}
             disabled={loggingOut}
