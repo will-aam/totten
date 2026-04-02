@@ -27,6 +27,7 @@ import {
   FileText,
   StickyNote,
   Database,
+  Smartphone, // Adicionei este ícone para o módulo de Autoatendimento
 } from "lucide-react";
 import {
   Sidebar,
@@ -71,7 +72,6 @@ const navItems = [
     icon: StickyNote,
     active: true,
   },
-  // { title: "Link na Bio", href: "/admin/link-bio", icon: Link2, active: false },
 ];
 
 const cadastrosSubItems = [
@@ -81,11 +81,23 @@ const cadastrosSubItems = [
   { title: "Estoque", href: "/admin/stock", active: true },
 ];
 
+// Agenda agora foca apenas na operação do dia a dia
 const agendaSubItems = [
-  { title: "Agendamentos Recorrentes", href: "/admin/recurring", active: true },
-  { title: "Confirmações e Lembretes", href: "/admin/reminders", active: true },
-  { title: "Bloqueio de Horário", href: "#", active: false },
-  { title: "Lista de Espera", href: "#", active: false },
+  { title: "Calendário Diário", href: "/admin/agenda/calendar", active: false },
+  { title: "Confirmações Manuais", href: "/admin/reminders", active: true },
+];
+
+// O Novo módulo focado na automação e configuração para o cliente final
+const autoatendimentoSubItems = [
+  { title: "Dashboard", href: "/admin/auto/dashboard", active: false },
+  {
+    title: "Solicitações Pendentes",
+    href: "/admin/auto/requests",
+    active: false,
+  },
+  { title: "Link Bio", href: "/admin/link-bio", icon: Link2, active: false },
+  { title: "WhatsApp Automático", href: "/admin/whatsapp-auto", active: false },
+  { title: "Regras e Horários", href: "/admin/auto/rules", active: false },
 ];
 
 const financeSubItems = [
@@ -103,7 +115,7 @@ const financeSubItems = [
   },
 ];
 
-type OpenModule = "cadastros" | "agenda" | "finance" | null;
+type OpenModule = "cadastros" | "agenda" | "autoatendimento" | "finance" | null;
 
 export function AdminSidebar() {
   const pathname = usePathname();
@@ -127,6 +139,12 @@ export function AdminSidebar() {
       setOpenModule("cadastros");
     } else if (agendaSubItems.some((i) => pathname.startsWith(i.href))) {
       setOpenModule("agenda");
+    } else if (
+      autoatendimentoSubItems.some(
+        (i) => pathname.startsWith(i.href) && i.href !== "#",
+      )
+    ) {
+      setOpenModule("autoatendimento");
     } else if (financeSubItems.some((i) => pathname.startsWith(i.href))) {
       setOpenModule("finance");
     }
@@ -319,6 +337,7 @@ export function AdminSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              {/* Módulo: Agenda Diária */}
               <Collapsible
                 asChild
                 className="group/collapsible w-full"
@@ -379,6 +398,70 @@ export function AdminSidebar() {
                 </SidebarMenuItem>
               </Collapsible>
 
+              {/* Módulo: Autoatendimento */}
+              <Collapsible
+                asChild
+                className="group/collapsible w-full"
+                open={openModule === "autoatendimento"}
+                onOpenChange={(open) =>
+                  setOpenModule(open ? "autoatendimento" : null)
+                }
+              >
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton
+                      isActive={autoatendimentoSubItems.some((i) =>
+                        pathname.startsWith(i.href),
+                      )}
+                      className="hover:bg-muted/50"
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-2">
+                          <Smartphone className="h-4 w-4" />
+                          <span>Autoatendimento</span>
+                        </div>
+                        <ChevronRight className="h-3 w-3 text-muted-foreground/50 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                      </div>
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub className="border-l border-border ml-4 mt-1">
+                      {autoatendimentoSubItems.map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton
+                            asChild={subItem.active}
+                            isActive={
+                              pathname.startsWith(subItem.href) &&
+                              subItem.active
+                            }
+                            className={cn(
+                              "py-2",
+                              !subItem.active &&
+                                "opacity-50 cursor-not-allowed",
+                            )}
+                          >
+                            {subItem.active ? (
+                              <Link
+                                href={subItem.href}
+                                onClick={() => setOpenMobile(false)}
+                              >
+                                <span className="text-xs">{subItem.title}</span>
+                              </Link>
+                            ) : (
+                              <div className="flex items-center justify-between w-full">
+                                <span className="text-xs">{subItem.title}</span>
+                                <Lock className="h-2.5 w-2.5 opacity-50" />
+                              </div>
+                            )}
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+
+              {/* Módulo: Financeiro */}
               {isMobile ? (
                 <SidebarMenuItem>
                   <SidebarMenuButton
