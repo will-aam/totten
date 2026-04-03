@@ -193,11 +193,7 @@ export default function AnamnesisListPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className={`flex-1 rounded-lg h-9 text-xs font-medium ${
-                        template.active
-                          ? "text-muted-foreground hover:text-amber-600 hover:bg-amber-50 hover:border-amber-200"
-                          : "text-muted-foreground hover:text-green-600 hover:bg-green-50 hover:border-green-200"
-                      }`}
+                      className={`flex-1 rounded-lg h-9 text-xs font-medium`}
                       onClick={() =>
                         handleToggleStatus(template.id, template.active)
                       }

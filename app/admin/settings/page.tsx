@@ -83,7 +83,7 @@ export default function AdminSettingsPage() {
             </TabsTrigger>
           </TabsList>
 
-          <div className="mt-6 flex-1">
+          <div className="mt-2 flex-1">
             <TabsContent
               value="general"
               className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500"

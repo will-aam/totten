@@ -19,8 +19,8 @@ export function NotificationsSettings() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card className="border-border shadow-sm">
-        <CardHeader>
+      <Card className="border-none shadow-none py-0 sm:py-6">
+        <CardHeader className="px-0">
           <CardTitle className="flex items-center gap-2 text-card-foreground">
             <Bell className="h-5 w-5 text-primary" />
             Alertas do Sistema
@@ -30,7 +30,7 @@ export function NotificationsSettings() {
             Totten.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-6">
+        <CardContent className="grid gap-6 px-0">
           {/* Alerta Sonoro */}
           <div className="flex items-start sm:items-center justify-between gap-4 rounded-lg border p-4 bg-card">
             <div className="flex items-center gap-3">

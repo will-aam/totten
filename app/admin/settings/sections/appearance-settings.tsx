@@ -71,17 +71,17 @@ export function AppearanceSettings() {
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-500">
       {/* Configuração de Temas */}
-      <Card className="border-border/50 shadow-sm rounded-3xl overflow-hidden">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-foreground font-black text-xl">
+      <Card className="border-none shadow-none py-0 sm:py-6">
+        <CardHeader className="px-0">
+          <CardTitle className="flex items-center gap-2 text-foreground">
             <Palette className="h-5 w-5 text-primary" />
             Aparência do Sistema
           </CardTitle>
-          <CardDescription className="font-medium text-base">
+          <CardDescription>
             Escolha o tema de cores que melhor combina com sua empresa.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-0 justify-center flex md:block">
           <div className="flex flex-wrap gap-4">
             {/* QUADRADO CLARO */}
             <button

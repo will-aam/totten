@@ -11,12 +11,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ShieldCheck, Loader2 } from "lucide-react";
+import { ShieldCheck, Loader2, Save, ArrowUp } from "lucide-react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function SecuritySettings() {
   const { data: session } = useSession();
+  const isMobile = useIsMobile();
   const [email, setEmail] = useState(session?.user?.email || "");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -66,17 +68,41 @@ export function SecuritySettings() {
   };
 
   return (
-    <Card className="border-border">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-card-foreground">
-          <ShieldCheck className="h-5 w-5 text-primary" />
-          Acesso e Segurança
-        </CardTitle>
-        <CardDescription>
-          Faça a gestão das credenciais de acesso ao painel de administração.
-        </CardDescription>
+    <Card className="border-none shadow-none py-0 sm:py-6">
+      <CardHeader className="px-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-card-foreground mb-2">
+              <ShieldCheck className="h-5 w-5 text-primary" />
+              Acesso e Segurança
+            </CardTitle>
+            <CardDescription>
+              Faça a gestão das credenciais de acesso ao painel de
+              administração.
+            </CardDescription>
+          </div>
+          <div className="flex items-center justify-end gap-2 shrink-0">
+            <Button
+              onClick={handleChangePassword}
+              disabled={loading}
+              className={` ${isMobile ? "hidden" : "max-w-xs"}`}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Salvar
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
       </CardHeader>
-      <CardContent className="grid gap-6">
+      <CardContent className="grid gap-6 px-0">
         <div className="grid gap-2">
           <Label htmlFor="email">E-mail de Acesso</Label>
           <Input
@@ -91,22 +117,21 @@ export function SecuritySettings() {
           </p>
         </div>
 
-        <form
-          onSubmit={handleChangePassword}
-          className="grid gap-4 pt-4 border-t"
-        >
+        <div className="grid gap-4">
           <h3 className="font-medium text-sm">Alterar Senha</h3>
 
-          <div className="grid gap-2 max-w-sm">
-            <Label htmlFor="current-password">Senha Atual</Label>
-            <Input
-              id="current-password"
-              type="password"
-              placeholder="••••••••"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              required
-            />
+          <div className="grid sm:grid-cols-2 gap-2 max-w-2xl">
+            <div className="grid gap-2">
+              <Label htmlFor="current-password">Senha Atual</Label>
+              <Input
+                id="current-password"
+                type="text"
+                placeholder="••••••••"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+              />
+            </div>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4 max-w-2xl">
@@ -114,7 +139,7 @@ export function SecuritySettings() {
               <Label htmlFor="new-password">Nova Senha</Label>
               <Input
                 id="new-password"
-                type="password"
+                type="text"
                 placeholder="••••••••"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
@@ -126,7 +151,7 @@ export function SecuritySettings() {
               <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
               <Input
                 id="confirm-password"
-                type="password"
+                type="text"
                 placeholder="••••••••"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -135,19 +160,15 @@ export function SecuritySettings() {
               />
             </div>
           </div>
-
-          <Button type="submit" disabled={loading} className="max-w-xs">
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Salvando...
-              </>
-            ) : (
-              "Salvar Nova Senha"
-            )}
-          </Button>
-        </form>
+        </div>
       </CardContent>
+      <button
+        onClick={handleChangePassword}
+        disabled={loading}
+        className={`${!isMobile ? "hidden" : "fixed bottom-0 right-4 md:bottom-8 md:right-8 h-14 w-14 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 z-50 translate-y-16 opacity-100 hover:scale-110"} `}
+      >
+        <Save className="h-6 w-6" strokeWidth={2.5} />
+      </button>
     </Card>
   );
 }
