@@ -15,9 +15,11 @@ import {
 import { Building, Info, Repeat, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function GeneralSettings() {
   const { data: session } = useSession();
+  const isMobile = useIsMobile();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [docType, setDocType] = useState<"CNPJ" | "CPF">("CNPJ");
@@ -32,7 +34,6 @@ export function GeneralSettings() {
 
   const [cpfCache, setCpfCache] = useState("");
   const [cnpjCache, setCnpjCache] = useState("");
-  const [emailFromSecurity, setEmailFromSecurity] = useState("");
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -47,8 +48,6 @@ export function GeneralSettings() {
             contactPhone: data.contactPhone || "",
             whatsapp: data.whatsapp || "",
           });
-          setEmailFromSecurity(session?.user?.email || "");
-
           const cleanDoc = data.document?.replace(/\D/g, "") || "";
           if (cleanDoc.length > 0) {
             if (cleanDoc.length <= 11) {
@@ -150,7 +149,7 @@ export function GeneralSettings() {
 
   if (loading) {
     return (
-      <Card className="border-0 bg-transparent shadow-none md:border md:bg-card md:shadow-sm">
+      <Card className="border-none shadow-none py-0 sm:py-6">
         <CardContent className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </CardContent>
@@ -159,15 +158,36 @@ export function GeneralSettings() {
   }
 
   return (
-    <Card className="border-0 bg-transparent shadow-none md:border md:bg-card md:shadow-sm">
-      <CardHeader className="px-0 pt-0 md:pt-6 md:px-6">
-        <CardTitle className="flex items-center gap-2 text-card-foreground">
-          <Building className="h-5 w-5 text-primary" />
-          Dados da Empresa
-        </CardTitle>
-        <CardDescription>
-          Configure as informações principais da sua empresa.
-        </CardDescription>
+    <Card className="border-none shadow-none py-0 sm:py-6">
+      <CardHeader className="px-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-card-foreground mb-2">
+              <Building className="h-5 w-5 text-primary" />
+              Dados da Empresa
+            </CardTitle>
+            <CardDescription>
+              Configure as informações principais da sua empresa.
+            </CardDescription>
+          </div>
+          <div
+            className={`flex ${isMobile ? "hidden" : "justify-end items-center gap-2 shrink-0"}`}
+          >
+            <Button onClick={handleSave} disabled={saving} className="min-w-32">
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Salvar
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
       </CardHeader>
 
       <CardContent className="grid gap-6 px-0 pb-0 md:pb-6 md:px-6">
@@ -229,7 +249,7 @@ export function GeneralSettings() {
           </div>
         </div>
 
-        <div className="grid sm:grid-cols-3 gap-4 pt-6 mt-2 border-t border-border">
+        <div className="grid sm:grid-cols-2 gap-4">
           {/* Telefone Fixo/Contato Secundário */}
           <div className="grid gap-2">
             <Label htmlFor="contactPhone">Telefone Fixo / Outro</Label>
@@ -256,41 +276,15 @@ export function GeneralSettings() {
               />
             </div>
           </div>
-
-          {/* E-mail */}
-          <div className="grid gap-2">
-            <Label htmlFor="email" className="text-muted-foreground">
-              E-mail Administrativo
-            </Label>
-            <Input
-              id="email"
-              value={emailFromSecurity}
-              disabled
-              className="bg-muted text-muted-foreground cursor-not-allowed"
-            />
-            <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-              <Info className="h-3 w-3 shrink-0" />
-              Altere na aba "Segurança"
-            </p>
-          </div>
-        </div>
-
-        <div className="flex justify-end pt-4 border-t border-border">
-          <Button onClick={handleSave} disabled={saving} className="min-w-32">
-            {saving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Salvando...
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                Salvar Alterações
-              </>
-            )}
-          </Button>
         </div>
       </CardContent>
+      <button
+        onClick={handleSave}
+        disabled={loading}
+        className={`${!isMobile ? "hidden" : "fixed bottom-0 right-4 md:bottom-8 md:right-8 h-14 w-14 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 z-50 translate-y-16 opacity-100 hover:scale-110"} `}
+      >
+        <Save className="h-6 w-6" strokeWidth={2.5} />
+      </button>
     </Card>
   );
 }

@@ -20,8 +20,10 @@ import {
 } from "@/components/ui/accordion";
 import { MessageSquare, HelpCircle, Save, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function MessageSettings() {
+  const isMobile = useIsMobile();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showTip, setShowTip] = useState(false);
@@ -103,7 +105,7 @@ export function MessageSettings() {
   // Loading state
   if (loading) {
     return (
-      <Card className="border-0 bg-transparent shadow-none md:border md:bg-card md:shadow-sm">
+      <Card className="border-none shadow-none py-0 sm:py-6">
         <CardContent className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </CardContent>
@@ -113,8 +115,8 @@ export function MessageSettings() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card className="border-0 bg-transparent shadow-none md:border md:bg-card md:shadow-sm">
-        <CardHeader className="px-0 pt-0 md:pt-6 md:px-6">
+      <Card className="border-none shadow-none py-0 sm:py-6">
+        <CardHeader className="px-0">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <CardTitle className="flex items-center gap-2 text-card-foreground">
@@ -127,7 +129,9 @@ export function MessageSettings() {
             </div>
 
             {/* Grupo de Botões */}
-            <div className="flex items-center gap-2 shrink-0">
+            <div
+              className={`flex ${isMobile ? "justify-end" : "justify-between"} items-center  gap-2 shrink-0`}
+            >
               <Button
                 variant="outline"
                 onClick={() =>
@@ -137,7 +141,11 @@ export function MessageSettings() {
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Modelo
               </Button>
-              <Button onClick={handleSaveAll} disabled={saving}>
+              <Button
+                onClick={handleSaveAll}
+                disabled={saving}
+                className={` ${isMobile ? "hidden" : "max-w-xs"}`}
+              >
                 {saving ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -267,6 +275,13 @@ export function MessageSettings() {
             </Accordion>
           </div>
         </CardContent>
+        <button
+          onClick={handleSaveAll}
+          disabled={saving}
+          className={`${!isMobile ? "hidden" : "fixed bottom-0 right-4 md:bottom-8 md:right-8 h-14 w-14 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 z-50 translate-y-16 opacity-100 hover:scale-110"} `}
+        >
+          <Save className="h-6 w-6" strokeWidth={2.5} />
+        </button>
       </Card>
     </div>
   );
