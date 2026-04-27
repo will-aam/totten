@@ -5,7 +5,7 @@ import useSWR, { mutate } from "swr";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input"; // 🔥 Importamos o Input
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
@@ -25,12 +25,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Package, Plus, Loader2 } from "lucide-react";
+import { Package, Plus, Loader2, ArchiveX } from "lucide-react";
 import { toast } from "sonner";
 import { PackageVoucher } from "./package-voucher";
 import { cn } from "@/lib/utils";
 import { getPaymentMethods } from "@/app/actions/payment-methods";
 import { OrganizationPaymentMethod } from "@/types/finance";
+import { archivePackage } from "@/app/actions/packages";
 
 export type PackageType = {
   id: string;
@@ -66,6 +67,8 @@ export function ClientPackage({
   const { data: packages, isLoading: isLoadingPackages } = useSWR<
     PackageType[]
   >(`/api/admin/clients/${clientId}/packages`, fetcher);
+
+  // Encontra o pacote ativo atual
   const activePackage =
     packages?.find(
       (pkg) => pkg.active && pkg.used_sessions < pkg.total_sessions,
@@ -76,6 +79,10 @@ export function ClientPackage({
   const [templates, setTemplates] = useState<PackageTemplate[]>([]);
   const [templateId, setTemplateId] = useState<string>("");
   const [loading, setLoading] = useState(false);
+
+  // 🔥 ESTADOS PARA ENCAMINHAMENTO DO PACOTE
+  const [isArchiving, setIsArchiving] = useState(false);
+  const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
 
   // 🔥 ESTADOS FINANCEIROS
   const [paymentMethods, setPaymentMethods] = useState<
@@ -174,6 +181,31 @@ export function ClientPackage({
     }
   };
 
+  // 🔥 FUNÇÃO ATUALIZADA: Lida com a confirmação e execução do encerramento
+  const handleArchivePackage = async () => {
+    if (!activePackage) return;
+
+    // Nota: A confirmação visual agora é feita pelo Modal (Dialog) antes de chamar esta função.
+    // Se preferir uma verificação extra de segurança no código (opcional), pode manter,
+    // mas como solicitado, removemos o window.confirm.
+
+    setIsArchiving(true);
+    try {
+      const result = await archivePackage(activePackage.id);
+      if (result.success) {
+        toast.success("Plano encerrado com sucesso!");
+        mutate(`/api/admin/clients/${clientId}/packages`);
+        setIsArchiveDialogOpen(false); // Fecha o modal de confirmação
+      } else {
+        toast.error(result.error || "Falha ao encerrar plano.");
+      }
+    } catch (error) {
+      toast.error("Erro de comunicação com o servidor.");
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+
   const currentTemplate = templates.find((t) => t.id === templateId);
 
   return (
@@ -211,7 +243,6 @@ export function ClientPackage({
                     value={templateId}
                     onValueChange={(val) => {
                       setTemplateId(val);
-                      // Dica UX: Seta o default de parcelas igual ao número de sessões do pacote
                       const tpl = templates.find((t) => t.id === val);
                       if (tpl) setInstallmentsCount(tpl.total_sessions);
                     }}
@@ -279,7 +310,7 @@ export function ClientPackage({
                       checked={payUpfront}
                       onCheckedChange={(val) => {
                         setPayUpfront(val);
-                        if (val) setGenerateInstallments(false); // Reseta parcelamento se for à vista
+                        if (val) setGenerateInstallments(false);
                       }}
                       disabled={loading}
                     />
@@ -418,15 +449,81 @@ export function ClientPackage({
                     : "🎉 Todas as sessões foram finalizadas!"}
                 </p>
               </div>
-              {isCompleted && (
-                <Button
-                  onClick={() => setVoucherOpen(true)}
-                  variant="outline"
-                  className="w-full rounded-xl border-primary/20 text-primary h-10"
+
+              {/* 🔥 AQUI FICAM OS BOTÕES */}
+              <div className="flex flex-col gap-2 mt-2">
+                {isCompleted && (
+                  <Button
+                    onClick={() => setVoucherOpen(true)}
+                    variant="outline"
+                    className="w-full rounded-xl border-primary/20 text-primary h-10"
+                  >
+                    Comprovante Final
+                  </Button>
+                )}
+
+                {/* 🔥 MODAL DE CONFIRMAÇÃO PARA ENCERRAR PLANO */}
+                <Dialog
+                  open={isArchiveDialogOpen}
+                  onOpenChange={setIsArchiveDialogOpen}
                 >
-                  Comprovante Final
-                </Button>
-              )}
+                  <DialogTrigger asChild>
+                    <Button
+                      disabled={isArchiving}
+                      variant="destructive"
+                      className="w-full rounded-xl h-10 flex items-center justify-center"
+                    >
+                      {isArchiving ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />{" "}
+                          Processando...
+                        </>
+                      ) : (
+                        <>
+                          <ArchiveX className="h-4 w-4 mr-2" />
+                          Encerrar / Zerar Plano
+                        </>
+                      )}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-100 rounded-2xl">
+                    <DialogHeader>
+                      <DialogTitle className="text-destructive">
+                        Encerrar Plano Prematuramente?
+                      </DialogTitle>
+                      <DialogDescription className="text-base py-2">
+                        Tem certeza que deseja encerrar este plano? O saldo
+                        restante de sessões será perdido e esta ação não pode
+                        ser desfeita.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsArchiveDialogOpen(false)}
+                        disabled={isArchiving}
+                        className="w-full sm:w-auto"
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={handleArchivePackage}
+                        disabled={isArchiving}
+                        className="w-full sm:w-auto"
+                      >
+                        {isArchiving ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          "Sim, encerrar plano"
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center text-center bg-muted/20 rounded-xl border border-dashed border-border p-6 py-10">

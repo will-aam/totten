@@ -87,11 +87,16 @@ export async function POST(request: Request) {
       },
     });
 
-    // Atualiza o contador de sessões usadas
+    // 🔥 CALCULA SE O PACOTE DEVE SER ARQUIVADO
+    const newUsedSessions = activePackage.used_sessions + 1;
+    const willRemainActive = newUsedSessions < activePackage.total_sessions;
+
+    // Atualiza o contador de sessões usadas e inativa se bateu o limite
     await prisma.package.update({
       where: { id: activePackage.id },
       data: {
-        used_sessions: activePackage.used_sessions + 1,
+        used_sessions: newUsedSessions,
+        active: willRemainActive, // 🎯 A mágica acontece aqui
       },
     });
 
@@ -102,7 +107,7 @@ export async function POST(request: Request) {
         name: client.name,
       },
       package_info: {
-        used_sessions: activePackage.used_sessions + 1,
+        used_sessions: newUsedSessions,
         total_sessions: activePackage.total_sessions,
       },
       check_in: {

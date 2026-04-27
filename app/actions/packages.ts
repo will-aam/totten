@@ -153,6 +153,10 @@ export async function getPackageHistory(packageId: string) {
  * Realiza uma baixa manual "robusta":
  * Cria um agendamento retroativo (agora), marca como REALIZADO e desconta do pacote.
  */
+/**
+ * Realiza uma baixa manual "robusta":
+ * Cria um agendamento retroativo (agora), marca como REALIZADO e desconta do pacote.
+ */
 export async function createManualPackageCheckIn(packageId: string) {
   try {
     const admin = await requireAuth();
@@ -194,12 +198,19 @@ export async function createManualPackageCheckIn(packageId: string) {
         },
       });
 
-      // Desconta a sessão do pacote
+      // Calcula se esta baixa vai zerar o pacote
+      const newUsedSessions = pkg.used_sessions + 1;
+      const willRemainActive = newUsedSessions < pkg.total_sessions;
+
+      // Desconta a sessão do pacote e já desativa caso tenha batido a cota
       await tx.package.update({
         where: { id: pkg.id },
-        data: { used_sessions: { increment: 1 } },
+        data: {
+          used_sessions: { increment: 1 },
+          active: willRemainActive,
+        },
       });
-    });
+    }); // 🔥 O FECHAMENTO DA TRANSAÇÃO QUE FALTAVA ESTÁ AQUI
 
     // Revalida todas as telas envolvidas para atualizar os números na hora
     revalidatePath("/admin/packages");

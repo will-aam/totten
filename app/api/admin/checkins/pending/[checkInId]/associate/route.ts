@@ -8,8 +8,8 @@ import { requireAuth } from "@/lib/auth";
  * POST /api/admin/checkins/pending/[checkInId]/associate
  * Body:
  * {
- *   "serviceId": "srv_id" | null,
- *   "packageId": "pkg_id" | null
+ * "serviceId": "srv_id" | null,
+ * "packageId": "pkg_id" | null
  * }
  */
 export async function POST(
@@ -94,9 +94,17 @@ export async function POST(
           },
         });
 
+        // 🔥 CALCULA SE O PACOTE DEVE SER ARQUIVADO
+        const newUsedSessions = pkg.used_sessions + 1;
+        const willRemainActive = newUsedSessions < pkg.total_sessions;
+
+        // Atualiza sessões e já inativa se bateu o limite
         await tx.package.update({
           where: { id: packageId },
-          data: { used_sessions: { increment: 1 } },
+          data: {
+            used_sessions: newUsedSessions,
+            active: willRemainActive, // 🎯 Correção aplicada aqui!
+          },
         });
 
         await tx.checkIn.update({

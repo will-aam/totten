@@ -33,6 +33,14 @@ import {
 } from "@/app/actions/packages";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/use-debounce";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"; // 🔥 Importado para o modal de confirmação
 
 function KpiCard({
   title,
@@ -73,7 +81,7 @@ function KpiCard({
   );
 }
 
-// 🔥 NOVO: Componente de Bolinha Pulsante (Sonda)
+// Componente de Bolinha Pulsante (Sonda)
 function StatusIndicator({
   active,
   isEndingSoon,
@@ -144,7 +152,6 @@ function PackageListItem({ pkg, onOpenDetails, onManualCheckIn }: any) {
             )}
           >
             {pkg.clientName}
-            {/* 🔥 NOVO: Badge "Arquivado" para pacotes inativos */}
             {!pkg.active && (
               <span className="text-[9px] uppercase tracking-wider bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-sm not-line-through">
                 Arquivado
@@ -173,19 +180,17 @@ function PackageListItem({ pkg, onOpenDetails, onManualCheckIn }: any) {
         className="flex items-center justify-end w-8 sm:w-12 gap-2"
         onClick={() => onOpenDetails(pkg)}
       >
-        {/* 🔥 Usando o novo indicador pulsante */}
         <StatusIndicator active={pkg.active} isEndingSoon={isEndingSoon} />
       </div>
 
       <div className="flex items-center gap-1">
-        {/* 🔥 Só exibe o botão de Check-in Manual se o pacote estiver ativo */}
         {pkg.active ? (
           <Button
             variant="ghost"
             size="icon"
             className="h-10 w-10 text-muted-foreground hover:text-primary hover:bg-primary/10 active:text-primary active:bg-primary/10 rounded-full shrink-0"
             onClick={(e) => {
-              e.stopPropagation(); // Evita abrir o modal ao clicar no botão
+              e.stopPropagation();
               onManualCheckIn(pkg);
             }}
             title="Registrar Check-in Manual"
@@ -193,7 +198,7 @@ function PackageListItem({ pkg, onOpenDetails, onManualCheckIn }: any) {
             <CheckCircle2 className="h-5 w-5" />
           </Button>
         ) : (
-          <div className="h-10 w-10" /> // Espaçador para manter o alinhamento
+          <div className="h-10 w-10" />
         )}
       </div>
     </div>
@@ -205,6 +210,11 @@ export default function PackagesPage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<any>(null);
+
+  // 🔥 NOVOS ESTADOS PARA O MODAL DE CHECK-IN
+  const [isCheckInDialogOpen, setIsCheckInDialogOpen] = useState(false);
+  const [pkgToCheckIn, setPkgToCheckIn] = useState<any>(null);
+  const [isCheckingIn, setIsCheckingIn] = useState(false);
 
   const [packages, setPackages] = useState<any[]>([]);
   const [kpis, setKpis] = useState({
@@ -249,7 +259,6 @@ export default function PackagesPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [loadData]);
 
-  // 🔥 NOVO: Quando o Modal fechar, recarregamos a tabela para atualizar se a dona tiver arquivado o pacote.
   const handleModalClose = (isOpen: boolean) => {
     setDetailsOpen(isOpen);
     if (!isOpen) {
@@ -257,27 +266,35 @@ export default function PackagesPage() {
     }
   };
 
-  const handleManualCheckIn = async (pkg: any) => {
+  // 🔥 FUNÇÃO PARA ABRIR O DIALOG
+  const openCheckInDialog = (pkg: any) => {
     if (pkg.usedSessions >= pkg.totalSessions) {
       toast.error("Saldo insuficiente.");
       return;
     }
-    const confirm = window.confirm(
-      `Registrar sessão de ${pkg.clientName} agora? (Isto criará um registro na agenda e check-in)`,
-    );
-    if (!confirm) return;
+    setPkgToCheckIn(pkg);
+    setIsCheckInDialogOpen(true);
+  };
 
+  // 🔥 FUNÇÃO PARA EXECUTAR O CHECK-IN (Confirmar no Modal)
+  const confirmManualCheckIn = async () => {
+    if (!pkgToCheckIn) return;
+
+    setIsCheckingIn(true);
     try {
       toast.loading("Registrando...", { id: "manual" });
-      const res = await createManualPackageCheckIn(pkg.id);
+      const res = await createManualPackageCheckIn(pkgToCheckIn.id);
       if (res.success) {
         toast.success("Check-in registrado com sucesso!", { id: "manual" });
-        loadData();
+        setIsCheckInDialogOpen(false); // Fecha o modal
+        loadData(); // Atualiza a lista
       } else {
         toast.error(res.error || "Erro ao registrar.", { id: "manual" });
       }
     } catch (e) {
       toast.error("Erro na conexão.", { id: "manual" });
+    } finally {
+      setIsCheckingIn(false);
     }
   };
 
@@ -362,7 +379,7 @@ export default function PackagesPage() {
                     key={pkg.id}
                     pkg={pkg}
                     onOpenDetails={handleOpenDetails}
-                    onManualCheckIn={handleManualCheckIn}
+                    onManualCheckIn={openCheckInDialog} // 🔥 Alterado para abrir o dialog
                   />
                 ))}
               </div>
@@ -412,6 +429,49 @@ export default function PackagesPage() {
         onOpenChange={handleModalClose}
         packageData={selectedPackage}
       />
+
+      {/* 🔥 MODAL DE CONFIRMAÇÃO DE CHECK-IN */}
+      <Dialog open={isCheckInDialogOpen} onOpenChange={setIsCheckInDialogOpen}>
+        <DialogContent className="sm:max-w-[400px] rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Registrar Check-in Manual?</DialogTitle>
+            <DialogDescription className="text-base py-2">
+              Você está registrando uma sessão para{" "}
+              <span className="font-bold text-foreground">
+                {pkgToCheckIn?.clientName}
+              </span>
+              . Isso criará um registro na agenda e dará baixa no saldo do
+              pacote.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsCheckInDialogOpen(false)}
+              disabled={isCheckingIn}
+              className="w-full sm:w-auto"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={confirmManualCheckIn}
+              disabled={isCheckingIn}
+              className="w-full sm:w-auto"
+            >
+              {isCheckingIn ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />{" "}
+                  Registrando...
+                </>
+              ) : (
+                "Confirmar"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <button
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
