@@ -1,5 +1,4 @@
 // app/admin/dashboard/page.tsx
-// Resumo Diário do Admin - Dashboard com KPIs e Lista de Check-ins Recentes
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -17,12 +16,13 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   CalendarCheck,
-  Users,
+  Group,
   AlertTriangle,
   Clock,
   ArrowUp,
-  Loader2,
-} from "lucide-react";
+  RefreshCw,
+} from "@boxicons/react";
+import type { BoxIconProps } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
 import { PendingCheckInsCard } from "@/components/admin/pending-checkins-card";
@@ -36,7 +36,6 @@ type CheckIn = {
   date_time: string;
 };
 
-// 2. Componente de KPI
 function KpiCard({
   title,
   value,
@@ -47,7 +46,9 @@ function KpiCard({
   title: string;
   value: string | number;
   description: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ForwardRefExoticComponent<
+    BoxIconProps & React.RefAttributes<SVGSVGElement>
+  >;
   className?: string;
 }) {
   return (
@@ -62,7 +63,7 @@ function KpiCard({
           {title}
         </CardTitle>
         <div className="p-2 bg-primary/10 rounded-full">
-          <Icon className="h-4 w-4 text-primary" />
+          <Icon size="sm" className="text-primary" />
         </div>
       </CardHeader>
       <CardContent>
@@ -77,7 +78,6 @@ function KpiCard({
   );
 }
 
-// 3. Componente de Item de Lista
 function CheckInListItem({ checkIn }: { checkIn: CheckIn }) {
   const date = new Date(checkIn.date_time);
   const formattedDate = date.toLocaleDateString("pt-BR", {
@@ -121,25 +121,18 @@ function CheckInListItem({ checkIn }: { checkIn: CheckIn }) {
   );
 }
 
-// 4. Página Principal
 export default function AdminDashboardPage() {
-  // Chamada isolada para os totais (recarrega a cada 15s, retornará um payload muito leve)
   const { data: kpiData, isLoading: isLoadingKpis } = useSWR(
     "/api/dashboard/kpis",
     fetcher,
-    {
-      refreshInterval: 15000,
-    },
+    { refreshInterval: 15000 },
   );
 
-  // Função para montar a URL da página do SWR Infinite
   const getCheckInsKey = (pageIndex: number, previousPageData: any) => {
-    // Se a página anterior informou que não tem mais dados, paramos de fazer fetch
     if (previousPageData && !previousPageData.hasMore) return null;
     return `/api/dashboard/checkins?page=${pageIndex + 1}&limit=8`;
   };
 
-  // SWR Infinite para lidar com a paginação da lista
   const {
     data: checkinsPages,
     isLoading: isLoadingFirstCheckins,
@@ -147,12 +140,10 @@ export default function AdminDashboardPage() {
     setSize,
   } = useSWRInfinite(getCheckInsKey, fetcher);
 
-  // Unifica todas as páginas retornadas num único array
   const checkIns = checkinsPages
     ? checkinsPages.flatMap((page) => page.data)
     : [];
 
-  // Status auxiliares de carregamento
   const isLoadingMore =
     isLoadingFirstCheckins ||
     (size > 0 &&
@@ -160,22 +151,19 @@ export default function AdminDashboardPage() {
       typeof checkinsPages[size - 1] === "undefined");
 
   const isEmpty = checkinsPages?.[0]?.data?.length === 0;
-  // Entende que chegou ao fim se o último array trouxer menos de 8 itens ou se o 'hasMore' do backend for false
   const isReachingEnd =
     isEmpty ||
     (checkinsPages &&
       checkinsPages[checkinsPages.length - 1]?.data?.length < 8);
 
   const [showScrollTop, setShowScrollTop] = useState(false);
-
-  // Referência para a "âncora invisível" no final da lista
   const observerTarget = useRef<HTMLDivElement>(null);
 
   const handleObserver = useCallback(
     (entries: IntersectionObserverEntry[]) => {
       const target = entries[0];
       if (target.isIntersecting && !isReachingEnd && !isLoadingMore) {
-        setSize(size + 1); // Puxa a próxima página
+        setSize(size + 1);
       }
     },
     [isReachingEnd, isLoadingMore, setSize, size],
@@ -184,13 +172,10 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     const element = observerTarget.current;
     if (!element) return;
-
-    // Dispara a visualização instantes antes de o elemento aparecer 100% (threshold: 0.1)
     const observer = new IntersectionObserver(handleObserver, {
       threshold: 0.1,
     });
     observer.observe(element);
-
     return () => observer.unobserve(element);
   }, [handleObserver, checkIns]);
 
@@ -206,7 +191,6 @@ export default function AdminDashboardPage() {
     <>
       <AdminHeader title="Resumo Diário" />
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative">
-        {" "}
         <div className="flex overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scroll-smooth md:grid md:grid-cols-3 md:overflow-visible md:pb-0 md:px-0 md:mx-0 gap-4 [&::-webkit-scrollbar]:hidden">
           {isLoadingKpis ? (
             <>
@@ -227,7 +211,7 @@ export default function AdminDashboardPage() {
                 title="Clientes Ativos"
                 value={kpiData?.activeClientsCount ?? 0}
                 description="Com pacotes em andamento"
-                icon={Users}
+                icon={Group}
                 className="min-w-[85vw] md:min-w-0 snap-center shrink-0"
               />
               <KpiCard
@@ -240,12 +224,13 @@ export default function AdminDashboardPage() {
             </>
           )}
         </div>
+
         <PendingCheckInsCard />
-        {/* LISTA DE CHECK-INS RECENTES */}
+
         <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card mt-2 md:mt-0">
           <CardHeader className="px-0 pt-0 md:pt-6 md:px-6">
             <CardTitle className="flex items-center gap-2 text-card-foreground">
-              <Clock className="h-5 w-5 text-primary" />
+              <Clock size="sm" className="text-primary" />
               Check-ins de Hoje
             </CardTitle>
             <CardDescription>
@@ -267,7 +252,7 @@ export default function AdminDashboardPage() {
               </div>
             ) : isEmpty ? (
               <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/30 rounded-lg border border-dashed border-border">
-                <CalendarCheck className="h-10 w-10 text-muted-foreground/40" />
+                <CalendarCheck size="lg" className="text-muted-foreground/40" />
                 <p className="mt-4 text-sm font-medium text-muted-foreground">
                   Nenhum check-in registrado hoje.
                 </p>
@@ -277,14 +262,15 @@ export default function AdminDashboardPage() {
                 {checkIns.map((checkIn: CheckIn) => (
                   <CheckInListItem key={checkIn.id} checkIn={checkIn} />
                 ))}
-
-                {/* Loader da paginação e alvo do Intersection Observer */}
                 <div
                   ref={observerTarget}
                   className="h-10 w-full flex items-center justify-center mt-4"
                 >
                   {isLoadingMore && (
-                    <Loader2 className="h-6 w-6 text-primary animate-spin" />
+                    <RefreshCw
+                      size="sm"
+                      className="text-primary animate-spin"
+                    />
                   )}
                 </div>
               </div>
@@ -303,7 +289,7 @@ export default function AdminDashboardPage() {
         )}
         aria-label="Voltar ao topo"
       >
-        <ArrowUp className="h-5 w-5" strokeWidth={2.5} />
+        <ArrowUp size="sm" />
       </button>
     </>
   );

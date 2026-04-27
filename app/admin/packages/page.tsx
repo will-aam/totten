@@ -432,7 +432,7 @@ export default function PackagesPage() {
 
       {/* 🔥 MODAL DE CONFIRMAÇÃO DE CHECK-IN */}
       <Dialog open={isCheckInDialogOpen} onOpenChange={setIsCheckInDialogOpen}>
-        <DialogContent className="sm:max-w-[400px] rounded-2xl">
+        <DialogContent className="sm:max-w-100 rounded-2xl">
           <DialogHeader>
             <DialogTitle>Registrar Check-in Manual?</DialogTitle>
             <DialogDescription className="text-base py-2">

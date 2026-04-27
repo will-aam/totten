@@ -19,17 +19,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Plus,
-  Search,
-  Users,
-  ChevronRight,
-  Trash2,
-  UserMinus,
-  UserCheck,
-  ArrowUp,
-} from "lucide-react";
-
+import { Plus, Search, ChevronRight } from "lucide-react";
+import { Group, ArrowUp, Trash, UserMinus, UserCheck } from "@boxicons/react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -86,7 +77,6 @@ function ClientMobileItem({
       )}
     >
       <div className="flex items-center gap-3">
-        {/* Avatar com borda azul se tiver anamnese */}
         <div
           className={cn(
             "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-bold shadow-sm border-2",
@@ -103,7 +93,6 @@ function ClientMobileItem({
           <span className="text-sm font-semibold text-foreground leading-none mb-1.5">
             {client.name}
           </span>
-
           <span className="text-xs text-muted-foreground leading-none">
             {client.cpf}
           </span>
@@ -115,7 +104,6 @@ function ClientMobileItem({
             {client.activePackageName}
           </span>
         )}
-
         <button
           onClick={(e) => onActionClick(client, e)}
           className={cn(
@@ -133,11 +121,11 @@ function ClientMobileItem({
           }
         >
           {!client.active ? (
-            <UserCheck className="h-4 w-4" />
+            <UserCheck size="sm" />
           ) : client.hasHistory ? (
-            <UserMinus className="h-4 w-4" />
+            <UserMinus size="sm" />
           ) : (
-            <Trash2 className="h-4 w-4" />
+            <Trash size="sm" />
           )}
         </button>
         <ChevronRight
@@ -153,11 +141,8 @@ export default function AdminClientsPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const debouncedSearch = useDebounce(search, 500);
-
-  // Estado para o botão de Scroll
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  // 🔥 OTIMIZAÇÃO: Só envia o parâmetro 'q' se a busca tiver 3 ou mais caracteres
   let apiUrl = `/api/clients?page=${page}&limit=${ITEMS_PER_PAGE}`;
   if (debouncedSearch && debouncedSearch.trim().length >= 3) {
     apiUrl += `&q=${encodeURIComponent(debouncedSearch.trim())}`;
@@ -175,24 +160,17 @@ export default function AdminClientsPage() {
 
   const [clientToProcess, setClientToProcess] = useState<Client | null>(null);
 
-  // Efeito para resetar a página se a busca mudar e atingir os 3 caracteres
   useEffect(() => {
     setPage(1);
   }, [debouncedSearch]);
 
-  // Efeito para controlar a visibilidade do botão ArrowUp
   useEffect(() => {
-    const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 200);
-    };
-
+    const handleScroll = () => setShowScrollTop(window.scrollY > 200);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
   const handleActionClick = (client: Client, e: React.MouseEvent) => {
     e.preventDefault();
@@ -210,12 +188,10 @@ export default function AdminClientsPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ active: true }),
         });
-
         if (!res.ok) throw new Error("Erro ao reativar");
-
         toast.success("Cliente reativado com sucesso!");
         mutate();
-      } catch (error) {
+      } catch {
         toast.error("Erro ao reativar o cliente.");
       } finally {
         setClientToProcess(null);
@@ -230,19 +206,17 @@ export default function AdminClientsPage() {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Erro na requisição");
-
       toast.success(
         clientToProcess.hasHistory
           ? "Cliente desativado com sucesso!"
           : "Cliente excluído com sucesso!",
       );
-
       if (!clientToProcess.hasHistory && clients.length === 1 && page > 1) {
         setPage(page - 1);
       } else {
         mutate();
       }
-    } catch (error) {
+    } catch {
       toast.error(`Erro ao ${actionText} o cliente.`);
     } finally {
       setClientToProcess(null);
@@ -259,10 +233,7 @@ export default function AdminClientsPage() {
             <Input
               placeholder="Buscar por nome, CPF ou telefone..."
               value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                // Não precisamos mais resetar a página aqui pois o useEffect com debouncedSearch já faz isso
-              }}
+              onChange={(e) => setSearch(e.target.value)}
               className="bg-card pl-10 text-foreground rounded-full md:rounded-md shadow-sm border-border"
             />
           </div>
@@ -277,11 +248,9 @@ export default function AdminClientsPage() {
           </Button>
         </div>
 
-        {/* Área de Conteúdo sem Card envoltório */}
         <div className="flex flex-col gap-4">
-          {/* Título da Seção */}
           <div className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-primary" />
+            <Group size="sm" className="text-primary" />
             <h2 className="text-xl font-semibold text-foreground tracking-tight">
               Todos os Clientes
             </h2>
@@ -301,7 +270,7 @@ export default function AdminClientsPage() {
             </div>
           ) : clients.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/30 rounded-lg border border-dashed border-border">
-              <Users className="h-10 w-10 text-muted-foreground/40" />
+              <Group size="lg" className="text-muted-foreground/40" />
               <p className="mt-4 text-sm font-medium text-muted-foreground">
                 {search.length >= 3
                   ? "Nenhum cliente encontrado para essa busca."
@@ -361,9 +330,8 @@ export default function AdminClientsPage() {
                       <TableRow
                         key={client.id}
                         onClick={() => {
-                          if (client.active) {
+                          if (client.active)
                             router.push(`/admin/clients/${client.id}`);
-                          }
                         }}
                         className={cn(
                           "transition-colors",
@@ -374,7 +342,6 @@ export default function AdminClientsPage() {
                       >
                         <TableCell className="font-medium text-foreground">
                           <div className="flex items-center gap-3">
-                            {/* Avatar com borda azul se tiver anamnese */}
                             <div
                               className={cn(
                                 "flex h-8 w-8 items-center justify-center rounded-full font-bold text-xs border-2",
@@ -387,17 +354,11 @@ export default function AdminClientsPage() {
                             >
                               {client.name.charAt(0).toUpperCase()}
                             </div>
-                            <div className="flex flex-col">
-                              <span className="font-semibold">
-                                {client.name}
-                              </span>
-                            </div>
+                            <span className="font-semibold">{client.name}</span>
                           </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground">
-                          <div className="flex flex-col">
-                            <span>{client.cpf}</span>
-                          </div>
+                          {client.cpf}
                         </TableCell>
                         <TableCell className="text-muted-foreground">
                           {client.phone_whatsapp}
@@ -411,7 +372,6 @@ export default function AdminClientsPage() {
                             <span className="text-muted-foreground/50">-</span>
                           )}
                         </TableCell>
-
                         <TableCell className="text-center">
                           <button
                             onClick={(e) => handleActionClick(client, e)}
@@ -430,11 +390,11 @@ export default function AdminClientsPage() {
                             }
                           >
                             {!client.active ? (
-                              <UserCheck className="h-5 w-5" />
+                              <UserCheck size="sm" />
                             ) : client.hasHistory ? (
-                              <UserMinus className="h-5 w-5" />
+                              <UserMinus size="sm" />
                             ) : (
-                              <Trash2 className="h-5 w-5" />
+                              <Trash size="sm" />
                             )}
                           </button>
                         </TableCell>
@@ -480,7 +440,7 @@ export default function AdminClientsPage() {
         </div>
       </div>
 
-      {/* Botão ArrowUp */}
+      {/* Botão scroll to top */}
       <button
         onClick={scrollToTop}
         className={cn(
@@ -491,7 +451,7 @@ export default function AdminClientsPage() {
         )}
         aria-label="Voltar ao topo"
       >
-        <ArrowUp className="h-5 w-5" strokeWidth={2.5} />
+        <ArrowUp size="sm" />
       </button>
 
       <AlertDialog

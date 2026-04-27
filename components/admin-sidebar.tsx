@@ -7,28 +7,26 @@ import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
 import {
-  NotebookText,
-  Users,
-  ClipboardList,
-  Settings,
-  LogOut,
-  CalendarDays,
+  NoteBook,
+  Group,
+  ClipboardDetail,
+  Cog,
+  Power,
+  CalendarDetail,
   Wallet,
   Lock,
-  Headset,
+  HeadphoneMic,
   Bell,
   User,
   ChevronRight,
-  UserCog,
-  Award,
-  Link2,
-  ShelvingUnit,
-  Loader2,
-  FileText,
-  StickyNote,
+  Medal,
+  LinkAlt,
+  LoaderDots,
+  Note,
   Database,
-  Smartphone, // Adicionei este ícone para o módulo de Autoatendimento
-} from "lucide-react";
+  Mobile,
+} from "@boxicons/react";
+import type { BoxIconProps } from "@boxicons/react";
 import {
   Sidebar,
   SidebarContent,
@@ -52,24 +50,71 @@ import {
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 
+type BoxIcon = React.ForwardRefExoticComponent<
+  BoxIconProps & React.RefAttributes<SVGSVGElement>
+>;
+
+// Componente auxiliar que troca de pack com transição suave
+function NavIcon({
+  icon: Icon,
+  isActive,
+  size = "sm",
+  className,
+}: {
+  icon: BoxIcon;
+  isActive: boolean;
+  size?: BoxIconProps["size"];
+  className?: string;
+}) {
+  return (
+    <span className="relative flex items-center justify-center transition-all duration-300">
+      {/* Ícone outline — some quando ativo */}
+      <Icon
+        size={size}
+        pack="basic"
+        className={cn(
+          "absolute transition-all duration-300",
+          isActive ? "opacity-0 scale-75" : "opacity-100 scale-100",
+          className,
+        )}
+      />
+      {/* Ícone filled — aparece quando ativo */}
+      <Icon
+        size={size}
+        pack="filled"
+        className={cn(
+          "transition-all duration-300",
+          isActive ? "opacity-100 scale-100" : "opacity-0 scale-75",
+          className,
+        )}
+      />
+    </span>
+  );
+}
+
 const navItems = [
   {
     title: "Agendamento",
     href: "/admin/agenda",
-    icon: CalendarDays,
+    icon: CalendarDetail as BoxIcon,
     active: true,
   },
   {
     title: "Histórico Check-in",
     href: "/admin/history",
-    icon: ClipboardList,
+    icon: ClipboardDetail as BoxIcon,
     active: true,
   },
-  { title: "Vouchers", href: "/admin/vouchers", icon: Award, active: true },
+  {
+    title: "Vouchers",
+    href: "/admin/vouchers",
+    icon: Medal as BoxIcon,
+    active: true,
+  },
   {
     title: "Notas",
     href: "/admin/notes",
-    icon: StickyNote,
+    icon: Note as BoxIcon,
     active: true,
   },
 ];
@@ -81,13 +126,11 @@ const cadastrosSubItems = [
   { title: "Estoque", href: "/admin/stock", active: true },
 ];
 
-// Agenda agora foca apenas na operação do dia a dia
 const agendaSubItems = [
   { title: "Calendário Diário", href: "/admin/agenda/calendar", active: false },
   { title: "Confirmações Manuais", href: "/admin/reminders", active: true },
 ];
 
-// O Novo módulo focado na automação e configuração para o cliente final
 const autoatendimentoSubItems = [
   { title: "Dashboard", href: "/admin/auto/dashboard", active: false },
   {
@@ -95,7 +138,7 @@ const autoatendimentoSubItems = [
     href: "/admin/auto/requests",
     active: false,
   },
-  { title: "Link Bio", href: "/admin/link-bio", icon: Link2, active: false },
+  { title: "Link Bio", href: "/admin/link-bio", icon: LinkAlt, active: false },
   { title: "WhatsApp Automático", href: "/admin/whatsapp-auto", active: false },
   { title: "Regras e Horários", href: "/admin/auto/rules", active: false },
 ];
@@ -108,11 +151,7 @@ const financeSubItems = [
     href: "/admin/finance/payment-methods",
     active: true,
   },
-  {
-    title: "Pacotes e Planos",
-    href: "/admin/packages",
-    active: true,
-  },
+  { title: "Pacotes e Planos", href: "/admin/packages", active: true },
 ];
 
 type OpenModule = "cadastros" | "agenda" | "autoatendimento" | "finance" | null;
@@ -133,7 +172,6 @@ export function AdminSidebar() {
   );
   const whatsappUrl = `https://wa.me/${supportPhone}?text=${supportMessage}`;
 
-  // Auto-abre o módulo correto baseado na rota atual
   useEffect(() => {
     if (cadastrosSubItems.some((i) => pathname.startsWith(i.href))) {
       setOpenModule("cadastros");
@@ -164,7 +202,6 @@ export function AdminSidebar() {
         setLoading(false);
       }
     };
-
     fetchSettings();
   }, []);
 
@@ -178,6 +215,20 @@ export function AdminSidebar() {
       setLoggingOut(false);
     }
   };
+
+  // Helpers de isActive por módulo
+  const isCadastrosActive = cadastrosSubItems.some((i) =>
+    pathname.startsWith(i.href),
+  );
+  const isAgendaActive = agendaSubItems.some((i) =>
+    pathname.startsWith(i.href),
+  );
+  const isAutoActive = autoatendimentoSubItems.some((i) =>
+    pathname.startsWith(i.href),
+  );
+  const isFinanceActive = financeSubItems.some((i) =>
+    pathname.startsWith(i.href),
+  );
 
   return (
     <Sidebar>
@@ -199,7 +250,7 @@ export function AdminSidebar() {
           </div>
           {loading ? (
             <div className="flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              <LoaderDots size="sm" className="text-primary" />
             </div>
           ) : (
             <h2 className="font-inter text-xl font-bold text-sidebar-foreground tracking-tight truncate">
@@ -216,7 +267,7 @@ export function AdminSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {/* Resumo Diário (sempre primeiro) */}
+              {/* Resumo Diário */}
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
@@ -227,7 +278,10 @@ export function AdminSidebar() {
                     href="/admin/dashboard"
                     onClick={() => setOpenMobile(false)}
                   >
-                    <NotebookText className="h-4 w-4" />
+                    <NavIcon
+                      icon={NoteBook}
+                      isActive={pathname.startsWith("/admin/dashboard")}
+                    />
                     <span>Resumo Diário</span>
                   </Link>
                 </SidebarMenuButton>
@@ -245,17 +299,21 @@ export function AdminSidebar() {
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton
-                      isActive={cadastrosSubItems.some((i) =>
-                        pathname.startsWith(i.href),
-                      )}
+                      isActive={isCadastrosActive}
                       className="hover:bg-muted/50"
                     >
                       <div className="flex items-center justify-between w-full">
                         <div className="flex items-center gap-2">
-                          <Database className="h-4 w-4" />
+                          <NavIcon
+                            icon={Database}
+                            isActive={isCadastrosActive}
+                          />
                           <span>Cadastros</span>
                         </div>
-                        <ChevronRight className="h-3 w-3 text-muted-foreground/50 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                        <ChevronRight
+                          size="xs"
+                          className="text-muted-foreground/50 transition-transform group-data-[state=open]/collapsible:rotate-90"
+                        />
                       </div>
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
@@ -285,7 +343,7 @@ export function AdminSidebar() {
                             ) : (
                               <div className="flex items-center justify-between w-full">
                                 <span className="text-xs">{subItem.title}</span>
-                                <Lock className="h-2.5 w-2.5 opacity-50" />
+                                <Lock size="xs" className="opacity-50" />
                               </div>
                             )}
                           </SidebarMenuSubButton>
@@ -297,36 +355,39 @@ export function AdminSidebar() {
               </Collapsible>
 
               {/* Demais itens do menu principal */}
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild={item.active}
-                    isActive={pathname.startsWith(item.href) && item.active}
-                    className={cn(
-                      "hover:bg-muted/50",
-                      !item.active && "opacity-50 cursor-not-allowed",
-                    )}
-                  >
-                    {item.active ? (
-                      <Link
-                        href={item.href}
-                        onClick={() => setOpenMobile(false)}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </Link>
-                    ) : (
-                      <div className="flex items-center justify-between w-full">
-                        <div className="flex items-center gap-2">
-                          <item.icon className="h-4 w-4" />
+              {navItems.map((item) => {
+                const isActive = pathname.startsWith(item.href) && item.active;
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild={item.active}
+                      isActive={isActive}
+                      className={cn(
+                        "hover:bg-muted/50",
+                        !item.active && "opacity-50 cursor-not-allowed",
+                      )}
+                    >
+                      {item.active ? (
+                        <Link
+                          href={item.href}
+                          onClick={() => setOpenMobile(false)}
+                        >
+                          <NavIcon icon={item.icon} isActive={isActive} />
                           <span>{item.title}</span>
+                        </Link>
+                      ) : (
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center gap-2">
+                            <NavIcon icon={item.icon} isActive={false} />
+                            <span>{item.title}</span>
+                          </div>
+                          <Lock size="xs" className="opacity-50" />
                         </div>
-                        <Lock className="h-3 w-3 opacity-50" />
-                      </div>
-                    )}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+                      )}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -337,7 +398,7 @@ export function AdminSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {/* Módulo: Agenda Diária */}
+              {/* Módulo: Agenda */}
               <Collapsible
                 asChild
                 className="group/collapsible w-full"
@@ -347,17 +408,21 @@ export function AdminSidebar() {
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton
-                      isActive={agendaSubItems.some((i) =>
-                        pathname.startsWith(i.href),
-                      )}
+                      isActive={isAgendaActive}
                       className="hover:bg-muted/50"
                     >
                       <div className="flex items-center justify-between w-full">
                         <div className="flex items-center gap-2">
-                          <CalendarDays className="h-4 w-4" />
+                          <NavIcon
+                            icon={CalendarDetail}
+                            isActive={isAgendaActive}
+                          />
                           <span>Agenda</span>
                         </div>
-                        <ChevronRight className="h-3 w-3 text-muted-foreground/50 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                        <ChevronRight
+                          size="xs"
+                          className="text-muted-foreground/50 transition-transform group-data-[state=open]/collapsible:rotate-90"
+                        />
                       </div>
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
@@ -387,7 +452,7 @@ export function AdminSidebar() {
                             ) : (
                               <div className="flex items-center justify-between w-full">
                                 <span className="text-xs">{subItem.title}</span>
-                                <Lock className="h-2.5 w-2.5 opacity-50" />
+                                <Lock size="xs" className="opacity-50" />
                               </div>
                             )}
                           </SidebarMenuSubButton>
@@ -410,17 +475,18 @@ export function AdminSidebar() {
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton
-                      isActive={autoatendimentoSubItems.some((i) =>
-                        pathname.startsWith(i.href),
-                      )}
+                      isActive={isAutoActive}
                       className="hover:bg-muted/50"
                     >
                       <div className="flex items-center justify-between w-full">
                         <div className="flex items-center gap-2">
-                          <Smartphone className="h-4 w-4" />
+                          <NavIcon icon={Mobile} isActive={isAutoActive} />
                           <span>Autoatendimento</span>
                         </div>
-                        <ChevronRight className="h-3 w-3 text-muted-foreground/50 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                        <ChevronRight
+                          size="xs"
+                          className="text-muted-foreground/50 transition-transform group-data-[state=open]/collapsible:rotate-90"
+                        />
                       </div>
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
@@ -450,7 +516,7 @@ export function AdminSidebar() {
                             ) : (
                               <div className="flex items-center justify-between w-full">
                                 <span className="text-xs">{subItem.title}</span>
-                                <Lock className="h-2.5 w-2.5 opacity-50" />
+                                <Lock size="xs" className="opacity-50" />
                               </div>
                             )}
                           </SidebarMenuSubButton>
@@ -466,7 +532,7 @@ export function AdminSidebar() {
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname.startsWith("/admin/finance")}
+                    isActive={isFinanceActive}
                     className="hover:bg-muted/50"
                   >
                     <Link
@@ -474,7 +540,7 @@ export function AdminSidebar() {
                       onClick={() => setOpenMobile(false)}
                     >
                       <div className="flex items-center gap-2">
-                        <Wallet className="h-4 w-4" />
+                        <NavIcon icon={Wallet} isActive={isFinanceActive} />
                         <span>Financeiro</span>
                       </div>
                     </Link>
@@ -492,17 +558,18 @@ export function AdminSidebar() {
                   <SidebarMenuItem>
                     <CollapsibleTrigger asChild>
                       <SidebarMenuButton
-                        isActive={financeSubItems.some((i) =>
-                          pathname.startsWith(i.href),
-                        )}
+                        isActive={isFinanceActive}
                         className="hover:bg-muted/50"
                       >
                         <div className="flex items-center justify-between w-full">
                           <div className="flex items-center gap-2">
-                            <Wallet className="h-4 w-4" />
+                            <NavIcon icon={Wallet} isActive={isFinanceActive} />
                             <span>Financeiro</span>
                           </div>
-                          <ChevronRight className="h-3 w-3 text-muted-foreground/50 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                          <ChevronRight
+                            size="xs"
+                            className="text-muted-foreground/50 transition-transform group-data-[state=open]/collapsible:rotate-90"
+                          />
                         </div>
                       </SidebarMenuButton>
                     </CollapsibleTrigger>
@@ -536,7 +603,7 @@ export function AdminSidebar() {
                                   <span className="text-xs">
                                     {subItem.title}
                                   </span>
-                                  <Lock className="h-2.5 w-2.5 opacity-50" />
+                                  <Lock size="xs" className="opacity-50" />
                                 </div>
                               )}
                             </SidebarMenuSubButton>
@@ -556,7 +623,7 @@ export function AdminSidebar() {
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <User className="h-4 w-4" strokeWidth={2.5} />
+              <User size="sm" />
             </div>
             <div className="flex flex-col">
               <span className="text-sm font-medium leading-none mb-1">
@@ -568,7 +635,7 @@ export function AdminSidebar() {
             </div>
           </div>
           <button className="relative p-2 text-muted-foreground hover:bg-muted rounded-full transition-all">
-            <Bell className="h-4 w-4" />
+            <Bell size="sm" />
             <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
           </button>
         </div>
@@ -582,7 +649,7 @@ export function AdminSidebar() {
             className="flex-1 justify-center bg-transparent hover:bg-transparent text-muted-foreground hover:text-primary"
           >
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-              <Headset className="h-4 w-4" />
+              <HeadphoneMic size="sm" />
             </a>
           </SidebarMenuButton>
 
@@ -592,7 +659,7 @@ export function AdminSidebar() {
             className="flex-1 justify-center bg-transparent hover:bg-transparent"
           >
             <Link href="/admin/settings" onClick={() => setOpenMobile(false)}>
-              <Settings className="h-4 w-4" />
+              <Cog size="sm" />
             </Link>
           </SidebarMenuButton>
 
@@ -602,9 +669,9 @@ export function AdminSidebar() {
             className="flex-2 justify-center text-destructive hover:text-destructive hover:bg-destructive/10"
           >
             {loggingOut ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <LoaderDots size="sm" className="animate-spin" />
             ) : (
-              <LogOut className="h-4 w-4" />
+              <Power size="sm" />
             )}
             <span>Sair</span>
           </SidebarMenuButton>
