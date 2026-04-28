@@ -2,7 +2,7 @@
 "use client";
 
 import { useSidebar } from "@/components/ui/sidebar";
-import { ChevronRight, CheckShield } from "@boxicons/react";
+import { ChevronsRight, CheckShield } from "@boxicons/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useSession } from "next-auth/react";
@@ -17,12 +17,12 @@ export function AdminHeader({ title }: { title: string }) {
   return (
     <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between bg-background/60 px-4 backdrop-blur-md md:px-6">
       <div className="flex items-center gap-3">
-        {/* Botão de menu usando ChevronRight */}
+        {/* Botão de menu usando ChevronsRight */}
         <button
           onClick={toggleSidebar}
           className="relative flex items-center justify-center p-1.5 -ml-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-md transition-all active:scale-95 overflow-hidden"
         >
-          <ChevronRight size="sm" />
+          <ChevronsRight size="base" removePadding />
           <span className="sr-only">Menu</span>
         </button>
 
