@@ -2,14 +2,14 @@
 "use client";
 
 import { useSidebar } from "@/components/ui/sidebar";
-import { Menu, X, CheckShield } from "@boxicons/react";
+import { ChevronRight, CheckShield } from "@boxicons/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
 export function AdminHeader({ title }: { title: string }) {
-  const { toggleSidebar, open } = useSidebar();
+  const { toggleSidebar } = useSidebar();
   const { data: session } = useSession();
 
   const slug = session?.user?.organizationSlug;
@@ -17,31 +17,12 @@ export function AdminHeader({ title }: { title: string }) {
   return (
     <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between bg-background/60 px-4 backdrop-blur-md md:px-6">
       <div className="flex items-center gap-3">
-        {/* Botão hamburguer: Menu vira X com rotação suave */}
+        {/* Botão de menu usando ChevronRight */}
         <button
           onClick={toggleSidebar}
-          className="relative p-1.5 -ml-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-md transition-all active:scale-95 overflow-hidden"
+          className="relative flex items-center justify-center p-1.5 -ml-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-md transition-all active:scale-95 overflow-hidden"
         >
-          <span className="relative flex items-center justify-center w-5 h-5">
-            <Menu
-              size="sm"
-              className={cn(
-                "absolute transition-all duration-300 ease-in-out",
-                open
-                  ? "opacity-0 rotate-90 scale-50"
-                  : "opacity-100 rotate-0 scale-100",
-              )}
-            />
-            <X
-              size="sm"
-              className={cn(
-                "absolute transition-all duration-300 ease-in-out",
-                open
-                  ? "opacity-100 rotate-0 scale-100"
-                  : "opacity-0 -rotate-90 scale-50",
-              )}
-            />
-          </span>
+          <ChevronRight size="sm" />
           <span className="sr-only">Menu</span>
         </button>
 
