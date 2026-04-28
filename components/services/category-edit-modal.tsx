@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Save, Power, PowerOff } from "lucide-react";
+import { LoaderDots, Save, Power } from "@boxicons/react";
 import { updateCategory, toggleCategoryStatus } from "@/app/actions/services";
 
 interface CategoryEditModalProps {
@@ -31,7 +31,6 @@ export function CategoryEditModal({
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState("");
 
-  // Sincroniza o campo de input quando o modal abre com uma categoria selecionada
   useEffect(() => {
     if (category) {
       setName(category.name || "");
@@ -66,7 +65,6 @@ export function CategoryEditModal({
   const handleToggleStatus = async () => {
     setLoading(true);
     try {
-      // category.active vem do banco (true/false)
       const res = await toggleCategoryStatus(category.id, category.active);
       if (res.success) {
         toast.success(
@@ -109,7 +107,6 @@ export function CategoryEditModal({
         </div>
 
         <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-4 border-t mt-4">
-          {/* BOTÃO DE STATUS (Inutilizar em vez de Excluir) */}
           <Button
             type="button"
             variant="outline"
@@ -122,14 +119,14 @@ export function CategoryEditModal({
             disabled={loading}
           >
             {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <LoaderDots size="sm" className="animate-spin" />
             ) : category.active ? (
               <>
-                <PowerOff className="mr-2 h-4 w-4" /> Desativar
+                <Power size="sm" className="mr-2" /> Desativar
               </>
             ) : (
               <>
-                <Power className="mr-2 h-4 w-4" /> Ativar
+                <Power size="sm" className="mr-2" /> Ativar
               </>
             )}
           </Button>
@@ -142,10 +139,10 @@ export function CategoryEditModal({
             className="rounded-xl bg-primary hover:bg-primary/90 font-bold"
           >
             {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <LoaderDots size="sm" className="animate-spin" />
             ) : (
               <>
-                <Save className="mr-2 h-4 w-4" /> Salvar
+                <Save size="sm" className="mr-2" /> Salvar
               </>
             )}
           </Button>

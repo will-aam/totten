@@ -16,16 +16,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
-  Loader2,
+  LoaderDots,
   Save,
   Power,
-  PowerOff,
   Layers,
-  CalendarDays,
-  Package as PackageIcon,
-  DollarSign,
-  Type,
-} from "lucide-react";
+  CalendarDetail,
+  Package,
+  Dollar,
+  Rename,
+} from "@boxicons/react";
 import {
   updatePackageTemplate,
   togglePackageTemplateStatus,
@@ -39,7 +38,6 @@ interface PackageEditModalProps {
   onSuccess: () => void;
 }
 
-// 🔥 Classe mágica do Tailwind para sumir com as setas dos inputs number
 const noSpinClass =
   "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
 
@@ -133,7 +131,7 @@ export const PackageEditModal = memo(
           <div className="p-6 pb-4 border-b border-border/40">
             <DialogHeader>
               <DialogTitle className="text-xl font-black flex items-center gap-2">
-                <PackageIcon className="h-5 w-5 text-primary" />
+                <Package size="sm" className="text-primary" />
                 Editar Pacote
               </DialogTitle>
               <DialogDescription className="font-medium">
@@ -148,10 +146,9 @@ export const PackageEditModal = memo(
 
           {/* BODY */}
           <div className="p-6 space-y-5">
-            {/* NOME DO PACOTE (O campo que estava faltando!) */}
             <div className="space-y-1.5">
               <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 ml-1">
-                <Type className="h-3 w-3" /> Nome do Pacote
+                <Rename size="xs" /> Nome do Pacote
               </Label>
               <Input
                 value={formData.name}
@@ -166,7 +163,7 @@ export const PackageEditModal = memo(
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 ml-1">
-                  <Layers className="h-3 w-3" /> Sessões
+                  <Layers size="xs" /> Sessões
                 </Label>
                 <Input
                   type="number"
@@ -184,7 +181,7 @@ export const PackageEditModal = memo(
 
               <div className="space-y-1.5">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 ml-1">
-                  <DollarSign className="h-3 w-3" /> Preço (R$)
+                  <Dollar size="xs" /> Preço (R$)
                 </Label>
                 <Input
                   type="number"
@@ -204,7 +201,7 @@ export const PackageEditModal = memo(
 
             <div className="space-y-1.5">
               <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 ml-1">
-                <CalendarDays className="h-3 w-3" /> Validade (dias)
+                <CalendarDetail size="xs" /> Validade (dias)
               </Label>
               <Input
                 type="number"
@@ -250,14 +247,14 @@ export const PackageEditModal = memo(
               disabled={loading}
             >
               {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <LoaderDots size="sm" className="animate-spin" />
               ) : packageTemplate.active ? (
                 <>
-                  <PowerOff className="mr-2 h-4 w-4" /> Desativar Pacote
+                  <Power size="sm" className="mr-2" /> Desativar Pacote
                 </>
               ) : (
                 <>
-                  <Power className="mr-2 h-4 w-4" /> Ativar Pacote
+                  <Power size="sm" className="mr-2" /> Ativar Pacote
                 </>
               )}
             </Button>
@@ -270,9 +267,9 @@ export const PackageEditModal = memo(
               className="rounded-2xl h-12 px-8 font-black bg-primary text-primary-foreground w-full sm:w-auto"
             >
               {loading ? (
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                <LoaderDots size="sm" className="animate-spin mr-2" />
               ) : (
-                <Save className="mr-2 h-5 w-5" />
+                <Save size="sm" className="mr-2" />
               )}
               Salvar Alterações
             </Button>

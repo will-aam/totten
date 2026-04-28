@@ -26,16 +26,16 @@ import {
   Sparkles,
   Clock,
   Palette,
-  DollarSign,
+  Dollar,
   TrendingDown,
   Tag,
   AlignLeft,
   Globe,
   Save,
-  Loader2,
-  PackageOpen,
-  Trash2,
-} from "lucide-react";
+  LoaderDots,
+  Box,
+  Trash,
+} from "@boxicons/react";
 import { toast } from "sonner";
 import { CategorySelect } from "./category-select";
 import { getStockItems } from "@/app/actions/stock";
@@ -117,10 +117,8 @@ export function ServiceForm() {
 
   const handleAddStockItem = (id: string) => {
     if (selectedStockItems.find((i) => i.stock_item_id === id)) return;
-
     const item = availableStockItems.find((i) => i.id === id);
     if (!item) return;
-
     setSelectedStockItems((prev) => [
       ...prev,
       {
@@ -152,32 +150,24 @@ export function ServiceForm() {
 
   const validate = () => {
     const errs: Record<string, string> = {};
-
     if (!form.name.trim()) errs.name = "Nome é obrigatório";
     if (!form.category) errs.category = "Selecione uma categoria";
     if (!form.duration) errs.duration = "Selecione a duração";
-    if (!form.price || Number(form.price) <= 0) {
+    if (!form.price || Number(form.price) <= 0)
       errs.price = "Preço deve ser maior que zero";
-    }
-
-    if (!form.trackStock && form.cost && Number(form.cost) < 0) {
+    if (!form.trackStock && form.cost && Number(form.cost) < 0)
       errs.cost = "O custo não pode ser negativo";
-    }
-
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!validate()) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
     }
-
     setLoading(true);
-
     try {
       const res = await fetch("/api/services", {
         method: "POST",
@@ -202,9 +192,7 @@ export function ServiceForm() {
             : [],
         }),
       });
-
       const data = await res.json();
-
       if (res.ok && data.success) {
         toast.success("Serviço cadastrado com sucesso!");
         router.push("/admin/services");
@@ -256,7 +244,7 @@ export function ServiceForm() {
                 htmlFor="category"
                 className="flex items-center gap-2 text-foreground font-medium"
               >
-                <Tag className="h-4 w-4 text-muted-foreground" />
+                <Tag size="sm" className="text-muted-foreground" />
                 Categoria *
               </Label>
               <CategorySelect
@@ -272,7 +260,7 @@ export function ServiceForm() {
               htmlFor="description"
               className="flex items-center gap-2 text-foreground font-medium"
             >
-              <AlignLeft className="h-4 w-4 text-muted-foreground" />
+              <AlignLeft size="sm" className="text-muted-foreground" />
               Descrição (Para o Cliente)
             </Label>
             <Textarea
@@ -293,7 +281,7 @@ export function ServiceForm() {
         <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card">
           <CardHeader className="px-0 pt-0 md:pt-6 md:px-6 pb-4">
             <CardTitle className="text-lg flex items-center gap-2 text-foreground">
-              <Clock className="h-5 w-5 text-primary" />
+              <Clock size="sm" className="text-primary" />
               Agenda e Visual
             </CardTitle>
           </CardHeader>
@@ -348,7 +336,7 @@ export function ServiceForm() {
                 htmlFor="color"
                 className="flex items-center gap-2 text-foreground font-medium"
               >
-                <Palette className="h-4 w-4 text-muted-foreground" />
+                <Palette size="sm" className="text-muted-foreground" />
                 Cor na Agenda
                 <span className="ml-auto text-[10px] font-bold tracking-wider uppercase bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
                   Em breve
@@ -379,7 +367,7 @@ export function ServiceForm() {
         <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card">
           <CardHeader className="px-0 pt-0 md:pt-6 md:px-6 pb-4">
             <CardTitle className="text-lg flex items-center gap-2 text-foreground">
-              <DollarSign className="h-5 w-5 text-primary" />
+              <Dollar size="sm" className="text-primary" />
               Financeiro e Custos
             </CardTitle>
           </CardHeader>
@@ -411,14 +399,14 @@ export function ServiceForm() {
 
             <div className="h-px w-full bg-border/50" />
 
-            {/* 🔥 MÓDULO HÍBRIDO DE CUSTO */}
+            {/* MÓDULO HÍBRIDO DE CUSTO */}
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between border border-border p-3 rounded-lg bg-muted/20 hover:bg-muted/30 transition-colors">
                 <div className="flex flex-col gap-1 pr-4">
                   <Label className="flex items-center gap-2 text-foreground font-medium cursor-pointer">
-                    <PackageOpen
+                    <Box
+                      size="sm"
                       className={cn(
-                        "h-4 w-4",
                         form.trackStock
                           ? "text-blue-600"
                           : "text-muted-foreground",
@@ -501,7 +489,7 @@ export function ServiceForm() {
                                 handleRemoveStockItem(item.stock_item_id)
                               }
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash size="sm" />
                             </Button>
                           </div>
                         </div>
@@ -559,7 +547,7 @@ export function ServiceForm() {
         <CardContent className="px-0 pt-0 md:p-6 flex items-center justify-between">
           <div className="flex flex-col gap-1 pr-4">
             <Label className="flex items-center gap-2 text-foreground font-medium text-base">
-              <Globe className="h-5 w-5 text-primary" />
+              <Globe size="sm" className="text-primary" />
               Disponível no Agendamento Online
               <span className="ml-2 text-[10px] font-bold tracking-wider uppercase bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
                 Em breve
@@ -580,7 +568,7 @@ export function ServiceForm() {
         </CardContent>
       </Card>
 
-      {/* RODAPÉ: Botões de Ação */}
+      {/* RODAPÉ */}
       <div className="flex items-center justify-end gap-3 pt-4 border-t border-border/50">
         <Button
           asChild
@@ -597,9 +585,9 @@ export function ServiceForm() {
           className="w-full sm:w-auto rounded-full md:rounded-md shadow-sm hover:shadow-md transition-all active:scale-[0.98]"
         >
           {loading ? (
-            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            <LoaderDots size="sm" className="animate-spin mr-2" />
           ) : (
-            <Save className="mr-2 h-5 w-5" />
+            <Save size="sm" className="mr-2" />
           )}
           {loading ? "Salvando..." : "Salvar Serviço"}
         </Button>

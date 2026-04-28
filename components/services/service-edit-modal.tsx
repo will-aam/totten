@@ -22,22 +22,21 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  Loader2,
+  LoaderDots,
   Save,
   Power,
-  PowerOff,
   TrendingDown,
-  PackageOpen,
-  Trash2,
-} from "lucide-react";
+  Box,
+  Trash,
+} from "@boxicons/react";
 import { updateService, toggleServiceStatus } from "@/app/actions/services";
-import { getStockItems } from "@/app/actions/stock"; // 🔥 Busca o Estoque
+import { getStockItems } from "@/app/actions/stock";
 import { cn } from "@/lib/utils";
 
 interface ServiceEditModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  service: any | null; // O objeto que vem da página de catálogo
+  service: any | null;
   categories: any[];
   onSuccess: () => void;
 }
@@ -48,7 +47,6 @@ type Duration = {
   minutes: number;
 };
 
-// Tipagem base do Insumo que vem do banco
 type StockItem = {
   id: string;
   name: string;
@@ -87,10 +85,9 @@ export function ServiceEditModal({
     duration: "",
     category_id: "",
     cost: "",
-    trackStock: false, // 🔥 Flag de Baixa Inteligente
+    trackStock: false,
   });
 
-  // Carrega as durações e o estoque ao abrir o modal
   useEffect(() => {
     if (open) {
       fetch("/api/service-durations")
@@ -106,7 +103,6 @@ export function ServiceEditModal({
     }
   }, [open]);
 
-  // Preenche os dados quando o serviço muda
   useEffect(() => {
     if (service) {
       setFormData({
@@ -119,7 +115,6 @@ export function ServiceEditModal({
         trackStock: service.track_stock || false,
       });
 
-      // Mapeia os insumos que já vêm do banco (se a baixa inteligente estiver ativa)
       if (service.stock_items && service.stock_items.length > 0) {
         const mapped = service.stock_items.map((item: any) => ({
           stock_item_id: item.stock_item_id,
@@ -136,13 +131,10 @@ export function ServiceEditModal({
 
   if (!service) return null;
 
-  // 🔥 Funções do Estoque
   const handleAddStockItem = (id: string) => {
     if (selectedStockItems.find((i) => i.stock_item_id === id)) return;
-
     const item = availableStockItems.find((i) => i.id === id);
     if (!item) return;
-
     setSelectedStockItems((prev) => [
       ...prev,
       {
@@ -185,7 +177,6 @@ export function ServiceEditModal({
 
     setLoading(true);
     try {
-      // 🔥 Chamada da Action atualizada com os dados do Estoque
       const res = await updateService(service.id, {
         name: formData.name,
         description: formData.description,
@@ -225,8 +216,9 @@ export function ServiceEditModal({
     try {
       const res = await toggleServiceStatus(service.id, service.active);
       if (res.success) {
-        const msg = service.active ? "Serviço desativado" : "Serviço ativado";
-        toast.success(msg);
+        toast.success(
+          service.active ? "Serviço desativado" : "Serviço ativado",
+        );
         onSuccess();
         onOpenChange(false);
       }
@@ -345,14 +337,14 @@ export function ServiceEditModal({
 
           <div className="h-px w-full bg-border/50 my-2" />
 
-          {/* 🔥 Custo Financeiro Híbrido (O Estoque na Edição) */}
+          {/* Custo Financeiro Híbrido */}
           <div className="flex flex-col gap-4 bg-muted/10 p-4 rounded-xl border border-border/50">
             <div className="flex items-center justify-between border-b border-border/50 pb-3">
               <div className="flex flex-col gap-1 pr-4">
                 <Label className="flex items-center gap-2 text-foreground font-medium cursor-pointer">
-                  <PackageOpen
+                  <Box
+                    size="sm"
                     className={cn(
-                      "h-4 w-4",
                       formData.trackStock
                         ? "text-blue-600"
                         : "text-muted-foreground",
@@ -373,7 +365,6 @@ export function ServiceEditModal({
             </div>
 
             {formData.trackStock ? (
-              // 🟢 MODO INTELIGENTE (ESTOQUE)
               <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 pt-1">
                 <Select onValueChange={handleAddStockItem} value="">
                   <SelectTrigger className="bg-muted/50 border-border/50 h-10 text-sm">
@@ -436,7 +427,7 @@ export function ServiceEditModal({
                               handleRemoveStockItem(item.stock_item_id)
                             }
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash size="sm" />
                           </Button>
                         </div>
                       </div>
@@ -457,11 +448,10 @@ export function ServiceEditModal({
                 )}
               </div>
             ) : (
-              // 🔴 MODO PREGUIÇOSO (CHUTE MANUAL)
               <div className="grid gap-2 animate-in fade-in pt-1">
                 <Label htmlFor="cost" className="flex items-center gap-2">
-                  <TrendingDown className="h-4 w-4 text-destructive" /> Custo de
-                  Material (R$)
+                  <TrendingDown size="sm" className="text-destructive" />
+                  Custo de Material (R$)
                 </Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
@@ -500,14 +490,14 @@ export function ServiceEditModal({
             disabled={loading}
           >
             {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <LoaderDots size="sm" className="animate-spin" />
             ) : service.active ? (
               <>
-                <PowerOff className="mr-2 h-4 w-4" /> Desativar
+                <Power size="sm" className="mr-2" /> Desativar
               </>
             ) : (
               <>
-                <Power className="mr-2 h-4 w-4" /> Ativar
+                <Power size="sm" className="mr-2" /> Ativar
               </>
             )}
           </Button>
@@ -520,9 +510,9 @@ export function ServiceEditModal({
             className="w-full sm:w-auto"
           >
             {loading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <LoaderDots size="sm" className="animate-spin mr-2" />
             ) : (
-              <Save className="mr-2 h-4 w-4" />
+              <Save size="sm" className="mr-2" />
             )}
             {loading ? "Salvando..." : "Salvar Alterações"}
           </Button>

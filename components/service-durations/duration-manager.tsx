@@ -6,7 +6,8 @@ import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Clock, Loader2, Plus, Trash2, Timer } from "lucide-react";
+import { Clock, LoaderDots, Trash, Timer } from "@boxicons/react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +27,6 @@ const formatDurationDisplay = (minutes: number) => {
   return `${h}h ${m}min`;
 };
 
-// Classe para remover setinhas do input number
 const noSpinClass =
   "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
 
@@ -130,7 +130,7 @@ export function DurationManager() {
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in duration-500">
-      {/* FORMULÁRIO DE CADASTRO - Aberto e Integrado */}
+      {/* FORMULÁRIO DE CADASTRO */}
       <div className="flex flex-col gap-6 pb-8 border-b border-border/40">
         <div className="flex flex-col gap-1">
           <h2 className="text-xl font-bold tracking-tight text-foreground">
@@ -172,7 +172,10 @@ export function DurationManager() {
                     noSpinClass,
                   )}
                 />
-                <Clock className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground/50" />
+                <Clock
+                  size="sm"
+                  className="absolute left-3 top-3.5 text-muted-foreground/50"
+                />
               </div>
             </div>
             <div className="space-y-2">
@@ -189,7 +192,10 @@ export function DurationManager() {
                     noSpinClass,
                   )}
                 />
-                <Timer className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground/50" />
+                <Timer
+                  size="sm"
+                  className="absolute left-3 top-3.5 text-muted-foreground/50"
+                />
               </div>
             </div>
           </div>
@@ -212,7 +218,7 @@ export function DurationManager() {
             className="w-full sm:w-auto rounded-xl px-6 h-11 active:scale-95 transition-transform"
           >
             {saving ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <LoaderDots size="sm" className="animate-spin" />
             ) : (
               "Salvar Duração"
             )}
@@ -223,7 +229,7 @@ export function DurationManager() {
       {/* LISTAGEM DE DURAÇÕES */}
       <div className="flex flex-col gap-4">
         <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-          <Clock className="h-5 w-5 text-primary" />
+          <Clock size="sm" className="text-primary" />
           Tempos Configurados
         </h2>
 
@@ -250,10 +256,7 @@ export function DurationManager() {
                 className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-muted/10 select-none transition-all active:scale-[0.98] active:bg-muted/30"
               >
                 <div className="flex items-center gap-3">
-                  <Timer
-                    className="h-4 w-4 text-muted-foreground"
-                    strokeWidth={2.5}
-                  />
+                  <Timer size="sm" className="text-muted-foreground" />
                   <div>
                     <h3 className="font-semibold text-sm text-foreground">
                       {duration.label}
@@ -264,14 +267,13 @@ export function DurationManager() {
                   </div>
                 </div>
 
-                {/* Botão de lixeira: Visível, cor neutra, vermelho no active */}
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => handleDelete(duration.id)}
                   className="text-muted-foreground hover:bg-transparent hover:text-muted-foreground active:bg-destructive/10 active:text-destructive active:scale-90 transition-all -mr-2"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash size="sm" />
                 </Button>
               </div>
             ))}

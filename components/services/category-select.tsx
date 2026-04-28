@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Check, ChevronsUpDown, Plus, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Check, ChevronsUpDown, LoaderDots } from "@boxicons/react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -41,7 +42,6 @@ export function CategorySelect({
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Busca categorias ao carregar
   useEffect(() => {
     fetchCategories();
   }, []);
@@ -60,7 +60,6 @@ export function CategorySelect({
     }
   };
 
-  // Cria nova categoria
   const createCategory = async (name: string) => {
     if (!name.trim()) return;
 
@@ -81,7 +80,6 @@ export function CategorySelect({
         setOpen(false);
         toast.success(`Categoria "${data.category.name}" criada!`);
       } else if (res.status === 409) {
-        // Categoria já existe
         onValueChange(data.category.id);
         setOpen(false);
         toast.info("Categoria já existe, selecionada automaticamente");
@@ -96,7 +94,6 @@ export function CategorySelect({
     }
   };
 
-  // Detecta Enter para criar categoria
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && searchQuery.trim()) {
       e.preventDefault();
@@ -133,7 +130,7 @@ export function CategorySelect({
                 Selecione ou crie uma categoria
               </span>
             )}
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            <ChevronsUpDown size="sm" className="ml-2 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-full p-0" align="start">
@@ -147,7 +144,7 @@ export function CategorySelect({
             <CommandList>
               {loading ? (
                 <div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <LoaderDots size="sm" className="animate-spin mr-2" />
                   Carregando...
                 </div>
               ) : (
@@ -166,7 +163,10 @@ export function CategorySelect({
                         >
                           {creating ? (
                             <>
-                              <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                              <LoaderDots
+                                size="xs"
+                                className="animate-spin mr-2"
+                              />
                               Criando...
                             </>
                           ) : (
@@ -190,8 +190,9 @@ export function CategorySelect({
                         }}
                       >
                         <Check
+                          size="sm"
                           className={cn(
-                            "mr-2 h-4 w-4",
+                            "mr-2",
                             value === category.id ? "opacity-100" : "opacity-0",
                           )}
                         />
@@ -213,7 +214,10 @@ export function CategorySelect({
                         >
                           {creating ? (
                             <>
-                              <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                              <LoaderDots
+                                size="xs"
+                                className="animate-spin mr-2"
+                              />
                               Criando...
                             </>
                           ) : (

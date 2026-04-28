@@ -4,33 +4,33 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import useSWR from "swr";
-import { AdminHeader } from "@/components/admin-header";
+import { cn } from "@/lib/utils";
+import { Plus } from "lucide-react";
+import {
+  Cog,
+  Package,
+  Tag,
+  Clock,
+  LoaderDots,
+  Layers,
+  CalendarDetail,
+  TrendingDown,
+  Box,
+} from "@boxicons/react";
+
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+
+import { AdminHeader } from "@/components/admin-header";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { DurationManager } from "@/components/service-durations/duration-manager";
-import { cn } from "@/lib/utils";
-import {
-  Plus,
-  Cog,
-  Package,
-  Tags,
-  Clock,
-  Loader2,
-  Layers,
-  CalendarDays,
-  TrendingDown,
-  PackageOpen, // 🔥 Importado ícone de pacote aberto
-} from "lucide-react";
-
 import { ServiceEditModal } from "@/components/services/service-edit-modal";
 import { CategoryEditModal } from "@/components/services/category-edit-modal";
 import { PackageEditModal } from "@/components/services/package-edit-modal";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-// --- TIPOS ATUALIZADOS ---
 type ServiceStockItem = {
   id: string;
   stock_item_id: string;
@@ -49,11 +49,11 @@ type Service = {
   duration: number;
   price: number;
   material_cost: number | null;
-  track_stock: boolean; // 🔥 Nova flag
+  track_stock: boolean;
   active: boolean;
   category_id: string;
   category: { id: string; name: string };
-  stock_items?: ServiceStockItem[]; // 🔥 Insumos vinculados
+  stock_items?: ServiceStockItem[];
 };
 
 type PackageTemplate = {
@@ -90,7 +90,7 @@ function formatDuration(minutes: number): string {
 const mobileNavItems = [
   { id: "services", label: "Serviços", icon: Cog },
   { id: "packages", label: "Pacotes", icon: Package },
-  { id: "categories", label: "Categorias", icon: Tags },
+  { id: "categories", label: "Categorias", icon: Tag },
   { id: "schedules", label: "Horários", icon: Clock },
 ];
 
@@ -131,32 +131,30 @@ function ServicesTabs() {
               value="services"
               className="flex items-center gap-2 py-2 rounded-lg"
             >
-              <Cog className="h-4 w-4" /> Serviços
+              <Cog size="sm" /> Serviços
             </TabsTrigger>
             <TabsTrigger
               value="packages"
               className="flex items-center gap-2 py-2 rounded-lg"
             >
-              <Package className="h-4 w-4" /> Pacotes
+              <Package size="sm" /> Pacotes
             </TabsTrigger>
             <TabsTrigger
               value="categories"
               className="flex items-center gap-2 py-2 rounded-lg"
             >
-              <Tags className="h-4 w-4" /> Categorias
+              <Tag size="sm" /> Categorias
             </TabsTrigger>
             <TabsTrigger
               value="schedules"
               className="flex items-center gap-2 py-2 rounded-lg"
             >
-              <Clock className="h-4 w-4" /> Horários
+              <Clock size="sm" /> Horários
             </TabsTrigger>
           </TabsList>
         </div>
 
-        {/* =========================================
-            ABA: SERVIÇOS
-            ========================================= */}
+        {/* ABA: SERVIÇOS */}
         <TabsContent
           value="services"
           className="mt-0 outline-none flex flex-col gap-4"
@@ -179,7 +177,7 @@ function ServicesTabs() {
 
           {loadingServices ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <LoaderDots size="lg" className="text-muted-foreground" />
             </div>
           ) : !services || services.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground bg-muted/20 border border-dashed rounded-xl">
@@ -220,7 +218,7 @@ function ServicesTabs() {
                   <div className="flex flex-col gap-2 pt-4 border-t border-border/40 mt-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                        <Clock className="h-3.5 w-3.5" />
+                        <Clock size="xs" />
                         {formatDuration(service.duration)}
                       </span>
                       <span className="text-sm font-black text-foreground">
@@ -228,11 +226,10 @@ function ServicesTabs() {
                       </span>
                     </div>
 
-                    {/* 🔥 MÁGICA HÍBRIDA DO ESTOQUE AQUI */}
                     {service.track_stock ? (
                       <div className="flex items-center justify-between bg-blue-500/10 rounded-lg p-2 -mx-2 -mb-2 mt-1 border border-blue-500/20">
                         <span className="text-[11px] font-semibold text-blue-600 flex items-center gap-1.5">
-                          <PackageOpen className="h-3.5 w-3.5" />
+                          <Box size="xs" />
                           Baixa Inteligente
                         </span>
                         <span className="text-[11px] font-bold text-blue-700">
@@ -243,7 +240,7 @@ function ServicesTabs() {
                       Number(service.material_cost) > 0 ? (
                       <div className="flex items-center justify-between bg-destructive/5 rounded-lg p-2 -mx-2 -mb-2 mt-1 border border-destructive/10">
                         <span className="text-[11px] font-medium text-destructive/80 flex items-center gap-1.5">
-                          <TrendingDown className="h-3.5 w-3.5" />
+                          <TrendingDown size="xs" />
                           Custo Fixo
                         </span>
                         <span className="text-[11px] font-bold text-destructive/90">
@@ -258,9 +255,7 @@ function ServicesTabs() {
           )}
         </TabsContent>
 
-        {/* =========================================
-            ABA: PACOTES
-            ========================================= */}
+        {/* ABA: PACOTES */}
         <TabsContent
           value="packages"
           className="mt-0 outline-none flex flex-col gap-4"
@@ -283,7 +278,7 @@ function ServicesTabs() {
 
           {loadingPackages ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <LoaderDots size="lg" className="text-muted-foreground" />
             </div>
           ) : !packages || packages.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground bg-muted/20 border border-dashed rounded-xl">
@@ -318,7 +313,7 @@ function ServicesTabs() {
                   <div className="flex flex-col gap-2 pt-4 border-t border-border/40 mt-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                        <Layers className="h-3.5 w-3.5" />
+                        <Layers size="xs" />
                         {pkg.total_sessions} sessões
                       </span>
                       <span className="text-sm font-black text-foreground">
@@ -329,7 +324,7 @@ function ServicesTabs() {
                     {pkg.validity_days && Number(pkg.validity_days) > 0 ? (
                       <div className="flex items-center justify-between bg-primary/5 rounded-lg p-2 -mx-2 -mb-2 mt-1 border border-primary/10">
                         <span className="text-[11px] font-medium text-primary flex items-center gap-1.5">
-                          <CalendarDays className="h-3.5 w-3.5" />
+                          <CalendarDetail size="xs" />
                           Validade
                         </span>
                         <span className="text-[11px] font-bold text-primary">
@@ -344,9 +339,7 @@ function ServicesTabs() {
           )}
         </TabsContent>
 
-        {/* =========================================
-            ABA: CATEGORIAS
-            ========================================= */}
+        {/* ABA: CATEGORIAS */}
         <TabsContent
           value="categories"
           className="mt-0 outline-none flex flex-col gap-4"
@@ -364,7 +357,7 @@ function ServicesTabs() {
 
           {loadingCategories ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <LoaderDots size="lg" className="text-muted-foreground" />
             </div>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -388,7 +381,7 @@ function ServicesTabs() {
                           : "bg-muted text-muted-foreground border-transparent",
                       )}
                     >
-                      <Tags className="h-5 w-5" strokeWidth={1.5} />
+                      <Tag size="sm" />
                     </div>
                     <div className="flex flex-col">
                       <h3 className="font-semibold leading-tight text-foreground flex items-center gap-2">
@@ -410,15 +403,12 @@ function ServicesTabs() {
           )}
         </TabsContent>
 
-        {/* =========================================
-            ABA: HORÁRIOS
-            ========================================= */}
+        {/* ABA: HORÁRIOS */}
         <TabsContent value="schedules" className="mt-0 outline-none">
           <DurationManager />
         </TabsContent>
       </Tabs>
 
-      {/* MODAIS DE EDIÇÃO INTEGRADOS */}
       <ServiceEditModal
         open={!!selectedService}
         onOpenChange={(open) => !open && setSelectedService(null)}
@@ -426,7 +416,6 @@ function ServicesTabs() {
         categories={categories || []}
         onSuccess={() => mutateServices()}
       />
-
       <CategoryEditModal
         open={!!selectedCategory}
         onOpenChange={(open) => !open && setSelectedCategory(null)}
@@ -436,7 +425,6 @@ function ServicesTabs() {
           mutateServices();
         }}
       />
-
       <PackageEditModal
         open={!!selectedPackage}
         onOpenChange={(open) => !open && setSelectedPackage(null)}
@@ -461,7 +449,7 @@ export default function ServicesCatalogPage() {
         <Suspense
           fallback={
             <div className="flex justify-center p-12 text-muted-foreground">
-              <Loader2 className="h-8 w-8 animate-spin" />
+              <LoaderDots size="lg" />
             </div>
           }
         >
