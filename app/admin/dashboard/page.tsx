@@ -19,7 +19,7 @@ import {
   Group,
   AlertTriangle,
   Clock,
-  ArrowUp,
+  ChevronUp,
   RefreshCw,
 } from "@boxicons/react";
 import type { BoxIconProps } from "@boxicons/react";
@@ -289,7 +289,7 @@ export default function AdminDashboardPage() {
         )}
         aria-label="Voltar ao topo"
       >
-        <ArrowUp size="sm" />
+        <ChevronUp removePadding size="sm" />
       </button>
     </>
   );

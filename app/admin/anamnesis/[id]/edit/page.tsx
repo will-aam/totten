@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react"; // 🔥 Adicionamos o 'use' aqui
+import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -8,12 +8,11 @@ import {
   ArrowLeft,
   X,
   Save,
-  FileText,
-  ListPlus,
-  Loader2,
+  FileDetail,
+  LoaderDots,
   PlusCircle,
-  Plus,
-} from "lucide-react";
+} from "@boxicons/react";
+import { Plus } from "lucide-react";
 
 import { AdminHeader } from "@/components/admin-header";
 import { Button } from "@/components/ui/button";
@@ -47,7 +46,6 @@ interface FormField {
   options?: string[];
 }
 
-// 🔥 Mudança na tipagem do params (agora é uma Promise)
 export default function EditAnamnesisTemplatePage({
   params,
 }: {
@@ -57,25 +55,21 @@ export default function EditAnamnesisTemplatePage({
   const { data: session } = useSession();
   const { toast } = useToast();
 
-  // 🔥 Desempacotando a Promise do Next.js 15+
   const resolvedParams = use(params);
   const templateId = resolvedParams.id;
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-
   const [name, setName] = useState("");
   const [fields, setFields] = useState<FormField[]>([]);
 
   useEffect(() => {
     async function loadTemplate() {
       setIsLoading(true);
-      // 🔥 Usando o templateId desempacotado
       const result = await getAnamnesisTemplateById(templateId);
 
       if (result.success && result.data) {
         setName(result.data.name);
-
         const loadedFields = (result.data.fields as any) || [];
         setFields(loadedFields);
       } else {
@@ -92,7 +86,7 @@ export default function EditAnamnesisTemplatePage({
     if (session?.user) {
       loadTemplate();
     }
-  }, [templateId, session, router, toast]); // 🔥 Atualizado nas dependências do useEffect
+  }, [templateId, session, router, toast]);
 
   const addField = () => {
     setFields([
@@ -199,13 +193,7 @@ export default function EditAnamnesisTemplatePage({
     }
 
     setIsSaving(true);
-
-    // 🔥 Usando o templateId desempacotado
-    const result = await updateAnamnesisTemplate(templateId, {
-      name,
-      fields,
-    });
-
+    const result = await updateAnamnesisTemplate(templateId, { name, fields });
     setIsSaving(false);
 
     if (result.success) {
@@ -226,7 +214,7 @@ export default function EditAnamnesisTemplatePage({
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+        <LoaderDots size="lg" className="text-primary mb-4" />
         <p className="text-muted-foreground">Carregando dados do modelo...</p>
       </div>
     );
@@ -245,7 +233,7 @@ export default function EditAnamnesisTemplatePage({
             className="rounded-full h-10 w-10 shrink-0"
           >
             <Link href="/admin/anamnesis">
-              <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+              <ArrowLeft size="sm" className="text-muted-foreground" />
             </Link>
           </Button>
           <div>
@@ -274,7 +262,7 @@ export default function EditAnamnesisTemplatePage({
         <div className="space-y-4">
           <div className="flex items-center justify-between border-b pb-3 border-border/50">
             <div className="flex items-center gap-2">
-              <ListPlus className="h-5 w-5 text-primary" />
+              <FileDetail size="sm" className="text-primary" />
               <h2 className="font-semibold text-foreground">Perguntas</h2>
             </div>
             <span className="text-xs font-medium text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
@@ -284,7 +272,7 @@ export default function EditAnamnesisTemplatePage({
 
           {fields.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center bg-muted/20 rounded-2xl border-2 border-dashed border-border">
-              <FileText className="h-10 w-10 text-muted-foreground/40 mb-4" />
+              <FileDetail size="lg" className="text-muted-foreground/40 mb-4" />
               <p className="text-sm font-medium text-muted-foreground">
                 Nenhuma pergunta adicionada.
               </p>
@@ -320,7 +308,11 @@ export default function EditAnamnesisTemplatePage({
                             ? "Ex: Histórico Clínico"
                             : "Ex: Você está gestante?"
                         }
-                        className={`h-11 bg-background border-border/60 focus:border-primary rounded-lg ${field.type === "section_title" ? "font-bold text-lg" : ""}`}
+                        className={`h-11 bg-background border-border/60 focus:border-primary rounded-lg ${
+                          field.type === "section_title"
+                            ? "font-bold text-lg"
+                            : ""
+                        }`}
                       />
                     </div>
 
@@ -359,7 +351,7 @@ export default function EditAnamnesisTemplatePage({
                       className="absolute top-2 right-2 md:static md:self-end md:mb-1 h-9 w-9 text-muted-foreground hover:bg-transparent active:bg-destructive/10 active:text-destructive active:scale-95 transition-transform shrink-0"
                       onClick={() => removeField(field.id)}
                     >
-                      <X className="w-5 h-5" />
+                      <X size="sm" />
                     </Button>
                   </div>
 
@@ -372,7 +364,11 @@ export default function EditAnamnesisTemplatePage({
                       {field.options?.map((option, optIndex) => (
                         <div key={optIndex} className="flex items-center gap-2">
                           <div
-                            className={`w-4 h-4 border border-muted-foreground/50 shrink-0 ${field.type === "single_choice" ? "rounded-full" : "rounded-sm"}`}
+                            className={`w-4 h-4 border border-muted-foreground/50 shrink-0 ${
+                              field.type === "single_choice"
+                                ? "rounded-full"
+                                : "rounded-sm"
+                            }`}
                           />
                           <Input
                             value={option}
@@ -389,7 +385,7 @@ export default function EditAnamnesisTemplatePage({
                             onClick={() => removeOption(field.id, optIndex)}
                             disabled={(field.options?.length || 0) <= 2}
                           >
-                            <X className="w-4 h-4" />
+                            <X size="sm" />
                           </Button>
                         </div>
                       ))}
@@ -414,17 +410,17 @@ export default function EditAnamnesisTemplatePage({
               onClick={addField}
               className="w-full h-12 border-dashed border-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors rounded-xl"
             >
-              <PlusCircle className="w-4 h-4 mr-2" /> Adicionar Nova Pergunta
+              <PlusCircle size="sm" className="mr-2" /> Adicionar Nova Pergunta
             </Button>
           )}
         </div>
 
-        {/* Footer Desktop - AGORA IDÊNTICO AO MOBILE */}
+        {/* Footer Desktop */}
         <div className="hidden md:flex justify-end gap-3 pt-6 border-t border-border/50">
           <Button
             variant="outline"
             asChild
-            className="h-12 rounded-xl font-bold px-8" // Mesmo tamanho e estilo
+            className="h-12 rounded-xl font-bold px-8"
           >
             <Link href="/admin/clients">Cancelar</Link>
           </Button>
@@ -434,16 +430,16 @@ export default function EditAnamnesisTemplatePage({
             className="px-8 h-12 rounded-xl font-bold shadow-lg"
           >
             {isSaving ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <LoaderDots size="sm" className="animate-spin mr-2" />
             ) : (
-              <Save className="w-4 h-4 mr-2" />
+              <Save size="sm" className="mr-2" />
             )}
             Salvar Modelo
           </Button>
         </div>
       </div>
 
-      {/* Footer Mobile - Mantido o padrão */}
+      {/* Footer Mobile */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-lg border-t md:hidden z-50 grid grid-cols-2 gap-3">
         <Button variant="outline" asChild className="h-12 rounded-xl font-bold">
           <Link href="/admin/anamnesis">Cancelar</Link>
@@ -454,9 +450,9 @@ export default function EditAnamnesisTemplatePage({
           className="h-12 rounded-xl font-bold shadow-lg"
         >
           {isSaving ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            <LoaderDots size="sm" className="animate-spin mr-2" />
           ) : (
-            <Save className="w-4 h-4 mr-2" />
+            <Save size="sm" className="mr-2" />
           )}
           Salvar
         </Button>

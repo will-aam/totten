@@ -5,11 +5,11 @@ import { useState, useEffect } from "react";
 import {
   Plus,
   Search,
-  PackageOpen,
-  ArrowUp,
-  ListFilter,
-  Loader2,
-} from "lucide-react";
+  Package,
+  ChevronUp,
+  Filter,
+  LoaderDots,
+} from "@boxicons/react";
 import { Button } from "@/components/ui/button";
 import { AdminHeader } from "@/components/admin-header";
 import { cn } from "@/lib/utils";
@@ -161,7 +161,7 @@ export default function StockPage() {
                   size="icon"
                   className="md:hidden rounded-full shrink-0 border-border"
                 >
-                  <ListFilter className="h-4 w-4" />
+                  <Filter className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
@@ -192,7 +192,7 @@ export default function StockPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <PackageOpen className="h-5 w-5 text-primary" />
+          <Package className="h-5 w-5 text-primary" />
           <h2 className="text-xl font-semibold text-foreground tracking-tight">
             Gestão de Insumos
           </h2>
@@ -200,7 +200,7 @@ export default function StockPage() {
 
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-            <Loader2 className="h-8 w-8 animate-spin mb-4 text-primary" />
+            <LoaderDots className="h-8 w-8 animate-spin mb-4 text-primary" />
             <p>Carregando estoque...</p>
           </div>
         ) : (
@@ -241,7 +241,7 @@ export default function StockPage() {
             : "opacity-0 translate-y-10 pointer-events-none",
         )}
       >
-        <ArrowUp className="h-5 w-5" strokeWidth={2.5} />
+        <ChevronUp removePadding className="h-5 w-5" />
       </button>
 
       <NewStockItemModal

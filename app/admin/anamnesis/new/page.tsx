@@ -8,12 +8,11 @@ import {
   ArrowLeft,
   X,
   Save,
-  FileText,
-  ListPlus,
-  Loader2,
+  FileDetail,
+  LoaderDots,
   PlusCircle,
-  Plus,
-} from "lucide-react";
+} from "@boxicons/react";
+import { Plus } from "lucide-react";
 
 import { AdminHeader } from "@/components/admin-header";
 import { Button } from "@/components/ui/button";
@@ -184,13 +183,11 @@ export default function NewAnamnesisTemplatePage() {
     }
 
     setIsSaving(true);
-
     const result = await createAnamnesisTemplate({
       name,
       fields,
       organizationId,
     });
-
     setIsSaving(false);
 
     if (result.success) {
@@ -209,9 +206,8 @@ export default function NewAnamnesisTemplatePage() {
     <>
       <AdminHeader title="Novo Fichário" />
 
-      {/* 🔥 LARGURA PADRÃO APLICADA AQUI: max-w-400 e animate-in */}
       <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-32 md:pb-6 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
-        {/* Header Padrão */}
+        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 border-b border-border/50 pb-4 md:pb-6">
           <Button
             asChild
@@ -220,7 +216,7 @@ export default function NewAnamnesisTemplatePage() {
             className="rounded-full h-10 w-10 shrink-0"
           >
             <Link href="/admin/anamnesis">
-              <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+              <ArrowLeft size="sm" className="text-muted-foreground" />
             </Link>
           </Button>
           <div>
@@ -233,7 +229,7 @@ export default function NewAnamnesisTemplatePage() {
           </div>
         </div>
 
-        {/* Input Nome */}
+        {/* Nome */}
         <div className="space-y-2">
           <Label htmlFor="name" className="font-semibold text-foreground">
             Nome do Modelo
@@ -247,11 +243,11 @@ export default function NewAnamnesisTemplatePage() {
           />
         </div>
 
-        {/* Área de Perguntas */}
+        {/* Perguntas */}
         <div className="space-y-4">
           <div className="flex items-center justify-between border-b pb-3 border-border/50 mt-4">
             <div className="flex items-center gap-2">
-              <ListPlus className="h-5 w-5 text-primary" />
+              <FileDetail size="sm" className="text-primary" />
               <h2 className="font-semibold text-foreground">Perguntas</h2>
             </div>
             <span className="text-xs font-medium text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
@@ -261,7 +257,7 @@ export default function NewAnamnesisTemplatePage() {
 
           {fields.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center bg-muted/20 rounded-2xl border-2 border-dashed border-border">
-              <FileText className="h-10 w-10 text-muted-foreground/40 mb-4" />
+              <FileDetail size="lg" className="text-muted-foreground/40 mb-4" />
               <p className="text-sm font-medium text-muted-foreground">
                 Nenhuma pergunta adicionada.
               </p>
@@ -297,7 +293,11 @@ export default function NewAnamnesisTemplatePage() {
                             ? "Ex: Histórico Clínico"
                             : "Ex: Você está gestante?"
                         }
-                        className={`h-11 bg-background border-border/60 focus:border-primary rounded-lg ${field.type === "section_title" ? "font-bold text-lg" : ""}`}
+                        className={`h-11 bg-background border-border/60 focus:border-primary rounded-lg ${
+                          field.type === "section_title"
+                            ? "font-bold text-lg"
+                            : ""
+                        }`}
                       />
                     </div>
 
@@ -336,7 +336,7 @@ export default function NewAnamnesisTemplatePage() {
                       className="absolute top-2 right-2 md:static md:self-end md:mb-1 h-9 w-9 text-muted-foreground hover:bg-transparent active:bg-destructive/10 active:text-destructive active:scale-95 transition-transform shrink-0"
                       onClick={() => removeField(field.id)}
                     >
-                      <X className="w-5 h-5" />
+                      <X size="sm" />
                     </Button>
                   </div>
 
@@ -349,7 +349,11 @@ export default function NewAnamnesisTemplatePage() {
                       {field.options?.map((option, optIndex) => (
                         <div key={optIndex} className="flex items-center gap-2">
                           <div
-                            className={`w-4 h-4 border border-muted-foreground/50 shrink-0 ${field.type === "single_choice" ? "rounded-full" : "rounded-sm"}`}
+                            className={`w-4 h-4 border border-muted-foreground/50 shrink-0 ${
+                              field.type === "single_choice"
+                                ? "rounded-full"
+                                : "rounded-sm"
+                            }`}
                           />
                           <Input
                             value={option}
@@ -366,7 +370,7 @@ export default function NewAnamnesisTemplatePage() {
                             onClick={() => removeOption(field.id, optIndex)}
                             disabled={(field.options?.length || 0) <= 2}
                           >
-                            <X className="w-4 h-4" />
+                            <X size="sm" />
                           </Button>
                         </div>
                       ))}
@@ -391,7 +395,7 @@ export default function NewAnamnesisTemplatePage() {
               onClick={addField}
               className="w-full h-12 border-dashed border-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors rounded-xl mt-4"
             >
-              <PlusCircle className="w-4 h-4 mr-2" /> Adicionar Nova Pergunta
+              <PlusCircle size="sm" className="mr-2" /> Adicionar Nova Pergunta
             </Button>
           )}
         </div>
@@ -411,9 +415,9 @@ export default function NewAnamnesisTemplatePage() {
             className="px-8 h-12 rounded-xl font-bold shadow-lg"
           >
             {isSaving ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <LoaderDots size="sm" className="animate-spin mr-2" />
             ) : (
-              <Save className="w-4 h-4 mr-2" />
+              <Save size="sm" className="mr-2" />
             )}
             Salvar Modelo
           </Button>
@@ -431,9 +435,9 @@ export default function NewAnamnesisTemplatePage() {
           className="h-12 rounded-xl font-bold shadow-lg"
         >
           {isSaving ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            <LoaderDots size="sm" className="animate-spin mr-2" />
           ) : (
-            <Save className="w-4 h-4 mr-2" />
+            <Save size="sm" className="mr-2" />
           )}
           Salvar
         </Button>

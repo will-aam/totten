@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Search, ChevronRight } from "lucide-react";
-import { Group, ArrowUp, Trash, UserMinus, UserCheck } from "@boxicons/react";
+import { Group, ChevronUp, Trash, UserMinus, UserCheck } from "@boxicons/react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -451,7 +451,7 @@ export default function AdminClientsPage() {
         )}
         aria-label="Voltar ao topo"
       >
-        <ArrowUp size="sm" />
+        <ChevronUp removePadding size="sm" />
       </button>
 
       <AlertDialog
