@@ -14,17 +14,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Search,
-  Plus,
-  Users,
+  Group,
   AlertTriangle,
-  CalendarClock,
-  ArrowUp,
-  CheckCircle2,
-  Loader2,
+  CalendarDetail,
+  ChevronUp,
+  CheckCircle,
+  LoaderDots,
   ChevronLeft,
   ChevronRight,
-} from "lucide-react";
+} from "@boxicons/react";
+import { Search, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PackageDetailsModal } from "@/components/packages/package-details-modal";
 import {
@@ -40,7 +39,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"; // 🔥 Importado para o modal de confirmação
+} from "@/components/ui/dialog";
 
 function KpiCard({
   title,
@@ -62,12 +61,12 @@ function KpiCard({
           {title}
         </CardTitle>
         <div className="p-2 bg-primary/10 rounded-full">
-          <Icon className="h-4 w-4 text-primary" />
+          <Icon size="sm" className="text-primary" />
         </div>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <Loader2 className="h-8 w-8 animate-spin text-primary/20" />
+          <LoaderDots size="sm" className="text-primary/20" />
         ) : (
           <div className="text-3xl font-bold text-foreground tracking-tight">
             {value}
@@ -81,7 +80,6 @@ function KpiCard({
   );
 }
 
-// Componente de Bolinha Pulsante (Sonda)
 function StatusIndicator({
   active,
   isEndingSoon,
@@ -107,13 +105,13 @@ function StatusIndicator({
           "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
           baseColor,
         )}
-      ></span>
+      />
       <span
         className={cn(
           "relative inline-flex rounded-full h-2.5 w-2.5",
           baseColor,
         )}
-      ></span>
+      />
     </div>
   );
 }
@@ -195,7 +193,7 @@ function PackageListItem({ pkg, onOpenDetails, onManualCheckIn }: any) {
             }}
             title="Registrar Check-in Manual"
           >
-            <CheckCircle2 className="h-5 w-5" />
+            <CheckCircle size="sm" />
           </Button>
         ) : (
           <div className="h-10 w-10" />
@@ -211,7 +209,6 @@ export default function PackagesPage() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<any>(null);
 
-  // 🔥 NOVOS ESTADOS PARA O MODAL DE CHECK-IN
   const [isCheckInDialogOpen, setIsCheckInDialogOpen] = useState(false);
   const [pkgToCheckIn, setPkgToCheckIn] = useState<any>(null);
   const [isCheckingIn, setIsCheckingIn] = useState(false);
@@ -224,7 +221,6 @@ export default function PackagesPage() {
   });
   const [loading, setLoading] = useState(true);
 
-  // Estados de Paginação e Busca
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 500);
   const [page, setPage] = useState(1);
@@ -261,12 +257,9 @@ export default function PackagesPage() {
 
   const handleModalClose = (isOpen: boolean) => {
     setDetailsOpen(isOpen);
-    if (!isOpen) {
-      loadData();
-    }
+    if (!isOpen) loadData();
   };
 
-  // 🔥 FUNÇÃO PARA ABRIR O DIALOG
   const openCheckInDialog = (pkg: any) => {
     if (pkg.usedSessions >= pkg.totalSessions) {
       toast.error("Saldo insuficiente.");
@@ -276,22 +269,20 @@ export default function PackagesPage() {
     setIsCheckInDialogOpen(true);
   };
 
-  // 🔥 FUNÇÃO PARA EXECUTAR O CHECK-IN (Confirmar no Modal)
   const confirmManualCheckIn = async () => {
     if (!pkgToCheckIn) return;
-
     setIsCheckingIn(true);
     try {
       toast.loading("Registrando...", { id: "manual" });
       const res = await createManualPackageCheckIn(pkgToCheckIn.id);
       if (res.success) {
         toast.success("Check-in registrado com sucesso!", { id: "manual" });
-        setIsCheckInDialogOpen(false); // Fecha o modal
-        loadData(); // Atualiza a lista
+        setIsCheckInDialogOpen(false);
+        loadData();
       } else {
         toast.error(res.error || "Erro ao registrar.", { id: "manual" });
       }
-    } catch (e) {
+    } catch {
       toast.error("Erro na conexão.", { id: "manual" });
     } finally {
       setIsCheckingIn(false);
@@ -313,7 +304,7 @@ export default function PackagesPage() {
             title="Pacotes Ativos"
             value={kpis.active}
             description="Em andamento"
-            icon={Users}
+            icon={Group}
             loading={loading}
             className="min-w-[85vw] md:min-w-0"
           />
@@ -329,7 +320,7 @@ export default function PackagesPage() {
             title="Total Pendente"
             value={kpis.totalPending}
             description="Sessões a realizar"
-            icon={CalendarClock}
+            icon={CalendarDetail}
             loading={loading}
             className="min-w-[85vw] md:min-w-0"
           />
@@ -357,8 +348,8 @@ export default function PackagesPage() {
         <Card className="border-none shadow-none bg-transparent md:bg-card md:border md:shadow-sm rounded-4xl overflow-hidden">
           <CardHeader className="px-0 pt-0 md:pt-6 md:px-6">
             <CardTitle className="flex items-center gap-2 text-lg font-bold">
-              <CalendarClock className="h-5 w-5 text-primary" /> Gestão de
-              Consumo
+              <CalendarDetail size="sm" className="text-primary" />
+              Gestão de Consumo
             </CardTitle>
             <CardDescription>
               Clique no nome para o extrato ou no check para baixar uma sessão
@@ -367,7 +358,7 @@ export default function PackagesPage() {
           <CardContent className="px-0 pb-0 md:pb-6 md:px-6">
             {loading ? (
               <div className="flex flex-col items-center py-20 gap-3">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <LoaderDots size="lg" className="text-primary" />
                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                   Buscando pacotes...
                 </span>
@@ -379,7 +370,7 @@ export default function PackagesPage() {
                     key={pkg.id}
                     pkg={pkg}
                     onOpenDetails={handleOpenDetails}
-                    onManualCheckIn={openCheckInDialog} // 🔥 Alterado para abrir o dialog
+                    onManualCheckIn={openCheckInDialog}
                   />
                 ))}
               </div>
@@ -400,7 +391,6 @@ export default function PackagesPage() {
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-center sm:text-left w-full sm:w-auto">
               Página {page} de {totalPages}
             </p>
-
             <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
               <Button
                 variant="outline"
@@ -408,16 +398,15 @@ export default function PackagesPage() {
                 disabled={page === 1 || loading}
                 className="rounded-xl h-10 font-bold bg-background shadow-sm hover:bg-muted"
               >
-                <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
+                <ChevronLeft size="sm" className="mr-1" /> Anterior
               </Button>
-
               <Button
                 variant="outline"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages || loading}
                 className="rounded-xl h-10 font-bold bg-background shadow-sm hover:bg-muted"
               >
-                Próxima <ChevronRight className="h-4 w-4 ml-1" />
+                Próxima <ChevronRight size="sm" className="ml-1" />
               </Button>
             </div>
           </div>
@@ -430,7 +419,6 @@ export default function PackagesPage() {
         packageData={selectedPackage}
       />
 
-      {/* 🔥 MODAL DE CONFIRMAÇÃO DE CHECK-IN */}
       <Dialog open={isCheckInDialogOpen} onOpenChange={setIsCheckInDialogOpen}>
         <DialogContent className="sm:max-w-100 rounded-2xl">
           <DialogHeader>
@@ -462,7 +450,7 @@ export default function PackagesPage() {
             >
               {isCheckingIn ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />{" "}
+                  <LoaderDots size="sm" className="animate-spin mr-2" />
                   Registrando...
                 </>
               ) : (
@@ -482,7 +470,7 @@ export default function PackagesPage() {
             : "translate-y-10 opacity-0 pointer-events-none",
         )}
       >
-        <ArrowUp className="h-6 w-6" strokeWidth={3} />
+        <ChevronUp size="base" removePadding />
       </button>
     </>
   );

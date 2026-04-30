@@ -20,14 +20,14 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  Plus,
-  Calendar as CalendarIcon,
-  Settings2,
-  ArrowUp,
-  Loader2,
-} from "lucide-react";
+  ChevronUp,
+  CalendarAlt,
+  Slider,
+  LoaderDots,
+} from "@boxicons/react";
+import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner"; // 1. Importação do toast
+import { toast } from "sonner";
 
 import {
   Popover,
@@ -36,7 +36,6 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 
-// Grids da Agenda
 import {
   DailyAgendaGrid,
   Appointment,
@@ -44,7 +43,6 @@ import {
 import { WeeklyAgendaGrid } from "@/components/agenda/weekly-agenda-grid";
 import { MonthlyAgendaGrid } from "@/components/agenda/monthly-agenda-grid";
 
-// Modais
 import { NewAppointmentModal } from "@/components/agenda/new-appointment-modal";
 import { AppointmentDetailsModal } from "@/components/agenda/appointment-details-modal";
 import { ScheduleSettingsModal } from "@/components/agenda/schedule-settings-modal";
@@ -65,20 +63,16 @@ export default function AgendaPage() {
 
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  // 🔥 2. SWR de Configurações preparado para mutação
-  // Usamos /api/settings (rota admin) para ter permissão de escrita e leitura
   const { data: settings, mutate: mutateSettings } = useSWR(
     "/api/settings",
     fetcher,
   );
 
-  // Derivamos os horários do SWR
   const openingTime = settings?.openingTime || "08:00";
   const closingTime = settings?.closingTime || "19:00";
   const openingHourNumber = Number(openingTime.split(":")[0]);
   const closingHourNumber = Number(closingTime.split(":")[0]);
 
-  // 🔥 OTIMIZAÇÃO: Queries de Agenda via SWR
   const dateStr = format(selectedDate, "yyyy-MM-dd");
   const weekStr = format(weekStart, "yyyy-MM-dd");
 
@@ -109,7 +103,6 @@ export default function AgendaPage() {
     fetcher,
   );
 
-  // Mapeamento otimizado dos agendamentos usando useMemo
   const mapAppointments = (raw: any) => {
     return (raw?.appointments ?? []).map((appt: any) => ({
       ...appt,
@@ -125,7 +118,6 @@ export default function AgendaPage() {
     [monthRaw],
   );
 
-  // --- NAVEGAÇÃO ---
   const goNext = () => {
     if (viewMode === "month") {
       const newDate = addMonths(selectedDate, 1);
@@ -156,7 +148,6 @@ export default function AgendaPage() {
     mutateMonth();
   };
 
-  // 🔥 3. Função Mestra de Salvar Settings
   const handleSaveSettings = async (newSettings: {
     openingTime: string;
     closingTime: string;
@@ -173,10 +164,7 @@ export default function AgendaPage() {
         throw new Error(errData.error || "Erro ao salvar");
       }
 
-      // A MÁGICA: Atualiza o cache local do SWR
-      // Isso faz o openingTime/closingTime atualizar instantaneamente na grade
       await mutateSettings();
-
       toast.success("Horários de funcionamento atualizados!");
     } catch (error) {
       toast.error(
@@ -184,7 +172,6 @@ export default function AgendaPage() {
           ? error.message
           : "Não foi possível salvar os horários.",
       );
-      // Repassa o erro para o modal tratar (ex: parar loading)
       throw error;
     }
   };
@@ -209,7 +196,6 @@ export default function AgendaPage() {
     <>
       <AdminHeader title="Agenda" />
 
-      {/* Layout Fluido: max-w-400 aplicado */}
       <div className="flex flex-col gap-4 p-4 md:p-6 max-w-400 mx-auto w-full pb-32 md:pb-6 relative min-h-[calc(100vh-100px)]">
         {/* HEADER DA AGENDA */}
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 border-b border-border/50 pb-4">
@@ -228,12 +214,15 @@ export default function AgendaPage() {
                               }).replace(/^\w/, (c) => c.toUpperCase())
                             : formattedDateDesktop}
                       </span>
-                      <ChevronDown className="h-4 w-4 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity" />
+                      <ChevronDown
+                        size="sm"
+                        className="text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity"
+                      />
                     </h1>
                     <p className="text-xs text-muted-foreground mt-0.5 font-medium">
                       {loadingDay || loadingWeek || loadingMonth ? (
                         <span className="flex items-center gap-1">
-                          <Loader2 className="h-3 w-3 animate-spin" />{" "}
+                          <LoaderDots size="xs" className="animate-spin" />
                           Atualizando...
                         </span>
                       ) : viewMode === "day" ? (
@@ -271,7 +260,7 @@ export default function AgendaPage() {
               onClick={() => setIsSettingsOpen(true)}
               className="rounded-full h-10 w-10 shrink-0 text-muted-foreground hover:bg-muted xl:hidden"
             >
-              <Settings2 className="h-5 w-5" />
+              <Slider size="sm" />
             </Button>
           </div>
 
@@ -303,7 +292,7 @@ export default function AgendaPage() {
                 onClick={goPrev}
                 className="h-10 w-10 rounded-full"
               >
-                <ChevronLeft className="h-5 w-5" />
+                <ChevronLeft size="sm" />
               </Button>
 
               {viewMode !== "month" && (
@@ -344,7 +333,7 @@ export default function AgendaPage() {
                 onClick={goNext}
                 className="h-10 w-10 rounded-full"
               >
-                <ChevronRight className="h-5 w-5" />
+                <ChevronRight size="sm" />
               </Button>
             </div>
 
@@ -354,7 +343,7 @@ export default function AgendaPage() {
               onClick={() => setIsSettingsOpen(true)}
               className="rounded-xl h-11 w-11 shrink-0 bg-card shadow-sm hidden xl:flex"
             >
-              <Settings2 className="h-4 w-4" />
+              <Slider size="sm" />
             </Button>
           </div>
         </div>
@@ -370,7 +359,6 @@ export default function AgendaPage() {
               endHour={closingHourNumber}
             />
           )}
-
           {viewMode === "week" && (
             <WeeklyAgendaGrid
               appointments={weekAppointments}
@@ -380,7 +368,6 @@ export default function AgendaPage() {
               endHour={closingHourNumber}
             />
           )}
-
           {viewMode === "month" && (
             <MonthlyAgendaGrid
               appointments={monthAppointments}
@@ -396,7 +383,7 @@ export default function AgendaPage() {
         </div>
       </div>
 
-      {/* BOTÕES FLUTUANTES (SPEED DIAL PATTERN) */}
+      {/* BOTÕES FLUTUANTES */}
       <Button
         onClick={() => setIsNewModalOpen(true)}
         className={cn(
@@ -419,7 +406,7 @@ export default function AgendaPage() {
             : "translate-y-16 opacity-0 pointer-events-none",
         )}
       >
-        <ArrowUp className="h-6 w-6" strokeWidth={2.5} />
+        <ChevronUp size="base" removePadding />
       </button>
 
       {/* MODAIS */}
@@ -431,19 +418,16 @@ export default function AgendaPage() {
         initialDate={selectedDate}
         onCreated={mutateAll}
       />
-
       <AppointmentDetailsModal
         open={!!selectedAppointment}
         onOpenChange={(open) => !open && setSelectedAppointment(null)}
         appointment={selectedAppointment}
         onRefresh={mutateAll}
       />
-
       <ScheduleSettingsModal
         open={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
         initialSettings={{ openingTime, closingTime }}
-        // 🔥 4. Conectando a nova função de save
         onSave={handleSaveSettings}
         onClearToday={mutateAll}
       />

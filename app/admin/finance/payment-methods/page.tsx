@@ -15,19 +15,18 @@ import { Badge } from "@/components/ui/badge";
 import {
   PlusCircle,
   CreditCard,
-  Banknote,
   Landmark,
-  QrCode,
-  ArrowUp,
-  Settings2,
-} from "lucide-react";
+  QrScan,
+  ChevronUp,
+  Slider,
+  Coin,
+} from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { OrganizationPaymentMethod } from "@/types/finance";
 import { PaymentMethodModal } from "@/components/finance/payment-method-modal";
 import { getPaymentMethods } from "@/app/actions/payment-methods";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// OTIMIZAÇÃO: Formatador global para evitar recriação a cada renderização da lista
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
@@ -43,14 +42,14 @@ function PaymentMethodListItem({
   const getIcon = () => {
     switch (method.type) {
       case "PIX":
-        return <QrCode className="h-5 w-5" />;
+        return <QrScan size="sm" />;
       case "CARTAO_CREDITO":
       case "CARTAO_DEBITO":
-        return <CreditCard className="h-5 w-5" />;
+        return <CreditCard size="sm" />;
       case "DINHEIRO":
-        return <Banknote className="h-5 w-5" />;
+        return <Coin size="sm" />;
       default:
-        return <Landmark className="h-5 w-5" />;
+        return <Landmark size="sm" />;
     }
   };
 
@@ -153,7 +152,6 @@ export default function PaymentMethodsPage() {
 
   useEffect(() => {
     loadData();
-
     const handleScroll = () => setShowScrollTop(window.scrollY > 200);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
@@ -175,7 +173,6 @@ export default function PaymentMethodsPage() {
     <>
       <AdminHeader title="Meios de Pagamento" />
 
-      {/* 🔥 OTIMIZAÇÃO ESTRUTURAL: max-w-400 e animate-in mantidos intocados como pedido */}
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -191,7 +188,7 @@ export default function PaymentMethodsPage() {
             className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground justify-center mt-2 sm:mt-0"
             onClick={handleNewPaymentMethod}
           >
-            <PlusCircle className="mr-2 h-4 w-4" />
+            <PlusCircle size="sm" className="mr-2" />
             Adicionar Pagamento
           </Button>
         </div>
@@ -199,7 +196,7 @@ export default function PaymentMethodsPage() {
         <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card mt-2 md:mt-0">
           <CardHeader className="px-0 pt-0 md:pt-6 md:px-6">
             <CardTitle className="flex items-center gap-2 text-card-foreground">
-              <Settings2 className="h-5 w-5 text-primary" />
+              <Slider size="sm" className="text-primary" />
               Configurações Atuais
             </CardTitle>
             <CardDescription>
@@ -230,7 +227,7 @@ export default function PaymentMethodsPage() {
                 ))
               ) : methods.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/30 rounded-lg border border-dashed border-border">
-                  <Landmark className="h-10 w-10 text-muted-foreground/40" />
+                  <Landmark size="lg" className="text-muted-foreground/40" />
                   <p className="mt-4 text-sm font-medium text-muted-foreground">
                     Nenhum meio de pagamento configurado.
                   </p>
@@ -259,10 +256,9 @@ export default function PaymentMethodsPage() {
         )}
         aria-label="Voltar ao topo"
       >
-        <ArrowUp className="h-6 w-6" strokeWidth={2.5} />
+        <ChevronUp size="base" removePadding />
       </button>
 
-      {/* 🔥 OTIMIZAÇÃO: Lazy Mount do Modal */}
       {isModalOpen && (
         <PaymentMethodModal
           isOpen={isModalOpen}

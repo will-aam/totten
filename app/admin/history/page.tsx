@@ -7,13 +7,13 @@ import { AdminHeader } from "@/components/admin-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
-  ClipboardList,
-  ArrowUp,
+  ClipboardDetail,
+  ChevronUp,
   CalendarCheck,
   ChevronLeft,
   ChevronRight,
-  Loader2,
-} from "lucide-react";
+  LoaderDots,
+} from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
 import {
@@ -21,11 +21,10 @@ import {
   type EnrichedCheckIn,
 } from "@/components/history/history-table";
 import { HistoryFilters } from "@/components/history/history-filters";
-import { useDebounce } from "@/hooks/use-debounce"; // 🔥 Seu hook de otimização
+import { useDebounce } from "@/hooks/use-debounce";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-// Tipagem da resposta da nossa API Otimizada
 type HistoryResponse = {
   data: EnrichedCheckIn[];
   total: number;
@@ -36,14 +35,13 @@ type HistoryResponse = {
 export default function AdminHistoryPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search, 500); // Aguarda 500ms após parar de digitar
+  const debouncedSearch = useDebounce(search, 500);
 
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
 
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  // Zera a página quando qualquer filtro mudar
   useEffect(() => {
     setPage(1);
   }, [debouncedSearch, dateFrom, dateTo]);
@@ -63,12 +61,7 @@ export default function AdminHistoryPage() {
     setPage(1);
   };
 
-  // 🔥 SWR CONECTADO COM PAGINAÇÃO NO SERVIDOR
-  const query = new URLSearchParams({
-    page: page.toString(),
-    limit: "15", // Mostra 15 registros por página
-  });
-
+  const query = new URLSearchParams({ page: page.toString(), limit: "15" });
   if (debouncedSearch) query.append("q", debouncedSearch);
   if (dateFrom) query.append("from", dateFrom.toISOString());
   if (dateTo) query.append("to", dateTo.toISOString());
@@ -87,9 +80,7 @@ export default function AdminHistoryPage() {
     <>
       <AdminHeader title="Histórico" />
 
-      {/* 🔥 AQUI ESTÁ O AJUSTE: max-w-400 aplicado! */}
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-12 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
-        {/* Componente de Filtros Clean */}
         <HistoryFilters
           search={search}
           setSearch={setSearch}
@@ -100,10 +91,9 @@ export default function AdminHistoryPage() {
           clearFilters={clearFilters}
         />
 
-        {/* Título de Seção "Solto" na tela */}
         <div className="flex items-center justify-between pt-2">
           <h2 className="text-xl font-black text-foreground flex items-center gap-2">
-            <ClipboardList className="h-6 w-6 text-primary" />
+            <ClipboardDetail size="sm" className="text-primary" />
             Extrato de Presenças
           </h2>
           {!isLoading && (
@@ -113,7 +103,6 @@ export default function AdminHistoryPage() {
           )}
         </div>
 
-        {/* Área da Tabela */}
         <div>
           {isLoading ? (
             <div className="flex flex-col gap-4 bg-card p-6 rounded-3xl border border-border/50">
@@ -130,7 +119,7 @@ export default function AdminHistoryPage() {
           ) : checkIns.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center bg-card rounded-4xl border border-dashed border-border/60 shadow-sm">
               <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mb-4">
-                <CalendarCheck className="h-8 w-8 text-muted-foreground" />
+                <CalendarCheck size="md" className="text-muted-foreground" />
               </div>
               <p className="text-base font-bold text-foreground">
                 Nenhum check-in encontrado
@@ -142,10 +131,8 @@ export default function AdminHistoryPage() {
             </div>
           ) : (
             <div className="animate-in slide-in-from-bottom-2 duration-500">
-              {/* A Tabela (Que já tem design de Card internamente) */}
               <HistoryTable data={checkIns} onUpdate={mutate} />
 
-              {/* Controles de Paginação Premium */}
               {totalPages > 1 && (
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 bg-card p-4 rounded-2xl border border-border/50 shadow-sm">
                   <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-center sm:text-left w-full sm:w-auto">
@@ -159,7 +146,7 @@ export default function AdminHistoryPage() {
                       disabled={page === 1}
                       className="rounded-xl h-10 font-bold bg-background shadow-sm hover:bg-muted"
                     >
-                      <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
+                      <ChevronLeft size="sm" className="mr-1" /> Anterior
                     </Button>
 
                     <Button
@@ -170,7 +157,7 @@ export default function AdminHistoryPage() {
                       disabled={page === totalPages}
                       className="rounded-xl h-10 font-bold bg-background shadow-sm hover:bg-muted"
                     >
-                      Próxima <ChevronRight className="h-4 w-4 ml-1" />
+                      Próxima <ChevronRight size="sm" className="ml-1" />
                     </Button>
                   </div>
                 </div>
@@ -180,7 +167,6 @@ export default function AdminHistoryPage() {
         </div>
       </div>
 
-      {/* Botão de Subir */}
       <button
         onClick={scrollToTop}
         className={cn(
@@ -191,7 +177,7 @@ export default function AdminHistoryPage() {
         )}
         aria-label="Voltar ao topo"
       >
-        <ArrowUp className="h-5 w-5" strokeWidth={3} />
+        <ChevronUp size="base" removePadding />
       </button>
     </>
   );
