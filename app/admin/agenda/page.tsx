@@ -25,7 +25,7 @@ import {
   Slider,
   LoaderDots,
 } from "@boxicons/react";
-import { Plus } from "lucide-react";
+import { Plus } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 

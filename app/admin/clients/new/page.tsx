@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { AdminHeader } from "@/components/admin-header";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "@boxicons/react";
 import { ClientForm } from "@/components/client/client-form";
 
 export default function NewClientPage() {

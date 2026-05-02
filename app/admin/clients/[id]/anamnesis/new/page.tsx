@@ -5,7 +5,13 @@ import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { ArrowLeft, Save, PenTool, Loader2, CheckCircle2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Save,
+  PenDraw,
+  LoaderDots,
+  CheckCircle,
+} from "@boxicons/react";
 
 import { AdminHeader } from "@/components/admin-header";
 import { Button } from "@/components/ui/button";
@@ -44,16 +50,12 @@ export default function NewClientAnamnesisPage({
 
   const [templates, setTemplates] = useState<any[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<any | null>(null);
-
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [signature, setSignature] = useState<string | null>(null);
-
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
 
-  // 🔥 OTIMIZAÇÃO: Isolar o ID para evitar que o useEffect rode em loop
-  // se o objeto session for atualizado pelo NextAuth em background.
   const organizationId = session?.user?.organizationId;
 
   useEffect(() => {
@@ -269,9 +271,8 @@ export default function NewClientAnamnesisPage({
     <>
       <AdminHeader title="Preencher Anamnese" />
 
-      {/* 🔥 OTIMIZAÇÃO ESTRUTURAL APLICADA: max-w-400 no container principal */}
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-32 animate-in fade-in duration-500 min-h-[calc(100vh-100px)] relative">
-        {/* Cabeçalho Responsivo */}
+        {/* Cabeçalho */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/50 pb-4">
           <div className="flex items-center gap-4">
             <Button
@@ -281,7 +282,7 @@ export default function NewClientAnamnesisPage({
               className="rounded-full h-10 w-10 shrink-0"
             >
               <Link href={`/admin/clients/${clientId}`}>
-                <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+                <ArrowLeft size="sm" className="text-muted-foreground" />
               </Link>
             </Button>
             <div>
@@ -294,7 +295,6 @@ export default function NewClientAnamnesisPage({
             </div>
           </div>
 
-          {/* Botões de Ação (Apenas Desktop) */}
           {selectedTemplate && (
             <div className="hidden md:flex items-center gap-3">
               <Button
@@ -304,9 +304,9 @@ export default function NewClientAnamnesisPage({
                 disabled={isSaving || isSavingDraft}
               >
                 {isSavingDraft ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <LoaderDots size="sm" className="animate-spin mr-2" />
                 ) : (
-                  <Save className="w-4 h-4 mr-2" />
+                  <Save size="sm" className="mr-2" />
                 )}
                 Rascunho
               </Button>
@@ -317,9 +317,9 @@ export default function NewClientAnamnesisPage({
                 disabled={isSaving || isSavingDraft || !signature}
               >
                 {isSaving ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <LoaderDots size="sm" className="animate-spin mr-2" />
                 ) : (
-                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  <CheckCircle size="sm" className="mr-2" />
                 )}
                 Finalizar
               </Button>
@@ -334,7 +334,7 @@ export default function NewClientAnamnesisPage({
           </Label>
           {isLoading ? (
             <div className="flex items-center text-sm text-muted-foreground">
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Carregando
+              <LoaderDots size="sm" className="animate-spin mr-2" /> Carregando
               modelos...
             </div>
           ) : (
@@ -365,7 +365,7 @@ export default function NewClientAnamnesisPage({
             {/* Assinatura Digital */}
             <div className="mt-8 space-y-4 p-5 border-2 border-primary/10 rounded-2xl bg-background shadow-sm">
               <div className="flex items-center gap-2 mb-2">
-                <PenTool className="w-5 h-5 text-primary" />
+                <PenDraw size="sm" className="text-primary" />
                 <h3 className="text-xl font-bold">Assinatura da Cliente</h3>
               </div>
               <p className="text-sm text-muted-foreground mb-4">
@@ -373,14 +373,13 @@ export default function NewClientAnamnesisPage({
                 caneta touch. Após assinar, o documento não poderá mais ser
                 alterado.
               </p>
-
               <SignaturePad onSignatureChange={setSignature} />
             </div>
           </div>
         )}
       </div>
 
-      {/* Botão Flutuante (Apenas Mobile) */}
+      {/* Botões Flutuantes Mobile */}
       {selectedTemplate && (
         <div className="md:hidden fixed bottom-20 right-4 flex flex-col gap-3 z-50 animate-in fade-in slide-in-from-bottom-8 duration-300">
           <Button
@@ -391,9 +390,12 @@ export default function NewClientAnamnesisPage({
             disabled={isSaving || isSavingDraft}
           >
             {isSavingDraft ? (
-              <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
+              <LoaderDots
+                size="sm"
+                className="text-muted-foreground animate-spin"
+              />
             ) : (
-              <Save className="h-5 w-5 text-muted-foreground" />
+              <Save size="sm" className="text-muted-foreground" />
             )}
           </Button>
 
@@ -407,9 +409,9 @@ export default function NewClientAnamnesisPage({
             disabled={isSaving || isSavingDraft || !signature}
           >
             {isSaving ? (
-              <Loader2 className="h-6 w-6 animate-spin" />
+              <LoaderDots size="sm" className="animate-spin" />
             ) : (
-              <CheckCircle2 className="h-6 w-6" strokeWidth={2.5} />
+              <CheckCircle size="sm" />
             )}
           </Button>
         </div>

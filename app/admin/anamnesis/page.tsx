@@ -4,7 +4,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Plus } from "lucide-react";
+import { Plus } from "@boxicons/react";
 import {
   Edit,
   FileDetail,

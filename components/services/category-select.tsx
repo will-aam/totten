@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Check, ChevronsUpDown, LoaderDots } from "@boxicons/react";
-import { Plus } from "lucide-react";
+import { Plus } from "@boxicons/react";
 import { Button } from "@/components/ui/button";
 import {
   Command,

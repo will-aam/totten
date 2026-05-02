@@ -12,7 +12,7 @@ import {
   LoaderDots,
   PlusCircle,
 } from "@boxicons/react";
-import { Plus } from "lucide-react";
+import { Plus } from "@boxicons/react";
 
 import { AdminHeader } from "@/components/admin-header";
 import { Button } from "@/components/ui/button";

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { cn } from "@/lib/utils";
-import { Plus } from "lucide-react";
+import { Plus } from "@boxicons/react";
 import {
   Cog,
   Package,

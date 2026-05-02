@@ -19,8 +19,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Search, ChevronRight } from "lucide-react";
-import { Group, ChevronUp, Trash, UserMinus, UserCheck } from "@boxicons/react";
+import {
+  Group,
+  Plus,
+  Search,
+  ChevronUp,
+  ChevronRight,
+  Trash,
+  UserMinus,
+  UserCheck,
+} from "@boxicons/react";
 import {
   AlertDialog,
   AlertDialogAction,

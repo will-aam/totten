@@ -5,13 +5,13 @@ import { useState, useEffect, use, useCallback } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
-  FileText,
-  Loader2,
+  FileDetail,
+  LoaderDots,
   Printer,
-  CheckCircle2,
+  CheckCircle,
   Clock,
-  PenTool,
-} from "lucide-react";
+  PenDraw,
+} from "@boxicons/react";
 
 import { AdminHeader } from "@/components/admin-header";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,6 @@ import {
   signAnamnesisResponse,
 } from "@/app/actions/anamnesis";
 
-// 🔥 OTIMIZAÇÃO: Formatador global instanciado apenas uma vez
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   day: "2-digit",
   month: "long",
@@ -50,7 +49,6 @@ export default function AnamnesisDocumentPage({
 
   const [response, setResponse] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-
   const [signature, setSignature] = useState<string | null>(null);
   const [isSigning, setIsSigning] = useState(false);
 
@@ -131,7 +129,7 @@ export default function AnamnesisDocumentPage({
   if (isLoading && !response) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+        <LoaderDots size="lg" className="text-primary mb-4" />
         <p className="text-muted-foreground">Carregando o documento...</p>
       </div>
     );
@@ -140,7 +138,10 @@ export default function AnamnesisDocumentPage({
   if (!response) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh]">
-        <FileText className="w-12 h-12 text-muted-foreground mb-4 opacity-50" />
+        <FileDetail
+          size="lg"
+          className="text-muted-foreground mb-4 opacity-50"
+        />
         <p className="text-muted-foreground">Documento não encontrado.</p>
         <Button asChild variant="link" className="mt-4">
           <Link href={`/admin/clients/${clientId}`}>Voltar ao perfil</Link>
@@ -172,23 +173,9 @@ export default function AnamnesisDocumentPage({
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
-          .print-wrapper {
-            max-width: 100% !important;
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-          }
-          .print-document {
-            border: none !important;
-            box-shadow: none !important;
-            margin: 0 !important;
-            padding: 0 !important;
-          }
-          .signature-img-print {
-            filter: none !important;
-            -webkit-filter: none !important;
-            mix-blend-mode: normal !important;
-          }
+          .print-wrapper { max-width: 100% !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+          .print-document { border: none !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; }
+          .signature-img-print { filter: none !important; -webkit-filter: none !important; mix-blend-mode: normal !important; }
         `}
       </style>
 
@@ -197,7 +184,7 @@ export default function AnamnesisDocumentPage({
       </div>
 
       <div className="print-wrapper flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
-        {/* Barra de Ações Superior (Oculta na impressão) */}
+        {/* Barra de Ações Superior */}
         <div className="print-hidden flex items-center justify-between border-b border-border/50 pb-4">
           <Button
             asChild
@@ -206,7 +193,7 @@ export default function AnamnesisDocumentPage({
             className="rounded-xl font-bold h-10 px-4"
           >
             <Link href={`/admin/clients/${clientId}`}>
-              <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
+              <ArrowLeft size="sm" className="mr-2" /> Voltar
             </Link>
           </Button>
 
@@ -216,13 +203,13 @@ export default function AnamnesisDocumentPage({
             className="rounded-xl font-bold shadow-sm h-10 px-4"
             onClick={() => window.print()}
           >
-            <Printer className="h-4 w-4 mr-2" /> Imprimir Documento
+            <Printer size="sm" className="mr-2" /> Imprimir Documento
           </Button>
         </div>
 
         {/* O Documento */}
         <div className="print-document bg-background border border-border/60 shadow-sm rounded-4xl p-6 md:p-10">
-          {/* Cabeçalho do Documento */}
+          {/* Cabeçalho */}
           <div className="text-center mb-8 pb-6 border-b-2 border-primary/20 print:border-gray-300">
             <h1 className="text-2xl font-black uppercase tracking-widest mb-2 text-foreground">
               {response.template?.name || "Ficha de Anamnese"}
@@ -234,12 +221,12 @@ export default function AnamnesisDocumentPage({
             <div className="mt-4 inline-flex items-center gap-2 print-hidden">
               {response.signed_at ? (
                 <Badge className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20 px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-xl">
-                  <CheckCircle2 className="w-4 h-4 mr-1.5" /> Assinado
+                  <CheckCircle size="xs" className="mr-1.5" /> Assinado
                   Legalmente
                 </Badge>
               ) : (
                 <Badge className="bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/20 px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-xl">
-                  <Clock className="w-4 h-4 mr-1.5" /> Rascunho Pendente
+                  <Clock size="xs" className="mr-1.5" /> Rascunho Pendente
                 </Badge>
               )}
             </div>
@@ -255,7 +242,6 @@ export default function AnamnesisDocumentPage({
                 {client.name}
               </p>
             </div>
-
             {client.cpf && (
               <div className="flex flex-col gap-1">
                 <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest print:text-gray-500">
@@ -266,7 +252,6 @@ export default function AnamnesisDocumentPage({
                 </p>
               </div>
             )}
-
             {client.phone_whatsapp && (
               <div className="flex flex-col gap-1">
                 <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest print:text-gray-500">
@@ -277,7 +262,6 @@ export default function AnamnesisDocumentPage({
                 </p>
               </div>
             )}
-
             {client.email && (
               <div className="md:col-span-2 print:col-span-1 flex flex-col gap-1">
                 <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest print:text-gray-500">
@@ -321,7 +305,7 @@ export default function AnamnesisDocumentPage({
             })}
           </div>
 
-          {/* 🔥 LÓGICA DE ASSINATURA DINÂMICA */}
+          {/* Assinatura */}
           {response.signature ? (
             <div className="mt-16 pt-8 border-t-2 border-dashed border-border print:border-gray-300 flex flex-col items-center print:break-inside-avoid">
               <p className="text-xs font-bold text-muted-foreground mb-4 uppercase tracking-widest print:text-gray-600">
@@ -346,11 +330,10 @@ export default function AnamnesisDocumentPage({
             </div>
           ) : (
             <div className="mt-12 pt-8 border-t-2 border-dashed border-border print:border-gray-300 w-full print:break-inside-avoid">
-              {/* 🔥 TELA DE ASSINATURA CORRIGIDA (Forçando display block e 100% width) */}
               <div className="block w-full print-hidden">
                 <div className="space-y-4 p-5 border-2 border-primary/10 rounded-2xl bg-background shadow-sm w-full">
                   <div className="flex items-center gap-2 mb-2">
-                    <PenTool className="w-5 h-5 text-primary" />
+                    <PenDraw size="sm" className="text-primary" />
                     <h3 className="text-xl font-bold">Assinatura da Cliente</h3>
                   </div>
                   <p className="text-sm text-muted-foreground mb-4">
@@ -358,7 +341,6 @@ export default function AnamnesisDocumentPage({
                     ou caneta touch. Após assinar, o documento não poderá mais
                     ser alterado.
                   </p>
-
                   <SignaturePad onSignatureChange={setSignature} />
                 </div>
 
@@ -369,16 +351,16 @@ export default function AnamnesisDocumentPage({
                     className="w-full md:w-auto h-12 px-8 rounded-xl font-bold shadow-md bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
                     {isSigning ? (
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      <LoaderDots size="sm" className="animate-spin mr-2" />
                     ) : (
-                      <CheckCircle2 className="w-5 h-5 mr-2" />
+                      <CheckCircle size="sm" className="mr-2" />
                     )}
                     Finalizar Assinatura
                   </Button>
                 </div>
               </div>
 
-              {/* 🖨️ INTERFACE DE IMPRESSÃO */}
+              {/* Interface de Impressão */}
               <div className="hidden print:flex flex-col items-center w-full mt-8">
                 <p className="text-gray-500 italic text-xs font-bold mb-16">
                   Este documento foi impresso sem assinatura digital.

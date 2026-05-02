@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ShieldCheck, Loader2, Save, ArrowUp } from "lucide-react";
+import { SealCheck, LoaderDots, Save } from "@boxicons/react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -44,10 +44,7 @@ export function SecuritySettings() {
       const res = await fetch("/api/auth/change-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          currentPassword,
-          newPassword,
-        }),
+        body: JSON.stringify({ currentPassword, newPassword }),
       });
 
       const data = await res.json();
@@ -73,7 +70,7 @@ export function SecuritySettings() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <CardTitle className="flex items-center gap-2 text-card-foreground mb-2">
-              <ShieldCheck className="h-5 w-5 text-primary" />
+              <SealCheck size="sm" className="text-primary" />
               Acesso e Segurança
             </CardTitle>
             <CardDescription>
@@ -85,16 +82,16 @@ export function SecuritySettings() {
             <Button
               onClick={handleChangePassword}
               disabled={loading}
-              className={` ${isMobile ? "hidden" : "max-w-xs"}`}
+              className={`${isMobile ? "hidden" : "max-w-xs"}`}
             >
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <LoaderDots size="sm" className="animate-spin mr-2" />
                   Salvando...
                 </>
               ) : (
                 <>
-                  <Save className="mr-2 h-4 w-4" />
+                  <Save size="sm" className="mr-2" />
                   Salvar
                 </>
               )}
@@ -162,12 +159,18 @@ export function SecuritySettings() {
           </div>
         </div>
       </CardContent>
+
+      {/* Botão flutuante mobile */}
       <button
         onClick={handleChangePassword}
         disabled={loading}
-        className={`${!isMobile ? "hidden" : "fixed bottom-0 right-4 md:bottom-8 md:right-8 h-14 w-14 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 z-50 translate-y-16 opacity-100 hover:scale-110"} `}
+        className={`${
+          !isMobile
+            ? "hidden"
+            : "fixed bottom-0 right-4 md:bottom-8 md:right-8 h-14 w-14 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 z-50 translate-y-16 opacity-100 hover:scale-110"
+        }`}
       >
-        <Save className="h-6 w-6" strokeWidth={2.5} />
+        <Save size="sm" />
       </button>
     </Card>
   );

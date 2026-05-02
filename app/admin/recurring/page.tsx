@@ -9,11 +9,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import {
   Repeat,
-  Search,
-  ArrowUp,
+  ChevronUp,
   ChevronLeft,
   ChevronRight,
-} from "lucide-react";
+  Search,
+} from "@boxicons/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { deleteAppointment } from "@/app/actions/appointments";
@@ -21,7 +21,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import {
   RecurringItem,
   type RecurringSeries,
-} from "@/components/recurring/recurring-item"; // 🔥 Componente importado!
+} from "@/components/recurring/recurring-item";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -50,11 +50,7 @@ export default function RecurringAppointmentsPage() {
 
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
-  const query = new URLSearchParams({
-    page: page.toString(),
-    limit: "15",
-  });
-
+  const query = new URLSearchParams({ page: page.toString(), limit: "15" });
   if (debouncedSearch && debouncedSearch.trim().length >= 3) {
     query.append("q", debouncedSearch.trim());
   }
@@ -81,7 +77,7 @@ export default function RecurringAppointmentsPage() {
       } else {
         toast.error("Erro ao cancelar a série.");
       }
-    } catch (error) {
+    } catch {
       toast.error("Erro de conexão ao cancelar.");
     }
   };
@@ -93,11 +89,9 @@ export default function RecurringAppointmentsPage() {
   ) => {
     const cleanPhone = phone.replace(/\D/g, "");
     let msg = `Olá ${clientName.split(" ")[0]}! Tudo bem?`;
-
     if (warnings.length > 0) {
       msg += ` Passando para lembrar que o seu pacote está finalizando, mas ainda temos seus horários fixos reservados na nossa agenda. Gostaria de renovar o plano para mantermos as suas vagas?`;
     }
-
     window.open(
       `https://api.whatsapp.com/send?phone=55${cleanPhone}&text=${encodeURIComponent(msg)}`,
       "_blank",
@@ -109,7 +103,6 @@ export default function RecurringAppointmentsPage() {
       <AdminHeader title="Gestão de Recorrências" />
 
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative min-h-[calc(100vh-100px)] animate-in fade-in duration-500">
-        {/* Cabeçalho e Busca */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border/40 pb-6">
           <div className="flex flex-col gap-1">
             <h2 className="text-2xl font-black tracking-tight text-foreground">
@@ -132,10 +125,9 @@ export default function RecurringAppointmentsPage() {
           </div>
         </div>
 
-        {/* Título da Seção */}
         <div className="flex items-center justify-between pt-2">
           <h2 className="text-xl font-black text-foreground flex items-center gap-2">
-            <Repeat className="h-6 w-6 text-primary" />
+            <Repeat size="sm" className="text-primary" />
             Séries Ativas e Finalizadas
           </h2>
           {!isLoading && (
@@ -145,7 +137,6 @@ export default function RecurringAppointmentsPage() {
           )}
         </div>
 
-        {/* LISTAGEM EM LINHAS */}
         <div className="flex flex-col gap-3">
           {isLoading ? (
             Array.from({ length: 5 }).map((_, i) => (
@@ -157,7 +148,7 @@ export default function RecurringAppointmentsPage() {
           ) : seriesList.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center bg-card rounded-4xl border border-dashed border-border/60 mt-2">
               <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mb-4">
-                <Repeat className="h-8 w-8 text-muted-foreground/50" />
+                <Repeat size="md" className="text-muted-foreground/50" />
               </div>
               <h3 className="text-lg font-bold text-foreground">
                 {searchTerm.length >= 3
@@ -177,7 +168,6 @@ export default function RecurringAppointmentsPage() {
                 className="animate-in slide-in-from-bottom-2"
                 style={{ animationDelay: `${index * 40}ms` }}
               >
-                {/* 🔥 A Mágica da Componentização aqui! */}
                 <RecurringItem
                   series={series}
                   onWhatsApp={handleWhatsApp}
@@ -188,13 +178,11 @@ export default function RecurringAppointmentsPage() {
           )}
         </div>
 
-        {/* CONTROLES DE PAGINAÇÃO */}
         {totalPages > 1 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 bg-card p-4 rounded-2xl border border-border/50">
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-center sm:text-left w-full sm:w-auto">
               Página {page} de {totalPages}
             </p>
-
             <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
               <Button
                 variant="outline"
@@ -202,16 +190,15 @@ export default function RecurringAppointmentsPage() {
                 disabled={page === 1}
                 className="rounded-xl h-10 font-bold bg-background hover:bg-muted border-none"
               >
-                <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
+                <ChevronLeft size="sm" className="mr-1" /> Anterior
               </Button>
-
               <Button
                 variant="outline"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
                 className="rounded-xl h-10 font-bold bg-background hover:bg-muted border-none"
               >
-                Próxima <ChevronRight className="h-4 w-4 ml-1" />
+                Próxima <ChevronRight size="sm" className="ml-1" />
               </Button>
             </div>
           </div>
@@ -228,7 +215,7 @@ export default function RecurringAppointmentsPage() {
         )}
         aria-label="Voltar ao topo"
       >
-        <ArrowUp className="h-5 w-5" strokeWidth={2.5} />
+        <ChevronUp size="base" removePadding />
       </button>
     </>
   );
