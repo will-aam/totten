@@ -10,7 +10,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon, Search, X, CalendarDays } from "lucide-react";
+import { CalendarDetail, Search, X } from "@boxicons/react";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -62,7 +62,7 @@ export function HistoryFilters({
           onClick={handleThisMonth}
           className="h-8 rounded-xl text-xs font-bold bg-background shadow-sm hover:bg-primary/10 hover:text-primary transition-colors"
         >
-          <CalendarDays className="h-3 w-3 mr-1.5" /> Este Mês
+          <Calendar className="h-3 w-3 mr-1.5" /> Este Mês
         </Button>
         <Button
           variant="outline"
@@ -70,7 +70,7 @@ export function HistoryFilters({
           onClick={handleLastMonth}
           className="h-8 rounded-xl text-xs font-bold bg-background shadow-sm hover:bg-primary/10 hover:text-primary transition-colors"
         >
-          <CalendarDays className="h-3 w-3 mr-1.5" /> Mês Passado
+          <Calendar className="h-3 w-3 mr-1.5" /> Mês Passado
         </Button>
       </div>
 
@@ -106,7 +106,7 @@ export function HistoryFilters({
                     !dateFrom && "text-muted-foreground",
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
+                  <CalendarDetail className="mr-2 h-4 w-4 text-primary" />
                   {dateFrom ? format(dateFrom, "dd/MM/yy") : "Selecione"}
                 </Button>
               </PopoverTrigger>
@@ -138,7 +138,7 @@ export function HistoryFilters({
                     !dateTo && "text-muted-foreground",
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
+                  <CalendarDetail className="mr-2 h-4 w-4 text-primary" />
                   {dateTo ? format(dateTo, "dd/MM/yy") : "Selecione"}
                 </Button>
               </PopoverTrigger>

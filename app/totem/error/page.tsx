@@ -4,7 +4,7 @@
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
-import { AlertTriangle, ArrowLeft } from "lucide-react";
+import { AlertTriangle, ArrowLeft } from "@boxicons/react";
 import { Button } from "@/components/ui/button";
 
 const errorMessages: Record<string, { title: string; description: string }> = {

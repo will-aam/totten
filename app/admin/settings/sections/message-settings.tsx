@@ -18,7 +18,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { MessageSquare, HelpCircle, Save, Loader2, Plus } from "lucide-react";
+import { Whatsapp, HelpCircle, Save, LoaderDots, Plus } from "@boxicons/react";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -107,7 +107,7 @@ export function MessageSettings() {
     return (
       <Card className="border-none shadow-none py-0 sm:py-6">
         <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <LoaderDots className="h-8 w-8 animate-spin text-primary" />
         </CardContent>
       </Card>
     );
@@ -120,7 +120,7 @@ export function MessageSettings() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <CardTitle className="flex items-center gap-2 text-card-foreground">
-                <MessageSquare className="h-5 w-5 text-primary" />
+                <Whatsapp className="h-5 w-5 text-primary" />
                 Modelos de Mensagens
               </CardTitle>
               <CardDescription className="mt-1.5">
@@ -148,7 +148,7 @@ export function MessageSettings() {
               >
                 {saving ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <LoaderDots className="h-4 w-4 mr-2 animate-spin" />
                     Salvando...
                   </>
                 ) : (

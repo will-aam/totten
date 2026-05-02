@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback } from "react";
-import { Eraser } from "lucide-react";
+import { Eraser } from "@boxicons/react";
 import { Button } from "@/components/ui/button";
 
 interface SignaturePadProps {

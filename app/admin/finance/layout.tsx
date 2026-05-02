@@ -3,16 +3,16 @@
 import { usePathname, useRouter } from "next/navigation";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import {
-  LayoutDashboard,
+  Dashboard,
   ArrowRightLeft,
   CreditCard,
   Package,
   Wallet, // 🔥 Importamos o ícone novo aqui
-} from "lucide-react";
+} from "@boxicons/react";
 
 // Menu inferior com as opções principais (agora com 5 itens)
 const mobileNavItems = [
-  { id: "/admin/finance/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "/admin/finance/dashboard", label: "Dashboard", icon: Dashboard },
   { id: "/admin/finance/transactions", label: "Extrato", icon: ArrowRightLeft },
   { id: "/admin/finance/receivables", label: "A Receber", icon: Wallet }, // 🔥 Nova rota adicionada
   {

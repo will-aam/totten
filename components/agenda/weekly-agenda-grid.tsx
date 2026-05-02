@@ -6,7 +6,7 @@ import { format, addDays, isSameDay, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Appointment } from "./daily-agenda-grid";
-import { Clock, Package as PackageIcon, AlertTriangle } from "lucide-react"; // 🔥 Importamos o ícone de alerta
+import { Clock, Package as PackageIcon, AlertTriangle } from "@boxicons/react"; // 🔥 Importamos o ícone de alerta
 
 interface WeeklyAgendaGridProps {
   appointments: Appointment[];

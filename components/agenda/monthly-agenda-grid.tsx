@@ -21,7 +21,7 @@ import {
   Package as PackageIcon,
   ChevronRight,
   AlertTriangle, // 🔥 Import do ícone
-} from "lucide-react";
+} from "@boxicons/react";
 import { Button } from "../ui/button";
 
 interface MonthlyAgendaGridProps {
@@ -57,7 +57,7 @@ export function MonthlyAgendaGrid({
   const startDate = startOfWeek(monthStart, { weekStartsOn: 0 });
   const endDate = endOfWeek(monthEnd, { weekStartsOn: 0 });
 
-  const calendarDays = eachDayOfInterval({ start: startDate, end: endDate });
+  const Calendar = eachDayOfInterval({ start: startDate, end: endDate });
   const weekDaysHeaders = ["D", "S", "T", "Q", "Q", "S", "S"];
 
   const activeDayKey = format(activeDate, "yyyy-MM-dd");
@@ -87,7 +87,7 @@ export function MonthlyAgendaGrid({
           </div>
 
           <div className="grid grid-cols-7 gap-y-4 gap-x-2">
-            {calendarDays.map((day) => {
+            {Calendar.map((day) => {
               const dateKey = format(day, "yyyy-MM-dd");
               const dayAppts = groupedData[dateKey] || [];
               const isCurrentMonth = isSameMonth(day, monthStart);
@@ -249,7 +249,7 @@ export function MonthlyAgendaGrid({
         </div>
 
         <div className="grid grid-cols-7 auto-rows-fr flex-1">
-          {calendarDays.map((day, idx) => {
+          {Calendar.map((day, idx) => {
             const dateKey = format(day, "yyyy-MM-dd");
             const dayAppts = groupedData[dateKey] || [];
             const isCurrentMonth = isSameMonth(day, monthStart);

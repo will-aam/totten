@@ -2,10 +2,10 @@
 import { SecondaryIndicators } from "@/types/finance";
 import {
   AlertCircle,
-  CalendarDays,
-  CalendarRange,
+  Calendar,
+  CalendarDetail,
   CreditCard,
-} from "lucide-react";
+} from "@boxicons/react";
 
 interface FinanceSecondaryIndicatorsProps {
   data: SecondaryIndicators;
@@ -43,7 +43,7 @@ export function FinanceSecondaryIndicators({
       {/* Recebido Hoje */}
       <div className={cardClasses}>
         {/* Ícone limpo, sem fundo */}
-        <CalendarDays className="h-7 w-7 text-emerald-500 shrink-0 stroke-[1.5]" />
+        <Calendar className="h-7 w-7 text-emerald-500 shrink-0 stroke-[1.5]" />
         <div className="min-w-0 flex-1 flex flex-col gap-0.5">
           <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground truncate">
             Recebido Hoje
@@ -56,7 +56,7 @@ export function FinanceSecondaryIndicators({
 
       {/* Recebido na Semana */}
       <div className={cardClasses}>
-        <CalendarRange className="h-7 w-7 text-blue-500 shrink-0 stroke-[1.5]" />
+        <CalendarDetail className="h-7 w-7 text-blue-500 shrink-0 stroke-[1.5]" />
         <div className="min-w-0 flex-1 flex flex-col gap-0.5">
           <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground truncate">
             Recebido Semana

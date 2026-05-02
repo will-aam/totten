@@ -6,7 +6,7 @@ import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image"; // 🔥 Importação para a logo
-import { ArrowLeft, Eye, EyeOff } from "lucide-react"; // Removido o Bird
+import { ArrowLeft, Eye, EyeClosed } from "@boxicons/react"; // Removido o Bird
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -149,7 +149,7 @@ function LoginForm() {
                   tabIndex={-1}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-5 w-5" />
+                    <EyeClosed className="h-5 w-5" />
                   ) : (
                     <Eye className="h-5 w-5" />
                   )}

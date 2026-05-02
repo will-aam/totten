@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle } from "@boxicons/react";
 import {
   DropdownMenu,
   DropdownMenuContent,

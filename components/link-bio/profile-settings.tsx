@@ -10,7 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Camera, User } from "lucide-react";
+import { Camera, User } from "@boxicons/react";
 
 // Aqui dizemos que o componente aceita as PROPS que o page.tsx enviou
 export function ProfileSettings({ data, onChange }: any) {

@@ -26,13 +26,13 @@ import {
 import {
   Package,
   Layers,
-  DollarSign,
-  CalendarDays,
+  Dollar,
+  Calendar,
   Save,
-  Loader2,
+  LoaderDots,
   Sparkles,
   Briefcase,
-} from "lucide-react";
+} from "@boxicons/react";
 import { toast } from "sonner";
 
 export function PackageForm() {
@@ -214,7 +214,7 @@ export function PackageForm() {
         <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card">
           <CardHeader className="px-0 pt-0 md:pt-6 md:px-6 pb-4">
             <CardTitle className="text-lg flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-primary" /> Preço Total
+              <Dollar className="h-5 w-5 text-primary" /> Preço Total
             </CardTitle>
           </CardHeader>
           <CardContent className="px-0 pb-0 md:pb-6 md:px-6">
@@ -239,7 +239,7 @@ export function PackageForm() {
         <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card">
           <CardHeader className="px-0 pt-0 md:pt-6 md:px-6 pb-4">
             <CardTitle className="text-lg flex items-center gap-2">
-              <CalendarDays className="h-5 w-5 text-primary" /> Validade
+              <Calendar className="h-5 w-5 text-primary" /> Validade
             </CardTitle>
           </CardHeader>
           <CardContent className="px-0 pb-0 md:pb-6 md:px-6">
@@ -288,7 +288,7 @@ export function PackageForm() {
           className="w-full sm:w-auto px-10 font-bold shadow-md"
         >
           {loading ? (
-            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            <LoaderDots className="mr-2 h-5 w-5 animate-spin" />
           ) : (
             <Save className="mr-2 h-5 w-5" />
           )}

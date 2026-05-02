@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { mutate } from "swr";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Pencil, Check, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Pencil, Check, X, LoaderDots } from "@boxicons/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -174,7 +174,7 @@ export function ClientHeader({ client }: { client: ClientHeaderType }) {
               title="Salvar (Enter)"
             >
               {saving ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
+                <LoaderDots className="h-5 w-5 animate-spin" />
               ) : (
                 <Check className="h-5 w-5" strokeWidth={2} />
               )}

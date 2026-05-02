@@ -4,7 +4,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { MinusCircle, PlusCircle, FileText } from "lucide-react";
+import { MinusCircle, PlusCircle, FileDetail } from "@boxicons/react";
 import { TransactionModal } from "@/components/finance/transaction-modal";
 import {
   Select,
@@ -168,7 +168,7 @@ export function FinanceHeader({
                 className="h-11 sm:h-10 px-3 sm:px-4 rounded-xl shrink-0 border-border/50 text-muted-foreground hover:text-foreground transition-transform active:scale-95 flex items-center gap-2"
               >
                 <Link href="/admin/finance/reports">
-                  <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <FileDetail className="h-4 w-4 sm:h-5 sm:w-5" />
                   <span className="font-medium text-sm">Relatórios</span>
                 </Link>
               </Button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { Search } from "@boxicons/react";
 import { Input } from "@/components/ui/input";
 import { AdminHeader } from "@/components/admin-header";
 

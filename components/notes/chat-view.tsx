@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ChevronLeft, StickyNote, Send } from "lucide-react";
+import { ChevronLeft, PenEditCircleAlt, Send } from "@boxicons/react";
 import { Button } from "@/components/ui/button";
 import { ChatBubble, Note } from "./chat-bubble";
 
@@ -109,7 +109,7 @@ export function ChatView({
           {notes.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center opacity-60">
               <div className="bg-primary/5 p-4 rounded-full mb-4">
-                <StickyNote className="h-8 w-8 text-primary/60" />
+                <PenEditCircleAlt className="h-8 w-8 text-primary/60" />
               </div>
               <p className="text-sm font-medium text-foreground">
                 Nenhuma anotação registrada.

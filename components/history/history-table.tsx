@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ArrowUpDown, Trash2, Loader2 } from "lucide-react"; // 🔥 Novos ícones
+import { ArrowUpDown, Trash, LoaderDots } from "@boxicons/react"; // 🔥 Novos ícones
 import {
   ColumnDef,
   SortingState,
@@ -85,7 +85,7 @@ function MobileHistoryItem({
         onClick={() => onDelete(checkIn)}
         className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full"
       >
-        <Trash2 className="h-4 w-4" />
+        <Trash className="h-4 w-4" />
       </Button>
     </div>
   );
@@ -209,7 +209,7 @@ export function HistoryTable({
             onClick={() => setCiToDelete(row.original)}
             className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-colors"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash className="h-4 w-4" />
           </Button>
         </div>
       ),
@@ -350,7 +350,7 @@ export function HistoryTable({
             >
               {deleting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <LoaderDots className="mr-2 h-4 w-4 animate-spin" />
                   Excluindo...
                 </>
               ) : (

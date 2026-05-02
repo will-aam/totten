@@ -10,13 +10,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Share2,
+  Share,
   Instagram,
   Facebook,
   Youtube,
   MessageCircle,
   Globe,
-} from "lucide-react";
+} from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
 const PLATFORMS = [
@@ -74,7 +74,7 @@ export function SocialSettings({ data, onChange }: any) {
       <CardHeader className="px-0 pt-0 md:pt-6 md:px-6 pb-4 flex flex-row items-start justify-between">
         <div>
           <CardTitle className="text-lg flex items-center gap-2 text-foreground mb-1">
-            <Share2 className="h-5 w-5 text-primary" /> Redes Sociais
+            <Share className="h-5 w-5 text-primary" /> Redes Sociais
           </CardTitle>
           <CardDescription>
             Toque nos ícones abaixo para adicionar as redes.

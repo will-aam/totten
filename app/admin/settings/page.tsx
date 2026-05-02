@@ -16,20 +16,19 @@ import { NotificationsSettings } from "./sections/notifications-settings";
 import {
   Building,
   Palette,
-  MessageSquare,
-  ShieldCheck,
-  Save,
+  Whatsapp,
+  CheckShield,
   Bell,
-} from "lucide-react";
+} from "@boxicons/react";
 import { Button } from "@/components/ui/button";
 
 // Definimos a lista de menus aqui, de forma limpa, para injetar no componente mobile
 const mobileNavItems = [
   { id: "general", label: "Geral", icon: Building },
   { id: "appearance", label: "Visual", icon: Palette },
-  { id: "messages", label: "Msg", icon: MessageSquare },
+  { id: "messages", label: "Msg", icon: Whatsapp },
   { id: "notifications", label: "Alertas", icon: Bell },
-  { id: "security", label: "Acesso", icon: ShieldCheck },
+  { id: "security", label: "Acesso", icon: CheckShield },
 ];
 
 export default function AdminSettingsPage() {
@@ -67,7 +66,7 @@ export default function AdminSettingsPage() {
               value="messages"
               className="flex gap-2 rounded-xl font-bold h-full data-[state=active]:shadow-sm transition-all"
             >
-              <MessageSquare className="h-4 w-4" /> Mensagens
+              <Whatsapp className="h-4 w-4" /> Mensagens
             </TabsTrigger>
             <TabsTrigger
               value="notifications"
@@ -79,7 +78,7 @@ export default function AdminSettingsPage() {
               value="security"
               className="flex gap-2 rounded-xl font-bold h-full data-[state=active]:shadow-sm transition-all"
             >
-              <ShieldCheck className="h-4 w-4" /> Acesso
+              <CheckShield className="h-4 w-4" /> Acesso
             </TabsTrigger>
           </TabsList>
 

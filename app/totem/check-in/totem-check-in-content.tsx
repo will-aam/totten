@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react"; // 🔥 Importamos a sessão
 import { CpfKeypad } from "@/components/cpf-keypad";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, LoaderDots } from "@boxicons/react";
 import Link from "next/link";
 import {
   Dialog,
@@ -216,7 +216,7 @@ export default function TotemCheckInContent() {
 
           {loading && (
             <div className="flex items-center gap-2 text-sm font-medium text-primary mt-2">
-              <Loader2 className="h-5 w-5 animate-spin" />
+              <LoaderDots className="h-5 w-5 animate-spin" />
               <span>Verificando agendamentos...</span>
             </div>
           )}

@@ -33,16 +33,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Clock,
-  CalendarDays,
+  CalendarAlt,
   User,
-  Trash2,
+  Trash,
   Save,
-  Loader2,
+  LoaderDots,
   Printer,
   Repeat,
   AlertTriangle, // 🔥 Adicionado ícone de alerta
-} from "lucide-react";
+} from "@boxicons/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -257,7 +256,7 @@ export const AppointmentDetailsModal = memo(
             >
               <div className="flex justify-between items-center text-sm font-bold uppercase tracking-tighter text-muted-foreground">
                 <div className="flex items-center gap-2">
-                  <CalendarDays className="h-4 w-4" /> Atendimento
+                  <CalendarAlt className="h-4 w-4" /> Atendimento
                 </div>
                 <Badge
                   variant={
@@ -386,7 +385,7 @@ export const AppointmentDetailsModal = memo(
                     variant="ghost"
                     className="text-destructive hover:bg-destructive/5 font-bold w-full sm:w-auto rounded-2xl h-12"
                   >
-                    <Trash2 className="mr-2 h-5 w-5" /> Excluir Sessão
+                    <Trash className="mr-2 h-5 w-5" /> Excluir Sessão
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent className="rounded-3xl border border-border/50 p-6 bg-background">
@@ -437,7 +436,7 @@ export const AppointmentDetailsModal = memo(
                 className="rounded-2xl bg-primary text-primary-foreground h-12 px-8 font-bold w-full sm:w-auto"
               >
                 {isSaving ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <LoaderDots className="h-5 w-5 animate-spin" />
                 ) : (
                   <>
                     <Save className="mr-2 h-5 w-5" /> Salvar

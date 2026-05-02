@@ -8,7 +8,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { PaymentMethod, Transaction, TransactionStatus } from "@/types/finance";
-import { ArrowDownRight, ArrowUpRight, ReceiptText } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Receipt } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
 interface RecentTransactionsListProps {
@@ -185,7 +185,7 @@ export function RecentTransactionsList({ data }: RecentTransactionsListProps) {
     <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card mt-2 md:mt-0">
       <CardHeader className="px-0 pt-0 md:pt-6 md:px-6">
         <CardTitle className="flex items-center gap-2 text-card-foreground">
-          <ReceiptText className="h-5 w-5 text-primary" />
+          <Receipt className="h-5 w-5 text-primary" />
           Histórico Recente
         </CardTitle>
         <CardDescription>
@@ -196,7 +196,7 @@ export function RecentTransactionsList({ data }: RecentTransactionsListProps) {
       <CardContent className="px-0 pb-0 md:pb-6 md:px-6">
         {data.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/30 rounded-lg border border-dashed border-border">
-            <ReceiptText className="h-10 w-10 text-muted-foreground/40" />
+            <Receipt className="h-10 w-10 text-muted-foreground/40" />
             <p className="mt-4 text-sm font-medium text-muted-foreground">
               Nenhuma movimentação encontrada.
             </p>

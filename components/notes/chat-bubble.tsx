@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Calendar, MoreVertical, Pencil, Trash } from "lucide-react";
+import { Calendar, MoveVertical, Pencil, Trash } from "@boxicons/react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -87,7 +87,7 @@ export function ChatBubble({ note, onEdit, onDelete }: ChatBubbleProps) {
             {/* Menu de Ações (Sempre Visível, cor suave text-muted-foreground/50) */}
             <DropdownMenu>
               <DropdownMenuTrigger className="p-1.5 -mt-1 -mr-2 shrink-0 rounded-full text-muted-foreground/50 hover:text-foreground hover:bg-muted outline-none transition-colors data-[state=open]:text-foreground data-[state=open]:bg-muted">
-                <MoreVertical className="h-4 w-4" />
+                <MoveVertical className="h-4 w-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
                 <DropdownMenuItem

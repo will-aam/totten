@@ -30,10 +30,10 @@ import { OrganizationPaymentMethod, PaymentMethod } from "@/types/finance";
 import {
   Check,
   ChevronsUpDown,
-  Loader2,
+  LoaderDots,
   PlusCircle,
-  Trash2,
-} from "lucide-react";
+  Trash,
+} from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import {
   upsertPaymentMethod,
@@ -205,7 +205,7 @@ export function PaymentMethodModal({
                   onClick={handleDelete}
                   disabled={isPending}
                 >
-                  <Trash2 className="h-5 w-5" />
+                  <Trash className="h-5 w-5" />
                 </Button>
               )}
             </div>
@@ -319,7 +319,7 @@ export function PaymentMethodModal({
                     onClick={handleClearSelection}
                     className="h-12 w-12 shrink-0 rounded-2xl border-border/50 text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 bg-card"
                   >
-                    <Trash2 className="h-5 w-5" />
+                    <Trash className="h-5 w-5" />
                   </Button>
                 )}
               </div>
@@ -417,7 +417,7 @@ export function PaymentMethodModal({
               disabled={isSaveDisabled}
             >
               {isPending ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
+                <LoaderDots className="h-5 w-5 animate-spin" />
               ) : (
                 "Salvar"
               )}

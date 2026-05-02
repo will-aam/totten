@@ -13,9 +13,9 @@ import { Button } from "@/components/ui/button";
 import {
   Palette,
   MessageCircle,
-  PaintbrushVertical,
-  CheckCircle2,
-} from "lucide-react";
+  BrushSparkles,
+  CheckCircle,
+} from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
 export function AppearanceSettings() {
@@ -94,7 +94,7 @@ export function AppearanceSettings() {
               )}
             >
               {theme === "light" && (
-                <CheckCircle2 className="absolute top-2 right-2 h-4 w-4 text-primary animate-in zoom-in" />
+                <CheckCircle className="absolute top-2 right-2 h-4 w-4 text-primary animate-in zoom-in" />
               )}
               <div className="h-10 w-10 rounded-full bg-[#f8fafc] border border-slate-200 shadow-sm" />
               <span className="mt-3 text-sm font-bold text-foreground">
@@ -113,7 +113,7 @@ export function AppearanceSettings() {
               )}
             >
               {theme === "dark" && (
-                <CheckCircle2 className="absolute top-2 right-2 h-4 w-4 text-primary animate-in zoom-in" />
+                <CheckCircle className="absolute top-2 right-2 h-4 w-4 text-primary animate-in zoom-in" />
               )}
               <div className="h-10 w-10 rounded-full bg-[#000000] border border-slate-800 shadow-sm" />
               <span className="mt-3 text-sm font-bold text-foreground">
@@ -145,7 +145,7 @@ export function AppearanceSettings() {
       <Card className="border border-dashed border-border bg-muted/30 rounded-2xl">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-foreground text-lg font-semibold">
-            <PaintbrushVertical className="h-5 w-5 text-primary" />
+            <BrushSparkles className="h-5 w-5 text-primary" />
             Personalize com a sua marca
           </CardTitle>
           <CardDescription className="text-muted-foreground text-sm">

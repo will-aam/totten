@@ -11,11 +11,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PackageVoucher } from "@/components/client/package-voucher";
 import {
   Search,
-  Award,
-  CheckCircle2,
+  MedalStarAlt,
+  CheckCircle,
   ChevronLeft,
   ChevronRight,
-} from "lucide-react";
+} from "@boxicons/react";
 import { useDebounce } from "@/hooks/use-debounce";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -110,7 +110,7 @@ export default function VouchersPage() {
         {/* Título de Seção */}
         <div className="flex items-center justify-between pt-2">
           <h2 className="text-xl font-black text-foreground flex items-center gap-2">
-            <Award className="h-6 w-6 text-primary" />
+            <MedalStarAlt className="h-6 w-6 text-primary" />
             Prontos para Envio
           </h2>
           {!isLoading && (
@@ -138,7 +138,7 @@ export default function VouchersPage() {
           ) : vouchers.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center bg-card rounded-4xl border border-dashed border-border/60 shadow-sm mt-2">
               <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mb-4">
-                <Award className="h-8 w-8 text-muted-foreground/50" />
+                <MedalStarAlt className="h-8 w-8 text-muted-foreground/50" />
               </div>
               <h3 className="text-lg font-bold text-foreground">
                 {search.length >= 3
@@ -173,7 +173,7 @@ export default function VouchersPage() {
                           variant="outline"
                           className="mt-2 w-fit text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
                         >
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                          <CheckCircle className="h-3 w-3 mr-1" />
                           Voucher já emitido
                         </Badge>
                       )}
@@ -190,7 +190,7 @@ export default function VouchersPage() {
                       onClick={() => handleOpenVoucher(item)}
                       className="rounded-2xl h-11 px-5 font-bold shadow-sm bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground active:scale-95 transition-all shrink-0"
                     >
-                      <Award className="mr-2 h-4 w-4" />
+                      <MedalStarAlt className="mr-2 h-4 w-4" />
                       {item.hasVoucher ? "Reenviar" : "Gerar Voucher"}
                     </Button>
                   </div>

@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image"; // 🔥 Importação para usar as imagens da pasta public
-import { Lock, LayoutDashboard } from "lucide-react"; // Removido o Bird
+import { Lock, Dashboard } from "@boxicons/react"; // Removido o Bird
 
 export default function TotemIdleContent() {
   const { data: session, status } = useSession();
@@ -99,7 +99,7 @@ export default function TotemIdleContent() {
         >
           {status === "authenticated" ? (
             <>
-              <LayoutDashboard className="h-4 w-4 transition-transform group-hover:scale-110" />
+              <Dashboard className="h-4 w-4 transition-transform group-hover:scale-110" />
               <span className="text-[10px] uppercase tracking-widest font-medium opacity-110">
                 Ir para Dashboard
               </span>

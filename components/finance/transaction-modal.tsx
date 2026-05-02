@@ -27,7 +27,12 @@ import {
   TransactionStatus,
   OrganizationPaymentMethod,
 } from "@/types/finance";
-import { ArrowDownCircle, ArrowUpCircle, Loader2, Repeat } from "lucide-react";
+import {
+  ArrowDownCircle,
+  ArrowUpCircle,
+  LoaderDots,
+  Repeat,
+} from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import {
   createTransaction,
@@ -471,7 +476,7 @@ export function TransactionModal({
               disabled={isSaveDisabled}
             >
               {isPending ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
+                <LoaderDots className="h-5 w-5 animate-spin" />
               ) : isEditing ? (
                 "Salvar"
               ) : isRecurring ? (

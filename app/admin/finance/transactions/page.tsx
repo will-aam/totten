@@ -35,15 +35,15 @@ import {
   ArrowUpRight,
   Calendar,
   Filter,
-  Loader2,
+  LoaderDots,
   Pencil,
-  Trash2,
-  MoreVertical,
+  Trash,
+  MoveVertical,
   Repeat,
   Search,
   ChevronLeft,
   ChevronRight,
-} from "lucide-react";
+} from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import {
   getPaginatedTransactions, // 🔥 Usando a Action Paginada
@@ -377,7 +377,7 @@ export default function TransactionsPage() {
         <div className="flex flex-col w-full">
           {isLoading ? (
             <div className="flex justify-center items-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <LoaderDots className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : transactions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center bg-muted/10 rounded-2xl">
@@ -476,7 +476,7 @@ export default function TransactionsPage() {
                                 size="icon"
                                 className="h-8 w-8 text-muted-foreground hover:bg-muted/30 hover:text-foreground rounded-full border-none focus-visible:ring-0 focus-visible:ring-offset-0 transition-colors"
                               >
-                                <MoreVertical className="h-4 w-4" />
+                                <MoveVertical className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent
@@ -495,7 +495,7 @@ export default function TransactionsPage() {
                                 className="gap-2 cursor-pointer rounded-xl text-rose-500 focus:bg-rose-500/10 focus:text-rose-600 dark:focus:bg-rose-900/20 dark:focus:text-rose-400 font-medium transition-colors mt-0.5"
                                 onClick={() => setDeletingTx(transaction)}
                               >
-                                <Trash2 className="h-4 w-4" /> Excluir
+                                <Trash className="h-4 w-4" /> Excluir
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -591,7 +591,7 @@ export default function TransactionsPage() {
               className="rounded-xl bg-destructive text-white hover:bg-destructive/90"
             >
               {isDeletingLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <LoaderDots className="h-4 w-4 animate-spin" />
               ) : (
                 "Sim, excluir"
               )}

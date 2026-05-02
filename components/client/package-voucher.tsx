@@ -5,7 +5,7 @@ import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download, Share2, BadgeCheck, Loader2 } from "lucide-react";
+import { ArrowToBottom, Share, BadgeCheck, LoaderDots } from "@boxicons/react";
 import { toast } from "sonner";
 
 interface PackageVoucherProps {
@@ -182,9 +182,9 @@ export function PackageVoucher({
             className="w-full rounded-full h-10 text-xs sm:text-sm active:scale-95 transition-transform"
           >
             {isExporting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <LoaderDots className="mr-2 h-4 w-4 animate-spin" />
             ) : (
-              <Share2 className="mr-2 h-4 w-4" />
+              <Share className="mr-2 h-4 w-4" />
             )}
             Compartilhar via WhatsApp
           </Button>
@@ -195,9 +195,9 @@ export function PackageVoucher({
             className="w-full rounded-full border-border hover:bg-muted active:scale-95 transition-transform h-10 text-xs sm:text-sm"
           >
             {isExporting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <LoaderDots className="mr-2 h-4 w-4 animate-spin" />
             ) : (
-              <Download className="mr-2 h-4 w-4" />
+              <ArrowToBottom className="mr-2 h-4 w-4" />
             )}
             Baixar Imagem
           </Button>

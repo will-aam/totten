@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Mail, Loader2, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Envelope, LoaderDots, CheckCircle } from "@boxicons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,7 +52,7 @@ export default function ForgotPasswordPage() {
         <Card className="w-full max-w-md border-border shadow-lg">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-500/10">
-              <CheckCircle2 className="h-8 w-8 text-green-500" />
+              <CheckCircle className="h-8 w-8 text-green-500" />
             </div>
             <CardTitle className="text-2xl">E-mail Enviado!</CardTitle>
             <CardDescription className="text-base">
@@ -99,7 +99,7 @@ export default function ForgotPasswordPage() {
       <Card className="w-full max-w-md border-border shadow-lg">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <Mail className="h-8 w-8 text-primary" />
+            <Envelope className="h-8 w-8 text-primary" />
           </div>
           <CardTitle className="text-2xl">Esqueceu a senha?</CardTitle>
           <CardDescription>
@@ -130,7 +130,7 @@ export default function ForgotPasswordPage() {
             >
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <LoaderDots className="mr-2 h-4 w-4 animate-spin" />
                   Enviando...
                 </>
               ) : (

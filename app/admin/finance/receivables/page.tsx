@@ -21,13 +21,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Loader2,
-  DollarSign,
+  LoaderDots,
+  Dollar,
   Calendar,
   User,
   ArrowDownRight,
-  CheckCircle2,
-} from "lucide-react";
+  CheckCircle,
+} from "@boxicons/react";
 import {
   getPendingReceivables,
   processReceivablePayment,
@@ -151,7 +151,7 @@ export default function ReceivablesPage() {
               </h2>
             </div>
             <div className="h-12 w-12 bg-emerald-100 dark:bg-emerald-900/50 rounded-full flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-              <DollarSign className="h-6 w-6" />
+              <Dollar className="h-6 w-6" />
             </div>
           </div>
         )}
@@ -159,11 +159,11 @@ export default function ReceivablesPage() {
         {/* Lista de Pendências */}
         {isLoading ? (
           <div className="flex justify-center items-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <LoaderDots className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : receivables.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center bg-muted/10 rounded-2xl border border-dashed border-border">
-            <CheckCircle2 className="h-12 w-12 text-emerald-500/50 mb-4" />
+            <CheckCircle className="h-12 w-12 text-emerald-500/50 mb-4" />
             <h3 className="text-lg font-semibold text-foreground">
               Tudo em dia!
             </h3>
@@ -288,7 +288,8 @@ export default function ReceivablesPage() {
             >
               {isProcessing ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processando
+                  <LoaderDots className="mr-2 h-4 w-4 animate-spin" />{" "}
+                  Processando
                 </>
               ) : (
                 "Confirmar Recebimento"

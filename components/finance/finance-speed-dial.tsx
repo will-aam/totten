@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, MinusCircle, PlusCircle, X } from "lucide-react";
+import { Plus, MinusCircle, PlusCircle, X } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { TransactionModal } from "@/components/finance/transaction-modal";
 

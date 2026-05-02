@@ -13,9 +13,9 @@ import {
   Youtube,
   MessageCircle,
   Globe,
-  Smartphone,
+  Mobile,
   X,
-} from "lucide-react";
+} from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
 import { ProfileSettings } from "@/components/link-bio/profile-settings";
@@ -237,7 +237,7 @@ export default function LinkBioPage() {
           onClick={() => setShowMobilePreview(true)}
           className="rounded-full shadow-xl bg-primary text-primary-foreground h-12 px-6 border-2 border-background/20 backdrop-blur-md"
         >
-          <Smartphone className="mr-2 h-5 w-5" />
+          <Mobile className="mr-2 h-5 w-5" />
           Ver Preview
         </Button>
       </div>

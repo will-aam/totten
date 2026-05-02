@@ -4,7 +4,7 @@ import { useState } from "react";
 import { StockItem } from "./stock-table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button"; // 🔥 Importamos o Button
-import { Trash2 } from "lucide-react"; // 🔥 Importamos o ícone da Lixeira
+import { Trash } from "@boxicons/react"; // 🔥 Importamos o ícone da Lixeira
 import { cn } from "@/lib/utils";
 
 interface StockMobileItemProps {
@@ -57,7 +57,7 @@ export function StockMobileItem({
           onClick={() => onDelete(item.id)}
           className="h-9 w-9 shrink-0 text-muted-foreground hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-full"
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash className="h-4 w-4" />
         </Button>
       </div>
 

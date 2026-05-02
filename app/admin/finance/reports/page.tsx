@@ -22,26 +22,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Loader2,
+  LoaderDots,
   TrendingUp,
-  Award,
-  Activity,
+  MedalStarAlt,
+  Pulse,
   Send,
-  BarChart3,
-  Download,
-  DollarSign,
-} from "lucide-react";
+  BarChart as BarChartIcon, // alias para evitar conflito com Recharts
+  ArrowToBottom,
+  Dollar,
+} from "@boxicons/react";
 import { getReportsData, sendMonthlyReport } from "@/app/actions/reports";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 
-// Gráficos
 import {
   Area,
   AreaChart,
   Bar,
-  BarChart,
+  BarChart, // Recharts — nome original mantido
   CartesianGrid,
   XAxis,
   YAxis,
@@ -50,17 +49,13 @@ import {
 } from "recharts";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 
-// OTIMIZAÇÃO: Formatador global
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
 });
 
-const formatCurrency = (value: number) => {
-  return currencyFormatter.format(value);
-};
+const formatCurrency = (value: number) => currencyFormatter.format(value);
 
-// Configurações dos Gráficos
 const performanceChartConfig = {
   agendamentos: { label: "Agendamentos", color: "#6366f1" },
 };
@@ -86,9 +81,9 @@ const MONTHS = [
 ];
 
 const mobileNavItems = [
-  { id: "desempenho", label: "Desempenho", icon: Activity },
-  { id: "servicos", label: "Curva ABC", icon: Award },
-  { id: "exportar", label: "Exportar", icon: Download },
+  { id: "desempenho", label: "Desempenho", icon: Pulse },
+  { id: "servicos", label: "Curva ABC", icon: MedalStarAlt },
+  { id: "exportar", label: "Exportar", icon: ArrowToBottom },
 ];
 
 export default function ReportsPage() {
@@ -132,14 +127,13 @@ export default function ReportsPage() {
     setIsSendingEmail(true);
     try {
       const res = await sendMonthlyReport(selectedMonth, selectedYear, emailTo);
-
       if (res.success) {
         toast.success(`Relatório enviado com sucesso para ${emailTo}!`);
         setEmailTo("");
       } else {
         toast.error("Erro ao enviar o fechamento. Verifique o servidor.");
       }
-    } catch (error) {
+    } catch {
       toast.error("Ocorreu um erro na comunicação com o servidor.");
     } finally {
       setIsSendingEmail(false);
@@ -156,12 +150,10 @@ export default function ReportsPage() {
     <>
       <AdminHeader title="Relatórios" />
 
-      {/* 🔥 CONTAINER: max-w-400 com min-w-0 para evitar vazamento horizontal */}
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full min-w-0 pb-32 md:pb-12 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
-        {/* Cabeçalho da Página */}
         <div className="flex flex-col gap-1 border-b border-border/40 pb-4">
           <h2 className="text-2xl font-black tracking-tight text-foreground flex items-center gap-2">
-            <BarChart3 className="h-6 w-6 text-primary" /> Relatórios
+            <BarChartIcon size="sm" className="text-primary" /> Relatórios
           </h2>
           <p className="text-muted-foreground text-sm font-medium mt-1">
             Acompanhe o crescimento, faturamento e os melhores serviços da sua
@@ -171,7 +163,7 @@ export default function ReportsPage() {
 
         {isLoading || !data ? (
           <div className="flex flex-col items-center justify-center py-32 flex-1">
-            <Loader2 className="h-10 w-10 animate-spin text-primary/50" />
+            <LoaderDots size="lg" className="text-primary/50" />
             <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest mt-4">
               Carregando dados...
             </p>
@@ -180,45 +172,39 @@ export default function ReportsPage() {
           <Tabs
             value={activeTab}
             onValueChange={setActiveTab}
-            className="w-full flex-1 flex flex-col min-w-0" // min-w-0 crucial para o Recharts
+            className="w-full flex-1 flex flex-col min-w-0"
           >
-            {/* 🔥 TABS LIST: Idêntico ao Settings */}
             <TabsList className="hidden md:grid w-full grid-cols-3 bg-muted/40 h-14 rounded-2xl p-1 border border-border/50 shadow-sm">
               <TabsTrigger
                 value="desempenho"
                 className="flex gap-2 rounded-xl font-bold h-full data-[state=active]:shadow-sm transition-all"
               >
-                <Activity className="h-4 w-4" /> Desempenho
+                <Pulse size="sm" /> Desempenho
               </TabsTrigger>
               <TabsTrigger
                 value="servicos"
                 className="flex gap-2 rounded-xl font-bold h-full data-[state=active]:shadow-sm transition-all"
               >
-                <Award className="h-4 w-4" /> Curva ABC
+                <MedalStarAlt size="sm" /> Curva ABC
               </TabsTrigger>
               <TabsTrigger
                 value="exportar"
                 className="flex gap-2 rounded-xl font-bold h-full data-[state=active]:shadow-sm transition-all"
               >
-                <Download className="h-4 w-4" /> Exportar
+                <ArrowToBottom size="sm" /> Exportar
               </TabsTrigger>
             </TabsList>
 
-            {/* 🔥 CONTAINER INTERNO: mt-6 e min-w-0 flex-1 */}
             <div className="mt-6 flex-1 min-w-0">
               {/* ABA 1: DESEMPENHO */}
               <TabsContent
                 value="desempenho"
                 className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500 space-y-6 min-w-0"
               >
-                {/* Gráfico 1: Agendamentos */}
                 <Card className="rounded-3xl border-border/50 shadow-sm bg-card overflow-hidden">
                   <CardHeader className="px-6 pt-6 pb-2 border-b border-border/40">
                     <CardTitle className="flex items-center gap-2 text-lg font-black text-foreground">
-                      <TrendingUp
-                        className="h-5 w-5 text-indigo-500"
-                        strokeWidth={2.5}
-                      />
+                      <TrendingUp size="sm" className="text-indigo-500" />
                       Volume de Agendamentos
                     </CardTitle>
                     <CardDescription className="font-medium text-muted-foreground pb-2">
@@ -296,14 +282,10 @@ export default function ReportsPage() {
                   </CardContent>
                 </Card>
 
-                {/* Gráfico 2: Receitas x Despesas */}
                 <Card className="rounded-3xl border-border/50 shadow-sm bg-card overflow-hidden">
                   <CardHeader className="px-6 pt-6 pb-2 border-b border-border/40">
                     <CardTitle className="flex items-center gap-2 text-lg font-black text-foreground">
-                      <DollarSign
-                        className="h-5 w-5 text-emerald-500"
-                        strokeWidth={2.5}
-                      />
+                      <Dollar size="sm" className="text-emerald-500" />
                       Receitas x Despesas
                     </CardTitle>
                     <CardDescription className="font-medium text-muted-foreground pb-2">
@@ -373,10 +355,7 @@ export default function ReportsPage() {
                 <Card className="rounded-3xl border-border/50 shadow-sm overflow-hidden bg-card">
                   <CardHeader className="px-6 pt-6 pb-4 border-b border-border/40">
                     <CardTitle className="flex items-center gap-2 text-lg font-black text-foreground">
-                      <Award
-                        className="h-5 w-5 text-amber-500"
-                        strokeWidth={2.5}
-                      />
+                      <MedalStarAlt size="sm" className="text-amber-500" />
                       Top Serviços
                     </CardTitle>
                     <CardDescription className="font-medium text-muted-foreground">
@@ -449,10 +428,7 @@ export default function ReportsPage() {
                 <Card className="rounded-3xl border-border/50 shadow-sm bg-card p-2 md:p-0">
                   <CardHeader className="px-4 md:px-6 pt-4 md:pt-6 pb-4 border-b border-border/40">
                     <CardTitle className="flex items-center gap-2 text-lg font-black text-foreground">
-                      <Download
-                        className="h-5 w-5 text-primary"
-                        strokeWidth={2.5}
-                      />
+                      <ArrowToBottom size="sm" className="text-primary" />
                       Exportar Fechamento
                     </CardTitle>
                     <CardDescription className="font-medium text-muted-foreground">
@@ -528,9 +504,9 @@ export default function ReportsPage() {
                         disabled={isSendingEmail}
                       >
                         {isSendingEmail ? (
-                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          <LoaderDots size="sm" className="animate-spin mr-2" />
                         ) : (
-                          <Send className="mr-2 h-5 w-5" strokeWidth={2.5} />
+                          <Send size="sm" className="mr-2" />
                         )}
                         {isSendingEmail ? "Enviando..." : "Enviar Fechamento"}
                       </Button>

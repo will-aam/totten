@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Package, Plus, Loader2, ArchiveX } from "lucide-react";
+import { Package, Plus, LoaderDots, Archive } from "@boxicons/react";
 import { toast } from "sonner";
 import { PackageVoucher } from "./package-voucher";
 import { cn } from "@/lib/utils";
@@ -404,7 +404,7 @@ export function ClientPackage({
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />{" "}
+                      <LoaderDots className="h-4 w-4 mr-2 animate-spin" />{" "}
                       Processando...
                     </>
                   ) : (
@@ -475,12 +475,12 @@ export function ClientPackage({
                     >
                       {isArchiving ? (
                         <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />{" "}
+                          <LoaderDots className="h-4 w-4 mr-2 animate-spin" />{" "}
                           Processando...
                         </>
                       ) : (
                         <>
-                          <ArchiveX className="h-4 w-4 mr-2" />
+                          <Archive className="h-4 w-4 mr-2" />
                           Encerrar / Zerar Plano
                         </>
                       )}
@@ -515,7 +515,7 @@ export function ClientPackage({
                         className="w-full sm:w-auto"
                       >
                         {isArchiving ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          <LoaderDots className="h-4 w-4 mr-2 animate-spin" />
                         ) : (
                           "Sim, encerrar plano"
                         )}

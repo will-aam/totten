@@ -19,13 +19,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import {
-  Clock,
-  Trash2,
-  Loader2,
-  ShieldCheck,
-  AlertTriangle,
-} from "lucide-react";
+import { Clock, LoaderDots, AlertTriangle } from "@boxicons/react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
@@ -245,7 +239,7 @@ export const ScheduleSettingsModal = memo(
                         className="rounded-2xl h-12 bg-destructive text-white font-black"
                       >
                         {isClearing ? (
-                          <Loader2 className="animate-spin" />
+                          <LoaderDots className="animate-spin" />
                         ) : (
                           "Sim, apagar tudo"
                         )}
@@ -271,7 +265,7 @@ export const ScheduleSettingsModal = memo(
               className="rounded-2xl h-12 px-8 bg-primary font-black"
             >
               {isSaving ? (
-                <Loader2 className="animate-spin" />
+                <LoaderDots className="animate-spin" />
               ) : (
                 "Salvar Configurações"
               )}

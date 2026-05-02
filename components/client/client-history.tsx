@@ -4,7 +4,7 @@
 import { useRef, useCallback, useEffect } from "react";
 import useSWRInfinite from "swr/infinite";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarCheck, Loader2 } from "lucide-react";
+import { CalendarCheck, LoaderDots } from "@boxicons/react";
 
 export type CheckInType = {
   id: string;
@@ -142,7 +142,7 @@ export function ClientHistory({ clientId }: { clientId: string }) {
               className="h-10 w-full flex items-center justify-center mt-2"
             >
               {isLoadingMore && (
-                <Loader2 className="h-5 w-5 text-primary animate-spin" />
+                <LoaderDots className="h-5 w-5 text-primary animate-spin" />
               )}
             </div>
           </div>

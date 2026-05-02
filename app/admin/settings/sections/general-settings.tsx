@@ -12,7 +12,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Building, Info, Repeat, Loader2, Save } from "lucide-react";
+import {
+  Building,
+  InfoCircle,
+  Repeat,
+  LoaderDots,
+  Save,
+} from "@boxicons/react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -151,7 +157,7 @@ export function GeneralSettings() {
     return (
       <Card className="border-none shadow-none py-0 sm:py-6">
         <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <LoaderDots className="h-8 w-8 animate-spin text-primary" />
         </CardContent>
       </Card>
     );
@@ -167,7 +173,7 @@ export function GeneralSettings() {
               Dados da Empresa
             </CardTitle>
             <CardDescription>
-              Configure as informações principais da sua empresa.
+              Configure as InfoCirclermações principais da sua empresa.
             </CardDescription>
           </div>
           <div
@@ -176,7 +182,7 @@ export function GeneralSettings() {
             <Button onClick={handleSave} disabled={saving} className="min-w-32">
               {saving ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <LoaderDots className="mr-2 h-4 w-4 animate-spin" />
                   Salvando...
                 </>
               ) : (

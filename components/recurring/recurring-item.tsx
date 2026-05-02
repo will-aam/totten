@@ -15,12 +15,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Clock,
-  CalendarRange,
+  CalendarDetail,
   AlertTriangle,
-  Trash2,
+  Trash,
   MessageCircle,
   Package as PackageIcon,
-} from "lucide-react";
+} from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
 // Tipagem exportada para reaproveitamento
@@ -112,7 +112,7 @@ export function RecurringItem({
               {series.completedSessions} / {series.totalSessions} Sessões
             </span>
             <span className="flex items-center gap-1">
-              <CalendarRange className="h-3 w-3" />
+              <CalendarDetail className="h-3 w-3" />
               Até {new Date(series.endDate).toLocaleDateString("pt-BR")}
             </span>
           </div>
@@ -176,7 +176,7 @@ export function RecurringItem({
                 title="Liberar Cadeiras (Excluir Série)"
                 className="rounded-xl h-10 w-10 text-muted-foreground hover:bg-destructive/10 hover:text-destructive shrink-0"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash className="h-4 w-4" />
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent className="rounded-4xl border-none shadow-2xl bg-background sm:max-w-md">

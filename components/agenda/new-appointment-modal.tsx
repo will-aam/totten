@@ -36,8 +36,8 @@ import {
   Minus,
   Plus,
   Package as PackageIcon,
-  Loader2,
-} from "lucide-react";
+  LoaderDots,
+} from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { createAppointment } from "@/app/actions/appointments";
@@ -500,7 +500,7 @@ export const NewAppointmentModal = memo(
               className="rounded-2xl h-12 font-black bg-primary text-primary-foreground  w-full sm:w-2/3 active:scale-[0.98] transition-all"
             >
               {saving ? (
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                <LoaderDots className="mr-2 h-5 w-5 animate-spin" />
               ) : isRecurring ? (
                 `Agendar ${repeatCount} Sessões`
               ) : (

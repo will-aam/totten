@@ -26,14 +26,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Calendar,
-  CheckCircle2,
+  CheckCircle,
   History,
   RotateCcw,
-  Loader2,
+  LoaderDots,
   CalendarPlus,
   Archive,
   AlertTriangle, // 🔥 Novo ícone para o aviso
-} from "lucide-react";
+} from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { getPackageHistory, archivePackage } from "@/app/actions/packages";
 import { format } from "date-fns";
@@ -195,7 +195,7 @@ export function PackageDetailsModal({
 
             {loading ? (
               <div className="flex flex-col items-center py-10 gap-3 text-muted-foreground/30">
-                <Loader2 className="h-8 w-8 animate-spin" />
+                <LoaderDots className="h-8 w-8 animate-spin" />
                 <span className="text-[10px] font-bold uppercase tracking-widest">
                   Sincronizando Histórico...
                 </span>
@@ -218,7 +218,7 @@ export function PackageDetailsModal({
                       )}
                     >
                       {item.status === "REALIZADO" ? (
-                        <CheckCircle2 className="h-5 w-5" />
+                        <CheckCircle className="h-5 w-5" />
                       ) : (
                         <span className="text-[11px] font-black">
                           {item.session || index + 1}
@@ -323,7 +323,7 @@ export function PackageDetailsModal({
                   className="w-full h-12 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] text-destructive hover:bg-destructive/10 hover:text-destructive active:scale-95 transition-all"
                 >
                   {isArchiving ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <LoaderDots className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
                     <Archive className="mr-2 h-4 w-4" />
                   )}

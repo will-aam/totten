@@ -6,7 +6,12 @@ import useSWR from "swr";
 import { AdminHeader } from "@/components/admin-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Bell, MessageCircle, CalendarCheck, CheckCircle2 } from "lucide-react";
+import {
+  Bell,
+  MessageCircle,
+  CalendarCheck,
+  CheckCircle,
+} from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -157,7 +162,7 @@ export default function RemindersPage() {
                               title="Já confirmado na agenda"
                               className="flex"
                             >
-                              <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-emerald-600" />
+                              <CheckCircle className="h-4 w-4 md:h-5 md:w-5 text-emerald-600" />
                             </span>
                           )}
                         </span>

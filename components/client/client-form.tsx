@@ -30,16 +30,12 @@ import {
   User,
   Phone,
   Package,
-  Loader2,
-  CheckCircle2,
-  Mail,
-  CalendarDays,
-  MapPin,
+  LoaderDots,
+  CheckCircle,
+  Pin,
   ChevronDown,
-  Sparkles,
-  CalendarIcon,
   CreditCard,
-} from "lucide-react";
+} from "@boxicons/react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -306,7 +302,7 @@ export function ClientForm() {
                             variant="outline"
                             className="w-full justify-start h-11 bg-muted/30"
                           >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            <Calendar className="mr-2 h-4 w-4" />
                             {form.birth_date
                               ? format(form.birth_date, "dd/MM/yyyy")
                               : "Selecionar data"}
@@ -343,7 +339,7 @@ export function ClientForm() {
                   {/* 🔥 Nova Seção: Endereço */}
                   <div className="space-y-4 border-t pt-4">
                     <h4 className="text-sm font-semibold flex items-center gap-2 text-muted-foreground">
-                      <MapPin className="h-4 w-4" /> Endereço
+                      <Pin className="h-4 w-4" /> Endereço
                     </h4>
 
                     <div className="grid sm:grid-cols-3 gap-4">
@@ -474,9 +470,9 @@ export function ClientForm() {
           className="px-8 h-12 rounded-xl font-bold shadow-lg"
         >
           {loading ? (
-            <Loader2 className="animate-spin mr-2" />
+            <LoaderDots className="animate-spin mr-2" />
           ) : (
-            <CheckCircle2 className="mr-2" />
+            <CheckCircle className="mr-2" />
           )}
           Finalizar Cadastro
         </Button>

@@ -23,7 +23,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "@boxicons/react";
-import { Search, Plus } from "lucide-react";
+import { Search, Plus } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { PackageDetailsModal } from "@/components/packages/package-details-modal";
 import {

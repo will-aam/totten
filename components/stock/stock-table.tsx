@@ -10,7 +10,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown, PackageOpen, Trash2 } from "lucide-react";
+import { ArrowUpDown, Package, Trash } from "@boxicons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -192,7 +192,7 @@ export function StockTable({
               onClick={() => onDeleteItem(item.id)} // 🔥 Chama a ação
               className="h-8 w-8 text-muted-foreground hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash className="h-4 w-4" />
             </Button>
           </div>
         );
@@ -212,7 +212,7 @@ export function StockTable({
   if (data.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/30 rounded-lg border border-dashed border-border">
-        <PackageOpen className="h-10 w-10 text-muted-foreground/40" />
+        <Package className="h-10 w-10 text-muted-foreground/40" />
         <p className="mt-4 text-sm font-medium text-muted-foreground">
           Nenhum insumo encontrado.
         </p>

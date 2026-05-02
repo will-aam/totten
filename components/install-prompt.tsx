@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Download, Share, PlusSquare } from "lucide-react";
+import { X, ArrowToBottom, Share, PlusSquare } from "@boxicons/react";
 
 export function InstallPrompt() {
   const [isStandalone, setIsStandalone] = useState(true); // Começa true para não piscar na tela
@@ -90,7 +90,7 @@ export function InstallPrompt() {
       <div className="flex items-center justify-between max-w-md mx-auto">
         <div className="flex items-center gap-3">
           <div className="bg-zinc-800 p-2 rounded-xl text-white">
-            <Download size={22} />
+            <ArrowToBottom />{" "}
           </div>
           <div className="flex flex-col">
             <span className="font-semibold text-sm leading-tight">
@@ -114,7 +114,8 @@ export function InstallPrompt() {
             className="p-2 text-zinc-400 hover:text-white rounded-full hover:bg-zinc-800 transition-colors"
             aria-label="Fechar aviso"
           >
-            <X size={20} />
+            {/* 🟢 Correção 1: De 20 para "20" */}
+            <X />
           </button>
         </div>
       </div>
@@ -130,8 +131,8 @@ export function InstallPrompt() {
               <span className="flex items-center justify-center w-5 h-5 rounded-full bg-zinc-800 text-xs font-bold">
                 1
               </span>
-              Toque no ícone <Share size={18} className="text-blue-400 mx-1" />{" "}
-              na barra inferior
+              Toque no ícone {/* 🟢 Correção 2: De 18 para "18" */}
+              <Share className="text-blue-400 mx-1" /> na barra inferior
             </li>
             <li className="flex items-center gap-2">
               <span className="flex items-center justify-center w-5 h-5 rounded-full bg-zinc-800 text-xs font-bold">
@@ -139,7 +140,9 @@ export function InstallPrompt() {
               </span>
               Role para baixo e escolha{" "}
               <span className="font-semibold text-white inline-flex items-center gap-1">
-                Adicionar à Tela de Início <PlusSquare size={16} />
+                Adicionar à Tela de Início{" "}
+                {/* 🟢 Correção 3: De 16 para "16" */}
+                <PlusSquare />
               </span>
             </li>
           </ol>

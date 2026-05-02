@@ -8,7 +8,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Palette, Check, Type } from "lucide-react";
+import { Palette, Check, Capitalize } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
 // Adicionamos as cores padrões ideais para cada tema!
@@ -166,7 +166,7 @@ export function ThemeSettings({ data, onChange }: any) {
         <div className="flex flex-col gap-5 pt-4 border-t border-border/50">
           <div className="flex flex-col gap-3">
             <Label className="text-foreground font-medium flex items-center gap-2">
-              <Type className="h-4 w-4" /> Fonte do Texto
+              <Capitalize className="h-4 w-4" /> Fonte do Texto
             </Label>
             <div className="flex bg-muted p-1 rounded-lg border border-border/50">
               <button

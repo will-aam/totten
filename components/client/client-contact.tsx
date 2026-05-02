@@ -16,18 +16,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   MessageCircle,
-  Mail,
   Pencil,
   Check,
   X,
-  Loader2,
-  Share2,
-  CalendarIcon,
-  MapPin,
-} from "lucide-react";
+  LoaderDots,
+  Pin,
+  Envelope,
+  Share,
+  Calendar,
+} from "@boxicons/react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
 
 export type ClientContactType = {
   id: string;
@@ -267,7 +266,7 @@ export function ClientContact({ client }: ClientContactProps) {
     <Card className="md:col-span-2 border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card">
       <CardHeader className="px-0 pt-0 md:pt-6 md:px-6 pb-3 md:pb-6 flex flex-row items-center justify-between">
         <CardTitle className="text-lg flex items-center gap-2 text-foreground">
-          <Share2 className="h-5 w-5 text-primary" strokeWidth={1.5} />
+          <Share className="h-5 w-5 text-primary" strokeWidth={1.5} />
           Contato e Ficha
         </CardTitle>
 
@@ -290,7 +289,7 @@ export function ClientContact({ client }: ClientContactProps) {
                 className="rounded-full h-8 w-8 text-[#25D366] select-none transition-transform duration-100 ease-out hover:bg-transparent active:scale-90 active:brightness-90"
               >
                 {saving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <LoaderDots className="h-4 w-4 animate-spin" />
                 ) : (
                   <Check className="h-4 w-4" strokeWidth={3} />
                 )}
@@ -339,7 +338,7 @@ export function ClientContact({ client }: ClientContactProps) {
                 </Label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <Mail className="h-4 w-4 text-primary" />
+                    <Envelope className="h-4 w-4 text-primary" />
                   </div>
                   <Input
                     value={editEmail}
@@ -358,7 +357,7 @@ export function ClientContact({ client }: ClientContactProps) {
                 </Label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
                   </div>
                   <Input
                     value={editBirthDate}
@@ -513,7 +512,7 @@ export function ClientContact({ client }: ClientContactProps) {
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-                  <Mail className="h-3 w-3" /> E-mail
+                  <Envelope className="h-3 w-3" /> E-mail
                 </span>
                 <span className="text-sm font-medium text-foreground">
                   {client.email || "Não informado"}
@@ -521,7 +520,7 @@ export function ClientContact({ client }: ClientContactProps) {
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-                  <CalendarIcon className="h-3 w-3" /> Nascimento
+                  <Calendar className="h-3 w-3" /> Nascimento
                 </span>
                 <span className="text-sm font-medium text-foreground">
                   {client.birth_date
@@ -531,7 +530,7 @@ export function ClientContact({ client }: ClientContactProps) {
               </div>
               <div className="flex flex-col gap-1 sm:col-span-2">
                 <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-                  <MapPin className="h-3 w-3" /> Endereço
+                  <Pin className="h-3 w-3" /> Endereço
                 </span>
                 <span className="text-sm font-medium text-foreground">
                   {addressDisplay || "Não informado"}

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mail } from "lucide-react";
+import { Envelope } from "@boxicons/react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,7 +15,7 @@ export default function CheckEmailPage() {
       <Card className="w-full max-w-md border-border shadow-lg">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <Mail className="h-8 w-8 text-primary" />
+            <Envelope className="h-8 w-8 text-primary" />
           </div>
           <CardTitle className="text-2xl">Verifique seu e-mail</CardTitle>
           <CardDescription className="text-base">

@@ -10,7 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Link as LinkIcon, Plus, Trash2 } from "lucide-react";
+import { Link as LinkIcon, Plus, Trash } from "@boxicons/react";
 
 export function AdditionalLinks({ data, onChange }: any) {
   const maxLinks = 3;
@@ -60,7 +60,7 @@ export function AdditionalLinks({ data, onChange }: any) {
                 onClick={() => handleRemoveLink(link.id)}
                 className="absolute top-3 right-3 text-muted-foreground hover:text-destructive transition-colors p-1"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash className="h-4 w-4" />
               </button>
               <div className="flex items-center gap-2 mb-4">
                 <div className="bg-primary/10 text-primary h-5 w-5 rounded-full flex items-center justify-center text-xs font-bold">

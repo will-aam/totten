@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
+import { LoaderDots } from "@boxicons/react";
 
 export interface NewStockItemData {
   name: string;
@@ -170,7 +170,7 @@ export function NewStockItemModal({
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <LoaderDots className="mr-2 h-4 w-4 animate-spin" />
                 Salvando...
               </>
             ) : (

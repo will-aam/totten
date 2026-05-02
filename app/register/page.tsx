@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { ArrowLeft, Repeat, Check, X } from "lucide-react";
+import { ArrowLeft, Repeat, Check, X } from "@boxicons/react";
 import { Progress } from "@/components/ui/progress";
 
 const initialState: ActionState = { error: "" };

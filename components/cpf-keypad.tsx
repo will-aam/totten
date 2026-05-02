@@ -2,7 +2,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Delete } from "lucide-react";
+import { TagX } from "@boxicons/react";
 
 interface CpfKeypadProps {
   value: string;
@@ -99,7 +99,7 @@ export function CpfKeypad({
           onClick={handleDelete}
           disabled={disabled}
         >
-          <Delete className="h-6 w-6" />
+          <TagX className="h-6 w-6" />
           <span className="sr-only">Apagar</span>
         </Button>
       </div>

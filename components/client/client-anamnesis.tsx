@@ -6,10 +6,10 @@ import useSWR from "swr";
 import {
   Plus,
   ClipboardCheck,
-  CheckCircle2,
+  CheckCircle,
   Clock,
   ChevronRight,
-} from "lucide-react";
+} from "@boxicons/react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -105,7 +105,7 @@ export function ClientAnamnesis({ clientId }: { clientId: string }) {
                       )}
                     >
                       {isSigned ? (
-                        <CheckCircle2 className="h-4 w-4" strokeWidth={2} />
+                        <CheckCircle className="h-4 w-4" strokeWidth={2} />
                       ) : (
                         <Clock className="h-4 w-4" strokeWidth={2} />
                       )}

@@ -10,7 +10,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Bell, Volume2, MonitorSmartphone, Mail } from "lucide-react";
+import { Bell, BellRing, Devices, Envelope } from "@boxicons/react";
+import { Volume } from "lucide-react";
 
 export function NotificationsSettings() {
   const [soundAlert, setSoundAlert] = useState(true);
@@ -35,7 +36,7 @@ export function NotificationsSettings() {
           <div className="flex items-start sm:items-center justify-between gap-4 rounded-lg border p-4 bg-card">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-full hidden sm:block">
-                <Volume2 className="h-5 w-5 text-primary" />
+                <Volume className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <Label className="text-base font-medium text-foreground">
@@ -54,7 +55,7 @@ export function NotificationsSettings() {
           <div className="flex items-start sm:items-center justify-between gap-4 rounded-lg border p-4 bg-card">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-full hidden sm:block">
-                <MonitorSmartphone className="h-5 w-5 text-primary" />
+                <Devices className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <Label className="text-base font-medium text-foreground">
@@ -73,7 +74,7 @@ export function NotificationsSettings() {
           <div className="flex items-start sm:items-center justify-between gap-4 rounded-lg border p-4 bg-card">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-full hidden sm:block">
-                <Mail className="h-5 w-5 text-primary" />
+                <Envelope className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <Label className="text-base font-medium text-foreground">

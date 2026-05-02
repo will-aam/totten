@@ -3,7 +3,7 @@
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, Sparkles } from "lucide-react";
+import { CheckCircle } from "@boxicons/react";
 
 function SuccessContent() {
   const searchParams = useSearchParams();
@@ -63,7 +63,7 @@ function SuccessContent() {
     <div className="flex min-h-dvh w-full items-center justify-center bg-background p-4 sm:p-6 md:p-8">
       <div className="relative flex w-full max-w-lg flex-col items-center gap-8 rounded-3xl bg-card p-8 shadow-xl border border-border sm:p-12 text-center">
         <div className="flex h-24 w-24 items-center justify-center rounded-full bg-primary/20 mt-4 sm:mt-0">
-          <CheckCircle2 className="h-14 w-14 text-primary" />
+          <CheckCircle className="h-14 w-14 text-primary" />
         </div>
 
         <div>
