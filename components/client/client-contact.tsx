@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  MessageCircle,
+  Whatsapp,
   Pencil,
   Check,
   X,
@@ -279,7 +279,7 @@ export function ClientContact({ client }: ClientContactProps) {
                 size="icon"
                 className="rounded-full h-8 w-8 text-muted-foreground select-none transition-transform duration-100 ease-out hover:bg-transparent active:scale-90 active:brightness-90"
               >
-                <X className="h-4 w-4" />
+                <X className="" />
               </Button>
               <Button
                 onClick={handleSave}
@@ -289,9 +289,9 @@ export function ClientContact({ client }: ClientContactProps) {
                 className="rounded-full h-8 w-8 text-[#25D366] select-none transition-transform duration-100 ease-out hover:bg-transparent active:scale-90 active:brightness-90"
               >
                 {saving ? (
-                  <LoaderDots className="h-4 w-4 animate-spin" />
+                  <LoaderDots className=" animate-spin" />
                 ) : (
-                  <Check className="h-4 w-4" strokeWidth={3} />
+                  <Check className="" strokeWidth={3} />
                 )}
               </Button>
             </div>
@@ -303,7 +303,7 @@ export function ClientContact({ client }: ClientContactProps) {
               className="text-muted-foreground rounded-full h-8 w-8 select-none transition-transform duration-100 ease-out hover:bg-transparent hover:text-muted-foreground active:scale-90 active:text-primary active:brightness-90"
               title="Completar / Editar ficha"
             >
-              <Pencil className="h-4 w-4" />
+              <Pencil className="" />
             </Button>
           )}
         </div>
@@ -319,7 +319,7 @@ export function ClientContact({ client }: ClientContactProps) {
                 </Label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <MessageCircle className="h-4 w-4 text-[#25D366]" />
+                    <Whatsapp className=" text-[#25D366]" />
                   </div>
                   <Input
                     value={editPhone}
@@ -338,7 +338,7 @@ export function ClientContact({ client }: ClientContactProps) {
                 </Label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <Envelope className="h-4 w-4 text-primary" />
+                    <Envelope className=" text-primary" />
                   </div>
                   <Input
                     value={editEmail}
@@ -357,7 +357,7 @@ export function ClientContact({ client }: ClientContactProps) {
                 </Label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <Calendar className="text-muted-foreground" />
                   </div>
                   <Input
                     value={editBirthDate}
@@ -430,7 +430,7 @@ export function ClientContact({ client }: ClientContactProps) {
                     variant="outline"
                     className="rounded-full flex-1 h-12 text-base border-[#25D366]/20 select-none transition-transform duration-100 ease-out hover:bg-transparent active:scale-95 active:bg-[#25D366]/10"
                   >
-                    <MessageCircle className="mr-2 h-5 w-5 text-[#25D366]" />{" "}
+                    <Whatsapp removePadding className=" text-[#25D366]" />{" "}
                     WhatsApp
                   </Button>
                 </DropdownMenuTrigger>
@@ -504,7 +504,7 @@ export function ClientContact({ client }: ClientContactProps) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-5 border-t border-border/40">
               <div className="flex flex-col gap-1">
                 <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-                  <MessageCircle className="h-3 w-3" /> WhatsApp
+                  <Whatsapp className="h-4 w-4" /> WhatsApp
                 </span>
                 <span className="text-sm font-medium text-foreground">
                   {client.phone_whatsapp || "Não informado"}
@@ -512,7 +512,7 @@ export function ClientContact({ client }: ClientContactProps) {
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-                  <Envelope className="h-3 w-3" /> E-mail
+                  <Envelope className="h-4 w-4" /> E-mail
                 </span>
                 <span className="text-sm font-medium text-foreground">
                   {client.email || "Não informado"}
@@ -520,7 +520,7 @@ export function ClientContact({ client }: ClientContactProps) {
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-                  <Calendar className="h-3 w-3" /> Nascimento
+                  <Calendar className="h-4 w-4" /> Nascimento
                 </span>
                 <span className="text-sm font-medium text-foreground">
                   {client.birth_date
@@ -530,7 +530,7 @@ export function ClientContact({ client }: ClientContactProps) {
               </div>
               <div className="flex flex-col gap-1 sm:col-span-2">
                 <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-                  <Pin className="h-3 w-3" /> Endereço
+                  <Pin className="h-4 w-4" /> Endereço
                 </span>
                 <span className="text-sm font-medium text-foreground">
                   {addressDisplay || "Não informado"}

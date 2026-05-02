@@ -9,7 +9,7 @@ import { FinanceSecondaryIndicators } from "@/components/finance/finance-seconda
 import { FinanceSummaryCards } from "@/components/finance/finance-summary-cards";
 import { RecentTransactionsList } from "@/components/finance/recent-transactions-list";
 import { FinanceSpeedDial } from "@/components/finance/finance-speed-dial";
-import { ChevronUp, Wallet, ChevronRight } from "@boxicons/react";
+import { ChevronUp, WalletAlt, ChevronRight } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { getFinanceDashboardData } from "@/app/actions/finance-dashboard";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -88,7 +88,7 @@ export default function FinanceDashboardPage() {
             >
               <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/50 rounded-2xl p-5 flex items-center justify-between hover:bg-emerald-100/50 dark:hover:bg-emerald-900/30 transition-colors shadow-sm group">
                 <div className="flex items-center gap-5">
-                  <Wallet size="md" className="text-emerald-500 shrink-0" />
+                  <WalletAlt size="md" className="text-emerald-500 shrink-0" />
                   <div className="flex flex-col">
                     <h3 className="text-base font-black text-foreground tracking-tight uppercase text-[13px]">
                       Contas a Receber
