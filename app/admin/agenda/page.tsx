@@ -1,4 +1,3 @@
-// app/admin/agenda/page.tsx
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
@@ -60,6 +59,11 @@ export default function AgendaPage() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] =
     useState<Appointment | null>(null);
+
+  // 🔥 NOVO: Estado para armazenar o horário clicado na grade
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | undefined>(
+    undefined,
+  );
 
   const [showScrollTop, setShowScrollTop] = useState(false);
 
@@ -173,6 +177,28 @@ export default function AgendaPage() {
           : "Não foi possível salvar os horários.",
       );
       throw error;
+    }
+  };
+
+  // 🔥 NOVO: Função para o Quick Confirm (Check)
+  const handleQuickConfirm = async (appt: Appointment) => {
+    try {
+      // Ajuste para a sua rota de update status (ex: PUT /api/appointments/[id])
+      // Ou chame sua Server Action de atualizar status se tiver ela importada
+      const res = await fetch(`/api/appointments/${appt.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "CONFIRMADO" }),
+      });
+
+      if (res.ok) {
+        toast.success("Agendamento confirmado!");
+        mutateAll();
+      } else {
+        toast.error("Falha ao confirmar agendamento.");
+      }
+    } catch (error) {
+      toast.error("Erro na conexão.");
     }
   };
 
@@ -357,6 +383,11 @@ export default function AgendaPage() {
               onRefresh={mutateDay}
               startHour={openingHourNumber}
               endHour={closingHourNumber}
+              onEmptySlotClick={(time) => {
+                setSelectedTimeSlot(time);
+                setIsNewModalOpen(true);
+              }}
+              onQuickConfirm={handleQuickConfirm}
             />
           )}
           {viewMode === "week" && (
@@ -385,7 +416,10 @@ export default function AgendaPage() {
 
       {/* BOTÕES FLUTUANTES */}
       <Button
-        onClick={() => setIsNewModalOpen(true)}
+        onClick={() => {
+          setSelectedTimeSlot(undefined);
+          setIsNewModalOpen(true);
+        }}
         className={cn(
           "fixed bottom-20 right-4 md:bottom-8 md:right-8 h-14 w-14 rounded-full shadow-2xl bg-primary text-primary-foreground z-40 transition-all duration-300",
           showScrollTop
@@ -412,10 +446,14 @@ export default function AgendaPage() {
       {/* MODAIS */}
       <NewAppointmentModal
         open={isNewModalOpen}
-        onOpenChange={setIsNewModalOpen}
+        onOpenChange={(open) => {
+          setIsNewModalOpen(open);
+          if (!open) setSelectedTimeSlot(undefined);
+        }}
         openingTime={openingTime}
         closingTime={closingTime}
         initialDate={selectedDate}
+        initialTime={selectedTimeSlot} // 🔥 Prop nova
         onCreated={mutateAll}
       />
       <AppointmentDetailsModal

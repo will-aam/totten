@@ -1,4 +1,3 @@
-// components/agenda/new-appointment-modal.tsx
 "use client";
 
 import React, { useEffect, useState, useMemo, memo } from "react";
@@ -51,6 +50,7 @@ interface NewAppointmentModalProps {
   openingTime?: string;
   closingTime?: string;
   initialDate?: Date;
+  initialTime?: string;
 }
 
 type ActivePackage = {
@@ -59,7 +59,7 @@ type ActivePackage = {
   total_sessions: number;
   used_sessions: number;
   service_id: string;
-  active?: boolean; // 🔥 Adicionado para tipagem da flag de inativo
+  active?: boolean;
 };
 
 function generateTimeSlots(openingTime: string, closingTime: string) {
@@ -86,6 +86,7 @@ export const NewAppointmentModal = memo(
     openingTime = "08:00",
     closingTime = "19:00",
     initialDate,
+    initialTime, // 🔥 CORREÇÃO AQUI: faltava desestruturar a prop!
   }: NewAppointmentModalProps) => {
     const [date, setDate] = useState<Date | undefined>(undefined);
     const [time, setTime] = useState<string | undefined>(undefined);
@@ -143,7 +144,7 @@ export const NewAppointmentModal = memo(
             data.data?.activePackage ||
             null;
 
-          // 🔥 DEFESA DE FRONTEND: Só aceita exibir o pacote se ele for ativo E tiver saldo.
+          // Só aceita exibir o pacote se ele for ativo E tiver saldo.
           if (
             pkg &&
             pkg.active !== false &&
@@ -151,7 +152,7 @@ export const NewAppointmentModal = memo(
           ) {
             setActivePackage(pkg);
           } else {
-            setActivePackage(null); // Esconde a opção de pacote se estiver arquivado
+            setActivePackage(null);
             setUsePackage(false);
           }
         } catch (error) {
@@ -176,27 +177,13 @@ export const NewAppointmentModal = memo(
         setActivePackage(null);
       } else {
         setDate(initialDate || new Date());
+        if (initialTime) setTime(initialTime);
       }
-    }, [open, initialDate]);
+    }, [open, initialDate, initialTime]);
 
     const saldoDisponivel = activePackage
       ? activePackage.total_sessions - activePackage.used_sessions
       : 0;
-
-    // AUTO-PREENCHIMENTO INTELIGENTE (Pacote -> Recorrência)
-    useEffect(() => {
-      if (usePackage && activePackage) {
-        setSelectedServiceId(activePackage.service_id);
-
-        if (saldoDisponivel > 1 && !isRecurring) {
-          setIsRecurring(true);
-          setRepeatCount(saldoDisponivel);
-        } else if (isRecurring && repeatCount > saldoDisponivel) {
-          setRepeatCount(saldoDisponivel > 1 ? saldoDisponivel : 2);
-          if (saldoDisponivel < 2) setIsRecurring(false);
-        }
-      }
-    }, [usePackage, activePackage, isRecurring, repeatCount, saldoDisponivel]);
 
     const handleSave = async () => {
       if (!selectedClientId || !selectedServiceId || !date || !time) {
@@ -279,7 +266,7 @@ export const NewAppointmentModal = memo(
               </Select>
             </div>
 
-            {/* PACOTE DA CLIENTE (Aparece dinamicamente se a cliente tiver pacote com saldo) */}
+            {/* PACOTE DA CLIENTE */}
             {activePackage && (
               <div
                 className={cn(
@@ -315,7 +302,18 @@ export const NewAppointmentModal = memo(
                   </Label>
                   <Switch
                     checked={usePackage}
-                    onCheckedChange={setUsePackage}
+                    onCheckedChange={(checked) => {
+                      setUsePackage(checked);
+                      if (checked && activePackage) {
+                        setSelectedServiceId(activePackage.service_id);
+                        if (saldoDisponivel > 1) {
+                          setIsRecurring(true);
+                          setRepeatCount(saldoDisponivel);
+                        } else {
+                          setIsRecurring(false);
+                        }
+                      }
+                    }}
                     className="data-[state=checked]:bg-primary"
                   />
                 </div>
@@ -497,7 +495,7 @@ export const NewAppointmentModal = memo(
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="rounded-2xl h-12 font-black bg-primary text-primary-foreground  w-full sm:w-2/3 active:scale-[0.98] transition-all"
+              className="rounded-2xl h-12 font-black bg-primary text-primary-foreground w-full sm:w-2/3 active:scale-[0.98] transition-all"
             >
               {saving ? (
                 <LoaderDots className="mr-2 h-5 w-5 animate-spin" />

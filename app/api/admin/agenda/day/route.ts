@@ -1,4 +1,3 @@
-// app/api/admin/agenda/day/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { startOfDay, endOfDay } from "date-fns";
@@ -72,12 +71,23 @@ export async function GET(req: NextRequest) {
       // Pegando o preço real (Pacote ou Serviço)
       const rawPrice = appt.package?.price ?? appt.service.price ?? 0;
 
-      let color = "bg-blue-100 border-blue-300 text-blue-900";
-      if (appt.package_id) {
-        color = "bg-emerald-100 border-emerald-300 text-emerald-900";
-      }
+      // 🔥 NOVO COLOR-CODING
+      let color = "";
       if (appt.status === "REALIZADO") {
+        // Concluído (Azul)
+        color = "bg-blue-100 border-blue-300 text-blue-900";
+      } else if (
+        appt.check_in &&
+        (appt.status === "PENDENTE" || appt.status === "CONFIRMADO")
+      ) {
+        // Cliente fez check-in / Sala de espera (Cinza/Slate)
         color = "bg-slate-100 border-slate-300 text-slate-900";
+      } else if (appt.recurrence_id || appt.package_id) {
+        // Cliente com horário fixo/recorrente (Verde)
+        color = "bg-emerald-100 border-emerald-300 text-emerald-900";
+      } else {
+        // Encaixe / Avulso (Amarelo/Laranja)
+        color = "bg-amber-100 border-amber-300 text-amber-900";
       }
 
       return {
@@ -87,7 +97,7 @@ export async function GET(req: NextRequest) {
         clientName: appt.client.name,
         service: appt.service.name,
         sessionInfo,
-        isRecurring: Boolean(appt.package_id),
+        isRecurring: Boolean(appt.recurrence_id), // Corrigido: agora olha para a recorrência real
         phone: appt.client.phone_whatsapp,
         color,
         hasCharge: appt.has_charge,

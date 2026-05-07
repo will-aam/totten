@@ -1,4 +1,3 @@
-// components/agenda/daily-agenda-grid.tsx
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -27,8 +26,10 @@ import {
   LoaderDots,
   Package as PackageIcon,
   Lock,
-  AlertTriangle, // 🔥 Adicionado
+  AlertTriangle,
   CalendarAlt,
+  Check,
+  Plus,
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -57,7 +58,7 @@ export interface Appointment {
   package?: {
     total_sessions: number;
     used_sessions: number;
-    active?: boolean; // 🔥 Tipagem adicionada aqui!
+    active?: boolean;
   } | null;
 }
 
@@ -67,6 +68,8 @@ interface DailyAgendaGridProps {
   onRefresh: () => void;
   startHour?: number;
   endHour?: number;
+  onEmptySlotClick?: (time: string) => void; // 🔥 Nova prop para clique no fundo
+  onQuickConfirm?: (appt: Appointment) => void; // 🔥 Nova prop para ação rápida
 }
 
 const cleanPhone = (phone: string) => {
@@ -85,7 +88,6 @@ function AppointmentCardContent({
   isCancelled?: boolean;
   isLocked?: boolean;
 }) {
-  // 🔥 Verifica se o pacote associado tá inativo
   const isPackageArchived = appt.package && appt.package.active === false;
 
   return (
@@ -100,7 +102,7 @@ function AppointmentCardContent({
         isCancelled && "opacity-40 grayscale-[0.8] border-dashed",
         isPackageArchived &&
           !isCancelled &&
-          "border-2 border-destructive/80 opacity-80", // Borda de atenção
+          "border-2 border-destructive/80 opacity-80",
         isOverlay &&
           "shadow-2xl scale-105 rotate-1 border-primary/50 cursor-grabbing",
       )}
@@ -114,7 +116,7 @@ function AppointmentCardContent({
             <span
               className={cn(
                 "font-bold text-sm md:text-base truncate",
-                (isCancelled || isPackageArchived) && "line-through", // Risca o nome se o pacote morreu
+                (isCancelled || isPackageArchived) && "line-through",
               )}
             >
               {appt.clientName}
@@ -124,11 +126,6 @@ function AppointmentCardContent({
             {appt.service}
           </span>
         </div>
-        {!isCancelled && !isLocked && !isOverlay && (
-          <div className="h-7 w-7 rounded-full bg-white/40 flex items-center justify-center text-emerald-700">
-            <MessageCircle className="h-4 w-4" />
-          </div>
-        )}
       </div>
 
       <div className="mt-auto flex items-center justify-between text-[10px] font-bold opacity-80 pt-1.5 border-t border-black/5">
@@ -136,7 +133,6 @@ function AppointmentCardContent({
           <Clock className="h-3 w-3" /> {appt.time}
         </span>
 
-        {/* 🔥 Mudança de tag se o pacote for arquivado */}
         <span
           className={cn(
             "px-1.5 rounded flex items-center gap-1",
@@ -169,12 +165,14 @@ function DraggableAppointmentCard({
   height,
   onClick,
   onWhatsApp,
+  onQuickConfirm,
 }: {
   appt: Appointment;
   top: number;
   height: number;
   onClick: () => void;
   onWhatsApp: (e: React.MouseEvent) => void;
+  onQuickConfirm?: (appt: Appointment) => void;
 }) {
   const isCancelled = appt.status?.toUpperCase() === "CANCELADO";
   const isRealizado = appt.status?.toUpperCase() === "REALIZADO";
@@ -198,6 +196,7 @@ function DraggableAppointmentCard({
     zIndex: isDragging ? 0 : 10,
     opacity: isDragging ? 0 : 1,
     touchAction: "none",
+    pointerEvents: "auto", // 🔥 Garante que os cards sejam interativos sobre a grade clicável
   };
 
   return (
@@ -208,6 +207,7 @@ function DraggableAppointmentCard({
       {...(!isLocked ? attributes : {})}
       className={cn(
         !isLocked ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
+        "group", // Adicionado group aqui para o hover state dos botões
       )}
       onClick={(e) => {
         if (e.defaultPrevented) return;
@@ -215,7 +215,29 @@ function DraggableAppointmentCard({
       }}
     >
       {!isLocked && (
-        <div className="absolute top-2 right-2 z-50">
+        <div className="absolute top-2 right-2 z-50 flex items-center gap-1">
+          {/* 🔥 QUICK ACTION: Confirmar */}
+          {appt.status === "PENDENTE" && (
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (onQuickConfirm) {
+                  onQuickConfirm(appt);
+                } else {
+                  toast.success("Confirmação rápida acionada!");
+                }
+              }}
+              className="h-8 w-8 rounded-full bg-white/60 hover:bg-white text-blue-600 shadow-sm opacity-0 group-hover:opacity-100 md:opacity-100 transition-opacity"
+              title="Confirmar Agendamento"
+            >
+              <Check className="h-5 w-5" />
+            </Button>
+          )}
+
+          {/* 🔥 QUICK ACTION: WhatsApp */}
           <Button
             size="icon"
             variant="ghost"
@@ -225,6 +247,7 @@ function DraggableAppointmentCard({
               onWhatsApp(e);
             }}
             className="h-8 w-8 rounded-full bg-white/60 hover:bg-white text-emerald-700 shadow-sm opacity-0 group-hover:opacity-100 md:opacity-100 transition-opacity"
+            title="Enviar WhatsApp"
           >
             <MessageCircle className="h-4 w-4" />
           </Button>
@@ -246,6 +269,8 @@ export function DailyAgendaGrid({
   onRefresh,
   startHour = DEFAULT_START_HOUR,
   endHour = 19,
+  onEmptySlotClick,
+  onQuickConfirm,
 }: DailyAgendaGridProps) {
   const [isMoving, setIsMoving] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -302,7 +327,6 @@ export function DailyAgendaGrid({
 
     const appt = active.data.current as Appointment;
 
-    // 🔥 Desabilita drag and drop para pacotes arquivados
     if (appt.package && appt.package.active === false) {
       toast.error("Não é possível reagendar. Este pacote foi arquivado.");
       return;
@@ -392,18 +416,47 @@ export function DailyAgendaGrid({
 
             {/* GRADE DA AGENDA */}
             <div className="flex-1 relative">
-              {HOURS_ARRAY.map((hour) => (
-                <div
-                  key={`grid-${hour}`}
-                  className="h-24 border-b border-border/10 w-full relative pointer-events-none"
-                >
-                  <div className="absolute top-1/4 w-full border-t border-dashed border-border/5 opacity-40" />
-                  <div className="absolute top-2/4 w-full border-t border-dotted border-border/10 opacity-60" />
-                  <div className="absolute top-3/4 w-full border-t border-dashed border-border/5 opacity-40" />
-                </div>
-              ))}
+              {/* 🔥 BACKGROUND COM SLOTS CLICÁVEIS */}
+              <div className="absolute inset-0 flex flex-col z-0">
+                {HOURS_ARRAY.map((hour) => (
+                  <div
+                    key={`grid-${hour}`}
+                    className="h-24 w-full relative flex flex-col"
+                  >
+                    {/* Bloco 00 - 30 */}
+                    <div
+                      onClick={() =>
+                        onEmptySlotClick?.(
+                          `${hour.toString().padStart(2, "0")}:00`,
+                        )
+                      }
+                      className="flex-1 border-b border-dashed border-border/10 cursor-pointer hover:bg-muted/10 transition-colors group relative"
+                    >
+                      <span className="absolute left-2 top-1 text-[10px] font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                        <Plus className="h-3 w-3" /> Agendar{" "}
+                        {hour.toString().padStart(2, "0")}:00
+                      </span>
+                    </div>
+                    {/* Bloco 30 - 00 */}
+                    <div
+                      onClick={() =>
+                        onEmptySlotClick?.(
+                          `${hour.toString().padStart(2, "0")}:30`,
+                        )
+                      }
+                      className="flex-1 border-b border-border/10 cursor-pointer hover:bg-muted/10 transition-colors group relative"
+                    >
+                      <span className="absolute left-2 top-1 text-[10px] font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                        <Plus className="h-3 w-3" /> Agendar{" "}
+                        {hour.toString().padStart(2, "0")}:30
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
 
-              <div className="absolute top-0 left-0 right-0 bottom-0">
+              {/* 🔥 CAMADA DOS CARDS SOBREPOSTA */}
+              <div className="absolute inset-0 z-10 pointer-events-none">
                 {appointments.map((appt) => {
                   const { top, height } = calculatePosition(
                     appt.time,
@@ -416,6 +469,7 @@ export function DailyAgendaGrid({
                       top={top}
                       height={height}
                       onClick={() => onAppointmentClick(appt)}
+                      onQuickConfirm={onQuickConfirm}
                       onWhatsApp={(e) => {
                         const msg = encodeURIComponent(
                           `Olá ${appt.clientName.split(" ")[0]}! Confirmamos seu horário às ${appt.time}?`,
@@ -442,8 +496,8 @@ export function DailyAgendaGrid({
           }}
         >
           {activeAppt && (
-            <div className="relative w-[calc(100%-40px)] ml-4">
-              <div className="absolute -top-8 left-2 bg-primary text-primary-foreground text-xs font-black px-3 py-1 rounded-full shadow-xl animate-in zoom-in-50 z-50 pointer-events-none">
+            <div className="relative w-[calc(100%-40px)] ml-4 pointer-events-none">
+              <div className="absolute -top-8 left-2 bg-primary text-primary-foreground text-xs font-black px-3 py-1 rounded-full shadow-xl animate-in zoom-in-50 z-50">
                 {dragTime}
               </div>
               <div
