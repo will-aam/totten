@@ -1,9 +1,11 @@
+// app/actions/team.ts
 "use server";
 
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
+import { Prisma } from "@prisma/client";
 
 export async function getTeam() {
   try {
@@ -18,8 +20,8 @@ export async function getTeam() {
         display_name: true,
         email: true,
         role: true,
-        active: true, // 🔥 Adicionado
-        permissions: true, // 🔥 Adicionado
+        active: true,
+        permissions: true, // 🔥 Trazendo as permissões do banco
         created_at: true,
       },
       orderBy: { created_at: "asc" },
@@ -40,16 +42,22 @@ export async function createCollaborator(data: {
 }) {
   try {
     const admin = await requireAuth();
-    if (admin.role !== "OWNER")
+
+    if (admin.role !== "OWNER") {
       return { success: false, error: "Sem permissão." };
-    if (!data.name || !data.email || !data.password)
+    }
+
+    if (!data.name || !data.email || !data.password) {
       return { success: false, error: "Preencha todos os campos." };
+    }
 
     const existingAdmin = await prisma.admin.findUnique({
       where: { email: data.email },
     });
-    if (existingAdmin)
+
+    if (existingAdmin) {
       return { success: false, error: "Este e-mail já está em uso." };
+    }
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
@@ -60,7 +68,7 @@ export async function createCollaborator(data: {
         password: hashedPassword,
         role: "COLLABORATOR",
         active: true,
-        permissions: data.permissions || [], // 🔥 Salva as permissões extras (vazio por padrão)
+        permissions: data.permissions || [], // 🔥 Salva as permissões garantindo que seja um array
         email_verified: true,
         organizations: { connect: { id: admin.organizationId } },
       },
@@ -85,8 +93,10 @@ export async function updateCollaborator(
 ) {
   try {
     const admin = await requireAuth();
-    if (admin.role !== "OWNER")
+
+    if (admin.role !== "OWNER") {
       return { success: false, error: "Sem permissão." };
+    }
 
     // Impede que o dono tire o próprio acesso de Owner ou altere seu e-mail por aqui
     const targetUser = await prisma.admin.findUnique({ where: { id } });
@@ -97,10 +107,11 @@ export async function updateCollaborator(
       };
     }
 
-    const updateData: any = {
+    // 🔥 Usando tipagem estrita do Prisma ao invés de 'any' para evitar quebras
+    const updateData: Prisma.AdminUpdateInput = {
       display_name: data.name,
       email: data.email,
-      permissions: data.permissions,
+      permissions: data.permissions || [], // 🔥 Atualiza as permissões com segurança
     };
 
     if (data.password && data.password.trim().length >= 6) {

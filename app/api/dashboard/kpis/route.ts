@@ -24,7 +24,7 @@ export async function GET() {
     // Fim do dia no Brasil (Início do próximo dia)
     const tomorrow = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
 
-    // 1. Check-ins de hoje
+    // 1. Check-ins de hoje (Toda a equipe vê o volume da clínica)
     const todayCheckInsCount = await prisma.checkIn.count({
       where: {
         organization_id: admin.organizationId,

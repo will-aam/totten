@@ -1,10 +1,10 @@
-// app/admin/dashboard/page.tsx
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import useSWR from "swr";
 import useSWRInfinite from "swr/infinite";
 import Link from "next/link";
+import { useSession } from "next-auth/react"; // 🔥 Importado para pegar o nome do usuário logado
 import { AdminHeader } from "@/components/admin-header";
 import {
   Card,
@@ -21,6 +21,7 @@ import {
   Clock,
   ChevronUp,
   RefreshCw,
+  User, // 🔥 Ícone para a rastreabilidade
 } from "@boxicons/react";
 import type { BoxIconProps } from "@boxicons/react";
 import { cn } from "@/lib/utils";
@@ -29,11 +30,13 @@ import { PendingCheckInsCard } from "@/components/admin/pending-checkins-card";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
+// 🔥 Preparando a tipagem para receber quem fez o atendimento
 type CheckIn = {
   id: string;
   client_id: string;
   client_name: string;
   date_time: string;
+  professional_name?: string | null;
 };
 
 function KpiCard({
@@ -106,9 +109,19 @@ function CheckInListItem({ checkIn }: { checkIn: CheckIn }) {
           <span className="text-sm font-semibold text-foreground leading-none mb-1.5 group-hover:text-primary group-hover:underline transition-colors">
             {checkIn.client_name}
           </span>
-          <span className="text-xs text-muted-foreground leading-none">
-            {formattedDate}
-          </span>
+
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground leading-none">
+            <span>{formattedDate}</span>
+            {/* 🔥 Selo visual de Rastreabilidade (Quem fez o atendimento) */}
+            {checkIn.professional_name && (
+              <>
+                <span>•</span>
+                <span className="flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
+                  <User size="xs" /> {checkIn.professional_name}
+                </span>
+              </>
+            )}
+          </div>
         </div>
       </Link>
 
@@ -122,6 +135,10 @@ function CheckInListItem({ checkIn }: { checkIn: CheckIn }) {
 }
 
 export default function AdminDashboardPage() {
+  const { data: session } = useSession(); // 🔥 Puxando a sessão
+  // Pega o primeiro nome (se existir) para deixar o painel amigável
+  const userName = session?.user?.name?.split(" ")[0] || "Líder";
+
   const { data: kpiData, isLoading: isLoadingKpis } = useSWR(
     "/api/dashboard/kpis",
     fetcher,
@@ -189,7 +206,9 @@ export default function AdminDashboardPage() {
 
   return (
     <>
-      <AdminHeader title="Resumo Diário" />
+      {/* 🔥 Título Dinâmico de Boas Vindas */}
+      <AdminHeader title={`Olá, ${userName}!`} />
+
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative">
         <div className="flex overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scroll-smooth md:grid md:grid-cols-3 md:overflow-visible md:pb-0 md:px-0 md:mx-0 gap-4 [&::-webkit-scrollbar]:hidden">
           {isLoadingKpis ? (

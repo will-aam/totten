@@ -5,6 +5,7 @@ import { AdminHeader } from "@/components/admin-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +23,7 @@ import {
   Pencil,
   Trash,
   Block,
+  Wallet,
 } from "@boxicons/react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
@@ -64,6 +66,7 @@ export default function TeamPage() {
     name: "",
     email: "",
     password: "",
+    permissions: [] as string[],
   });
 
   useEffect(() => {
@@ -87,7 +90,7 @@ export default function TeamPage() {
   // HANDLERS DE ABERTURA DOS MODAIS
   // --------------------------------------------------------
   const openCreate = () => {
-    setFormData({ name: "", email: "", password: "" });
+    setFormData({ name: "", email: "", password: "", permissions: [] });
     setSelectedMember(null);
     setModalView("create");
   };
@@ -97,6 +100,7 @@ export default function TeamPage() {
       name: member.display_name || "",
       email: member.email,
       password: "",
+      permissions: member.permissions || [],
     });
     setSelectedMember(member);
     setModalView("edit");
@@ -278,6 +282,48 @@ export default function TeamPage() {
                 Ela poderá alterar a senha depois se quiser. Min. 6 caracteres.
               </span>
             </div>
+
+            {/* ⚡ GERENCIAMENTO DE PERMISSÕES */}
+            <div className="mt-2 flex flex-col gap-3 rounded-xl border border-border/50 bg-muted/20 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Permissões de Acesso
+              </p>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label className="text-sm font-medium">
+                    Agenda & Dashboard
+                  </Label>
+                  <p className="text-[10px] text-muted-foreground">
+                    Acesso padrão para visualizar a rotina da clínica.
+                  </p>
+                </div>
+                <Switch checked={true} disabled />
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                <div className="space-y-0.5">
+                  <Label className="text-sm font-medium flex items-center gap-1.5">
+                    <Wallet size="xs" className="text-muted-foreground" />{" "}
+                    Financeiro
+                  </Label>
+                  <p className="text-[10px] text-muted-foreground">
+                    Pode visualizar caixa, extrato e métricas de lucro.
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.permissions.includes("FINANCE")}
+                  onCheckedChange={(checked) => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      permissions: checked
+                        ? [...prev.permissions, "FINANCE"]
+                        : prev.permissions.filter((p) => p !== "FINANCE"),
+                    }));
+                  }}
+                />
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={closeModal} disabled={saving}>
@@ -374,6 +420,7 @@ const TeamMemberCard = memo(
     onDelete: (m: TeamMember) => void;
   }) => {
     const isOwner = member.role === "OWNER";
+    const hasFinance = member.permissions.includes("FINANCE");
 
     return (
       <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border border-border/50 bg-card shadow-sm gap-4 transition-all hover:border-border">
@@ -384,7 +431,7 @@ const TeamMemberCard = memo(
           >
             <User size="sm" />
           </div>
-          <div>
+          <div className="flex flex-col items-start gap-1">
             <h3
               className={`font-bold text-base flex items-center gap-2 ${!member.active && "opacity-60"}`}
             >
@@ -399,7 +446,14 @@ const TeamMemberCard = memo(
                 </span>
               )}
             </h3>
-            <p className="text-sm text-muted-foreground">{member.email}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-muted-foreground">{member.email}</p>
+              {!isOwner && hasFinance && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 flex items-center gap-1">
+                  <Wallet size="xs" /> Financeiro
+                </span>
+              )}
+            </div>
           </div>
         </div>
 

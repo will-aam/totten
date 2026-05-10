@@ -97,7 +97,7 @@ const navItems = [
     ownerOnly: false, // Colaborador vê a agenda principal
   },
   {
-    title: "Minha Equipe", // 🔥 NOVO ITEM ADICIONADO AQUI
+    title: "Minha Equipe",
     href: "/admin/team",
     icon: Group as BoxIcon,
     active: true,
@@ -179,8 +179,10 @@ export function AdminSidebar() {
   );
   const whatsappUrl = `https://wa.me/${supportPhone}?text=${supportMessage}`;
 
-  // 🔥 RECUPERANDO A ROLE DA SESSÃO
+  // 🔥 RECUPERANDO AS REGRAS DA SESSÃO
   const isOwner = session?.user?.role === "OWNER";
+  const hasFinancePermission = session?.user?.permissions?.includes("FINANCE");
+  const canViewFinance = isOwner || hasFinancePermission; // ⚡ Libera se for dona OU tiver permissão
 
   useEffect(() => {
     if (cadastrosSubItems.some((i) => pathname.startsWith(i.href))) {
@@ -276,27 +278,25 @@ export function AdminSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {/* 🔥 SÓ OWNER VÊ DASHBOARD */}
-              {isOwner && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith("/admin/dashboard")}
-                    className="hover:bg-muted/50"
+              {/* 🔥 AGORA TODOS (OWNER E COLLABORATOR) VEEM O RESUMO DIÁRIO */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith("/admin/dashboard")}
+                  className="hover:bg-muted/50"
+                >
+                  <Link
+                    href="/admin/dashboard"
+                    onClick={() => setOpenMobile(false)}
                   >
-                    <Link
-                      href="/admin/dashboard"
-                      onClick={() => setOpenMobile(false)}
-                    >
-                      <NavIcon
-                        icon={NoteBook}
-                        isActive={pathname.startsWith("/admin/dashboard")}
-                      />
-                      <span>Resumo Diário</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
+                    <NavIcon
+                      icon={NoteBook}
+                      isActive={pathname.startsWith("/admin/dashboard")}
+                    />
+                    <span>Resumo Diário</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
 
               {/* 🔥 SÓ OWNER VÊ CADASTROS */}
               {isOwner && (
@@ -411,84 +411,80 @@ export function AdminSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* 🔥 SÓ RENDERIZA "MÓDULOS" SE TIVER ALGO DENTRO PARA MOSTRAR */}
-        {isOwner && (
-          <SidebarGroup className="mt-0.5">
-            <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 px-2">
-              Módulos
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {/* Módulo: Agenda - Apenas SubItems, já que o Colaborador vê o link "Agendamento" direto no root */}
-                <Collapsible
-                  asChild
-                  className="group/collapsible w-full"
-                  open={openModule === "agenda"}
-                  onOpenChange={(open) => setOpenModule(open ? "agenda" : null)}
-                >
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton
-                        isActive={isAgendaActive}
-                        className="hover:bg-muted/50"
-                      >
-                        <div className="flex items-center justify-between w-full">
-                          <div className="flex items-center gap-2">
-                            <NavIcon
-                              icon={CalendarDetail}
-                              isActive={isAgendaActive}
-                            />
-                            <span>Gestão de Agenda</span>
-                          </div>
-                          <ChevronRight
-                            size="xs"
-                            className="text-muted-foreground/50 transition-transform group-data-[state=open]/collapsible:rotate-90"
+        {/* MÓDULOS */}
+        <SidebarGroup className="mt-0.5">
+          <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 px-2">
+            Módulos
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {/* Módulo: Agenda - Todos veem */}
+              <Collapsible
+                asChild
+                className="group/collapsible w-full"
+                open={openModule === "agenda"}
+                onOpenChange={(open) => setOpenModule(open ? "agenda" : null)}
+              >
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton
+                      isActive={isAgendaActive}
+                      className="hover:bg-muted/50"
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-2">
+                          <NavIcon
+                            icon={CalendarDetail}
+                            isActive={isAgendaActive}
                           />
+                          <span>Gestão de Agenda</span>
                         </div>
-                      </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <SidebarMenuSub className="border-l border-border ml-4 mt-1">
-                        {agendaSubItems.map((subItem) => (
-                          <SidebarMenuSubItem key={subItem.title}>
-                            <SidebarMenuSubButton
-                              asChild={subItem.active}
-                              isActive={
-                                pathname.startsWith(subItem.href) &&
-                                subItem.active
-                              }
-                              className={cn(
-                                "py-2",
-                                !subItem.active &&
-                                  "opacity-50 cursor-not-allowed",
-                              )}
-                            >
-                              {subItem.active ? (
-                                <Link
-                                  href={subItem.href}
-                                  onClick={() => setOpenMobile(false)}
-                                >
-                                  <span className="text-xs">
-                                    {subItem.title}
-                                  </span>
-                                </Link>
-                              ) : (
-                                <div className="flex items-center justify-between w-full">
-                                  <span className="text-xs">
-                                    {subItem.title}
-                                  </span>
-                                  <Lock size="xs" className="opacity-50" />
-                                </div>
-                              )}
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </SidebarMenuItem>
-                </Collapsible>
+                        <ChevronRight
+                          size="xs"
+                          className="text-muted-foreground/50 transition-transform group-data-[state=open]/collapsible:rotate-90"
+                        />
+                      </div>
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub className="border-l border-border ml-4 mt-1">
+                      {agendaSubItems.map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton
+                            asChild={subItem.active}
+                            isActive={
+                              pathname.startsWith(subItem.href) &&
+                              subItem.active
+                            }
+                            className={cn(
+                              "py-2",
+                              !subItem.active &&
+                                "opacity-50 cursor-not-allowed",
+                            )}
+                          >
+                            {subItem.active ? (
+                              <Link
+                                href={subItem.href}
+                                onClick={() => setOpenMobile(false)}
+                              >
+                                <span className="text-xs">{subItem.title}</span>
+                              </Link>
+                            ) : (
+                              <div className="flex items-center justify-between w-full">
+                                <span className="text-xs">{subItem.title}</span>
+                                <Lock size="xs" className="opacity-50" />
+                              </div>
+                            )}
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
 
-                {/* Módulo: Autoatendimento */}
+              {/* Módulo: Autoatendimento - Apenas Owner */}
+              {isOwner && (
                 <Collapsible
                   asChild
                   className="group/collapsible w-full"
@@ -555,9 +551,11 @@ export function AdminSidebar() {
                     </CollapsibleContent>
                   </SidebarMenuItem>
                 </Collapsible>
+              )}
 
-                {/* Módulo: Financeiro */}
-                {isMobile ? (
+              {/* ⚡ Módulo: Financeiro - Visível para Owner OU Colaborador com Permissão */}
+              {canViewFinance &&
+                (isMobile ? (
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       asChild
@@ -645,11 +643,10 @@ export function AdminSidebar() {
                       </CollapsibleContent>
                     </SidebarMenuItem>
                   </Collapsible>
-                )}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+                ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter className="p-4 border-t flex flex-col gap-3">
