@@ -1,3 +1,4 @@
+// app/api/admin/checkins/pending/[checkInId]/associate/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
@@ -91,6 +92,7 @@ export async function POST(
             package_id: packageId,
             organization_id: admin.organizationId,
             status: "REALIZADO",
+            professional_id: admin.id, // Opcional: define quem atendeu no appointment
           },
         });
 
@@ -103,7 +105,7 @@ export async function POST(
           where: { id: packageId },
           data: {
             used_sessions: newUsedSessions,
-            active: willRemainActive, // 🎯 Correção aplicada aqui!
+            active: willRemainActive,
           },
         });
 
@@ -112,6 +114,7 @@ export async function POST(
           data: {
             appointment_id: created.id,
             package_id: packageId,
+            admin_id: admin.id, // 🔥 Rastreabilidade: Assina quem confirmou o pacote
           },
         });
 
@@ -139,6 +142,7 @@ export async function POST(
           organization_id: admin.organizationId,
           status: "REALIZADO",
           has_charge: true,
+          professional_id: admin.id, // Opcional: define quem atendeu no appointment
         },
       });
 
@@ -146,6 +150,7 @@ export async function POST(
         where: { id: checkInId },
         data: {
           appointment_id: created.id,
+          admin_id: admin.id, // 🔥 Rastreabilidade: Assina quem confirmou o serviço
         },
       });
 

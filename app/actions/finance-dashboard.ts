@@ -2,25 +2,13 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { requireAuth } from "@/lib/auth"; // 🔥 Padronizado com os outros arquivos
 import { PaymentMethod } from "@prisma/client";
-
-async function getAdminOrg() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) throw new Error("Não autorizado");
-  const admin = await prisma.admin.findUnique({
-    where: { email: session.user.email },
-    include: { organizations: true },
-  });
-  if (!admin || admin.organizations.length === 0)
-    throw new Error("Organização não encontrada");
-  return admin.organizations[0].id;
-}
 
 export async function getFinanceDashboardData(month?: number, year?: number) {
   try {
-    const organizationId = await getAdminOrg();
+    const admin = await requireAuth(); // 🔥 Garante a sessão e pega os dados do Admin
+    const organizationId = admin.organizationId;
     const now = new Date();
 
     const targetMonth = month ? month - 1 : now.getMonth();
@@ -163,10 +151,12 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
         status: true,
         client: { select: { name: true } },
         payment_method: { select: { type: true } },
+        admin: { select: { display_name: true } }, // 🔥 RASTREABILIDADE
         appointment: {
           select: {
             client: { select: { name: true } },
             payment_method: true,
+            professional: { select: { display_name: true } }, // 🔥 RASTREABILIDADE (Se gerado via agenda)
           },
         },
       },
@@ -183,6 +173,10 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
       clientName: t.client?.name || t.appointment?.client.name || undefined,
       paymentMethod:
         t.payment_method?.type || t.appointment?.payment_method || undefined,
+      professionalName:
+        t.admin?.display_name ||
+        t.appointment?.professional?.display_name ||
+        undefined, // 🔥 Enviando o nome da colaboradora para a tela!
     }));
 
     return {

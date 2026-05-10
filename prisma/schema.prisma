@@ -50,6 +50,10 @@ model Admin {
   verification_token String?        @unique
   organizations      Organization[] @relation("AdminToOrganization")
   appointments       Appointment[]  @relation("ProfessionalToAppointment")
+  
+  // 🔥 Novas relações de rastreabilidade adicionadas
+  check_ins          CheckIn[]      @relation("AdminToCheckIn")
+  transactions       Transaction[]  @relation("AdminToTransaction")
 
   @@map("admins")
 }
@@ -258,6 +262,11 @@ model CheckIn {
   client_id       String?
   package_id      String?
   organization_id String
+  
+  // 🔥 Nova coluna e relação com o Admin
+  admin_id        String?
+  admin           Admin?       @relation("AdminToCheckIn", fields: [admin_id], references: [id], onDelete: SetNull)
+
   appointment     Appointment? @relation(fields: [appointment_id], references: [id], onDelete: Cascade)
   client          Client?      @relation(fields: [client_id], references: [id], onDelete: Cascade)
   organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
@@ -302,6 +311,11 @@ model Transaction {
   recurrence_id     String?
   installment       String?
   stock_item_id     String?
+  
+  // 🔥 Nova coluna e relação com o Admin
+  admin_id          String?
+  admin             Admin?                     @relation("AdminToTransaction", fields: [admin_id], references: [id], onDelete: SetNull)
+
   appointment       Appointment?               @relation(fields: [appointment_id], references: [id])
   client            Client?                    @relation(fields: [client_id], references: [id])
   organization      Organization               @relation(fields: [organization_id], references: [id], onDelete: Cascade)

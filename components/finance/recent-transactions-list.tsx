@@ -1,4 +1,3 @@
-// components/finance/recent-transactions-list.tsx
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -8,11 +7,16 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { PaymentMethod, Transaction, TransactionStatus } from "@/types/finance";
-import { ArrowDownRight, ArrowUpRight, Receipt } from "@boxicons/react";
+import { ArrowDownRight, ArrowUpRight, Receipt, User } from "@boxicons/react"; // 🔥 Importamos o User
 import { cn } from "@/lib/utils";
 
+// 🔥 RASTREABILIDADE: Estendendo o tipo localmente para não precisar alterar o arquivo de types agora
+export interface ExtendedTransaction extends Transaction {
+  professionalName?: string | null;
+}
+
 interface RecentTransactionsListProps {
-  data: Transaction[];
+  data: ExtendedTransaction[];
 }
 
 // 🔥 OTIMIZAÇÃO: Formatadores instanciados uma única vez
@@ -36,7 +40,11 @@ function getPaymentMethodLabel(method: string | null | undefined): string {
   return "Outros";
 }
 
-function TransactionListItem({ transaction }: { transaction: Transaction }) {
+function TransactionListItem({
+  transaction,
+}: {
+  transaction: ExtendedTransaction;
+}) {
   const isIncome = transaction.type === "RECEITA";
 
   // =========================================================================
@@ -146,6 +154,16 @@ function TransactionListItem({ transaction }: { transaction: Transaction }) {
               <>
                 <span>•</span>
                 <span className="truncate">{transaction.clientName}</span>
+              </>
+            )}
+
+            {/* 🔥 RASTREABILIDADE: Assinatura de quem registrou a transação */}
+            {transaction.professionalName && (
+              <>
+                <span>•</span>
+                <span className="flex items-center gap-0.5 font-medium text-emerald-600 dark:text-emerald-400 shrink-0">
+                  <User size="xs" /> {transaction.professionalName}
+                </span>
               </>
             )}
           </span>

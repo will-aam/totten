@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ArrowUpDown, Trash, LoaderDots } from "@boxicons/react"; // 🔥 Novos ícones
+import { ArrowUpDown, Trash, LoaderDots, User } from "@boxicons/react"; // 🔥 Ícone User adicionado
 import {
   ColumnDef,
   SortingState,
@@ -40,9 +40,10 @@ export interface EnrichedCheckIn {
   date_time: string;
   client_name: string;
   client_cpf: string;
+  professional_name?: string | null; // 🔥 RASTREABILIDADE: Novo campo adicionado
 }
 
-// Atualizamos o Item Mobile para aceitar o clique de exclusão
+// Atualizamos o Item Mobile para aceitar o clique de exclusão e exibir quem atendeu
 function MobileHistoryItem({
   checkIn,
   onDelete,
@@ -72,9 +73,17 @@ function MobileHistoryItem({
           <span className="text-sm font-semibold text-foreground leading-none mb-1.5">
             {checkIn.client_name}
           </span>
-          <span className="text-xs text-muted-foreground leading-none capitalize">
-            {formattedDate} às {formattedTime}
-          </span>
+          <div className="flex flex-col gap-1 text-xs text-muted-foreground capitalize">
+            <span>
+              {formattedDate} às {formattedTime}
+            </span>
+            {/* 🔥 RASTREABILIDADE: Selo de quem atendeu */}
+            {checkIn.professional_name && (
+              <span className="flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
+                <User size="xs" /> {checkIn.professional_name}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -114,7 +123,7 @@ export function HistoryTable({
       const result = await deleteCheckIn(ciToDelete.id);
       if (result.success) {
         toast.success("Check-in removido e saldo devolvido ao pacote.");
-        onUpdate(); // 🔥 ADICIONE ESTA LINHA AQUI
+        onUpdate(); // 🔥 Atualiza a tabela chamando a função do componente pai
       } else {
         toast.error(result.error || "Erro ao remover check-in.");
       }
@@ -182,14 +191,25 @@ export function HistoryTable({
           minute: "2-digit",
         });
 
+        const professionalName = row.original.professional_name;
+
         return (
           <div className="flex flex-col px-2">
             <span className="font-medium text-foreground capitalize">
               {formattedDate}
             </span>
-            <span className="text-xs text-muted-foreground">
-              {formattedTime}
-            </span>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+              <span>{formattedTime}</span>
+              {/* 🔥 RASTREABILIDADE na Tabela Desktop */}
+              {professionalName && (
+                <>
+                  <span>•</span>
+                  <span className="flex items-center gap-0.5 font-medium text-emerald-600 dark:text-emerald-400">
+                    <User size="xs" /> {professionalName}
+                  </span>
+                </>
+              )}
+            </div>
           </div>
         );
       },

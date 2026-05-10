@@ -2,36 +2,13 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { requireAuth } from "@/lib/auth"; // 🔥 Substituído pela sua função robusta
 import { revalidatePath } from "next/cache";
 import {
   TransactionType,
   TransactionStatus,
   PaymentMethod,
 } from "@prisma/client";
-
-// 🔥 OTIMIZAÇÃO: Busca apenas o ID necessário para não encher a RAM
-async function getAdminOrg() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) throw new Error("Não autorizado");
-
-  const admin = await prisma.admin.findUnique({
-    where: { email: session.user.email },
-    select: {
-      organizations: {
-        select: { id: true },
-        take: 1,
-      },
-    },
-  });
-
-  if (!admin || admin.organizations.length === 0) {
-    throw new Error("Organização não encontrada");
-  }
-
-  return admin.organizations[0].id;
-}
 
 // --- 1. CRIAR TRANSAÇÃO MANUAL (COM RECORRÊNCIA) ---
 export async function createTransaction(data: {
@@ -46,7 +23,7 @@ export async function createTransaction(data: {
   duration?: number;
 }) {
   try {
-    const organizationId = await getAdminOrg();
+    const admin = await requireAuth();
 
     if (data.isRecurring && data.duration && data.duration > 1) {
       const recurrenceId = `rec_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -67,9 +44,10 @@ export async function createTransaction(data: {
           date: txDate,
           status: i === 0 ? data.status : "PENDENTE",
           payment_method_id: data.paymentMethodId || null,
-          organization_id: organizationId,
+          organization_id: admin.organizationId,
           recurrence_id: recurrenceId,
           installment: `${i + 1}/${data.duration}`,
+          admin_id: admin.id, // 🔥 RASTREABILIDADE
         });
       }
 
@@ -85,7 +63,8 @@ export async function createTransaction(data: {
           date: new Date(data.date + "T12:00:00Z"),
           status: data.status,
           payment_method_id: data.paymentMethodId || null,
-          organization_id: organizationId,
+          organization_id: admin.organizationId,
+          admin_id: admin.id, // 🔥 RASTREABILIDADE
         },
       });
     }
@@ -113,11 +92,11 @@ export async function updateTransaction(
   },
 ) {
   try {
-    const organizationId = await getAdminOrg();
+    const admin = await requireAuth();
 
     const currentTx = await prisma.transaction.findUnique({
-      where: { id, organization_id: organizationId },
-      select: { recurrence_id: true, date: true }, // 🔥 OTIMIZAÇÃO: Trazendo só o que precisa
+      where: { id, organization_id: admin.organizationId },
+      select: { recurrence_id: true, date: true },
     });
 
     if (!currentTx) throw new Error("Transação não encontrada.");
@@ -137,7 +116,7 @@ export async function updateTransaction(
     if (data.updateFuture && currentTx.recurrence_id) {
       await prisma.transaction.updateMany({
         where: {
-          organization_id: organizationId,
+          organization_id: admin.organizationId,
           recurrence_id: currentTx.recurrence_id,
           date: { gt: currentTx.date },
         },
@@ -161,11 +140,11 @@ export async function updateTransaction(
 // --- 3. EXCLUIR TRANSAÇÃO MANUAL ---
 export async function deleteTransaction(id: string, deleteFuture?: boolean) {
   try {
-    const organizationId = await getAdminOrg();
+    const admin = await requireAuth();
 
     const currentTx = await prisma.transaction.findUnique({
-      where: { id, organization_id: organizationId },
-      select: { recurrence_id: true, date: true }, // 🔥 OTIMIZAÇÃO
+      where: { id, organization_id: admin.organizationId },
+      select: { recurrence_id: true, date: true },
     });
 
     if (!currentTx) throw new Error("Transação não encontrada.");
@@ -173,7 +152,7 @@ export async function deleteTransaction(id: string, deleteFuture?: boolean) {
     if (deleteFuture && currentTx.recurrence_id) {
       await prisma.transaction.deleteMany({
         where: {
-          organization_id: organizationId,
+          organization_id: admin.organizationId,
           recurrence_id: currentTx.recurrence_id,
           date: { gte: currentTx.date },
         },
@@ -196,16 +175,15 @@ export async function deleteTransaction(id: string, deleteFuture?: boolean) {
 // --- 4. BUSCAR EXTRATO COMPLETO DO MÊS ---
 export async function getFullTransactions(month: number, year: number) {
   try {
-    const organizationId = await getAdminOrg();
+    const admin = await requireAuth();
 
     const targetMonth = month - 1;
     const monthStart = new Date(year, targetMonth, 1, 0, 0, 0);
     const monthEnd = new Date(year, targetMonth + 1, 0, 23, 59, 59, 999);
 
-    // 🔥 OTIMIZAÇÃO: Usar Select para puxar menos dados (Economia de tráfego)
     const appointments = await prisma.appointment.findMany({
       where: {
-        organization_id: organizationId,
+        organization_id: admin.organizationId,
         status: "REALIZADO",
         date_time: { gte: monthStart, lte: monthEnd },
       },
@@ -215,12 +193,13 @@ export async function getFullTransactions(month: number, year: number) {
         payment_method: true,
         client: { select: { name: true } },
         service: { select: { name: true, price: true, material_cost: true } },
+        professional: { select: { display_name: true } }, // 🔥 RASTREABILIDADE
       },
     });
 
     const manualTransactions = await prisma.transaction.findMany({
       where: {
-        organization_id: organizationId,
+        organization_id: admin.organizationId,
         date: { gte: monthStart, lte: monthEnd },
       },
       select: {
@@ -234,6 +213,7 @@ export async function getFullTransactions(month: number, year: number) {
         installment: true,
         client: { select: { name: true } },
         payment_method: { select: { type: true } },
+        admin: { select: { display_name: true } }, // 🔥 RASTREABILIDADE
       },
     });
 
@@ -251,6 +231,7 @@ export async function getFullTransactions(month: number, year: number) {
         status: (a.payment_method ? "PAGO" : "PENDENTE") as "PAGO" | "PENDENTE",
         clientName: a.client.name,
         paymentMethod: a.payment_method || undefined,
+        professionalName: a.professional?.display_name || undefined, // 🔥
       });
 
       if (a.service.material_cost && Number(a.service.material_cost) > 0) {
@@ -264,6 +245,7 @@ export async function getFullTransactions(month: number, year: number) {
           date: a.date_time.toISOString(),
           status: "PAGO" as const,
           clientName: a.client.name,
+          professionalName: undefined, // Custo de insumo é automático
         });
       }
       return items;
@@ -282,6 +264,7 @@ export async function getFullTransactions(month: number, year: number) {
       paymentMethod: t.payment_method?.type || undefined,
       recurrence_id: t.recurrence_id,
       installment: t.installment,
+      professionalName: t.admin?.display_name || undefined, // 🔥
     }));
 
     return [...historyFromAppts, ...historyFromTx].sort(
@@ -299,10 +282,10 @@ export async function updateTransactionStatus(
   status: TransactionStatus,
 ) {
   try {
-    const organizationId = await getAdminOrg();
+    const admin = await requireAuth();
 
     await prisma.transaction.update({
-      where: { id, organization_id: organizationId },
+      where: { id, organization_id: admin.organizationId },
       data: { status },
     });
 
@@ -318,12 +301,11 @@ export async function updateTransactionStatus(
 // --- 6. BUSCAR CONTAS A RECEBER (PENDENTES) ---
 export async function getPendingReceivables() {
   try {
-    const organizationId = await getAdminOrg();
+    const admin = await requireAuth();
 
-    // 🔥 OTIMIZAÇÃO: Buscando estritamente os dados necessários
     const pendingAppointments = await prisma.appointment.findMany({
       where: {
-        organization_id: organizationId,
+        organization_id: admin.organizationId,
         status: "REALIZADO",
         payment_method: null,
       },
@@ -338,7 +320,7 @@ export async function getPendingReceivables() {
 
     const pendingTransactions = await prisma.transaction.findMany({
       where: {
-        organization_id: organizationId,
+        organization_id: admin.organizationId,
         type: "RECEITA",
         status: "PENDENTE",
       },
@@ -387,23 +369,25 @@ export async function processReceivablePayment(
   paymentMethodId?: string,
 ) {
   try {
-    const organizationId = await getAdminOrg();
+    const admin = await requireAuth();
 
     if (sourceType === "APPOINTMENT") {
       await prisma.appointment.update({
-        where: { id, organization_id: organizationId },
+        where: { id, organization_id: admin.organizationId },
         data: {
           payment_method: paymentMethod as PaymentMethod, // Cast seguro para Enum
           has_charge: false,
+          professional_id: admin.id, // 🔥 Assina o apontamento (baixa no caixa)
         },
       });
       revalidatePath("/admin/agenda");
     } else {
       await prisma.transaction.update({
-        where: { id, organization_id: organizationId },
+        where: { id, organization_id: admin.organizationId },
         data: {
           status: "PAGO",
           payment_method_id: paymentMethodId || null,
+          admin_id: admin.id, // 🔥 Assina quem quitou a pendência
         },
       });
     }
@@ -429,7 +413,7 @@ export async function getPaginatedTransactions(params: {
   search?: string;
 }) {
   try {
-    const organizationId = await getAdminOrg();
+    const admin = await requireAuth();
 
     const targetMonth = params.month - 1;
     const monthStart = new Date(params.year, targetMonth, 1, 0, 0, 0);
@@ -443,13 +427,13 @@ export async function getPaginatedTransactions(params: {
       : { gte: monthStart, lte: monthEnd };
 
     const commonApptWhere: any = {
-      organization_id: organizationId,
+      organization_id: admin.organizationId,
       status: "REALIZADO",
     };
     if (dateFilter) commonApptWhere.date_time = dateFilter;
 
     const commonTxWhere: any = {
-      organization_id: organizationId,
+      organization_id: admin.organizationId,
     };
     if (dateFilter) commonTxWhere.date = dateFilter;
     if (params.type) commonTxWhere.type = params.type;
@@ -468,7 +452,6 @@ export async function getPaginatedTransactions(params: {
       ];
     }
 
-    // OTIMIZAÇÃO: Promise.all rodando as duas consultas em paralelo, trazendo apenas as colunas necessárias
     const [rawAppts, rawTxs] = await Promise.all([
       prisma.appointment.findMany({
         where: commonApptWhere,
@@ -478,6 +461,7 @@ export async function getPaginatedTransactions(params: {
           payment_method: true,
           client: { select: { name: true } },
           service: { select: { name: true, price: true, material_cost: true } },
+          professional: { select: { display_name: true } }, // 🔥
         },
       }),
       prisma.transaction.findMany({
@@ -493,6 +477,7 @@ export async function getPaginatedTransactions(params: {
           installment: true,
           client: { select: { name: true } },
           payment_method: { select: { type: true } },
+          admin: { select: { display_name: true } }, // 🔥
         },
       }),
     ]);
@@ -516,6 +501,7 @@ export async function getPaginatedTransactions(params: {
             | "PENDENTE",
           clientName: a.client.name,
           paymentMethod: a.payment_method || undefined,
+          professionalName: a.professional?.display_name || undefined, // 🔥
         });
       }
 
@@ -553,6 +539,7 @@ export async function getPaginatedTransactions(params: {
       paymentMethod: t.payment_method?.type || undefined,
       recurrence_id: t.recurrence_id,
       installment: t.installment,
+      professionalName: t.admin?.display_name || undefined, // 🔥
     }));
 
     // Une tudo e ordena

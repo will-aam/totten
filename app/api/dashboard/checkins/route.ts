@@ -46,6 +46,12 @@ export async function GET(request: Request) {
             name: true,
           },
         },
+        // 🔥 RASTREABILIDADE: Trazendo o nome de quem atendeu
+        admin: {
+          select: {
+            display_name: true,
+          },
+        },
       },
       orderBy: {
         date_time: "desc",
@@ -67,6 +73,7 @@ export async function GET(request: Request) {
       client_id: checkIn.client?.id ?? "",
       client_name: checkIn.client?.name ?? "Cliente Avulso",
       date_time: checkIn.date_time,
+      professional_name: checkIn.admin?.display_name ?? null, // 🔥 Enviando o nome pro Dashboard
     }));
 
     return NextResponse.json({

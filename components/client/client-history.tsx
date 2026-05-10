@@ -1,14 +1,14 @@
-// components/client/client-history.tsx
 "use client";
 
 import { useRef, useCallback, useEffect } from "react";
 import useSWRInfinite from "swr/infinite";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarCheck, LoaderDots } from "@boxicons/react";
+import { CalendarCheck, LoaderDots, User } from "@boxicons/react"; // 🔥 Importamos o User
 
 export type CheckInType = {
   id: string;
   date_time: string;
+  professional_name?: string | null; // 🔥 RASTREABILIDADE: Novo campo adicionado
 };
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -123,13 +123,23 @@ export function ClientHistory({ clientId }: { clientId: string }) {
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary border border-primary/20">
                     <CalendarCheck className="h-4 w-4" strokeWidth={1.5} />
                   </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-foreground leading-none mb-1.5 capitalize">
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-sm font-semibold text-foreground leading-none capitalize">
                       {formatDate(ci.date_time)}
                     </span>
-                    <span className="text-[11px] text-muted-foreground font-medium leading-none">
-                      Check-in realizado
-                    </span>
+
+                    {/* 🔥 RASTREABILIDADE: Linha de informação */}
+                    <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground font-medium leading-none">
+                      <span>Check-in realizado</span>
+                      {ci.professional_name && (
+                        <>
+                          <span className="text-muted-foreground/40">•</span>
+                          <span className="flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400">
+                            <User size="xs" /> {ci.professional_name}
+                          </span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <span className="text-xs font-medium text-muted-foreground bg-muted/30 px-2.5 py-1 rounded-md">

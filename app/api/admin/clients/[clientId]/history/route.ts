@@ -37,7 +37,7 @@ export async function GET(
       );
     }
 
-    // Busca os check-ins paginados
+    // Busca os check-ins paginados com a assinatura do profissional
     const checkIns = await prisma.checkIn.findMany({
       where: {
         client_id: clientId,
@@ -46,6 +46,12 @@ export async function GET(
       select: {
         id: true,
         date_time: true,
+        // 🔥 RASTREABILIDADE: Busca quem confirmou este check-in
+        admin: {
+          select: {
+            display_name: true,
+          },
+        },
       },
       orderBy: {
         date_time: "desc",
@@ -55,10 +61,17 @@ export async function GET(
     });
 
     const hasMore = checkIns.length > limit;
-    const dataToReturn = hasMore ? checkIns.slice(0, -1) : checkIns;
+    const rawDataToReturn = hasMore ? checkIns.slice(0, -1) : checkIns;
+
+    // Formata os dados para o Front-End
+    const formattedData = rawDataToReturn.map((checkIn) => ({
+      id: checkIn.id,
+      date_time: checkIn.date_time,
+      professional_name: checkIn.admin?.display_name ?? null, // 🔥 Enviando o nome assinado
+    }));
 
     return NextResponse.json({
-      data: dataToReturn,
+      data: formattedData,
       hasMore,
       page,
     });
