@@ -1,4 +1,3 @@
-// components/admin-sidebar.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -54,7 +53,6 @@ type BoxIcon = React.ForwardRefExoticComponent<
   BoxIconProps & React.RefAttributes<SVGSVGElement>
 >;
 
-// Componente auxiliar que troca de pack com transição suave
 function NavIcon({
   icon: Icon,
   isActive,
@@ -68,7 +66,6 @@ function NavIcon({
 }) {
   return (
     <span className="relative flex items-center justify-center transition-all duration-300">
-      {/* Ícone outline — some quando ativo */}
       <Icon
         size={size}
         pack="basic"
@@ -78,7 +75,6 @@ function NavIcon({
           className,
         )}
       />
-      {/* Ícone filled — aparece quando ativo */}
       <Icon
         size={size}
         pack="filled"
@@ -98,24 +94,28 @@ const navItems = [
     href: "/admin/agenda",
     icon: CalendarDetail as BoxIcon,
     active: true,
+    ownerOnly: false, // Colaborador vê a agenda principal
   },
   {
     title: "Histórico Check-in",
     href: "/admin/history",
     icon: ClipboardDetail as BoxIcon,
     active: true,
+    ownerOnly: true, // Colaborador não vê histórico geral
   },
   {
     title: "Vouchers",
     href: "/admin/vouchers",
     icon: Medal as BoxIcon,
     active: true,
+    ownerOnly: true,
   },
   {
     title: "Notas",
     href: "/admin/notes",
     icon: Note as BoxIcon,
     active: true,
+    ownerOnly: true,
   },
 ];
 
@@ -172,6 +172,9 @@ export function AdminSidebar() {
   );
   const whatsappUrl = `https://wa.me/${supportPhone}?text=${supportMessage}`;
 
+  // 🔥 RECUPERANDO A ROLE DA SESSÃO
+  const isOwner = session?.user?.role === "OWNER";
+
   useEffect(() => {
     if (cadastrosSubItems.some((i) => pathname.startsWith(i.href))) {
       setOpenModule("cadastros");
@@ -216,7 +219,6 @@ export function AdminSidebar() {
     }
   };
 
-  // Helpers de isActive por módulo
   const isCadastrosActive = cadastrosSubItems.some((i) =>
     pathname.startsWith(i.href),
   );
@@ -267,304 +269,51 @@ export function AdminSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {/* Resumo Diário */}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname.startsWith("/admin/dashboard")}
-                  className="hover:bg-muted/50"
-                >
-                  <Link
-                    href="/admin/dashboard"
-                    onClick={() => setOpenMobile(false)}
-                  >
-                    <NavIcon
-                      icon={NoteBook}
-                      isActive={pathname.startsWith("/admin/dashboard")}
-                    />
-                    <span>Resumo Diário</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              {/* Cadastros (Collapsible) */}
-              <Collapsible
-                asChild
-                className="group/collapsible w-full"
-                open={openModule === "cadastros"}
-                onOpenChange={(open) =>
-                  setOpenModule(open ? "cadastros" : null)
-                }
-              >
-                <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton
-                      isActive={isCadastrosActive}
-                      className="hover:bg-muted/50"
-                    >
-                      <div className="flex items-center justify-between w-full">
-                        <div className="flex items-center gap-2">
-                          <NavIcon
-                            icon={Database}
-                            isActive={isCadastrosActive}
-                          />
-                          <span>Cadastros</span>
-                        </div>
-                        <ChevronRight
-                          size="xs"
-                          className="text-muted-foreground/50 transition-transform group-data-[state=open]/collapsible:rotate-90"
-                        />
-                      </div>
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub className="border-l border-border ml-4 mt-1">
-                      {cadastrosSubItems.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton
-                            asChild={subItem.active}
-                            isActive={
-                              pathname.startsWith(subItem.href) &&
-                              subItem.active
-                            }
-                            className={cn(
-                              "py-2",
-                              !subItem.active &&
-                                "opacity-50 cursor-not-allowed",
-                            )}
-                          >
-                            {subItem.active ? (
-                              <Link
-                                href={subItem.href}
-                                onClick={() => setOpenMobile(false)}
-                              >
-                                <span className="text-xs">{subItem.title}</span>
-                              </Link>
-                            ) : (
-                              <div className="flex items-center justify-between w-full">
-                                <span className="text-xs">{subItem.title}</span>
-                                <Lock size="xs" className="opacity-50" />
-                              </div>
-                            )}
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </SidebarMenuItem>
-              </Collapsible>
-
-              {/* Demais itens do menu principal */}
-              {navItems.map((item) => {
-                const isActive = pathname.startsWith(item.href) && item.active;
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild={item.active}
-                      isActive={isActive}
-                      className={cn(
-                        "hover:bg-muted/50",
-                        !item.active && "opacity-50 cursor-not-allowed",
-                      )}
-                    >
-                      {item.active ? (
-                        <Link
-                          href={item.href}
-                          onClick={() => setOpenMobile(false)}
-                        >
-                          <NavIcon icon={item.icon} isActive={isActive} />
-                          <span>{item.title}</span>
-                        </Link>
-                      ) : (
-                        <div className="flex items-center justify-between w-full">
-                          <div className="flex items-center gap-2">
-                            <NavIcon icon={item.icon} isActive={false} />
-                            <span>{item.title}</span>
-                          </div>
-                          <Lock size="xs" className="opacity-50" />
-                        </div>
-                      )}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup className="mt-0.5">
-          <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 px-2">
-            Módulos
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {/* Módulo: Agenda */}
-              <Collapsible
-                asChild
-                className="group/collapsible w-full"
-                open={openModule === "agenda"}
-                onOpenChange={(open) => setOpenModule(open ? "agenda" : null)}
-              >
-                <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton
-                      isActive={isAgendaActive}
-                      className="hover:bg-muted/50"
-                    >
-                      <div className="flex items-center justify-between w-full">
-                        <div className="flex items-center gap-2">
-                          <NavIcon
-                            icon={CalendarDetail}
-                            isActive={isAgendaActive}
-                          />
-                          <span>Agenda</span>
-                        </div>
-                        <ChevronRight
-                          size="xs"
-                          className="text-muted-foreground/50 transition-transform group-data-[state=open]/collapsible:rotate-90"
-                        />
-                      </div>
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub className="border-l border-border ml-4 mt-1">
-                      {agendaSubItems.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton
-                            asChild={subItem.active}
-                            isActive={
-                              pathname.startsWith(subItem.href) &&
-                              subItem.active
-                            }
-                            className={cn(
-                              "py-2",
-                              !subItem.active &&
-                                "opacity-50 cursor-not-allowed",
-                            )}
-                          >
-                            {subItem.active ? (
-                              <Link
-                                href={subItem.href}
-                                onClick={() => setOpenMobile(false)}
-                              >
-                                <span className="text-xs">{subItem.title}</span>
-                              </Link>
-                            ) : (
-                              <div className="flex items-center justify-between w-full">
-                                <span className="text-xs">{subItem.title}</span>
-                                <Lock size="xs" className="opacity-50" />
-                              </div>
-                            )}
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </SidebarMenuItem>
-              </Collapsible>
-
-              {/* Módulo: Autoatendimento */}
-              <Collapsible
-                asChild
-                className="group/collapsible w-full"
-                open={openModule === "autoatendimento"}
-                onOpenChange={(open) =>
-                  setOpenModule(open ? "autoatendimento" : null)
-                }
-              >
-                <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton
-                      isActive={isAutoActive}
-                      className="hover:bg-muted/50"
-                    >
-                      <div className="flex items-center justify-between w-full">
-                        <div className="flex items-center gap-2">
-                          <NavIcon icon={Mobile} isActive={isAutoActive} />
-                          <span>Autoatendimento</span>
-                        </div>
-                        <ChevronRight
-                          size="xs"
-                          className="text-muted-foreground/50 transition-transform group-data-[state=open]/collapsible:rotate-90"
-                        />
-                      </div>
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub className="border-l border-border ml-4 mt-1">
-                      {autoatendimentoSubItems.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton
-                            asChild={subItem.active}
-                            isActive={
-                              pathname.startsWith(subItem.href) &&
-                              subItem.active
-                            }
-                            className={cn(
-                              "py-2",
-                              !subItem.active &&
-                                "opacity-50 cursor-not-allowed",
-                            )}
-                          >
-                            {subItem.active ? (
-                              <Link
-                                href={subItem.href}
-                                onClick={() => setOpenMobile(false)}
-                              >
-                                <span className="text-xs">{subItem.title}</span>
-                              </Link>
-                            ) : (
-                              <div className="flex items-center justify-between w-full">
-                                <span className="text-xs">{subItem.title}</span>
-                                <Lock size="xs" className="opacity-50" />
-                              </div>
-                            )}
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </SidebarMenuItem>
-              </Collapsible>
-
-              {/* Módulo: Financeiro */}
-              {isMobile ? (
+              {/* 🔥 SÓ OWNER VÊ DASHBOARD */}
+              {isOwner && (
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
-                    isActive={isFinanceActive}
+                    isActive={pathname.startsWith("/admin/dashboard")}
                     className="hover:bg-muted/50"
                   >
                     <Link
-                      href="/admin/finance/dashboard"
+                      href="/admin/dashboard"
                       onClick={() => setOpenMobile(false)}
                     >
-                      <div className="flex items-center gap-2">
-                        <NavIcon icon={Wallet} isActive={isFinanceActive} />
-                        <span>Financeiro</span>
-                      </div>
+                      <NavIcon
+                        icon={NoteBook}
+                        isActive={pathname.startsWith("/admin/dashboard")}
+                      />
+                      <span>Resumo Diário</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              ) : (
+              )}
+
+              {/* 🔥 SÓ OWNER VÊ CADASTROS */}
+              {isOwner && (
                 <Collapsible
                   asChild
                   className="group/collapsible w-full"
-                  open={openModule === "finance"}
+                  open={openModule === "cadastros"}
                   onOpenChange={(open) =>
-                    setOpenModule(open ? "finance" : null)
+                    setOpenModule(open ? "cadastros" : null)
                   }
                 >
                   <SidebarMenuItem>
                     <CollapsibleTrigger asChild>
                       <SidebarMenuButton
-                        isActive={isFinanceActive}
+                        isActive={isCadastrosActive}
                         className="hover:bg-muted/50"
                       >
                         <div className="flex items-center justify-between w-full">
                           <div className="flex items-center gap-2">
-                            <NavIcon icon={Wallet} isActive={isFinanceActive} />
-                            <span>Financeiro</span>
+                            <NavIcon
+                              icon={Database}
+                              isActive={isCadastrosActive}
+                            />
+                            <span>Cadastros</span>
                           </div>
                           <ChevronRight
                             size="xs"
@@ -575,7 +324,7 @@ export function AdminSidebar() {
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                       <SidebarMenuSub className="border-l border-border ml-4 mt-1">
-                        {financeSubItems.map((subItem) => (
+                        {cadastrosSubItems.map((subItem) => (
                           <SidebarMenuSubItem key={subItem.title}>
                             <SidebarMenuSubButton
                               asChild={subItem.active}
@@ -614,9 +363,286 @@ export function AdminSidebar() {
                   </SidebarMenuItem>
                 </Collapsible>
               )}
+
+              {/* Demais itens do menu principal */}
+              {navItems.map((item) => {
+                if (item.ownerOnly && !isOwner) return null; // 🔥 Esconde os menus restritos do Colaborador
+
+                const isActive = pathname.startsWith(item.href) && item.active;
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild={item.active}
+                      isActive={isActive}
+                      className={cn(
+                        "hover:bg-muted/50",
+                        !item.active && "opacity-50 cursor-not-allowed",
+                      )}
+                    >
+                      {item.active ? (
+                        <Link
+                          href={item.href}
+                          onClick={() => setOpenMobile(false)}
+                        >
+                          <NavIcon icon={item.icon} isActive={isActive} />
+                          <span>{item.title}</span>
+                        </Link>
+                      ) : (
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center gap-2">
+                            <NavIcon icon={item.icon} isActive={false} />
+                            <span>{item.title}</span>
+                          </div>
+                          <Lock size="xs" className="opacity-50" />
+                        </div>
+                      )}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* 🔥 SÓ RENDERIZA "MÓDULOS" SE TIVER ALGO DENTRO PARA MOSTRAR */}
+        {isOwner && (
+          <SidebarGroup className="mt-0.5">
+            <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 px-2">
+              Módulos
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {/* Módulo: Agenda - Apenas SubItems, já que o Colaborador vê o link "Agendamento" direto no root */}
+                <Collapsible
+                  asChild
+                  className="group/collapsible w-full"
+                  open={openModule === "agenda"}
+                  onOpenChange={(open) => setOpenModule(open ? "agenda" : null)}
+                >
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton
+                        isActive={isAgendaActive}
+                        className="hover:bg-muted/50"
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center gap-2">
+                            <NavIcon
+                              icon={CalendarDetail}
+                              isActive={isAgendaActive}
+                            />
+                            <span>Gestão de Agenda</span>
+                          </div>
+                          <ChevronRight
+                            size="xs"
+                            className="text-muted-foreground/50 transition-transform group-data-[state=open]/collapsible:rotate-90"
+                          />
+                        </div>
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub className="border-l border-border ml-4 mt-1">
+                        {agendaSubItems.map((subItem) => (
+                          <SidebarMenuSubItem key={subItem.title}>
+                            <SidebarMenuSubButton
+                              asChild={subItem.active}
+                              isActive={
+                                pathname.startsWith(subItem.href) &&
+                                subItem.active
+                              }
+                              className={cn(
+                                "py-2",
+                                !subItem.active &&
+                                  "opacity-50 cursor-not-allowed",
+                              )}
+                            >
+                              {subItem.active ? (
+                                <Link
+                                  href={subItem.href}
+                                  onClick={() => setOpenMobile(false)}
+                                >
+                                  <span className="text-xs">
+                                    {subItem.title}
+                                  </span>
+                                </Link>
+                              ) : (
+                                <div className="flex items-center justify-between w-full">
+                                  <span className="text-xs">
+                                    {subItem.title}
+                                  </span>
+                                  <Lock size="xs" className="opacity-50" />
+                                </div>
+                              )}
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
+
+                {/* Módulo: Autoatendimento */}
+                <Collapsible
+                  asChild
+                  className="group/collapsible w-full"
+                  open={openModule === "autoatendimento"}
+                  onOpenChange={(open) =>
+                    setOpenModule(open ? "autoatendimento" : null)
+                  }
+                >
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton
+                        isActive={isAutoActive}
+                        className="hover:bg-muted/50"
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center gap-2">
+                            <NavIcon icon={Mobile} isActive={isAutoActive} />
+                            <span>Autoatendimento</span>
+                          </div>
+                          <ChevronRight
+                            size="xs"
+                            className="text-muted-foreground/50 transition-transform group-data-[state=open]/collapsible:rotate-90"
+                          />
+                        </div>
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub className="border-l border-border ml-4 mt-1">
+                        {autoatendimentoSubItems.map((subItem) => (
+                          <SidebarMenuSubItem key={subItem.title}>
+                            <SidebarMenuSubButton
+                              asChild={subItem.active}
+                              isActive={
+                                pathname.startsWith(subItem.href) &&
+                                subItem.active
+                              }
+                              className={cn(
+                                "py-2",
+                                !subItem.active &&
+                                  "opacity-50 cursor-not-allowed",
+                              )}
+                            >
+                              {subItem.active ? (
+                                <Link
+                                  href={subItem.href}
+                                  onClick={() => setOpenMobile(false)}
+                                >
+                                  <span className="text-xs">
+                                    {subItem.title}
+                                  </span>
+                                </Link>
+                              ) : (
+                                <div className="flex items-center justify-between w-full">
+                                  <span className="text-xs">
+                                    {subItem.title}
+                                  </span>
+                                  <Lock size="xs" className="opacity-50" />
+                                </div>
+                              )}
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
+
+                {/* Módulo: Financeiro */}
+                {isMobile ? (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isFinanceActive}
+                      className="hover:bg-muted/50"
+                    >
+                      <Link
+                        href="/admin/finance/dashboard"
+                        onClick={() => setOpenMobile(false)}
+                      >
+                        <div className="flex items-center gap-2">
+                          <NavIcon icon={Wallet} isActive={isFinanceActive} />
+                          <span>Financeiro</span>
+                        </div>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ) : (
+                  <Collapsible
+                    asChild
+                    className="group/collapsible w-full"
+                    open={openModule === "finance"}
+                    onOpenChange={(open) =>
+                      setOpenModule(open ? "finance" : null)
+                    }
+                  >
+                    <SidebarMenuItem>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton
+                          isActive={isFinanceActive}
+                          className="hover:bg-muted/50"
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center gap-2">
+                              <NavIcon
+                                icon={Wallet}
+                                isActive={isFinanceActive}
+                              />
+                              <span>Financeiro</span>
+                            </div>
+                            <ChevronRight
+                              size="xs"
+                              className="text-muted-foreground/50 transition-transform group-data-[state=open]/collapsible:rotate-90"
+                            />
+                          </div>
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub className="border-l border-border ml-4 mt-1">
+                          {financeSubItems.map((subItem) => (
+                            <SidebarMenuSubItem key={subItem.title}>
+                              <SidebarMenuSubButton
+                                asChild={subItem.active}
+                                isActive={
+                                  pathname.startsWith(subItem.href) &&
+                                  subItem.active
+                                }
+                                className={cn(
+                                  "py-2",
+                                  !subItem.active &&
+                                    "opacity-50 cursor-not-allowed",
+                                )}
+                              >
+                                {subItem.active ? (
+                                  <Link
+                                    href={subItem.href}
+                                    onClick={() => setOpenMobile(false)}
+                                  >
+                                    <span className="text-xs">
+                                      {subItem.title}
+                                    </span>
+                                  </Link>
+                                ) : (
+                                  <div className="flex items-center justify-between w-full">
+                                    <span className="text-xs">
+                                      {subItem.title}
+                                    </span>
+                                    <Lock size="xs" className="opacity-50" />
+                                  </div>
+                                )}
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </SidebarMenuItem>
+                  </Collapsible>
+                )}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="p-4 border-t flex flex-col gap-3">
@@ -627,10 +653,10 @@ export function AdminSidebar() {
             </div>
             <div className="flex flex-col">
               <span className="text-sm font-medium leading-none mb-1">
-                Administrador
+                {isOwner ? "Administrador" : "Colaborador(a)"}
               </span>
               <span className="text-[10px] text-muted-foreground leading-none truncate max-w-35">
-                {session?.user?.email || "admin@totten.com"}
+                {session?.user?.email || "usuario@totten.com"}
               </span>
             </div>
           </div>
@@ -646,22 +672,27 @@ export function AdminSidebar() {
           <SidebarMenuButton
             asChild
             tooltip="Suporte"
-            className="flex-1 justify-center bg-transparent hover:bg-transparent text-muted-foreground hover:text-primary"
+            className={cn(
+              "flex-1 justify-center bg-transparent hover:bg-transparent text-muted-foreground hover:text-primary",
+              !isOwner && "hidden", // Esconde suporte para colaborador
+            )}
           >
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
               <HeadphoneMic size="sm" />
             </a>
           </SidebarMenuButton>
 
-          <SidebarMenuButton
-            asChild
-            tooltip="Configurações"
-            className="flex-1 justify-center bg-transparent hover:bg-transparent"
-          >
-            <Link href="/admin/settings" onClick={() => setOpenMobile(false)}>
-              <Cog size="sm" />
-            </Link>
-          </SidebarMenuButton>
+          {isOwner && (
+            <SidebarMenuButton
+              asChild
+              tooltip="Configurações"
+              className="flex-1 justify-center bg-transparent hover:bg-transparent text-muted-foreground hover:text-foreground"
+            >
+              <Link href="/admin/settings" onClick={() => setOpenMobile(false)}>
+                <Cog size="sm" />
+              </Link>
+            </SidebarMenuButton>
+          )}
 
           <SidebarMenuButton
             onClick={handleLogout}

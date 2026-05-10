@@ -1,4 +1,3 @@
-// components/admin-header.tsx
 "use client";
 
 import { useSidebar } from "@/components/ui/sidebar";
@@ -13,6 +12,7 @@ export function AdminHeader({ title }: { title: string }) {
   const { data: session } = useSession();
 
   const slug = session?.user?.organizationSlug;
+  const isOwner = session?.user?.role === "OWNER";
 
   return (
     <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between bg-background/60 px-4 backdrop-blur-md md:px-6">
@@ -51,37 +51,40 @@ export function AdminHeader({ title }: { title: string }) {
       </div>
 
       <div className="flex items-center">
-        <Button
-          asChild
-          variant="secondary"
-          size="sm"
-          className="group h-8 sm:h-9 gap-2 rounded-full font-medium text-xs sm:text-sm shadow-sm border border-border/50 bg-primary/5 hover:bg-primary/10 text-primary transition-all"
-        >
-          <Link href={slug ? `/totem/idle?slug=${slug}` : "/totem/idle"}>
-            <span className="relative flex items-center justify-center w-4 h-4">
-              <CheckShield
-                size="base"
-                removePadding
-                pack="basic"
-                className={cn(
-                  "absolute transition-all duration-300",
-                  "opacity-100 scale-100 group-hover:opacity-0 group-hover:scale-75",
-                )}
-              />
-              <CheckShield
-                size="base"
-                removePadding
-                pack="filled"
-                className={cn(
-                  "absolute transition-all duration-300",
-                  "opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100",
-                )}
-              />
-            </span>
-            <span className="hidden sm:inline">Modo Check-in</span>
-            <span className="sm:hidden">Totem</span>
-          </Link>
-        </Button>
+        {/* 🔥 Só o dono pode acessar/configurar o Totem de Check-in */}
+        {isOwner && (
+          <Button
+            asChild
+            variant="secondary"
+            size="sm"
+            className="group h-8 sm:h-9 gap-2 rounded-full font-medium text-xs sm:text-sm shadow-sm border border-border/50 bg-primary/5 hover:bg-primary/10 text-primary transition-all"
+          >
+            <Link href={slug ? `/totem/idle?slug=${slug}` : "/totem/idle"}>
+              <span className="relative flex items-center justify-center w-4 h-4">
+                <CheckShield
+                  size="base"
+                  removePadding
+                  pack="basic"
+                  className={cn(
+                    "absolute transition-all duration-300",
+                    "opacity-100 scale-100 group-hover:opacity-0 group-hover:scale-75",
+                  )}
+                />
+                <CheckShield
+                  size="base"
+                  removePadding
+                  pack="filled"
+                  className={cn(
+                    "absolute transition-all duration-300",
+                    "opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100",
+                  )}
+                />
+              </span>
+              <span className="hidden sm:inline">Modo Check-in</span>
+              <span className="sm:hidden">Totem</span>
+            </Link>
+          </Button>
+        )}
       </div>
     </header>
   );

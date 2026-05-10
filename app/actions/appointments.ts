@@ -1,4 +1,3 @@
-// app/actions/appointments.ts
 "use server";
 
 import { prisma } from "@/lib/prisma";
@@ -16,6 +15,7 @@ export type CreateAppointmentInput = {
   observations?: string;
   packageId?: string;
   repeatCount?: number;
+  professionalId?: string; // 🔥 ADICIONADO: Quem vai realizar o atendimento
 };
 
 export type CreateAppointmentResult =
@@ -35,6 +35,7 @@ export async function createAppointment(
       observations,
       packageId,
       repeatCount = 1,
+      professionalId, // 🔥 Recebe o profissional do modal
     } = input;
 
     const firstDateTime =
@@ -86,6 +87,7 @@ export async function createAppointment(
             organization_id: admin.organizationId,
             recurrence_id: recurrenceId,
             session_number: packageId ? startSessionNumber + i + 1 : null,
+            professional_id: professionalId || admin.id, // 🔥 SALVA O PROFISSIONAL (Se não enviar, assume quem está logado)
           },
         });
         created.push(appt);

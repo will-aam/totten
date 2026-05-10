@@ -1,4 +1,3 @@
-//lib/auth.ts
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
@@ -10,7 +9,7 @@ export async function getSession() {
 }
 
 /**
- * 🧑‍💼 Retorna os dados do Admin logado (incluindo organization_id)
+ * 🧑‍💼 Retorna os dados do Admin logado (incluindo organization_id e role)
  * Retorna null se não houver sessão ativa
  */
 export async function getCurrentAdmin() {
@@ -24,6 +23,7 @@ export async function getCurrentAdmin() {
     id: session.user.id,
     email: session.user.email,
     name: session.user.name,
+    role: (session.user as any).role || "OWNER", // 🔥 ADICIONADO: Exporta a Role com fallback de segurança
     organizationId: session.user.organizationId,
     organizationName: session.user.organizationName,
   };

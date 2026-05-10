@@ -11,6 +11,7 @@ import { requireAuth } from "@/lib/auth";
 export async function GET(req: NextRequest) {
   try {
     const admin = await requireAuth();
+    const role = (admin as any).role || "OWNER"; // 🔥 Pegamos a Role do usuário logado
 
     const { searchParams } = new URL(req.url);
     const dateParam = searchParams.get("date");
@@ -26,17 +27,24 @@ export async function GET(req: NextRequest) {
     const from = new Date(`${dateParam}T00:00:00.000-03:00`);
     const to = new Date(`${dateParam}T23:59:59.999-03:00`);
 
-    const appointments = await prisma.appointment.findMany({
-      where: {
-        organization_id: admin.organizationId,
-        date_time: {
-          gte: from,
-          lte: to,
-        },
-        status: {
-          in: ["PENDENTE", "CONFIRMADO", "REALIZADO"],
-        },
+    // 🔥 TRAVA DE VISIBILIDADE: Se for colaboradora, filtra só os agendamentos dela
+    const whereClause: any = {
+      organization_id: admin.organizationId,
+      date_time: {
+        gte: from,
+        lte: to,
       },
+      status: {
+        in: ["PENDENTE", "CONFIRMADO", "REALIZADO"],
+      },
+    };
+
+    if (role === "COLLABORATOR") {
+      whereClause.professional_id = admin.id; // Só os agendamentos onde ela é a profissional
+    }
+
+    const appointments = await prisma.appointment.findMany({
+      where: whereClause,
       include: {
         client: true,
         service: true,

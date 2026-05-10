@@ -13,24 +13,24 @@ model Organization {
   slug                String                      @unique
   created_at          DateTime                    @default(now())
   updated_at          DateTime                    @updatedAt
+  anamnesis_responses AnamnesisResponse[]
+  anamnesis_templates AnamnesisTemplate[]
   appointments        Appointment[]
   categories          Category[]
   check_ins           CheckIn[]
+  client_notes        ClientNote[]
   clients             Client[]
-  payment_methods     OrganizationPaymentMethod[]
-  transactions        Transaction[]
   link_bio            LinkBio?
   message_templates   MessageTemplate[]
+  payment_methods     OrganizationPaymentMethod[]
   package_templates   PackageTemplate[]
   packages            Package[]
   service_durations   ServiceDuration[]
   services            Service[]
   settings            Settings?
-  admins              Admin[]                     @relation("AdminToOrganization")
-  anamnesis_templates AnamnesisTemplate[]
-  anamnesis_responses AnamnesisResponse[]
   stock_items         StockItem[]
-  client_notes        ClientNote[]
+  transactions        Transaction[]
+  admins              Admin[]                     @relation("AdminToOrganization")
 
   @@map("organizations")
 }
@@ -45,6 +45,8 @@ model Admin {
   email_verified     Boolean        @default(false)
   reset_token        String?        @unique
   verification_token String?        @unique
+  role               String         @default("OWNER")
+  appointments       Appointment[]  @relation("ProfessionalToAppointment")
   organizations      Organization[] @relation("AdminToOrganization")
 
   @@map("admins")
@@ -105,16 +107,16 @@ model Client {
   street              String?
   number              String?
   organization_id     String
-  active              Boolean             @default(true)
   created_at          DateTime            @default(now())
   updated_at          DateTime            @updatedAt
+  active              Boolean             @default(true)
+  anamnesis_responses AnamnesisResponse[]
   appointments        Appointment[]
   check_ins           CheckIn[]
   notes               ClientNote[]
   organization        Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   packages            Package[]
   transactions        Transaction[]
-  anamnesis_responses AnamnesisResponse[]
 
   @@unique([cpf, organization_id])
   @@map("clients")
@@ -136,16 +138,16 @@ model Service {
   name              String
   description       String?
   duration          Int
-  price             Decimal            @db.Decimal(10, 2)
-  material_cost     Decimal?           @db.Decimal(10, 2)
-  track_stock       Boolean            @default(false)    // 🔥 NOVA COLUNA: Ativa a Baixa Inteligente
+  price             Decimal
   category_id       String
   organization_id   String
   active            Boolean            @default(true)
+  material_cost     Decimal?           @db.Decimal(10, 2)
+  track_stock       Boolean            @default(false)
   appointments      Appointment[]
   package_templates PackageTemplate[]
   packages          Package[]
-  stock_items       ServiceStockItem[]                    // 🔥 Relação com Insumos
+  stock_items       ServiceStockItem[]
   category          Category           @relation(fields: [category_id], references: [id])
   organization      Organization       @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
@@ -180,7 +182,6 @@ model Package {
   client_id       String
   service_id      String
   organization_id String
-  transactions    Transaction[]
   created_at      DateTime      @default(now())
   updated_at      DateTime      @updatedAt
   appointments    Appointment[]
@@ -188,6 +189,7 @@ model Package {
   client          Client        @relation(fields: [client_id], references: [id], onDelete: Cascade)
   organization    Organization  @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   service         Service       @relation(fields: [service_id], references: [id])
+  transactions    Transaction[]
   vouchers        Voucher[]
 
   @@map("packages")
@@ -211,19 +213,21 @@ model Appointment {
   has_charge      Boolean           @default(false)
   session_number  Int?
   observations    String?
-  recurrence_id   String?
   client_id       String
   service_id      String
   package_id      String?
   organization_id String
-  transaction     Transaction?
   created_at      DateTime          @default(now())
   updated_at      DateTime          @updatedAt
+  recurrence_id   String?
+  professional_id String?
   client          Client            @relation(fields: [client_id], references: [id], onDelete: Cascade)
   organization    Organization      @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   package         Package?          @relation(fields: [package_id], references: [id])
+  professional    Admin?            @relation("ProfessionalToAppointment", fields: [professional_id], references: [id])
   service         Service           @relation(fields: [service_id], references: [id])
   check_in        CheckIn?
+  transaction     Transaction?
 
   @@index([organization_id, date_time])
   @@index([client_id, date_time])
@@ -261,6 +265,132 @@ model CheckIn {
   @@map("check_ins")
 }
 
+model OrganizationPaymentMethod {
+  id              String        @id @default(cuid())
+  name            String
+  type            PaymentMethod
+  isActive        Boolean       @default(true)
+  feePercentage   Decimal       @default(0) @db.Decimal(10, 2)
+  feeFixed        Decimal       @default(0) @db.Decimal(10, 2)
+  daysToReceive   Int           @default(0)
+  organization_id String
+  created_at      DateTime      @default(now())
+  updated_at      DateTime      @updatedAt
+  organization    Organization  @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  transactions    Transaction[]
+
+  @@index([organization_id])
+  @@map("organization_payment_methods")
+}
+
+model Transaction {
+  id                String                     @id @default(cuid())
+  type              TransactionType
+  description       String
+  amount            Decimal                    @db.Decimal(10, 2)
+  date              DateTime
+  status            TransactionStatus          @default(PAGO)
+  client_id         String?
+  payment_method_id String?
+  appointment_id    String?                    @unique
+  package_id        String?
+  organization_id   String
+  created_at        DateTime                   @default(now())
+  updated_at        DateTime                   @updatedAt
+  recurrence_id     String?
+  installment       String?
+  stock_item_id     String?
+  appointment       Appointment?               @relation(fields: [appointment_id], references: [id])
+  client            Client?                    @relation(fields: [client_id], references: [id])
+  organization      Organization               @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  package           Package?                   @relation(fields: [package_id], references: [id])
+  payment_method    OrganizationPaymentMethod? @relation(fields: [payment_method_id], references: [id])
+  stock_item        StockItem?                 @relation(fields: [stock_item_id], references: [id])
+
+  @@index([organization_id, date])
+  @@index([recurrence_id])
+  @@map("transactions")
+}
+
+model AnamnesisTemplate {
+  id              String              @id @default(cuid())
+  name            String
+  fields          Json
+  organization_id String
+  active          Boolean             @default(true)
+  created_at      DateTime            @default(now())
+  updated_at      DateTime            @updatedAt
+  responses       AnamnesisResponse[]
+  organization    Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@index([organization_id])
+  @@map("anamnesis_templates")
+}
+
+model AnamnesisResponse {
+  id              String            @id @default(cuid())
+  template_id     String
+  client_id       String
+  organization_id String
+  content         Json
+  signature       String?
+  signed_at       DateTime?
+  created_at      DateTime          @default(now())
+  updated_at      DateTime          @updatedAt
+  client          Client            @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  organization    Organization      @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  template        AnamnesisTemplate @relation(fields: [template_id], references: [id])
+
+  @@index([client_id])
+  @@index([organization_id])
+  @@index([template_id])
+  @@map("anamnesis_responses")
+}
+
+model StockItem {
+  id              String             @id @default(cuid())
+  name            String
+  quantity        Decimal            @db.Decimal(10, 3)
+  unit_cost       Decimal            @db.Decimal(10, 2)
+  isAutoDeduct    Boolean            @default(false)
+  organization_id String
+  created_at      DateTime           @default(now())
+  updated_at      DateTime           @updatedAt
+  was_expensed    Boolean            @default(false)
+  services        ServiceStockItem[]
+  organization    Organization       @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  transactions    Transaction[]
+
+  @@map("stock_items")
+}
+
+model ServiceStockItem {
+  id            String    @id @default(cuid())
+  service_id    String
+  stock_item_id String
+  quantity_used Decimal   @db.Decimal(10, 3)
+  service       Service   @relation(fields: [service_id], references: [id], onDelete: Cascade)
+  stock_item    StockItem @relation(fields: [stock_item_id], references: [id])
+
+  @@unique([service_id, stock_item_id])
+  @@map("service_stock_items")
+}
+
+model ClientNote {
+  id              String       @id @default(cuid())
+  text            String
+  date            DateTime     @default(now())
+  client_id       String
+  organization_id String
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @default(now()) @updatedAt
+  client          Client       @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@index([client_id, date])
+  @@map("client_notes")
+}
+
 enum AppointmentStatus {
   PENDENTE
   CONFIRMADO
@@ -285,141 +415,4 @@ enum TransactionStatus {
   PAGO
   PENDENTE
   ATRASADO
-}
-
-model OrganizationPaymentMethod {
-  id              String        @id @default(cuid())
-  name            String
-  type            PaymentMethod
-  isActive        Boolean       @default(true)
-  feePercentage   Decimal       @default(0) @db.Decimal(10, 2)
-  feeFixed        Decimal       @default(0) @db.Decimal(10, 2)
-  daysToReceive   Int           @default(0)
-  organization_id String
-  created_at      DateTime      @default(now())
-  updated_at      DateTime      @updatedAt
-
-  organization    Organization  @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  transactions    Transaction[]
-
-  @@index([organization_id])
-  @@map("organization_payment_methods")
-}
-
-model Transaction {
-  id                String                     @id @default(cuid())
-  type              TransactionType
-  description       String
-  amount            Decimal                    @db.Decimal(10, 2)
-  date              DateTime
-  status            TransactionStatus          @default(PAGO)
-  
-  recurrence_id     String?
-  installment       String?
-
-  client_id         String?
-  payment_method_id String?
-  appointment_id    String?                    @unique
-  package_id        String?
-  stock_item_id     String?                    // 🔥 Nova Relação: Caso a despesa tenha vindo de uma compra de estoque
-
-  organization_id   String
-
-  created_at        DateTime                   @default(now())
-  updated_at        DateTime                   @updatedAt
-
-  client            Client?                    @relation(fields: [client_id], references: [id], onDelete: SetNull)
-  payment_method    OrganizationPaymentMethod? @relation(fields: [payment_method_id], references: [id], onDelete: SetNull)
-  appointment       Appointment?               @relation(fields: [appointment_id], references: [id], onDelete: SetNull)
-  package           Package?                   @relation(fields: [package_id], references: [id], onDelete: SetNull)
-  stock_item        StockItem?                 @relation(fields: [stock_item_id], references: [id], onDelete: SetNull)
-  organization      Organization               @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-
-  @@index([organization_id, date])
-  @@index([recurrence_id])
-  @@map("transactions")
-}
-
-model AnamnesisTemplate {
-  id              String              @id @default(cuid())
-  name            String
-  fields          Json
-  organization_id String
-  active          Boolean             @default(true)
-  created_at      DateTime            @default(now())
-  updated_at      DateTime            @updatedAt
-
-  organization    Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  responses       AnamnesisResponse[]
-
-  @@map("anamnesis_templates")
-}
-
-model AnamnesisResponse {
-  id              String            @id @default(cuid())
-  template_id     String
-  client_id       String
-  organization_id String
-  content         Json
-  signature       String?           @db.Text
-  signed_at       DateTime?
-  created_at      DateTime          @default(now())
-  updated_at      DateTime          @updatedAt
-
-  template        AnamnesisTemplate @relation(fields: [template_id], references: [id])
-  client          Client            @relation(fields: [client_id], references: [id], onDelete: Cascade)
-  organization    Organization      @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-
-  @@map("anamnesis_responses")
-}
-
-// 🔥 --- NOVAS TABELAS DE ESTOQUE --- 🔥
-
-model StockItem {
-  id              String             @id @default(cuid())
-  name            String
-  quantity        Decimal            @db.Decimal(10, 3) // Permite fracionamento (ex: 0.500)
-  unit_cost       Decimal            @db.Decimal(10, 2)
-  isAutoDeduct    Boolean            @default(false)
-  was_expensed    Boolean            @default(false) 
-  organization_id String
-  created_at      DateTime           @default(now())
-  updated_at      DateTime           @updatedAt
-
-  organization    Organization       @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  services        ServiceStockItem[]
-  transactions    Transaction[]      // Vincula transações de compra a este insumo
-
-  @@map("stock_items")
-}
-
-model ServiceStockItem {
-  id              String    @id @default(cuid())
-  service_id      String
-  stock_item_id   String
-  quantity_used   Decimal   @db.Decimal(10, 3) // Quanto do insumo é gasto em 1 serviço
-
-  service         Service   @relation(fields: [service_id], references: [id], onDelete: Cascade)
-  stock_item      StockItem @relation(fields: [stock_item_id], references: [id], onDelete: Restrict)
-
-  @@unique([service_id, stock_item_id]) // Evita Insumo duplicado no mesmo serviço
-  @@map("service_stock_items")
-}
-// 🔥 --- NOVA TABELA DE ANOTAÇÕES DE CLIENTES --- 🔥
-model ClientNote {
-  id              String       @id @default(cuid())
-  text            String       @db.Text
-  date            DateTime     @default(now())
-  
-  client_id       String
-  organization_id String
-  
-  created_at      DateTime     @default(now())
-  updated_at      DateTime     @updatedAt
-
-  client          Client       @relation(fields: [client_id], references: [id], onDelete: Cascade)
-  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-
-  @@index([client_id, date]) // Índice para busca rápida ao abrir o chat
-  @@map("client_notes")
 }

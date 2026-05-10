@@ -36,10 +36,13 @@ import {
   Plus,
   Package as PackageIcon,
   LoaderDots,
+  User,
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { createAppointment } from "@/app/actions/appointments";
+import { useSession } from "next-auth/react"; // 🔥 Para saber se é OWNER
+import { getTeam } from "@/app/actions/team"; // 🔥 Para puxar a equipe
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -60,6 +63,11 @@ type ActivePackage = {
   used_sessions: number;
   service_id: string;
   active?: boolean;
+};
+
+type TeamMember = {
+  id: string;
+  display_name: string | null;
 };
 
 function generateTimeSlots(openingTime: string, closingTime: string) {
@@ -86,8 +94,11 @@ export const NewAppointmentModal = memo(
     openingTime = "08:00",
     closingTime = "19:00",
     initialDate,
-    initialTime, // 🔥 CORREÇÃO AQUI: faltava desestruturar a prop!
+    initialTime,
   }: NewAppointmentModalProps) => {
+    const { data: session } = useSession(); // 🔥 Sessão atual
+    const isOwner = session?.user?.role === "OWNER";
+
     const [date, setDate] = useState<Date | undefined>(undefined);
     const [time, setTime] = useState<string | undefined>(undefined);
     const [selectedClientId, setSelectedClientId] = useState<
@@ -96,6 +107,13 @@ export const NewAppointmentModal = memo(
     const [selectedServiceId, setSelectedServiceId] = useState<
       string | undefined
     >(undefined);
+
+    // 🔥 Novo estado para o Profissional (já começa com o ID de quem tá logado)
+    const [selectedProfessionalId, setSelectedProfessionalId] = useState<
+      string | undefined
+    >(undefined);
+    const [team, setTeam] = useState<TeamMember[]>([]);
+
     const [isRecurring, setIsRecurring] = useState(false);
     const [repeatCount, setRepeatCount] = useState(2);
     const [saving, setSaving] = useState(false);
@@ -144,7 +162,6 @@ export const NewAppointmentModal = memo(
             data.data?.activePackage ||
             null;
 
-          // Só aceita exibir o pacote se ele for ativo E tiver saldo.
           if (
             pkg &&
             pkg.active !== false &&
@@ -160,12 +177,23 @@ export const NewAppointmentModal = memo(
         }
       }
 
-      if (open) {
-        loadClientPackage();
-      }
+      if (open) loadClientPackage();
     }, [selectedClientId, open]);
 
-    // Limpeza ao fechar
+    // 🔥 Carrega a equipe se for OWNER
+    useEffect(() => {
+      async function fetchTeam() {
+        if (open && isOwner) {
+          const res = await getTeam();
+          if (res.success && res.data) {
+            setTeam(res.data);
+          }
+        }
+      }
+      fetchTeam();
+    }, [open, isOwner]);
+
+    // Limpeza ao fechar e setup inicial
     useEffect(() => {
       if (!open) {
         setSelectedClientId(undefined);
@@ -175,11 +203,14 @@ export const NewAppointmentModal = memo(
         setRepeatCount(2);
         setTime(undefined);
         setActivePackage(null);
+        setSelectedProfessionalId(session?.user?.id); // Reseta pro usuário logado
       } else {
         setDate(initialDate || new Date());
         if (initialTime) setTime(initialTime);
+        if (!selectedProfessionalId)
+          setSelectedProfessionalId(session?.user?.id); // Seta default
       }
-    }, [open, initialDate, initialTime]);
+    }, [open, initialDate, initialTime, session]);
 
     const saldoDisponivel = activePackage
       ? activePackage.total_sessions - activePackage.used_sessions
@@ -203,6 +234,7 @@ export const NewAppointmentModal = memo(
           dateTime: fullDateTime,
           packageId: usePackage && activePackage ? activePackage.id : undefined,
           repeatCount: isRecurring ? repeatCount : 1,
+          professionalId: selectedProfessionalId, // 🔥 ENVIA O PROFISSIONAL
         });
 
         if (!result.success) {
@@ -234,6 +266,37 @@ export const NewAppointmentModal = memo(
           </DialogHeader>
 
           <div className="grid gap-5 py-4">
+            {/* 🔥 PROFISSIONAL (Só aparece para a dona) */}
+            {isOwner && (
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                  Profissional
+                </Label>
+                <Select
+                  value={selectedProfessionalId}
+                  onValueChange={setSelectedProfessionalId}
+                >
+                  <SelectTrigger className="bg-muted/40 border-none rounded-2xl h-12 transition-all">
+                    <User className="mr-2 h-4 w-4 text-primary" />
+                    <SelectValue placeholder="Quem vai atender?" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl border border-border/50 bg-background shadow-xl">
+                    {team.map((member) => (
+                      <SelectItem
+                        key={member.id}
+                        value={member.id}
+                        className="rounded-xl py-2 font-medium"
+                      >
+                        {member.id === session?.user?.id
+                          ? "Eu mesma"
+                          : member.display_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             {/* CLIENTE */}
             <div className="space-y-1.5">
               <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
