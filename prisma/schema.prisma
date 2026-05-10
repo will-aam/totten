@@ -40,14 +40,16 @@ model Admin {
   display_name       String?
   email              String         @unique
   password           String
+  role               String         @default("OWNER")
+  active             Boolean        @default(true) 
+  permissions        String[]       @default([])   
   created_at         DateTime       @default(now())
   updated_at         DateTime       @updatedAt
   email_verified     Boolean        @default(false)
   reset_token        String?        @unique
   verification_token String?        @unique
-  role               String         @default("OWNER")
-  appointments       Appointment[]  @relation("ProfessionalToAppointment")
   organizations      Organization[] @relation("AdminToOrganization")
+  appointments       Appointment[]  @relation("ProfessionalToAppointment")
 
   @@map("admins")
 }

@@ -97,6 +97,13 @@ const navItems = [
     ownerOnly: false, // Colaborador vê a agenda principal
   },
   {
+    title: "Minha Equipe", // 🔥 NOVO ITEM ADICIONADO AQUI
+    href: "/admin/team",
+    icon: Group as BoxIcon,
+    active: true,
+    ownerOnly: true, // Apenas a administradora (Owner) vê
+  },
+  {
     title: "Histórico Check-in",
     href: "/admin/history",
     icon: ClipboardDetail as BoxIcon,

@@ -1,14 +1,15 @@
 "use client";
 
 import { useSidebar } from "@/components/ui/sidebar";
-import { ChevronsRight, ChevronsLeft, CheckShield } from "@boxicons/react";
+
+import { MenuLeft, CheckShield } from "@boxicons/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
 export function AdminHeader({ title }: { title: string }) {
-  const { toggleSidebar, open } = useSidebar();
+  const { toggleSidebar } = useSidebar();
   const { data: session } = useSession();
 
   const slug = session?.user?.organizationSlug;
@@ -19,31 +20,9 @@ export function AdminHeader({ title }: { title: string }) {
       <div className="flex items-center gap-3">
         <button
           onClick={toggleSidebar}
-          className="relative flex items-center justify-center p-1.5 -ml-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-md transition-all active:scale-95 overflow-hidden"
+          className="relative flex items-center justify-center p-1.5 -ml-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-md transition-all active:scale-95"
         >
-          {/* Sidebar aberto → seta esquerda (fechar). Fechado → seta direita (abrir) */}
-          <span className="relative flex items-center justify-center w-6 h-6">
-            <ChevronsRight
-              size="base"
-              removePadding
-              className={cn(
-                "absolute transition-all duration-300 ease-in-out",
-                open
-                  ? "opacity-0 -translate-x-3 scale-75"
-                  : "opacity-100 translate-x-0 scale-100",
-              )}
-            />
-            <ChevronsLeft
-              size="base"
-              removePadding
-              className={cn(
-                "absolute transition-all duration-300 ease-in-out",
-                open
-                  ? "opacity-100 translate-x-0 scale-100"
-                  : "opacity-0 translate-x-3 scale-75",
-              )}
-            />
-          </span>
+          <MenuLeft size="base" removePadding />
           <span className="sr-only">Menu</span>
         </button>
 
@@ -51,7 +30,7 @@ export function AdminHeader({ title }: { title: string }) {
       </div>
 
       <div className="flex items-center">
-        {/* 🔥 Só o dono pode acessar/configurar o Totem de Check-in */}
+        {/* Só o dono pode acessar/configurar o Totem de Check-in */}
         {isOwner && (
           <Button
             asChild

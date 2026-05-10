@@ -9,7 +9,7 @@ export async function getSession() {
 }
 
 /**
- * 🧑‍💼 Retorna os dados do Admin logado (incluindo organization_id e role)
+ * 🧑‍💼 Retorna os dados do Admin logado (incluindo organization_id, role e permissions)
  * Retorna null se não houver sessão ativa
  */
 export async function getCurrentAdmin() {
@@ -23,7 +23,8 @@ export async function getCurrentAdmin() {
     id: session.user.id,
     email: session.user.email,
     name: session.user.name,
-    role: (session.user as any).role || "OWNER", // 🔥 ADICIONADO: Exporta a Role com fallback de segurança
+    role: (session.user as any).role || "OWNER",
+    permissions: (session.user as any).permissions || [], // 🔥 ADICIONADO
     organizationId: session.user.organizationId,
     organizationName: session.user.organizationName,
   };

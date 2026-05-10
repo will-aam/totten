@@ -52,6 +52,14 @@ export const authOptions: NextAuthOptions = {
             );
           }
 
+          // 🔥 NOVA TRAVA: Bloqueia acesso se a dona desativou a colaboradora
+          if (!admin.active) {
+            console.log("❌ Erro: Usuário desativado");
+            throw new Error(
+              "Sua conta foi desativada. Fale com a administração.",
+            );
+          }
+
           console.log("👉 4. Comparando senhas com Bcrypt...");
           const isValidPassword = await bcrypt.compare(
             credentials.password,
@@ -68,7 +76,8 @@ export const authOptions: NextAuthOptions = {
             id: admin.id,
             email: admin.email,
             name: admin.display_name || admin.email,
-            role: admin.role, // 🔥 OBTENDO DO BANCO
+            role: admin.role,
+            permissions: admin.permissions || [], // 🔥 PEGA DO BANCO
             organizationId: admin.organizations[0].id,
             organizationName: admin.organizations[0].name,
             organizationSlug: admin.organizations[0].slug,
@@ -84,7 +93,8 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = (user as any).role; // 🔥 SALVANDO NO TOKEN
+        token.role = (user as any).role;
+        token.permissions = (user as any).permissions; // 🔥 SALVANDO NO TOKEN
         token.organizationId = (user as any).organizationId;
         token.organizationName = (user as any).organizationName;
         token.organizationSlug = (user as any).organizationSlug;
@@ -94,7 +104,8 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (token) {
         session.user.id = token.id as string;
-        session.user.role = token.role as string; // 🔥 ENVIANDO PRO FRONTEND
+        session.user.role = token.role as string;
+        session.user.permissions = (token.permissions as string[]) || []; // 🔥 ENVIANDO PRO FRONTEND
         session.user.organizationId = token.organizationId as string;
         session.user.organizationName = token.organizationName as string;
         session.user.organizationSlug = token.organizationSlug as string;
