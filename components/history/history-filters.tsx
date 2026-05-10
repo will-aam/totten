@@ -4,13 +4,19 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calendar } from "@/components/ui/calendar";
+import { Calendar } from "@/components/ui/calendar"; // 📅 Este é o componente interativo
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarDetail, Search, X } from "@boxicons/react";
+// 🔥 Importamos o ícone de calendário com o apelido 'CalendarIcon' para não dar conflito
+import {
+  Calendar as CalendarIcon,
+  CalendarDetail,
+  Search,
+  X,
+} from "@boxicons/react";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -62,7 +68,8 @@ export function HistoryFilters({
           onClick={handleThisMonth}
           className="h-8 rounded-xl text-xs font-bold bg-background shadow-sm hover:bg-primary/10 hover:text-primary transition-colors"
         >
-          <Calendar className="h-3 w-3 mr-1.5" /> Este Mês
+          {/* 🔥 Usando o Ícone aqui em vez do componente interativo */}
+          <CalendarIcon className="h-4 w-4 mr-1.5" /> Este Mês
         </Button>
         <Button
           variant="outline"
@@ -70,7 +77,8 @@ export function HistoryFilters({
           onClick={handleLastMonth}
           className="h-8 rounded-xl text-xs font-bold bg-background shadow-sm hover:bg-primary/10 hover:text-primary transition-colors"
         >
-          <Calendar className="h-3 w-3 mr-1.5" /> Mês Passado
+          {/* 🔥 Usando o Ícone aqui em vez do componente interativo */}
+          <CalendarIcon className="h-4 w-4 mr-1.5" /> Mês Passado
         </Button>
       </div>
 
@@ -85,7 +93,7 @@ export function HistoryFilters({
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Nome ou CPF (mín. 3 letras)..." // 🔥 UNICA MUDANÇA: Aviso ao usuário
+              placeholder="Nome ou CPF (mín. 3 letras)..."
               className="pl-10 rounded-2xl bg-card border-border/50 h-12 shadow-sm font-medium focus-visible:ring-primary/20"
             />
           </div>
