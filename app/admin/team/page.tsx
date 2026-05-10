@@ -24,6 +24,7 @@ import {
   Trash,
   Block,
   Wallet,
+  ClipboardDetail, // 🔥 Importado para o Histórico
 } from "@boxicons/react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
@@ -289,18 +290,47 @@ export default function TeamPage() {
                 Permissões de Acesso
               </p>
 
+              {/* Padrão (Sempre Ativo) */}
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label className="text-sm font-medium">
                     Agenda & Dashboard
                   </Label>
                   <p className="text-[10px] text-muted-foreground">
-                    Acesso padrão para visualizar a rotina da clínica.
+                    Acesso padrão para visualizar a rotina da empresa.
                   </p>
                 </div>
                 <Switch checked={true} disabled />
               </div>
 
+              {/* Permissão: Histórico */}
+              <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                <div className="space-y-0.5">
+                  <Label className="text-sm font-medium flex items-center gap-1.5">
+                    <ClipboardDetail
+                      size="xs"
+                      className="text-muted-foreground"
+                    />{" "}
+                    Histórico de Check-in
+                  </Label>
+                  <p className="text-[10px] text-muted-foreground">
+                    Pode visualizar todos os atendimentos passados.
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.permissions.includes("HISTORY")}
+                  onCheckedChange={(checked) => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      permissions: checked
+                        ? [...prev.permissions, "HISTORY"]
+                        : prev.permissions.filter((p) => p !== "HISTORY"),
+                    }));
+                  }}
+                />
+              </div>
+
+              {/* Permissão: Financeiro */}
               <div className="flex items-center justify-between pt-2 border-t border-border/50">
                 <div className="space-y-0.5">
                   <Label className="text-sm font-medium flex items-center gap-1.5">
@@ -405,7 +435,6 @@ export default function TeamPage() {
 
 // -----------------------------------------------------------------------------------
 // ⚡ COMPONENTE DE CARD OTIMIZADO
-// Usando `memo` para impedir re-renderizações desnecessárias em telas pesadas
 // -----------------------------------------------------------------------------------
 const TeamMemberCard = memo(
   ({
@@ -421,6 +450,7 @@ const TeamMemberCard = memo(
   }) => {
     const isOwner = member.role === "OWNER";
     const hasFinance = member.permissions.includes("FINANCE");
+    const hasHistory = member.permissions.includes("HISTORY"); // 🔥 Checando permissão de histórico
 
     return (
       <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border border-border/50 bg-card shadow-sm gap-4 transition-all hover:border-border">
@@ -431,7 +461,7 @@ const TeamMemberCard = memo(
           >
             <User size="sm" />
           </div>
-          <div className="flex flex-col items-start gap-1">
+          <div className="flex flex-col items-start gap-1.5">
             <h3
               className={`font-bold text-base flex items-center gap-2 ${!member.active && "opacity-60"}`}
             >
@@ -446,19 +476,31 @@ const TeamMemberCard = memo(
                 </span>
               )}
             </h3>
-            <div className="flex items-center gap-2">
+
+            <div className="flex flex-wrap items-center gap-2">
               <p className="text-sm text-muted-foreground">{member.email}</p>
-              {!isOwner && hasFinance && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 flex items-center gap-1">
-                  <Wallet size="xs" /> Financeiro
-                </span>
+
+              {/* Badges de Permissão Dinâmicos */}
+              {!isOwner && (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {hasHistory && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 flex items-center gap-1">
+                      <ClipboardDetail size="xs" /> Histórico
+                    </span>
+                  )}
+                  {hasFinance && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 flex items-center gap-1">
+                      <Wallet size="xs" /> Financeiro
+                    </span>
+                  )}
+                </div>
               )}
             </div>
           </div>
         </div>
 
         {/* AÇÕES E TAGS */}
-        <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto mt-2 sm:mt-0 pt-2 sm:pt-0 border-t border-border/40 sm:border-0">
+        <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto mt-2 sm:mt-0 pt-2 sm:pt-0 border-t border-border/40 sm:border-0 shrink-0">
           {isOwner ? (
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
               <Shield

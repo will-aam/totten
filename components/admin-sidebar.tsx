@@ -94,7 +94,6 @@ const navItems = [
     href: "/admin/agenda",
     icon: CalendarDetail as BoxIcon,
     active: true,
-    ownerOnly: false, // Colaborador vê a agenda principal
   },
   {
     title: "Minha Equipe",
@@ -108,7 +107,7 @@ const navItems = [
     href: "/admin/history",
     icon: ClipboardDetail as BoxIcon,
     active: true,
-    ownerOnly: true, // Colaborador não vê histórico geral
+    permission: "HISTORY", // 🔥 Agora depende dessa permissão específica
   },
   {
     title: "Vouchers",
@@ -182,7 +181,7 @@ export function AdminSidebar() {
   // 🔥 RECUPERANDO AS REGRAS DA SESSÃO
   const isOwner = session?.user?.role === "OWNER";
   const hasFinancePermission = session?.user?.permissions?.includes("FINANCE");
-  const canViewFinance = isOwner || hasFinancePermission; // ⚡ Libera se for dona OU tiver permissão
+  const canViewFinance = isOwner || hasFinancePermission;
 
   useEffect(() => {
     if (cadastrosSubItems.some((i) => pathname.startsWith(i.href))) {
@@ -278,7 +277,7 @@ export function AdminSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {/* 🔥 AGORA TODOS (OWNER E COLLABORATOR) VEEM O RESUMO DIÁRIO */}
+              {/* Resumo Diário (Todos veem) */}
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
@@ -298,7 +297,7 @@ export function AdminSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              {/* 🔥 SÓ OWNER VÊ CADASTROS */}
+              {/* Cadastros (Apenas Owner) */}
               {isOwner && (
                 <Collapsible
                   asChild
@@ -373,7 +372,16 @@ export function AdminSidebar() {
 
               {/* Demais itens do menu principal */}
               {navItems.map((item) => {
-                if (item.ownerOnly && !isOwner) return null; // 🔥 Esconde os menus restritos do Colaborador
+                // 🔥 Bloqueia se for exclusivo da dona
+                if (item.ownerOnly && !isOwner) return null;
+
+                // 🔥 Bloqueia se exigir uma permissão que a colaboradora não tem
+                if (
+                  item.permission &&
+                  !isOwner &&
+                  !session?.user?.permissions?.includes(item.permission)
+                )
+                  return null;
 
                 const isActive = pathname.startsWith(item.href) && item.active;
                 return (
@@ -553,7 +561,7 @@ export function AdminSidebar() {
                 </Collapsible>
               )}
 
-              {/* ⚡ Módulo: Financeiro - Visível para Owner OU Colaborador com Permissão */}
+              {/* Módulo: Financeiro - Visível para Owner OU Colaborador com Permissão */}
               {canViewFinance &&
                 (isMobile ? (
                   <SidebarMenuItem>
