@@ -218,13 +218,8 @@ export function AdminSidebar() {
 
   const handleLogout = async () => {
     setLoggingOut(true);
-    try {
-      await signOut({ redirect: false });
-      router.push("/totem/idle");
-    } catch (error) {
-      console.error("Erro ao sair:", error);
-      setLoggingOut(false);
-    }
+
+    await signOut({ callbackUrl: "/totem/idle" });
   };
 
   const isCadastrosActive = cadastrosSubItems.some((i) =>
