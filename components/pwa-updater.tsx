@@ -1,4 +1,3 @@
-// componentes/pwa-updater.tsx
 "use client";
 
 import { useEffect } from "react";
@@ -6,24 +5,37 @@ import { toast } from "sonner";
 
 export function PWAUpdater() {
   useEffect(() => {
-    // Verifica se estamos no browser e se o navegador suporta Service Workers
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-      // Este evento é disparado automaticamente quando o novo Service Worker
-      // assume o controlo (devido ao skipWaiting que configurámos)
+      // 1. Escuta quando o NOVO Service Worker assume o controle
       navigator.serviceWorker.addEventListener("controllerchange", () => {
-        // Avisa o cliente para ele saber porque é que o ecrã vai piscar
         toast.info("Atualização disponível", {
           description: "A aplicar a nova versão do Totten...",
           duration: 3000,
         });
 
-        // Dá um pequeno delay de 1.5 segundos para o cliente ler o Toast e força o reload
         setTimeout(() => {
           window.location.reload();
         }, 1500);
       });
+
+      // 2. FORÇA A CHECAGEM POR ATUALIZAÇÕES NO SERVIDOR
+      // Isso é crucial para telas que ficam muito tempo abertas (como Totens)
+      navigator.serviceWorker.ready.then((registration) => {
+        // Opcional: Checa uma vez logo que a página carrega
+        registration.update();
+
+        // Checa silenciosamente a cada 15 minutos se você subiu um novo código
+        setInterval(
+          () => {
+            registration.update().catch((err) => {
+              console.error("Erro ao checar atualizações do PWA:", err);
+            });
+          },
+          15 * 60 * 1000,
+        ); // 15 minutos em milissegundos
+      });
     }
   }, []);
 
-  return null; // Este componente não renderiza nada visualmente, apenas roda a lógica
+  return null;
 }
