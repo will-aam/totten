@@ -243,13 +243,23 @@ export function AdminSidebar() {
           className="flex items-center gap-3"
           onClick={() => setOpenMobile(false)}
         >
-          <div className="flex h-9 w-9 items-center justify-center shrink-0 bg-white rounded-full">
+          <div className="flex h-9 w-9 items-center justify-center shrink-0 bg-white dark:bg-transparent rounded-full overflow-hidden">
+            {/* Logo exibida no TEMA CLARO */}
             <Image
               src="/totten.png"
               alt="Logo"
               width={36}
               height={36}
-              className="rounded-full object-cover"
+              className="rounded-full object-cover dark:hidden block"
+              priority
+            />
+            {/* Logo exibida no TEMA ESCURO */}
+            <Image
+              src="/totten-brac.png"
+              alt="Logo"
+              width={36}
+              height={36}
+              className="rounded-full object-cover hidden dark:block"
               priority
             />
           </div>
