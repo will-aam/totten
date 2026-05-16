@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { AdminHeader } from "@/components/admin-header";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "@boxicons/react";
+import { ChevronLeft } from "@boxicons/react";
 import { PackageForm } from "@/components/packages/package-form";
 
 export default function NewPackagePage() {
@@ -20,7 +20,10 @@ export default function NewPackagePage() {
             className="rounded-full h-10 w-10 shrink-0"
           >
             <Link href="/admin/services?tab=packages">
-              <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+              <ChevronLeft
+                removePadding
+                className="h-9 w-9 text-muted-foreground scale-120"
+              />
             </Link>
           </Button>
           <div className="flex flex-col gap-1">

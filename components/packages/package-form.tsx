@@ -1,16 +1,8 @@
-// components/packages/package-form.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,10 +22,10 @@ import {
   Calendar,
   Save,
   LoaderDots,
-  Sparkles,
   Briefcase,
 } from "@boxicons/react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export function PackageForm() {
   const router = useRouter();
@@ -47,13 +39,12 @@ export function PackageForm() {
     total_sessions: "10",
     price: "",
     validity_days: "90",
-    active: true, // 🔥 Nome do campo sincronizado com o Prisma
-    service_id: "", // 🔥 Campo obrigatório para o banco
+    active: true,
+    service_id: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // 1. Busca serviços para o catálogo de amarração
   useEffect(() => {
     async function loadServices() {
       try {
@@ -101,8 +92,8 @@ export function PackageForm() {
           price: Number(form.price),
           validity_days:
             form.validity_days !== "" ? Number(form.validity_days) : null,
-          active: form.active, // 🔥 Enviando o campo correto
-          service_id: form.service_id, // 🔥 Enviando a amarração
+          active: form.active,
+          service_id: form.service_id,
         }),
       });
 
@@ -122,170 +113,175 @@ export function PackageForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-      <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card">
-        <CardHeader className="px-0 pt-0 md:pt-6 md:px-6 pb-4">
-          <CardTitle className="text-lg flex items-center gap-2">
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col w-full bg-background rounded-none md:rounded-2xl md:bg-card md:border md:shadow-sm md:p-6 pb-8 md:pb-6"
+    >
+      {/* 
+        A interface foi completamente achatada para Mobile. 
+        As linhas divisórias guiam o olhar sem consumir padding desnecessário.
+      */}
+
+      {/* SEÇÃO 1: CABEÇALHO E SERVIÇO */}
+      <div className="flex flex-col gap-6 pb-6 border-b border-border/50">
+        <div>
+          <h2 className="text-lg font-bold flex items-center gap-2 text-foreground">
             <Package className="h-5 w-5 text-primary" />
             Configuração do Pacote
-          </CardTitle>
-          <CardDescription>
-            Vincule este pacote a um serviço base e defina as regras.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="px-0 pb-0 md:pb-6 md:px-6 flex flex-col gap-5">
-          {/* SELEÇÃO DE SERVIÇO */}
-          <div className="flex flex-col gap-2">
-            <Label className="flex items-center gap-2">
-              <Briefcase className="h-4 w-4 text-muted-foreground" /> Serviço
-              Base *
-            </Label>
-            <Select
-              value={form.service_id}
-              onValueChange={(val) => setForm({ ...form, service_id: val })}
-            >
-              <SelectTrigger className="bg-muted/50 h-11">
-                <SelectValue
-                  placeholder={
-                    loadingServices ? "Carregando..." : "Selecione o serviço..."
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {services.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.service_id && (
-              <p className="text-xs text-destructive">{errors.service_id}</p>
-            )}
-          </div>
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Vincule este pacote a um serviço base e defina suas regras.
+          </p>
+        </div>
 
-          <div className="grid md:grid-cols-2 gap-5">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="name">Nome Comercial *</Label>
-              <Input
-                id="name"
-                placeholder="Ex: Combo Fidelidade (10 sessões)"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="bg-muted/50 h-11"
-              />
-              {errors.name && (
-                <p className="text-xs text-destructive">{errors.name}</p>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Label className="flex items-center gap-2">
-                <Layers className="h-4 w-4 text-muted-foreground" /> Qtd.
-                Sessões *
-              </Label>
-              <Input
-                type="number"
-                value={form.total_sessions}
-                onChange={(e) =>
-                  setForm({ ...form, total_sessions: e.target.value })
+        <div className="flex flex-col gap-2">
+          <Label className="flex items-center gap-2">
+            <Briefcase className="h-4 w-4 text-muted-foreground" /> Serviço Base
+            *
+          </Label>
+          <Select
+            value={form.service_id}
+            onValueChange={(val) => setForm({ ...form, service_id: val })}
+          >
+            <SelectTrigger className="bg-muted/30 h-12 rounded-xl border-border/50">
+              <SelectValue
+                placeholder={
+                  loadingServices ? "Carregando..." : "Selecione o serviço..."
                 }
-                className="bg-muted/50 h-11 font-bold"
               />
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="description">Descrição</Label>
-            <Textarea
-              id="description"
-              placeholder="Detalhes sobre o que o pacote inclui..."
-              value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
-              className="bg-muted/50 min-h-20"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card">
-          <CardHeader className="px-0 pt-0 md:pt-6 md:px-6 pb-4">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Dollar className="h-5 w-5 text-primary" /> Preço Total
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-0 pb-0 md:pb-6 md:px-6">
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
-                R$
-              </span>
-              <Input
-                type="number"
-                step="0.01"
-                value={form.price}
-                onChange={(e) => setForm({ ...form, price: e.target.value })}
-                className="bg-muted/50 h-11 pl-9 font-bold text-lg text-primary"
-              />
-            </div>
-            {errors.price && (
-              <p className="text-xs text-destructive mt-1">{errors.price}</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card">
-          <CardHeader className="px-0 pt-0 md:pt-6 md:px-6 pb-4">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-primary" /> Validade
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-0 pb-0 md:pb-6 md:px-6">
-            <div className="relative">
-              <Input
-                type="number"
-                value={form.validity_days}
-                onChange={(e) =>
-                  setForm({ ...form, validity_days: e.target.value })
-                }
-                className="bg-muted/50 h-11 pr-12"
-              />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                dias
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+            </SelectTrigger>
+            <SelectContent className="rounded-xl">
+              {services.map((s) => (
+                <SelectItem key={s.id} value={s.id} className="rounded-lg">
+                  {s.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.service_id && (
+            <p className="text-xs text-destructive">{errors.service_id}</p>
+          )}
+        </div>
       </div>
 
-      <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card">
-        <CardContent className="px-0 pt-0 md:p-6 flex items-center justify-between">
-          <div className="flex flex-col gap-1 pr-4">
-            <Label className="flex items-center gap-2 text-base font-medium">
-              Pacote Ativo
-            </Label>
-            <p className="text-sm text-muted-foreground">
-              Disponível para venda imediatamente após salvar.
-            </p>
+      {/* SEÇÃO 2: DADOS PRINCIPAIS */}
+      <div className="flex flex-col gap-5 py-6 border-b border-border/50">
+        <div className="grid md:grid-cols-2 gap-5">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="name">Nome Comercial *</Label>
+            <Input
+              id="name"
+              placeholder="Ex: Combo Fidelidade (10 sessões)"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className="bg-muted/30 h-12 rounded-xl border-border/50"
+            />
+            {errors.name && (
+              <p className="text-xs text-destructive">{errors.name}</p>
+            )}
           </div>
-          <Switch
-            checked={form.active}
-            onCheckedChange={(checked) => setForm({ ...form, active: checked })}
-          />
-        </CardContent>
-      </Card>
 
-      <div className="flex items-center justify-end gap-3 pt-4 border-t border-border/50">
-        <Button asChild variant="ghost" className="hidden sm:flex">
+          <div className="flex flex-col gap-2">
+            <Label className="flex items-center gap-2">
+              <Layers className="h-4 w-4 text-muted-foreground" /> Qtd. Sessões
+              *
+            </Label>
+            <Input
+              type="number"
+              value={form.total_sessions}
+              onChange={(e) =>
+                setForm({ ...form, total_sessions: e.target.value })
+              }
+              className="bg-muted/30 h-12 rounded-xl border-border/50 font-bold"
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="description">Descrição</Label>
+          <Textarea
+            id="description"
+            placeholder="Detalhes sobre o que o pacote inclui..."
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+            className="bg-muted/30 min-h-24 rounded-xl border-border/50 resize-none"
+          />
+        </div>
+      </div>
+
+      {/* SEÇÃO 3: VALORES E REGRAS (Lado a lado no Desktop) */}
+      <div className="grid md:grid-cols-2 gap-6 py-6 border-b border-border/50">
+        <div className="flex flex-col gap-2">
+          <Label className="flex items-center gap-2">
+            <Dollar className="h-4 w-4 text-primary" /> Preço Total *
+          </Label>
+          <div className="relative">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">
+              R$
+            </span>
+            <Input
+              type="number"
+              step="0.01"
+              value={form.price}
+              onChange={(e) => setForm({ ...form, price: e.target.value })}
+              className="bg-muted/30 h-12 rounded-xl border-border/50 pl-11 font-bold text-lg text-foreground"
+            />
+          </div>
+          {errors.price && (
+            <p className="text-xs text-destructive">{errors.price}</p>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-primary" /> Validade do Pacote
+          </Label>
+          <div className="relative">
+            <Input
+              type="number"
+              value={form.validity_days}
+              onChange={(e) =>
+                setForm({ ...form, validity_days: e.target.value })
+              }
+              className="bg-muted/30 h-12 rounded-xl border-border/50 pr-14"
+            />
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">
+              dias
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* SEÇÃO 4: STATUS (Switch) */}
+      <div className="flex items-center justify-between py-6">
+        <div className="flex flex-col gap-1 pr-4">
+          <Label className="text-base font-bold text-foreground">
+            Pacote Ativo
+          </Label>
+          <p className="text-sm text-muted-foreground leading-snug">
+            Disponível para venda imediatamente.
+          </p>
+        </div>
+        <Switch
+          checked={form.active}
+          onCheckedChange={(checked) => setForm({ ...form, active: checked })}
+          className="data-[state=checked]:bg-primary"
+        />
+      </div>
+
+      {/* BOTÕES DE AÇÃO */}
+      <div className="flex items-center justify-end gap-3 pt-6 md:border-t border-border/50 mt-auto md:mt-0">
+        <Button
+          asChild
+          variant="ghost"
+          className="hidden sm:flex rounded-xl h-12 font-medium"
+        >
           <Link href="/admin/services?tab=packages">Cancelar</Link>
         </Button>
         <Button
           type="submit"
-          size="lg"
           disabled={loading}
-          className="w-full sm:w-auto px-10 font-bold shadow-md"
+          className="w-full sm:w-auto h-12 px-8 rounded-xl font-bold shadow-md transition-all hover:scale-[1.02] active:scale-95"
         >
           {loading ? (
             <LoaderDots className="mr-2 h-5 w-5 animate-spin" />

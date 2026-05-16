@@ -1,7 +1,34 @@
-// app/api/clients/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin } from "@/lib/auth";
+
+// Função auxiliar para tentar prever formatações de CPF e Telefone se o usuário digitar só números
+function getSearchVariations(searchQuery: string) {
+  const variations = [searchQuery];
+  const onlyNumbers = searchQuery.replace(/\D/g, "");
+
+  if (onlyNumbers.length > 0) {
+    // Adiciona a versão "só números" na busca
+    variations.push(onlyNumbers);
+
+    // Se parecer um pedaço de CPF (ex: digitou 123456)
+    if (onlyNumbers.length >= 3 && onlyNumbers.length <= 11) {
+      let cpfFormatted = onlyNumbers.replace(/(\d{3})(\d)/, "$1.$2");
+      cpfFormatted = cpfFormatted.replace(/(\d{3})(\d)/, "$1.$2");
+      cpfFormatted = cpfFormatted.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+      variations.push(cpfFormatted);
+    }
+
+    // Se parecer um telefone (ex: digitou 7999)
+    if (onlyNumbers.length >= 2) {
+      let phoneFormatted = onlyNumbers.replace(/^(\d{2})(\d)/g, "($1) $2");
+      phoneFormatted = phoneFormatted.replace(/(\d)(\d{4})$/, "$1-$2");
+      variations.push(phoneFormatted);
+    }
+  }
+
+  return variations;
+}
 
 export async function GET(request: Request) {
   try {
@@ -23,18 +50,24 @@ export async function GET(request: Request) {
       AND: [{ organization_id: admin.organizationId }],
     };
 
-    // Se o parâmetro active=true for enviado, forçamos o filtro no banco
     if (activeParam === "true") {
       whereClause.AND.push({ active: true });
     }
 
-    // Se houver busca, ela entra como um critério extra dentro do AND
     if (search) {
+      // Pega as possíveis variações do que o usuário digitou
+      const searchVariations = getSearchVariations(search);
+
       whereClause.AND.push({
         OR: [
+          // Busca parcial no Nome (ignorando caixa alta/baixa)
           { name: { contains: search, mode: "insensitive" } },
-          { cpf: { contains: search } },
-          { phone_whatsapp: { contains: search } },
+          // Busca em CPF combinando a busca pura e as formatações estimadas
+          ...searchVariations.map((val) => ({ cpf: { contains: val } })),
+          // Busca em WhatsApp combinando a busca pura e as formatações estimadas
+          ...searchVariations.map((val) => ({
+            phone_whatsapp: { contains: val },
+          })),
         ],
       });
     }
@@ -77,12 +110,10 @@ export async function GET(request: Request) {
     ]);
 
     const formattedClients = clients.map((client) => {
-      // Busca o pacote ativo (com saldo)
       const activePkg = client.packages.find(
         (pkg) => pkg.used_sessions < pkg.total_sessions,
       );
 
-      // Verifica se o cliente tem algum histórico para impedir exclusão acidental
       const hasHistory =
         client._count.appointments > 0 ||
         client._count.check_ins > 0 ||
@@ -113,7 +144,6 @@ export async function GET(request: Request) {
   }
 }
 
-// POST - Cria um novo cliente
 export async function POST(request: Request) {
   try {
     const admin = await getCurrentAdmin();
@@ -140,7 +170,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verifica duplicidade no CPF dentro da mesma organização
     const existingClient = await prisma.client.findUnique({
       where: {
         cpf_organization_id: {

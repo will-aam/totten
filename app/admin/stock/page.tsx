@@ -140,7 +140,8 @@ export default function StockPage() {
   return (
     <>
       <AdminHeader title="Estoque" />
-      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-350 mx-auto w-full pb-24 md:pb-6 relative">
+      {/* 1. Alteramos de max-w-350 para max-w-400 para padronizar com a aba Clientes */}
+      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full sm:max-w-md">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -205,11 +206,12 @@ export default function StockPage() {
           </div>
         ) : (
           <>
-            <div className="hidden md:block">
+            {/* 2. Adicionamos overflow-x-auto, rounded-md e border para evitar cortes visuais */}
+            <div className="hidden md:block overflow-x-auto rounded-md border border-border">
               <StockTable
                 data={filteredAndSortedItems}
                 onUpdateItem={handleUpdateItem}
-                onDeleteItem={(id) => setItemToDelete(id)} // 🔥 Passa o ID para o Estado do Modal
+                onDeleteItem={(id) => setItemToDelete(id)}
               />
             </div>
 
@@ -219,7 +221,7 @@ export default function StockPage() {
                   key={item.id}
                   item={item}
                   onUpdate={handleUpdateItem}
-                  onDelete={(id) => setItemToDelete(id)} // 🔥 Passa o ID para o Estado do Modal
+                  onDelete={(id) => setItemToDelete(id)}
                 />
               ))}
               {filteredAndSortedItems.length === 0 && (
@@ -250,7 +252,6 @@ export default function StockPage() {
         onSave={handleSaveNewItem}
       />
 
-      {/* 🔥 MODAL DE CONFIRMAÇÃO DE EXCLUSÃO NATIVO DO SISTEMA */}
       <AlertDialog
         open={!!itemToDelete}
         onOpenChange={(open) => !open && setItemToDelete(null)}

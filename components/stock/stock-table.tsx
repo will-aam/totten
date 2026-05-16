@@ -1,4 +1,3 @@
-// components/stock/stock-table.tsx
 "use client";
 
 import { useState } from "react";
@@ -25,11 +24,19 @@ export type StockItem = {
 interface StockTableProps {
   data: StockItem[];
   onUpdateItem: (id: string, updates: Partial<StockItem>) => void;
-  onDeleteItem: (id: string) => void; // 🔥 Nova prop
+  onDeleteItem: (id: string) => void;
 }
 
 const hideArrowsClass =
   "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
+
+// 🔥 NOVO: estado visual “editando/focado”
+const editableInputClass =
+  "border-transparent bg-transparent shadow-none " +
+  "hover:border-border/70 hover:bg-muted/20 " +
+  "focus-visible:border-sky-400/70 focus-visible:bg-background " +
+  "focus-visible:ring-2 focus-visible:ring-sky-400/25 focus-visible:ring-offset-0 " +
+  "transition-colors";
 
 export function StockTable({
   data,
@@ -63,7 +70,7 @@ export function StockTable({
             {isEditing ? (
               <Input
                 autoFocus
-                className="h-8 py-0"
+                className={cn("h-8 py-0", editableInputClass)}
                 defaultValue={item.name}
                 onBlur={(e) => {
                   onUpdateItem(item.id, { name: e.target.value });
@@ -71,6 +78,7 @@ export function StockTable({
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") e.currentTarget.blur();
+                  if (e.key === "Escape") setEditingId(null);
                 }}
               />
             ) : (
@@ -102,8 +110,9 @@ export function StockTable({
               type="number"
               step="0.01"
               className={cn(
-                "h-8 w-24 border-transparent bg-transparent hover:border-border focus:bg-background transition-all",
+                "h-8 w-24",
                 hideArrowsClass,
+                editableInputClass, // 🔥 aplicado aqui
               )}
               defaultValue={item.unit_cost}
               onBlur={(e) =>
@@ -113,6 +122,7 @@ export function StockTable({
               }
               onKeyDown={(e) => {
                 if (e.key === "Enter") e.currentTarget.blur();
+                if (e.key === "Escape") e.currentTarget.blur();
               }}
             />
           </div>
@@ -138,8 +148,9 @@ export function StockTable({
               type="number"
               step="0.1"
               className={cn(
-                "h-8 w-24 text-center border-transparent bg-transparent hover:border-border focus:bg-background transition-all",
+                "h-8 w-24 text-center",
                 hideArrowsClass,
+                editableInputClass, // 🔥 aplicado aqui
               )}
               defaultValue={item.quantity}
               onBlur={(e) =>
@@ -149,6 +160,7 @@ export function StockTable({
               }
               onKeyDown={(e) => {
                 if (e.key === "Enter") e.currentTarget.blur();
+                if (e.key === "Escape") e.currentTarget.blur();
               }}
             />
           </div>
@@ -189,7 +201,7 @@ export function StockTable({
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => onDeleteItem(item.id)} // 🔥 Chama a ação
+              onClick={() => onDeleteItem(item.id)}
               className="h-8 w-8 text-muted-foreground hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50"
             >
               <Trash className="h-4 w-4" />

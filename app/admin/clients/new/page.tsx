@@ -1,8 +1,9 @@
+// app/admin/clients/new/page.tsx
 import Link from "next/link";
 import { AdminHeader } from "@/components/admin-header";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "@boxicons/react";
-import { ClientForm } from "@/components/client/client-form"; // Importando o form que você já corrigiu!
+import { ChevronLeft } from "@boxicons/react";
+import { ClientForm } from "@/components/client/client-form";
 
 export default function NewClientPage() {
   return (
@@ -15,10 +16,13 @@ export default function NewClientPage() {
             asChild
             variant="outline"
             size="icon"
-            className="rounded-full h-10 w-10 shrink-0"
+            className="rounded-full h-10 w-10 shrink-0 "
           >
             <Link href="/admin/clients">
-              <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+              <ChevronLeft
+                removePadding
+                className="h-9 w-9 text-muted-foreground scale-120"
+              />
             </Link>
           </Button>
           <div>
