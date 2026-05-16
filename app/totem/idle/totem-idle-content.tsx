@@ -56,14 +56,27 @@ export default function TotemIdleContent() {
 
       <div className="flex flex-col items-center gap-8 w-full max-w-sm animate-in fade-in zoom-in duration-700">
         <div className="flex flex-col items-center gap-4">
-          {/* 🔥 Logo com corte circular perfeito, sem fundo/borda */}
-          <Image
-            src="/totten.png"
-            alt="Totten Logo"
-            width={128} // Mantendo o tamanho definido anteriormente
-            height={128}
-            className="rounded-full overflow-hidden aspect-square h-24 w-24 md:h-32 md:w-32 object-cover animate-pulse-slow" // 🔥 Classes cruciais: rounded-full, overflow-hidden, aspect-square, object-cover
-          />
+          {/* 🔥 Logo com troca dinâmica de tema e sem cortes */}
+          <div className="flex items-center justify-center shrink-0">
+            {/* Logo exibida no TEMA CLARO */}
+            <Image
+              src="/totten.png"
+              alt="Totten Logo"
+              width={128}
+              height={128}
+              className="object-contain h-24 w-24 md:h-32 md:w-32 animate-pulse-slow dark:hidden block"
+              priority
+            />
+            {/* Logo exibida no TEMA ESCURO */}
+            <Image
+              src="/totten-brac.png"
+              alt="Totten Logo"
+              width={128}
+              height={128}
+              className="object-contain h-24 w-24 md:h-32 md:w-32 animate-pulse-slow hidden dark:block"
+              priority
+            />
+          </div>
 
           <div className="space-y-1 text-center min-h-15 flex items-center justify-center w-full">
             {loading || status === "loading" ? (
