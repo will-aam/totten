@@ -4,8 +4,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import useSWR from "swr";
 import useSWRInfinite from "swr/infinite";
 import Link from "next/link";
-import { useSession } from "next-auth/react"; // 🔥 Importado para pegar o nome do usuário logado
 import { AdminHeader } from "@/components/admin-header";
+import { PendingCheckInsCard } from "@/components/admin/pending-checkins-card";
 import {
   Card,
   CardContent,
@@ -21,16 +21,13 @@ import {
   Clock,
   ChevronUp,
   RefreshCw,
-  User, // 🔥 Ícone para a rastreabilidade
+  User,
 } from "@boxicons/react";
 import type { BoxIconProps } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
-import { PendingCheckInsCard } from "@/components/admin/pending-checkins-card";
-
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-// 🔥 Preparando a tipagem para receber quem fez o atendimento
 type CheckIn = {
   id: string;
   client_id: string;
@@ -135,10 +132,6 @@ function CheckInListItem({ checkIn }: { checkIn: CheckIn }) {
 }
 
 export default function AdminDashboardPage() {
-  const { data: session } = useSession(); // 🔥 Puxando a sessão
-  // Pega o primeiro nome (se existir) para deixar o painel amigável
-  const userName = session?.user?.name?.split(" ")[0] || "Líder";
-
   const { data: kpiData, isLoading: isLoadingKpis } = useSWR(
     "/api/dashboard/kpis",
     fetcher,
@@ -149,7 +142,6 @@ export default function AdminDashboardPage() {
     if (previousPageData && !previousPageData.hasMore) return null;
     return `/api/dashboard/checkins?page=${pageIndex + 1}&limit=8`;
   };
-
   const {
     data: checkinsPages,
     isLoading: isLoadingFirstCheckins,
@@ -206,8 +198,8 @@ export default function AdminDashboardPage() {
 
   return (
     <>
-      {/* 🔥 Título Dinâmico de Boas Vindas */}
-      <AdminHeader title={`Olá, ${userName}!`} />
+      {/* 🔥 Título Fixo da Página */}
+      <AdminHeader title="Resumo Diário" />
 
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative">
         <div className="flex overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scroll-smooth md:grid md:grid-cols-3 md:overflow-visible md:pb-0 md:px-0 md:mx-0 gap-4 [&::-webkit-scrollbar]:hidden">
@@ -246,17 +238,18 @@ export default function AdminDashboardPage() {
 
         <PendingCheckInsCard />
 
-        <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card mt-2 md:mt-0">
-          <CardHeader className="px-0 pt-0 md:pt-6 md:px-6">
-            <CardTitle className="flex items-center gap-2 text-card-foreground">
+        <div className="mt-4 md:mt-6 flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5 px-1">
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground tracking-tight">
               <Clock size="sm" className="text-primary" />
               Check-ins de Hoje
-            </CardTitle>
-            <CardDescription>
-              Os últimos registros de presença contabilizados hoje
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="px-0 pb-0 md:pb-6 md:px-6">
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Presenças contabilizadas hoje{" "}
+            </p>
+          </div>
+
+          <div className="w-full">
             {isLoadingFirstCheckins ? (
               <div className="flex flex-col gap-4">
                 {Array.from({ length: 4 }).map((_, i) => (
@@ -294,8 +287,8 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       <button
