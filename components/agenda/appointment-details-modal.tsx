@@ -1,4 +1,3 @@
-// components/agenda/appointment-details-modal.tsx
 "use client";
 
 import React, { useState, useEffect, useRef, memo, useMemo } from "react";
@@ -40,7 +39,7 @@ import {
   LoaderDots,
   Printer,
   Repeat,
-  AlertTriangle, // 🔥 Adicionado ícone de alerta
+  AlertTriangle,
 } from "@boxicons/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -124,9 +123,6 @@ export const AppointmentDetailsModal = memo(
     if (!appointment) return null;
     const isRecurrent = !!appointment.recurrence_id;
 
-    // 🔥 NOVO: Verifica se o pacote do agendamento foi arquivado (com base na prop que a API envia)
-    // Se sua API de agenda ainda não envia o "package.active", vamos considerar appointment.isPackageArchived (se você mapear no backend)
-    // Para garantir de forma burra: vamos checar a prop `appointment.package?.active === false`
     const isPackageArchived =
       appointment.package && appointment.package.active === false;
 
@@ -134,7 +130,6 @@ export const AppointmentDetailsModal = memo(
       targetStatus?: string,
       updateAllSeries = false,
     ) => {
-      // 🔥 NOVO: Defesa no botão de salvar
       const finalStatus = targetStatus || status;
       if (isPackageArchived && finalStatus !== "cancelado") {
         toast.error(
@@ -197,7 +192,7 @@ export const AppointmentDetailsModal = memo(
               ? "ring-2 ring-destructive border-destructive/50"
               : "",
             isPackageArchived &&
-              "ring-2 ring-destructive/80 border-destructive/50", // Borda vermelha se o pacote tiver morto
+              "ring-2 ring-destructive/80 border-destructive/50",
           )}
         >
           <ThermalReceipt
@@ -212,7 +207,7 @@ export const AppointmentDetailsModal = memo(
                 <User className="h-5 w-5 text-primary shrink-0" />
                 <span className="truncate">{appointment.clientName}</span>
               </DialogTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap mt-0.5">
                 <span className="text-muted-foreground text-sm font-medium">
                   {appointment.service}
                 </span>
@@ -224,12 +219,27 @@ export const AppointmentDetailsModal = memo(
                     <Repeat className="h-3 w-3" /> Série
                   </Badge>
                 )}
+
+                {/* 🔥 ETIQUETA DE RASTREABILIDADE DO PROFISSIONAL */}
+                {appointment.professionalName && (
+                  <>
+                    <span className="text-muted-foreground/30 hidden sm:inline">
+                      •
+                    </span>
+                    <Badge
+                      variant="secondary"
+                      className="bg-emerald-100/50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-none flex gap-1 items-center rounded-full px-2 shadow-sm"
+                    >
+                      <User className="h-3 w-3" />
+                      {appointment.professionalName}
+                    </Badge>
+                  </>
+                )}
               </div>
             </div>
           </DialogHeader>
 
-          <div className="flex flex-col gap-5 overflow-y-auto py-2 pr-1">
-            {/* 🔥 NOVO: Alerta de Pacote Arquivado */}
+          <div className="flex flex-col gap-5 overflow-y-auto py-2 pr-1 custom-scrollbar">
             {isPackageArchived &&
               status !== "cancelado" &&
               status !== "realizado" && (
@@ -287,11 +297,7 @@ export const AppointmentDetailsModal = memo(
                 <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">
                   Status
                 </Label>
-                <Select
-                  value={status}
-                  onValueChange={setStatus}
-                  // 🔥 NOVO: Desabilita se o pacote tiver sido arquivado
-                >
+                <Select value={status} onValueChange={setStatus}>
                   <SelectTrigger className="rounded-2xl h-12 bg-muted/20 border-none font-semibold">
                     <SelectValue />
                   </SelectTrigger>
@@ -359,7 +365,7 @@ export const AppointmentDetailsModal = memo(
                   !hasCharge && "bg-muted/20 border-none",
                 )}
                 onClick={() => setHasCharge(!hasCharge)}
-                disabled={status === "realizado" || isPackageArchived} // 🔥 Desabilita cobrança pra pacote morto
+                disabled={status === "realizado" || isPackageArchived}
               >
                 {hasCharge ? "Cobrança Ativa" : "Tudo Pago"}
               </Button>
@@ -424,7 +430,6 @@ export const AppointmentDetailsModal = memo(
 
             <div className="flex-1" />
 
-            {/* 🔥 NOVO: Esconde o botão de Salvar se o pacote foi arquivado e o status não é de cancelamento */}
             {!showSaveOptions ? (
               <Button
                 onClick={() =>
