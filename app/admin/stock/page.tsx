@@ -184,7 +184,7 @@ export default function StockPage() {
 
             <Button
               onClick={() => setIsModalOpen(true)}
-              className="rounded-full md:rounded-md shadow-sm flex-1 sm:w-auto font-semibold"
+              className="h-12 px-8 rounded-xl font-medium shadow-sm"
             >
               <Plus className="mr-2 h-4 w-4" /> Cadastrar
             </Button>

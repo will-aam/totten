@@ -137,6 +137,7 @@ export function MessageSettings() {
                 onClick={() =>
                   toast.info("Recurso de criar novos modelos em breve!")
                 }
+                className="h-12 px-8 rounded-xl font-medium shadow-sm"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Modelo
@@ -144,7 +145,7 @@ export function MessageSettings() {
               <Button
                 onClick={handleSaveAll}
                 disabled={saving}
-                className={` ${isMobile ? "hidden" : "max-w-xs"}`}
+                className="h-12 px-8 rounded-xl font-medium shadow-sm"
               >
                 {saving ? (
                   <>

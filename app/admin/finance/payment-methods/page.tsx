@@ -185,7 +185,7 @@ export default function PaymentMethodsPage() {
           </div>
 
           <Button
-            className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground justify-center mt-2 sm:mt-0"
+            className="h-12 px-8 rounded-xl font-medium shadow-sm"
             onClick={handleNewPaymentMethod}
           >
             <PlusCircle size="sm" className="mr-2" />

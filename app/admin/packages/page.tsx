@@ -338,7 +338,7 @@ export default function PackagesPage() {
           </div>
           <Button
             onClick={() => router.push("/admin/clients")}
-            className="h-12 w-12 md:w-auto md:px-6 rounded-2xl font-bold shadow-md active:scale-90 transition-all"
+            className="h-12 px-8 rounded-xl font-medium shadow-sm"
           >
             <Plus className="h-5 w-5 md:mr-2" />
             <span className="hidden md:inline">Nova Venda</span>

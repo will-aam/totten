@@ -1,9 +1,8 @@
-// app/admin/clients/new/page.tsx
 import Link from "next/link";
 import { AdminHeader } from "@/components/admin-header";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "@boxicons/react";
-import { ClientForm } from "@/components/client/client-form";
+import { ClientForm } from "@/components/client/client-form"; // Importando o form que você já corrigiu!
 
 export default function NewClientPage() {
   return (

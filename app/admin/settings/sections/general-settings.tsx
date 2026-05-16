@@ -179,7 +179,11 @@ export function GeneralSettings() {
           <div
             className={`flex ${isMobile ? "hidden" : "justify-end items-center gap-2 shrink-0"}`}
           >
-            <Button onClick={handleSave} disabled={saving} className="min-w-32">
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="h-12 px-8 rounded-xl font-medium shadow-sm"
+            >
               {saving ? (
                 <>
                   <LoaderDots className="mr-2 h-4 w-4 animate-spin" />

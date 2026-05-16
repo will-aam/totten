@@ -82,7 +82,7 @@ export function SecuritySettings() {
             <Button
               onClick={handleChangePassword}
               disabled={loading}
-              className={`${isMobile ? "hidden" : "max-w-xs"}`}
+              className="h-12 px-8 rounded-xl font-medium shadow-sm"
             >
               {loading ? (
                 <>

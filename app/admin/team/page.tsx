@@ -200,7 +200,7 @@ export default function TeamPage() {
           </div>
           <Button
             onClick={openCreate}
-            className="h-11 rounded-xl font-bold shrink-0 shadow-sm"
+            className="h-12 px-8 rounded-xl font-medium shadow-sm"
           >
             <UserPlus size="sm" className="mr-2" />
             Novo Acesso

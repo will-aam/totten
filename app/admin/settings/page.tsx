@@ -1,4 +1,3 @@
-// app/admin/settings/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -39,50 +38,51 @@ export default function AdminSettingsPage() {
     <>
       <AdminHeader title="Configurações do Sistema" />
 
-      {/* 🔥 1. LARGURA FLUIDA: Trocamos max-w-5xl por max-w-400 para acompanhar monitores grandes */}
+      {/* LARGURA FLUIDA: Trocamos max-w-5xl por max-w-400 para acompanhar monitores grandes */}
       {/* Adicionado min-h para empurrar o botão de salvar sempre pro fundo */}
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-32 md:pb-12 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
-        {/* Usamos value e onValueChange para controlar as Tabs programaticamente */}
         <Tabs
           value={activeTab}
           onValueChange={setActiveTab}
           className="w-full flex-1 flex flex-col"
         >
-          {/* 🔥 2. MENU DESKTOP PREMIUM: Arredondado, h-14, fundo suave */}
-          <TabsList className="hidden md:grid w-full grid-cols-5 bg-muted/40 h-14 rounded-2xl p-1 border border-border/50 shadow-sm">
-            <TabsTrigger
-              value="general"
-              className="flex gap-2 rounded-xl font-bold h-full data-[state=active]:shadow-sm transition-all"
-            >
-              <Building className="h-4 w-4" /> Geral
-            </TabsTrigger>
-            <TabsTrigger
-              value="appearance"
-              className="flex gap-2 rounded-xl font-bold h-full data-[state=active]:shadow-sm transition-all"
-            >
-              <Palette className="h-4 w-4" /> Aparência
-            </TabsTrigger>
-            <TabsTrigger
-              value="messages"
-              className="flex gap-2 rounded-xl font-bold h-full data-[state=active]:shadow-sm transition-all"
-            >
-              <Whatsapp className="h-4 w-4" /> Mensagens
-            </TabsTrigger>
-            <TabsTrigger
-              value="notifications"
-              className="flex gap-2 rounded-xl font-bold h-full data-[state=active]:shadow-sm transition-all"
-            >
-              <Bell className="h-4 w-4" /> Notificações
-            </TabsTrigger>
-            <TabsTrigger
-              value="security"
-              className="flex gap-2 rounded-xl font-bold h-full data-[state=active]:shadow-sm transition-all"
-            >
-              <CheckShield className="h-4 w-4" /> Acesso
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            {/* 🔥 DESIGN IGUAL AO ARQUIVO SERVICES: Grid menor, p-1 bg-muted, rounded-xl e triggers com py-2 */}
+            <TabsList className="hidden md:grid w-full lg:w-200 grid-cols-5 h-auto gap-1 bg-muted p-1 rounded-xl">
+              <TabsTrigger
+                value="general"
+                className="flex items-center gap-2 py-2 rounded-lg"
+              >
+                <Building size="sm" /> Geral
+              </TabsTrigger>
+              <TabsTrigger
+                value="appearance"
+                className="flex items-center gap-2 py-2 rounded-lg"
+              >
+                <Palette size="sm" /> Aparência
+              </TabsTrigger>
+              <TabsTrigger
+                value="messages"
+                className="flex items-center gap-2 py-2 rounded-lg"
+              >
+                <Whatsapp size="sm" /> Mensagens
+              </TabsTrigger>
+              <TabsTrigger
+                value="notifications"
+                className="flex items-center gap-2 py-2 rounded-lg"
+              >
+                <Bell size="sm" /> Notificações
+              </TabsTrigger>
+              <TabsTrigger
+                value="security"
+                className="flex items-center gap-2 py-2 rounded-lg"
+              >
+                <CheckShield size="sm" /> Acesso
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-          <div className="mt-2 flex-1">
+          <div className="flex-1">
             <TabsContent
               value="general"
               className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500"

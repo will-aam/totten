@@ -1,3 +1,4 @@
+// app/admin/services/page.tsx
 "use client";
 
 import { Suspense, useState } from "react";
@@ -168,7 +169,10 @@ function ServicesTabs() {
                 Gerencie o catálogo de serviços do sistema.
               </p>
             </div>
-            <Button asChild className="rounded-full shadow-sm">
+            <Button
+              asChild
+              className="h-12 px-8 rounded-xl font-medium shadow-sm"
+            >
               <Link href="/admin/services/new">
                 <Plus className="mr-2 h-4 w-4" /> Novo Serviço
               </Link>
@@ -269,7 +273,10 @@ function ServicesTabs() {
                 Modelos para vender múltiplas sessões.
               </p>
             </div>
-            <Button asChild className="rounded-full shadow-sm">
+            <Button
+              asChild
+              className="h-12 px-8 rounded-xl font-medium shadow-sm"
+            >
               <Link href="/admin/packages/new">
                 <Plus className="mr-2 h-4 w-4" /> Novo Pacote
               </Link>

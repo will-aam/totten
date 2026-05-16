@@ -1,4 +1,3 @@
-// components/client/client-form.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -20,12 +19,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Calendar } from "@/components/ui/calendar";
+import { Calendar } from "@/components/ui/calendar"; // O calendário bonito
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@/components/ui/popover"; // O popup bonito
 import {
   User,
   Phone,
@@ -35,6 +34,7 @@ import {
   Pin,
   ChevronDown,
   CreditCard,
+  Calendar as CalendarIcon, // O ícone
 } from "@boxicons/react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -103,7 +103,6 @@ export function ClientForm() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Busca templates de pacotes ativos
   useEffect(() => {
     const fetchTemplates = async () => {
       try {
@@ -137,7 +136,6 @@ export function ClientForm() {
 
     setLoading(true);
     try {
-      // 1. Criar Cliente (Enviando também os campos de endereço)
       const clientRes = await fetch("/api/clients", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -160,7 +158,6 @@ export function ClientForm() {
       if (!clientRes.ok)
         throw new Error(clientData.error || "Erro ao criar cliente");
 
-      // 2. Criar Pacote vinculado ao cliente
       if (form.package_template_id !== "none") {
         const template = packageTemplates.find(
           (t) => t.id === form.package_template_id,
@@ -205,7 +202,6 @@ export function ClientForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4 md:gap-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8 items-start">
-        {/* DADOS DO CLIENTE */}
         <div className="lg:col-span-2 flex flex-col gap-4">
           <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card">
             <CardHeader className="px-0 pt-0 md:pt-6 md:px-6">
@@ -220,7 +216,7 @@ export function ClientForm() {
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   placeholder="Ex: Maria Oliveira"
-                  className="h-11 bg-muted/30"
+                  className="h-11 bg-muted/30 rounded-xl"
                 />
                 {errors.name && (
                   <p className="text-xs text-destructive">{errors.name}</p>
@@ -241,7 +237,7 @@ export function ClientForm() {
                       })
                     }
                     placeholder="(00) 00000-0000"
-                    className="h-11 bg-muted/30"
+                    className="h-11 bg-muted/30 rounded-xl"
                   />
                   {errors.phone_whatsapp && (
                     <p className="text-xs text-destructive">
@@ -259,7 +255,7 @@ export function ClientForm() {
                       setForm({ ...form, cpf: formatCpfInput(e.target.value) })
                     }
                     placeholder="000.000.000-00"
-                    className="h-11 bg-muted/30"
+                    className="h-11 bg-muted/30 rounded-xl"
                   />
                   {errors.cpf && (
                     <p className="text-xs text-destructive">{errors.cpf}</p>
@@ -292,7 +288,6 @@ export function ClientForm() {
                   </Button>
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-4 space-y-6">
-                  {/* Seção Contato/Nascimento */}
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Nascimento</Label>
@@ -300,15 +295,20 @@ export function ClientForm() {
                         <PopoverTrigger asChild>
                           <Button
                             variant="outline"
-                            className="w-full justify-start h-11 bg-muted/30"
+                            className="w-full justify-start h-11 bg-muted/30 rounded-xl font-normal"
                           >
-                            <Calendar className="mr-2 h-4 w-4" />
+                            <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
                             {form.birth_date
                               ? format(form.birth_date, "dd/MM/yyyy")
                               : "Selecionar data"}
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="p-0 w-auto">
+                        {/* AQUI ESTÁ O SEGREDO DO VISUAL BONITO DO POPOVER */}
+                        <PopoverContent
+                          className="w-auto p-0 rounded-3xl border-none shadow-2xl"
+                          align="start"
+                        >
+                          {/* AQUI ESTÁ O SEGREDO DO CALENDÁRIO DA SHADCN */}
                           <Calendar
                             mode="single"
                             selected={form.birth_date}
@@ -316,9 +316,7 @@ export function ClientForm() {
                               setForm({ ...form, birth_date: d })
                             }
                             locale={ptBR}
-                            captionLayout="dropdown"
-                            fromYear={1930}
-                            toYear={new Date().getFullYear()}
+                            initialFocus
                           />
                         </PopoverContent>
                       </Popover>
@@ -331,12 +329,11 @@ export function ClientForm() {
                           setForm({ ...form, email: e.target.value })
                         }
                         placeholder="email@exemplo.com"
-                        className="h-11 bg-muted/30"
+                        className="h-11 bg-muted/30 rounded-xl"
                       />
                     </div>
                   </div>
 
-                  {/* 🔥 Nova Seção: Endereço */}
                   <div className="space-y-4 border-t pt-4">
                     <h4 className="text-sm font-semibold flex items-center gap-2 text-muted-foreground">
                       <Pin className="h-4 w-4" /> Endereço
@@ -354,7 +351,7 @@ export function ClientForm() {
                             })
                           }
                           placeholder="00000-000"
-                          className="h-11 bg-muted/30"
+                          className="h-11 bg-muted/30 rounded-xl"
                         />
                       </div>
                       <div className="space-y-2 sm:col-span-2">
@@ -364,7 +361,7 @@ export function ClientForm() {
                           onChange={(e) =>
                             setForm({ ...form, city: e.target.value })
                           }
-                          className="h-11 bg-muted/30"
+                          className="h-11 bg-muted/30 rounded-xl"
                         />
                       </div>
                     </div>
@@ -378,7 +375,7 @@ export function ClientForm() {
                             setForm({ ...form, street: e.target.value })
                           }
                           placeholder="Ex: Avenida Beira Mar"
-                          className="h-11 bg-muted/30"
+                          className="h-11 bg-muted/30 rounded-xl"
                         />
                       </div>
                       <div className="space-y-2 sm:col-span-1">
@@ -389,7 +386,7 @@ export function ClientForm() {
                             setForm({ ...form, number: e.target.value })
                           }
                           placeholder="Ex: 123"
-                          className="h-11 bg-muted/30"
+                          className="h-11 bg-muted/30 rounded-xl"
                         />
                       </div>
                     </div>
@@ -400,7 +397,6 @@ export function ClientForm() {
           </Card>
         </div>
 
-        {/* PACOTE (SELEÇÃO DIRETA DO CATÁLOGO) */}
         <div className="lg:col-span-1">
           <Card className="border-2 border-primary/10 shadow-md sticky top-4">
             <CardHeader>
@@ -417,7 +413,7 @@ export function ClientForm() {
                     setForm({ ...form, package_template_id: v })
                   }
                 >
-                  <SelectTrigger className="h-11 bg-muted/30">
+                  <SelectTrigger className="h-11 bg-muted/30 rounded-xl">
                     <SelectValue placeholder="Selecione um pacote..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -460,21 +456,22 @@ export function ClientForm() {
         </div>
       </div>
 
-      <div className="flex justify-end gap-3 pt-6 border-t">
-        <Button asChild variant="ghost" className="rounded-xl">
+      {/* Botões no final do formulário */}
+      <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t">
+        <Button
+          asChild
+          variant="ghost"
+          className="h-12 px-8 rounded-xl font-medium"
+        >
           <Link href="/admin/clients">Cancelar</Link>
         </Button>
+
         <Button
           type="submit"
           disabled={loading}
-          className="px-8 h-12 rounded-xl font-bold shadow-lg"
+          className="h-12 px-8 rounded-xl font-medium shadow-sm"
         >
-          {loading ? (
-            <LoaderDots className="animate-spin mr-2" />
-          ) : (
-            <CheckCircle className="mr-2" />
-          )}
-          Finalizar Cadastro
+          {loading ? "Salvando..." : "Finalizar Cadastro"}
         </Button>
       </div>
     </form>

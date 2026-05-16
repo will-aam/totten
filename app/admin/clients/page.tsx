@@ -247,7 +247,7 @@ export default function AdminClientsPage() {
           </div>
           <Button
             asChild
-            className="rounded-full md:rounded-md shadow-sm w-full sm:w-auto"
+            className="h-12 px-8 rounded-xl font-medium shadow-sm"
           >
             <Link href="/admin/clients/new">
               <Plus className="mr-2 h-4 w-4" />
