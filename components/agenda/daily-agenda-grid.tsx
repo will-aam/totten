@@ -30,6 +30,7 @@ import {
   CalendarAlt,
   Check,
   Plus,
+  User, // 🔥 Importamos o ícone User
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -60,6 +61,7 @@ export interface Appointment {
     used_sessions: number;
     active?: boolean;
   } | null;
+  professionalName?: string | null; // 🔥 Nova propriedade para a Rastreabilidade na Agenda
 }
 
 interface DailyAgendaGridProps {
@@ -68,8 +70,8 @@ interface DailyAgendaGridProps {
   onRefresh: () => void;
   startHour?: number;
   endHour?: number;
-  onEmptySlotClick?: (time: string) => void; // 🔥 Nova prop para clique no fundo
-  onQuickConfirm?: (appt: Appointment) => void; // 🔥 Nova prop para ação rápida
+  onEmptySlotClick?: (time: string) => void;
+  onQuickConfirm?: (appt: Appointment) => void;
 }
 
 const cleanPhone = (phone: string) => {
@@ -122,9 +124,22 @@ function AppointmentCardContent({
               {appt.clientName}
             </span>
           </div>
-          <span className="text-[11px] font-semibold opacity-80 truncate uppercase tracking-wider">
-            {appt.service}
-          </span>
+
+          <div className="flex flex-col gap-1 mt-0.5">
+            <span className="text-[11px] font-semibold opacity-80 truncate uppercase tracking-wider leading-none">
+              {appt.service}
+            </span>
+
+            {/* 🔥 ETIQUETA DO PROFISSIONAL (Aparece se houver atribuição) */}
+            {appt.professionalName && (
+              <div className="flex items-center gap-1 mt-0.5 bg-background/40 w-fit px-1.5 py-0.5 rounded text-[9px] font-semibold text-foreground/80 backdrop-blur-sm border border-border/30">
+                <User className="h-3 w-3" />
+                <span className="truncate max-w-20">
+                  {appt.professionalName.split(" ")[0]}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -163,6 +178,8 @@ function DraggableAppointmentCard({
   appt,
   top,
   height,
+  width = "calc(100% - 24px)", // 🔥 Valor padrão (100% menos margens)
+  left = "8px", // 🔥 Valor padrão
   onClick,
   onWhatsApp,
   onQuickConfirm,
@@ -170,6 +187,8 @@ function DraggableAppointmentCard({
   appt: Appointment;
   top: number;
   height: number;
+  width?: string;
+  left?: string;
   onClick: () => void;
   onWhatsApp: (e: React.MouseEvent) => void;
   onQuickConfirm?: (appt: Appointment) => void;
@@ -191,12 +210,12 @@ function DraggableAppointmentCard({
     position: "absolute",
     top: `${top}px`,
     height: `${height}px`,
-    left: "8px",
-    right: "16px",
+    left,
+    width,
     zIndex: isDragging ? 0 : 10,
     opacity: isDragging ? 0 : 1,
     touchAction: "none",
-    pointerEvents: "auto", // 🔥 Garante que os cards sejam interativos sobre a grade clicável
+    pointerEvents: "auto",
   };
 
   return (
@@ -207,7 +226,7 @@ function DraggableAppointmentCard({
       {...(!isLocked ? attributes : {})}
       className={cn(
         !isLocked ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
-        "group", // Adicionado group aqui para o hover state dos botões
+        "group",
       )}
       onClick={(e) => {
         if (e.defaultPrevented) return;
@@ -216,7 +235,6 @@ function DraggableAppointmentCard({
     >
       {!isLocked && (
         <div className="absolute top-2 right-2 z-50 flex items-center gap-1">
-          {/* 🔥 QUICK ACTION: Confirmar */}
           {appt.status === "PENDENTE" && (
             <Button
               size="icon"
@@ -237,7 +255,6 @@ function DraggableAppointmentCard({
             </Button>
           )}
 
-          {/* 🔥 QUICK ACTION: WhatsApp */}
           <Button
             size="icon"
             variant="ghost"
@@ -376,6 +393,60 @@ export function DailyAgendaGrid({
     [activeId, appointments],
   );
 
+  // =========================================================================
+  // 🔥 ALGORITMO DE COLISÃO (OVERLAPS): Impede que os cards fiquem em cima do outro
+  // =========================================================================
+  const positionedAppts = useMemo(() => {
+    const timeToMinutes = (timeStr: string) => {
+      const [h, m] = timeStr.split(":").map(Number);
+      return h * 60 + m;
+    };
+
+    const sortedAppts = [...appointments].sort(
+      (a, b) => timeToMinutes(a.time) - timeToMinutes(b.time),
+    );
+
+    const columns: { appt: Appointment; start: number; end: number }[][] = [];
+
+    sortedAppts.forEach((appt) => {
+      const start = timeToMinutes(appt.time);
+      const end = start + appt.duration;
+
+      let placed = false;
+      for (let i = 0; i < columns.length; i++) {
+        const lastInCol = columns[i][columns[i].length - 1];
+        if (lastInCol.end <= start) {
+          columns[i].push({ appt, start, end });
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        columns.push([{ appt, start, end }]);
+      }
+    });
+
+    const numColumns = columns.length || 1;
+    const result: {
+      appt: Appointment;
+      layout: { width: string; left: string };
+    }[] = [];
+
+    columns.forEach((col, colIndex) => {
+      col.forEach(({ appt }) => {
+        result.push({
+          appt,
+          layout: {
+            width: `calc(${100 / numColumns}% - 12px)`, // Divide o espaço dando respiro
+            left: `calc(${(100 / numColumns) * colIndex}% + 8px)`, // Ajusta a posição horizontal
+          },
+        });
+      });
+    });
+
+    return result;
+  }, [appointments]);
+
   const HOURS_ARRAY = Array.from(
     { length: endHour - startHour + 1 },
     (_, i) => i + startHour,
@@ -457,7 +528,8 @@ export function DailyAgendaGrid({
 
               {/* 🔥 CAMADA DOS CARDS SOBREPOSTA */}
               <div className="absolute inset-0 z-10 pointer-events-none">
-                {appointments.map((appt) => {
+                {/* RENDERIZA USANDO O ARRAY POSICIONADO (Evita Colisão) */}
+                {positionedAppts.map(({ appt, layout }) => {
                   const { top, height } = calculatePosition(
                     appt.time,
                     appt.duration,
@@ -468,6 +540,8 @@ export function DailyAgendaGrid({
                       appt={appt}
                       top={top}
                       height={height}
+                      left={layout.left} // 🔥 Aplica posição horizontal do algoritmo
+                      width={layout.width} // 🔥 Aplica a largura ajustada do algoritmo
                       onClick={() => onAppointmentClick(appt)}
                       onQuickConfirm={onQuickConfirm}
                       onWhatsApp={(e) => {

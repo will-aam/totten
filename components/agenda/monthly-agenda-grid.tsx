@@ -1,4 +1,3 @@
-// components/agenda/monthly-agenda-grid.tsx
 "use client";
 
 import { useState, useMemo } from "react";
@@ -20,7 +19,8 @@ import {
   Clock,
   Package as PackageIcon,
   ChevronRight,
-  AlertTriangle, // 🔥 Import do ícone
+  AlertTriangle,
+  User, // 🔥 Import do ícone
 } from "@boxicons/react";
 import { Button } from "../ui/button";
 
@@ -194,7 +194,7 @@ export function MonthlyAgendaGrid({
                     key={appt.id}
                     onClick={() => onAppointmentClick(appt)}
                     className={cn(
-                      "flex items-center gap-4 p-3 rounded-2xl border border-border/30 transition-all active:scale-[0.97]",
+                      "flex items-start gap-4 p-3 rounded-2xl border border-border/30 transition-all active:scale-[0.97]",
                       appt.color,
                       isCancelled && "opacity-40 grayscale border-dashed",
                       isPackageArchived &&
@@ -202,12 +202,12 @@ export function MonthlyAgendaGrid({
                         "border-2 border-destructive/80 opacity-80",
                     )}
                   >
-                    <div className="flex flex-col items-center justify-center w-11 shrink-0 border-r border-black/5 pr-3">
+                    <div className="flex flex-col items-center justify-start w-11 shrink-0 border-r border-black/5 pr-3 pt-1">
                       <span className="text-[11px] font-black">
                         {appt.time}
                       </span>
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 flex flex-col gap-0.5">
                       <p
                         className={cn(
                           "text-sm font-black truncate flex items-center gap-1.5",
@@ -224,6 +224,16 @@ export function MonthlyAgendaGrid({
                           ? "Pacote Inativo"
                           : appt.service}
                       </p>
+
+                      {/* 🔥 ETIQUETA DO PROFISSIONAL (MOBILE LIST) */}
+                      {appt.professionalName && (
+                        <div className="flex items-center gap-1 mt-1 bg-background/50 w-fit px-1.5 py-0.5 rounded text-[9px] font-semibold text-foreground/80 border border-border/30">
+                          <User className="h-3 w-3" />
+                          <span className="truncate max-w-25">
+                            {appt.professionalName.split(" ")[0]}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -302,7 +312,7 @@ export function MonthlyAgendaGrid({
                           onAppointmentClick(appt);
                         }}
                         className={cn(
-                          "text-[9px] font-bold leading-none px-2 py-1.5 rounded-lg truncate border shadow-sm transition-transform hover:scale-[1.03] flex items-center gap-1",
+                          "text-[9px] font-bold leading-none px-2 py-1.5 rounded-lg truncate border shadow-sm transition-transform hover:scale-[1.03] flex items-center gap-1 justify-between",
                           appt.color ||
                             "bg-blue-100 border-blue-200 text-blue-900",
                           isCancelled && "opacity-40 grayscale border-dashed",
@@ -311,30 +321,36 @@ export function MonthlyAgendaGrid({
                             "border-destructive/80 opacity-80",
                         )}
                       >
-                        <span
-                          className={cn(
-                            "opacity-70 mr-0.5 font-black",
-                            (isCancelled || isPackageArchived) &&
-                              "line-through",
-                          )}
-                        >
-                          {appt.time}
-                        </span>
+                        <div className="flex items-center gap-1 truncate">
+                          <span
+                            className={cn(
+                              "opacity-70 font-black",
+                              (isCancelled || isPackageArchived) &&
+                                "line-through",
+                            )}
+                          >
+                            {appt.time}
+                          </span>
 
-                        {/* 🔥 Ícone de alerta mini */}
-                        {isPackageArchived && !isCancelled && (
-                          <AlertTriangle className="h-2.5 w-2.5 text-destructive shrink-0" />
+                          {isPackageArchived && !isCancelled && (
+                            <AlertTriangle className="h-2.5 w-2.5 text-destructive shrink-0" />
+                          )}
+
+                          <span
+                            className={cn(
+                              "truncate",
+                              (isCancelled || isPackageArchived) &&
+                                "line-through",
+                            )}
+                          >
+                            {appt.clientName.split(" ")[0]}
+                          </span>
+                        </div>
+
+                        {/* 🔥 ÍCONE DO PROFISSIONAL (DESKTOP GRID) */}
+                        {appt.professionalName && (
+                          <User className="h-2.5 w-2.5 opacity-60 shrink-0" />
                         )}
-
-                        <span
-                          className={cn(
-                            "truncate",
-                            (isCancelled || isPackageArchived) &&
-                              "line-through",
-                          )}
-                        >
-                          {appt.clientName.split(" ")[0]}
-                        </span>
                       </div>
                     );
                   })}

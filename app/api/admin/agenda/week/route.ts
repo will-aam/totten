@@ -12,6 +12,7 @@ import { startOfWeek, endOfWeek } from "date-fns";
 export async function GET(req: NextRequest) {
   try {
     const admin = await requireAuth();
+    const role = (admin as any).role || "OWNER"; // 🔥 Consistência com o diário
 
     const { searchParams } = new URL(req.url);
     const dateParam = searchParams.get("date");
@@ -23,33 +24,38 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Identifica o início (Domingo) e fim (Sábado) da semana baseada na data passada
-    // Tudo forçado para UTC-3 (Horário de Brasília) para evitar pulo de dias
     const baseDate = new Date(`${dateParam}T12:00:00.000-03:00`);
 
     const weekStart = startOfWeek(baseDate, { weekStartsOn: 0 }); // 0 = Domingo
     const weekEnd = endOfWeek(baseDate, { weekStartsOn: 0 }); // Sábado
 
-    // Ajusta as horas para cobrir a semana inteira
     const from = new Date(weekStart.setHours(0, 0, 0, 0));
     const to = new Date(weekEnd.setHours(23, 59, 59, 999));
 
-    const appointments = await prisma.appointment.findMany({
-      where: {
-        organization_id: admin.organizationId,
-        date_time: {
-          gte: from,
-          lte: to,
-        },
-        status: {
-          in: ["PENDENTE", "CONFIRMADO", "REALIZADO"],
-        },
+    // 🔥 Adicionada a Trava de Visibilidade (Como no diário)
+    const whereClause: any = {
+      organization_id: admin.organizationId,
+      date_time: {
+        gte: from,
+        lte: to,
       },
+      status: {
+        in: ["PENDENTE", "CONFIRMADO", "REALIZADO"],
+      },
+    };
+
+    if (role === "COLLABORATOR") {
+      whereClause.professional_id = admin.id;
+    }
+
+    const appointments = await prisma.appointment.findMany({
+      where: whereClause,
       include: {
         client: true,
         service: true,
         package: true,
         check_in: true,
+        professional: { select: { display_name: true } }, // 🔥 RASTREABILIDADE
       },
       orderBy: {
         date_time: "asc",
@@ -59,7 +65,6 @@ export async function GET(req: NextRequest) {
     const mapped = appointments.map((appt) => {
       const date = new Date(appt.date_time);
 
-      // FORÇANDO O FUSO HORÁRIO DO BRASIL PARA EXIBIR A HORA CORRETA
       const timeFormatter = new Intl.DateTimeFormat("pt-BR", {
         timeZone: "America/Sao_Paulo",
         hour: "2-digit",
@@ -101,16 +106,16 @@ export async function GET(req: NextRequest) {
         observations: appt.observations ?? "",
         paymentMethod: appt.payment_method ?? "nenhum",
         price: Number(rawPrice),
-
         date_time: appt.date_time.toISOString(),
         package_id: appt.package_id,
         session_number: appt.session_number,
         recurrence_id: appt.recurrence_id,
+        professionalName: appt.professional?.display_name ?? null, // 🔥 Adicionado ao JSON enviado ao front
         package: appt.package
           ? {
               total_sessions: appt.package.total_sessions,
               used_sessions: appt.package.used_sessions,
-              active: appt.package.active, // 🔥 O SEGREDO ESTÁ AQUI: Enviando a flag para o frontend
+              active: appt.package.active,
             }
           : null,
       };

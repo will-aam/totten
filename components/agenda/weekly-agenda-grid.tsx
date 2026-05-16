@@ -1,4 +1,3 @@
-// components/agenda/weekly-agenda-grid.tsx
 "use client";
 
 import React, { useMemo, useEffect, useState } from "react";
@@ -6,7 +5,12 @@ import { format, addDays, isSameDay, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Appointment } from "./daily-agenda-grid";
-import { Clock, Package as PackageIcon, AlertTriangle } from "@boxicons/react"; // 🔥 Importamos o ícone de alerta
+import {
+  Clock,
+  Package as PackageIcon,
+  AlertTriangle,
+  User,
+} from "@boxicons/react"; // 🔥 Importamos o ícone User
 
 interface WeeklyAgendaGridProps {
   appointments: Appointment[];
@@ -54,7 +58,11 @@ export function WeeklyAgendaGrid({
     return groups;
   }, [appointments, weekDays]);
 
-  const getAppointmentStyle = (appt: Appointment) => {
+  // 🔥 Adaptamos o Style para aceitar o Left e Width dinâmicos do algoritmo de colisão
+  const getAppointmentStyle = (
+    appt: Appointment,
+    layout: { width: string; left: string },
+  ) => {
     const date = new Date(appt.date_time || new Date());
     const apptHour = date.getHours();
     const apptMinute = date.getMinutes();
@@ -67,7 +75,9 @@ export function WeeklyAgendaGrid({
     return {
       top: `${top}px`,
       height: `${height}px`,
-      minHeight: "24px", // Garante que sessões curtas sejam clicáveis
+      minHeight: "24px",
+      width: layout.width, // Define a largura baseada na quantidade de colisões
+      left: layout.left, // Define a posição horizontal
     };
   };
 
@@ -120,6 +130,58 @@ export function WeeklyAgendaGrid({
               const dayAppointments = groupedAppointments[dateKey] || [];
               const today = isToday(day);
 
+              // =========================================================================
+              // 🔥 ALGORITMO DE COLISÃO (OVERLAPS): Impede que os cards fiquem em cima do outro
+              // =========================================================================
+              const sortedAppts = [...dayAppointments].sort(
+                (a, b) =>
+                  new Date(a.date_time || new Date()).getTime() -
+                  new Date(b.date_time || new Date()).getTime(),
+              );
+
+              const columns: {
+                appt: Appointment;
+                start: number;
+                end: number;
+              }[][] = [];
+
+              sortedAppts.forEach((appt) => {
+                const start = new Date(appt.date_time || new Date()).getTime();
+                const end = start + appt.duration * 60000;
+
+                let placed = false;
+                for (let i = 0; i < columns.length; i++) {
+                  const lastInCol = columns[i][columns[i].length - 1];
+                  if (lastInCol.end <= start) {
+                    columns[i].push({ appt, start, end });
+                    placed = true;
+                    break;
+                  }
+                }
+                if (!placed) {
+                  columns.push([{ appt, start, end }]);
+                }
+              });
+
+              const numColumns = columns.length || 1;
+              const positionedAppts: {
+                appt: Appointment;
+                layout: { width: string; left: string };
+              }[] = [];
+
+              columns.forEach((col, colIndex) => {
+                col.forEach(({ appt }) => {
+                  positionedAppts.push({
+                    appt,
+                    layout: {
+                      width: `calc(${100 / numColumns}% - 4px)`, // Divide o espaço e dá uma folguinha (4px)
+                      left: `calc(${(100 / numColumns) * colIndex}% + 2px)`,
+                    },
+                  });
+                });
+              });
+              // =========================================================================
+
               return (
                 <div
                   key={day.toISOString()}
@@ -164,29 +226,31 @@ export function WeeklyAgendaGrid({
                       </div>
                     ))}
 
-                    {/* RENDERIZAÇÃO DOS CARDS */}
-                    {dayAppointments.map((appt) => {
+                    {/* RENDERIZAÇÃO DOS CARDS (Usando a posição calculada) */}
+                    {positionedAppts.map(({ appt, layout }) => {
                       const isCancelled =
                         appt.status?.toUpperCase() === "CANCELADO";
 
-                      // 🔥 NOVO: Checagem se o pacote está inativo
                       const isPackageArchived =
                         appt.package && appt.package.active === false;
+
+                      // 🔥 Verificação de Rastreabilidade (Profissional)
+                      // Nota: Adicione a propriedade `professionalName` na interface Appointment no `daily-agenda-grid.tsx`
+                      const profName = (appt as any).professionalName;
 
                       return (
                         <div
                           key={appt.id}
                           onClick={() => onAppointmentClick(appt)}
                           className={cn(
-                            "absolute left-0.5 right-0.5 rounded-lg p-1.5 cursor-pointer transition-all hover:scale-[1.03] hover:z-50 shadow-sm border flex flex-col justify-between group overflow-hidden",
+                            "absolute rounded-lg p-1.5 cursor-pointer transition-all hover:scale-[1.03] hover:z-50 shadow-sm border flex flex-col justify-between group overflow-hidden",
                             appt.color,
                             isCancelled && "opacity-30 grayscale border-dashed",
-                            // 🔥 Bordinha vermelha se tiver arquivado (e não tiver sido cancelado)
                             isPackageArchived &&
                               !isCancelled &&
                               "border border-destructive/80 opacity-80",
                           )}
-                          style={getAppointmentStyle(appt)}
+                          style={getAppointmentStyle(appt, layout)}
                         >
                           <div className="flex flex-col gap-0.5">
                             <div
@@ -196,19 +260,28 @@ export function WeeklyAgendaGrid({
                                   "line-through",
                               )}
                             >
-                              {/* 🔥 Muda o ícone se for pacote inativo */}
                               {!isPackageArchived && appt.package_id && (
                                 <PackageIcon className="h-2.5 w-2.5" />
                               )}
                               {isPackageArchived && !isCancelled && (
                                 <AlertTriangle className="h-2.5 w-2.5 text-destructive" />
                               )}
-
                               {appt.clientName.split(" ")[0]}
                             </div>
+
                             <div className="text-[8px] font-bold opacity-70 truncate uppercase tracking-tighter">
                               {appt.service}
                             </div>
+
+                            {/* 🔥 ETIQUETA DO PROFISSIONAL */}
+                            {profName && (
+                              <div className="flex items-center gap-0.5 mt-0.5 bg-background/30 w-fit px-1 py-0.5 rounded-[3px] text-[8px] font-semibold text-foreground/80 backdrop-blur-sm">
+                                <User className="h-2 w-2" />
+                                <span className="truncate max-w-12.5">
+                                  {profName.split(" ")[0]}
+                                </span>
+                              </div>
+                            )}
                           </div>
 
                           <div className="mt-auto pt-1 border-t border-black/5 flex justify-between items-center">

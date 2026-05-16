@@ -20,7 +20,6 @@ import {
   ChevronRight,
   ChevronDown,
   ChevronUp,
-  CalendarAlt,
   Slider,
   LoaderDots,
 } from "@boxicons/react";

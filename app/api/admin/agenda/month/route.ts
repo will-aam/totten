@@ -12,6 +12,7 @@ import { startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 export async function GET(req: NextRequest) {
   try {
     const admin = await requireAuth();
+    const role = (admin as any).role || "OWNER"; // 🔥 Pegamos a Role do usuário logado
 
     const { searchParams } = new URL(req.url);
     const dateParam = searchParams.get("date");
@@ -37,22 +38,30 @@ export async function GET(req: NextRequest) {
     const from = new Date(gridStart.setHours(0, 0, 0, 0));
     const to = new Date(gridEnd.setHours(23, 59, 59, 999));
 
-    const appointments = await prisma.appointment.findMany({
-      where: {
-        organization_id: admin.organizationId,
-        date_time: {
-          gte: from,
-          lte: to,
-        },
-        status: {
-          in: ["PENDENTE", "CONFIRMADO", "REALIZADO"],
-        },
+    // 🔥 TRAVA DE VISIBILIDADE
+    const whereClause: any = {
+      organization_id: admin.organizationId,
+      date_time: {
+        gte: from,
+        lte: to,
       },
+      status: {
+        in: ["PENDENTE", "CONFIRMADO", "REALIZADO"],
+      },
+    };
+
+    if (role === "COLLABORATOR") {
+      whereClause.professional_id = admin.id;
+    }
+
+    const appointments = await prisma.appointment.findMany({
+      where: whereClause,
       include: {
         client: true,
         service: true,
         package: true,
         check_in: true,
+        professional: { select: { display_name: true } }, // 🔥 RASTREABILIDADE
       },
       orderBy: {
         date_time: "asc",
@@ -108,10 +117,12 @@ export async function GET(req: NextRequest) {
         package_id: appt.package_id,
         session_number: appt.session_number,
         recurrence_id: appt.recurrence_id,
+        professionalName: appt.professional?.display_name ?? null, // 🔥 Adicionado
         package: appt.package
           ? {
               total_sessions: appt.package.total_sessions,
               used_sessions: appt.package.used_sessions,
+              active: appt.package.active, // 🔥 Corrigido para repassar a flag de inativo
             }
           : null,
       };

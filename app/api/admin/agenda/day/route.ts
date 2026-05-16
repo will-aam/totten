@@ -1,6 +1,6 @@
+// app/api/admin/agenda/day/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { startOfDay, endOfDay } from "date-fns";
 import { requireAuth } from "@/lib/auth";
 
 /**
@@ -50,6 +50,7 @@ export async function GET(req: NextRequest) {
         service: true,
         package: true,
         check_in: true,
+        professional: { select: { display_name: true } }, // 🔥 RASTREABILIDADE
       },
       orderBy: {
         date_time: "asc",
@@ -69,7 +70,7 @@ export async function GET(req: NextRequest) {
 
       const duration = Number(appt.service.duration ?? 60);
 
-      // Info de sessão base (o frontend agora faz um override visual mais bonito)
+      // Info de sessão base
       let sessionInfo = "Avulsa";
       if (appt.package) {
         const current = appt.session_number ?? 1;
@@ -82,19 +83,15 @@ export async function GET(req: NextRequest) {
       // 🔥 NOVO COLOR-CODING
       let color = "";
       if (appt.status === "REALIZADO") {
-        // Concluído (Azul)
         color = "bg-blue-100 border-blue-300 text-blue-900";
       } else if (
         appt.check_in &&
         (appt.status === "PENDENTE" || appt.status === "CONFIRMADO")
       ) {
-        // Cliente fez check-in / Sala de espera (Cinza/Slate)
         color = "bg-slate-100 border-slate-300 text-slate-900";
       } else if (appt.recurrence_id || appt.package_id) {
-        // Cliente com horário fixo/recorrente (Verde)
         color = "bg-emerald-100 border-emerald-300 text-emerald-900";
       } else {
-        // Encaixe / Avulso (Amarelo/Laranja)
         color = "bg-amber-100 border-amber-300 text-amber-900";
       }
 
@@ -105,7 +102,7 @@ export async function GET(req: NextRequest) {
         clientName: appt.client.name,
         service: appt.service.name,
         sessionInfo,
-        isRecurring: Boolean(appt.recurrence_id), // Corrigido: agora olha para a recorrência real
+        isRecurring: Boolean(appt.recurrence_id),
         phone: appt.client.phone_whatsapp,
         color,
         hasCharge: appt.has_charge,
@@ -118,11 +115,12 @@ export async function GET(req: NextRequest) {
         package_id: appt.package_id,
         session_number: appt.session_number,
         recurrence_id: appt.recurrence_id,
+        professionalName: appt.professional?.display_name ?? null, // 🔥 Adicionado ao JSON enviado ao front
         package: appt.package
           ? {
               total_sessions: appt.package.total_sessions,
               used_sessions: appt.package.used_sessions,
-              active: appt.package.active, // 🔥 O SEGREDO ESTÁ AQUI: Enviando a flag para o frontend
+              active: appt.package.active,
             }
           : null,
       };
