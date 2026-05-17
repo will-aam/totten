@@ -13,6 +13,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { AdminHeader } from "@/components/admin-header";
 import { cn } from "@/lib/utils";
+
+// Importando as ações do estoque (Get, Create, Update, Delete)
 import { NewStockItemModal } from "@/components/stock/new-item-modal";
 import { StockTable, StockItem } from "@/components/stock/stock-table";
 import { StockMobileItem } from "@/components/stock/stock-mobile-item";

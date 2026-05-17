@@ -1,3 +1,4 @@
+// components/client/client-contact.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -149,6 +150,36 @@ export function ClientContact({ client }: ClientContactProps) {
     setEditNumber(client.number || "");
   };
 
+  // 🔥 Nova função para buscar o CEP automaticamente
+  const handleCepChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedCep = formatCepInput(e.target.value);
+    setEditZipCode(formattedCep);
+
+    const pureCep = formattedCep.replace(/\D/g, "");
+
+    // Dispara a busca apenas quando o CEP estiver completo (8 dígitos)
+    if (pureCep.length === 8) {
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${pureCep}/json/`);
+        const data = await res.json();
+
+        if (data.erro) {
+          toast.error("CEP não encontrado.");
+          return;
+        }
+
+        // Auto-preenche os campos que temos no banco
+        if (data.logradouro) setEditStreet(data.logradouro);
+        if (data.localidade) setEditCity(data.localidade);
+
+        toast.success("Endereço preenchido automaticamente!");
+      } catch (error) {
+        console.error("Erro ao buscar CEP:", error);
+        toast.error("Erro ao tentar buscar o CEP.");
+      }
+    }
+  };
+
   const handleSave = async () => {
     const cleanPhone = editPhone.replace(/\D/g, "");
     if (cleanPhone.length < 10) {
@@ -219,12 +250,11 @@ export function ClientContact({ client }: ClientContactProps) {
     const nomeCurto = client.name.split(" ")[0];
     return template
       .replace(/{nome}/g, nomeCurto)
-      .replace(/{usadas}/g, "-") // Neste contexto genérico não temos o pacote ativo
+      .replace(/{usadas}/g, "-")
       .replace(/{total}/g, "-")
       .replace(/{horario}/g, "09:00");
   };
 
-  // 🔥 Nova função blindada usando o objeto URL nativo
   const handleSendWhatsApp = (templateText: string) => {
     if (!client.phone_whatsapp) {
       toast.error("O cliente não possui um número de WhatsApp cadastrado.");
@@ -245,14 +275,13 @@ export function ClientContact({ client }: ClientContactProps) {
 
     const message = formatMessage(templateText);
 
-    // O objeto URL constrói e codifica a URL de forma 100% segura para qualquer emoji
-    // Ele não "quebra" emojis complexos no meio do caminho.
     const url = new URL("https://api.whatsapp.com/send");
     url.searchParams.set("phone", targetPhone);
     url.searchParams.set("text", message);
 
     window.open(url.toString(), "_blank");
   };
+
   const addressParts = [];
   if (client.street)
     addressParts.push(
@@ -376,11 +405,10 @@ export function ClientContact({ client }: ClientContactProps) {
                 </Label>
                 <Input
                   value={editZipCode}
-                  onChange={(e) =>
-                    setEditZipCode(formatCepInput(e.target.value))
-                  }
+                  onChange={handleCepChange} // 🔥 Trocado para nossa função nova
                   placeholder="00000-000"
                   className="h-10 bg-muted/30"
+                  maxLength={9} // Ajuda a limitar para o usuário
                 />
               </div>
             </div>

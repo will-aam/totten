@@ -1,3 +1,4 @@
+// components/services/service-form.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -59,7 +60,8 @@ type SelectedStockItem = {
   stock_item_id: string;
   name: string;
   unit_cost: number;
-  quantity_used: number;
+  // 🔥 Mudança: Aceitar string para permitir estado vazio enquanto o usuário digita
+  quantity_used: number | string;
 };
 
 export function ServiceForm() {
@@ -131,7 +133,12 @@ export function ServiceForm() {
   };
 
   const handleUpdateStockQty = (id: string, qty: string) => {
-    const parsedQty = parseFloat(qty) || 0;
+    // 🔥 Remove tudo que não for número (bloqueia vírgulas, pontos e letras)
+    const cleanQty = qty.replace(/\D/g, "");
+
+    // 🔥 Remove os zeros à esquerda ou deixa vazio para permitir a digitação livre
+    const parsedQty = cleanQty === "" ? "" : parseInt(cleanQty, 10);
+
     setSelectedStockItems((prev) =>
       prev.map((i) =>
         i.stock_item_id === id ? { ...i, quantity_used: parsedQty } : i,
@@ -143,8 +150,9 @@ export function ServiceForm() {
     setSelectedStockItems((prev) => prev.filter((i) => i.stock_item_id !== id));
   };
 
+  // 🔥 Converte para Number com fallback para 0 para cálculo correto em tempo real
   const calculatedMaterialCost = selectedStockItems.reduce(
-    (acc, item) => acc + item.quantity_used * item.unit_cost,
+    (acc, item) => acc + (Number(item.quantity_used) || 0) * item.unit_cost,
     0,
   );
 
@@ -187,7 +195,8 @@ export function ServiceForm() {
           stock_items: form.trackStock
             ? selectedStockItems.map((i) => ({
                 stock_item_id: i.stock_item_id,
-                quantity_used: i.quantity_used,
+                // 🔥 Fallback de segurança: se o usuário deixar o campo vazio e salvar, assume 1
+                quantity_used: Number(i.quantity_used) || 1,
               }))
             : [],
         }),
@@ -468,10 +477,11 @@ export function ServiceForm() {
                             </p>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
+                            {/* 🔥 Usando text e inputMode numeric para anular decimais e dar controle livre */}
                             <Input
-                              type="number"
-                              step="0.1"
-                              className="h-8 w-16 text-center text-xs p-1 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                              type="text"
+                              inputMode="numeric"
+                              className="h-8 w-16 text-center text-xs p-1"
                               value={item.quantity_used}
                               onChange={(e) =>
                                 handleUpdateStockQty(
@@ -479,6 +489,15 @@ export function ServiceForm() {
                                   e.target.value,
                                 )
                               }
+                              onBlur={(e) => {
+                                // Se o usuário sair do input deixando vazio ou zero, volta pra 1
+                                if (
+                                  !e.target.value ||
+                                  Number(e.target.value) <= 0
+                                ) {
+                                  handleUpdateStockQty(item.stock_item_id, "1");
+                                }
+                              }}
                             />
                             <Button
                               variant="ghost"

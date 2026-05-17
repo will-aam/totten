@@ -1,3 +1,4 @@
+// components/services/service-edit-modal.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -32,12 +33,13 @@ import {
 import { updateService, toggleServiceStatus } from "@/app/actions/services";
 import { getStockItems } from "@/app/actions/stock";
 import { cn } from "@/lib/utils";
+import { CategorySelect } from "./category-select"; // 🔥 Importamos o nosso componente turbinado
 
 interface ServiceEditModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   service: any | null;
-  categories: any[];
+  categories: any[]; // Mantemos a prop para não quebrar quem chama, mas o CategorySelect gerencia isso sozinho
   onSuccess: () => void;
 }
 
@@ -59,7 +61,7 @@ type SelectedStockItem = {
   stock_item_id: string;
   name: string;
   unit_cost: number;
-  quantity_used: number;
+  quantity_used: number | string; // 🔥 Permite string para lidar com estado vazio sem o bug do zero
 };
 
 export function ServiceEditModal({
@@ -147,7 +149,10 @@ export function ServiceEditModal({
   };
 
   const handleUpdateStockQty = (id: string, qty: string) => {
-    const parsedQty = parseFloat(qty) || 0;
+    // 🔥 Removemos caracteres não numéricos e impedimos zeros à esquerda soltos
+    const cleanQty = qty.replace(/\D/g, "");
+    const parsedQty = cleanQty === "" ? "" : parseInt(cleanQty, 10);
+
     setSelectedStockItems((prev) =>
       prev.map((i) =>
         i.stock_item_id === id ? { ...i, quantity_used: parsedQty } : i,
@@ -159,8 +164,9 @@ export function ServiceEditModal({
     setSelectedStockItems((prev) => prev.filter((i) => i.stock_item_id !== id));
   };
 
+  // 🔥 Converte para Number com fallback para 0 para cálculo correto em tempo real
   const calculatedMaterialCost = selectedStockItems.reduce(
-    (acc, item) => acc + item.quantity_used * item.unit_cost,
+    (acc, item) => acc + (Number(item.quantity_used) || 0) * item.unit_cost,
     0,
   );
 
@@ -192,7 +198,8 @@ export function ServiceEditModal({
         stock_items: formData.trackStock
           ? selectedStockItems.map((i) => ({
               stock_item_id: i.stock_item_id,
-              quantity_used: i.quantity_used,
+              // 🔥 Fallback de segurança: se o usuário deixar vazio e salvar, assume 1
+              quantity_used: Number(i.quantity_used) || 1,
             }))
           : [],
       });
@@ -253,23 +260,13 @@ export function ServiceEditModal({
 
             <div className="grid gap-2">
               <Label htmlFor="category">Categoria *</Label>
-              <Select
+              {/* 🔥 Trocamos o Select nativo pelo nosso CategorySelect */}
+              <CategorySelect
                 value={formData.category_id}
                 onValueChange={(val) =>
                   setFormData({ ...formData, category_id: val })
                 }
-              >
-                <SelectTrigger className="bg-muted/50 h-10">
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
             </div>
           </div>
 
@@ -406,10 +403,11 @@ export function ServiceEditModal({
                           </p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
+                          {/* 🔥 Trocado type="number" por text + inputMode="numeric" com validação onBlur */}
                           <Input
-                            type="number"
-                            step="0.1"
-                            className="h-8 w-16 text-center text-xs p-1 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                            type="text"
+                            inputMode="numeric"
+                            className="h-8 w-16 text-center text-xs p-1"
                             value={item.quantity_used}
                             onChange={(e) =>
                               handleUpdateStockQty(
@@ -417,6 +415,14 @@ export function ServiceEditModal({
                                 e.target.value,
                               )
                             }
+                            onBlur={(e) => {
+                              if (
+                                !e.target.value ||
+                                Number(e.target.value) <= 0
+                              ) {
+                                handleUpdateStockQty(item.stock_item_id, "1");
+                              }
+                            }}
                           />
                           <Button
                             variant="ghost"

@@ -1,6 +1,8 @@
+// app/api/clients/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin } from "@/lib/auth";
+import { Prisma } from "@prisma/client"; // 🔥 Importamos a tipagem do Prisma
 
 // Função auxiliar para tentar prever formatações de CPF e Telefone se o usuário digitar só números
 function getSearchVariations(searchQuery: string) {
@@ -45,32 +47,33 @@ export async function GET(request: Request) {
     const activeParam = searchParams.get("active");
     const skip = (page - 1) * limit;
 
-    // 🔥 ESTRUTURA BLINDADA: Usamos um array de AND para garantir que todos os filtros sejam respeitados
-    const whereClause: any = {
-      AND: [{ organization_id: admin.organizationId }],
-    };
+    // 🔥 Refatoração Sênior: Tipagem estrita criando um array de condições
+    const andConditions: Prisma.ClientWhereInput[] = [
+      { organization_id: admin.organizationId },
+    ];
 
     if (activeParam === "true") {
-      whereClause.AND.push({ active: true });
+      andConditions.push({ active: true });
     }
 
     if (search) {
-      // Pega as possíveis variações do que o usuário digitou
       const searchVariations = getSearchVariations(search);
 
-      whereClause.AND.push({
+      andConditions.push({
         OR: [
-          // Busca parcial no Nome (ignorando caixa alta/baixa)
           { name: { contains: search, mode: "insensitive" } },
-          // Busca em CPF combinando a busca pura e as formatações estimadas
           ...searchVariations.map((val) => ({ cpf: { contains: val } })),
-          // Busca em WhatsApp combinando a busca pura e as formatações estimadas
           ...searchVariations.map((val) => ({
             phone_whatsapp: { contains: val },
           })),
         ],
       });
     }
+
+    // Passamos o array para a cláusula principal
+    const whereClause: Prisma.ClientWhereInput = {
+      AND: andConditions,
+    };
 
     const [totalCount, clients] = await Promise.all([
       prisma.client.count({ where: whereClause }),
@@ -186,13 +189,18 @@ export async function POST(request: Request) {
       );
     }
 
+    // 🔥 Proteção contra bug de fuso horário
+    const formattedBirthDate = birth_date
+      ? new Date(`${birth_date}T12:00:00Z`)
+      : null;
+
     const client = await prisma.client.create({
       data: {
         name,
         cpf,
         phone_whatsapp,
         email: email || null,
-        birth_date: birth_date ? new Date(birth_date) : null,
+        birth_date: formattedBirthDate,
         zip_code: zip_code || null,
         city: city || null,
         street: street || null,

@@ -1,6 +1,8 @@
+// app/api/clients/[id]/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin } from "@/lib/auth";
+import { Prisma } from "@prisma/client"; // 🔥 Adicionamos os tipos do Prisma
 
 export async function GET(
   _request: Request,
@@ -88,8 +90,9 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
-    // 🔥 Montamos dinamicamente os dados que serão atualizados
-    const updateData: any = {};
+    // 🔥 Refatoração Sênior: Tipagem estrita com Prisma.ClientUpdateInput
+    const updateData: Prisma.ClientUpdateInput = {};
+
     if (body.name !== undefined) updateData.name = body.name;
     if (body.cpf !== undefined) updateData.cpf = body.cpf;
     if (body.phone_whatsapp !== undefined)
