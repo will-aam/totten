@@ -10,7 +10,19 @@ import {
   Package as PackageIcon,
   AlertTriangle,
   User,
-} from "@boxicons/react"; // 🔥 Importamos o ícone User
+  DotsVerticalRounded,
+  MessageCircle,
+  Check,
+  InfoCircle,
+} from "@boxicons/react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 interface WeeklyAgendaGridProps {
   appointments: Appointment[];
@@ -18,9 +30,17 @@ interface WeeklyAgendaGridProps {
   onAppointmentClick: (appointment: Appointment) => void;
   startHour?: number;
   endHour?: number;
+  onQuickConfirm?: (appt: Appointment) => void; // 🔥 Adicionado para suportar atalho
 }
 
 const HOUR_HEIGHT = 96; // 96px por hora para manter consistência com a visão diária
+
+// Função auxiliar para o WhatsApp
+const cleanPhone = (phone: string) => {
+  if (!phone) return "";
+  const digits = phone.replace(/\D/g, "");
+  return digits.startsWith("55") ? digits : `55${digits}`;
+};
 
 export function WeeklyAgendaGrid({
   appointments,
@@ -28,6 +48,7 @@ export function WeeklyAgendaGrid({
   onAppointmentClick,
   startHour = 8,
   endHour = 19,
+  onQuickConfirm,
 }: WeeklyAgendaGridProps) {
   const [now, setNow] = useState(new Date());
 
@@ -58,7 +79,6 @@ export function WeeklyAgendaGrid({
     return groups;
   }, [appointments, weekDays]);
 
-  // 🔥 Adaptamos o Style para aceitar o Left e Width dinâmicos do algoritmo de colisão
   const getAppointmentStyle = (
     appt: Appointment,
     layout: { width: string; left: string },
@@ -76,8 +96,8 @@ export function WeeklyAgendaGrid({
       top: `${top}px`,
       height: `${height}px`,
       minHeight: "24px",
-      width: layout.width, // Define a largura baseada na quantidade de colisões
-      left: layout.left, // Define a posição horizontal
+      width: layout.width,
+      left: layout.left,
     };
   };
 
@@ -130,9 +150,7 @@ export function WeeklyAgendaGrid({
               const dayAppointments = groupedAppointments[dateKey] || [];
               const today = isToday(day);
 
-              // =========================================================================
-              // 🔥 ALGORITMO DE COLISÃO (OVERLAPS): Impede que os cards fiquem em cima do outro
-              // =========================================================================
+              // ALGORITMO DE COLISÃO
               const sortedAppts = [...dayAppointments].sort(
                 (a, b) =>
                   new Date(a.date_time || new Date()).getTime() -
@@ -174,27 +192,26 @@ export function WeeklyAgendaGrid({
                   positionedAppts.push({
                     appt,
                     layout: {
-                      width: `calc(${100 / numColumns}% - 4px)`, // Divide o espaço e dá uma folguinha (4px)
+                      width: `calc(${100 / numColumns}% - 4px)`,
                       left: `calc(${(100 / numColumns) * colIndex}% + 2px)`,
                     },
                   });
                 });
               });
-              // =========================================================================
 
               return (
                 <div
                   key={day.toISOString()}
                   className={cn(
-                    "flex-1 min-w-25 relative border-r border-border/50 last:border-r-0 transition-colors",
-                    today ? "bg-primary/2" : "hover:bg-muted/2",
+                    "flex-1 min-w-27.5 relative border-r border-border/50 last:border-r-0 transition-colors",
+                    today ? "bg-primary/5" : "hover:bg-muted/20",
                   )}
                 >
                   {/* Cabeçalho do Dia */}
                   <div
                     className={cn(
-                      "h-14 border-b border-border/50 flex flex-col items-center justify-center sticky top-0 z-20 transition-colors",
-                      today ? "bg-primary/5" : "bg-card",
+                      "h-14 border-b border-border/50 flex flex-col items-center justify-center sticky top-0 z-20 transition-colors backdrop-blur-md",
+                      today ? "bg-primary/10" : "bg-card/80",
                     )}
                   >
                     <span
@@ -226,16 +243,22 @@ export function WeeklyAgendaGrid({
                       </div>
                     ))}
 
-                    {/* RENDERIZAÇÃO DOS CARDS (Usando a posição calculada) */}
+                    {/* RENDERIZAÇÃO DOS CARDS */}
                     {positionedAppts.map(({ appt, layout }) => {
                       const isCancelled =
                         appt.status?.toUpperCase() === "CANCELADO";
-
+                      const isRealizado =
+                        appt.status?.toUpperCase() === "REALIZADO";
                       const isPackageArchived =
                         appt.package && appt.package.active === false;
+                      const paymentMethod =
+                        appt.payment_method || appt.paymentMethod;
+                      const isPaid =
+                        !!paymentMethod && paymentMethod !== "nenhum";
 
-                      // 🔥 Verificação de Rastreabilidade (Profissional)
-                      // Nota: Adicione a propriedade `professionalName` na interface Appointment no `daily-agenda-grid.tsx`
+                      // Lógica de bloqueio para esconder ações não permitidas
+                      const isLocked = isCancelled || isRealizado || isPaid;
+
                       const profName = (appt as any).professionalName;
 
                       return (
@@ -245,14 +268,80 @@ export function WeeklyAgendaGrid({
                           className={cn(
                             "absolute rounded-lg p-1.5 cursor-pointer transition-all hover:scale-[1.03] hover:z-50 shadow-sm border flex flex-col justify-between group overflow-hidden",
                             appt.color,
-                            isCancelled && "opacity-30 grayscale border-dashed",
+                            isCancelled && "opacity-40 grayscale border-dashed",
                             isPackageArchived &&
                               !isCancelled &&
                               "border border-destructive/80 opacity-80",
                           )}
                           style={getAppointmentStyle(appt, layout)}
                         >
-                          <div className="flex flex-col gap-0.5">
+                          {/* 🔥 MENU DE OPÇÕES TRANPARENTE */}
+                          <div className="absolute top-0.5 right-0.5 z-50">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-5 w-5 bg-transparent hover:bg-black/10 text-black/50 hover:text-black shadow-none border-none p-0 m-0"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <DotsVerticalRounded className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent
+                                align="end"
+                                className="w-48 z-100 rounded-xl"
+                              >
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onAppointmentClick(appt);
+                                  }}
+                                  className="font-medium"
+                                >
+                                  <InfoCircle className="mr-2 h-4 w-4" />{" "}
+                                  Detalhes da Sessão
+                                </DropdownMenuItem>
+
+                                <DropdownMenuSeparator />
+
+                                {!isLocked &&
+                                  appt.status?.toUpperCase() !==
+                                    "CONFIRMADO" && (
+                                    <DropdownMenuItem
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (onQuickConfirm)
+                                          onQuickConfirm(appt);
+                                      }}
+                                      className="text-blue-600 focus:text-blue-700 font-medium"
+                                    >
+                                      <Check className="mr-2 h-4 w-4" /> Marcar
+                                      Confirmado
+                                    </DropdownMenuItem>
+                                  )}
+
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const msg = encodeURIComponent(
+                                      `Olá ${appt.clientName.split(" ")[0]}! Confirmamos seu horário às ${appt.time}?`,
+                                    );
+                                    window.open(
+                                      `https://wa.me/${cleanPhone(appt.phone)}?text=${msg}`,
+                                      "_blank",
+                                    );
+                                  }}
+                                  className="text-emerald-600 focus:text-emerald-700 font-medium"
+                                >
+                                  <MessageCircle className="mr-2 h-4 w-4" />{" "}
+                                  Enviar WhatsApp
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+
+                          <div className="flex flex-col gap-0.5 pr-4">
                             <div
                               className={cn(
                                 "text-[10px] font-black leading-none truncate flex items-center gap-1",
@@ -273,7 +362,6 @@ export function WeeklyAgendaGrid({
                               {appt.service}
                             </div>
 
-                            {/* 🔥 ETIQUETA DO PROFISSIONAL */}
                             {profName && (
                               <div className="flex items-center gap-0.5 mt-0.5 bg-background/30 w-fit px-1 py-0.5 rounded-[3px] text-[8px] font-semibold text-foreground/80 backdrop-blur-sm">
                                 <User className="h-2 w-2" />
@@ -284,11 +372,14 @@ export function WeeklyAgendaGrid({
                             )}
                           </div>
 
-                          <div className="mt-auto pt-1 border-t border-black/5 flex justify-between items-center">
-                            <span className="text-[9px] font-black opacity-80">
-                              {appt.time}
-                            </span>
-                          </div>
+                          {/* Rodapé do card: oculta texto se for muito curto, mantendo só layout visual */}
+                          {(appt.duration / 60) * HOUR_HEIGHT > 30 && (
+                            <div className="mt-auto pt-1 border-t border-black/5 flex justify-between items-center">
+                              <span className="text-[9px] font-black opacity-80">
+                                {appt.time}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       );
                     })}

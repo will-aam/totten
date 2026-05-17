@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
         lte: to,
       },
       status: {
-        in: ["PENDENTE", "CONFIRMADO", "REALIZADO"],
+        in: ["PENDENTE", "CONFIRMADO", "REALIZADO", "CANCELADO"],
       },
     };
 
@@ -88,12 +88,31 @@ export async function GET(req: NextRequest) {
 
       const rawPrice = appt.package?.price ?? appt.service.price ?? 0;
 
-      let color = "bg-blue-100 border-blue-300 text-blue-900";
-      if (appt.package_id) {
-        color = "bg-emerald-100 border-emerald-300 text-emerald-900";
-      }
-      if (appt.status === "REALIZADO") {
-        color = "bg-slate-100 border-slate-300 text-slate-900";
+      // 🔥 NOVO COLOR-CODING COM SUPORTE PERFEITO A DARK MODE E REGRAS DE NEGÓCIO
+      let color = "";
+      const serviceName = appt.service.name.toLowerCase();
+
+      if (appt.status === "CANCELADO") {
+        color =
+          "bg-slate-100 border-slate-300 text-slate-600 dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-400";
+      } else if (appt.status === "REALIZADO") {
+        color =
+          "bg-blue-100 border-blue-300 text-blue-800 dark:bg-blue-900/40 dark:border-blue-800 dark:text-blue-300";
+      } else if (serviceName.includes("contenção")) {
+        color =
+          "bg-emerald-100 border-emerald-300 text-emerald-800 dark:bg-emerald-900/40 dark:border-emerald-800 dark:text-emerald-300";
+      } else if (
+        appt.check_in &&
+        (appt.status === "PENDENTE" || appt.status === "CONFIRMADO")
+      ) {
+        color =
+          "bg-purple-100 border-purple-300 text-purple-800 dark:bg-purple-900/40 dark:border-purple-800 dark:text-purple-300";
+      } else if (appt.recurrence_id || appt.package_id) {
+        color =
+          "bg-teal-100 border-teal-300 text-teal-800 dark:bg-teal-900/40 dark:border-teal-800 dark:text-teal-300";
+      } else {
+        color =
+          "bg-amber-100 border-amber-300 text-amber-800 dark:bg-amber-900/40 dark:border-amber-800 dark:text-amber-300";
       }
 
       return {
@@ -117,12 +136,12 @@ export async function GET(req: NextRequest) {
         package_id: appt.package_id,
         session_number: appt.session_number,
         recurrence_id: appt.recurrence_id,
-        professionalName: appt.professional?.display_name ?? null, // 🔥 Adicionado
+        professionalName: appt.professional?.display_name ?? null,
         package: appt.package
           ? {
               total_sessions: appt.package.total_sessions,
               used_sessions: appt.package.used_sessions,
-              active: appt.package.active, // 🔥 Corrigido para repassar a flag de inativo
+              active: appt.package.active,
             }
           : null,
       };

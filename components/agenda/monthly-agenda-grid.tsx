@@ -194,7 +194,7 @@ export function MonthlyAgendaGrid({
                     key={appt.id}
                     onClick={() => onAppointmentClick(appt)}
                     className={cn(
-                      "flex items-start gap-4 p-3 rounded-2xl border border-border/30 transition-all active:scale-[0.97]",
+                      "flex items-start gap-4 p-3 rounded-2xl border transition-all active:scale-[0.97]",
                       appt.color,
                       isCancelled && "opacity-40 grayscale border-dashed",
                       isPackageArchived &&
@@ -211,7 +211,8 @@ export function MonthlyAgendaGrid({
                       <p
                         className={cn(
                           "text-sm font-black truncate flex items-center gap-1.5",
-                          (isCancelled || isPackageArchived) && "line-through",
+                          (isCancelled || isPackageArchived) &&
+                            "line-through opacity-70",
                         )}
                       >
                         {isPackageArchived && !isCancelled && (
@@ -222,7 +223,9 @@ export function MonthlyAgendaGrid({
                       <p className="text-[9px] font-bold opacity-70 truncate uppercase tracking-tighter">
                         {isPackageArchived && !isCancelled
                           ? "Pacote Inativo"
-                          : appt.service}
+                          : isCancelled
+                            ? "Sessão Cancelada"
+                            : appt.service}
                       </p>
 
                       {/* 🔥 ETIQUETA DO PROFISSIONAL (MOBILE LIST) */}
@@ -277,8 +280,8 @@ export function MonthlyAgendaGrid({
                 className={cn(
                   "min-h-30 p-2 border-r border-b border-border/40 flex flex-col gap-1.5 relative group cursor-pointer transition-colors",
                   (idx + 1) % 7 === 0 && "border-r-0",
-                  !isCurrentMonth && "bg-muted/3 opacity-40 grayscale",
-                  isToday && "bg-primary/3",
+                  !isCurrentMonth && "bg-muted/30 opacity-40 grayscale",
+                  isToday && "bg-primary/5",
                   isCurrentMonth && "hover:bg-muted/10",
                 )}
               >
@@ -340,7 +343,7 @@ export function MonthlyAgendaGrid({
                             className={cn(
                               "truncate",
                               (isCancelled || isPackageArchived) &&
-                                "line-through",
+                                "line-through opacity-70",
                             )}
                           >
                             {appt.clientName.split(" ")[0]}

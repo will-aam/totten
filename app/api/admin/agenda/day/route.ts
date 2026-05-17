@@ -1,4 +1,3 @@
-// app/api/admin/agenda/day/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
@@ -11,7 +10,7 @@ import { requireAuth } from "@/lib/auth";
 export async function GET(req: NextRequest) {
   try {
     const admin = await requireAuth();
-    const role = (admin as any).role || "OWNER"; // 🔥 Pegamos a Role do usuário logado
+    const role = (admin as any).role || "OWNER";
 
     const { searchParams } = new URL(req.url);
     const dateParam = searchParams.get("date");
@@ -27,7 +26,7 @@ export async function GET(req: NextRequest) {
     const from = new Date(`${dateParam}T00:00:00.000-03:00`);
     const to = new Date(`${dateParam}T23:59:59.999-03:00`);
 
-    // 🔥 TRAVA DE VISIBILIDADE: Se for colaboradora, filtra só os agendamentos dela
+    // 🔥 TRAVA DE VISIBILIDADE
     const whereClause: any = {
       organization_id: admin.organizationId,
       date_time: {
@@ -35,12 +34,12 @@ export async function GET(req: NextRequest) {
         lte: to,
       },
       status: {
-        in: ["PENDENTE", "CONFIRMADO", "REALIZADO"],
+        in: ["PENDENTE", "CONFIRMADO", "REALIZADO", "CANCELADO"],
       },
     };
 
     if (role === "COLLABORATOR") {
-      whereClause.professional_id = admin.id; // Só os agendamentos onde ela é a profissional
+      whereClause.professional_id = admin.id;
     }
 
     const appointments = await prisma.appointment.findMany({
@@ -50,7 +49,7 @@ export async function GET(req: NextRequest) {
         service: true,
         package: true,
         check_in: true,
-        professional: { select: { display_name: true } }, // 🔥 RASTREABILIDADE
+        professional: { select: { display_name: true } },
       },
       orderBy: {
         date_time: "asc",
@@ -60,7 +59,6 @@ export async function GET(req: NextRequest) {
     const mapped = appointments.map((appt) => {
       const date = new Date(appt.date_time);
 
-      // FORÇANDO O FUSO HORÁRIO DO BRASIL PARA EXIBIR A HORA CORRETA
       const timeFormatter = new Intl.DateTimeFormat("pt-BR", {
         timeZone: "America/Sao_Paulo",
         hour: "2-digit",
@@ -70,29 +68,45 @@ export async function GET(req: NextRequest) {
 
       const duration = Number(appt.service.duration ?? 60);
 
-      // Info de sessão base
       let sessionInfo = "Avulsa";
       if (appt.package) {
         const current = appt.session_number ?? 1;
         sessionInfo = `Sessão ${current} de ${appt.package.total_sessions}`;
       }
 
-      // Pegando o preço real (Pacote ou Serviço)
       const rawPrice = appt.package?.price ?? appt.service.price ?? 0;
 
-      // 🔥 NOVO COLOR-CODING
+      // 🔥 NOVO COLOR-CODING COM SUPORTE PERFEITO A DARK MODE E REGRAS DE NEGÓCIO
       let color = "";
-      if (appt.status === "REALIZADO") {
-        color = "bg-blue-100 border-blue-300 text-blue-900";
+      const serviceName = appt.service.name.toLowerCase();
+
+      if (appt.status === "CANCELADO") {
+        // Cinza translúcido
+        color =
+          "bg-slate-100 border-slate-300 text-slate-600 dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-400";
+      } else if (appt.status === "REALIZADO") {
+        // Azul para Realizado
+        color =
+          "bg-blue-100 border-blue-300 text-blue-800 dark:bg-blue-900/40 dark:border-blue-800 dark:text-blue-300";
+      } else if (serviceName.includes("contenção")) {
+        // Verde específico para serviço de contenção
+        color =
+          "bg-emerald-100 border-emerald-300 text-emerald-800 dark:bg-emerald-900/40 dark:border-emerald-800 dark:text-emerald-300";
       } else if (
         appt.check_in &&
         (appt.status === "PENDENTE" || appt.status === "CONFIRMADO")
       ) {
-        color = "bg-slate-100 border-slate-300 text-slate-900";
+        // Roxo/Indigo: Cliente já está na recepção (fez check-in) mas ainda não finalizou
+        color =
+          "bg-purple-100 border-purple-300 text-purple-800 dark:bg-purple-900/40 dark:border-purple-800 dark:text-purple-300";
       } else if (appt.recurrence_id || appt.package_id) {
-        color = "bg-emerald-100 border-emerald-300 text-emerald-900";
+        // Teal (Verde-azulado) para pacotes/séries normais
+        color =
+          "bg-teal-100 border-teal-300 text-teal-800 dark:bg-teal-900/40 dark:border-teal-800 dark:text-teal-300";
       } else {
-        color = "bg-amber-100 border-amber-300 text-amber-900";
+        // Amarelo: Avulso a confirmar
+        color =
+          "bg-amber-100 border-amber-300 text-amber-800 dark:bg-amber-900/40 dark:border-amber-800 dark:text-amber-300";
       }
 
       return {
@@ -115,7 +129,7 @@ export async function GET(req: NextRequest) {
         package_id: appt.package_id,
         session_number: appt.session_number,
         recurrence_id: appt.recurrence_id,
-        professionalName: appt.professional?.display_name ?? null, // 🔥 Adicionado ao JSON enviado ao front
+        professionalName: appt.professional?.display_name ?? null,
         package: appt.package
           ? {
               total_sessions: appt.package.total_sessions,

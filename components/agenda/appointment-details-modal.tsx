@@ -183,6 +183,16 @@ export const AppointmentDetailsModal = memo(
       }
     };
 
+    // Função para tratar a mudança de status e blindar as regras de negócio
+    const handleStatusChange = (newStatus: string) => {
+      setStatus(newStatus);
+      if (newStatus === "cancelado") {
+        setPayment("nenhum");
+        setObs("");
+        setHasCharge(false);
+      }
+    };
+
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
@@ -220,7 +230,7 @@ export const AppointmentDetailsModal = memo(
                   </Badge>
                 )}
 
-                {/* 🔥 ETIQUETA DE RASTREABILIDADE DO PROFISSIONAL */}
+                {/* ETIQUETA DE RASTREABILIDADE DO PROFISSIONAL */}
                 {appointment.professionalName && (
                   <>
                     <span className="text-muted-foreground/30 hidden sm:inline">
@@ -274,7 +284,12 @@ export const AppointmentDetailsModal = memo(
                       ? "destructive"
                       : "outline"
                   }
-                  className="rounded-lg border-none bg-background"
+                  className={cn(
+                    "rounded-lg border-none px-2.5 py-0.5",
+                    status !== "cancelado" &&
+                      !isPackageArchived &&
+                      "bg-background",
+                  )}
                 >
                   {status === "cancelado"
                     ? "Cancelado"
@@ -297,7 +312,7 @@ export const AppointmentDetailsModal = memo(
                 <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">
                   Status
                 </Label>
-                <Select value={status} onValueChange={setStatus}>
+                <Select value={status} onValueChange={handleStatusChange}>
                   <SelectTrigger className="rounded-2xl h-12 bg-muted/20 border-none font-semibold">
                     <SelectValue />
                   </SelectTrigger>
@@ -307,9 +322,6 @@ export const AppointmentDetailsModal = memo(
                       disabled={isPackageArchived}
                     >
                       A Confirmar
-                    </SelectItem>
-                    <SelectItem value="confirmado" disabled={isPackageArchived}>
-                      Confirmado
                     </SelectItem>
                     <SelectItem value="realizado" disabled={isPackageArchived}>
                       Realizado
@@ -326,9 +338,9 @@ export const AppointmentDetailsModal = memo(
                 <Select
                   value={payment}
                   onValueChange={setPayment}
-                  disabled={isPackageArchived}
+                  disabled={isPackageArchived || status === "cancelado"}
                 >
-                  <SelectTrigger className="rounded-2xl h-12 bg-muted/20 border-none font-semibold">
+                  <SelectTrigger className="rounded-2xl h-12 bg-muted/20 border-none font-semibold disabled:opacity-50">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-2xl border-border/50 bg-background">
@@ -352,8 +364,13 @@ export const AppointmentDetailsModal = memo(
               <Textarea
                 value={obs}
                 onChange={(e) => setObs(e.target.value)}
-                placeholder="Digite detalhes que aparecerão no recibo..."
-                className="bg-muted/20 border-none resize-none h-24 rounded-2xl p-4"
+                disabled={status === "cancelado"}
+                placeholder={
+                  status === "cancelado"
+                    ? "Indisponível para agendamentos cancelados"
+                    : "Digite detalhes que aparecerão no recibo..."
+                }
+                className="bg-muted/20 border-none resize-none h-24 rounded-2xl p-4 disabled:opacity-50"
               />
             </div>
 
@@ -365,7 +382,11 @@ export const AppointmentDetailsModal = memo(
                   !hasCharge && "bg-muted/20 border-none",
                 )}
                 onClick={() => setHasCharge(!hasCharge)}
-                disabled={status === "realizado" || isPackageArchived}
+                disabled={
+                  status === "realizado" ||
+                  isPackageArchived ||
+                  status === "cancelado"
+                }
               >
                 {hasCharge ? "Cobrança Ativa" : "Tudo Pago"}
               </Button>
@@ -373,6 +394,7 @@ export const AppointmentDetailsModal = memo(
               <Button
                 variant="secondary"
                 className="bg-primary/10 text-primary font-black rounded-2xl h-12"
+                disabled={status === "cancelado"}
                 onClick={() => {
                   handlePrint();
                   toast.success("Gerando recibo...");
@@ -412,7 +434,7 @@ export const AppointmentDetailsModal = memo(
                     {isRecurrent && (
                       <AlertDialogAction
                         onClick={() => handleDelete(true)}
-                        className="bg-destructive/10 text-destructive rounded-2xl border-none font-bold"
+                        className="bg-destructive/10 text-destructive rounded-2xl border-none font-bold hover:bg-destructive/20"
                       >
                         Excluir Toda a Série
                       </AlertDialogAction>
@@ -444,7 +466,9 @@ export const AppointmentDetailsModal = memo(
                   <LoaderDots className="h-5 w-5 animate-spin" />
                 ) : (
                   <>
-                    <Save className="mr-2 h-5 w-5" /> Salvar
+                    <span className="flex items-center">
+                      <Save className="mr-2 h-5 w-5" /> Salvar
+                    </span>
                   </>
                 )}
               </Button>
@@ -455,7 +479,7 @@ export const AppointmentDetailsModal = memo(
                   disabled={
                     isSaving || (isPackageArchived && status !== "cancelado")
                   }
-                  className="rounded-2xl h-12 bg-amber-600 text-white font-bold text-xs uppercase"
+                  className="rounded-2xl h-12 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs uppercase"
                 >
                   Toda a Série
                 </Button>
