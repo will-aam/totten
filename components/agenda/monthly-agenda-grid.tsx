@@ -168,7 +168,8 @@ export function MonthlyAgendaGrid({
               onClick={() => onDayClick?.(activeDate)}
               className="text-primary font-bold text-[10px] h-7 px-2 uppercase tracking-tighter"
             >
-              Ver dia completo <ChevronRight className="ml-1 h-3 w-3" />
+              Ver dia completo{" "}
+              <ChevronRight removePadding className="ml-1 h-3 w-3" />
             </Button>
           </div>
 
@@ -216,7 +217,10 @@ export function MonthlyAgendaGrid({
                         )}
                       >
                         {isPackageArchived && !isCancelled && (
-                          <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
+                          <AlertTriangle
+                            removePadding
+                            className="h-3.5 w-3.5 text-destructive shrink-0"
+                          />
                         )}
                         {appt.clientName}
                       </p>
@@ -231,7 +235,7 @@ export function MonthlyAgendaGrid({
                       {/* 🔥 ETIQUETA DO PROFISSIONAL (MOBILE LIST) */}
                       {appt.professionalName && (
                         <div className="flex items-center gap-1 mt-1 bg-background/50 w-fit px-1.5 py-0.5 rounded text-[9px] font-semibold text-foreground/80 border border-border/30">
-                          <User className="h-3 w-3" />
+                          <User removePadding className="h-3 w-3" />
                           <span className="truncate max-w-25">
                             {appt.professionalName.split(" ")[0]}
                           </span>

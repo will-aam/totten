@@ -393,7 +393,7 @@ export default function AgendaPage() {
                 onClick={goPrev}
                 className="h-10 w-10 rounded-full shrink-0 z-20 bg-background/50 backdrop-blur-sm shadow-sm"
               >
-                <ChevronLeft size="sm" />
+                <ChevronLeft removePadding size="sm" />
               </Button>
 
               {viewMode !== "month" && (
@@ -469,7 +469,7 @@ export default function AgendaPage() {
                 onClick={goNext}
                 className="h-10 w-10 rounded-full shrink-0 z-20 bg-background/50 backdrop-blur-sm shadow-sm"
               >
-                <ChevronRight size="sm" />
+                <ChevronRight removePadding size="sm" />
               </Button>
             </div>
 

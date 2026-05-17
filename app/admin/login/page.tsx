@@ -6,7 +6,7 @@ import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image"; // 🔥 Importação para a logo
-import { ArrowLeft, Eye, EyeClosed } from "@boxicons/react"; // Removido o Bird
+import { ChevronLeft, Eye, EyeClosed } from "@boxicons/react"; // Removido o Bird
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -76,7 +76,7 @@ function LoginForm() {
         className="absolute top-4 left-4 sm:static sm:self-start flex w-fit items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group z-10"
       >
         <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-transparent sm:bg-muted/50 hover:bg-muted transition-colors">
-          <ArrowLeft className="h-5 w-5" />
+          <ChevronLeft removePadding className="h-5 w-5" />
         </div>
         <span className="hidden sm:inline font-medium">Voltar</span>
       </Link>

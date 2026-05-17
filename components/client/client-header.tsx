@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { mutate } from "swr";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Pencil, Check, X, LoaderDots } from "@boxicons/react";
+import { ChevronLeft, Pencil, Check, X, LoaderDots } from "@boxicons/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -97,7 +97,7 @@ export function ClientHeader({ client }: { client: ClientHeaderType }) {
         className="rounded-full h-11 w-11 shrink-0 text-muted-foreground hover:bg-muted/50 transition-colors"
       >
         <Link href="/admin/clients">
-          <ArrowLeft className="h-5 w-5" strokeWidth={1.5} />
+          <ChevronLeft removePadding className="h-5 w-5" strokeWidth={1.5} />
         </Link>
       </Button>
 

@@ -398,7 +398,8 @@ export default function PackagesPage() {
                 disabled={page === 1 || loading}
                 className="rounded-xl h-10 font-bold bg-background shadow-sm hover:bg-muted"
               >
-                <ChevronLeft size="sm" className="mr-1" /> Anterior
+                <ChevronLeft removePadding size="sm" className="mr-1" />{" "}
+                Anterior
               </Button>
               <Button
                 variant="outline"
@@ -406,7 +407,8 @@ export default function PackagesPage() {
                 disabled={page === totalPages || loading}
                 className="rounded-xl h-10 font-bold bg-background shadow-sm hover:bg-muted"
               >
-                Próxima <ChevronRight size="sm" className="ml-1" />
+                Próxima{" "}
+                <ChevronRight removePadding size="sm" className="ml-1" />
               </Button>
             </div>
           </div>

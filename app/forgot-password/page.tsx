@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Envelope, LoaderDots, CheckCircle } from "@boxicons/react";
+import {
+  ChevronLeft,
+  Envelope,
+  LoaderDots,
+  CheckCircle,
+} from "@boxicons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -91,7 +96,7 @@ export default function ForgotPasswordPage() {
         className="absolute top-6 left-6 md:top-8 md:left-8 flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group"
       >
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-card shadow-sm border border-border group-hover:bg-[#D9C6BF]/20 transition-colors">
-          <ArrowLeft className="h-5 w-5" />
+          <ChevronLeft removePadding className="h-5 w-5" />
         </div>
         <span className="hidden sm:inline font-medium">Voltar</span>
       </Link>
@@ -99,7 +104,7 @@ export default function ForgotPasswordPage() {
       <Card className="w-full max-w-md border-border shadow-lg">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <Envelope className="h-8 w-8 text-primary" />
+            <Envelope removePadding className="h-8 w-8 text-primary" />
           </div>
           <CardTitle className="text-2xl">Esqueceu a senha?</CardTitle>
           <CardDescription>

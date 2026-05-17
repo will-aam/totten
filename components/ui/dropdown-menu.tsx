@@ -217,7 +217,7 @@ function DropdownMenuSubTrigger({
       {...props}
     >
       {children}
-      <ChevronRight className="ml-auto size-4" />
+      <ChevronRight removePadding className="ml-auto size-4" />
     </DropdownMenuPrimitive.SubTrigger>
   );
 }

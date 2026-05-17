@@ -130,7 +130,10 @@ export function ClientAnamnesis({ clientId }: { clientId: string }) {
                   </div>
 
                   {/* Setas e badges removidos para limpeza mobile */}
-                  <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
+                  <ChevronRight
+                    removePadding
+                    className="h-4 w-4 text-muted-foreground/40"
+                  />
                 </Link>
               );
             })}

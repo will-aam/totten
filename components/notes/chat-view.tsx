@@ -86,7 +86,7 @@ export function ChatView({
           onClick={onBack}
           className="-ml-2 text-muted-foreground hover:text-foreground"
         >
-          <ChevronLeft className="h-6 w-6" />
+          <ChevronLeft removePadding className="h-6 w-6" />
         </Button>
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-sm border border-primary/20">

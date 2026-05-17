@@ -11,6 +11,7 @@ import {
   PenDraw,
   LoaderDots,
   CheckCircle,
+  ChevronLeft,
 } from "@boxicons/react";
 
 import { AdminHeader } from "@/components/admin-header";
@@ -282,7 +283,11 @@ export default function NewClientAnamnesisPage({
               className="rounded-full h-10 w-10 shrink-0"
             >
               <Link href={`/admin/clients/${clientId}`}>
-                <ArrowLeft size="sm" className="text-muted-foreground" />
+                <ChevronLeft
+                  removePadding
+                  size="sm"
+                  className="text-muted-foreground"
+                />
               </Link>
             </Button>
             <div>

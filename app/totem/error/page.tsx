@@ -4,7 +4,7 @@
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
-import { AlertTriangle, ArrowLeft } from "@boxicons/react";
+import { AlertTriangle, ArrowLeft, ChevronLeft } from "@boxicons/react";
 import { Button } from "@/components/ui/button";
 
 const errorMessages: Record<string, { title: string; description: string }> = {
@@ -66,7 +66,7 @@ function ErrorContent() {
       <div className="flex w-full flex-col gap-3">
         <Button asChild size="lg" className="h-16 text-lg">
           <Link href={idleLink}>
-            <ArrowLeft className="mr-2 h-5 w-5" />
+            <ChevronLeft removePadding className="mr-2 h-5 w-5" />
             Voltar ao Início
           </Link>
         </Button>

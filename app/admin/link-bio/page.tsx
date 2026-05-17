@@ -207,7 +207,7 @@ export default function LinkBioPage() {
               disabled={currentStep === 0}
               className="rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
             >
-              <ChevronLeft className="h-5 w-5 mr-1" /> Anterior
+              <ChevronLeft removePadding className="h-5 w-5 mr-1" /> Anterior
             </Button>
             <span className="text-sm font-medium text-muted-foreground hidden sm:block">
               {STEPS[currentStep].title}
@@ -218,7 +218,7 @@ export default function LinkBioPage() {
               disabled={currentStep === STEPS.length - 1}
               className="rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
             >
-              Próximo <ChevronRight className="h-5 w-5 ml-1" />
+              Próximo <ChevronRight removePadding className="h-5 w-5 ml-1" />
             </Button>
           </div>
         </div>

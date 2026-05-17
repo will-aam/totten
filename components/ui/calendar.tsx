@@ -142,14 +142,20 @@ function Calendar({
         Chevron: ({ className, orientation }) => {
           // 🟢 Removido {...props} daqui
           if (orientation === "left") {
-            return <ChevronLeft className={cn("size-4", className)} />;
+            return (
+              <ChevronLeft removePadding className={cn("size-4", className)} />
+            );
           }
 
           if (orientation === "right") {
-            return <ChevronRight className={cn("size-4", className)} />;
+            return (
+              <ChevronRight removePadding className={cn("size-4", className)} />
+            );
           }
 
-          return <ChevronDown className={cn("size-4", className)} />;
+          return (
+            <ChevronDown removePadding className={cn("size-4", className)} />
+          );
         },
         DayButton: CalendarDayButton,
         WeekNumber: ({ children, ...props }) => {

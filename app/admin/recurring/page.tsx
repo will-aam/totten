@@ -190,7 +190,8 @@ export default function RecurringAppointmentsPage() {
                 disabled={page === 1}
                 className="rounded-xl h-10 font-bold bg-background hover:bg-muted border-none"
               >
-                <ChevronLeft size="sm" className="mr-1" /> Anterior
+                <ChevronLeft removePadding size="sm" className="mr-1" />{" "}
+                Anterior
               </Button>
               <Button
                 variant="outline"
@@ -198,7 +199,8 @@ export default function RecurringAppointmentsPage() {
                 disabled={page === totalPages}
                 className="rounded-xl h-10 font-bold bg-background hover:bg-muted border-none"
               >
-                Próxima <ChevronRight size="sm" className="ml-1" />
+                Próxima{" "}
+                <ChevronRight removePadding size="sm" className="ml-1" />
               </Button>
             </div>
           </div>

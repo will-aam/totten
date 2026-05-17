@@ -211,7 +211,8 @@ export default function VouchersPage() {
                       disabled={page === 1}
                       className="rounded-xl h-10 font-bold bg-background shadow-sm hover:bg-muted"
                     >
-                      <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
+                      <ChevronLeft removePadding className="h-4 w-4 mr-1" />{" "}
+                      Anterior
                     </Button>
 
                     <Button
@@ -222,7 +223,8 @@ export default function VouchersPage() {
                       disabled={page === totalPages}
                       className="rounded-xl h-10 font-bold bg-background shadow-sm hover:bg-muted"
                     >
-                      Próxima <ChevronRight className="h-4 w-4 ml-1" />
+                      Próxima{" "}
+                      <ChevronRight removePadding className="h-4 w-4 ml-1" />
                     </Button>
                   </div>
                 </div>

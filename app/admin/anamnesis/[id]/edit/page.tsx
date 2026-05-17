@@ -11,6 +11,7 @@ import {
   FileDetail,
   LoaderDots,
   PlusCircle,
+  ChevronLeft,
 } from "@boxicons/react";
 import { Plus } from "@boxicons/react";
 
@@ -233,7 +234,11 @@ export default function EditAnamnesisTemplatePage({
             className="rounded-full h-10 w-10 shrink-0"
           >
             <Link href="/admin/anamnesis">
-              <ArrowLeft size="sm" className="text-muted-foreground" />
+              <ChevronLeft
+                removePadding
+                size="sm"
+                className="text-muted-foreground"
+              />
             </Link>
           </Button>
           <div>

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { ArrowLeft, Repeat, Check, X } from "@boxicons/react";
+import { ChevronLeft, Repeat, Check, X } from "@boxicons/react";
 import { Progress } from "@/components/ui/progress";
 
 const initialState: ActionState = { error: "" };
@@ -116,7 +116,7 @@ export default function RegisterPage() {
         className="absolute top-4 left-4 sm:top-8 sm:left-8 flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group z-10"
       >
         <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-transparent sm:bg-muted/50 hover:bg-muted transition-colors">
-          <ArrowLeft className="h-5 w-5" />
+          <ChevronLeft removePadding className="h-5 w-5" />
         </div>
         <span className="hidden sm:inline font-medium">Voltar ao Login</span>
       </Link>

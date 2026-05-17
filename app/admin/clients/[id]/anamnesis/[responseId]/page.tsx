@@ -11,6 +11,7 @@ import {
   CheckCircle,
   Clock,
   PenDraw,
+  ChevronLeft,
 } from "@boxicons/react";
 
 import { AdminHeader } from "@/components/admin-header";
@@ -193,7 +194,7 @@ export default function AnamnesisDocumentPage({
             className="rounded-xl font-bold h-10 px-4"
           >
             <Link href={`/admin/clients/${clientId}`}>
-              <ArrowLeft size="sm" className="mr-2" /> Voltar
+              <ChevronLeft removePadding size="sm" className="mr-2" /> Voltar
             </Link>
           </Button>
 

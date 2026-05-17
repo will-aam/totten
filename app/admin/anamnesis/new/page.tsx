@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { createAnamnesisTemplate } from "@/app/actions/anamnesis";
+import { ChevronLeft } from "lucide-react";
 
 type FieldType =
   | "text"
@@ -216,7 +217,7 @@ export default function NewAnamnesisTemplatePage() {
             className="rounded-full h-10 w-10 shrink-0"
           >
             <Link href="/admin/anamnesis">
-              <ArrowLeft size="sm" className="text-muted-foreground" />
+              <ChevronLeft size="sm" className="text-muted-foreground" />
             </Link>
           </Button>
           <div>

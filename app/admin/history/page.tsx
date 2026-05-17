@@ -146,7 +146,8 @@ export default function AdminHistoryPage() {
                       disabled={page === 1}
                       className="rounded-xl h-10 font-bold bg-background shadow-sm hover:bg-muted"
                     >
-                      <ChevronLeft size="sm" className="mr-1" /> Anterior
+                      <ChevronLeft removePadding size="sm" className="mr-1" />{" "}
+                      Anterior
                     </Button>
 
                     <Button
@@ -157,7 +158,8 @@ export default function AdminHistoryPage() {
                       disabled={page === totalPages}
                       className="rounded-xl h-10 font-bold bg-background shadow-sm hover:bg-muted"
                     >
-                      Próxima <ChevronRight size="sm" className="ml-1" />
+                      Próxima{" "}
+                      <ChevronRight removePadding size="sm" className="ml-1" />
                     </Button>
                   </div>
                 </div>
