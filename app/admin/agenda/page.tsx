@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import useSWR from "swr";
 import {
   format,
@@ -22,8 +22,8 @@ import {
   ChevronUp,
   Slider,
   LoaderDots,
+  Plus,
 } from "@boxicons/react";
-import { Plus } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -59,20 +59,26 @@ export default function AgendaPage() {
   const [selectedAppointment, setSelectedAppointment] =
     useState<Appointment | null>(null);
 
-  // 🔥 NOVO: Estado para armazenar o horário clicado na grade
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | undefined>(
     undefined,
   );
 
   const [showScrollTop, setShowScrollTop] = useState(false);
 
+  // REFS E ESTADOS PARA A ROLETA INFINITA DE DATAS
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isProgrammaticScroll = useRef(false);
+  const [rosterBaseDate, setRosterBaseDate] = useState(new Date());
+
   const { data: settings, mutate: mutateSettings } = useSWR(
     "/api/settings",
     fetcher,
   );
 
-  const openingTime = settings?.openingTime || "08:00";
-  const closingTime = settings?.closingTime || "19:00";
+  // 🔥 Correção TS: Forçando para String para garantir o método .split()
+  const openingTime = String(settings?.openingTime || "08:00");
+  const closingTime = String(settings?.closingTime || "19:00");
   const openingHourNumber = Number(openingTime.split(":")[0]);
   const closingHourNumber = Number(closingTime.split(":")[0]);
 
@@ -121,12 +127,30 @@ export default function AgendaPage() {
     [monthRaw],
   );
 
+  // Se a data selecionada for muito longe do roster (ex: usuário escolheu no calendário), atualiza a base da roleta
+  useEffect(() => {
+    const diff =
+      Math.abs(selectedDate.getTime() - rosterBaseDate.getTime()) /
+      (1000 * 60 * 60 * 24);
+    if (diff > 45) {
+      setRosterBaseDate(selectedDate);
+    }
+  }, [selectedDate, rosterBaseDate]);
+
+  // GERA UMA LISTA DE 180 DIAS (Virtuamente Infinito pro usuário)
+  const rouletteDays = useMemo(() => {
+    return Array.from({ length: 181 }, (_, i) =>
+      addDays(rosterBaseDate, i - 90),
+    );
+  }, [rosterBaseDate]);
+
   const goNext = () => {
     if (viewMode === "month") {
       const newDate = addMonths(selectedDate, 1);
       setSelectedDate(newDate);
       setWeekStart(startOfWeek(newDate, { weekStartsOn: 0 }));
     } else {
+      isProgrammaticScroll.current = true;
       const newDate = addDays(selectedDate, viewMode === "day" ? 1 : 7);
       setSelectedDate(newDate);
       setWeekStart(startOfWeek(newDate, { weekStartsOn: 0 }));
@@ -139,6 +163,7 @@ export default function AgendaPage() {
       setSelectedDate(newDate);
       setWeekStart(startOfWeek(newDate, { weekStartsOn: 0 }));
     } else {
+      isProgrammaticScroll.current = true;
       const newDate = subDays(selectedDate, viewMode === "day" ? 1 : 7);
       setSelectedDate(newDate);
       setWeekStart(startOfWeek(newDate, { weekStartsOn: 0 }));
@@ -161,35 +186,22 @@ export default function AgendaPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newSettings),
       });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || "Erro ao salvar");
-      }
-
+      if (!res.ok) throw new Error("Erro ao salvar");
       await mutateSettings();
       toast.success("Horários de funcionamento atualizados!");
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Não foi possível salvar os horários.",
-      );
+      toast.error("Não foi possível salvar os horários.");
       throw error;
     }
   };
 
-  // 🔥 NOVO: Função para o Quick Confirm (Check)
   const handleQuickConfirm = async (appt: Appointment) => {
     try {
-      // Ajuste para a sua rota de update status (ex: PUT /api/appointments/[id])
-      // Ou chame sua Server Action de atualizar status se tiver ela importada
-      const res = await fetch(`/api/appointments/${appt.id}`, {
+      const res = await fetch(`/api/admin/appointments/${appt.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "CONFIRMADO" }),
       });
-
       if (res.ok) {
         toast.success("Agendamento confirmado!");
         mutateAll();
@@ -207,6 +219,72 @@ export default function AgendaPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // EFEITO MÁGICO 1: Centraliza o botão clicado ou navegado via Setas perfeitamente no meio
+  useEffect(() => {
+    if (scrollContainerRef.current && viewMode !== "month") {
+      const container = scrollContainerRef.current;
+      const selectedBtn = container.querySelector(
+        `[data-date="${format(selectedDate, "yyyy-MM-dd")}"]`,
+      ) as HTMLElement;
+
+      if (selectedBtn) {
+        const scrollLeft =
+          selectedBtn.offsetLeft -
+          container.clientWidth / 2 +
+          selectedBtn.clientWidth / 2;
+
+        isProgrammaticScroll.current = true;
+        container.scrollTo({ left: scrollLeft, behavior: "smooth" });
+
+        setTimeout(() => {
+          isProgrammaticScroll.current = false;
+        }, 500);
+      }
+    }
+  }, [selectedDate, viewMode, rosterBaseDate]);
+
+  // EFEITO MÁGICO 2: Detecta qual botão parou no meio quando o usuário arrasta o dedo
+  const handleDaysScroll = () => {
+    if (isProgrammaticScroll.current) return;
+
+    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+
+    scrollTimeoutRef.current = setTimeout(() => {
+      const container = scrollContainerRef.current;
+      if (!container) return;
+
+      const centerLine = container.scrollLeft + container.clientWidth / 2;
+      let minDistance = Infinity;
+
+      // 🔥 Correção TS: Alterado para iniciar com String Vazia e evitar inferência de "never" no split
+      let closestDateStr = "";
+
+      const buttons = container.querySelectorAll(".day-btn");
+      buttons.forEach((btn) => {
+        const el = btn as HTMLElement;
+        const btnCenter = el.offsetLeft + el.clientWidth / 2;
+        const distance = Math.abs(btnCenter - centerLine);
+
+        if (distance < minDistance) {
+          minDistance = distance;
+          const attr = el.getAttribute("data-date");
+          if (attr) closestDateStr = attr;
+        }
+      });
+
+      // 🔥 Se a string não for vazia, garantimos pro Typescript que existe um split seguro.
+      if (closestDateStr !== "") {
+        const [y, m, d] = closestDateStr.split("-").map(Number);
+        const newDate = new Date(y, m - 1, d);
+
+        if (!isSameDay(newDate, selectedDate)) {
+          setSelectedDate(newDate);
+          setWeekStart(startOfWeek(newDate, { weekStartsOn: 0 }));
+        }
+      }
+    }, 150);
+  };
+
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
   const formattedDateDesktop = format(selectedDate, "EEEE, dd MMM", {
@@ -215,14 +293,11 @@ export default function AgendaPage() {
     .replace(/^\w/, (c) => c.toUpperCase())
     .replace("-feira", "");
 
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-
   return (
     <>
       <AdminHeader title="Agenda" />
 
       <div className="flex flex-col gap-4 p-4 md:p-6 max-w-400 mx-auto w-full pb-32 md:pb-6 relative min-h-[calc(100vh-100px)]">
-        {/* HEADER DA AGENDA */}
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 border-b border-border/50 pb-4">
           <div className="flex w-full xl:w-auto justify-between items-center">
             <Popover>
@@ -247,7 +322,7 @@ export default function AgendaPage() {
                     <p className="text-xs text-muted-foreground mt-0.5 font-medium">
                       {loadingDay || loadingWeek || loadingMonth ? (
                         <span className="flex items-center gap-1">
-                          <LoaderDots size="xs" className="animate-spin" />
+                          <LoaderDots size="xs" className="animate-spin" />{" "}
                           Atualizando...
                         </span>
                       ) : viewMode === "day" ? (
@@ -270,6 +345,7 @@ export default function AgendaPage() {
                   selected={selectedDate}
                   onSelect={(date) => {
                     if (date) {
+                      isProgrammaticScroll.current = true;
                       setSelectedDate(date);
                       setWeekStart(startOfWeek(date, { weekStartsOn: 0 }));
                     }
@@ -310,44 +386,79 @@ export default function AgendaPage() {
               </TabsList>
             </Tabs>
 
-            <div className="flex items-center w-full lg:w-auto justify-between bg-muted/20 lg:bg-transparent rounded-2xl p-1 lg:p-0 border lg:border-0 border-border/50 shrink-0">
+            <div className="flex items-center w-full lg:w-auto justify-between bg-muted/20 lg:bg-transparent rounded-2xl p-1 lg:p-0 border lg:border-0 border-border/50 shrink-0 overflow-hidden">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={goPrev}
-                className="h-10 w-10 rounded-full"
+                className="h-10 w-10 rounded-full shrink-0 z-20 bg-background/50 backdrop-blur-sm shadow-sm"
               >
                 <ChevronLeft size="sm" />
               </Button>
 
               {viewMode !== "month" && (
-                <div className="flex gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden px-1">
-                  {weekDays.map((day) => (
-                    <button
-                      key={day.toISOString()}
-                      onClick={() => setSelectedDate(day)}
-                      className={cn(
-                        "flex flex-col items-center justify-center h-12 w-10 sm:h-14 sm:w-12 rounded-xl border transition-all shrink-0",
-                        isSameDay(day, selectedDate)
-                          ? "bg-primary text-primary-foreground shadow-sm border-primary scale-105"
-                          : isSameDay(day, new Date())
-                            ? "bg-primary/10 text-primary border-primary/20"
-                            : "bg-card text-muted-foreground border-transparent hover:bg-muted",
-                      )}
-                    >
-                      <span className="text-[9px] font-bold uppercase">
-                        {format(day, "EEE", { locale: ptBR }).substring(0, 3)}
-                      </span>
-                      <span className="text-sm sm:text-base font-bold">
-                        {format(day, "dd")}
-                      </span>
-                    </button>
-                  ))}
+                <div
+                  ref={scrollContainerRef}
+                  onScroll={handleDaysScroll}
+                  className="flex gap-2 lg:gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden scroll-smooth snap-x snap-mandatory flex-1 max-w-60 sm:max-w-[320px] relative px-1 py-1 items-center"
+                  style={{
+                    maskImage:
+                      "linear-gradient(to right, transparent, black 15%, black 85%, transparent)",
+                    WebkitMaskImage:
+                      "linear-gradient(to right, transparent, black 15%, black 85%, transparent)",
+                  }}
+                >
+                  <div className="shrink-0 w-[calc(50%-24px)] sm:w-[calc(50%-28px)]" />
+
+                  {rouletteDays.map((day) => {
+                    const isSelected = isSameDay(day, selectedDate);
+                    const isToday = isSameDay(day, new Date());
+
+                    return (
+                      <button
+                        key={`roleta-${day.toISOString()}`}
+                        data-selected={isSelected}
+                        data-date={format(day, "yyyy-MM-dd")}
+                        onClick={() => {
+                          isProgrammaticScroll.current = true;
+                          setSelectedDate(day);
+                          setWeekStart(startOfWeek(day, { weekStartsOn: 0 }));
+                        }}
+                        className={cn(
+                          "day-btn snap-center flex flex-col items-center justify-center h-12 w-12 sm:h-14 sm:w-14 rounded-[14px] border transition-all shrink-0 duration-300",
+                          isSelected
+                            ? "bg-primary text-primary-foreground shadow-md border-primary scale-110 z-10"
+                            : isToday
+                              ? "bg-primary/10 text-primary border-primary/30"
+                              : "bg-card text-muted-foreground border-transparent hover:bg-muted opacity-50 hover:opacity-100",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "text-[9px] uppercase",
+                            isSelected ? "font-bold" : "font-semibold",
+                          )}
+                        >
+                          {format(day, "EEE", { locale: ptBR }).substring(0, 3)}
+                        </span>
+                        <span
+                          className={cn(
+                            "text-sm sm:text-base tracking-tighter",
+                            isSelected ? "font-black" : "font-bold",
+                          )}
+                        >
+                          {format(day, "dd")}
+                        </span>
+                      </button>
+                    );
+                  })}
+
+                  <div className="shrink-0 w-[calc(50%-24px)] sm:w-[calc(50%-28px)]" />
                 </div>
               )}
 
               {viewMode === "month" && (
-                <div className="px-4 text-sm font-bold text-muted-foreground capitalize">
+                <div className="px-4 text-sm font-bold text-muted-foreground capitalize flex-1 text-center">
                   {format(selectedDate, "MMMM", { locale: ptBR })}
                 </div>
               )}
@@ -356,7 +467,7 @@ export default function AgendaPage() {
                 variant="ghost"
                 size="icon"
                 onClick={goNext}
-                className="h-10 w-10 rounded-full"
+                className="h-10 w-10 rounded-full shrink-0 z-20 bg-background/50 backdrop-blur-sm shadow-sm"
               >
                 <ChevronRight size="sm" />
               </Button>
@@ -396,6 +507,7 @@ export default function AgendaPage() {
               onAppointmentClick={setSelectedAppointment}
               startHour={openingHourNumber}
               endHour={closingHourNumber}
+              onQuickConfirm={handleQuickConfirm}
             />
           )}
           {viewMode === "month" && (
@@ -442,7 +554,6 @@ export default function AgendaPage() {
         <ChevronUp size="base" removePadding />
       </button>
 
-      {/* MODAIS */}
       <NewAppointmentModal
         open={isNewModalOpen}
         onOpenChange={(open) => {
@@ -452,7 +563,7 @@ export default function AgendaPage() {
         openingTime={openingTime}
         closingTime={closingTime}
         initialDate={selectedDate}
-        initialTime={selectedTimeSlot} // 🔥 Prop nova
+        initialTime={selectedTimeSlot}
         onCreated={mutateAll}
       />
       <AppointmentDetailsModal

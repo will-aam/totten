@@ -14,6 +14,7 @@ import {
   MessageCircle,
   Check,
   InfoCircle,
+  Lock,
 } from "@boxicons/react";
 import {
   DropdownMenu,
@@ -30,12 +31,11 @@ interface WeeklyAgendaGridProps {
   onAppointmentClick: (appointment: Appointment) => void;
   startHour?: number;
   endHour?: number;
-  onQuickConfirm?: (appt: Appointment) => void; // 🔥 Adicionado para suportar atalho
+  onQuickConfirm?: (appt: Appointment) => void;
 }
 
-const HOUR_HEIGHT = 96; // 96px por hora para manter consistência com a visão diária
+const HOUR_HEIGHT = 96;
 
-// Função auxiliar para o WhatsApp
 const cleanPhone = (phone: string) => {
   if (!phone) return "";
   const digits = phone.replace(/\D/g, "");
@@ -53,7 +53,7 @@ export function WeeklyAgendaGrid({
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 60000); // Atualiza a cada minuto
+    const timer = setInterval(() => setNow(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
 
@@ -79,6 +79,7 @@ export function WeeklyAgendaGrid({
     return groups;
   }, [appointments, weekDays]);
 
+  // 🔥 ALTURA VISUAL FIXA DE 25 MINUTOS PARA CANCELADOS
   const getAppointmentStyle = (
     appt: Appointment,
     layout: { width: string; left: string },
@@ -90,7 +91,10 @@ export function WeeklyAgendaGrid({
     const startH = Math.max(startHour, Math.min(apptHour, endHour));
     const top =
       (startH - startHour) * HOUR_HEIGHT + (apptMinute / 60) * HOUR_HEIGHT;
-    const height = (appt.duration / 60) * HOUR_HEIGHT;
+
+    const isCancelled = appt.status?.toUpperCase() === "CANCELADO";
+    const effectiveDuration = isCancelled ? 25 : appt.duration;
+    const height = (effectiveDuration / 60) * HOUR_HEIGHT;
 
     return {
       top: `${top}px`,
@@ -116,12 +120,10 @@ export function WeeklyAgendaGrid({
     <div className="flex flex-col bg-card rounded-3xl border border-border/50 overflow-hidden shadow-sm animate-in fade-in duration-500">
       <div className="overflow-x-auto custom-scrollbar">
         <div className="min-w-200 flex relative">
-          {/* COLUNA DE HORÁRIOS (STICKY) */}
           <div className="w-16 shrink-0 border-r border-border/50 bg-muted/30 sticky left-0 z-30 backdrop-blur-md">
             <div className="h-14 border-b border-border/50 flex items-center justify-center text-muted-foreground bg-muted/50">
               <Clock className="w-4 h-4" />
             </div>
-
             {hours.map((hour) => (
               <div
                 key={`hour-${hour}`}
@@ -132,9 +134,7 @@ export function WeeklyAgendaGrid({
             ))}
           </div>
 
-          {/* COLUNAS DOS DIAS */}
           <div className="flex flex-1 relative">
-            {/* LINHA DE TEMPO ATUAL */}
             {currentTimeTop !== null && (
               <div
                 className="absolute left-0 right-0 z-40 flex items-center pointer-events-none"
@@ -150,7 +150,6 @@ export function WeeklyAgendaGrid({
               const dayAppointments = groupedAppointments[dateKey] || [];
               const today = isToday(day);
 
-              // ALGORITMO DE COLISÃO
               const sortedAppts = [...dayAppointments].sort(
                 (a, b) =>
                   new Date(a.date_time || new Date()).getTime() -
@@ -165,7 +164,9 @@ export function WeeklyAgendaGrid({
 
               sortedAppts.forEach((appt) => {
                 const start = new Date(appt.date_time || new Date()).getTime();
-                const end = start + appt.duration * 60000;
+                const isCancelled = appt.status?.toUpperCase() === "CANCELADO";
+                const effectiveDuration = isCancelled ? 25 : appt.duration;
+                const end = start + effectiveDuration * 60000;
 
                 let placed = false;
                 for (let i = 0; i < columns.length; i++) {
@@ -207,7 +208,6 @@ export function WeeklyAgendaGrid({
                     today ? "bg-primary/5" : "hover:bg-muted/20",
                   )}
                 >
-                  {/* Cabeçalho do Dia */}
                   <div
                     className={cn(
                       "h-14 border-b border-border/50 flex flex-col items-center justify-center sticky top-0 z-20 transition-colors backdrop-blur-md",
@@ -232,7 +232,6 @@ export function WeeklyAgendaGrid({
                     </span>
                   </div>
 
-                  {/* Grade de fundo */}
                   <div className="relative bg-grid-pattern-subtle">
                     {hours.map((hour) => (
                       <div
@@ -243,7 +242,6 @@ export function WeeklyAgendaGrid({
                       </div>
                     ))}
 
-                    {/* RENDERIZAÇÃO DOS CARDS */}
                     {positionedAppts.map(({ appt, layout }) => {
                       const isCancelled =
                         appt.status?.toUpperCase() === "CANCELADO";
@@ -256,11 +254,36 @@ export function WeeklyAgendaGrid({
                       const isPaid =
                         !!paymentMethod && paymentMethod !== "nenhum";
 
-                      // Lógica de bloqueio para esconder ações não permitidas
                       const isLocked = isCancelled || isRealizado || isPaid;
-
                       const profName = (appt as any).professionalName;
 
+                      // 🔥 VISUAL ULTRA COMPACTO SE CANCELADO
+                      if (isCancelled) {
+                        return (
+                          <div
+                            key={appt.id}
+                            onClick={() => onAppointmentClick(appt)}
+                            className={cn(
+                              "absolute rounded-lg px-2 py-1 cursor-pointer transition-all hover:scale-[1.03] hover:z-50 shadow-sm border border-dashed flex flex-col justify-center overflow-hidden",
+                              appt.color,
+                              "opacity-50 grayscale border-dashed",
+                            )}
+                            style={getAppointmentStyle(appt, layout)}
+                          >
+                            <div className="flex items-center gap-1 w-full overflow-hidden">
+                              <Lock className="h-3 w-3 shrink-0 opacity-60" />
+                              <span className="text-[10px] font-black truncate line-through opacity-80">
+                                {appt.clientName.split(" ")[0]}
+                              </span>
+                            </div>
+                            <div className="text-[9px] font-bold opacity-70 mt-0.5">
+                              {appt.time}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      // VISUAL NORMAL (NÃO CANCELADO)
                       return (
                         <div
                           key={appt.id}
@@ -268,21 +291,18 @@ export function WeeklyAgendaGrid({
                           className={cn(
                             "absolute rounded-lg p-1.5 cursor-pointer transition-all hover:scale-[1.03] hover:z-50 shadow-sm border flex flex-col justify-between group overflow-hidden",
                             appt.color,
-                            isCancelled && "opacity-40 grayscale border-dashed",
                             isPackageArchived &&
-                              !isCancelled &&
                               "border border-destructive/80 opacity-80",
                           )}
                           style={getAppointmentStyle(appt, layout)}
                         >
-                          {/* 🔥 MENU DE OPÇÕES TRANPARENTE */}
                           <div className="absolute top-0.5 right-0.5 z-50">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button
                                   size="icon"
                                   variant="ghost"
-                                  className="h-5 w-5 bg-transparent hover:bg-black/10 text-black/50 hover:text-black shadow-none border-none p-0 m-0"
+                                  className="h-5 w-5 bg-transparent hover:bg-black/5 text-black/50 hover:text-black shadow-none border-none p-0 m-0"
                                   onClick={(e) => e.stopPropagation()}
                                 >
                                   <DotsVerticalRounded className="h-4 w-4" />
@@ -299,7 +319,7 @@ export function WeeklyAgendaGrid({
                                   }}
                                   className="font-medium"
                                 >
-                                  <InfoCircle className="mr-2 h-4 w-4" />{" "}
+                                  <InfoCircle className="mr-2 h-4 w-4" />
                                   Detalhes da Sessão
                                 </DropdownMenuItem>
 
@@ -334,7 +354,7 @@ export function WeeklyAgendaGrid({
                                   }}
                                   className="text-emerald-600 focus:text-emerald-700 font-medium"
                                 >
-                                  <MessageCircle className="mr-2 h-4 w-4" />{" "}
+                                  <MessageCircle className="mr-2 h-4 w-4" />
                                   Enviar WhatsApp
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
@@ -345,14 +365,13 @@ export function WeeklyAgendaGrid({
                             <div
                               className={cn(
                                 "text-[10px] font-black leading-none truncate flex items-center gap-1",
-                                (isCancelled || isPackageArchived) &&
-                                  "line-through",
+                                isPackageArchived && "line-through opacity-70",
                               )}
                             >
                               {!isPackageArchived && appt.package_id && (
                                 <PackageIcon className="h-2.5 w-2.5" />
                               )}
-                              {isPackageArchived && !isCancelled && (
+                              {isPackageArchived && (
                                 <AlertTriangle className="h-2.5 w-2.5 text-destructive" />
                               )}
                               {appt.clientName.split(" ")[0]}
@@ -372,7 +391,6 @@ export function WeeklyAgendaGrid({
                             )}
                           </div>
 
-                          {/* Rodapé do card: oculta texto se for muito curto, mantendo só layout visual */}
                           {(appt.duration / 60) * HOUR_HEIGHT > 30 && (
                             <div className="mt-auto pt-1 border-t border-black/5 flex justify-between items-center">
                               <span className="text-[9px] font-black opacity-80">

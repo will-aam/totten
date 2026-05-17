@@ -83,6 +83,7 @@ interface DailyAgendaGridProps {
 }
 
 const cleanPhone = (phone: string) => {
+  if (!phone) return "";
   const digits = phone.replace(/\D/g, "");
   return digits.startsWith("55") ? digits : `55${digits}`;
 };
@@ -101,23 +102,42 @@ function AppointmentCardContent({
   isLocked?: boolean;
 }) {
   const isPackageArchived = appt.package && appt.package.active === false;
-  // 🔥 Truncamento Inteligente: Se a altura for menor que 40px (ex: 10-15min), ativamos o modo compacto
   const isCompact = height <= 40;
 
+  // 🔥 VISUAL EXCLUSIVO E RESPONSIVO PARA CANCELADOS
+  if (isCancelled) {
+    return (
+      <div
+        className={cn(
+          "h-full w-full rounded-xl border border-dashed flex items-center justify-between px-2 py-1 shadow-sm transition-all overflow-hidden",
+          appt.color,
+          "opacity-50 grayscale-[0.8]",
+          isOverlay && "shadow-2xl scale-105 rotate-1 cursor-grabbing",
+        )}
+      >
+        <div className="flex items-center gap-1.5 truncate pr-2 w-full">
+          <Lock className="h-3 w-3 shrink-0 opacity-60" />
+          <span className="font-bold text-xs truncate line-through opacity-80">
+            {appt.clientName}
+          </span>
+        </div>
+        <div className="flex items-center gap-1 shrink-0 text-[10px] font-bold opacity-70">
+          <Clock className="h-3 w-3 hidden sm:block" />
+          <span>{appt.time}</span>
+        </div>
+      </div>
+    );
+  }
+
+  // 👇 Abaixo fica o layout normal para agendamentos não-cancelados
   return (
     <div
       className={cn(
         "h-full w-full rounded-xl border flex shadow-sm group overflow-hidden transition-all relative",
         isCompact ? "flex-row items-center px-2 py-1 gap-2" : "flex-col p-3",
         appt.color,
-        appt.hasCharge &&
-          !isCancelled &&
-          !isPackageArchived &&
-          "border-2 border-destructive",
-        isCancelled && "opacity-40 grayscale-[0.8] border-dashed",
-        isPackageArchived &&
-          !isCancelled &&
-          "border-2 border-destructive/80 opacity-80",
+        appt.hasCharge && !isPackageArchived && "border-2 border-destructive",
+        isPackageArchived && "border-2 border-destructive/80 opacity-80",
         isOverlay &&
           "shadow-2xl scale-105 rotate-1 border-primary/50 cursor-grabbing",
       )}
@@ -145,7 +165,7 @@ function AppointmentCardContent({
               className={cn(
                 "font-bold truncate",
                 isCompact ? "text-xs" : "text-sm md:text-base",
-                (isCancelled || isPackageArchived) && "line-through",
+                isPackageArchived && "line-through",
               )}
             >
               {appt.clientName}
@@ -189,12 +209,11 @@ function AppointmentCardContent({
             <Clock className="h-3 w-3" /> {appt.time}
           </span>
 
-          {/* Oculta informações de sessão em cards ultra curtos se não for pacote inativo/cancelado */}
-          {(!isCompact || isCancelled || isPackageArchived) && (
+          {(!isCompact || isPackageArchived) && (
             <span
               className={cn(
                 "px-1.5 rounded flex items-center gap-1",
-                isPackageArchived && !isCancelled
+                isPackageArchived
                   ? "bg-destructive/10 text-destructive font-black"
                   : "bg-white/30",
               )}
@@ -202,14 +221,8 @@ function AppointmentCardContent({
               {!isPackageArchived && appt.package_id && !isCompact && (
                 <PackageIcon className="h-3 w-3" />
               )}
-              {isPackageArchived && !isCancelled && (
-                <AlertTriangle className="h-3 w-3" />
-              )}
-              {isCancelled
-                ? "Cancelado"
-                : isPackageArchived
-                  ? "Inativo"
-                  : appt.sessionInfo}
+              {isPackageArchived && <AlertTriangle className="h-3 w-3" />}
+              {isPackageArchived ? "Inativo" : appt.sessionInfo}
             </span>
           )}
         </div>
@@ -217,7 +230,6 @@ function AppointmentCardContent({
     </div>
   );
 }
-
 function DraggableAppointmentCard({
   appt,
   top,
@@ -277,55 +289,58 @@ function DraggableAppointmentCard({
         onClick();
       }}
     >
-      <div className="absolute top-1 right-1 z-50">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-6 w-6 bg-transparent hover:bg-black/5 text-black/50 hover:text-black shadow-none border-none p-0 m-0"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <DotsVerticalRounded className="h-5 w-5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 z-100 rounded-xl">
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onClick();
-              }}
-              className="font-medium"
-            >
-              <InfoCircle className="mr-2 h-4 w-4" /> Detalhes da Sessão
-            </DropdownMenuItem>
-
-            <DropdownMenuSeparator />
-
-            {!isLocked && appt.status?.toUpperCase() !== "CONFIRMADO" && (
+      {/* 🔥 MENU DE OPÇÕES: Oculto completamente se o agendamento foi cancelado */}
+      {!isCancelled && (
+        <div className="absolute top-1 right-1 z-50">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-6 w-6 bg-transparent hover:bg-black/5 text-black/50 hover:text-black shadow-none border-none p-0 m-0"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <DotsVerticalRounded className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 z-100 rounded-xl">
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (onQuickConfirm) onQuickConfirm(appt);
+                  onClick();
                 }}
-                className="text-blue-600 focus:text-blue-700 font-medium"
+                className="font-medium"
               >
-                <Check className="mr-2 h-4 w-4" /> Marcar Confirmado
+                <InfoCircle className="mr-2 h-4 w-4" /> Detalhes da Sessão
               </DropdownMenuItem>
-            )}
 
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onWhatsApp(e);
-              }}
-              className="text-emerald-600 focus:text-emerald-700 font-medium"
-            >
-              <MessageCircle className="mr-2 h-4 w-4" /> Enviar WhatsApp
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+              <DropdownMenuSeparator />
+
+              {!isLocked && appt.status?.toUpperCase() !== "CONFIRMADO" && (
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onQuickConfirm) onQuickConfirm(appt);
+                  }}
+                  className="text-blue-600 focus:text-blue-700 font-medium"
+                >
+                  <Check className="mr-2 h-4 w-4" /> Marcar Confirmado
+                </DropdownMenuItem>
+              )}
+
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onWhatsApp(e);
+                }}
+                className="text-emerald-600 focus:text-emerald-700 font-medium"
+              >
+                <MessageCircle className="mr-2 h-4 w-4" /> Enviar WhatsApp
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
 
       <AppointmentCardContent
         appt={appt}
@@ -359,12 +374,17 @@ export function DailyAgendaGrid({
 
   const { setNodeRef: setDroppableRef } = useDroppable({ id: "agenda-grid" });
 
-  const calculatePosition = (timeStr: string, durationMinutes: number) => {
-    const [hours, minutes] = timeStr.split(":").map(Number);
+  // 🔥 FUNÇÃO REFATORADA: Ocupa apenas 25 minutos visuais se for CANCELADO
+  const calculatePosition = (appt: Appointment) => {
+    const [hours, minutes] = appt.time.split(":").map(Number);
     const totalMinutes = hours * 60 + minutes;
     const startOffset = startHour * 60;
     const top = ((totalMinutes - startOffset) / 60) * HOUR_HEIGHT;
-    const height = (durationMinutes / 60) * HOUR_HEIGHT;
+
+    const isCancelled = appt.status?.toUpperCase() === "CANCELADO";
+    const effectiveDuration = isCancelled ? 25 : appt.duration;
+    const height = (effectiveDuration / 60) * HOUR_HEIGHT;
+
     return { top, height };
   };
 
@@ -377,7 +397,7 @@ export function DailyAgendaGrid({
   const handleDragMove = (event: DragMoveEvent) => {
     const { active, delta } = event;
     const appt = active.data.current as Appointment;
-    const pos = calculatePosition(appt.time, appt.duration);
+    const pos = calculatePosition(appt);
 
     const newTop = pos.top + delta.y;
     const minutesFromStart = (newTop / HOUR_HEIGHT) * 60;
@@ -406,7 +426,7 @@ export function DailyAgendaGrid({
       return;
     }
 
-    const pos = calculatePosition(appt.time, appt.duration);
+    const pos = calculatePosition(appt);
     const newTop = pos.top + delta.y;
     const minutesFromStart = (newTop / HOUR_HEIGHT) * 60;
     const totalMinutes = startHour * 60 + minutesFromStart;
@@ -464,7 +484,10 @@ export function DailyAgendaGrid({
 
     sortedAppts.forEach((appt) => {
       const start = timeToMinutes(appt.time);
-      const end = start + appt.duration;
+      // 🔥 Ajuste de colisão também respeitando o tempo compactado
+      const isCancelled = appt.status?.toUpperCase() === "CANCELADO";
+      const effectiveDuration = isCancelled ? 25 : appt.duration;
+      const end = start + effectiveDuration;
 
       let placed = false;
       for (let i = 0; i < columns.length; i++) {
@@ -577,10 +600,7 @@ export function DailyAgendaGrid({
 
               <div className="absolute inset-0 z-10 pointer-events-none">
                 {positionedAppts.map(({ appt, layout }) => {
-                  const { top, height } = calculatePosition(
-                    appt.time,
-                    appt.duration,
-                  );
+                  const { top, height } = calculatePosition(appt);
                   return (
                     <DraggableAppointmentCard
                       key={appt.id}
@@ -622,12 +642,12 @@ export function DailyAgendaGrid({
               </div>
               <div
                 style={{
-                  height: `${(activeAppt.duration / 60) * HOUR_HEIGHT}px`,
+                  height: `${calculatePosition(activeAppt).height}px`,
                 }}
               >
                 <AppointmentCardContent
                   appt={activeAppt}
-                  height={(activeAppt.duration / 60) * HOUR_HEIGHT}
+                  height={calculatePosition(activeAppt).height}
                   isOverlay
                 />
               </div>
