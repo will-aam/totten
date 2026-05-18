@@ -1,3 +1,4 @@
+// components/stock/stock-table.tsx
 "use client";
 
 import { useState } from "react";
@@ -26,9 +27,6 @@ interface StockTableProps {
   onUpdateItem: (id: string, updates: Partial<StockItem>) => void;
   onDeleteItem: (id: string) => void;
 }
-
-const hideArrowsClass =
-  "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
 
 // 🔥 NOVO: estado visual “editando/focado”
 const editableInputClass =
@@ -107,19 +105,25 @@ export function StockTable({
           <div className="flex items-center gap-1 px-2">
             <span className="text-muted-foreground text-xs">R$</span>
             <Input
-              type="number"
-              step="0.01"
-              className={cn(
-                "h-8 w-24",
-                hideArrowsClass,
-                editableInputClass, // 🔥 aplicado aqui
-              )}
+              type="text" // 🔥 Alterado para text
+              inputMode="decimal" // Chama o teclado numérico no celular
+              className={cn("h-8 w-24", editableInputClass)}
               defaultValue={item.unit_cost}
-              onBlur={(e) =>
-                onUpdateItem(item.id, {
-                  unit_cost: parseFloat(e.target.value) || 0,
-                })
-              }
+              onChange={(e) => {
+                // Bloqueia letras em tempo real, permitindo só números, vírgula e ponto
+                e.target.value = e.target.value.replace(/[^0-9.,]/g, "");
+              }}
+              onBlur={(e) => {
+                // Ao perder o foco, formata o que foi digitado
+                const val = e.target.value.replace(",", "."); // Aceita vírgula do padrão BR
+                let parsed = parseFloat(val);
+
+                // Se ficou vazio ou digitou algo inválido, volta para 0
+                if (isNaN(parsed) || parsed < 0) parsed = 0;
+
+                e.target.value = parsed.toString(); // Devolve o número limpo pra tela
+                onUpdateItem(item.id, { unit_cost: parsed });
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") e.currentTarget.blur();
                 if (e.key === "Escape") e.currentTarget.blur();
@@ -145,19 +149,23 @@ export function StockTable({
         return (
           <div className="flex justify-center px-2">
             <Input
-              type="number"
-              step="0.1"
-              className={cn(
-                "h-8 w-24 text-center",
-                hideArrowsClass,
-                editableInputClass, // 🔥 aplicado aqui
-              )}
+              type="text" // 🔥 Alterado para text
+              inputMode="decimal"
+              className={cn("h-8 w-24 text-center", editableInputClass)}
               defaultValue={item.quantity}
-              onBlur={(e) =>
-                onUpdateItem(item.id, {
-                  quantity: parseFloat(e.target.value) || 0,
-                })
-              }
+              onChange={(e) => {
+                // Bloqueia letras em tempo real
+                e.target.value = e.target.value.replace(/[^0-9.,]/g, "");
+              }}
+              onBlur={(e) => {
+                const val = e.target.value.replace(",", ".");
+                let parsed = parseFloat(val);
+
+                if (isNaN(parsed) || parsed < 0) parsed = 0;
+
+                e.target.value = parsed.toString();
+                onUpdateItem(item.id, { quantity: parsed });
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") e.currentTarget.blur();
                 if (e.key === "Escape") e.currentTarget.blur();

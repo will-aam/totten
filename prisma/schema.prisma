@@ -40,20 +40,18 @@ model Admin {
   display_name       String?
   email              String         @unique
   password           String
-  role               String         @default("OWNER")
-  active             Boolean        @default(true) 
-  permissions        String[]       @default([])   
   created_at         DateTime       @default(now())
   updated_at         DateTime       @updatedAt
   email_verified     Boolean        @default(false)
   reset_token        String?        @unique
   verification_token String?        @unique
-  organizations      Organization[] @relation("AdminToOrganization")
+  role               String         @default("OWNER")
+  active             Boolean        @default(true)
+  permissions        String[]       @default([])
   appointments       Appointment[]  @relation("ProfessionalToAppointment")
-  
-  // 🔥 Novas relações de rastreabilidade adicionadas
   check_ins          CheckIn[]      @relation("AdminToCheckIn")
   transactions       Transaction[]  @relation("AdminToTransaction")
+  organizations      Organization[] @relation("AdminToOrganization")
 
   @@map("admins")
 }
@@ -262,11 +260,8 @@ model CheckIn {
   client_id       String?
   package_id      String?
   organization_id String
-  
-  // 🔥 Nova coluna e relação com o Admin
   admin_id        String?
-  admin           Admin?       @relation("AdminToCheckIn", fields: [admin_id], references: [id], onDelete: SetNull)
-
+  admin           Admin?       @relation("AdminToCheckIn", fields: [admin_id], references: [id])
   appointment     Appointment? @relation(fields: [appointment_id], references: [id], onDelete: Cascade)
   client          Client?      @relation(fields: [client_id], references: [id], onDelete: Cascade)
   organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
@@ -311,11 +306,8 @@ model Transaction {
   recurrence_id     String?
   installment       String?
   stock_item_id     String?
-  
-  // 🔥 Nova coluna e relação com o Admin
   admin_id          String?
-  admin             Admin?                     @relation("AdminToTransaction", fields: [admin_id], references: [id], onDelete: SetNull)
-
+  admin             Admin?                     @relation("AdminToTransaction", fields: [admin_id], references: [id])
   appointment       Appointment?               @relation(fields: [appointment_id], references: [id])
   client            Client?                    @relation(fields: [client_id], references: [id])
   organization      Organization               @relation(fields: [organization_id], references: [id], onDelete: Cascade)
@@ -373,6 +365,7 @@ model StockItem {
   created_at      DateTime           @default(now())
   updated_at      DateTime           @updatedAt
   was_expensed    Boolean            @default(false)
+  active          Boolean            @default(true)
   services        ServiceStockItem[]
   organization    Organization       @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   transactions    Transaction[]

@@ -339,36 +339,6 @@ export function ServiceForm() {
                 </p>
               )}
             </div>
-
-            <div className="flex flex-col gap-2 opacity-60 pointer-events-none select-none">
-              <Label
-                htmlFor="color"
-                className="flex items-center gap-2 text-foreground font-medium"
-              >
-                <Palette size="sm" className="text-muted-foreground" />
-                Cor na Agenda
-                <span className="ml-auto text-[10px] font-bold tracking-wider uppercase bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
-                  Em breve
-                </span>
-              </Label>
-              <div className="flex items-center gap-3">
-                <div className="relative h-11 w-11 rounded-full overflow-hidden border-2 border-border shadow-sm shrink-0">
-                  <input
-                    type="color"
-                    id="color"
-                    value={form.color}
-                    disabled
-                    onChange={(e) =>
-                      setForm({ ...form, color: e.target.value })
-                    }
-                    className="absolute -top-2 -left-2 h-16 w-16 cursor-not-allowed"
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Escolha a cor que representará este serviço no calendário.
-                </p>
-              </div>
-            </div>
           </CardContent>
         </Card>
 

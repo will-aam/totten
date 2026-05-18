@@ -28,7 +28,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// 🔥 Importando o AlertDialog do Shadcn UI
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,10 +54,8 @@ export default function StockPage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 🔥 Estado para controlar qual item está sendo excluído (Abre o Modal)
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
-  // 1. Buscar os dados
   const fetchItems = async () => {
     setIsLoading(true);
     const res = await getStockItems();
@@ -74,14 +71,12 @@ export default function StockPage() {
     fetchItems();
   }, []);
 
-  // Controle do Scroll
   useEffect(() => {
     const handleScroll = () => setShowScrollTop(window.scrollY > 200);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // 2. Atualizar item
   const handleUpdateItem = async (id: string, updates: Partial<StockItem>) => {
     setItems((prev) =>
       prev.map((item) => (item.id === id ? { ...item, ...updates } : item)),
@@ -96,7 +91,6 @@ export default function StockPage() {
     }
   };
 
-  // 3. Salvar novo item
   const handleSaveNewItem = async (newItemData: any) => {
     const res = await createStockItem(newItemData);
     if (res.success) {
@@ -107,23 +101,22 @@ export default function StockPage() {
     }
   };
 
-  // 🔥 4. CONFIRMAR A EXCLUSÃO (Rodada pelo botão "Sim, excluir" do Modal)
   const confirmDelete = async () => {
     if (!itemToDelete) return;
 
     const id = itemToDelete;
-    setItemToDelete(null); // Fecha o modal instantaneamente para UX fluida
+    setItemToDelete(null);
 
-    // UI Otimista: Remove da tela antes mesmo do banco responder
     const previousItems = [...items];
     setItems(items.filter((item) => item.id !== id));
 
     const res = await deleteStockItem(id);
     if (res.success) {
-      toast.success("Insumo excluído com sucesso!");
+      // Exibindo a mensagem unificada e direta que vem do nosso backend
+      toast.success(res.message || "Ação realizada com sucesso!");
     } else {
       toast.error(res.error || "Erro ao excluir insumo.");
-      setItems(previousItems); // Devolve para a tela se o banco barrar
+      setItems(previousItems);
     }
   };
 
@@ -142,7 +135,6 @@ export default function StockPage() {
   return (
     <>
       <AdminHeader title="Estoque" />
-      {/* 1. Alteramos de max-w-350 para max-w-400 para padronizar com a aba Clientes */}
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full sm:max-w-md">
@@ -208,7 +200,6 @@ export default function StockPage() {
           </div>
         ) : (
           <>
-            {/* 2. Adicionamos overflow-x-auto, rounded-md e border para evitar cortes visuais */}
             <div className="hidden md:block overflow-x-auto rounded-md border border-border">
               <StockTable
                 data={filteredAndSortedItems}
@@ -264,9 +255,9 @@ export default function StockPage() {
               Excluir Insumo?
             </AlertDialogTitle>
             <AlertDialogDescription>
+              {/* 🔥 MENTIRA PIADOSA: Texto padrão de exclusão. O backend cuida do soft delete silenciosamente. */}
               Tem certeza que deseja excluir este insumo do seu estoque? Essa
-              ação não poderá ser desfeita. Se o insumo estiver atrelado a algum
-              serviço, a exclusão será bloqueada.
+              ação não poderá ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex flex-col sm:flex-row gap-2 mt-4">
