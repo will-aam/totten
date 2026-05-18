@@ -1,39 +1,62 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { RefreshCw } from "@boxicons/react"; // Usando o Boxicons do seu projeto
+import { RefreshCw } from "@boxicons/react";
 
 export function PWAUpdater() {
   const [isUpdating, setIsUpdating] = useState(false);
+  const isReloading = useRef(false);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-      // 1. Escuta quando o novo SW assumir (skipWaiting)
-      navigator.serviceWorker.addEventListener("controllerchange", () => {
-        setIsUpdating(true);
+    if (typeof window === "undefined" || !("serviceWorker" in navigator))
+      return;
 
-        // Dá 2.5 segundos para o usuário ler o aviso animado, então força o recarregamento
-        setTimeout(() => {
-          window.location.reload();
-        }, 2500);
+    // Função centralizada para evitar múltiplos reloads
+    const triggerUpdate = () => {
+      if (isReloading.current) return;
+      isReloading.current = true;
+      setIsUpdating(true);
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 2500);
+    };
+
+    // 1. Escuta Clássica: Quando o novo SW assumir (se o React já estiver montado)
+    navigator.serviceWorker.addEventListener("controllerchange", triggerUpdate);
+
+    // 2. Estratégia de Fallback: Monitora o ciclo de vida direto no registro
+    navigator.serviceWorker.ready.then((registration) => {
+      // Escuta ativamente quando um novo ciclo de instalação começa em segundo plano
+      registration.addEventListener("updatefound", () => {
+        const newWorker = registration.installing;
+        if (newWorker) {
+          newWorker.addEventListener("statechange", () => {
+            // Se o novo worker foi ativado E já havia um controlador antigo (tela desatualizada)
+            if (
+              newWorker.state === "activated" &&
+              navigator.serviceWorker.controller
+            ) {
+              triggerUpdate();
+            }
+          });
+        }
       });
 
-      // 2. Estratégia de Atualização "Quase Instantânea"
-      navigator.serviceWorker.ready.then((registration) => {
-        // Gatilho 1: Sempre que a tela acender ou a aba voltar a ficar visível
-        document.addEventListener("visibilitychange", () => {
-          if (document.visibilityState === "visible") {
-            registration.update().catch(() => {});
-          }
-        });
+      // Gatilhos de Checagem "Quase Instantânea"
+      const checkForUpdate = () => {
+        registration.update().catch(() => {});
+      };
 
-        // Gatilho 2: Checa a cada 1 minuto (essencial para totens inativos)
-        setInterval(() => {
-          registration.update().catch(() => {});
-        }, 60 * 1000);
+      // Sempre que a tela acender ou o app voltar de segundo plano no celular
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") checkForUpdate();
       });
-    }
+
+      // Checa a cada 1 minuto
+      setInterval(checkForUpdate, 60 * 1000);
+    });
   }, []);
 
   return (
@@ -43,7 +66,7 @@ export function PWAUpdater() {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 50 }}
-          // Customizado para o tema do Totten e posicionado bem no topo visual (z-[9999])
+          // Retornado para a sintaxe limpa recomendada pelo seu VS Code
           className="fixed bottom-12 md:bottom-24 left-1/2 -translate-x-1/2 z-9999 bg-primary text-primary-foreground px-6 py-3 rounded-full shadow-[0_10px_40px_rgba(0,0,0,0.2)] flex items-center gap-3 whitespace-nowrap"
         >
           <RefreshCw size="sm" className="animate-spin" />
