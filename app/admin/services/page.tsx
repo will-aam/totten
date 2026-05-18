@@ -65,6 +65,10 @@ type PackageTemplate = {
   price: number;
   validity_days: number | null;
   active: boolean;
+  // 🔥 Adicionado o tipo do service para o TS não reclamar
+  service?: {
+    name: string;
+  };
 };
 
 type Category = {
@@ -314,6 +318,13 @@ function ServicesTabs() {
                           Inativo
                         </span>
                       )}
+                    </div>
+                    {/* 🔥 NOVO: Exibição elegante do Serviço Base */}
+                    <div className="flex items-center gap-1.5 mt-1 text-muted-foreground">
+                      <Cog size="xs" className="shrink-0" />
+                      <span className="text-xs font-medium truncate">
+                        {pkg.service?.name || "Sem serviço base"}
+                      </span>
                     </div>
                   </div>
 

@@ -24,6 +24,7 @@ import {
   Package,
   Dollar,
   Rename,
+  Cog, // 🔥 Importamos o ícone Cog para o Serviço
 } from "@boxicons/react";
 import {
   updatePackageTemplate,
@@ -70,6 +71,11 @@ export const PackageEditModal = memo(
     }, [packageTemplate, open]);
 
     if (!packageTemplate) return null;
+
+    // 🔥 Obtemos o nome do serviço base a partir do objeto packageTemplate
+    // Ajuste "service.name" caso a propriedade no seu backend se chame diferente (ex: "serviceName")
+    const serviceName =
+      packageTemplate.service?.name || "Serviço não identificado";
 
     const handleSave = async () => {
       if (!formData.name || !formData.total_sessions || !formData.price) {
@@ -157,6 +163,18 @@ export const PackageEditModal = memo(
                 }
                 placeholder="Ex: Pacote Verão"
                 className="rounded-2xl h-12 bg-muted/40 border-none font-bold focus-visible:ring-primary/20"
+              />
+            </div>
+
+            {/* 🔥 NOVO: Exibição do Serviço Base (Somente Leitura) */}
+            <div className="space-y-1.5 opacity-70 pointer-events-none select-none">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 ml-1">
+                <Cog size="xs" /> Serviço Base Vinculado
+              </Label>
+              <Input
+                value={serviceName}
+                disabled
+                className="rounded-2xl h-12 bg-muted/40 border-none font-bold text-muted-foreground"
               />
             </div>
 

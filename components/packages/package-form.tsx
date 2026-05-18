@@ -198,7 +198,7 @@ export function PackageForm() {
         </div>
 
         <div className="flex flex-col gap-2">
-          <Label htmlFor="description">Descrição</Label>
+          <Label htmlFor="description">Descrição(Para o Cliente)</Label>
           <Textarea
             id="description"
             placeholder="Detalhes sobre o que o pacote inclui..."

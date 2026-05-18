@@ -21,7 +21,13 @@ export async function GET(req: NextRequest) {
         price: true,
         service_id: true,
         active: true,
-        validity_days: true, // ✅ AGORA A API DEVOLVE A VALIDADE
+        validity_days: true,
+        // 🔥 AQUI ESTÁ A MÁGICA: Trazendo a relação do serviço para o front-end
+        service: {
+          select: {
+            name: true,
+          },
+        },
       },
       orderBy: { created_at: "desc" },
     });
@@ -55,7 +61,6 @@ export async function POST(request: Request) {
         total_sessions: Number(total_sessions),
         price: Number(price),
         service_id,
-        // ✅ Salva como número se existir, ou null se estiver vazio
         validity_days:
           validity_days !== "" && validity_days !== null
             ? Number(validity_days)
