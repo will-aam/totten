@@ -7,9 +7,14 @@ const withPWA = withPWAInit({
   reloadOnOnline: true,
   swcMinify: true,
   disable: process.env.NODE_ENV === "development",
-  register: true, // Garante que o SW seja registrado pelo plugin
-  skipWaiting: true, // Força a nova versão a assumir o controle na hora, sem "waiting"
-  cleanupOutdatedCaches: true, // Deleta pastas de cache de versões antigas automaticamente
+
+  // ========================================================
+  // ESTRATÉGIA ANTI-ZUMBI: ATUALIZAÇÃO AGRESSIVA
+  // ========================================================
+  register: true,
+  skipWaiting: true, // ESSENCIAL: Faz o SW assumir o controle na hora
+  cleanupOutdatedCaches: true, // Deleta o lixo antigo
+  // ========================================================
 });
 
 /** @type {import('next').NextConfig} */
