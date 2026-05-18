@@ -7,14 +7,9 @@ const withPWA = withPWAInit({
   reloadOnOnline: true,
   swcMinify: true,
   disable: process.env.NODE_ENV === "development",
-
-  // ========================================================
-  // ESTRATÉGIA ANTI-ZUMBI: ATUALIZAÇÃO AGRESSIVA
-  // ========================================================
   register: true,
-  skipWaiting: true, // ESSENCIAL: Faz o SW assumir o controle na hora
-  cleanupOutdatedCaches: true, // Deleta o lixo antigo
-  // ========================================================
+  skipWaiting: true,
+  cleanupOutdatedCaches: true,
 });
 
 /** @type {import('next').NextConfig} */
@@ -24,6 +19,20 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
+  },
+  // 🔥 ADIÇÃO SÊNIOR: Força a CDN a nunca cachear o Service Worker
+  async headers() {
+    return [
+      {
+        source: "/sw.js",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=0, s-maxage=0, must-revalidate",
+          },
+        ],
+      },
+    ];
   },
   turbopack: {},
 };
