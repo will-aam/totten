@@ -175,12 +175,11 @@ export async function POST(req: NextRequest) {
               await tx.transaction.create({
                 data: {
                   type: "DESPESA",
-                  description: `Custo de Insumo (Totem): ${stockData.name}`,
+                  description: `Custo Totem (Agend: ${agendamento.id}): ${stockData.name}`,
                   amount: costOfUsedQty,
                   date: new Date(),
                   status: "PAGO",
                   organization_id: admin.organizationId,
-                  appointment_id: agendamento.id,
                 },
               });
             }
@@ -195,12 +194,11 @@ export async function POST(req: NextRequest) {
         await tx.transaction.create({
           data: {
             type: "DESPESA",
-            description: `Custo Fixo de Material (Totem): ${service.name}`,
+            description: `Custo Fixo (Totem - Agend: ${agendamento.id}): ${service.name}`,
             amount: service.material_cost,
             date: new Date(),
             status: "PAGO",
             organization_id: admin.organizationId,
-            appointment_id: agendamento.id,
           },
         });
       }
