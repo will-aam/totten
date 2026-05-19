@@ -6,11 +6,11 @@ const withPWA = withPWAInit({
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
   swcMinify: true,
-  disable: process.env.NODE_ENV === "development",
+
+  disable: false,
+
   register: true,
-  // 🔥 A MUDANÇA CRÍTICA: false.
-  // O SW baixa a atualização e fica aguardando o usuário clicar no botão do nosso Modal.
-  skipWaiting: false,
+  skipWaiting: true,
   cleanupOutdatedCaches: true,
 });
 
@@ -22,7 +22,6 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // Força a CDN a nunca cachear o Service Worker (Essencial)
   async headers() {
     return [
       {
@@ -36,7 +35,6 @@ const nextConfig = {
       },
     ];
   },
-  turbopack: {},
 };
 
 export default withPWA(nextConfig);
