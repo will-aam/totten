@@ -6,11 +6,10 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { PaymentMethod, Transaction, TransactionStatus } from "@/types/finance";
-import { ArrowDownRight, ArrowUpRight, Receipt, User } from "@boxicons/react"; // 🔥 Importamos o User
+import { Transaction, TransactionStatus } from "@/types/finance";
+import { ArrowDownRight, ArrowUpRight, Receipt, User } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
-// 🔥 RASTREABILIDADE: Estendendo o tipo localmente para não precisar alterar o arquivo de types agora
 export interface ExtendedTransaction extends Transaction {
   professionalName?: string | null;
 }
@@ -19,7 +18,6 @@ interface RecentTransactionsListProps {
   data: ExtendedTransaction[];
 }
 
-// 🔥 OTIMIZAÇÃO: Formatadores instanciados uma única vez
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
@@ -47,66 +45,35 @@ function TransactionListItem({
 }) {
   const isIncome = transaction.type === "RECEITA";
 
-  // =========================================================================
-  // 🔥 MAGIA DE FRONT-END: Limpando a String do Título para o Mobile
-  // =========================================================================
-  let displayTitle = transaction.description;
+  // Processamento do Título e Taxas
+  let rawDesc = transaction.description || "";
   let taxDiscount = "";
 
-  // 1. Extrai o texto da taxa (ex: "(Taxa abatida: R$ 2,50)") e remove do título principal
-  const taxMatch = displayTitle.match(/\(Taxa abatida:\s*(R\$\s*[\d,.]+)\)/i);
+  const taxMatch = rawDesc.match(/\(Taxa abatida:\s*(R\$\s*[\d,.]+)\)/i);
   if (taxMatch) {
-    taxDiscount = taxMatch[1]; // Pega só o "R$ 2,50"
-    displayTitle = displayTitle.replace(taxMatch[0], "").trim();
+    taxDiscount = taxMatch[1];
+    rawDesc = rawDesc.replace(taxMatch[0], "").trim();
   }
 
-  // 2. Remove o nome do cliente repetido em parênteses (ex: "(Maria Silva)")
+  let displayTitle = rawDesc.split("|")[0].trim();
+
   if (transaction.clientName) {
-    // Escapa caracteres especiais do nome para não quebrar a Regex
-    const escapedName = transaction.clientName.replace(
-      /[.*+?^${}()|[\]\\]/g,
-      "\\$&",
-    );
+    const escapedName = transaction.clientName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const nameRegex = new RegExp(`\\(\\s*${escapedName}\\s*\\)`, "i");
-    displayTitle = displayTitle
-      .replace(nameRegex, "")
-      .replace(/\s{2,}/g, " ")
-      .trim();
+    displayTitle = displayTitle.replace(nameRegex, "").replace(/\s{2,}/g, " ").trim();
   }
-  // =========================================================================
 
   const StatusBadge = ({ status }: { status: TransactionStatus }) => {
-    switch (status) {
-      case "PAGO":
-        return (
-          <Badge
-            variant="secondary"
-            className="bg-emerald-100/50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 border-none text-[10px] px-1.5 py-0 h-4"
-          >
-            Pago
-          </Badge>
-        );
-      case "PENDENTE":
-        return (
-          <Badge
-            variant="secondary"
-            className="bg-amber-100/50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 border-none text-[10px] px-1.5 py-0 h-4"
-          >
-            Pendente
-          </Badge>
-        );
-      case "ATRASADO":
-        return (
-          <Badge
-            variant="secondary"
-            className="bg-rose-100/50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400 border-none text-[10px] px-1.5 py-0 h-4"
-          >
-            Atrasado
-          </Badge>
-        );
-      default:
-        return null;
-    }
+    const styles = {
+      PAGO: "bg-emerald-100/50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400",
+      PENDENTE: "bg-amber-100/50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400",
+      ATRASADO: "bg-rose-100/50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400",
+    };
+    return (
+      <Badge variant="secondary" className={`${styles[status]} border-none text-[10px] px-1.5 py-0 h-4`}>
+        {status.charAt(0) + status.slice(1).toLowerCase()}
+      </Badge>
+    );
   };
 
   return (
@@ -120,44 +87,27 @@ function TransactionListItem({
               : "bg-rose-100/50 text-rose-600 border-rose-200/50 dark:bg-rose-900/30 dark:border-rose-800/50",
           )}
         >
-          {isIncome ? (
-            <ArrowUpRight className="h-5 w-5" />
-          ) : (
-            <ArrowDownRight className="h-5 w-5" />
-          )}
+          {isIncome ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownRight className="h-5 w-5" />}
         </div>
 
         <div className="flex flex-col min-w-0">
-          {/* 🔥 truncate adicionado para garantir que corta com "..." se a tela for minúscula */}
-          <span
-            className="text-sm font-semibold text-foreground leading-tight mb-1 truncate"
-            title={displayTitle}
-          >
+          <span className="text-sm font-semibold text-foreground leading-tight mb-1 truncate" title={displayTitle}>
             {displayTitle}
           </span>
-
           <span className="text-xs text-muted-foreground leading-none flex items-center gap-1.5 truncate">
-            <span className="shrink-0">
-              {dateFormatter.format(new Date(transaction.date))}
-            </span>
-
+            <span className="shrink-0">{dateFormatter.format(new Date(transaction.date))}</span>
             {transaction.paymentMethod && (
               <>
                 <span>•</span>
-                <span className="shrink-0">
-                  {getPaymentMethodLabel(transaction.paymentMethod)}
-                </span>
+                <span className="shrink-0">{getPaymentMethodLabel(transaction.paymentMethod)}</span>
               </>
             )}
-
             {transaction.clientName && (
               <>
                 <span>•</span>
                 <span className="truncate">{transaction.clientName}</span>
               </>
             )}
-
-            {/* 🔥 RASTREABILIDADE: Assinatura de quem registrou a transação */}
             {transaction.professionalName && (
               <>
                 <span>•</span>
@@ -170,26 +120,15 @@ function TransactionListItem({
         </div>
       </div>
 
-      {/* Valores e Badges alinhados à direita */}
       <div className="flex flex-col items-end gap-1 shrink-0">
-        <span
-          className={cn(
-            "text-sm font-bold leading-none",
-            isIncome
-              ? "text-emerald-600 dark:text-emerald-400"
-              : "text-foreground",
-          )}
-        >
+        <span className={cn("text-sm font-bold leading-none", isIncome ? "text-emerald-600 dark:text-emerald-400" : "text-foreground")}>
           {isIncome ? "+" : "-"} {currencyFormatter.format(transaction.amount)}
         </span>
-
-        {/* 🔥 Mostra a taxa de forma super discreta debaixo do valor */}
         {taxDiscount && (
           <span className="text-[9px] font-medium text-muted-foreground/80 leading-none">
             - taxa {taxDiscount}
           </span>
         )}
-
         <div className="mt-0.5">
           <StatusBadge status={transaction.status} />
         </div>
@@ -206,26 +145,18 @@ export function RecentTransactionsList({ data }: RecentTransactionsListProps) {
           <Receipt className="h-5 w-5 text-primary" />
           Histórico Recente
         </CardTitle>
-        <CardDescription>
-          Últimas movimentações financeiras registradas
-        </CardDescription>
+        <CardDescription>Últimas movimentações financeiras registradas</CardDescription>
       </CardHeader>
-
       <CardContent className="px-0 pb-0 md:pb-6 md:px-6">
         {data.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/30 rounded-lg border border-dashed border-border">
             <Receipt className="h-10 w-10 text-muted-foreground/40" />
-            <p className="mt-4 text-sm font-medium text-muted-foreground">
-              Nenhuma movimentação encontrada.
-            </p>
+            <p className="mt-4 text-sm font-medium text-muted-foreground">Nenhuma movimentação encontrada.</p>
           </div>
         ) : (
           <div className="flex flex-col">
             {data.map((transaction) => (
-              <TransactionListItem
-                key={transaction.id}
-                transaction={transaction}
-              />
+              <TransactionListItem key={transaction.id} transaction={transaction} />
             ))}
           </div>
         )}
