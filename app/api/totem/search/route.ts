@@ -185,11 +185,11 @@ export async function POST(req: NextRequest) {
         }
 
         // c) Lança a despesa consolidada (Apenas UMA transação)
-        if (totalCost > 0) {
+if (totalCost > 0) {
           await tx.transaction.create({
             data: {
               type: "DESPESA",
-              description: `Custo Consolidado de Insumos (Agend: ${agendamento.id})\nDetalhes: ${detailsArray.join(" | ")}`,
+              description: `Custo Insumos (Totem) | Agend: ${agendamento.id} | Detalhes: ${detailsArray.join(" | ")}`,
               amount: totalCost,
               date: new Date(),
               status: "PAGO",
