@@ -8,7 +8,9 @@ const withPWA = withPWAInit({
   swcMinify: true,
   disable: process.env.NODE_ENV === "development",
   register: true,
-  skipWaiting: true,
+  // 🔥 A MUDANÇA CRÍTICA: false.
+  // O SW baixa a atualização e fica aguardando o usuário clicar no botão do nosso Modal.
+  skipWaiting: false,
   cleanupOutdatedCaches: true,
 });
 
@@ -20,7 +22,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // 🔥 ADIÇÃO SÊNIOR: Força a CDN a nunca cachear o Service Worker
+  // Força a CDN a nunca cachear o Service Worker (Essencial)
   async headers() {
     return [
       {
