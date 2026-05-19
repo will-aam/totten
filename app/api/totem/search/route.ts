@@ -157,33 +157,45 @@ export async function POST(req: NextRequest) {
         service.stock_items &&
         service.stock_items.length > 0
       ) {
-        // FLUXO A e B (Baixa Inteligente)
+        // FLUXO A e B (Baixa Inteligente com Lançamento Único Consolidado)
+        let totalCost = 0;
+        let detailsArray: string[] = [];
+
         for (const item of service.stock_items) {
           const stockData = item.stock_item;
           const usedQty = item.quantity_used;
 
-          // a) Baixa a quantidade física
+          // a) Baixa a quantidade física no estoque (mantém individual)
           await tx.stockItem.update({
             where: { id: stockData.id },
             data: { quantity: { decrement: usedQty } },
           });
 
-          // b) Regra de Caixa
+          // b) Acumula o custo financeiro
           if (!stockData.was_expensed) {
-            const costOfUsedQty = Number(usedQty) * Number(stockData.unit_cost);
-            if (costOfUsedQty > 0) {
-              await tx.transaction.create({
-                data: {
-                  type: "DESPESA",
-                  description: `Custo Totem (Agend: ${agendamento.id}): ${stockData.name}`,
-                  amount: costOfUsedQty,
-                  date: new Date(),
-                  status: "PAGO",
-                  organization_id: admin.organizationId,
-                },
-              });
+            const itemCost = Number(usedQty) * Number(stockData.unit_cost);
+            if (itemCost > 0) {
+              totalCost += itemCost;
+              // Guarda o detalhe para a descrição (Ex: "2x Luva (R$ 1,00)")
+              detailsArray.push(
+                `${usedQty}x ${stockData.name} (R$ ${itemCost.toFixed(2).replace(".", ",")})`
+              );
             }
           }
+        }
+
+        // c) Lança a despesa consolidada (Apenas UMA transação)
+        if (totalCost > 0) {
+          await tx.transaction.create({
+            data: {
+              type: "DESPESA",
+              description: `Custo Consolidado de Insumos (Agend: ${agendamento.id})\nDetalhes: ${detailsArray.join(" | ")}`,
+              amount: totalCost,
+              date: new Date(),
+              status: "PAGO",
+              organization_id: admin.organizationId,
+            },
+          });
         }
       } else if (
         !service.track_stock &&
@@ -194,7 +206,7 @@ export async function POST(req: NextRequest) {
         await tx.transaction.create({
           data: {
             type: "DESPESA",
-            description: `Custo Fixo (Totem - Agend: ${agendamento.id}): ${service.name}`,
+            description: `Custo Fixo de Material (Totem - Agend: ${agendamento.id}): ${service.name}`,
             amount: service.material_cost,
             date: new Date(),
             status: "PAGO",
