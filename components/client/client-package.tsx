@@ -1,3 +1,4 @@
+// components/client/client-package.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -40,6 +41,7 @@ export type PackageType = {
   used_sessions: number;
   price: number | string;
   active: boolean;
+  sessionDates?: string[]; // 🔥 NOVO: Adicionado para receber as datas do backend
 };
 
 interface PackageTemplate {
@@ -181,13 +183,8 @@ export function ClientPackage({
     }
   };
 
-  // 🔥 FUNÇÃO ATUALIZADA: Lida com a confirmação e execução do encerramento
   const handleArchivePackage = async () => {
     if (!activePackage) return;
-
-    // Nota: A confirmação visual agora é feita pelo Modal (Dialog) antes de chamar esta função.
-    // Se preferir uma verificação extra de segurança no código (opcional), pode manter,
-    // mas como solicitado, removemos o window.confirm.
 
     setIsArchiving(true);
     try {
@@ -543,6 +540,8 @@ export function ClientPackage({
           )}
         </CardContent>
       </Card>
+      
+      {/* 🔥 NOVO: Passando sessionDates para o Voucher */}
       {activePackage && (
         <PackageVoucher
           open={voucherOpen}
@@ -551,6 +550,7 @@ export function ClientPackage({
           packageName={activePackage.name}
           totalSessions={activePackage.total_sessions}
           packageId={activePackage.id}
+          sessionDates={activePackage.sessionDates || []}
         />
       )}
     </>
