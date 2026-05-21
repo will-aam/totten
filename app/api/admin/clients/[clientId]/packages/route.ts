@@ -50,15 +50,38 @@ export async function GET(
         used_sessions: true,
         price: true,
         active: true,
-        service_id: true, // 🔥 Adicionado para garantir o auto-preenchimento no frontend
+        service_id: true,
+        // 🔥 NOVO: Busca o histórico de check-ins para extrair as datas
+        check_ins: {
+          select: {
+            date_time: true,
+          },
+          orderBy: {
+            date_time: "asc",
+          },
+        },
       },
       orderBy: {
         created_at: "desc",
       },
     });
 
+    // 🔥 NOVO: Mapeia o resultado para injetar o array 'sessionDates' igual fizemos no outro arquivo
+    const formattedPackages = packages.map((pkg) => {
+      return {
+        id: pkg.id,
+        name: pkg.name,
+        total_sessions: pkg.total_sessions,
+        used_sessions: pkg.used_sessions,
+        price: pkg.price,
+        active: pkg.active,
+        service_id: pkg.service_id,
+        sessionDates: pkg.check_ins.map((checkin) => checkin.date_time.toISOString()),
+      };
+    });
+
     // 🔥 Retorna o array direto para bater perfeitamente com a tipagem do SWR no Front
-    return NextResponse.json(packages);
+    return NextResponse.json(formattedPackages);
   } catch (error) {
     console.error("[GET /api/admin/clients/[clientId]/packages] ERRO:", error);
 
