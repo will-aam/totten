@@ -30,6 +30,7 @@ type CompletedPackage = {
   completionDate: string;
   hasVoucher: boolean;
   lastVoucherDate?: Date;
+  sessionDates?: string[]; // <-- ADICIONADO AQUI
 };
 
 type VouchersResponse = {
@@ -243,6 +244,7 @@ export default function VouchersPage() {
           clientName={selectedVoucher.clientName}
           packageName={selectedVoucher.packageName}
           totalSessions={selectedVoucher.totalSessions}
+          sessionDates={selectedVoucher.sessionDates || []} 
         />
       )}
     </>
