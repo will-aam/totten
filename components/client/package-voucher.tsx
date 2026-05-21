@@ -15,6 +15,8 @@ interface PackageVoucherProps {
   clientName: string;
   packageName: string;
   totalSessions: number;
+  // Nova prop para receber o array de datas
+  sessionDates?: string[] | Date[]; 
 }
 
 export function PackageVoucher({
@@ -24,11 +26,11 @@ export function PackageVoucher({
   clientName,
   packageName,
   totalSessions,
+  sessionDates = [], // Valor default vazio
 }: PackageVoucherProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
 
-  // Registra voucher na API
   const registerVoucher = async () => {
     try {
       await fetch("/api/vouchers", {
@@ -100,40 +102,29 @@ export function PackageVoucher({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] sm:max-w-md bg-background p-4 sm:p-6 rounded-3xl overflow-y-auto max-h-[90dvh] border-border">
-        {/* Título invisível para acessibilidade (exigência do Radix) */}
         <DialogTitle className="sr-only">Comprovante de Conclusão</DialogTitle>
 
         <div className="flex flex-col items-center justify-center py-2 sm:py-4 w-full overflow-hidden">
-          {/* CARD DO COMPROVANTE - 100% Flat e com largura w-72 (suportada pelo Tailwind) */}
           <div
             ref={cardRef}
-            className="w-72 bg-card  p-5  flex flex-col items-center text-center relative overflow-hidden shrink-0"
+            className="w-72 bg-card p-5 flex flex-col items-center text-center relative overflow-hidden shrink-0"
           >
-            {/* --- DECORAÇÕES DE FUNDO --- */}
-
-            {/* 1. Topo Direita (Principal) */}
+            {/* Decorações de Fundo */}
             <div className="absolute -top-10 -right-10 text-muted/20 pointer-events-none">
               <BadgeCheck className="h-32 w-32 fill-current" />
             </div>
-
-            {/* 2. Baixo Esquerda (Secundária - Espelhada) */}
             <div className="absolute -bottom-10 -left-10 text-muted/10 pointer-events-none rotate-180">
               <BadgeCheck className="h-24 w-24 fill-current" />
             </div>
-
-            {/* 3. Sparkle Sutil no Centro (Textura) */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-muted/5 pointer-events-none">
               <BadgeCheck className="h-40 w-40" />
             </div>
 
-            {/* --- CONTEÚDO --- */}
-
-            {/* Ícone Principal */}
+            {/* Conteúdo */}
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground mb-3 z-10 shrink-0">
               <BadgeCheck className="h-6 w-6" />
             </div>
 
-            {/* Títulos */}
             <h2 className="font-serif text-2xl font-bold text-foreground mb-1 z-10 leading-tight">
               Parabéns!
             </h2>
@@ -143,7 +134,6 @@ export function PackageVoucher({
 
             <div className="w-full h-px bg-border mb-4 z-10" />
 
-            {/* Detalhes */}
             <div className="flex flex-col gap-1 w-full z-10">
               <p className="text-xs text-muted-foreground">Certificamos que</p>
               <p className="text-lg font-bold text-foreground leading-tight">
@@ -156,11 +146,38 @@ export function PackageVoucher({
                 {packageName}
               </p>
 
-              {/* Badge de Sessões */}
               <div className="mt-4 inline-flex mx-auto items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded-full text-xs font-medium">
                 {totalSessions} / {totalSessions} Sessões
               </div>
             </div>
+
+            {/* --- NOVO: HISTÓRICO DE SESSÕES --- */}
+            {sessionDates.length > 0 && (
+              <div className="mt-5 w-full z-10 flex flex-col items-center">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-2">
+                  Histórico de Uso
+                </p>
+                {/* Grid 2 colunas: perfeito para a largura w-72 */}
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 w-full px-1">
+                  {sessionDates.map((date, index) => (
+                    <div 
+                      key={index} 
+                      className="flex justify-between items-center text-[10px] bg-muted/40 rounded px-2 py-1"
+                    >
+                      <span className="font-bold text-muted-foreground mr-2">{index + 1}º</span>
+                      <span className="text-foreground font-medium truncate">
+                        {new Date(date).toLocaleDateString("pt-BR", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "2-digit" // Usa formato curto dd/mm/aa para economizar espaço
+                        })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* ----------------------------------- */}
 
             {/* Footer */}
             <div className="mt-6 pt-3 w-full border-t border-dashed border-border z-10 flex justify-between items-center px-1">
@@ -174,18 +191,14 @@ export function PackageVoucher({
           </div>
         </div>
 
-        {/* BOTÕES DE AÇÃO - Totalmente Flat */}
+        {/* Botões */}
         <div className="flex flex-col gap-2 w-full mt-2">
           <Button
             onClick={() => handleExport("share")}
             disabled={isExporting}
             className="w-full rounded-full h-10 text-xs sm:text-sm active:scale-95 transition-transform"
           >
-            {isExporting ? (
-              <LoaderDots className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Share className="mr-2 h-4 w-4" />
-            )}
+            {isExporting ? <LoaderDots className="mr-2 h-4 w-4 animate-spin" /> : <Share className="mr-2 h-4 w-4" />}
             Compartilhar via WhatsApp
           </Button>
           <Button
@@ -194,11 +207,7 @@ export function PackageVoucher({
             disabled={isExporting}
             className="w-full rounded-full border-border hover:bg-muted active:scale-95 transition-transform h-10 text-xs sm:text-sm"
           >
-            {isExporting ? (
-              <LoaderDots className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <ArrowToBottom className="mr-2 h-4 w-4" />
-            )}
+            {isExporting ? <LoaderDots className="mr-2 h-4 w-4 animate-spin" /> : <ArrowToBottom className="mr-2 h-4 w-4" />}
             Baixar Imagem
           </Button>
         </div>
