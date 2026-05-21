@@ -59,6 +59,15 @@ export async function GET(request: Request) {
             },
             take: 1,
           },
+          // 🔥 NOVO: Busca o histórico de check-ins (sessões realizadas) deste pacote
+          check_ins: {
+            select: {
+              date_time: true,
+            },
+            orderBy: {
+              date_time: "asc", // Traz em ordem cronológica, do 1º ao último
+            },
+          },
         },
         orderBy: {
           updated_at: "desc",
@@ -83,6 +92,8 @@ export async function GET(request: Request) {
       }),
       hasVoucher: pkg.vouchers.length > 0,
       lastVoucherDate: pkg.vouchers[0]?.issue_date,
+      // 🔥 NOVO: Extrai apenas as datas e envia como string ISO para o Frontend
+      sessionDates: pkg.check_ins.map((checkin) => checkin.date_time.toISOString()),
     }));
 
     // 🔥 Retorna os dados envelopados com os metadados de paginação
