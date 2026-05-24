@@ -18,7 +18,7 @@ import {
   Bell,
   User,
   ChevronRight,
-  Medal,
+  Ticket,
   LinkAlt,
   LoaderDots,
   Note,
@@ -112,7 +112,7 @@ const navItems = [
   {
     title: "Vouchers",
     href: "/admin/vouchers",
-    icon: Medal as BoxIcon,
+    icon: Ticket as BoxIcon,
     active: true,
     ownerOnly: true,
   },

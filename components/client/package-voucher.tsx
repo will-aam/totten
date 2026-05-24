@@ -15,8 +15,7 @@ interface PackageVoucherProps {
   clientName: string;
   packageName: string;
   totalSessions: number;
-  // Nova prop para receber o array de datas
-  sessionDates?: string[] | Date[]; 
+  sessionDates?: string[] | Date[];
 }
 
 export function PackageVoucher({
@@ -26,7 +25,7 @@ export function PackageVoucher({
   clientName,
   packageName,
   totalSessions,
-  sessionDates = [], // Valor default vazio
+  sessionDates = [],
 }: PackageVoucherProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -151,33 +150,41 @@ export function PackageVoucher({
               </div>
             </div>
 
-            {/* --- NOVO: HISTÓRICO DE SESSÕES --- */}
-            {sessionDates.length > 0 && (
-              <div className="mt-5 w-full z-10 flex flex-col items-center">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-2">
-                  Histórico de Uso
-                </p>
-                {/* Grid 2 colunas: perfeito para a largura w-72 */}
-                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 w-full px-1">
-                  {sessionDates.map((date, index) => (
-                    <div 
-                      key={index} 
-                      className="flex justify-between items-center text-[10px] bg-muted/40 rounded px-2 py-1"
+            {/* --- HISTÓRICO DE SESSÕES (CORRIGIDO PARA SEMPRE MOSTRAR O TOTAL) --- */}
+            <div className="mt-5 w-full z-10 flex flex-col items-center">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-2">
+                Histórico de Uso
+              </p>
+              {/* Grid inteligente: se for > 6 sessões (ex: 10), usa 3 colunas para caber perfeitamente no cartão */}
+              <div
+                className={`grid gap-x-2 gap-y-1.5 w-full px-1 ${totalSessions > 6 ? "grid-cols-3" : "grid-cols-2"}`}
+              >
+                {/* Array.from força a repetição com base no TOTAL de sessões do pacote */}
+                {Array.from({ length: totalSessions }).map((_, index) => {
+                  const date = sessionDates[index]; // Tenta buscar a data correspondente
+                  return (
+                    <div
+                      key={index}
+                      className="flex justify-between items-center text-[9px] bg-muted/40 rounded px-1.5 py-1"
                     >
-                      <span className="font-bold text-muted-foreground mr-2">{index + 1}º</span>
+                      <span className="font-bold text-muted-foreground mr-1">
+                        {index + 1}º
+                      </span>
                       <span className="text-foreground font-medium truncate">
-                        {new Date(date).toLocaleDateString("pt-BR", {
-                          day: "2-digit",
-                          month: "2-digit",
-                          year: "2-digit" // Usa formato curto dd/mm/aa para economizar espaço
-                        })}
+                        {date
+                          ? new Date(date).toLocaleDateString("pt-BR", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "2-digit",
+                            })
+                          : "--/--/--"}{" "}
+                        {/* Caso não tenha registro, mostra os traços para não quebrar a UI */}
                       </span>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
-            )}
-            {/* ----------------------------------- */}
+            </div>
 
             {/* Footer */}
             <div className="mt-6 pt-3 w-full border-t border-dashed border-border z-10 flex justify-between items-center px-1">
@@ -198,7 +205,11 @@ export function PackageVoucher({
             disabled={isExporting}
             className="w-full rounded-full h-10 text-xs sm:text-sm active:scale-95 transition-transform"
           >
-            {isExporting ? <LoaderDots className="mr-2 h-4 w-4 animate-spin" /> : <Share className="mr-2 h-4 w-4" />}
+            {isExporting ? (
+              <LoaderDots className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Share className="mr-2 h-4 w-4" />
+            )}
             Compartilhar via WhatsApp
           </Button>
           <Button
@@ -207,7 +218,11 @@ export function PackageVoucher({
             disabled={isExporting}
             className="w-full rounded-full border-border hover:bg-muted active:scale-95 transition-transform h-10 text-xs sm:text-sm"
           >
-            {isExporting ? <LoaderDots className="mr-2 h-4 w-4 animate-spin" /> : <ArrowToBottom className="mr-2 h-4 w-4" />}
+            {isExporting ? (
+              <LoaderDots className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <ArrowToBottom className="mr-2 h-4 w-4" />
+            )}
             Baixar Imagem
           </Button>
         </div>

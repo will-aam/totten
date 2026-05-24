@@ -12,23 +12,20 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    // 🔥 Captura parâmetros de paginação e busca da URL
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "15", 10);
     const search = searchParams.get("q") || "";
     const skip = (page - 1) * limit;
 
-    // 🔥 Constrói a regra de busca base (Pacotes concluídos)
     const whereClause: any = {
       organization_id: admin.organizationId,
       active: true,
       used_sessions: {
-        gte: prisma.package.fields.total_sessions, // Sessões usadas >= total
+        gte: prisma.package.fields.total_sessions,
       },
     };
 
-    // 🔥 Adiciona o filtro de texto SE o usuário estiver buscando algo
     if (search) {
       whereClause.OR = [
         { client: { name: { contains: search, mode: "insensitive" } } },
@@ -36,67 +33,71 @@ export async function GET(request: Request) {
       ];
     }
 
-    // 🔥 Executa a contagem e a busca em paralelo para máxima performance
     const [totalCount, completedPackages] = await Promise.all([
       prisma.package.count({ where: whereClause }),
       prisma.package.findMany({
         where: whereClause,
         include: {
           client: {
-            select: {
-              id: true,
-              name: true,
-            },
+            select: { id: true, name: true },
           },
           service: {
-            select: {
-              name: true,
-            },
+            select: { name: true },
           },
           vouchers: {
-            orderBy: {
-              issue_date: "desc",
-            },
+            orderBy: { issue_date: "desc" },
             take: 1,
           },
-          // 🔥 NOVO: Busca o histórico de check-ins (sessões realizadas) deste pacote
+          // Busca os check-ins vinculados ao pacote
           check_ins: {
-            select: {
-              date_time: true,
-            },
-            orderBy: {
-              date_time: "asc", // Traz em ordem cronológica, do 1º ao último
-            },
+            select: { date_time: true },
+            orderBy: { date_time: "asc" },
+          },
+          // Busca também os agendamentos realizados caso falte um check-in
+          appointments: {
+            where: { status: "REALIZADO" },
+            select: { date_time: true },
+            orderBy: { date_time: "asc" },
           },
         },
         orderBy: {
           updated_at: "desc",
         },
-        skip, // Pula os registros das páginas anteriores
-        take: limit, // Pega apenas os 15 da página atual
+        skip,
+        take: limit,
       }),
     ]);
 
-    // Formata os dados para o frontend
-    const formatted = completedPackages.map((pkg) => ({
-      id: pkg.id,
-      clientId: pkg.client.id,
-      clientName: pkg.client.name,
-      packageName: pkg.name,
-      serviceName: pkg.service.name,
-      totalSessions: pkg.total_sessions,
-      completionDate: pkg.updated_at.toLocaleDateString("pt-BR", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }),
-      hasVoucher: pkg.vouchers.length > 0,
-      lastVoucherDate: pkg.vouchers[0]?.issue_date,
-      // 🔥 NOVO: Extrai apenas as datas e envia como string ISO para o Frontend
-      sessionDates: pkg.check_ins.map((checkin) => checkin.date_time.toISOString()),
-    }));
+    const formatted = completedPackages.map((pkg) => {
+      // Junta e ordena cronologicamente as datas de check-in e de agendamentos
+      const rawDates = [
+        ...pkg.check_ins.map((c) => c.date_time),
+        ...pkg.appointments.map((a) => a.date_time),
+      ].sort((a, b) => a.getTime() - b.getTime());
 
-    // 🔥 Retorna os dados envelopados com os metadados de paginação
+      // Filtra datas duplicadas (ex: agendamento e check-in feitos no mesmo dia)
+      const uniqueDates = Array.from(
+        new Set(rawDates.map((d) => d.toISOString().split("T")[0])),
+      ).map((dateStr) => new Date(dateStr).toISOString());
+
+      return {
+        id: pkg.id,
+        clientId: pkg.client.id,
+        clientName: pkg.client.name,
+        packageName: pkg.name,
+        serviceName: pkg.service.name,
+        totalSessions: pkg.total_sessions,
+        completionDate: pkg.updated_at.toLocaleDateString("pt-BR", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        }),
+        hasVoucher: pkg.vouchers.length > 0,
+        lastVoucherDate: pkg.vouchers[0]?.issue_date,
+        sessionDates: uniqueDates, // Envia as datas consolidadas
+      };
+    });
+
     return NextResponse.json({
       data: formatted,
       total: totalCount,
@@ -111,6 +112,7 @@ export async function GET(request: Request) {
 
 // POST - Registra que um voucher foi emitido
 export async function POST(request: Request) {
+  // ... Código do POST continua idêntico (não alterado)
   try {
     const admin = await getCurrentAdmin();
 
@@ -128,7 +130,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Cria o registro de voucher
     const voucher = await prisma.voucher.create({
       data: {
         package_id,
