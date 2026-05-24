@@ -6,7 +6,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -30,7 +29,6 @@ import {
   Phone,
   Package,
   LoaderDots,
-  CheckCircle,
   Pin,
   ChevronDown,
   CreditCard,
@@ -200,211 +198,212 @@ export function ClientForm() {
   );
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4 md:gap-6">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8 items-start">
-        <div className="lg:col-span-2 flex flex-col gap-4">
-          <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card">
-            <CardHeader className="px-0 pt-0 md:pt-6 md:px-6">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <User className="h-5 w-5 text-primary" /> Ficha da Cliente
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-0 pb-0 md:pb-6 md:px-6 space-y-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6 md:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12 items-start">
+        {/* LADO ESQUERDO: Dados do Cliente (Flutuante / Flat) */}
+        <div className="lg:col-span-2 flex flex-col gap-6">
+          <div>
+            <h2 className="text-lg font-bold flex items-center gap-2 text-foreground mb-4">
+              <User className="h-5 w-5 text-primary" /> Ficha da Cliente
+            </h2>
+          </div>
+
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <Label>Nome Completo *</Label>
+              <Input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="Ex: Maria Oliveira"
+                className="h-11 bg-muted/30 rounded-xl border-border/50"
+              />
+              {errors.name && (
+                <p className="text-xs text-destructive">{errors.name}</p>
+              )}
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-5">
               <div className="space-y-2">
-                <Label>Nome Completo *</Label>
+                <Label className="flex items-center gap-2">
+                  <Phone className="h-4 w-4" /> WhatsApp *
+                </Label>
                 <Input
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="Ex: Maria Oliveira"
-                  className="h-11 bg-muted/30 rounded-xl"
+                  value={form.phone_whatsapp}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      phone_whatsapp: formatPhoneInput(e.target.value),
+                    })
+                  }
+                  placeholder="(00) 00000-0000"
+                  className="h-11 bg-muted/30 rounded-xl border-border/50"
                 />
-                {errors.name && (
-                  <p className="text-xs text-destructive">{errors.name}</p>
+                {errors.phone_whatsapp && (
+                  <p className="text-xs text-destructive">
+                    {errors.phone_whatsapp}
+                  </p>
                 )}
               </div>
-
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Phone className="h-4 w-4" /> WhatsApp *
-                  </Label>
-                  <Input
-                    value={form.phone_whatsapp}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        phone_whatsapp: formatPhoneInput(e.target.value),
-                      })
-                    }
-                    placeholder="(00) 00000-0000"
-                    className="h-11 bg-muted/30 rounded-xl"
-                  />
-                  {errors.phone_whatsapp && (
-                    <p className="text-xs text-destructive">
-                      {errors.phone_whatsapp}
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <CreditCard className="h-4 w-4" /> CPF *
-                  </Label>
-                  <Input
-                    value={form.cpf}
-                    onChange={(e) =>
-                      setForm({ ...form, cpf: formatCpfInput(e.target.value) })
-                    }
-                    placeholder="000.000.000-00"
-                    className="h-11 bg-muted/30 rounded-xl"
-                  />
-                  {errors.cpf && (
-                    <p className="text-xs text-destructive">{errors.cpf}</p>
-                  )}
-                </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" /> CPF *
+                </Label>
+                <Input
+                  value={form.cpf}
+                  onChange={(e) =>
+                    setForm({ ...form, cpf: formatCpfInput(e.target.value) })
+                  }
+                  placeholder="000.000.000-00"
+                  className="h-11 bg-muted/30 rounded-xl border-border/50"
+                />
+                {errors.cpf && (
+                  <p className="text-xs text-destructive">{errors.cpf}</p>
+                )}
               </div>
+            </div>
 
-              <Collapsible
-                open={showMore}
-                onOpenChange={setShowMore}
-                className="border-t pt-4"
-              >
-                <CollapsibleTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="w-full justify-between hover:bg-primary/5 rounded-xl"
-                  >
-                    <span className="text-muted-foreground font-medium">
-                      {showMore
-                        ? "Ocultar detalhes"
-                        : "Ficha completa (Endereço, E-mail...)"}
-                    </span>
-                    <ChevronDown
-                      className={cn(
-                        "h-4 w-4 transition-transform",
-                        showMore && "rotate-180",
-                      )}
-                    />
-                  </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="pt-4 space-y-6">
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Nascimento</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className="w-full justify-start h-11 bg-muted/30 rounded-xl font-normal"
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
-                            {form.birth_date
-                              ? format(form.birth_date, "dd/MM/yyyy")
-                              : "Selecionar data"}
-                          </Button>
-                        </PopoverTrigger>
-                        {/* AQUI ESTÁ O SEGREDO DO VISUAL BONITO DO POPOVER */}
-                        <PopoverContent
-                          className="w-auto p-0 rounded-3xl border-none shadow-2xl"
-                          align="start"
+            <Collapsible
+              open={showMore}
+              onOpenChange={setShowMore}
+              className="border-t border-border/50 pt-5 mt-2"
+            >
+              <CollapsibleTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full justify-between hover:bg-primary/5 rounded-xl h-12"
+                >
+                  <span className="text-muted-foreground font-medium">
+                    {showMore
+                      ? "Ocultar detalhes"
+                      : "Ficha completa (Endereço, E-mail...)"}
+                  </span>
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 transition-transform",
+                      showMore && "rotate-180",
+                    )}
+                  />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-6 space-y-6">
+                <div className="grid sm:grid-cols-2 gap-5">
+                  <div className="space-y-2">
+                    <Label>Nascimento</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start h-11 bg-muted/30 border-border/50 rounded-xl font-normal"
                         >
-                          {/* AQUI ESTÁ O SEGREDO DO CALENDÁRIO DA SHADCN */}
-                          <Calendar
-                            mode="single"
-                            selected={form.birth_date}
-                            onSelect={(d) =>
-                              setForm({ ...form, birth_date: d })
-                            }
-                            locale={ptBR}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>E-mail</Label>
+                          <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
+                          {form.birth_date
+                            ? format(form.birth_date, "dd/MM/yyyy")
+                            : "Selecionar data"}
+                        </Button>
+                      </PopoverTrigger>
+                      {/* AQUI ESTÁ O SEGREDO DO VISUAL BONITO DO POPOVER */}
+                      <PopoverContent
+                        className="w-auto p-0 rounded-3xl border-none shadow-2xl"
+                        align="start"
+                      >
+                        {/* AQUI ESTÁ O SEGREDO DO CALENDÁRIO DA SHADCN */}
+                        <Calendar
+                          mode="single"
+                          selected={form.birth_date}
+                          onSelect={(d) => setForm({ ...form, birth_date: d })}
+                          locale={ptBR}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>E-mail</Label>
+                    <Input
+                      type="email"
+                      value={form.email}
+                      onChange={(e) =>
+                        setForm({ ...form, email: e.target.value })
+                      }
+                      placeholder="email@exemplo.com"
+                      className="h-11 bg-muted/30 rounded-xl border-border/50"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-5 border-t border-border/50 pt-5">
+                  <h4 className="text-sm font-semibold flex items-center gap-2 text-muted-foreground">
+                    <Pin className="h-4 w-4" /> Endereço
+                  </h4>
+
+                  <div className="grid sm:grid-cols-3 gap-5">
+                    <div className="space-y-2 sm:col-span-1">
+                      <Label>CEP</Label>
                       <Input
-                        value={form.email}
+                        value={form.zip_code}
                         onChange={(e) =>
-                          setForm({ ...form, email: e.target.value })
+                          setForm({
+                            ...form,
+                            zip_code: formatCepInput(e.target.value),
+                          })
                         }
-                        placeholder="email@exemplo.com"
-                        className="h-11 bg-muted/30 rounded-xl"
+                        placeholder="00000-000"
+                        className="h-11 bg-muted/30 rounded-xl border-border/50"
+                      />
+                    </div>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label>Cidade</Label>
+                      <Input
+                        value={form.city}
+                        onChange={(e) =>
+                          setForm({ ...form, city: e.target.value })
+                        }
+                        className="h-11 bg-muted/30 rounded-xl border-border/50"
                       />
                     </div>
                   </div>
 
-                  <div className="space-y-4 border-t pt-4">
-                    <h4 className="text-sm font-semibold flex items-center gap-2 text-muted-foreground">
-                      <Pin className="h-4 w-4" /> Endereço
-                    </h4>
-
-                    <div className="grid sm:grid-cols-3 gap-4">
-                      <div className="space-y-2 sm:col-span-1">
-                        <Label>CEP</Label>
-                        <Input
-                          value={form.zip_code}
-                          onChange={(e) =>
-                            setForm({
-                              ...form,
-                              zip_code: formatCepInput(e.target.value),
-                            })
-                          }
-                          placeholder="00000-000"
-                          className="h-11 bg-muted/30 rounded-xl"
-                        />
-                      </div>
-                      <div className="space-y-2 sm:col-span-2">
-                        <Label>Cidade</Label>
-                        <Input
-                          value={form.city}
-                          onChange={(e) =>
-                            setForm({ ...form, city: e.target.value })
-                          }
-                          className="h-11 bg-muted/30 rounded-xl"
-                        />
-                      </div>
+                  <div className="grid sm:grid-cols-3 gap-5">
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label>Rua / Logradouro</Label>
+                      <Input
+                        value={form.street}
+                        onChange={(e) =>
+                          setForm({ ...form, street: e.target.value })
+                        }
+                        placeholder="Ex: Avenida Beira Mar"
+                        className="h-11 bg-muted/30 rounded-xl border-border/50"
+                      />
                     </div>
-
-                    <div className="grid sm:grid-cols-3 gap-4">
-                      <div className="space-y-2 sm:col-span-2">
-                        <Label>Rua / Logradouro</Label>
-                        <Input
-                          value={form.street}
-                          onChange={(e) =>
-                            setForm({ ...form, street: e.target.value })
-                          }
-                          placeholder="Ex: Avenida Beira Mar"
-                          className="h-11 bg-muted/30 rounded-xl"
-                        />
-                      </div>
-                      <div className="space-y-2 sm:col-span-1">
-                        <Label>Número</Label>
-                        <Input
-                          value={form.number}
-                          onChange={(e) =>
-                            setForm({ ...form, number: e.target.value })
-                          }
-                          placeholder="Ex: 123"
-                          className="h-11 bg-muted/30 rounded-xl"
-                        />
-                      </div>
+                    <div className="space-y-2 sm:col-span-1">
+                      <Label>Número</Label>
+                      <Input
+                        value={form.number}
+                        onChange={(e) =>
+                          setForm({ ...form, number: e.target.value })
+                        }
+                        placeholder="Ex: 123"
+                        className="h-11 bg-muted/30 rounded-xl border-border/50"
+                      />
                     </div>
                   </div>
-                </CollapsibleContent>
-              </Collapsible>
-            </CardContent>
-          </Card>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
         </div>
 
+        {/* LADO DIREITO: Pacote Inicial (Highlight Box) */}
         <div className="lg:col-span-1">
-          <Card className="border-2 border-primary/10 shadow-md sticky top-4">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
+          <div className="flex flex-col gap-5 p-5 md:p-6 rounded-2xl bg-muted/20 border border-border/50 sticky top-4">
+            <div>
+              <h2 className="text-lg font-bold flex items-center gap-2 text-foreground">
                 <Package className="h-5 w-5 text-primary" /> Pacote Inicial
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              </h2>
+            </div>
+
+            <div className="space-y-4">
               <div className="space-y-2">
                 <Label>Escolha um Pacote do Catálogo</Label>
                 <Select
@@ -413,7 +412,7 @@ export function ClientForm() {
                     setForm({ ...form, package_template_id: v })
                   }
                 >
-                  <SelectTrigger className="h-11 bg-muted/30 rounded-xl">
+                  <SelectTrigger className="h-11 bg-background border-border/50 rounded-xl">
                     <SelectValue placeholder="Selecione um pacote..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -428,7 +427,7 @@ export function ClientForm() {
               </div>
 
               {selectedTemplate && (
-                <div className="bg-primary/5 p-4 rounded-2xl border border-primary/20 space-y-3 animate-in fade-in zoom-in-95 duration-200">
+                <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 space-y-3 animate-in fade-in zoom-in-95 duration-200 mt-2">
                   <div className="flex items-center gap-2 text-primary font-bold text-sm">
                     Resumo Selecionado
                   </div>
@@ -451,17 +450,17 @@ export function ClientForm() {
                   </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Botões no final do formulário */}
-      <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t">
+      {/* RODAPÉ: Botões de Ação */}
+      <div className="flex flex-col sm:flex-row gap-3 pt-8 border-t border-border/50">
         <Button
           asChild
           variant="ghost"
-          className="h-12 px-8 rounded-xl font-medium"
+          className="h-12 rounded-xl font-medium order-2 sm:order-1"
         >
           <Link href="/admin/clients">Cancelar</Link>
         </Button>
@@ -469,9 +468,15 @@ export function ClientForm() {
         <Button
           type="submit"
           disabled={loading}
-          className="h-12 px-8 rounded-xl font-medium shadow-sm"
+          className="h-12 rounded-xl font-bold shadow-md transition-all hover:scale-[1.02] active:scale-95 order-1 sm:order-2 w-full sm:w-auto"
         >
-          {loading ? "Salvando..." : "Finalizar Cadastro"}
+          {loading ? (
+            <>
+              <LoaderDots className="mr-2 h-5 w-5 animate-spin" /> Salvando...
+            </>
+          ) : (
+            "Finalizar Cadastro"
+          )}
         </Button>
       </div>
     </form>
