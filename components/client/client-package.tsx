@@ -390,7 +390,7 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
             <Skeleton className="h-2.5 w-full rounded-full" />
           </div>
         ) : activePackage ? (
-          <div className="flex flex-col gap-5 p-5 rounded-xl border border-border/40 md:bg-muted/10">
+          <div className="flex flex-col gap-5 p-5 md:p-0 rounded-xl md:rounded-none border border-border/40 md:border-0 md:bg-transparent">
             <div className="flex flex-col gap-1">
               <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
                 Sessões Realizadas
@@ -481,7 +481,7 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center text-center bg-muted/20 rounded-xl border border-dashed border-border p-6 py-10">
+          <div className="flex flex-col items-center justify-center text-center bg-muted/20 rounded-xl border border-dashed border-border p-6 py-10 md:border-t md:rounded-none md:border-dashed md:border-0 md:bg-transparent">
             <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
               <Package
                 className="h-6 w-6 text-muted-foreground/50"

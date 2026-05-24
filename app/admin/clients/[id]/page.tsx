@@ -62,8 +62,8 @@ export default function ClientDetailPage({
         <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full">
           <Skeleton className="h-10 w-32 rounded-full" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Skeleton className="h-[400px] md:col-span-2 rounded-xl" />
-            <Skeleton className="h-[400px] md:col-span-1 rounded-xl" />
+            <Skeleton className="h-100 md:col-span-2 rounded-xl" />
+            <Skeleton className="h-100 md:col-span-1 rounded-xl" />
           </div>
         </div>
       </>

@@ -28,6 +28,10 @@ import {
   Trash,
   UserMinus,
   UserCheck,
+  Mobile,
+  Table as TableIcon,
+  File,
+  Cloud,
 } from "@boxicons/react";
 import {
   AlertDialog,
@@ -39,6 +43,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
 type Client = {
@@ -235,8 +247,8 @@ export default function AdminClientsPage() {
     <>
       <AdminHeader title="Clientes" />
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative w-full sm:max-w-md">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="relative w-full lg:max-w-md">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Buscar por nome, CPF ou telefone..."
@@ -245,15 +257,71 @@ export default function AdminClientsPage() {
               className="bg-card pl-10 text-foreground rounded-full md:rounded-md shadow-sm border-border"
             />
           </div>
-          <Button
-            asChild
-            className="h-12 px-8 rounded-xl font-medium shadow-sm"
-          >
-            <Link href="/admin/clients/new">
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Cliente
-            </Link>
-          </Button>
+
+          <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+            {/* Botão de Importar Clientes (Estático/Futuro) */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="h-12 w-full sm:w-auto px-6 rounded-xl font-medium shadow-sm border-border/60 hover:bg-muted/50 transition-colors"
+                >
+                  Importar Clientes
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-64 z-100 rounded-xl shadow-lg"
+              >
+                <DropdownMenuLabel className="font-semibold text-muted-foreground text-xs">
+                  Opções de importação (em breve)
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  disabled
+                  className="cursor-not-allowed opacity-60 flex items-center py-2.5"
+                >
+                  <Mobile className="mr-2.5 h-4 w-4" />
+                  <span>Contatos do Celular</span>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem
+                  disabled
+                  className="cursor-not-allowed opacity-60 flex items-center py-2.5"
+                >
+                  <Cloud className="mr-2.5 h-4 w-4" />
+                  <span>Google Contatos</span>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem
+                  disabled
+                  className="cursor-not-allowed opacity-60 flex items-center py-2.5"
+                >
+                  <TableIcon className="mr-2.5 h-4 w-4" />
+                  <span>Planilha </span>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem
+                  disabled
+                  className="cursor-not-allowed opacity-60 flex items-center py-2.5"
+                >
+                  <File className="mr-2.5 h-4 w-4" />
+                  <span>Arquivo TXT / vCard</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Botão Novo Cliente */}
+            <Button
+              asChild
+              className="h-12 w-full sm:w-auto px-8 rounded-xl font-medium shadow-sm transition-all"
+            >
+              <Link href="/admin/clients/new">
+                <Plus className="mr-2 h-4 w-4" />
+                Novo Cliente
+              </Link>
+            </Button>
+          </div>
         </div>
 
         <div className="flex flex-col gap-4">
