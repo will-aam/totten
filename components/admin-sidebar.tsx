@@ -24,6 +24,7 @@ import {
   Note,
   Database,
   Mobile,
+  Gift,
 } from "@boxicons/react";
 import type { BoxIconProps } from "@boxicons/react";
 import {
@@ -122,6 +123,12 @@ const navItems = [
     icon: Note as BoxIcon,
     active: true,
     ownerOnly: true,
+  },
+  {
+    title: "Aniversariantes",
+    href: "/admin/birthdays",
+    icon: Gift as BoxIcon,
+    active: false, // Bloqueado, preparando terreno para funcionalidade futura
   },
 ];
 
