@@ -1,9 +1,9 @@
 // components/client/client-contact.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { mutate } from "swr";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,13 +18,12 @@ import {
 import {
   Whatsapp,
   Pencil,
-  Check,
-  X,
   LoaderDots,
   Pin,
   Envelope,
-  Share,
+  User,
   Calendar,
+  UserIdCard,
 } from "@boxicons/react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -46,7 +45,15 @@ interface ClientContactProps {
   client: ClientContactType;
 }
 
-// Máscaras de Input
+// 🔥 Máscaras
+function formatCpf(value: string) {
+  const d = value.replace(/\D/g, "").slice(0, 11);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
+  if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`;
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+}
+
 function formatPhoneInput(value: string) {
   const d = value.replace(/\D/g, "").slice(0, 11);
   if (d.length <= 2) return `(${d}`;
@@ -60,7 +67,6 @@ function formatCepInput(value: string) {
   return `${d.slice(0, 5)}-${d.slice(5)}`;
 }
 
-// Máscara para a Data de Nascimento (DD/MM/AAAA)
 function formatDateInput(value: string) {
   const d = value.replace(/\D/g, "").slice(0, 8);
   if (d.length <= 2) return d;
@@ -83,18 +89,22 @@ function initDateStr(dateStr?: string | null) {
 export function ClientContact({ client }: ClientContactProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
+  // Estados Unificados
+  const [editName, setEditName] = useState(client.name || "");
+  const [editCpf, setEditCpf] = useState(client.cpf || "");
   const [editPhone, setEditPhone] = useState(client.phone_whatsapp || "");
   const [editEmail, setEditEmail] = useState(client.email || "");
-
   const [editBirthDate, setEditBirthDate] = useState(
     initDateStr(client.birth_date),
   );
-
   const [editZipCode, setEditZipCode] = useState(client.zip_code || "");
   const [editCity, setEditCity] = useState(client.city || "");
   const [editStreet, setEditStreet] = useState(client.street || "");
   const [editNumber, setEditNumber] = useState(client.number || "");
+
+  const initial = client.name ? client.name.charAt(0).toUpperCase() : "?";
 
   const [templates, setTemplates] = useState({
     msgUpdate:
@@ -112,23 +122,19 @@ export function ClientContact({ client }: ClientContactProps) {
         const res = await fetch("/api/settings/messages");
         if (res.ok) {
           const data = await res.json();
-          setTemplates((prev) => ({
-            msgUpdate: data.msgUpdate || prev.msgUpdate,
-            msgWelcome: data.msgWelcome || prev.msgWelcome,
-            msgRenewal: data.msgRenewal || prev.msgRenewal,
-            msgReminder: data.msgReminder || prev.msgReminder,
-          }));
+          setTemplates((prev) => ({ ...prev, ...data }));
         }
       } catch (e) {
-        console.error("Erro ao carregar templates do WhatsApp", e);
+        console.error("Erro ao carregar templates", e);
       }
     };
-
     fetchTemplates();
   }, []);
 
   useEffect(() => {
     if (!isEditing) {
+      setEditName(client.name || "");
+      setEditCpf(client.cpf || "");
       setEditPhone(client.phone_whatsapp || "");
       setEditEmail(client.email || "");
       setEditBirthDate(initDateStr(client.birth_date));
@@ -136,81 +142,54 @@ export function ClientContact({ client }: ClientContactProps) {
       setEditCity(client.city || "");
       setEditStreet(client.street || "");
       setEditNumber(client.number || "");
+    } else {
+      setTimeout(() => nameInputRef.current?.focus(), 100);
     }
   }, [client, isEditing]);
 
-  const handleCancel = () => {
-    setIsEditing(false);
-    setEditPhone(client.phone_whatsapp || "");
-    setEditEmail(client.email || "");
-    setEditBirthDate(initDateStr(client.birth_date));
-    setEditZipCode(client.zip_code || "");
-    setEditCity(client.city || "");
-    setEditStreet(client.street || "");
-    setEditNumber(client.number || "");
-  };
+  const handleCancel = () => setIsEditing(false);
 
-  // 🔥 Nova função para buscar o CEP automaticamente
   const handleCepChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const formattedCep = formatCepInput(e.target.value);
     setEditZipCode(formattedCep);
-
     const pureCep = formattedCep.replace(/\D/g, "");
-
-    // Dispara a busca apenas quando o CEP estiver completo (8 dígitos)
     if (pureCep.length === 8) {
       try {
         const res = await fetch(`https://viacep.com.br/ws/${pureCep}/json/`);
         const data = await res.json();
-
-        if (data.erro) {
-          toast.error("CEP não encontrado.");
-          return;
-        }
-
-        // Auto-preenche os campos que temos no banco
+        if (data.erro) return toast.error("CEP não encontrado.");
         if (data.logradouro) setEditStreet(data.logradouro);
         if (data.localidade) setEditCity(data.localidade);
-
         toast.success("Endereço preenchido automaticamente!");
-      } catch (error) {
-        console.error("Erro ao buscar CEP:", error);
+      } catch {
         toast.error("Erro ao tentar buscar o CEP.");
       }
     }
   };
 
   const handleSave = async () => {
-    const cleanPhone = editPhone.replace(/\D/g, "");
-    if (cleanPhone.length < 10) {
-      toast.error("O WhatsApp é obrigatório. Informe DDD + número.");
-      return;
-    }
-
-    const isEmailValid =
-      !editEmail || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editEmail);
-    if (!isEmailValid) {
-      toast.error("O E-mail inserido é inválido.");
-      return;
-    }
+    if (!editName.trim()) return toast.error("O nome é obrigatório.");
+    if (editCpf.replace(/\D/g, "").length !== 11)
+      return toast.error("CPF deve ter 11 dígitos.");
+    if (editPhone.replace(/\D/g, "").length < 10)
+      return toast.error("WhatsApp inválido.");
+    if (editEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editEmail))
+      return toast.error("E-mail inválido.");
 
     let formattedBirthDate = null;
     if (editBirthDate.length === 10) {
       const [day, month, year] = editBirthDate.split("/");
       formattedBirthDate = `${year}-${month}-${day}`;
-
       const d = new Date(`${formattedBirthDate}T12:00:00Z`);
       if (
         isNaN(d.getTime()) ||
         d.getFullYear() > new Date().getFullYear() ||
         d.getFullYear() < 1900
       ) {
-        toast.error("A data de nascimento informada é inválida.");
-        return;
+        return toast.error("Data de nascimento inválida.");
       }
-    } else if (editBirthDate.length > 0 && editBirthDate.length < 10) {
-      toast.error("A data de nascimento está incompleta. Use DD/MM/AAAA.");
-      return;
+    } else if (editBirthDate.length > 0) {
+      return toast.error("Data de nascimento incompleta.");
     }
 
     setSaving(true);
@@ -219,8 +198,8 @@ export function ClientContact({ client }: ClientContactProps) {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: client.name,
-          cpf: client.cpf,
+          name: editName.trim(),
+          cpf: editCpf,
           phone_whatsapp: editPhone,
           email: editEmail || null,
           birth_date: formattedBirthDate,
@@ -231,125 +210,114 @@ export function ClientContact({ client }: ClientContactProps) {
         }),
       });
 
-      if (!res.ok) {
-        const payload = await res.json();
-        throw new Error(payload?.error || "Erro ao salvar a ficha.");
-      }
-
-      toast.success("Ficha do cliente atualizada com sucesso!");
+      if (!res.ok)
+        throw new Error((await res.json())?.error || "Erro ao salvar.");
+      toast.success("Ficha atualizada com sucesso!");
       setIsEditing(false);
       mutate(`/api/clients/${client.id}`);
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Erro ao salvar.");
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao salvar.");
     } finally {
       setSaving(false);
     }
   };
 
-  const formatMessage = (template: string) => {
-    const nomeCurto = client.name.split(" ")[0];
-    return template
-      .replace(/{nome}/g, nomeCurto)
-      .replace(/{usadas}/g, "-")
-      .replace(/{total}/g, "-")
-      .replace(/{horario}/g, "09:00");
-  };
-
   const handleSendWhatsApp = (templateText: string) => {
-    if (!client.phone_whatsapp) {
-      toast.error("O cliente não possui um número de WhatsApp cadastrado.");
-      return;
-    }
-
+    if (!client.phone_whatsapp) return toast.error("Cliente sem WhatsApp.");
     const rawPhone = client.phone_whatsapp.replace(/\D/g, "");
-    let targetPhone = rawPhone;
+    const targetPhone =
+      rawPhone.startsWith("55") || rawPhone.length >= 12
+        ? rawPhone
+        : `55${rawPhone}`;
+    if (targetPhone.length < 12) return toast.error("WhatsApp inválido.");
 
-    if (!rawPhone.startsWith("55") || rawPhone.length < 12) {
-      targetPhone = `55${rawPhone}`;
-    }
-
-    if (targetPhone.length < 12) {
-      toast.error("O número de WhatsApp cadastrado parece inválido.");
-      return;
-    }
-
-    const message = formatMessage(templateText);
-
-    const url = new URL("https://api.whatsapp.com/send");
-    url.searchParams.set("phone", targetPhone);
-    url.searchParams.set("text", message);
-
-    window.open(url.toString(), "_blank");
+    const message = templateText.replace(/{nome}/g, client.name.split(" ")[0]);
+    window.open(
+      `https://api.whatsapp.com/send?phone=${targetPhone}&text=${encodeURIComponent(message)}`,
+      "_blank",
+    );
   };
 
-  const addressParts = [];
-  if (client.street)
-    addressParts.push(
-      `${client.street}${client.number ? `, ${client.number}` : ""}`,
-    );
-  if (client.city) addressParts.push(client.city);
-  if (client.zip_code) addressParts.push(client.zip_code);
-  const addressDisplay = addressParts.join(" - ");
+  const addressDisplay = [
+    client.street
+      ? `${client.street}${client.number ? `, ${client.number}` : ""}`
+      : "",
+    client.city,
+    client.zip_code,
+  ]
+    .filter(Boolean)
+    .join(" - ");
 
   return (
     <Card className="md:col-span-2 border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card">
-      <CardHeader className="px-0 pt-0 md:pt-6 md:px-6 pb-3 md:pb-6 flex flex-row items-center justify-between">
-        <CardTitle className="text-lg flex items-center gap-2 text-foreground">
-          <Share className="h-5 w-5 text-primary" strokeWidth={1.5} />
-          Contato e Ficha
-        </CardTitle>
-
-        <div className="flex items-center gap-1">
-          {isEditing ? (
-            <div className="flex gap-1">
-              <Button
-                onClick={handleCancel}
-                variant="ghost"
-                size="icon"
-                className="rounded-full h-8 w-8 text-muted-foreground select-none transition-transform duration-100 ease-out hover:bg-transparent active:scale-90 active:brightness-90"
-              >
-                <X className="" />
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={saving}
-                variant="ghost"
-                size="icon"
-                className="rounded-full h-8 w-8 text-[#25D366] select-none transition-transform duration-100 ease-out hover:bg-transparent active:scale-90 active:brightness-90"
-              >
-                {saving ? (
-                  <LoaderDots className=" animate-spin" />
-                ) : (
-                  <Check className="" strokeWidth={3} />
-                )}
-              </Button>
-            </div>
-          ) : (
-            <Button
-              onClick={() => setIsEditing(true)}
-              size="icon"
-              variant="ghost"
-              className="text-muted-foreground rounded-full h-8 w-8 select-none transition-transform duration-100 ease-out hover:bg-transparent hover:text-muted-foreground active:scale-90 active:text-primary active:brightness-90"
-              title="Completar / Editar ficha"
-            >
-              <Pencil className="" />
-            </Button>
-          )}
-        </div>
-      </CardHeader>
-
-      <CardContent className="px-0 pb-0 md:pb-6 md:px-6 flex flex-col gap-5">
+      <CardContent className="px-0 pt-4 md:pt-6 md:px-6 flex flex-col">
         {isEditing ? (
-          <div className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {/* NOVO: Header de edição limpo com botões diretos e explícitos */}
+            <div className="flex items-center justify-between pb-2 border-b border-border/40">
+              <span className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                Editando Ficha
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleCancel}
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 rounded-lg text-muted-foreground hover:bg-muted"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleSave}
+                  disabled={saving}
+                  size="sm"
+                  className="h-8 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4"
+                >
+                  {saving ? <LoaderDots className="animate-spin" /> : "Salvar"}
+                </Button>
+              </div>
+            </div>
+
+            {/* GRID UNIFICADO DE EDIÇÃO */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground">
+                  Nome Completo *
+                </Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary pointer-events-none" />
+                  <Input
+                    ref={nameInputRef}
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    placeholder="Nome do cliente"
+                    className="pl-9 h-10 bg-muted/30 focus-visible:ring-primary/50"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground">
+                  CPF *
+                </Label>
+                <div className="relative">
+                  <UserIdCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  <Input
+                    value={editCpf}
+                    onChange={(e) => setEditCpf(formatCpf(e.target.value))}
+                    placeholder="000.000.000-00"
+                    className="pl-9 h-10 bg-muted/30"
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-muted-foreground">
                   WhatsApp *
                 </Label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <Whatsapp className=" text-[#25D366]" />
-                  </div>
+                  <Whatsapp className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#25D366] pointer-events-none" />
                   <Input
                     value={editPhone}
                     onChange={(e) =>
@@ -360,15 +328,12 @@ export function ClientContact({ client }: ClientContactProps) {
                   />
                 </div>
               </div>
-
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-muted-foreground">
                   E-mail
                 </Label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <Envelope className=" text-primary" />
-                  </div>
+                  <Envelope className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                   <Input
                     value={editEmail}
                     onChange={(e) => setEditEmail(e.target.value)}
@@ -385,9 +350,7 @@ export function ClientContact({ client }: ClientContactProps) {
                   Nascimento
                 </Label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <Calendar className="text-muted-foreground" />
-                  </div>
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                   <Input
                     value={editBirthDate}
                     onChange={(e) =>
@@ -398,17 +361,16 @@ export function ClientContact({ client }: ClientContactProps) {
                   />
                 </div>
               </div>
-
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-muted-foreground">
                   CEP
                 </Label>
                 <Input
                   value={editZipCode}
-                  onChange={handleCepChange} // 🔥 Trocado para nossa função nova
+                  onChange={handleCepChange}
                   placeholder="00000-000"
                   className="h-10 bg-muted/30"
-                  maxLength={9} // Ajuda a limitar para o usuário
+                  maxLength={9}
                 />
               </div>
             </div>
@@ -432,135 +394,148 @@ export function ClientContact({ client }: ClientContactProps) {
                 <Input
                   value={editStreet}
                   onChange={(e) => setEditStreet(e.target.value)}
-                  placeholder="Ex: Avenida Central"
+                  placeholder="Avenida Central"
                   className="h-10 bg-muted/30"
                 />
               </div>
               <div className="space-y-1.5 sm:col-span-2">
                 <Label className="text-xs font-semibold text-muted-foreground">
-                  Número
+                  Nº
                 </Label>
                 <Input
                   value={editNumber}
                   onChange={(e) => setEditNumber(e.target.value)}
-                  placeholder="Ex: 123"
+                  placeholder="123"
                   className="h-10 bg-muted/30"
                 />
               </div>
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-6 animate-in fade-in duration-300">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
+          <div className="flex flex-col animate-in fade-in duration-300">
+            {/* 🔥 NOVO: CABEÇALHO LIMPO DO PERFIL DIRETAMENTE NO CARD CONTENT */}
+            <div className="flex gap-4 w-full">
+              {/* Avatar */}
+              <div className="hidden sm:flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-black text-2xl">
+                {initial}
+              </div>
+
+              <div className="flex flex-col flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex flex-col min-w-0">
+                    <h2 className="text-xl md:text-2xl font-black text-foreground tracking-tight leading-tight truncate">
+                      {client.name}
+                    </h2>
+                    <p className="text-sm font-medium text-muted-foreground mt-0.5">
+                      CPF: {client.cpf}
+                    </p>
+                  </div>
+                  {/* Botão de Editar super elegante à direita */}
                   <Button
-                    variant="outline"
-                    className="rounded-full flex-1 h-12 text-base border-[#25D366]/20 select-none transition-transform duration-100 ease-out hover:bg-transparent active:scale-95 active:bg-[#25D366]/10"
+                    onClick={() => setIsEditing(true)}
+                    size="icon"
+                    variant="ghost"
+                    className="text-muted-foreground bg-muted/30 rounded-full h-10 w-10 hover:bg-muted/60 hover:text-foreground transition-colors shrink-0"
+                    title="Editar Ficha"
                   >
-                    <Whatsapp removePadding className=" text-[#25D366]" />{" "}
-                    WhatsApp
+                    <Pencil className="h-5 w-5" />
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-72">
-                  <DropdownMenuLabel>Qual mensagem enviar?</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => handleSendWhatsApp(templates.msgUpdate)}
-                    className="cursor-pointer py-2 select-none transition-colors hover:bg-transparent focus:bg-muted/50 data-highlighted:bg-muted/50"
-                  >
-                    <div className="flex flex-col gap-1">
-                      <span className="font-medium text-sm">
-                        Atualização (Check-in)
-                      </span>
-                      <span className="text-[10px] text-muted-foreground line-clamp-1">
-                        {templates.msgUpdate
-                          ? templates.msgUpdate.substring(0, 40) + "..."
-                          : "Enviando atualização..."}
-                      </span>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleSendWhatsApp(templates.msgWelcome)}
-                    className="cursor-pointer py-2 select-none transition-colors hover:bg-transparent focus:bg-muted/50 data-highlighted:bg-muted/50"
-                  >
-                    <div className="flex flex-col gap-1">
-                      <span className="font-medium text-sm">
-                        Boas-vindas (Novo)
-                      </span>
-                      <span className="text-[10px] text-muted-foreground line-clamp-1">
-                        {templates.msgWelcome
-                          ? templates.msgWelcome.substring(0, 40) + "..."
-                          : "Mensagem de boas-vindas..."}
-                      </span>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleSendWhatsApp(templates.msgRenewal)}
-                    className="cursor-pointer py-2 select-none transition-colors hover:bg-transparent focus:bg-muted/50 data-highlighted:bg-muted/50"
-                  >
-                    <div className="flex flex-col gap-1">
-                      <span className="font-medium text-sm">
-                        Renovação de Pacote
-                      </span>
-                      <span className="text-[10px] text-muted-foreground line-clamp-1">
-                        {templates.msgRenewal
-                          ? templates.msgRenewal.substring(0, 40) + "..."
-                          : "Aviso de renovação..."}
-                      </span>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleSendWhatsApp(templates.msgReminder)}
-                    className="cursor-pointer py-2 select-none transition-colors hover:bg-transparent focus:bg-muted/50 data-highlighted:bg-muted/50"
-                  >
-                    <div className="flex flex-col gap-1">
-                      <span className="font-medium text-sm">
-                        Lembrete de Agenda
-                      </span>
-                      <span className="text-[10px] text-muted-foreground line-clamp-1">
-                        {templates.msgReminder
-                          ? templates.msgReminder.substring(0, 40) + "..."
-                          : "Lembrete de horário..."}
-                      </span>
-                    </div>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                </div>
+
+                {/* Botão de WhatsApp acoplado à área superior */}
+                <div className="mt-4 sm:mt-5 w-full sm:w-auto">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full sm:w-auto rounded-xl h-10 border-[#25D366]/30 bg-[#25D366]/5 text-[#25D366] hover:bg-[#25D366]/10 transition-colors font-semibold"
+                      >
+                        <Whatsapp className="mr-2 h-4 w-4" /> Enviar Mensagem
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="start"
+                      className="w-64 rounded-xl"
+                    >
+                      <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider">
+                        Modelos Rápidos
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => handleSendWhatsApp(templates.msgUpdate)}
+                        className="cursor-pointer py-2.5"
+                      >
+                        <span className="font-medium text-sm">
+                          Atualização (Check-in)
+                        </span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleSendWhatsApp(templates.msgWelcome)}
+                        className="cursor-pointer py-2.5"
+                      >
+                        <span className="font-medium text-sm">
+                          Boas-vindas (Novo)
+                        </span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleSendWhatsApp(templates.msgRenewal)}
+                        className="cursor-pointer py-2.5"
+                      >
+                        <span className="font-medium text-sm">
+                          Renovação de Pacote
+                        </span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          handleSendWhatsApp(templates.msgReminder)
+                        }
+                        className="cursor-pointer py-2.5"
+                      >
+                        <span className="font-medium text-sm">
+                          Lembrete de Agenda
+                        </span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-5 border-t border-border/40">
+            <div className="border-t border-border/50 my-5 md:my-6" />
+
+            {/* 🔥 GRID DE CONTATOS (Informações Adicionais) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="flex flex-col gap-1">
-                <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-                  <Whatsapp className="h-4 w-4" /> WhatsApp
+                <span className="text-[11px] text-muted-foreground font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <Whatsapp className="h-3.5 w-3.5" /> WhatsApp Pessoal
                 </span>
-                <span className="text-sm font-medium text-foreground">
+                <span className="text-sm font-semibold text-foreground">
                   {client.phone_whatsapp || "Não informado"}
                 </span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-                  <Envelope className="h-4 w-4" /> E-mail
+                <span className="text-[11px] text-muted-foreground font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <Envelope className="h-3.5 w-3.5" /> E-mail
                 </span>
-                <span className="text-sm font-medium text-foreground">
+                <span className="text-sm font-semibold text-foreground truncate">
                   {client.email || "Não informado"}
                 </span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-                  <Calendar className="h-4 w-4" /> Nascimento
+                <span className="text-[11px] text-muted-foreground font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5" /> Nascimento
                 </span>
-                <span className="text-sm font-medium text-foreground">
+                <span className="text-sm font-semibold text-foreground">
                   {client.birth_date
                     ? format(parseDate(client.birth_date)!, "dd/MM/yyyy")
                     : "Não informada"}
                 </span>
               </div>
               <div className="flex flex-col gap-1 sm:col-span-2">
-                <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-                  <Pin className="h-4 w-4" /> Endereço
+                <span className="text-[11px] text-muted-foreground font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <Pin className="h-3.5 w-3.5" /> Endereço Residencial
                 </span>
-                <span className="text-sm font-medium text-foreground">
+                <span className="text-sm font-semibold text-foreground leading-snug">
                   {addressDisplay || "Não informado"}
                 </span>
               </div>

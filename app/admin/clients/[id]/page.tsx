@@ -14,6 +14,7 @@ import { ClientHeader } from "@/components/client/client-header";
 import { ClientContact } from "@/components/client/client-contact";
 import { ClientPackage } from "@/components/client/client-package";
 import { ClientAnamnesis } from "@/components/client/client-anamnesis";
+import { ClientVouchers } from "@/components/client/client-vouchers"; // 🔥 NOVO IMPORT AQUI
 import { ClientHistory } from "@/components/client/client-history";
 
 export type ClientType = {
@@ -59,10 +60,10 @@ export default function ClientDetailPage({
       <>
         <AdminHeader title="Perfil do Cliente" />
         <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full">
-          <Skeleton className="h-10 w-10 rounded-full" />
+          <Skeleton className="h-10 w-32 rounded-full" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Skeleton className="h-64 md:col-span-2 rounded-xl" />
-            <Skeleton className="h-64 md:col-span-1 rounded-xl" />
+            <Skeleton className="h-[400px] md:col-span-2 rounded-xl" />
+            <Skeleton className="h-[400px] md:col-span-1 rounded-xl" />
           </div>
         </div>
       </>
@@ -104,7 +105,9 @@ export default function ClientDetailPage({
           />
         </div>
 
+        {/* 🔥 A ORDEM EXATA QUE VOCÊ PEDIU */}
         <ClientAnamnesis clientId={id} />
+        <ClientVouchers clientId={id} clientName={client.name} />
         <ClientHistory clientId={id} />
       </div>
 
