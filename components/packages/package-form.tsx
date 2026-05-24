@@ -113,15 +113,7 @@ export function PackageForm() {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="flex flex-col w-full bg-background rounded-none md:rounded-2xl md:bg-card md:border md:shadow-sm md:p-6 pb-8 md:pb-6"
-    >
-      {/* 
-        A interface foi completamente achatada para Mobile. 
-        As linhas divisórias guiam o olhar sem consumir padding desnecessário.
-      */}
-
+    <form onSubmit={handleSubmit} className="flex flex-col w-full pb-8 md:pb-2">
       {/* SEÇÃO 1: CABEÇALHO E SERVIÇO */}
       <div className="flex flex-col gap-6 pb-6 border-b border-border/50">
         <div>
@@ -270,7 +262,7 @@ export function PackageForm() {
       </div>
 
       {/* BOTÕES DE AÇÃO */}
-      <div className="flex items-center justify-end gap-3 pt-6 md:border-t border-border/50 mt-auto md:mt-0">
+      <div className="flex items-center justify-end gap-3 pt-6 mt-auto md:mt-0">
         <Button
           asChild
           variant="ghost"
