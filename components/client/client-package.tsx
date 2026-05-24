@@ -26,6 +26,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+} from "@/components/ui/carousel";
 import { Package, Plus, LoaderDots, Archive } from "@boxicons/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -54,7 +59,6 @@ interface PackageTemplate {
 
 interface ClientPackageProps {
   clientId: string;
-  clientName: string;
   clientActive: boolean;
 }
 
@@ -65,10 +69,10 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
     PackageType[]
   >(`/api/admin/clients/${clientId}/packages`, fetcher);
 
-  const activePackage =
-    packages?.find(
+  const activePackages =
+    packages?.filter(
       (pkg) => pkg.active && pkg.used_sessions < pkg.total_sessions,
-    ) || null;
+    ) || [];
 
   const [addPkgOpen, setAddPkgOpen] = useState(false);
   const [templates, setTemplates] = useState<PackageTemplate[]>([]);
@@ -77,6 +81,7 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
 
   const [isArchiving, setIsArchiving] = useState(false);
   const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
+  const [pkgToArchive, setPkgToArchive] = useState<PackageType | null>(null);
 
   const [paymentMethods, setPaymentMethods] = useState<
     OrganizationPaymentMethod[]
@@ -86,6 +91,18 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
 
   const [generateInstallments, setGenerateInstallments] = useState(false);
   const [installmentsCount, setInstallmentsCount] = useState<number>(2);
+
+  // Estados para as bolinhas de navegação do carrossel
+  const [api, setApi] = useState<any>();
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    if (!api) return;
+    setCurrent(api.selectedScrollSnap());
+    api.on("select", () => {
+      setCurrent(api.selectedScrollSnap());
+    });
+  }, [api]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -104,12 +121,6 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
     };
     if (addPkgOpen) loadData();
   }, [addPkgOpen]);
-
-  const progress = activePackage
-    ? Math.round(
-        (activePackage.used_sessions / activePackage.total_sessions) * 100,
-      )
-    : 0;
 
   const handleAddPackage = async () => {
     if (!templateId) return toast.error("Selecione um pacote do catálogo");
@@ -162,14 +173,15 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
   };
 
   const handleArchivePackage = async () => {
-    if (!activePackage) return;
+    if (!pkgToArchive) return;
     setIsArchiving(true);
     try {
-      const result = await archivePackage(activePackage.id);
+      const result = await archivePackage(pkgToArchive.id);
       if (result.success) {
         toast.success("Plano encerrado com sucesso!");
         mutate(`/api/admin/clients/${clientId}/packages`);
         setIsArchiveDialogOpen(false);
+        setPkgToArchive(null);
       } else {
         toast.error(result.error || "Falha ao encerrar plano.");
       }
@@ -182,9 +194,59 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
 
   const currentTemplate = templates.find((t) => t.id === templateId);
 
+  const renderPackageInfo = (pkg: PackageType) => {
+    const progress = Math.round((pkg.used_sessions / pkg.total_sessions) * 100);
+    return (
+      <div className="flex flex-col gap-4 md:bg-transparent">
+        <div className="flex flex-col">
+          <span className="font-bold text-foreground text-sm truncate uppercase tracking-wider">
+            {pkg.name}
+          </span>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
+            Sessões Realizadas
+          </span>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-4xl font-black text-primary leading-none">
+              {pkg.used_sessions}
+            </span>
+            <span className="text-lg font-medium text-muted-foreground leading-none">
+              / {pkg.total_sessions}
+            </span>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Progress
+            value={progress}
+            className="h-2.5 bg-primary/10 [&>div]:bg-primary"
+          />
+          <p className="text-xs font-medium text-muted-foreground">
+            Restam {pkg.total_sessions - pkg.used_sessions} sessões para
+            concluir.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-2 mt-1">
+          <Button
+            variant="destructive"
+            className="w-full rounded-xl h-10 flex items-center justify-center"
+            onClick={() => {
+              setPkgToArchive(pkg);
+              setIsArchiveDialogOpen(true);
+            }}
+          >
+            <Archive className="h-4 w-4 mr-2" /> Encerrar / Zerar Plano
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <Card className="md:col-span-1 border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card">
-      <CardHeader className="px-0 pt-0 md:pt-6 md:px-6 pb-3 md:pb-6 flex flex-row items-center justify-between">
+      <CardHeader className="px-0 pt-0 md:pt-6 md:px-6 pb-3 flex flex-row items-center justify-between">
         <CardTitle className="text-lg flex items-center gap-2 text-foreground">
           <Package className="h-5 w-5 text-primary" /> Plano Ativo
         </CardTitle>
@@ -201,6 +263,7 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md rounded-2xl">
+            {/* Modal de venda mantido idêntico... */}
             <DialogHeader>
               <DialogTitle>Vender Novo Pacote</DialogTitle>
               <DialogDescription>
@@ -383,105 +446,62 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
         </Dialog>
       </CardHeader>
 
-      <CardContent className="px-0 pb-0 md:pb-6 md:px-6 flex flex-col gap-5">
+      {/* 🔥 LINHA SEPARADORA MINIMALISTA CENTRALIZADA */}
+      <div className="w-[90%] mx-auto border-t border-border/50 mb-4" />
+
+      <CardContent className="px-0 pb-4 md:pb-6 md:px-6 flex flex-col">
         {isLoadingPackages ? (
-          <div className="space-y-4">
+          <div className="space-y-4 px-4 md:px-0">
             <Skeleton className="h-12 w-full rounded-xl" />
             <Skeleton className="h-2.5 w-full rounded-full" />
           </div>
-        ) : activePackage ? (
-          <div className="flex flex-col gap-5 p-5 md:p-0 rounded-xl md:rounded-none border border-border/40 md:border-0 md:bg-transparent">
-            <div className="flex flex-col gap-1">
-              <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-                Sessões Realizadas
-              </span>
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-4xl font-black text-primary leading-none">
-                  {activePackage.used_sessions}
-                </span>
-                <span className="text-lg font-medium text-muted-foreground leading-none">
-                  / {activePackage.total_sessions}
-                </span>
+        ) : activePackages.length > 0 ? (
+          <div className="relative">
+            {activePackages.length === 1 ? (
+              <div className="px-4 md:px-0">
+                {renderPackageInfo(activePackages[0])}
               </div>
-            </div>
-            <div className="space-y-2">
-              <Progress
-                value={progress}
-                className="h-2.5 bg-primary/10 [&>div]:bg-primary"
-              />
-              <p className="text-xs font-medium text-muted-foreground">
-                Restam{" "}
-                {activePackage.total_sessions - activePackage.used_sessions}{" "}
-                sessões para concluir.
-              </p>
-            </div>
+            ) : (
+              // 🔥 CARROSSEL SEM SETAS E COM ESPAÇAMENTO NATIVO SUAVE
+              <div className="flex flex-col">
+                <Carousel
+                  setApi={setApi}
+                  opts={{ align: "start", loop: false }}
+                  className="w-full"
+                >
+                  <CarouselContent>
+                    {activePackages.map((pkg) => (
+                      <CarouselItem key={pkg.id}>
+                        {/* padding interno pra não grudar na borda da tela no mobile */}
+                        <div className="px-4 md:px-1">
+                          {renderPackageInfo(pkg)}
+                        </div>
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                </Carousel>
 
-            <div className="flex flex-col gap-2 mt-2">
-              <Dialog
-                open={isArchiveDialogOpen}
-                onOpenChange={setIsArchiveDialogOpen}
-              >
-                <DialogTrigger asChild>
-                  <Button
-                    disabled={isArchiving}
-                    variant="destructive"
-                    className="w-full rounded-xl h-10 flex items-center justify-center"
-                  >
-                    {isArchiving ? (
-                      <>
-                        {" "}
-                        <LoaderDots className="h-4 w-4 mr-2 animate-spin" />{" "}
-                        Processando...{" "}
-                      </>
-                    ) : (
-                      <>
-                        {" "}
-                        <Archive className="h-4 w-4 mr-2" /> Encerrar / Zerar
-                        Plano{" "}
-                      </>
-                    )}
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-100 rounded-2xl">
-                  <DialogHeader>
-                    <DialogTitle className="text-destructive">
-                      Encerrar Plano Prematuramente?
-                    </DialogTitle>
-                    <DialogDescription className="text-base py-2">
-                      Tem certeza que deseja encerrar este plano? O saldo
-                      restante de sessões será perdido.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-end gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setIsArchiveDialogOpen(false)}
-                      disabled={isArchiving}
-                      className="w-full sm:w-auto"
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      onClick={handleArchivePackage}
-                      disabled={isArchiving}
-                      className="w-full sm:w-auto"
-                    >
-                      {isArchiving ? (
-                        <LoaderDots className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        "Sim, encerrar plano"
+                {/* 🔥 BOLINHAS DE NAVEGAÇÃO COM TRANSIÇÃO MACIA */}
+                <div className="flex justify-center gap-2 mt-5">
+                  {activePackages.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => api?.scrollTo(i)}
+                      className={cn(
+                        "h-2 rounded-full transition-all duration-500 ease-in-out",
+                        current === i
+                          ? "bg-primary w-6"
+                          : "bg-muted-foreground/30 w-2 hover:bg-primary/50",
                       )}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
+                      aria-label={`Ir para o plano ${i + 1}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center text-center bg-muted/20 rounded-xl border border-dashed border-border p-6 py-10 md:border-t md:rounded-none md:border-dashed md:border-0 md:bg-transparent">
+          <div className="flex flex-col items-center justify-center text-center bg-muted/20 rounded-xl border border-dashed border-border p-6 py-10 md:border-dashed md:bg-transparent mx-4 md:mx-0">
             <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
               <Package
                 className="h-6 w-6 text-muted-foreground/50"
@@ -497,6 +517,46 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
           </div>
         )}
       </CardContent>
+
+      {/* Modal de Encerramento */}
+      <Dialog open={isArchiveDialogOpen} onOpenChange={setIsArchiveDialogOpen}>
+        <DialogContent className="sm:max-w-100 rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-destructive">
+              Encerrar Plano Prematuramente?
+            </DialogTitle>
+            <DialogDescription className="text-base py-2">
+              Tem certeza que deseja encerrar o plano{" "}
+              <strong>{pkgToArchive?.name}</strong>? O saldo restante de sessões
+              será perdido.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsArchiveDialogOpen(false)}
+              disabled={isArchiving}
+              className="w-full sm:w-auto"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleArchivePackage}
+              disabled={isArchiving}
+              className="w-full sm:w-auto"
+            >
+              {isArchiving ? (
+                <LoaderDots className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                "Sim, encerrar plano"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

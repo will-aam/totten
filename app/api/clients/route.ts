@@ -92,6 +92,7 @@ export async function GET(request: Request) {
           email: true,
           active: true,
           packages: {
+            // Traz apenas os registros não arquivados/inativos
             where: { active: true },
             select: {
               id: true,
@@ -113,7 +114,8 @@ export async function GET(request: Request) {
     ]);
 
     const formattedClients = clients.map((client) => {
-      const activePkg = client.packages.find(
+      // 🔥 Pega tudos os pacotes que estão ativos e que AINDA TÊM sessão sobrando
+      const activePackages = client.packages.filter(
         (pkg) => pkg.used_sessions < pkg.total_sessions,
       );
 
@@ -129,7 +131,12 @@ export async function GET(request: Request) {
         phone_whatsapp: client.phone_whatsapp,
         email: client.email,
         active: client.active,
-        activePackageName: activePkg ? activePkg.name : null,
+
+        // Define o nome de exibição como o principal e extrai a contagem correta:
+        activePackageName:
+          activePackages.length > 0 ? activePackages[0].name : null,
+        activePackagesCount: activePackages.length,
+
         hasHistory,
         hasAnamnesis: client._count.anamnesis_responses > 0,
       };

@@ -32,6 +32,7 @@ import {
   Table as TableIcon,
   File,
   Cloud,
+  ArrowOutDownSquareHalf,
 } from "@boxicons/react";
 import {
   AlertDialog,
@@ -59,6 +60,7 @@ type Client = {
   cpf: string;
   phone_whatsapp: string;
   activePackageName?: string | null;
+  activePackagesCount?: number; // Para mostrar o "+1", "+2" futuramente
   hasHistory?: boolean;
   hasAnamnesis?: boolean;
   active: boolean;
@@ -118,11 +120,23 @@ function ClientMobileItem({
           </span>
         </div>
       </div>
-      <div className="flex items-center gap-2 text-muted-foreground/50">
+      <div className="flex items-center gap-2 text-muted-foreground/50 shrink-0">
         {client.activePackageName && client.active && (
-          <span className="text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-md truncate max-w-25">
-            {client.activePackageName}
-          </span>
+          <div className="flex items-center gap-1">
+            <span
+              className="text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-md truncate max-w-32.5"
+              title={client.activePackageName}
+            >
+              {client.activePackageName.length > 18
+                ? `${client.activePackageName.substring(0, 18)}...`
+                : client.activePackageName}
+            </span>
+            {client.activePackagesCount && client.activePackagesCount > 1 ? (
+              <span className="text-[9px] font-bold text-muted-foreground bg-muted border border-border px-1.5 py-0.5 rounded-md h-full flex items-center">
+                +{client.activePackagesCount - 1}
+              </span>
+            ) : null}
+          </div>
         )}
         <button
           onClick={(e) => onActionClick(client, e)}
@@ -266,6 +280,7 @@ export default function AdminClientsPage() {
                   variant="outline"
                   className="h-12 w-full sm:w-auto px-6 rounded-xl font-medium shadow-sm border-border/60 hover:bg-muted/50 transition-colors"
                 >
+                  <ArrowOutDownSquareHalf className="mr-2 h-5 w-5 text-muted-foreground" />
                   Importar Clientes
                 </Button>
               </DropdownMenuTrigger>
@@ -277,6 +292,7 @@ export default function AdminClientsPage() {
                   Opções de importação (em breve)
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+
                 <DropdownMenuItem
                   disabled
                   className="cursor-not-allowed opacity-60 flex items-center py-2.5"
@@ -298,7 +314,7 @@ export default function AdminClientsPage() {
                   className="cursor-not-allowed opacity-60 flex items-center py-2.5"
                 >
                   <TableIcon className="mr-2.5 h-4 w-4" />
-                  <span>Planilha </span>
+                  <span>Planilha</span>
                 </DropdownMenuItem>
 
                 <DropdownMenuItem
@@ -439,15 +455,30 @@ export default function AdminClientsPage() {
                         <TableCell className="text-muted-foreground">
                           {client.phone_whatsapp}
                         </TableCell>
+
                         <TableCell className="text-center">
                           {client.activePackageName && client.active ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-semibold">
-                              {client.activePackageName}
-                            </span>
+                            <div className="flex items-center justify-center gap-1.5">
+                              <span
+                                className="inline-flex items-center px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-semibold max-w-62.5 truncate"
+                                title={client.activePackageName}
+                              >
+                                {client.activePackageName.length > 28
+                                  ? `${client.activePackageName.substring(0, 28)}...`
+                                  : client.activePackageName}
+                              </span>
+                              {client.activePackagesCount &&
+                              client.activePackagesCount > 1 ? (
+                                <span className="inline-flex items-center px-1.5 py-1 rounded-md bg-muted border border-border text-muted-foreground text-[10px] font-bold">
+                                  +{client.activePackagesCount - 1}
+                                </span>
+                              ) : null}
+                            </div>
                           ) : (
                             <span className="text-muted-foreground/50">-</span>
                           )}
                         </TableCell>
+
                         <TableCell className="text-center">
                           <button
                             onClick={(e) => handleActionClick(client, e)}
