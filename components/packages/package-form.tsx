@@ -26,13 +26,16 @@ import {
   Briefcase,
 } from "@boxicons/react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 
 export function PackageForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [loadingServices, setLoadingServices] = useState(true);
   const [services, setServices] = useState<any[]>([]);
+
+  // Constantes de proteção estabelecidas
+  const MAX_SESSIONS = 120;
+  const MAX_VALIDITY_DAYS = 730; // 2 anos
 
   const [form, setForm] = useState({
     name: "",
@@ -69,7 +72,9 @@ export function PackageForm() {
     if (!form.service_id) errs.service_id = "Selecione um serviço base";
     if (!form.total_sessions || Number(form.total_sessions) < 1)
       errs.total_sessions = "Mínimo 1 sessão";
-    // Como form.price guarda sempre no formato "10.00", Number(form.price) funciona perfeitamente
+    // Proteção extra no backend-side logic front
+    if (Number(form.total_sessions) > MAX_SESSIONS)
+      errs.total_sessions = `Mínimo 1, Máximo ${MAX_SESSIONS}`;
     if (!form.price || Number(form.price) <= 0) errs.price = "Preço inválido";
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -78,7 +83,7 @@ export function PackageForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) {
-      toast.error("Preencha os campos obrigatórios.");
+      toast.error("Preencha os campos corretamente.");
       return;
     }
 
@@ -176,17 +181,27 @@ export function PackageForm() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label className="flex items-center gap-2">
-              <Layers className="h-4 w-4 text-muted-foreground" /> Qtd. Sessões
-              *
+            <Label className="flex items-center justify-between gap-2">
+              <span className="flex items-center gap-2">
+                <Layers className="h-4 w-4 text-muted-foreground" /> Qtd.
+                Sessões *
+              </span>
+              <span className="text-[10px] text-muted-foreground">
+                Máx: {MAX_SESSIONS}
+              </span>
             </Label>
             <Input
               type="text"
               inputMode="numeric"
               value={form.total_sessions}
               onChange={(e) => {
-                const onlyCleanDigits = e.target.value.replace(/\D/g, "");
-                setForm({ ...form, total_sessions: onlyCleanDigits });
+                let cleanDigit = e.target.value.replace(/\D/g, "");
+                // Impede zero à esquerda (se digitar 0, ignora).
+                if (cleanDigit && Number(cleanDigit) === 0) cleanDigit = "";
+                // Trava no limite
+                if (Number(cleanDigit) > MAX_SESSIONS)
+                  cleanDigit = MAX_SESSIONS.toString();
+                setForm({ ...form, total_sessions: cleanDigit });
               }}
               className="bg-muted/30 h-12 rounded-xl border-border/50 font-bold"
             />
@@ -210,7 +225,7 @@ export function PackageForm() {
         </div>
       </div>
 
-      {/* SEÇÃO 3: VALORES E REGRAS (Lado a lado no Desktop) */}
+      {/* SEÇÃO 3: VALORES E REGRAS */}
       <div className="grid md:grid-cols-2 gap-6 py-6 border-b border-border/50">
         <div className="flex flex-col gap-2">
           <Label className="flex items-center gap-2">
@@ -245,8 +260,13 @@ export function PackageForm() {
         </div>
 
         <div className="flex flex-col gap-2">
-          <Label className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-primary" /> Validade do Pacote
+          <Label className="flex items-center justify-between gap-2">
+            <span className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-primary" /> Validade do Pacote
+            </span>
+            <span className="text-[10px] text-muted-foreground">
+              Máx: {MAX_VALIDITY_DAYS} dias
+            </span>
           </Label>
           <div className="relative">
             <Input
@@ -254,8 +274,14 @@ export function PackageForm() {
               inputMode="numeric"
               value={form.validity_days}
               onChange={(e) => {
-                const onlyCleanDigits = e.target.value.replace(/\D/g, "");
-                setForm({ ...form, validity_days: onlyCleanDigits });
+                let cleanDigit = e.target.value.replace(/\D/g, "");
+                // Impede zero (se não digitou nada, deixa vazio)
+                if (cleanDigit && Number(cleanDigit) === 0) cleanDigit = "";
+                // Trava no limite
+                if (Number(cleanDigit) > MAX_VALIDITY_DAYS)
+                  cleanDigit = MAX_VALIDITY_DAYS.toString();
+
+                setForm({ ...form, validity_days: cleanDigit });
               }}
               className="bg-muted/30 h-12 rounded-xl border-border/50 pr-14"
             />
