@@ -1,3 +1,4 @@
+// components/package-form.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -68,6 +69,7 @@ export function PackageForm() {
     if (!form.service_id) errs.service_id = "Selecione um serviço base";
     if (!form.total_sessions || Number(form.total_sessions) < 1)
       errs.total_sessions = "Mínimo 1 sessão";
+    // Como form.price guarda sempre no formato "10.00", Number(form.price) funciona perfeitamente
     if (!form.price || Number(form.price) <= 0) errs.price = "Preço inválido";
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -179,13 +181,20 @@ export function PackageForm() {
               *
             </Label>
             <Input
-              type="number"
+              type="text"
+              inputMode="numeric"
               value={form.total_sessions}
-              onChange={(e) =>
-                setForm({ ...form, total_sessions: e.target.value })
-              }
+              onChange={(e) => {
+                const onlyCleanDigits = e.target.value.replace(/\D/g, "");
+                setForm({ ...form, total_sessions: onlyCleanDigits });
+              }}
               className="bg-muted/30 h-12 rounded-xl border-border/50 font-bold"
             />
+            {errors.total_sessions && (
+              <p className="text-xs text-destructive">
+                {errors.total_sessions}
+              </p>
+            )}
           </div>
         </div>
 
@@ -212,10 +221,21 @@ export function PackageForm() {
               R$
             </span>
             <Input
-              type="number"
-              step="0.01"
-              value={form.price}
-              onChange={(e) => setForm({ ...form, price: e.target.value })}
+              type="text"
+              inputMode="numeric"
+              value={form.price ? form.price.replace(".", ",") : ""}
+              onChange={(e) => {
+                const onlyNumbers = e.target.value.replace(/\D/g, "");
+                if (!onlyNumbers) {
+                  setForm({ ...form, price: "" });
+                } else {
+                  setForm({
+                    ...form,
+                    price: (Number(onlyNumbers) / 100).toFixed(2),
+                  });
+                }
+              }}
+              placeholder="0,00"
               className="bg-muted/30 h-12 rounded-xl border-border/50 pl-11 font-bold text-lg text-foreground"
             />
           </div>
@@ -230,11 +250,13 @@ export function PackageForm() {
           </Label>
           <div className="relative">
             <Input
-              type="number"
+              type="text"
+              inputMode="numeric"
               value={form.validity_days}
-              onChange={(e) =>
-                setForm({ ...form, validity_days: e.target.value })
-              }
+              onChange={(e) => {
+                const onlyCleanDigits = e.target.value.replace(/\D/g, "");
+                setForm({ ...form, validity_days: onlyCleanDigits });
+              }}
               className="bg-muted/30 h-12 rounded-xl border-border/50 pr-14"
             />
             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">
