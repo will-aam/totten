@@ -398,16 +398,42 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
                         </Label>
                         <Input
                           type="number"
+                          inputMode="numeric"
                           min={2}
-                          max={24}
+                          max={48}
+                          step={1}
                           value={installmentsCount}
-                          onChange={(e) =>
-                            setInstallmentsCount(Number(e.target.value))
-                          }
+                          onChange={(e) => {
+                            let value = e.target.value;
+
+                            // Permite apagar tudo (valor temporário vazio)
+                            if (value === "") {
+                              setInstallmentsCount(0); // ou mantém o último valor válido
+                              return;
+                            }
+
+                            let num = parseInt(value, 10);
+
+                            // Bloqueia valores inválidos
+                            if (isNaN(num)) return;
+
+                            // Limita entre 2 e 48
+                            if (num < 2) num = 2;
+                            if (num > 48) num = 48;
+
+                            setInstallmentsCount(num);
+                          }}
+                          onWheel={(e) => e.currentTarget.blur()} // ← Desativa rolagem do mouse
+                          onKeyDown={(e) => {
+                            // Bloqueia o uso das setas ↑ ↓ do teclado (opcional)
+                            if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                              e.preventDefault();
+                            }
+                          }}
                           disabled={loading}
-                          className="h-11 rounded-xl w-32"
+                          className="h-11 rounded-xl w-32 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
-                        {currentTemplate && installmentsCount > 0 && (
+                        {currentTemplate && installmentsCount >= 2 && (
                           <p className="text-xs text-muted-foreground mt-1 font-medium">
                             Serão geradas {installmentsCount} parcelas de{" "}
                             {new Intl.NumberFormat("pt-BR", {
