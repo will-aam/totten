@@ -37,7 +37,7 @@ export async function GET(
       );
     }
 
-    // Busca os check-ins paginados com a assinatura do profissional
+    // Busca os check-ins paginados com a assinatura do profissional e dados do pacote
     const checkIns = await prisma.checkIn.findMany({
       where: {
         client_id: clientId,
@@ -52,6 +52,12 @@ export async function GET(
             display_name: true,
           },
         },
+        // 🔥 IDENTIFICAÇÃO: Busca o pacote vinculado (se houver)
+        package: {
+          select: {
+            name: true,
+          },
+        },
       },
       orderBy: {
         date_time: "desc",
@@ -63,12 +69,19 @@ export async function GET(
     const hasMore = checkIns.length > limit;
     const rawDataToReturn = hasMore ? checkIns.slice(0, -1) : checkIns;
 
-    // Formata os dados para o Front-End
-    const formattedData = rawDataToReturn.map((checkIn) => ({
-      id: checkIn.id,
-      date_time: checkIn.date_time,
-      professional_name: checkIn.admin?.display_name ?? null, // 🔥 Enviando o nome assinado
-    }));
+    // Formata os dados para o Front-End, criando a distinção de "tipo"
+    const formattedData = rawDataToReturn.map((checkIn) => {
+      const isPackage = !!checkIn.package;
+
+      return {
+        id: checkIn.id,
+        date_time: checkIn.date_time,
+        professional_name: checkIn.admin?.display_name ?? null,
+        // 🔥 Novas propriedades para o front-end desenhar as etiquetas
+        type: isPackage ? "PACOTE" : "AVULSO",
+        package_name: checkIn.package?.name ?? null,
+      };
+    });
 
     return NextResponse.json({
       data: formattedData,

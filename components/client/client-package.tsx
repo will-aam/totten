@@ -31,7 +31,7 @@ import {
   CarouselContent,
   CarouselItem,
 } from "@/components/ui/carousel";
-import { Package, Plus, LoaderDots, Archive } from "@boxicons/react";
+import { Package, Plus, LoaderDots, Archive, Calendar } from "@boxicons/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { getPaymentMethods } from "@/app/actions/payment-methods";
@@ -46,6 +46,7 @@ export type PackageType = {
   price: number | string;
   active: boolean;
   sessionDates?: string[];
+  created_at?: string; // 🔥 NOVO: Adicionado para receber a data de início do ciclo
 };
 
 interface PackageTemplate {
@@ -201,6 +202,14 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
         <div className="flex flex-col">
           <span className="font-bold text-foreground text-sm truncate uppercase tracking-wider">
             {pkg.name}
+          </span>
+          {/* 🔥 NOVO: Âncora Temporal para ajudar a administradora a não se perder */}
+          <span className="text-[11px] text-muted-foreground font-medium flex items-center gap-1.5 mt-0.5">
+            <Calendar className="h-3.5 w-3.5" />
+            Início do ciclo:{" "}
+            {pkg.created_at
+              ? new Date(pkg.created_at).toLocaleDateString("pt-BR")
+              : "--/--/----"}
           </span>
         </div>
 
@@ -406,26 +415,22 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
                           onChange={(e) => {
                             let value = e.target.value;
 
-                            // Permite apagar tudo (valor temporário vazio)
                             if (value === "") {
-                              setInstallmentsCount(0); // ou mantém o último valor válido
+                              setInstallmentsCount(0);
                               return;
                             }
 
                             let num = parseInt(value, 10);
 
-                            // Bloqueia valores inválidos
                             if (isNaN(num)) return;
 
-                            // Limita entre 2 e 48
                             if (num < 2) num = 2;
                             if (num > 48) num = 48;
 
                             setInstallmentsCount(num);
                           }}
-                          onWheel={(e) => e.currentTarget.blur()} // ← Desativa rolagem do mouse
+                          onWheel={(e) => e.currentTarget.blur()}
                           onKeyDown={(e) => {
-                            // Bloqueia o uso das setas ↑ ↓ do teclado (opcional)
                             if (e.key === "ArrowUp" || e.key === "ArrowDown") {
                               e.preventDefault();
                             }
@@ -472,7 +477,6 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
         </Dialog>
       </CardHeader>
 
-      {/* 🔥 LINHA SEPARADORA MINIMALISTA CENTRALIZADA */}
       <div className="w-[90%] mx-auto border-t border-border/50 mb-4" />
 
       <CardContent className="px-0 pb-4 md:pb-6 md:px-6 flex flex-col">
@@ -488,7 +492,6 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
                 {renderPackageInfo(activePackages[0])}
               </div>
             ) : (
-              // 🔥 CARROSSEL SEM SETAS E COM ESPAÇAMENTO NATIVO SUAVE
               <div className="flex flex-col">
                 <Carousel
                   setApi={setApi}
@@ -498,7 +501,6 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
                   <CarouselContent>
                     {activePackages.map((pkg) => (
                       <CarouselItem key={pkg.id}>
-                        {/* padding interno pra não grudar na borda da tela no mobile */}
                         <div className="px-4 md:px-1">
                           {renderPackageInfo(pkg)}
                         </div>
@@ -507,7 +509,6 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
                   </CarouselContent>
                 </Carousel>
 
-                {/* 🔥 BOLINHAS DE NAVEGAÇÃO COM TRANSIÇÃO MACIA */}
                 <div className="flex justify-center gap-2 mt-5">
                   {activePackages.map((_, i) => (
                     <button
@@ -544,7 +545,6 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
         )}
       </CardContent>
 
-      {/* Modal de Encerramento */}
       <Dialog open={isArchiveDialogOpen} onOpenChange={setIsArchiveDialogOpen}>
         <DialogContent className="sm:max-w-100 rounded-2xl">
           <DialogHeader>

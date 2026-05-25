@@ -51,7 +51,7 @@ export async function GET(
         price: true,
         active: true,
         service_id: true,
-        // 🔥 NOVO: Busca o histórico de check-ins para extrair as datas
+        created_at: true, // 🔥 NOVO: Busca a data de criação do pacote (Início do Ciclo)
         check_ins: {
           select: {
             date_time: true,
@@ -66,7 +66,7 @@ export async function GET(
       },
     });
 
-    // 🔥 NOVO: Mapeia o resultado para injetar o array 'sessionDates' igual fizemos no outro arquivo
+    // 🔥 NOVO: Mapeia o resultado para injetar o array 'sessionDates' e a data de criação
     const formattedPackages = packages.map((pkg) => {
       return {
         id: pkg.id,
@@ -76,7 +76,10 @@ export async function GET(
         price: pkg.price,
         active: pkg.active,
         service_id: pkg.service_id,
-        sessionDates: pkg.check_ins.map((checkin) => checkin.date_time.toISOString()),
+        created_at: pkg.created_at.toISOString(), // 🔥 NOVO: Envia a data formatada para o front-end
+        sessionDates: pkg.check_ins.map((checkin) =>
+          checkin.date_time.toISOString(),
+        ),
       };
     });
 
