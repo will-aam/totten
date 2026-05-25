@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label"; // 🔥 NOVO: Adicionado Label
 import {
   Group,
   AlertTriangle,
@@ -22,8 +23,9 @@ import {
   LoaderDots,
   ChevronLeft,
   ChevronRight,
+  Search,
+  Plus,
 } from "@boxicons/react";
-import { Search, Plus } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { PackageDetailsModal } from "@/components/packages/package-details-modal";
 import {
@@ -213,6 +215,10 @@ export default function PackagesPage() {
   const [pkgToCheckIn, setPkgToCheckIn] = useState<any>(null);
   const [isCheckingIn, setIsCheckingIn] = useState(false);
 
+  // 🔥 NOVO: Estados de Data e Hora para o Check-in
+  const [checkInDate, setCheckInDate] = useState("");
+  const [checkInTime, setCheckInTime] = useState("");
+
   const [packages, setPackages] = useState<any[]>([]);
   const [kpis, setKpis] = useState({
     active: 0,
@@ -266,15 +272,42 @@ export default function PackagesPage() {
       return;
     }
     setPkgToCheckIn(pkg);
+
+    // 🔥 NOVO: Injeta o dia e a hora atuais automaticamente
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    setCheckInDate(`${year}-${month}-${day}`);
+
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    setCheckInTime(`${hours}:${minutes}`);
+
     setIsCheckInDialogOpen(true);
   };
 
   const confirmManualCheckIn = async () => {
     if (!pkgToCheckIn) return;
+    if (!checkInDate || !checkInTime) {
+      return toast.error("Por favor, preencha a data e a hora corretamente.");
+    }
+
     setIsCheckingIn(true);
     try {
       toast.loading("Registrando...", { id: "manual" });
-      const res = await createManualPackageCheckIn(pkgToCheckIn.id);
+
+      // 🔥 NOVO: Monta a data ISO para mandar pro backend
+      const dateTimeString = new Date(
+        `${checkInDate}T${checkInTime}:00`,
+      ).toISOString();
+
+      // Passamos a data como segundo parâmetro da action!
+      const res = await createManualPackageCheckIn(
+        pkgToCheckIn.id,
+        dateTimeString,
+      );
+
       if (res.success) {
         toast.success("Check-in registrado com sucesso!", { id: "manual" });
         setIsCheckInDialogOpen(false);
@@ -424,23 +457,51 @@ export default function PackagesPage() {
       <Dialog open={isCheckInDialogOpen} onOpenChange={setIsCheckInDialogOpen}>
         <DialogContent className="sm:max-w-100 rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Registrar Check-in Manual?</DialogTitle>
+            <DialogTitle>Registrar Check-in Manual</DialogTitle>
             <DialogDescription className="text-base py-2">
-              Você está registrando uma sessão para{" "}
+              Dando baixa em uma sessão para{" "}
               <span className="font-bold text-foreground">
                 {pkgToCheckIn?.clientName}
               </span>
-              . Isso criará um registro na agenda e dará baixa no saldo do
-              pacote.
+              . Informe a data e o horário do atendimento.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-end gap-2">
+
+          {/* 🔥 NOVO: Inputs de Data e Hora para o Check-in Manual */}
+          <div className="flex flex-row gap-4 py-2">
+            <div className="flex flex-col gap-2 flex-1">
+              <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                Data do Atendimento
+              </Label>
+              <Input
+                type="date"
+                value={checkInDate}
+                onChange={(e) => setCheckInDate(e.target.value)}
+                disabled={isCheckingIn}
+                className="h-11 rounded-xl bg-muted/30"
+              />
+            </div>
+            <div className="flex flex-col gap-2 flex-1">
+              <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                Hora
+              </Label>
+              <Input
+                type="time"
+                value={checkInTime}
+                onChange={(e) => setCheckInTime(e.target.value)}
+                disabled={isCheckingIn}
+                className="h-11 rounded-xl bg-muted/30"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-end gap-2 mt-4">
             <Button
               type="button"
               variant="outline"
               onClick={() => setIsCheckInDialogOpen(false)}
               disabled={isCheckingIn}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto h-12 rounded-xl font-bold"
             >
               Cancelar
             </Button>
@@ -448,7 +509,7 @@ export default function PackagesPage() {
               type="button"
               onClick={confirmManualCheckIn}
               disabled={isCheckingIn}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto h-12 rounded-xl font-bold"
             >
               {isCheckingIn ? (
                 <>
@@ -456,7 +517,7 @@ export default function PackagesPage() {
                   Registrando...
                 </>
               ) : (
-                "Confirmar"
+                "Confirmar Baixa"
               )}
             </Button>
           </DialogFooter>

@@ -334,7 +334,7 @@ export async function updateAppointment(
   }
 }
 
-// --- 3. DELETAR (INDIVIDUAL OU SÉRIE) ---
+// --- 3. DELETAR (INDIVIDUAL OU SÉRIE) COM SEGURANÇA ---
 export async function deleteAppointment(
   id: string,
   deleteAll: boolean = false,
@@ -343,25 +343,64 @@ export async function deleteAppointment(
   try {
     const admin = await requireAuth();
 
-    if (deleteAll && recurrenceId) {
-      await prisma.appointment.deleteMany({
-        where: {
-          recurrence_id: recurrenceId,
-          organization_id: admin.organizationId,
-        },
-      });
-    } else {
-      await prisma.appointment.delete({
-        where: { id, organization_id: admin.organizationId },
-      });
-    }
+    // 1. Buscamos todos os agendamentos que serão deletados para verificar se são de pacote
+    const appointmentsToDelete = await prisma.appointment.findMany({
+      where: {
+        ...(deleteAll && recurrenceId
+          ? { recurrence_id: recurrenceId }
+          : { id }),
+        organization_id: admin.organizationId,
+      },
+      include: { package: true },
+    });
+
+    if (appointmentsToDelete.length === 0)
+      return { success: false, error: "Agendamento não encontrado." };
+
+    // 2. Transação: Delete limpo (reverte saldo e apaga históricos)
+    await prisma.$transaction(async (tx) => {
+      for (const appt of appointmentsToDelete) {
+        // A. Se era um agendamento REALIZADO de um pacote, precisamos devolver o crédito
+        if (appt.status === AppointmentStatus.REALIZADO && appt.package_id) {
+          await tx.package.update({
+            where: { id: appt.package_id },
+            data: {
+              used_sessions: { decrement: 1 },
+              active: true, // Garante que o pacote reative caso estivesse zerado
+            },
+          });
+        }
+
+        // B. Apaga o check-in vinculado (para não deixar "check-in órfão" no histórico)
+        await tx.checkIn.deleteMany({
+          where: { appointment_id: appt.id },
+        });
+      }
+
+      // C. Finalmente, deleta os agendamentos
+      if (deleteAll && recurrenceId) {
+        await tx.appointment.deleteMany({
+          where: {
+            recurrence_id: recurrenceId,
+            organization_id: admin.organizationId,
+          },
+        });
+      } else {
+        await tx.appointment.delete({
+          where: { id, organization_id: admin.organizationId },
+        });
+      }
+    });
 
     revalidatePath("/admin/agenda");
-    revalidatePath("/admin/finance/dashboard");
+    revalidatePath("/admin/packages");
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/history");
+
     return { success: true };
   } catch (error) {
-    console.error(error);
-    return { success: false, error: "Erro ao excluir." };
+    console.error("Erro ao excluir agendamento:", error);
+    return { success: false, error: "Erro ao excluir agendamento." };
   }
 }
 

@@ -24,10 +24,6 @@ export async function getPackagesDashboardData(params?: {
     const skip = (page - 1) * limit;
 
     // 🔥 OTIMIZAÇÃO DE KPIs: Calculados DIRETAMENTE no banco de dados.
-    // Em vez de baixar 5.000 pacotes pro Node.js para contar quantos estão ativos,
-    // pedimos ao PostgreSQL que nos devolva apenas o número 5000. Super rápido!
-
-    // 1. Total Ativos
     const activeCount = await prisma.package.count({
       where: {
         organization_id: admin.organizationId,
@@ -35,9 +31,6 @@ export async function getPackagesDashboardData(params?: {
       },
     });
 
-    // 2. Próximos do Fim (Faltam 2 ou menos sessões para acabar)
-    // O Prisma não permite comparar duas colunas diretamente no 'where' simples (used_sessions >= total_sessions - 2)
-    // Então puxamos apenas essas duas colunas e contamos na RAM, mas apenas dos pacotes ATIVOS (muito mais leve).
     const activePackagesForKpi = await prisma.package.findMany({
       where: { organization_id: admin.organizationId, active: true },
       select: { used_sessions: true, total_sessions: true },
@@ -70,7 +63,6 @@ export async function getPackagesDashboardData(params?: {
       ];
     }
 
-    // Busca a quantidade total de pacotes que combinam com o filtro para montar a paginação (ex: Página 1 de 5)
     const totalPackages = await prisma.package.count({
       where: baseWhere,
     });
@@ -105,7 +97,6 @@ export async function getPackagesDashboardData(params?: {
         endingSoon: endingSoonCount,
         totalPending: totalPendingSessions,
       },
-      // Dados para o Frontend montar os botões de "Anterior" e "Próxima"
       total: totalPackages,
       page,
       totalPages: Math.ceil(totalPackages / limit) || 1,
@@ -151,13 +142,13 @@ export async function getPackageHistory(packageId: string) {
 
 /**
  * Realiza uma baixa manual "robusta":
- * Cria um agendamento retroativo (agora), marca como REALIZADO e desconta do pacote.
+ * Cria um agendamento retroativo, marca como REALIZADO e desconta do pacote.
+ * 🔥 NOVO: Recebe o `dateTimeString` do frontend para gravar a data/hora exata do check-in.
  */
-/**
- * Realiza uma baixa manual "robusta":
- * Cria um agendamento retroativo (agora), marca como REALIZADO e desconta do pacote.
- */
-export async function createManualPackageCheckIn(packageId: string) {
+export async function createManualPackageCheckIn(
+  packageId: string,
+  dateTimeString?: string,
+) {
   try {
     const admin = await requireAuth();
 
@@ -172,12 +163,15 @@ export async function createManualPackageCheckIn(packageId: string) {
       return { success: false, error: "Este pacote não possui mais saldo." };
     }
 
+    // Define a data do check-in. Se o front enviou uma data, usa ela, senão usa 'agora'
+    const checkInDate = dateTimeString ? new Date(dateTimeString) : new Date();
+
     // 2. Executa a transação para garantir que o histórico e o saldo batam sempre
     await prisma.$transaction(async (tx) => {
-      // Cria um agendamento para AGORA já marcado como REALIZADO
+      // Cria um agendamento com a data ESCOLHIDA, já marcado como REALIZADO
       const appt = await tx.appointment.create({
         data: {
-          date_time: new Date(),
+          date_time: checkInDate, // 🔥 Usa a data informada no modal
           status: AppointmentStatus.REALIZADO,
           client_id: pkg.client_id,
           service_id: pkg.service_id,
@@ -188,13 +182,15 @@ export async function createManualPackageCheckIn(packageId: string) {
         },
       });
 
-      // Registra o Check-In para este agendamento (aparecerá no Histórico de Check-in)
+      // Registra o Check-In com a mesma data para este agendamento
       await tx.checkIn.create({
         data: {
+          date_time: checkInDate, // 🔥 Usa a data informada no modal no histórico de checkin também
           appointment_id: appt.id,
           client_id: pkg.client_id,
           package_id: pkg.id,
           organization_id: admin.organizationId,
+          admin_id: admin.id, // 🔥 CORREÇÃO: Usando admin.id em vez de admin.userId
         },
       });
 
@@ -210,12 +206,14 @@ export async function createManualPackageCheckIn(packageId: string) {
           active: willRemainActive,
         },
       });
-    }); // 🔥 O FECHAMENTO DA TRANSAÇÃO QUE FALTAVA ESTÁ AQUI
+    });
 
     // Revalida todas as telas envolvidas para atualizar os números na hora
     revalidatePath("/admin/packages");
     revalidatePath("/admin/agenda");
     revalidatePath("/admin/history");
+    // Revalida também o perfil da cliente para a Timeline atualizar
+    revalidatePath(`/admin/clients/${pkg.client_id}`);
 
     return { success: true };
   } catch (error) {
@@ -269,6 +267,7 @@ export async function deleteCheckIn(checkInId: string) {
     revalidatePath("/admin/history");
     revalidatePath("/admin/packages");
     revalidatePath("/admin/dashboard");
+    revalidatePath(`/admin/clients/${checkIn.client_id}`);
 
     return { success: true };
   } catch (error) {
@@ -276,15 +275,14 @@ export async function deleteCheckIn(checkInId: string) {
     return { success: false, error: "Falha ao excluir o registro." };
   }
 }
+
 /**
  * Encerra/Arquiva um pacote manualmente antes da hora.
- * Ideal para clientes que abandonaram o pacote ou que fizeram um acordo de renovação precoce.
  */
 export async function archivePackage(packageId: string) {
   try {
     const admin = await requireAuth();
 
-    // Verifica se o pacote existe e pertence à organização
     const pkg = await prisma.package.findUnique({
       where: { id: packageId, organization_id: admin.organizationId },
     });
@@ -297,13 +295,11 @@ export async function archivePackage(packageId: string) {
       return { success: false, error: "Este pacote já está encerrado." };
     }
 
-    // Inativa o pacote
     await prisma.package.update({
       where: { id: pkg.id },
       data: { active: false },
     });
 
-    // Revalida as páginas para atualizar as listas e o dashboard
     revalidatePath("/admin/packages");
     revalidatePath("/admin/dashboard");
     revalidatePath(`/admin/clients/${pkg.client_id}`);
