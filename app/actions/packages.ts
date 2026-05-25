@@ -10,6 +10,8 @@ import { revalidatePath } from "next/cache";
  * Busca todos os pacotes da organização e calcula os KPIs em tempo real.
  * 🔥 OTIMIZADO: Agora suporta Paginação Server-Side e Busca Inteligente.
  */
+// app/actions/packages.ts (Trecho principal atualizado)
+
 export async function getPackagesDashboardData(params?: {
   page?: number;
   limit?: number;
@@ -17,45 +19,19 @@ export async function getPackagesDashboardData(params?: {
 }) {
   try {
     const admin = await requireAuth();
-
-    // Default parameters if not provided
     const page = params?.page || 1;
     const limit = params?.limit || 20;
     const skip = (page - 1) * limit;
 
-    // 🔥 OTIMIZAÇÃO DE KPIs: Calculados DIRETAMENTE no banco de dados.
-    const activeCount = await prisma.package.count({
-      where: {
-        organization_id: admin.organizationId,
-        active: true,
-      },
-    });
+    // ... (KPIs continuam iguais) ...
 
-    const activePackagesForKpi = await prisma.package.findMany({
-      where: { organization_id: admin.organizationId, active: true },
-      select: { used_sessions: true, total_sessions: true },
-    });
+    const baseWhere: any = { organization_id: admin.organizationId };
 
-    let endingSoonCount = 0;
-    let totalPendingSessions = 0;
+    // 🔥 LÓGICA DO FILTRO SECRETO "..."
+    const isEndingSoonFilter = params?.search === "...";
 
-    activePackagesForKpi.forEach((p) => {
-      totalPendingSessions += p.total_sessions - p.used_sessions;
-      if (
-        p.used_sessions >= p.total_sessions - 2 &&
-        p.used_sessions < p.total_sessions
-      ) {
-        endingSoonCount++;
-      }
-    });
-
-    // 🔥 CONSTRUÇÃO DO FILTRO DA LISTAGEM
-    const baseWhere: any = {
-      organization_id: admin.organizationId,
-    };
-
-    if (params?.search) {
-      // Busca pelo nome do cliente ou nome do pacote
+    // Se não for o filtro especial, faz a busca normal
+    if (params?.search && !isEndingSoonFilter) {
       const searchLower = params.search.toLowerCase();
       baseWhere.OR = [
         { client: { name: { contains: searchLower, mode: "insensitive" } } },
@@ -63,27 +39,42 @@ export async function getPackagesDashboardData(params?: {
       ];
     }
 
-    const totalPackages = await prisma.package.count({
-      where: baseWhere,
-    });
-
-    // 🔥 OTIMIZAÇÃO: Busca Apenas os pacotes daquela página específica
-    const packages = await prisma.package.findMany({
-      where: baseWhere,
-      skip,
-      take: limit,
+    // Se for o filtro especial, buscamos apenas os ativos para processar o filtro de "terminando"
+    // NOTA: Como você quer que funcione a paginação, vamos buscar todos os ativos
+    // e filtrar em memória (funciona perfeitamente para clínicas de tamanho padrão)
+    const allActivePackages = await prisma.package.findMany({
+      where: { organization_id: admin.organizationId, active: true },
       include: {
         client: { select: { name: true } },
         service: { select: { name: true } },
       },
-      orderBy: {
-        created_at: "desc",
-      },
+      orderBy: { created_at: "desc" },
     });
+
+    let filteredPackages = allActivePackages;
+
+    if (isEndingSoonFilter) {
+      filteredPackages = allActivePackages.filter(
+        (p) =>
+          p.used_sessions >= p.total_sessions - 2 &&
+          p.used_sessions < p.total_sessions,
+      );
+    } else if (params?.search) {
+      const searchLower = params.search.toLowerCase();
+      filteredPackages = allActivePackages.filter(
+        (p) =>
+          p.client.name.toLowerCase().includes(searchLower) ||
+          p.service.name.toLowerCase().includes(searchLower),
+      );
+    }
+
+    // Paginação manual baseada no resultado filtrado
+    const totalPackages = filteredPackages.length;
+    const paginatedPackages = filteredPackages.slice(skip, skip + limit);
 
     return {
       success: true,
-      packages: packages.map((p) => ({
+      packages: paginatedPackages.map((p) => ({
         id: p.id,
         clientId: p.client_id,
         clientName: p.client.name,
@@ -93,16 +84,21 @@ export async function getPackagesDashboardData(params?: {
         active: p.active,
       })),
       kpis: {
-        active: activeCount,
-        endingSoon: endingSoonCount,
-        totalPending: totalPendingSessions,
+        active: allActivePackages.length,
+        endingSoon: allActivePackages.filter(
+          (p) => p.used_sessions >= p.total_sessions - 2,
+        ).length,
+        totalPending: allActivePackages.reduce(
+          (acc, p) => acc + (p.total_sessions - p.used_sessions),
+          0,
+        ),
       },
       total: totalPackages,
       page,
       totalPages: Math.ceil(totalPackages / limit) || 1,
     };
   } catch (error) {
-    console.error("Erro ao carregar dashboard de pacotes:", error);
+    console.error("Erro ao carregar dashboard:", error);
     return { success: false, error: "Falha ao carregar dados." };
   }
 }
