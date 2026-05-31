@@ -32,27 +32,25 @@ import {
   getPendingReceivables,
   processReceivablePayment,
 } from "@/app/actions/transactions";
-import { getPaymentMethods } from "@/app/actions/payment-methods"; // 🔥 Importamos a busca de pagamentos
-import { OrganizationPaymentMethod } from "@/types/finance"; // 🔥 Importamos a tipagem
+import { getPaymentMethods } from "@/app/actions/payment-methods";
+import { OrganizationPaymentMethod } from "@/types/finance";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 
 export default function ReceivablesPage() {
   const [receivables, setReceivables] = useState<any[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<
     OrganizationPaymentMethod[]
-  >([]); // 🔥 Estado para as formas de pagamento
+  >([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Controle do Modal de Pagamento
-  const [selectedItem, setSelectedItem] = useState<any | null>(null);
-  const [paymentMethodId, setPaymentMethodId] = useState<string>(""); // 🔥 Agora guardamos o ID da forma selecionada
+  // Controle do Modal de Pagamento - aceita o item ou a chave "ALL" para dar baixa em todos
+  const [selectedItem, setSelectedItem] = useState<any | "ALL" | null>(null);
+  const [paymentMethodId, setPaymentMethodId] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      // 🔥 Buscamos as pendências e os métodos de pagamento simultaneamente
       const [receivablesData, methodsData] = await Promise.all([
         getPendingReceivables(),
         getPaymentMethods(),
@@ -78,7 +76,6 @@ export default function ReceivablesPage() {
       return;
     }
 
-    // Encontra o método completo selecionado para pegar o Tipo (para a agenda) e o ID (para o financeiro)
     const selectedMethod = paymentMethods.find(
       (pm) => pm.id === paymentMethodId,
     );
@@ -86,19 +83,45 @@ export default function ReceivablesPage() {
 
     setIsProcessing(true);
     try {
-      const res = await processReceivablePayment(
-        selectedItem.id,
-        selectedItem.sourceType,
-        selectedMethod.type, // Enum usado no agendamento
-        selectedMethod.id, // ID usado na transação manual
-      );
+      if (selectedItem === "ALL") {
+        // Fluxo Master: Múltiplas baixas em lote
+        const promises = receivables.map((item) =>
+          processReceivablePayment(
+            item.id,
+            item.sourceType,
+            selectedMethod.type,
+            selectedMethod.id,
+          ),
+        );
 
-      if (res.success) {
-        toast.success("Pagamento registrado com sucesso!");
-        handleCloseModal();
-        loadData(); // Recarrega a lista
+        const results = await Promise.all(promises);
+        const allSuccess = results.every((res) => res.success);
+
+        if (allSuccess) {
+          toast.success("Todos os recebimentos foram registrados com sucesso!");
+          handleCloseModal();
+          loadData();
+        } else {
+          toast.error("Alguns recebimentos falharam. Verifique a lista.");
+          handleCloseModal();
+          loadData();
+        }
       } else {
-        toast.error(res.error || "Erro ao registrar pagamento.");
+        // Fluxo original: Baixa em um único item
+        const res = await processReceivablePayment(
+          selectedItem.id,
+          selectedItem.sourceType,
+          selectedMethod.type,
+          selectedMethod.id,
+        );
+
+        if (res.success) {
+          toast.success("Pagamento registrado com sucesso!");
+          handleCloseModal();
+          loadData();
+        } else {
+          toast.error(res.error || "Erro ao registrar pagamento.");
+        }
       }
     } catch (error) {
       toast.error("Erro na conexão.");
@@ -109,7 +132,7 @@ export default function ReceivablesPage() {
 
   const handleCloseModal = () => {
     setSelectedItem(null);
-    setPaymentMethodId(""); // Limpa a seleção ao fechar
+    setPaymentMethodId("");
   };
 
   const formatCurrency = (value: number) => {
@@ -132,6 +155,11 @@ export default function ReceivablesPage() {
     return `${dayMonth} às ${time}`;
   };
 
+  const totalReceivables = receivables.reduce(
+    (acc, item) => acc + item.amount,
+    0,
+  );
+
   return (
     <>
       <AdminHeader title="Contas a Receber" />
@@ -139,20 +167,27 @@ export default function ReceivablesPage() {
       <div className="flex flex-col gap-4 p-4 md:p-6 max-w-5xl mx-auto w-full pb-24 md:pb-6">
         {/* Resumo */}
         {!isLoading && receivables.length > 0 && (
-          <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/50 rounded-2xl p-4 flex items-center justify-between mb-2">
-            <div>
-              <p className="text-sm font-medium text-emerald-800 dark:text-emerald-400">
-                Total a Receber
-              </p>
-              <h2 className="text-2xl font-bold text-emerald-900 dark:text-emerald-300">
-                {formatCurrency(
-                  receivables.reduce((acc, item) => acc + item.amount, 0),
-                )}
-              </h2>
+          <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/50 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-2">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 bg-emerald-100 dark:bg-emerald-900/50 rounded-full flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                <Dollar className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-emerald-800 dark:text-emerald-400">
+                  Total a Receber
+                </p>
+                <h2 className="text-2xl font-bold text-emerald-900 dark:text-emerald-300">
+                  {formatCurrency(totalReceivables)}
+                </h2>
+              </div>
             </div>
-            <div className="h-12 w-12 bg-emerald-100 dark:bg-emerald-900/50 rounded-full flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-              <Dollar className="h-6 w-6" />
-            </div>
+
+            <Button
+              onClick={() => setSelectedItem("ALL")}
+              className="w-full sm:w-auto rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+            >
+              Dar Baixa em Todos
+            </Button>
           </div>
         )}
 
@@ -231,14 +266,32 @@ export default function ReceivablesPage() {
       >
         <DialogContent className="rounded-3xl sm:max-w-md border-border/50 shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-xl">Registrar Recebimento</DialogTitle>
+            <DialogTitle className="text-xl">
+              {selectedItem === "ALL"
+                ? "Registrar Todos os Recebimentos"
+                : "Registrar Recebimento"}
+            </DialogTitle>
             <DialogDescription>
-              Selecione a forma de pagamento utilizada para dar baixa no valor
-              de{" "}
-              <strong className="text-foreground">
-                {selectedItem && formatCurrency(selectedItem.amount)}
-              </strong>
-              .
+              Selecione a forma de pagamento utilizada para dar baixa{" "}
+              {selectedItem === "ALL" ? (
+                <>
+                  em todos os valores pendentes, totalizando{" "}
+                  <strong className="text-foreground">
+                    {formatCurrency(totalReceivables)}
+                  </strong>
+                  .
+                </>
+              ) : (
+                <>
+                  no valor de{" "}
+                  <strong className="text-foreground">
+                    {selectedItem &&
+                      selectedItem !== "ALL" &&
+                      formatCurrency(selectedItem.amount)}
+                  </strong>
+                  .
+                </>
+              )}
             </DialogDescription>
           </DialogHeader>
 
@@ -255,7 +308,6 @@ export default function ReceivablesPage() {
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
-                  {/* 🔥 Renderizamos apenas as opções ATIVAS cadastradas na organização */}
                   {paymentMethods
                     .filter((pm) => pm.isActive)
                     .map((method) => (
