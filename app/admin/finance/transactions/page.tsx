@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { AdminHeader } from "@/components/admin-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input"; // 🔥 Import para o campo de busca
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -29,6 +29,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   ArrowDownRight,
@@ -38,15 +44,16 @@ import {
   LoaderDots,
   Pencil,
   Trash,
-  MoveVertical,
+  ChevronDown,
   Repeat,
   Search,
   ChevronLeft,
   ChevronRight,
+  InfoCircle,
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import {
-  getPaginatedTransactions, // 🔥 Usando a Action Paginada
+  getPaginatedTransactions,
   deleteTransaction,
   updateTransactionStatus,
 } from "@/app/actions/transactions";
@@ -70,17 +77,56 @@ const MONTHS = [
   { value: 12, label: "Dezembro" },
 ];
 
+// 🔥 Função de limpeza do texto aprimorada
+function getCleanDescription(
+  desc: string,
+  type: string,
+  clientName?: string | null,
+) {
+  if (!desc) return type === "RECEITA" ? "Receita" : "Despesa";
+
+  let clean = desc.split("|")[0];
+
+  // 1. Remove blocos inteiros entre parênteses gerados pelo sistema (ex: "(Totem - Agend: ID):")
+  clean = clean.replace(/\(Totem[^)]+\):?/gi, "");
+  clean = clean.replace(/\(Agend[^)]+\):?/gi, "");
+
+  // 2. Remove UUIDs (padrão com traços) e CUIDs (padrão de ~25 letras e números)
+  clean = clean.replace(
+    /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/gi,
+    "",
+  );
+  clean = clean.replace(/[a-z0-9]{24,30}/gi, "");
+
+  // 3. Remove termos técnicos e palavras soltas
+  clean = clean.replace(/Custo fixo de material/gi, "");
+  clean = clean.replace(/Custo de insumo/gi, "");
+  clean = clean.replace(/Agendamento/gi, "");
+  clean = clean.replace(/ID:/gi, "");
+
+  // 4. Remove o nome do cliente se estiver entre parênteses no meio da string
+  if (clientName) {
+    const escapedName = clientName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const nameRegex = new RegExp(`\\(\\s*${escapedName}\\s*\\)`, "i");
+    clean = clean.replace(nameRegex, "");
+  }
+
+  // 5. Limpeza final de formatação (espaços duplos, dois pontos, traços ou vírgulas sobrando nas pontas)
+  clean = clean.replace(/\s{2,}/g, " "); // Remove espaços duplos
+  clean = clean.replace(/-\s*-/g, "-"); // Arruma traços duplos
+  clean = clean.replace(/^[-\s,:]+|[-\s,:]+$/g, ""); // Remove lixo do começo e do final da frase
+
+  return clean.trim() || (type === "RECEITA" ? "Receita" : "Despesa");
+}
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 🔥 Estados de Paginação e Busca (Performance)
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearch = useDebounce(searchTerm, 500);
 
-  // Estados de Controle (Deletar e Editar)
   const [deletingTx, setDeletingTx] = useState<any | null>(null);
   const [deleteFuture, setDeleteFuture] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<any | null>(
@@ -88,7 +134,9 @@ export default function TransactionsPage() {
   );
   const [isDeletingLoading, setIsDeletingLoading] = useState(false);
 
-  // Filtros
+  // 🔥 Novo estado para o Modal de Visualização Rápida
+  const [viewingTx, setViewingTx] = useState<any | null>(null);
+
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [filterType, setFilterType] = useState<"ALL" | "RECEITA" | "DESPESA">(
@@ -102,7 +150,6 @@ export default function TransactionsPage() {
     (_, i) => startYear + i,
   );
 
-  // 🔥 Reseta a página se os filtros mudarem
   useEffect(() => {
     setPage(1);
   }, [selectedMonth, selectedYear, filterType, debouncedSearch]);
@@ -112,7 +159,6 @@ export default function TransactionsPage() {
     try {
       const searchQuery =
         debouncedSearch.trim().length >= 3 ? debouncedSearch.trim() : "";
-
       const response = await getPaginatedTransactions({
         month: selectedMonth,
         year: selectedYear,
@@ -121,7 +167,6 @@ export default function TransactionsPage() {
         limit: 20,
         search: searchQuery,
       });
-
       setTransactions(response.data);
       setTotalPages(response.totalPages);
     } catch (error) {
@@ -223,9 +268,7 @@ export default function TransactionsPage() {
       badgeClasses =
         "bg-rose-100/50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400";
       label = "Atrasado";
-    } else {
-      return null;
-    }
+    } else return null;
 
     const baseClasses =
       "text-[10px] px-1.5 py-0 h-4 transition-colors select-none";
@@ -242,39 +285,41 @@ export default function TransactionsPage() {
     }
 
     return (
-      <DropdownMenu>
-        <DropdownMenuTrigger className="outline-none focus:outline-none">
-          <Badge
-            variant="secondary"
-            className={cn(
-              baseClasses,
-              badgeClasses,
-              "cursor-pointer border border-foreground/15 hover:border-foreground/30 hover:opacity-80",
-            )}
+      <div onClick={(e) => e.stopPropagation()}>
+        <DropdownMenu>
+          <DropdownMenuTrigger className="outline-none focus:outline-none">
+            <Badge
+              variant="secondary"
+              className={cn(
+                baseClasses,
+                badgeClasses,
+                "cursor-pointer border border-foreground/15 hover:border-foreground/30 hover:opacity-80",
+              )}
+            >
+              {label}
+            </Badge>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="min-w-30 rounded-xl border border-border/40 shadow-sm p-1 bg-background"
           >
-            {label}
-          </Badge>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align="end"
-          className="min-w-30 rounded-xl border border-border/40 shadow-sm p-1 bg-background"
-        >
-          <DropdownMenuItem
-            className="text-xs font-semibold justify-center cursor-pointer rounded-lg text-emerald-600 focus:bg-emerald-50 focus:text-emerald-700 dark:focus:bg-emerald-900/20 dark:text-emerald-400"
-            onClick={() => handleStatusChange(transaction.originalId, "PAGO")}
-          >
-            Pago
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="text-xs font-semibold justify-center cursor-pointer rounded-lg text-amber-600 focus:bg-amber-50 focus:text-amber-700 dark:focus:bg-amber-900/20 dark:text-amber-400 mt-0.5"
-            onClick={() =>
-              handleStatusChange(transaction.originalId, "PENDENTE")
-            }
-          >
-            Pendente
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+            <DropdownMenuItem
+              className="text-xs font-semibold justify-center cursor-pointer rounded-lg text-emerald-600 focus:bg-emerald-50 focus:text-emerald-700 dark:focus:bg-emerald-900/20 dark:text-emerald-400"
+              onClick={() => handleStatusChange(transaction.originalId, "PAGO")}
+            >
+              Pago
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-xs font-semibold justify-center cursor-pointer rounded-lg text-amber-600 focus:bg-amber-50 focus:text-amber-700 dark:focus:bg-amber-900/20 dark:text-amber-400 mt-0.5"
+              onClick={() =>
+                handleStatusChange(transaction.originalId, "PENDENTE")
+              }
+            >
+              Pendente
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     );
   };
 
@@ -282,9 +327,7 @@ export default function TransactionsPage() {
     <>
       <AdminHeader title="Extrato de Movimentações" />
 
-      {/* 🔥 AJUSTE ESTRUTURAL: max-w-400 aplicado e animate-in */}
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
-        {/* Painel de Filtros e Busca */}
         <div className="flex flex-col gap-4">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card p-4 rounded-2xl border border-border/50 shadow-sm">
             <div className="flex items-center gap-2 w-full md:w-auto">
@@ -329,7 +372,6 @@ export default function TransactionsPage() {
               </Select>
             </div>
 
-            {/* Campo de Busca Livre e Tipo */}
             <div className="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -392,11 +434,17 @@ export default function TransactionsPage() {
             <div className="flex flex-col w-full">
               {transactions.map((transaction) => {
                 const isIncome = transaction.type === "RECEITA";
+                const displayTitle = getCleanDescription(
+                  transaction.description,
+                  transaction.type,
+                  transaction.clientName,
+                );
 
                 return (
                   <div
                     key={transaction.id}
-                    className="flex items-center justify-between py-4 border-b border-border/50 last:border-0 hover:bg-muted/10 transition-colors px-1 sm:px-2 rounded-lg group"
+                    className="flex items-center justify-between py-4 border-b border-border/50 last:border-0 hover:bg-muted/10 transition-colors px-1 sm:px-2 rounded-lg group cursor-pointer"
+                    onClick={() => setViewingTx(transaction)}
                   >
                     <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 pr-2">
                       <div
@@ -415,14 +463,17 @@ export default function TransactionsPage() {
                       </div>
 
                       <div className="flex flex-col min-w-0">
-                        <span className="text-sm font-semibold text-foreground leading-tight mb-1 truncate flex items-center gap-2">
-                          {transaction.description}
+                        <span
+                          className="text-sm font-semibold text-foreground leading-tight mb-1 truncate flex items-center gap-2"
+                          title={transaction.description}
+                        >
+                          {displayTitle}
                           {transaction.installment && (
                             <Badge
                               variant="secondary"
                               className="text-[10px] h-4 px-1.5 py-0 flex items-center gap-1 bg-primary/10 text-primary hover:bg-primary/20 border-none"
                             >
-                              <Repeat className="h-3 w-3" />
+                              <Repeat className="h-3 w-3" />{" "}
                               {transaction.installment}
                             </Badge>
                           )}
@@ -463,11 +514,13 @@ export default function TransactionsPage() {
                           {isIncome ? "+" : "-"}{" "}
                           {formatCurrency(transaction.amount)}
                         </span>
-
                         <StatusBadge transaction={transaction} />
                       </div>
 
-                      <div className="flex items-center justify-end w-8 sm:w-10">
+                      <div
+                        className="flex items-center justify-end w-8 sm:w-10"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         {transaction.isManual ? (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -476,7 +529,7 @@ export default function TransactionsPage() {
                                 size="icon"
                                 className="h-8 w-8 text-muted-foreground hover:bg-muted/30 hover:text-foreground rounded-full border-none focus-visible:ring-0 focus-visible:ring-offset-0 transition-colors"
                               >
-                                <MoveVertical className="h-4 w-4" />
+                                <ChevronDown className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent
@@ -511,7 +564,6 @@ export default function TransactionsPage() {
           )}
         </div>
 
-        {/* 🔥 CONTROLES DE PAGINAÇÃO */}
         {totalPages > 1 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-2 bg-card p-4 rounded-2xl border border-border/50 shadow-sm">
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-center sm:text-left w-full sm:w-auto">
@@ -527,7 +579,6 @@ export default function TransactionsPage() {
               >
                 <ChevronLeft removePadding className="h-4 w-4 mr-1" /> Anterior
               </Button>
-
               <Button
                 variant="outline"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
@@ -540,6 +591,74 @@ export default function TransactionsPage() {
           </div>
         )}
       </div>
+
+      {/* MODAL DE DETALHES RÁPIDOS */}
+      <Dialog
+        open={!!viewingTx}
+        onOpenChange={(open) => !open && setViewingTx(null)}
+      >
+        <DialogContent className="rounded-3xl sm:max-w-md border-border/50 shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <InfoCircle className="h-6 w-6 text-primary" />
+              Detalhes da Movimentação
+            </DialogTitle>
+          </DialogHeader>
+
+          {viewingTx && (
+            <div className="space-y-5 py-2">
+              <div className="flex items-center justify-between bg-muted/20 p-4 rounded-2xl border border-border/50">
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Valor
+                  </span>
+                  <span
+                    className={cn(
+                      "text-2xl font-bold",
+                      viewingTx.type === "RECEITA"
+                        ? "text-emerald-600"
+                        : "text-rose-600",
+                    )}
+                  >
+                    {formatCurrency(viewingTx.amount)}
+                  </span>
+                </div>
+                <StatusBadge transaction={viewingTx} />
+              </div>
+
+              <div className="space-y-2">
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                  Descrição Completa
+                </span>
+                <div className="bg-muted/30 p-4 rounded-xl border border-border/50 text-sm leading-relaxed text-foreground">
+                  {viewingTx.description}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Data
+                  </span>
+                  <span className="text-sm font-semibold">
+                    {formatDate(viewingTx.date)}
+                  </span>
+                </div>
+                {viewingTx.clientName && (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Cliente
+                    </span>
+                    <span className="text-sm font-semibold">
+                      {viewingTx.clientName}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog
         open={!!deletingTx}
@@ -560,7 +679,6 @@ export default function TransactionsPage() {
                 Você está prestes a excluir esta transação. Essa ação atualizará
                 o seu caixa e não pode ser desfeita.
               </p>
-
               {deletingTx?.recurrence_id && (
                 <label className="flex items-start gap-3 p-4 border border-border/50 rounded-xl bg-muted/20 cursor-pointer hover:bg-muted/30 transition-colors">
                   <Checkbox
