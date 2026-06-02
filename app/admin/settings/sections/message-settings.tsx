@@ -33,8 +33,9 @@ export function MessageSettings() {
   const [msgWelcome, setMsgWelcome] = useState("");
   const [msgRenewal, setMsgRenewal] = useState("");
   const [msgReminder, setMsgReminder] = useState("");
+  const [msgManualConfirmation, setMsgManualConfirmation] = useState(""); // 🔥 Novo estado
 
-  // 🔥 Busca dados do banco quando carrega
+  // Busca dados do banco quando carrega
   useEffect(() => {
     const fetchMessages = async () => {
       try {
@@ -57,6 +58,11 @@ export function MessageSettings() {
             data.msgReminder ||
               "Oi, {nome}! Passando para lembrar do nosso horário agendado para amanhã às {horario}. \n\nPodemos confirmar sua presença? 👍",
           );
+          // 🔥 Carregando a nova mensagem
+          setMsgManualConfirmation(
+            data.msgManualConfirmation ||
+              "Olá {nome}! Passando para confirmar o seu horário amanhã às *{horario}* para o serviço de {servico}. Podemos confirmar? 🥰",
+          );
         } else {
           toast.error("Erro ao carregar mensagens");
         }
@@ -71,7 +77,7 @@ export function MessageSettings() {
     fetchMessages();
   }, []);
 
-  // 🔥 Salva TUDO
+  // Salva TUDO
   const handleSaveAll = async () => {
     setSaving(true);
 
@@ -84,6 +90,7 @@ export function MessageSettings() {
           msgWelcome,
           msgRenewal,
           msgReminder,
+          msgManualConfirmation, // 🔥 Inclui no save
         }),
       });
 
@@ -256,9 +263,9 @@ export function MessageSettings() {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="item-4" className="px-4 border-0">
+              <AccordionItem value="item-4" className="border-b px-4">
                 <AccordionTrigger className="hover:no-underline hover:text-primary transition-colors">
-                  4. Lembrete de Agendamento
+                  4. Lembrete de Agendamento Automático
                 </AccordionTrigger>
                 <AccordionContent className="pb-4">
                   <Textarea
@@ -270,6 +277,29 @@ export function MessageSettings() {
                   <p className="text-xs text-muted-foreground mt-2">
                     Variáveis: <code className="text-primary">{"{nome}"}</code>,{" "}
                     <code className="text-primary">{"{horario}"}</code>
+                  </p>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* 🔥 Novo Accordion Item para a confirmação manual */}
+              <AccordionItem value="item-5" className="px-4 border-0">
+                <AccordionTrigger className="hover:no-underline hover:text-primary transition-colors">
+                  5. Confirmação Manual (WhatsApp)
+                </AccordionTrigger>
+                <AccordionContent className="pb-4">
+                  <Textarea
+                    rows={3}
+                    value={msgManualConfirmation}
+                    onChange={(e) => setMsgManualConfirmation(e.target.value)}
+                    className="resize-none bg-muted focus-visible:ring-primary"
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Mensagem acionada pelo botão do WhatsApp na página de
+                    Confirmações e Lembretes. <br />
+                    Variáveis: <code className="text-primary">
+                      {"{nome}"}
+                    </code>, <code className="text-primary">{"{horario}"}</code>
+                    , <code className="text-primary">{"{servico}"}</code>
                   </p>
                 </AccordionContent>
               </AccordionItem>

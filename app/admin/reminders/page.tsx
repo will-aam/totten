@@ -25,10 +25,25 @@ interface Reminder {
   status: string;
 }
 
+type SettingsMessagesResponse = {
+  msgManualConfirmation?: string;
+};
+
+const DEFAULT_MANUAL_CONFIRMATION_TEMPLATE =
+  "Olá {nome}! Passando para confirmar o seu horário amanhã às *{horario}* para o serviço de {servico}. Podemos confirmar? 🥰";
+
+function applyTemplate(
+  template: string,
+  vars: { nome: string; horario: string; servico: string },
+) {
+  return template
+    .replace(/{nome}/g, vars.nome)
+    .replace(/{horario}/g, vars.horario)
+    .replace(/{servico}/g, vars.servico);
+}
+
 export default function RemindersPage() {
   // 🔥 OTIMIZAÇÃO DE RENDERIZAÇÃO: Calcula as datas de forma síncrona com useMemo
-  // Em vez de esperar o componente nascer, renderizar e depois acionar o useEffect,
-  // calculamos imediatamente. O SWR não vai mais esperar para disparar!
   const { dateQuery, formattedDate } = useMemo(() => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -52,17 +67,33 @@ export default function RemindersPage() {
     fetcher,
   );
 
+  // ✅ Busca o template dinâmico das configurações
+  const { data: settingsMsgs } = useSWR<SettingsMessagesResponse>(
+    "/api/settings/messages",
+    fetcher,
+  );
+
+  const manualTemplate =
+    settingsMsgs?.msgManualConfirmation?.trim() ||
+    DEFAULT_MANUAL_CONFIRMATION_TEMPLATE;
+
   const [messagedIds, setMessagedIds] = useState<Set<string>>(new Set());
 
   const handleSendWhatsApp = (appt: Reminder) => {
     const cleanPhone = appt.phone.replace(/\D/g, "");
-    const firstName = appt.clientName.split(" ")[0];
+    const firstName = appt.clientName?.split(" ")[0] || appt.clientName || "";
 
-    const msg = `Olá ${firstName}! Passando para confirmar o seu horário amanhã às *${appt.time}* para o serviço de ${appt.serviceName}. Podemos confirmar? 🥰`;
+    const msg = applyTemplate(manualTemplate, {
+      nome: firstName,
+      horario: appt.time,
+      servico: appt.serviceName,
+    });
 
     setMessagedIds((prev) => new Set(prev).add(appt.id));
     window.open(
-      `https://api.whatsapp.com/send?phone=55${cleanPhone}&text=${encodeURIComponent(msg)}`,
+      `https://api.whatsapp.com/send?phone=55${cleanPhone}&text=${encodeURIComponent(
+        msg,
+      )}`,
       "_blank",
     );
   };
@@ -71,9 +102,7 @@ export default function RemindersPage() {
     <>
       <AdminHeader title="Confirmações e Lembretes" />
 
-      {/* 🔥 PADRÃO DE LARGURA: max-w-400 e min-h ajustado */}
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-12 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
-        {/* Cabeçalho da Seção (Solto) */}
         <div className="flex flex-col gap-1 border-b border-border/40 pb-6">
           <h2 className="text-2xl font-black tracking-tight text-foreground">
             Agenda de Amanhã
@@ -83,7 +112,6 @@ export default function RemindersPage() {
           </p>
         </div>
 
-        {/* Título de Seção "Solto" na tela */}
         <div className="flex items-center justify-between pt-2">
           <h2 className="text-xl font-black text-foreground flex items-center gap-2">
             <Bell className="h-6 w-6 text-primary" />
@@ -97,7 +125,6 @@ export default function RemindersPage() {
           )}
         </div>
 
-        {/* Container Principal Livre */}
         <div className="flex flex-col w-full">
           {isLoading ? (
             <div className="flex flex-col gap-4">
@@ -138,9 +165,7 @@ export default function RemindersPage() {
                     )}
                     style={{ animationDelay: `${index * 40}ms` }}
                   >
-                    {/* Infos (Esquerda) */}
                     <div className="flex items-center gap-4">
-                      {/* Bolinha do Horário */}
                       <div
                         className={cn(
                           "flex flex-col items-center justify-center h-14 w-14 rounded-2xl font-bold shrink-0",
@@ -172,7 +197,6 @@ export default function RemindersPage() {
                       </div>
                     </div>
 
-                    {/* Botão Whatsapp (Direita) */}
                     <div className="flex justify-end w-full md:w-auto border-t md:border-none border-border/40 pt-4 md:pt-0">
                       <Button
                         onClick={() => handleSendWhatsApp(appt)}

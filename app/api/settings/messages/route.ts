@@ -11,12 +11,11 @@ export async function GET() {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    // Busca configurações (para pegar o WhatsApp remetente, caso algum outro lugar ainda use)
+    // (mantive porque você já retornava phone)
     const settings = await prisma.settings.findUnique({
       where: { organization_id: admin.organizationId },
     });
 
-    // Busca templates de mensagem
     const templates = await prisma.messageTemplate.findMany({
       where: { organization_id: admin.organizationId },
     });
@@ -32,6 +31,8 @@ export async function GET() {
       msgWelcome: templatesMap["WELCOME"] || "",
       msgRenewal: templatesMap["RENEWAL"] || "",
       msgReminder: templatesMap["REMINDER"] || "",
+      // ✅ novo
+      msgManualConfirmation: templatesMap["MANUAL_CONFIRMATION"] || "",
     });
   } catch (error) {
     console.error("Erro ao buscar mensagens:", error);
@@ -39,7 +40,7 @@ export async function GET() {
   }
 }
 
-// PUT - Atualiza APENAS os templates (O WhatsApp agora fica na aba Geral)
+// PUT - Atualiza templates
 export async function PUT(request: Request) {
   try {
     const admin = await getCurrentAdmin();
@@ -49,7 +50,14 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const { msgUpdate, msgWelcome, msgRenewal, msgReminder } = body;
+    const {
+      msgUpdate,
+      msgWelcome,
+      msgRenewal,
+      msgReminder,
+      // ✅ novo
+      msgManualConfirmation,
+    } = body;
 
     await prisma.$transaction(async (tx) => {
       const templates = [
@@ -57,6 +65,8 @@ export async function PUT(request: Request) {
         { type: "WELCOME", content: msgWelcome },
         { type: "RENEWAL", content: msgRenewal },
         { type: "REMINDER", content: msgReminder },
+        // ✅ novo
+        { type: "MANUAL_CONFIRMATION", content: msgManualConfirmation },
       ];
 
       for (const template of templates) {
@@ -70,9 +80,7 @@ export async function PUT(request: Request) {
               organization_id: admin.organizationId,
             },
           },
-          update: {
-            content: template.content,
-          },
+          update: { content: template.content },
           create: {
             type: template.type,
             content: template.content,
