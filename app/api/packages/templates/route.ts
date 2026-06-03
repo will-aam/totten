@@ -26,6 +26,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
     }
 
+    // ✅ Validações extras para evitar “venda inconsistente”
+    if (pay_upfront) {
+      if (!payment_method) {
+        return NextResponse.json(
+          { error: "Selecione a forma de pagamento para venda à vista." },
+          { status: 400 },
+        );
+      }
+    }
+
+    if (!pay_upfront && generate_installments) {
+      const count = Number(installments_count);
+      if (!Number.isFinite(count) || count < 2 || count > 48) {
+        return NextResponse.json(
+          { error: "O número de parcelas deve ser entre 2 e 48." },
+          { status: 400 },
+        );
+      }
+    }
+
     const client = await prisma.client.findUnique({
       where: { id: client_id, organization_id: admin.organizationId },
     });
@@ -49,7 +69,6 @@ export async function POST(request: Request) {
     }
 
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Cria o pacote (O "Contrato" de sessões)
       const novoPacote = await tx.package.create({
         data: {
           name: service.name,
@@ -110,11 +129,11 @@ export async function POST(request: Request) {
         installments_count > 0 &&
         Number(price) > 0
       ) {
-        const amountPerInstallment = Number(price) / installments_count;
+        const count = Number(installments_count);
+        const amountPerInstallment = Number(price) / count;
         const baseDate = new Date();
 
-        for (let i = 0; i < installments_count; i++) {
-          // A primeira parcela vence hoje, a segunda no mês que vem, etc.
+        for (let i = 0; i < count; i++) {
           const dueDate = new Date(baseDate);
           dueDate.setMonth(baseDate.getMonth() + i);
 
@@ -124,8 +143,8 @@ export async function POST(request: Request) {
               description: `Parcela Pacote: ${service.name} (${client.name})`,
               amount: amountPerInstallment,
               date: dueDate,
-              status: "PENDENTE", // 🔥 Importante: Nasce pendente!
-              installment: `${i + 1}/${installments_count}`, // Ex: "1/4", "2/4"
+              status: "PENDENTE",
+              installment: `${i + 1}/${count}`,
               organization_id: admin.organizationId,
               client_id: client.id,
               package_id: novoPacote.id,

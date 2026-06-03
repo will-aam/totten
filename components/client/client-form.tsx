@@ -1,3 +1,4 @@
+// components/client/client-form.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -38,6 +39,11 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
+
+// ✅ Mesma fonte do ClientPackage
+import { getPaymentMethods } from "@/app/actions/payment-methods";
+import { OrganizationPaymentMethod } from "@/types/finance";
 
 // Máscaras
 function formatCpfInput(value: string) {
@@ -81,11 +87,22 @@ export function ClientForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [loadingPackages, setLoadingPackages] = useState(true);
-  const [loadingCep, setLoadingCep] = useState(false); // 🔥 Novo estado para o CEP
+  const [loadingCep, setLoadingCep] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const [packageTemplates, setPackageTemplates] = useState<PackageTemplate[]>(
     [],
   );
+
+  // ✅ Formas de pagamento (igual ClientPackage)
+  const [paymentMethods, setPaymentMethods] = useState<
+    OrganizationPaymentMethod[]
+  >([]);
+
+  // ✅ estados de venda (igual ClientPackage)
+  const [payUpfront, setPayUpfront] = useState(false);
+  const [selectedMethod, setSelectedMethod] = useState<string>("");
+  const [generateInstallments, setGenerateInstallments] = useState(false);
+  const [installmentsCount, setInstallmentsCount] = useState<number>(2);
 
   const [form, setForm] = useState({
     name: "",
@@ -103,27 +120,37 @@ export function ClientForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const fetchTemplates = async () => {
+    const loadData = async () => {
       try {
         const res = await fetch("/api/package-templates?active=true");
         if (res.ok) {
           const data = await res.json();
           setPackageTemplates(data);
         }
+        const methodsData = await getPaymentMethods();
+        setPaymentMethods(methodsData as OrganizationPaymentMethod[]);
       } catch (error) {
-        console.error("Erro ao buscar pacotes:", error);
+        console.error("Erro ao carregar dados:", error);
       } finally {
         setLoadingPackages(false);
       }
     };
-    fetchTemplates();
+
+    loadData();
   }, []);
 
-  // 🔥 Função que busca o CEP na API do ViaCEP
+  // Reset opções quando usuário escolhe "Nenhum pacote agora"
+  useEffect(() => {
+    if (form.package_template_id === "none") {
+      setPayUpfront(false);
+      setSelectedMethod("");
+      setGenerateInstallments(false);
+      setInstallmentsCount(2);
+    }
+  }, [form.package_template_id]);
+
   const handleCepLookup = async (cep: string) => {
     const rawCep = cep.replace(/\D/g, "");
-
-    // Só busca se tiver exatamente 8 números
     if (rawCep.length === 8) {
       setLoadingCep(true);
       try {
@@ -154,6 +181,20 @@ export function ClientForm() {
     if (form.cpf.replace(/\D/g, "").length !== 11) errs.cpf = "CPF incompleto";
     if (form.phone_whatsapp.replace(/\D/g, "").length < 10)
       errs.phone_whatsapp = "WhatsApp inválido";
+
+    // ✅ validações extras se vender pacote
+    if (form.package_template_id !== "none") {
+      if (payUpfront && !selectedMethod) {
+        errs.payment_method = "Selecione a forma de pagamento.";
+      }
+
+      if (!payUpfront && generateInstallments) {
+        if (installmentsCount < 2 || installmentsCount > 48) {
+          errs.installments = "O número de parcelas deve ser entre 2 e 48.";
+        }
+      }
+    }
+
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -164,6 +205,7 @@ export function ClientForm() {
 
     setLoading(true);
     try {
+      // 1) cria cliente
       const clientRes = await fetch("/api/clients", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -186,6 +228,7 @@ export function ClientForm() {
       if (!clientRes.ok)
         throw new Error(clientData.error || "Erro ao criar cliente");
 
+      // 2) se selecionou pacote, vende
       if (form.package_template_id !== "none") {
         const template = packageTemplates.find(
           (t) => t.id === form.package_template_id,
@@ -200,6 +243,12 @@ export function ClientForm() {
               service_id: template.service_id,
               total_sessions: Number(template.total_sessions),
               price: Number(template.price),
+
+              // ✅ novos campos (mesmo padrão do ClientPackage)
+              pay_upfront: payUpfront,
+              payment_method: payUpfront ? selectedMethod : null,
+              generate_installments: !payUpfront ? generateInstallments : false,
+              installments_count: installmentsCount,
             }),
           });
 
@@ -377,7 +426,7 @@ export function ClientForm() {
                         onChange={(e) => {
                           const val = formatCepInput(e.target.value);
                           setForm({ ...form, zip_code: val });
-                          handleCepLookup(val); // 🔥 Dispara a busca ao digitar
+                          handleCepLookup(val);
                         }}
                         placeholder="00000-000"
                         className="h-11 bg-muted/30 rounded-xl border-border/50"
@@ -429,6 +478,7 @@ export function ClientForm() {
           </div>
         </div>
 
+        {/* ✅ Pacote inicial robusto */}
         <div className="lg:col-span-1">
           <div className="flex flex-col gap-5 p-5 md:p-6 rounded-2xl bg-muted/20 border border-border/50 sticky top-4">
             <div>
@@ -445,6 +495,7 @@ export function ClientForm() {
                   onValueChange={(v) =>
                     setForm({ ...form, package_template_id: v })
                   }
+                  disabled={loadingPackages || loading}
                 >
                   <SelectTrigger className="h-11 bg-background border-border/50 rounded-xl">
                     <SelectValue placeholder="Selecione um pacote..." />
@@ -482,6 +533,141 @@ export function ClientForm() {
                       </span>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* ✅ Opções avançadas só quando tem pacote */}
+              {selectedTemplate && (
+                <div className="space-y-4 border-t border-border/50 pt-4">
+                  <div className="flex items-center justify-between rounded-xl border border-border/50 p-3 bg-muted/20">
+                    <div className="space-y-0.5 pr-4">
+                      <Label className="text-sm font-bold">
+                        Pagar Pacote à Vista?
+                      </Label>
+                      <p className="text-[11px] text-muted-foreground leading-tight">
+                        Registra o valor total no caixa agora.
+                      </p>
+                    </div>
+
+                    <Switch
+                      checked={payUpfront}
+                      onCheckedChange={(val) => {
+                        setPayUpfront(val);
+                        if (val) setGenerateInstallments(false);
+                      }}
+                      disabled={loading}
+                    />
+                  </div>
+
+                  {payUpfront && (
+                    <div className="flex flex-col gap-2 animate-in fade-in zoom-in-95 duration-200">
+                      <Label className="text-xs font-bold uppercase text-muted-foreground">
+                        Forma de Pagamento
+                      </Label>
+
+                      <Select
+                        value={selectedMethod}
+                        onValueChange={setSelectedMethod}
+                        disabled={loading}
+                      >
+                        <SelectTrigger className="h-11 rounded-xl">
+                          <SelectValue placeholder="Como o cliente está pagando?" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {paymentMethods
+                            .filter((pm) => pm.isActive)
+                            .map((pm) => (
+                              <SelectItem key={pm.id} value={pm.type}>
+                                {pm.name}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+
+                      {errors.payment_method && (
+                        <p className="text-xs text-destructive">
+                          {errors.payment_method}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {!payUpfront && (
+                    <div className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
+                      <div className="flex items-center justify-between rounded-xl border border-border/50 p-3 bg-amber-500/10 dark:bg-amber-500/5">
+                        <div className="space-y-0.5 pr-4">
+                          <Label className="text-sm font-bold text-amber-700 dark:text-amber-500">
+                            Gerar Contas a Receber?
+                          </Label>
+                          <p className="text-[11px] text-amber-600/80 dark:text-amber-500/80 leading-tight">
+                            Cria parcelas mensais pendentes.
+                          </p>
+                        </div>
+
+                        <Switch
+                          checked={generateInstallments}
+                          onCheckedChange={setGenerateInstallments}
+                          disabled={loading}
+                        />
+                      </div>
+
+                      {generateInstallments && (
+                        <div className="flex flex-col gap-2">
+                          <Label className="text-xs font-bold uppercase text-muted-foreground">
+                            Quantidade de Parcelas
+                          </Label>
+
+                          <Input
+                            type="number"
+                            inputMode="numeric"
+                            min={2}
+                            max={48}
+                            step={1}
+                            value={installmentsCount}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              if (value === "") {
+                                setInstallmentsCount(0);
+                                return;
+                              }
+                              let num = parseInt(value, 10);
+                              if (isNaN(num)) return;
+                              if (num < 2) num = 2;
+                              if (num > 48) num = 48;
+                              setInstallmentsCount(num);
+                            }}
+                            onWheel={(e) => e.currentTarget.blur()}
+                            onKeyDown={(e) => {
+                              if (
+                                e.key === "ArrowUp" ||
+                                e.key === "ArrowDown"
+                              ) {
+                                e.preventDefault();
+                              }
+                            }}
+                            disabled={loading}
+                            className="h-11 rounded-xl w-32 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+
+                          {errors.installments && (
+                            <p className="text-xs text-destructive">
+                              {errors.installments}
+                            </p>
+                          )}
+
+                          {installmentsCount >= 2 && (
+                            <p className="text-xs text-muted-foreground mt-1 font-medium">
+                              Serão geradas {installmentsCount} parcelas de{" "}
+                              {formatCurrency(
+                                Number(selectedTemplate.price) /
+                                  installmentsCount,
+                              )}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
