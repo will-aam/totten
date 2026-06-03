@@ -98,11 +98,7 @@ export default function ClientDetailPage({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
           <ClientContact client={client} />
-          <ClientPackage
-            clientId={id}
-            clientName={client.name}
-            clientActive={client.active}
-          />
+          <ClientPackage clientId={id} clientActive={client.active} />
         </div>
 
         {/* 🔥 A ORDEM EXATA QUE VOCÊ PEDIU */}

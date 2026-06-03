@@ -18,12 +18,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Calendar } from "@/components/ui/calendar"; // O calendário bonito
+import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"; // O popup bonito
+} from "@/components/ui/popover";
 import {
   User,
   Phone,
@@ -32,7 +32,7 @@ import {
   Pin,
   ChevronDown,
   CreditCard,
-  Calendar as CalendarIcon, // O ícone
+  Calendar as CalendarIcon,
 } from "@boxicons/react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -81,6 +81,7 @@ export function ClientForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [loadingPackages, setLoadingPackages] = useState(true);
+  const [loadingCep, setLoadingCep] = useState(false); // 🔥 Novo estado para o CEP
   const [showMore, setShowMore] = useState(false);
   const [packageTemplates, setPackageTemplates] = useState<PackageTemplate[]>(
     [],
@@ -117,6 +118,35 @@ export function ClientForm() {
     };
     fetchTemplates();
   }, []);
+
+  // 🔥 Função que busca o CEP na API do ViaCEP
+  const handleCepLookup = async (cep: string) => {
+    const rawCep = cep.replace(/\D/g, "");
+
+    // Só busca se tiver exatamente 8 números
+    if (rawCep.length === 8) {
+      setLoadingCep(true);
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${rawCep}/json/`);
+        const data = await res.json();
+
+        if (!data.erro) {
+          setForm((prev) => ({
+            ...prev,
+            street: data.logradouro || prev.street,
+            city: `${data.localidade} - ${data.uf}` || prev.city,
+          }));
+          toast.success("Endereço encontrado!");
+        } else {
+          toast.error("CEP não encontrado.");
+        }
+      } catch (error) {
+        toast.error("Erro ao buscar o endereço.");
+      } finally {
+        setLoadingCep(false);
+      }
+    }
+  };
 
   const validate = () => {
     const errs: Record<string, string> = {};
@@ -200,7 +230,6 @@ export function ClientForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6 md:gap-8">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12 items-start">
-        {/* LADO ESQUERDO: Dados do Cliente (Flutuante / Flat) */}
         <div className="lg:col-span-2 flex flex-col gap-6">
           <div>
             <h2 className="text-lg font-bold flex items-center gap-2 text-foreground mb-4">
@@ -302,12 +331,10 @@ export function ClientForm() {
                             : "Selecionar data"}
                         </Button>
                       </PopoverTrigger>
-                      {/* AQUI ESTÁ O SEGREDO DO VISUAL BONITO DO POPOVER */}
                       <PopoverContent
                         className="w-auto p-0 rounded-3xl border-none shadow-2xl"
                         align="start"
                       >
-                        {/* AQUI ESTÁ O SEGREDO DO CALENDÁRIO DA SHADCN */}
                         <Calendar
                           mode="single"
                           selected={form.birth_date}
@@ -338,18 +365,23 @@ export function ClientForm() {
                   </h4>
 
                   <div className="grid sm:grid-cols-3 gap-5">
-                    <div className="space-y-2 sm:col-span-1">
-                      <Label>CEP</Label>
+                    <div className="space-y-2 sm:col-span-1 relative">
+                      <Label>
+                        CEP
+                        {loadingCep && (
+                          <LoaderDots className="inline-block ml-2 h-3 w-3 animate-spin text-primary" />
+                        )}
+                      </Label>
                       <Input
                         value={form.zip_code}
-                        onChange={(e) =>
-                          setForm({
-                            ...form,
-                            zip_code: formatCepInput(e.target.value),
-                          })
-                        }
+                        onChange={(e) => {
+                          const val = formatCepInput(e.target.value);
+                          setForm({ ...form, zip_code: val });
+                          handleCepLookup(val); // 🔥 Dispara a busca ao digitar
+                        }}
                         placeholder="00000-000"
                         className="h-11 bg-muted/30 rounded-xl border-border/50"
+                        maxLength={9}
                       />
                     </div>
                     <div className="space-y-2 sm:col-span-2">
@@ -359,7 +391,9 @@ export function ClientForm() {
                         onChange={(e) =>
                           setForm({ ...form, city: e.target.value })
                         }
+                        placeholder="Ex: Aracaju - SE"
                         className="h-11 bg-muted/30 rounded-xl border-border/50"
+                        disabled={loadingCep}
                       />
                     </div>
                   </div>
@@ -374,6 +408,7 @@ export function ClientForm() {
                         }
                         placeholder="Ex: Avenida Beira Mar"
                         className="h-11 bg-muted/30 rounded-xl border-border/50"
+                        disabled={loadingCep}
                       />
                     </div>
                     <div className="space-y-2 sm:col-span-1">
@@ -394,7 +429,6 @@ export function ClientForm() {
           </div>
         </div>
 
-        {/* LADO DIREITO: Pacote Inicial (Highlight Box) */}
         <div className="lg:col-span-1">
           <div className="flex flex-col gap-5 p-5 md:p-6 rounded-2xl bg-muted/20 border border-border/50 sticky top-4">
             <div>
@@ -455,7 +489,6 @@ export function ClientForm() {
         </div>
       </div>
 
-      {/* RODAPÉ: Botões de Ação */}
       <div className="flex flex-col sm:flex-row gap-3 pt-8 border-t border-border/50">
         <Button
           asChild
