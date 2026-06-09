@@ -74,31 +74,6 @@ model Settings {
   @@map("settings")
 }
 
-model MessageTemplate {
-  id              String       @id @default(cuid())
-  type            String
-  content         String
-  organization_id String
-  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-
-  @@unique([type, organization_id])
-  @@map("message_templates")
-}
-
-model LinkBio {
-  id                String       @id @default(cuid())
-  profile_image_url String?
-  bio_text          String?
-  theme_color_light String       @default("#ffffff")
-  theme_color_dark  String       @default("#000000")
-  font_family       String       @default("Inter")
-  social_links      Json?
-  organization_id   String       @unique
-  organization      Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-
-  @@map("link_bio")
-}
-
 model Client {
   id                  String              @id @default(cuid())
   name                String
@@ -125,6 +100,32 @@ model Client {
   @@unique([cpf, organization_id])
   @@map("clients")
 }
+
+model MessageTemplate {
+  id              String       @id @default(cuid())
+  type            String
+  content         String
+  organization_id String
+  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@unique([type, organization_id])
+  @@map("message_templates")
+}
+
+model LinkBio {
+  id                String       @id @default(cuid())
+  profile_image_url String?
+  bio_text          String?
+  theme_color_light String       @default("#ffffff")
+  theme_color_dark  String       @default("#000000")
+  font_family       String       @default("Inter")
+  social_links      Json?
+  organization_id   String       @unique
+  organization      Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@map("link_bio")
+}
+
 
 model Category {
   id              String       @id @default(cuid())

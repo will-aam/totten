@@ -14,7 +14,7 @@ import { ClientHeader } from "@/components/client/client-header";
 import { ClientContact } from "@/components/client/client-contact";
 import { ClientPackage } from "@/components/client/client-package";
 import { ClientAnamnesis } from "@/components/client/client-anamnesis";
-import { ClientVouchers } from "@/components/client/client-vouchers"; // 🔥 NOVO IMPORT AQUI
+import { ClientVouchers } from "@/components/client/client-vouchers";
 import { ClientHistory } from "@/components/client/client-history";
 
 export type ClientType = {

@@ -128,7 +128,7 @@ const navItems = [
     title: "Aniversariantes",
     href: "/admin/birthdays",
     icon: Gift as BoxIcon,
-    active: false, // Bloqueado, preparando terreno para funcionalidade futura
+    active: true,
   },
 ];
 
