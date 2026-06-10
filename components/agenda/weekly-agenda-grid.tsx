@@ -117,7 +117,7 @@ export function WeeklyAgendaGrid({
   }, [now, startHour, endHour]);
 
   return (
-    <div className="flex flex-col bg-card rounded-3xl border border-border/50 overflow-hidden shadow-sm animate-in fade-in duration-500">
+    <div className="flex flex-col bg-card rounded-3xl border border-border/50 overflow-hidden shadow-sm">
       <div className="overflow-x-auto custom-scrollbar">
         <div className="min-w-200 flex relative">
           <div className="w-16 shrink-0 border-r border-border/50 bg-muted/30 sticky left-0 z-30 backdrop-blur-md">
@@ -202,7 +202,7 @@ export function WeeklyAgendaGrid({
 
               return (
                 <div
-                  key={day.toISOString()}
+                  key={dateKey}
                   className={cn(
                     "flex-1 min-w-27.5 relative border-r border-border/50 last:border-r-0 transition-colors",
                     today ? "bg-primary/5" : "hover:bg-muted/20",
