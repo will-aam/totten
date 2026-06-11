@@ -63,9 +63,13 @@ export function WeeklyAgendaGrid({
     [startHour, endHour],
   );
 
+  // 🔥 Estabiliza a referência do Date via Timestamp para evitar re-render desnecessário
+  const weekStartMs = weekStart.getTime();
+
   const weekDays = useMemo(
-    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
-    [weekStart],
+    () =>
+      Array.from({ length: 7 }, (_, i) => addDays(new Date(weekStartMs), i)),
+    [weekStartMs],
   );
 
   const groupedAppointments = useMemo(() => {
@@ -150,11 +154,16 @@ export function WeeklyAgendaGrid({
               const dayAppointments = groupedAppointments[dateKey] || [];
               const today = isToday(day);
 
-              const sortedAppts = [...dayAppointments].sort(
-                (a, b) =>
-                  new Date(a.date_time || new Date()).getTime() -
-                  new Date(b.date_time || new Date()).getTime(),
-              );
+              // 🔥 Sort Estável: Desempata pelo ID para evitar troca de colunas
+              const sortedAppts = [...dayAppointments].sort((a, b) => {
+                const timeA = new Date(a.date_time || new Date()).getTime();
+                const timeB = new Date(b.date_time || new Date()).getTime();
+
+                if (timeA === timeB) {
+                  return String(a.id).localeCompare(String(b.id));
+                }
+                return timeA - timeB;
+              });
 
               const columns: {
                 appt: Appointment;
@@ -257,14 +266,14 @@ export function WeeklyAgendaGrid({
                       const isLocked = isCancelled || isRealizado || isPaid;
                       const profName = (appt as any).professionalName;
 
-                      // 🔥 VISUAL ULTRA COMPACTO SE CANCELADO
+                      // 🔥 VISUAL ULTRA COMPACTO SE CANCELADO (Removido transition-all)
                       if (isCancelled) {
                         return (
                           <div
                             key={appt.id}
                             onClick={() => onAppointmentClick(appt)}
                             className={cn(
-                              "absolute rounded-lg px-2 py-1 cursor-pointer transition-all hover:scale-[1.03] hover:z-50 shadow-sm border border-dashed flex flex-col justify-center overflow-hidden",
+                              "absolute rounded-lg px-2 py-1 cursor-pointer transition-transform hover:scale-[1.03] hover:z-50 shadow-sm border border-dashed flex flex-col justify-center overflow-hidden",
                               appt.color,
                               "opacity-50 grayscale border-dashed",
                             )}
@@ -283,13 +292,13 @@ export function WeeklyAgendaGrid({
                         );
                       }
 
-                      // VISUAL NORMAL (NÃO CANCELADO)
+                      // VISUAL NORMAL (NÃO CANCELADO) (Removido transition-all)
                       return (
                         <div
                           key={appt.id}
                           onClick={() => onAppointmentClick(appt)}
                           className={cn(
-                            "absolute rounded-lg p-1.5 cursor-pointer transition-all hover:scale-[1.03] hover:z-50 shadow-sm border flex flex-col justify-between group overflow-hidden",
+                            "absolute rounded-lg p-1.5 cursor-pointer transition-transform hover:scale-[1.03] hover:z-50 shadow-sm border flex flex-col justify-between group overflow-hidden",
                             appt.color,
                             isPackageArchived &&
                               "border border-destructive/80 opacity-80",
