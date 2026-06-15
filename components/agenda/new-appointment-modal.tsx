@@ -9,7 +9,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -41,8 +40,8 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { createAppointment } from "@/app/actions/appointments";
-import { useSession } from "next-auth/react"; // 🔥 Para saber se é OWNER
-import { getTeam } from "@/app/actions/team"; // 🔥 Para puxar a equipe
+import { useSession } from "next-auth/react";
+import { getTeam } from "@/app/actions/team";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -96,7 +95,7 @@ export const NewAppointmentModal = memo(
     initialDate,
     initialTime,
   }: NewAppointmentModalProps) => {
-    const { data: session } = useSession(); // 🔥 Sessão atual
+    const { data: session } = useSession();
     const isOwner = session?.user?.role === "OWNER";
 
     const [date, setDate] = useState<Date | undefined>(undefined);
@@ -108,7 +107,6 @@ export const NewAppointmentModal = memo(
       string | undefined
     >(undefined);
 
-    // 🔥 Novo estado para o Profissional (já começa com o ID de quem tá logado)
     const [selectedProfessionalId, setSelectedProfessionalId] = useState<
       string | undefined
     >(undefined);
@@ -128,14 +126,12 @@ export const NewAppointmentModal = memo(
       [openingTime, closingTime],
     );
 
-    // Lista de Clientes Ativos
     const { data: clientsResponse, isLoading: loadingClients } = useSWR(
       open ? "/api/clients?active=true&limit=1000" : null,
       fetcher,
     );
     const clients = clientsResponse?.data || [];
 
-    // Lista de Serviços Ativos
     const { data: servicesResponse, isLoading: loadingServices } = useSWR(
       open ? "/api/services?active=true" : null,
       fetcher,
@@ -180,7 +176,6 @@ export const NewAppointmentModal = memo(
       if (open) loadClientPackage();
     }, [selectedClientId, open]);
 
-    // 🔥 Carrega a equipe se for OWNER
     useEffect(() => {
       async function fetchTeam() {
         if (open && isOwner) {
@@ -193,7 +188,7 @@ export const NewAppointmentModal = memo(
       fetchTeam();
     }, [open, isOwner]);
 
-    // Limpeza ao fechar e setup inicial
+    // 🔥 Limpeza de estado e injeção de data/hora inicial
     useEffect(() => {
       if (!open) {
         setSelectedClientId(undefined);
@@ -203,21 +198,35 @@ export const NewAppointmentModal = memo(
         setRepeatCount(2);
         setTime(undefined);
         setActivePackage(null);
-        setSelectedProfessionalId(session?.user?.id); // Reseta pro usuário logado
+        setSelectedProfessionalId(undefined); // Limpa para forçar re-injeção segura depois
       } else {
         setDate(initialDate || new Date());
         if (initialTime) setTime(initialTime);
-        if (!selectedProfessionalId)
-          setSelectedProfessionalId(session?.user?.id); // Seta default
       }
-    }, [open, initialDate, initialTime, session]);
+    }, [open, initialDate, initialTime]);
+
+    // 🔥 BLINDAGEM DO PROFISSIONAL: Garante que o ID do usuário logado assuma assim que a sessão existir
+    useEffect(() => {
+      if (open && session?.user?.id && !selectedProfessionalId) {
+        setSelectedProfessionalId(session.user.id);
+      }
+    }, [open, session?.user?.id, selectedProfessionalId]);
 
     const saldoDisponivel = activePackage
       ? activePackage.total_sessions - activePackage.used_sessions
       : 0;
 
     const handleSave = async () => {
-      if (!selectedClientId || !selectedServiceId || !date || !time) {
+      // Usamos a sessão como fallback direto no click, caso o estado ainda esteja vazio por algum micro-delay
+      const finalProfessionalId = selectedProfessionalId || session?.user?.id;
+
+      if (
+        !selectedClientId ||
+        !selectedServiceId ||
+        !date ||
+        !time ||
+        !finalProfessionalId
+      ) {
         toast.error("Preencha todos os campos obrigatórios.");
         return;
       }
@@ -234,7 +243,7 @@ export const NewAppointmentModal = memo(
           dateTime: fullDateTime,
           packageId: usePackage && activePackage ? activePackage.id : undefined,
           repeatCount: isRecurring ? repeatCount : 1,
-          professionalId: selectedProfessionalId, // 🔥 ENVIA O PROFISSIONAL
+          professionalId: finalProfessionalId, // 🔥 Agora 100% seguro
         });
 
         if (!result.success) {
@@ -266,7 +275,6 @@ export const NewAppointmentModal = memo(
           </DialogHeader>
 
           <div className="grid gap-5 py-4">
-            {/* 🔥 PROFISSIONAL (Só aparece para a dona) */}
             {isOwner && (
               <div className="space-y-1.5">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
@@ -281,23 +289,29 @@ export const NewAppointmentModal = memo(
                     <SelectValue placeholder="Quem vai atender?" />
                   </SelectTrigger>
                   <SelectContent className="rounded-2xl border border-border/50 bg-background shadow-xl">
-                    {team.map((member) => (
-                      <SelectItem
-                        key={member.id}
-                        value={member.id}
-                        className="rounded-xl py-2 font-medium"
-                      >
-                        {member.id === session?.user?.id
-                          ? "Admin"
-                          : member.display_name}
-                      </SelectItem>
-                    ))}
+                    {/* 🔥 Garante que o Admin logado apareça como opção default mesmo se getTeam não retornar ele explícito */}
+                    <SelectItem
+                      value={session?.user?.id || ""}
+                      className="rounded-xl py-2 font-medium"
+                    >
+                      Admin
+                    </SelectItem>
+                    {team
+                      .filter((member) => member.id !== session?.user?.id) // Evita duplicação
+                      .map((member) => (
+                        <SelectItem
+                          key={member.id}
+                          value={member.id}
+                          className="rounded-xl py-2 font-medium"
+                        >
+                          {member.display_name}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
             )}
 
-            {/* CLIENTE */}
             <div className="space-y-1.5">
               <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                 Cliente
@@ -329,7 +343,6 @@ export const NewAppointmentModal = memo(
               </Select>
             </div>
 
-            {/* PACOTE DA CLIENTE */}
             {activePackage && (
               <div
                 className={cn(
@@ -383,7 +396,6 @@ export const NewAppointmentModal = memo(
               </div>
             )}
 
-            {/* SERVIÇO */}
             <div className="space-y-1.5">
               <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                 Serviço
@@ -416,7 +428,6 @@ export const NewAppointmentModal = memo(
               </Select>
             </div>
 
-            {/* DATA/HORA */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
@@ -471,7 +482,6 @@ export const NewAppointmentModal = memo(
               </div>
             </div>
 
-            {/* RECORRÊNCIA */}
             <div
               className={cn(
                 "border-2 rounded-3xl p-4 transition-all duration-500",

@@ -22,6 +22,61 @@ export type CreateAppointmentResult =
   | { success: true; appointments: Appointment[] }
   | { success: false; error: string };
 
+// 🔥 FUNÇÃO AUXILIAR: Verifica colisão de horários
+async function hasScheduleConflict(
+  organizationId: string,
+  professionalId: string,
+  newStartTime: Date,
+  durationMinutes: number,
+  excludeAppointmentId?: string,
+): Promise<boolean> {
+  // Pega o início e o fim do dia para filtrar no banco e não trazer a base toda
+  const startOfDay = new Date(newStartTime);
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(newStartTime);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  const newEndTime = new Date(newStartTime.getTime() + durationMinutes * 60000);
+
+  // Busca os agendamentos do profissional naquele dia (exceto cancelados)
+  const existingAppts = await prisma.appointment.findMany({
+    where: {
+      organization_id: organizationId,
+      professional_id: professionalId,
+      date_time: {
+        gte: startOfDay,
+        lte: endOfDay,
+      },
+      status: {
+        not: "CANCELADO",
+      },
+      // Se estivermos editando via Drag&Drop, ignoramos o próprio agendamento
+      id: excludeAppointmentId ? { not: excludeAppointmentId } : undefined,
+    },
+    include: {
+      service: {
+        select: { duration: true },
+      },
+    },
+  });
+
+  // Checa a sobreposição matemática (Overlap)
+  for (const appt of existingAppts) {
+    const existingStart = appt.date_time.getTime();
+    const existingEnd = existingStart + appt.service.duration * 60000;
+
+    // Regra de colisão: Inicio Novo < Fim Velho E Fim Novo > Inicio Velho
+    if (
+      newStartTime.getTime() < existingEnd &&
+      newEndTime.getTime() > existingStart
+    ) {
+      return true; // 🚨 CONFLITO DETECTADO
+    }
+  }
+
+  return false; // ✅ HORÁRIO LIVRE
+}
+
 // --- 1. CRIAR AGENDAMENTO (RECORRÊNCIA) ---
 export async function createAppointment(
   input: CreateAppointmentInput,
@@ -35,7 +90,7 @@ export async function createAppointment(
       observations,
       packageId,
       repeatCount = 1,
-      professionalId, // 🔥 Recebe o profissional do modal
+      professionalId,
     } = input;
 
     const firstDateTime =
@@ -47,6 +102,39 @@ export async function createAppointment(
     );
     const recurrenceId = totalSessionsToCreate > 1 ? randomUUID() : null;
 
+    // 1. Busca os dados do serviço para saber a duração
+    const service = await prisma.service.findUnique({
+      where: { id: serviceId, organization_id: admin.organizationId },
+    });
+
+    if (!service) {
+      return { success: false, error: "Serviço não encontrado." };
+    }
+
+    const targetProfessional = professionalId || admin.id;
+
+    // 🔥 PRE-CHECK: Verifica se ALGUMA das datas da recorrência tem conflito
+    for (const date of appointmentDates) {
+      const isOccupied = await hasScheduleConflict(
+        admin.organizationId,
+        targetProfessional,
+        date,
+        service.duration,
+      );
+
+      if (isOccupied) {
+        const timeStr = date.toLocaleTimeString("pt-BR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        const dateStr = date.toLocaleDateString("pt-BR");
+        return {
+          success: false,
+          error: `Horário indisponível! O profissional já possui atendimento no dia ${dateStr} às ${timeStr}.`,
+        };
+      }
+    }
+
     let startSessionNumber = 0;
 
     if (packageId) {
@@ -55,7 +143,6 @@ export async function createAppointment(
         return { success: false, error: "Pacote não encontrado." };
       }
 
-      // Bloqueia uso de pacotes arquivados na criação
       if (!pkg.active) {
         return {
           success: false,
@@ -87,7 +174,7 @@ export async function createAppointment(
             organization_id: admin.organizationId,
             recurrence_id: recurrenceId,
             session_number: packageId ? startSessionNumber + i + 1 : null,
-            professional_id: professionalId || admin.id, // 🔥 SALVA O PROFISSIONAL (Se não enviar, assume quem está logado)
+            professional_id: targetProfessional,
           },
         });
         created.push(appt);
@@ -140,7 +227,6 @@ export async function updateAppointment(
       finalHasCharge = false;
     if (finalStatus === AppointmentStatus.CANCELADO) finalHasCharge = false;
 
-    // 🔥 BUSCA O AGENDAMENTO COM O SERVIÇO E SEUS INSUMOS (SE HOUVER)
     const currentAppt = await prisma.appointment.findUnique({
       where: { id, organization_id: admin.organizationId },
       include: {
@@ -163,7 +249,6 @@ export async function updateAppointment(
       finalStatus === AppointmentStatus.REALIZADO &&
       currentAppt.status !== AppointmentStatus.REALIZADO;
 
-    // 🔥 Travas de Segurança do Pacote
     if (isMarkingAsDone && currentAppt.package) {
       if (!currentAppt.package.active) {
         return {
@@ -182,9 +267,7 @@ export async function updateAppointment(
       }
     }
 
-    // 🔥 A GRANDE TRANSAÇÃO
     await prisma.$transaction(async (tx) => {
-      // Lógica de Atualização em Lote ou Individual
       if (updateAll && recurrenceId) {
         await tx.appointment.updateMany({
           where: {
@@ -232,19 +315,13 @@ export async function updateAppointment(
         }
       }
 
-      // 🔥 --- O CORAÇÃO DO SISTEMA FINANCEIRO E DE ESTOQUE --- 🔥
-
       const service = currentAppt.service;
-
-      // 1. GERAR RECEITA (Desacoplado da mudança de status)
-      // Se está realizado, não é pacote, tem método de pagamento...
       const requiresRevenue =
         finalStatus === AppointmentStatus.REALIZADO &&
         !currentAppt.package_id &&
         finalPaymentMethod !== null;
 
       if (requiresRevenue) {
-        // Verifica se já não foi gerada uma receita antes (ex: se a recepção só estiver editando a observação)
         const existingRevenue = await tx.transaction.findFirst({
           where: { appointment_id: currentAppt.id, type: "RECEITA" },
         });
@@ -264,23 +341,17 @@ export async function updateAppointment(
         }
       }
 
-      // 2. GERAR DESPESA E BAIXAR ESTOQUE (Matriz de Decisão)
-      // Isso continua amarrado ao `isMarkingAsDone` para NUNCA baixar o estoque 2x
       if (isMarkingAsDone) {
         if (service.track_stock && service.stock_items.length > 0) {
-          // FLUXO A e B: A Cliente Organizada / Híbrida (Tem Estoque)
-
           for (const item of service.stock_items) {
             const stockData = item.stock_item;
             const usedQty = item.quantity_used;
 
-            // a) Baixa a quantidade física da prateleira (Sempre)
             await tx.stockItem.update({
               where: { id: stockData.id },
               data: { quantity: { decrement: usedQty } },
             });
 
-            // b) Regra de Caixa: Só gera despesa se NÃO marcou "Lançar como Despesa" na compra
             if (!stockData.was_expensed) {
               const costOfUsedQty =
                 Number(usedQty) * Number(stockData.unit_cost);
@@ -305,8 +376,6 @@ export async function updateAppointment(
           service.material_cost &&
           Number(service.material_cost) > 0
         ) {
-          // FLUXO C: A Cliente Preguiçosa (O Chute Manual)
-
           await tx.transaction.create({
             data: {
               type: "DESPESA",
@@ -320,7 +389,7 @@ export async function updateAppointment(
           });
         }
       }
-    }); // Fim da transaction
+    });
 
     revalidatePath("/admin/agenda");
     revalidatePath("/admin/packages");
@@ -343,7 +412,6 @@ export async function deleteAppointment(
   try {
     const admin = await requireAuth();
 
-    // 1. Buscamos todos os agendamentos que serão deletados para verificar se são de pacote
     const appointmentsToDelete = await prisma.appointment.findMany({
       where: {
         ...(deleteAll && recurrenceId
@@ -357,27 +425,23 @@ export async function deleteAppointment(
     if (appointmentsToDelete.length === 0)
       return { success: false, error: "Agendamento não encontrado." };
 
-    // 2. Transação: Delete limpo (reverte saldo e apaga históricos)
     await prisma.$transaction(async (tx) => {
       for (const appt of appointmentsToDelete) {
-        // A. Se era um agendamento REALIZADO de um pacote, precisamos devolver o crédito
         if (appt.status === AppointmentStatus.REALIZADO && appt.package_id) {
           await tx.package.update({
             where: { id: appt.package_id },
             data: {
               used_sessions: { decrement: 1 },
-              active: true, // Garante que o pacote reative caso estivesse zerado
+              active: true,
             },
           });
         }
 
-        // B. Apaga o check-in vinculado (para não deixar "check-in órfão" no histórico)
         await tx.checkIn.deleteMany({
           where: { appointment_id: appt.id },
         });
       }
 
-      // C. Finalmente, deleta os agendamentos
       if (deleteAll && recurrenceId) {
         await tx.appointment.deleteMany({
           where: {
@@ -411,10 +475,44 @@ export async function updateAppointmentDateTime(
 ) {
   try {
     const admin = await requireAuth();
+
+    // 1. Busca os dados do agendamento que está sendo movido
+    const apptToMove = await prisma.appointment.findUnique({
+      where: { id, organization_id: admin.organizationId },
+      include: {
+        service: { select: { duration: true } },
+      },
+    });
+
+    if (!apptToMove) {
+      return { success: false, error: "Agendamento não encontrado." };
+    }
+
+    const newDate = new Date(newDateIso);
+
+    // 🔥 PRE-CHECK: Verifica se a nova posição está livre
+    // Passamos o `id` do agendamento para ele não colidir com ele mesmo
+    const isOccupied = await hasScheduleConflict(
+      admin.organizationId,
+      apptToMove.professional_id || admin.id,
+      newDate,
+      apptToMove.service.duration,
+      id,
+    );
+
+    if (isOccupied) {
+      return {
+        success: false,
+        error: "Esse horário já está ocupado por outro atendimento!",
+      };
+    }
+
+    // 2. Se estiver livre, pode mover tranquilamente
     await prisma.appointment.update({
       where: { id, organization_id: admin.organizationId },
-      data: { date_time: new Date(newDateIso) },
+      data: { date_time: newDate },
     });
+
     revalidatePath("/admin/agenda");
     return { success: true };
   } catch (error) {
