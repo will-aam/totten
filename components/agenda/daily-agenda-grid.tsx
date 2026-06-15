@@ -183,16 +183,7 @@ function AppointmentCardContent({
                 {appt.service}
               </span>
             )}
-
-            {/* Etiqueta Profissional */}
-            {appt.professionalName && (
-              <div className="flex items-center gap-1 bg-background/40 w-fit px-1 py-0.5 rounded text-[9px] font-semibold text-foreground/80 backdrop-blur-sm border border-border/30">
-                <User className="h-3 w-3" />
-                <span className="truncate max-w-16">
-                  {appt.professionalName.split(" ")[0]}
-                </span>
-              </div>
-            )}
+            {/* O profissional foi movido daqui para o rodapé! */}
           </div>
         </div>
 
@@ -205,9 +196,22 @@ function AppointmentCardContent({
               : "mt-auto justify-between w-full pt-1.5 border-t border-black/5",
           )}
         >
-          <span className="flex items-center gap-1">
-            <Clock className="h-3 w-3" /> {appt.time}
-          </span>
+          {/* 🔥 AGRUPAMOS RELÓGIO E PROFISSIONAL JUNTOS */}
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1 shrink-0">
+              <Clock className="h-3 w-3" /> {appt.time}
+            </span>
+
+            {/* Etiqueta Profissional Movida para cá */}
+            {appt.professionalName && (
+              <div className="flex items-center gap-1 bg-background/50 px-1.5 py-0.5 rounded text-[9px] font-bold text-foreground/90 backdrop-blur-sm border border-black/5 shadow-sm shrink-0">
+                <User className="h-2.5 w-2.5" />
+                <span className="truncate max-w-15">
+                  {appt.professionalName.split(" ")[0]}
+                </span>
+              </div>
+            )}
+          </div>
 
           {(!isCompact || isPackageArchived) && (
             <span
