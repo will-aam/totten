@@ -109,7 +109,7 @@ function AppointmentCardContent({
     return (
       <div
         className={cn(
-          "h-full w-full rounded-xl border border-dashed flex items-center justify-between px-2 py-1 shadow-sm transition-all overflow-hidden",
+          "h-full w-full rounded-xl border border-dashed flex items-center justify-between px-2 py-1 shadow-sm transition-transform overflow-hidden",
           appt.color,
           "opacity-50 grayscale-[0.8]",
           isOverlay && "shadow-2xl scale-105 rotate-1 cursor-grabbing",
@@ -133,7 +133,7 @@ function AppointmentCardContent({
   return (
     <div
       className={cn(
-        "h-full w-full rounded-xl border flex shadow-sm group overflow-hidden transition-all relative",
+        "h-full w-full rounded-xl border flex shadow-sm group overflow-hidden transition-transform relative",
         isCompact ? "flex-row items-center px-2 py-1 gap-2" : "flex-col p-3",
         appt.color,
         appt.hasCharge && !isPackageArchived && "border-2 border-destructive",
@@ -230,6 +230,7 @@ function AppointmentCardContent({
     </div>
   );
 }
+
 function DraggableAppointmentCard({
   appt,
   top,
@@ -374,7 +375,6 @@ export function DailyAgendaGrid({
 
   const { setNodeRef: setDroppableRef } = useDroppable({ id: "agenda-grid" });
 
-  // 🔥 FUNÇÃO REFATORADA: Ocupa apenas 25 minutos visuais se for CANCELADO
   const calculatePosition = (appt: Appointment) => {
     const [hours, minutes] = appt.time.split(":").map(Number);
     const totalMinutes = hours * 60 + minutes;
@@ -476,15 +476,19 @@ export function DailyAgendaGrid({
       return h * 60 + m;
     };
 
-    const sortedAppts = [...appointments].sort(
-      (a, b) => timeToMinutes(a.time) - timeToMinutes(b.time),
-    );
+    // 🔥 SORT ESTÁVEL: Desempata pelo ID para os blocos não piscarem em re-renderizações!
+    const sortedAppts = [...appointments].sort((a, b) => {
+      const diff = timeToMinutes(a.time) - timeToMinutes(b.time);
+      if (diff === 0) {
+        return String(a.id).localeCompare(String(b.id));
+      }
+      return diff;
+    });
 
     const columns: { appt: Appointment; start: number; end: number }[][] = [];
 
     sortedAppts.forEach((appt) => {
       const start = timeToMinutes(appt.time);
-      // 🔥 Ajuste de colisão também respeitando o tempo compactado
       const isCancelled = appt.status?.toUpperCase() === "CANCELADO";
       const effectiveDuration = isCancelled ? 25 : appt.duration;
       const end = start + effectiveDuration;
