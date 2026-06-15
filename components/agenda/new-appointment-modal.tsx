@@ -288,7 +288,7 @@ export const NewAppointmentModal = memo(
                         className="rounded-xl py-2 font-medium"
                       >
                         {member.id === session?.user?.id
-                          ? "Eu mesma"
+                          ? "Admin"
                           : member.display_name}
                       </SelectItem>
                     ))}

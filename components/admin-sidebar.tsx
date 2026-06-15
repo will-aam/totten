@@ -134,9 +134,9 @@ const navItems = [
 
 const cadastrosSubItems = [
   { title: "Clientes", href: "/admin/clients", active: true },
-  { title: "Serviços", href: "/admin/services", active: true },
-  { title: "Fichas de Anamnese", href: "/admin/anamnesis", active: true },
   { title: "Estoque", href: "/admin/stock", active: true },
+  { title: "Serviços e Pacotes", href: "/admin/services", active: true },
+  { title: "Fichas de Anamnese", href: "/admin/anamnesis", active: true },
 ];
 
 const agendaSubItems = [

@@ -30,9 +30,6 @@ export default function NewServicePage() {
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
               Cadastrar Serviço
             </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Crie um novo serviço avulso.
-            </p>
           </div>
         </div>
 

@@ -19,12 +19,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import {
   User,
   Phone,
@@ -33,11 +27,9 @@ import {
   Pin,
   ChevronDown,
   CreditCard,
-  Calendar as CalendarIcon,
 } from "@boxicons/react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 
@@ -67,6 +59,14 @@ function formatCepInput(value: string) {
   return `${d.slice(0, 5)}-${d.slice(5)}`;
 }
 
+// 🔥 Máscara Dinâmica para a Data de Nascimento
+function formatDateInput(value: string) {
+  const d = value.replace(/\D/g, "").slice(0, 8);
+  if (d.length <= 2) return d;
+  if (d.length <= 4) return `${d.slice(0, 2)}/${d.slice(2)}`;
+  return `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4)}`;
+}
+
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -93,16 +93,19 @@ export function ClientForm() {
     [],
   );
 
-  // ✅ Formas de pagamento (igual ClientPackage)
+  // ✅ Formas de pagamento
   const [paymentMethods, setPaymentMethods] = useState<
     OrganizationPaymentMethod[]
   >([]);
 
-  // ✅ estados de venda (igual ClientPackage)
+  // ✅ Estados de venda
   const [payUpfront, setPayUpfront] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<string>("");
   const [generateInstallments, setGenerateInstallments] = useState(false);
   const [installmentsCount, setInstallmentsCount] = useState<number>(2);
+
+  // 🔥 Estados para o campo dinâmico de Nascimento
+  const [birthDateStr, setBirthDateStr] = useState("");
 
   const [form, setForm] = useState({
     name: "",
@@ -182,12 +185,11 @@ export function ClientForm() {
     if (form.phone_whatsapp.replace(/\D/g, "").length < 10)
       errs.phone_whatsapp = "WhatsApp inválido";
 
-    // ✅ validações extras se vender pacote
+    // Validações extras se vender pacote
     if (form.package_template_id !== "none") {
       if (payUpfront && !selectedMethod) {
         errs.payment_method = "Selecione a forma de pagamento.";
       }
-
       if (!payUpfront && generateInstallments) {
         if (installmentsCount < 2 || installmentsCount > 48) {
           errs.installments = "O número de parcelas deve ser entre 2 e 48.";
@@ -243,8 +245,6 @@ export function ClientForm() {
               service_id: template.service_id,
               total_sessions: Number(template.total_sessions),
               price: Number(template.price),
-
-              // ✅ novos campos (mesmo padrão do ClientPackage)
               pay_upfront: payUpfront,
               payment_method: payUpfront ? selectedMethod : null,
               generate_installments: !payUpfront ? generateInstallments : false,
@@ -349,7 +349,7 @@ export function ClientForm() {
                 <Button
                   type="button"
                   variant="ghost"
-                  className="w-full justify-between hover:bg-primary/5 rounded-xl h-12"
+                  className="w-full justify-between bg-primary/5 rounded-xl h-12"
                 >
                   <span className="text-muted-foreground font-medium">
                     {showMore
@@ -366,34 +366,41 @@ export function ClientForm() {
               </CollapsibleTrigger>
               <CollapsibleContent className="pt-6 space-y-6">
                 <div className="grid sm:grid-cols-2 gap-5">
+                  {/* 🔥 BLOCO DE NASCIMENTO LIMPO (SÓ DIGITAÇÃO) */}
                   <div className="space-y-2">
                     <Label>Nascimento</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="w-full justify-start h-11 bg-muted/30 border-border/50 rounded-xl font-normal"
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
-                          {form.birth_date
-                            ? format(form.birth_date, "dd/MM/yyyy")
-                            : "Selecionar data"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        className="w-auto p-0 rounded-3xl border-none shadow-2xl"
-                        align="start"
-                      >
-                        <Calendar
-                          mode="single"
-                          selected={form.birth_date}
-                          onSelect={(d) => setForm({ ...form, birth_date: d })}
-                          locale={ptBR}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <Input
+                      placeholder="DD/MM/AAAA"
+                      value={birthDateStr}
+                      maxLength={10}
+                      onChange={(e) => {
+                        const val = formatDateInput(e.target.value);
+                        setBirthDateStr(val);
+                        if (val.length === 10) {
+                          const [day, month, year] = val.split("/");
+                          const dateObj = new Date(
+                            Number(year),
+                            Number(month) - 1,
+                            Number(day),
+                          );
+                          // Validação básica se a data é minimamente coerente
+                          if (
+                            !isNaN(dateObj.getTime()) &&
+                            dateObj.getFullYear() > 1900 &&
+                            dateObj.getFullYear() <= new Date().getFullYear()
+                          ) {
+                            setForm({ ...form, birth_date: dateObj });
+                          } else {
+                            setForm({ ...form, birth_date: undefined });
+                          }
+                        } else {
+                          setForm({ ...form, birth_date: undefined });
+                        }
+                      }}
+                      className="h-11 bg-muted/30 rounded-xl border-border/50 w-full"
+                    />
                   </div>
+
                   <div className="space-y-2">
                     <Label>E-mail</Label>
                     <Input
