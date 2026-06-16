@@ -389,7 +389,7 @@ export function ClientContact({ client }: ClientContactProps) {
               </div>
               <div className="space-y-1.5 sm:col-span-5">
                 <Label className="text-xs font-semibold text-muted-foreground">
-                  Rua / Logradouro
+                  Rua
                 </Label>
                 <Input
                   value={editStreet}

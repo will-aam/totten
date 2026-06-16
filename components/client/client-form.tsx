@@ -456,7 +456,7 @@ export function ClientForm() {
 
                   <div className="grid sm:grid-cols-3 gap-5">
                     <div className="space-y-2 sm:col-span-2">
-                      <Label>Rua / Logradouro</Label>
+                      <Label>Rua</Label>
                       <Input
                         value={form.street}
                         onChange={(e) =>

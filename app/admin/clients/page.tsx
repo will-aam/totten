@@ -10,6 +10,7 @@ import { AdminHeader } from "@/components/admin-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useDebounce } from "@/hooks/use-debounce";
+import { ImportClientsModal } from "@/components/client/import-clients-modal";
 import {
   Table,
   TableBody,
@@ -33,6 +34,7 @@ import {
   File,
   Cloud,
   ArrowOutDownSquareHalf,
+  Layers,
 } from "@boxicons/react";
 import {
   AlertDialog,
@@ -60,7 +62,7 @@ type Client = {
   cpf: string;
   phone_whatsapp: string;
   activePackageName?: string | null;
-  activePackagesCount?: number; // Para mostrar o "+1", "+2" futuramente
+  activePackagesCount?: number;
   hasHistory?: boolean;
   hasAnamnesis?: boolean;
   active: boolean;
@@ -103,7 +105,7 @@ function ClientMobileItem({
           className={cn(
             "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-bold shadow-sm border-2",
             client.active && client.hasAnamnesis
-              ? "border-blue-500 bg-none-500/10 text-blue-600"
+              ? "border-blue-500 bg-blue-500/10 text-blue-600"
               : client.active
                 ? "bg-primary/10 text-primary border-primary/20"
                 : "bg-muted-foreground/10 text-muted-foreground border-muted-foreground/20",
@@ -174,12 +176,24 @@ export default function AdminClientsPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const debouncedSearch = useDebounce(search, 500);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
+  // 🔥 Nova Lógica do Filtro Oculto (**)
+  const hasMultiplePackagesFilter = debouncedSearch.includes("**");
+  let cleanSearch = debouncedSearch.replace(/\*\*/g, "").trim();
+
   let apiUrl = `/api/clients?page=${page}&limit=${ITEMS_PER_PAGE}`;
-  if (debouncedSearch && debouncedSearch.trim().length >= 3) {
-    apiUrl += `&q=${encodeURIComponent(debouncedSearch.trim())}`;
+
+  // Se ativou o filtro, envia a flag para o backend
+  if (hasMultiplePackagesFilter) {
+    apiUrl += `&multiple_packages=true`;
+  }
+
+  // Se ainda sobrou texto na busca e for >= 3 letras, busca normal
+  if (cleanSearch.length >= 3) {
+    apiUrl += `&q=${encodeURIComponent(cleanSearch)}`;
   }
 
   const {
@@ -268,12 +282,21 @@ export default function AdminClientsPage() {
               placeholder="Buscar por nome, CPF ou telefone..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="bg-card pl-10 text-foreground rounded-full md:rounded-md shadow-sm border-border"
+              className={cn(
+                "bg-card pl-10 text-foreground rounded-full md:rounded-md shadow-sm border-border transition-all duration-300",
+                search.includes("**") && "pr-32 border-primary/50 bg-primary/5", // Abre espaço pro badge
+              )}
             />
+            {/* 🔥 Badge visual mostrando que o filtro oculto está ativo */}
+            {search.includes("**") && (
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold bg-primary text-primary-foreground px-2 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 animate-in zoom-in duration-300 pointer-events-none">
+                <Layers size="xs" /> Mais de 1 plano
+              </span>
+            )}
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-            {/* Botão de Importar Clientes (Estático/Futuro) */}
+            {/* Botão de Importar Clientes */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -292,7 +315,6 @@ export default function AdminClientsPage() {
                   Opções de importação (em breve)
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-
                 <DropdownMenuItem
                   disabled
                   className="cursor-not-allowed opacity-60 flex items-center py-2.5"
@@ -300,7 +322,6 @@ export default function AdminClientsPage() {
                   <Mobile className="mr-2.5 h-4 w-4" />
                   <span>Contatos do Celular</span>
                 </DropdownMenuItem>
-
                 <DropdownMenuItem
                   disabled
                   className="cursor-not-allowed opacity-60 flex items-center py-2.5"
@@ -308,15 +329,15 @@ export default function AdminClientsPage() {
                   <Cloud className="mr-2.5 h-4 w-4" />
                   <span>Google Contatos</span>
                 </DropdownMenuItem>
-
                 <DropdownMenuItem
-                  disabled
-                  className="cursor-not-allowed opacity-60 flex items-center py-2.5"
+                  onClick={() => setIsImportModalOpen(true)}
+                  className="flex items-center py-2.5 cursor-pointer"
                 >
-                  <TableIcon className="mr-2.5 h-4 w-4" />
-                  <span>Planilha</span>
+                  <TableIcon className="mr-2.5 h-4 w-4 text-emerald-600" />
+                  <span className="font-medium text-foreground">
+                    Planilha (Excel/CSV)
+                  </span>
                 </DropdownMenuItem>
-
                 <DropdownMenuItem
                   disabled
                   className="cursor-not-allowed opacity-60 flex items-center py-2.5"
@@ -362,13 +383,19 @@ export default function AdminClientsPage() {
             </div>
           ) : clients.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/30 rounded-lg border border-dashed border-border">
-              <Group size="lg" className="text-muted-foreground/40" />
+              {search.includes("**") ? (
+                <Layers size="lg" className="text-muted-foreground/40" />
+              ) : (
+                <Group size="lg" className="text-muted-foreground/40" />
+              )}
               <p className="mt-4 text-sm font-medium text-muted-foreground">
-                {search.length >= 3
-                  ? "Nenhum cliente encontrado para essa busca."
-                  : "Nenhum cliente cadastrado ainda."}
+                {search.includes("**")
+                  ? "Nenhum cliente com mais de um pacote/plano ativo."
+                  : search.length >= 3
+                    ? "Nenhum cliente encontrado para essa busca."
+                    : "Nenhum cliente cadastrado ainda."}
               </p>
-              {search.length < 3 && (
+              {cleanSearch.length < 3 && !hasMultiplePackagesFilter && (
                 <Button
                   asChild
                   className="mt-4 rounded-full md:rounded-md"
@@ -455,7 +482,6 @@ export default function AdminClientsPage() {
                         <TableCell className="text-muted-foreground">
                           {client.phone_whatsapp}
                         </TableCell>
-
                         <TableCell className="text-center">
                           {client.activePackageName && client.active ? (
                             <div className="flex items-center justify-center gap-1.5">
@@ -478,7 +504,6 @@ export default function AdminClientsPage() {
                             <span className="text-muted-foreground/50">-</span>
                           )}
                         </TableCell>
-
                         <TableCell className="text-center">
                           <button
                             onClick={(e) => handleActionClick(client, e)}
@@ -546,8 +571,12 @@ export default function AdminClientsPage() {
           )}
         </div>
       </div>
+      <ImportClientsModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onSuccess={() => mutate()} // Atualiza a lista automaticamente após importar!
+      />
 
-      {/* Botão scroll to top */}
       <button
         onClick={scrollToTop}
         className={cn(
