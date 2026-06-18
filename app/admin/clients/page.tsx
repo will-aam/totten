@@ -290,7 +290,7 @@ export default function AdminClientsPage() {
             {/* 🔥 Badge visual mostrando que o filtro oculto está ativo */}
             {search.includes("**") && (
               <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold bg-primary text-primary-foreground px-2 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 animate-in zoom-in duration-300 pointer-events-none">
-                <Layers size="xs" /> Mais de 1 plano
+                <Layers size="xs" /> Mais de 1 Pacote
               </span>
             )}
           </div>
@@ -390,7 +390,7 @@ export default function AdminClientsPage() {
               )}
               <p className="mt-4 text-sm font-medium text-muted-foreground">
                 {search.includes("**")
-                  ? "Nenhum cliente com mais de um pacote/plano ativo."
+                  ? "Nenhum cliente com mais de um pacote ativo."
                   : search.length >= 3
                     ? "Nenhum cliente encontrado para essa busca."
                     : "Nenhum cliente cadastrado ainda."}
@@ -437,7 +437,7 @@ export default function AdminClientsPage() {
                         WhatsApp
                       </TableHead>
                       <TableHead className="text-center text-muted-foreground font-semibold">
-                        Plano / Pacote
+                        Pacote
                       </TableHead>
                       <TableHead className="text-center text-muted-foreground font-semibold w-24">
                         Ações

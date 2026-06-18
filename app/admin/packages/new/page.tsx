@@ -31,7 +31,7 @@ export default function NewPackagePage() {
               Cadastrar Pacote
             </h1>
             <p className="text-sm text-muted-foreground font-medium">
-              Monte um plano com múltiplas sessões para vender.
+              Monte um Pacote com múltiplas sessões para vender.
             </p>
           </div>
         </div>

@@ -46,7 +46,7 @@ export type PackageType = {
   price: number | string;
   active: boolean;
   sessionDates?: string[];
-  created_at?: string; // 🔥 NOVO: Adicionado para receber a data de início do ciclo
+  created_at?: string;
 };
 
 interface PackageTemplate {
@@ -93,7 +93,6 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
   const [generateInstallments, setGenerateInstallments] = useState(false);
   const [installmentsCount, setInstallmentsCount] = useState<number>(2);
 
-  // Estados para as bolinhas de navegação do carrossel
   const [api, setApi] = useState<any>();
   const [current, setCurrent] = useState(0);
 
@@ -179,12 +178,12 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
     try {
       const result = await archivePackage(pkgToArchive.id);
       if (result.success) {
-        toast.success("Plano encerrado com sucesso!");
+        toast.success("Pacote encerrado com sucesso!");
         mutate(`/api/admin/clients/${clientId}/packages`);
         setIsArchiveDialogOpen(false);
         setPkgToArchive(null);
       } else {
-        toast.error(result.error || "Falha ao encerrar plano.");
+        toast.error(result.error || "Falha ao encerrar Pacote.");
       }
     } catch (error) {
       toast.error("Erro de comunicação com o servidor.");
@@ -203,7 +202,6 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
           <span className="font-bold text-foreground text-sm truncate uppercase tracking-wider">
             {pkg.name}
           </span>
-          {/* 🔥 NOVO: Âncora Temporal para ajudar a administradora a não se perder */}
           <span className="text-[11px] text-muted-foreground font-medium flex items-center gap-1.5 mt-0.5">
             <Calendar className="h-3.5 w-3.5" />
             Início do ciclo:{" "}
@@ -246,7 +244,7 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
               setIsArchiveDialogOpen(true);
             }}
           >
-            <Archive className="h-4 w-4 mr-2" /> Encerrar / Zerar Plano
+            <Archive className="h-4 w-4 mr-2" /> Encerrar
           </Button>
         </div>
       </div>
@@ -257,7 +255,7 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
     <Card className="md:col-span-1 border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card">
       <CardHeader className="px-0 pt-0 md:pt-6 md:px-6 pb-3 flex flex-row items-center justify-between">
         <CardTitle className="text-lg flex items-center gap-2 text-foreground">
-          <Package className="h-5 w-5 text-primary" /> Plano Ativo
+          <Package className="h-5 w-5 text-primary" /> Pacote Ativo
         </CardTitle>
 
         <Dialog open={addPkgOpen} onOpenChange={setAddPkgOpen}>
@@ -265,24 +263,30 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
             <Button
               size="sm"
               variant="outline"
-              disabled={!clientActive}
-              className="h-8 rounded-full border-primary/20 text-primary select-none transition-transform duration-100 ease-out hover:bg-transparent hover:text-primary active:scale-95 active:bg-primary/10 text-xs font-medium px-3"
+              // 🔥 A MÁGICA AQUI: Desabilita se o cliente estiver inativo OU se já tiver pacote ativo
+              disabled={!clientActive || activePackages.length >= 1}
+              title={
+                activePackages.length >= 1
+                  ? "Encerre o Pacote atual para vender outro"
+                  : ""
+              }
+              className="h-8 rounded-full border-primary/20 text-primary select-none transition-transform duration-100 ease-out hover:bg-transparent hover:text-primary active:scale-95 active:bg-primary/10 text-xs font-medium px-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Plus className="h-3.5 w-3.5 mr-1" strokeWidth={2} /> Novo
+              <Plus className="h-3.5 w-3.5 mr-1" strokeWidth={2} />
+              {activePackages.length >= 1 ? "Limite Atingido" : "Novo"}
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md rounded-2xl">
-            {/* Modal de venda mantido idêntico... */}
             <DialogHeader>
               <DialogTitle>Vender Novo Pacote</DialogTitle>
               <DialogDescription>
-                Selecione um plano do seu catálogo para aplicar a este cliente.
+                Selecione um Pacote do seu catálogo para aplicar a este cliente.
               </DialogDescription>
             </DialogHeader>
 
             <div className="flex flex-col gap-4 py-4 max-h-[60vh] overflow-y-auto px-1">
               <div className="flex flex-col gap-2">
-                <Label>Plano Disponível</Label>
+                <Label>Pacote Disponível</Label>
                 <Select
                   value={templateId}
                   onValueChange={(val) => {
@@ -297,7 +301,7 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
                       placeholder={
                         templates.length === 0
                           ? "Nenhum pacote ativo"
-                          : "Selecione um plano"
+                          : "Selecione um Pacote"
                       }
                     />
                   </SelectTrigger>
@@ -314,7 +318,7 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
               {currentTemplate && (
                 <div className="bg-muted/30 p-4 rounded-xl border border-border space-y-2 mt-2">
                   <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider">
-                    Resumo do Plano
+                    Resumo do Pacote
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Sessões:</span>
@@ -520,7 +524,7 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
                           ? "bg-primary w-6"
                           : "bg-muted-foreground/30 w-2 hover:bg-primary/50",
                       )}
-                      aria-label={`Ir para o plano ${i + 1}`}
+                      aria-label={`Ir para o Pacote ${i + 1}`}
                     />
                   ))}
                 </div>
@@ -536,7 +540,7 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
               />
             </div>
             <p className="text-sm text-muted-foreground font-medium">
-              Sem plano ativo
+              Sem Pacote ativo
             </p>
             <p className="text-xs text-muted-foreground/70 mt-1 max-w-50">
               Clique em "Novo" para vender um pacote.
@@ -549,10 +553,10 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
         <DialogContent className="sm:max-w-100 rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-destructive">
-              Encerrar Plano Prematuramente?
+              Encerrar Pacote Prematuramente?
             </DialogTitle>
             <DialogDescription className="text-base py-2">
-              Tem certeza que deseja encerrar o plano{" "}
+              Tem certeza que deseja encerrar o Pacote{" "}
               <strong>{pkgToArchive?.name}</strong>? O saldo restante de sessões
               será perdido.
             </DialogDescription>
@@ -577,7 +581,7 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
               {isArchiving ? (
                 <LoaderDots className="h-4 w-4 mr-2 animate-spin" />
               ) : (
-                "Sim, encerrar plano"
+                "Sim, encerrar Pacote"
               )}
             </Button>
           </DialogFooter>
