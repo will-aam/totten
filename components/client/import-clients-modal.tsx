@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,11 +19,11 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  File,
   Table,
   CheckCircle,
   LoaderDots,
   ChevronRight,
+  ClockDashedHalf,
 } from "@boxicons/react";
 import * as XLSX from "xlsx";
 import { cn } from "@/lib/utils";
@@ -40,6 +40,8 @@ const DB_FIELDS = [
   { key: "street", label: "Rua / Logradouro", required: false },
   { key: "number", label: "Número", required: false },
 ];
+
+const COOLDOWN_MINUTES = 3; // Tempo de bloqueio (em minutos)
 
 interface ImportClientsModalProps {
   isOpen: boolean;
@@ -61,6 +63,33 @@ export function ImportClientsModal({
   const [excelData, setExcelData] = useState<any[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
 
+  // 🔥 Estados do Cooldown
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
+
+  // Verifica o cooldown toda vez que o modal abre ou a cada segundo
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const checkCooldown = () => {
+      const lastImport = localStorage.getItem("totten_last_import");
+      if (lastImport) {
+        const timePassed = Date.now() - parseInt(lastImport, 10);
+        const cooldownMs = COOLDOWN_MINUTES * 60 * 1000;
+
+        if (timePassed < cooldownMs) {
+          setCooldownRemaining(Math.ceil((cooldownMs - timePassed) / 1000));
+        } else {
+          setCooldownRemaining(0);
+          localStorage.removeItem("totten_last_import");
+        }
+      }
+    };
+
+    checkCooldown();
+    const interval = setInterval(checkCooldown, 1000);
+    return () => clearInterval(interval);
+  }, [isOpen]);
+
   const handleClose = () => {
     setStep(1);
     setFileName("");
@@ -70,13 +99,9 @@ export function ImportClientsModal({
     onClose();
   };
 
-  // 🔥 Nova função: Baixar Planilha Modelo
   const handleDownloadTemplate = () => {
     try {
-      // 1. Prepara os cabeçalhos com o formato exato que a API espera ver mapeado
       const headers = DB_FIELDS.map((f) => f.label);
-
-      // 2. Prepara uma linha de exemplo (ajuda o usuário a entender como preencher)
       const exampleRow = [
         "Maria da Silva (Obrigatório)",
         "000.000.000-00 (Obrigatório)",
@@ -89,12 +114,10 @@ export function ImportClientsModal({
         "1000",
       ];
 
-      // 3. Cria a planilha virtual
       const ws = XLSX.utils.aoa_to_sheet([headers, exampleRow]);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Modelo_Clientes");
 
-      // 4. Salva e inicia o download
       XLSX.writeFile(wb, "Modelo_Importacao_Totten.xlsx");
       toast.success("Planilha modelo baixada!");
     } catch (error) {
@@ -124,11 +147,19 @@ export function ImportClientsModal({
           return;
         }
 
+        // 🔥 Bloqueio de segurança: Limita a 1000 linhas
+        if (data.length > 1000) {
+          toast.error(
+            "Por motivos de segurança, o limite é de 1000 clientes por arquivo.",
+          );
+          setLoading(false);
+          return;
+        }
+
         const headers = Object.keys(data[0] as object);
         setExcelHeaders(headers);
         setExcelData(data);
 
-        // Auto-Mapeamento inteligente
         const autoMap: Record<string, string> = {};
         DB_FIELDS.forEach((field) => {
           const match = headers.find(
@@ -191,6 +222,10 @@ export function ImportClientsModal({
         if (result.skipped > 0) {
           toast.info(`${result.skipped} ignorados (CPF já cadastrado).`);
         }
+
+        // 🔥 REGISTRA O HORÁRIO DA IMPORTAÇÃO NO NAVEGADOR
+        localStorage.setItem("totten_last_import", Date.now().toString());
+
         onSuccess();
         handleClose();
       } else {
@@ -203,25 +238,52 @@ export function ImportClientsModal({
     }
   };
 
+  // 🔥 Formata os segundos em MM:SS
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60)
+      .toString()
+      .padStart(2, "0");
+    const s = (seconds % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="sm:max-w-150 bg-card p-0 overflow-hidden border-border/50">
-        {/* HEADER */}
         <DialogHeader className="p-6 pb-4 border-b border-border/50 bg-muted/10">
           <DialogTitle className="text-xl flex items-center gap-2">
             <Table size="sm" className="text-primary" />
             Importar Planilha de Clientes
           </DialogTitle>
           <DialogDescription>
-            {step === 1
-              ? "Envie seu arquivo CSV ou Excel (.xlsx, .xls) para importar clientes em lote."
-              : `Mapeie as colunas do seu arquivo "${fileName}" para os dados do Totten.`}
+            {cooldownRemaining > 0
+              ? "Por questões de segurança, aguarde o tempo de processamento."
+              : step === 1
+                ? "Envie seu arquivo CSV ou Excel (.xlsx, .xls) para importar clientes em lote."
+                : `Mapeie as colunas do seu arquivo "${fileName}" para os dados do Totten.`}
           </DialogDescription>
         </DialogHeader>
 
-        {/* CONTEÚDO */}
         <div className="p-6">
-          {step === 1 ? (
+          {/* 🔥 TELA DE COOLDOWN */}
+          {cooldownRemaining > 0 ? (
+            <div className="flex flex-col items-center justify-center border border-border rounded-xl p-10 bg-muted/10 animate-in zoom-in-95 duration-300">
+              <div className="h-16 w-16 bg-amber-500/10 text-amber-500 rounded-full flex items-center justify-center mb-4 relative">
+                <ClockDashedHalf size="md" className="animate-pulse" />
+              </div>
+              <h3 className="font-bold text-foreground text-lg mb-1">
+                Processando Lote Anterior
+              </h3>
+              <p className="text-sm text-muted-foreground text-center max-w-70 mb-6">
+                Para garantir a estabilidade do banco de dados, aguarde o tempo
+                abaixo antes de enviar uma nova planilha.
+              </p>
+
+              <div className="text-3xl font-black text-foreground tracking-widest bg-background px-6 py-3 rounded-lg border shadow-sm">
+                {formatTime(cooldownRemaining)}
+              </div>
+            </div>
+          ) : step === 1 ? (
             <div className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-xl p-10 bg-muted/5 transition-all hover:bg-muted/20">
               <input
                 type="file"
@@ -241,10 +303,9 @@ export function ImportClientsModal({
                 Selecionar Planilha
               </h3>
               <p className="text-sm text-muted-foreground text-center max-w-62.5 mb-6">
-                Aceitamos arquivos CSV, TXT e formatações do Excel.
+                Aceitamos arquivos CSV, TXT e Excel (Máx: 1000 linhas).
               </p>
 
-              {/* 🔥 Grupo de Botões (Download Modelo e Upload) */}
               <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                 <Button
                   variant="outline"
@@ -343,7 +404,7 @@ export function ImportClientsModal({
         </div>
 
         {/* FOOTER */}
-        {step === 2 && (
+        {step === 2 && cooldownRemaining === 0 && (
           <div className="p-6 pt-0 flex justify-end gap-3 bg-card border-t border-border/50 mt-2 py-4">
             <Button
               variant="ghost"

@@ -7,10 +7,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { AdminHeader } from "@/components/admin-header";
+import { ImportClientsModal } from "@/components/client/import-clients-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useDebounce } from "@/hooks/use-debounce";
-import { ImportClientsModal } from "@/components/client/import-clients-modal";
 import {
   Table,
   TableBody,
@@ -35,6 +35,7 @@ import {
   Cloud,
   ArrowOutDownSquareHalf,
   Layers,
+  Paperclip,
 } from "@boxicons/react";
 import {
   AlertDialog,
@@ -101,17 +102,30 @@ function ClientMobileItem({
       )}
     >
       <div className="flex items-center gap-3">
-        <div
-          className={cn(
-            "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-bold shadow-sm border-2",
-            client.active && client.hasAnamnesis
-              ? "border-blue-500 bg-blue-500/10 text-blue-600"
-              : client.active
+        {/* Avatar com badge de anamnese */}
+        <div className="relative">
+          <div
+            className={cn(
+              "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-bold shadow-sm border-2",
+              client.active
                 ? "bg-primary/10 text-primary border-primary/20"
                 : "bg-muted-foreground/10 text-muted-foreground border-muted-foreground/20",
+            )}
+          >
+            {initial}
+          </div>
+          {/* Badge de Anamnese */}
+          {client.active && client.hasAnamnesis && (
+            <div
+              className="absolute top-0 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-background z-10"
+              title="Possui Ficha de Anamnese"
+            >
+              <Paperclip
+                size="xs"
+                className="text-blue-500 dark:text-blue-400 h-3 w-3"
+              />
+            </div>
           )}
-        >
-          {initial}
         </div>
         <div className="flex flex-col">
           <span className="text-sm font-semibold text-foreground leading-none mb-1.5">
@@ -165,7 +179,8 @@ function ClientMobileItem({
           )}
         </button>
         <ChevronRight
-          className={cn("h-5 w-5 shrink-0", !client.active && "hidden")}
+          size="sm"
+          className={cn("shrink-0", !client.active && "hidden")}
         />
       </div>
     </div>
@@ -180,21 +195,13 @@ export default function AdminClientsPage() {
   const debouncedSearch = useDebounce(search, 500);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  // 🔥 Nova Lógica do Filtro Oculto (**)
   const hasMultiplePackagesFilter = debouncedSearch.includes("**");
   let cleanSearch = debouncedSearch.replace(/\*\*/g, "").trim();
 
   let apiUrl = `/api/clients?page=${page}&limit=${ITEMS_PER_PAGE}`;
-
-  // Se ativou o filtro, envia a flag para o backend
-  if (hasMultiplePackagesFilter) {
-    apiUrl += `&multiple_packages=true`;
-  }
-
-  // Se ainda sobrou texto na busca e for >= 3 letras, busca normal
-  if (cleanSearch.length >= 3) {
+  if (hasMultiplePackagesFilter) apiUrl += `&multiple_packages=true`;
+  if (cleanSearch.length >= 3)
     apiUrl += `&q=${encodeURIComponent(cleanSearch)}`;
-  }
 
   const {
     data: apiResponse,
@@ -248,7 +255,6 @@ export default function AdminClientsPage() {
     }
 
     const actionText = clientToProcess.hasHistory ? "desativar" : "excluir";
-
     try {
       const res = await fetch(`/api/clients/${clientToProcess.id}`, {
         method: "DELETE",
@@ -278,16 +284,16 @@ export default function AdminClientsPage() {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="relative w-full lg:max-w-md">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            {/* Input de busca por asterisco com destaque para filtro de múltiplos pacotes */}
             <Input
               placeholder="Buscar por nome, CPF ou telefone..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className={cn(
                 "bg-card pl-10 text-foreground rounded-full md:rounded-md shadow-sm border-border transition-all duration-300",
-                search.includes("**") && "pr-32 border-primary/50 bg-primary/5", // Abre espaço pro badge
+                search.includes("**") && "pr-32 border-primary/50 bg-primary/5",
               )}
             />
-            {/* 🔥 Badge visual mostrando que o filtro oculto está ativo */}
             {search.includes("**") && (
               <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold bg-primary text-primary-foreground px-2 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 animate-in zoom-in duration-300 pointer-events-none">
                 <Layers size="xs" /> Mais de 1 Pacote
@@ -296,14 +302,16 @@ export default function AdminClientsPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-            {/* Botão de Importar Clientes */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
                   className="h-12 w-full sm:w-auto px-6 rounded-xl font-medium shadow-sm border-border/60 hover:bg-muted/50 transition-colors"
                 >
-                  <ArrowOutDownSquareHalf className="mr-2 h-5 w-5 text-muted-foreground" />
+                  <ArrowOutDownSquareHalf
+                    size="sm"
+                    className="mr-2 text-muted-foreground"
+                  />
                   Importar Clientes
                 </Button>
               </DropdownMenuTrigger>
@@ -319,21 +327,21 @@ export default function AdminClientsPage() {
                   disabled
                   className="cursor-not-allowed opacity-60 flex items-center py-2.5"
                 >
-                  <Mobile className="mr-2.5 h-4 w-4" />
+                  <Mobile size="sm" className="mr-2.5" />
                   <span>Contatos do Celular</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   disabled
                   className="cursor-not-allowed opacity-60 flex items-center py-2.5"
                 >
-                  <Cloud className="mr-2.5 h-4 w-4" />
+                  <Cloud size="sm" className="mr-2.5" />
                   <span>Google Contatos</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setIsImportModalOpen(true)}
                   className="flex items-center py-2.5 cursor-pointer"
                 >
-                  <TableIcon className="mr-2.5 h-4 w-4 text-emerald-600" />
+                  <TableIcon size="sm" className="mr-2.5 text-emerald-600" />
                   <span className="font-medium text-foreground">
                     Planilha (Excel/CSV)
                   </span>
@@ -342,13 +350,12 @@ export default function AdminClientsPage() {
                   disabled
                   className="cursor-not-allowed opacity-60 flex items-center py-2.5"
                 >
-                  <File className="mr-2.5 h-4 w-4" />
+                  <File size="sm" className="mr-2.5" />
                   <span>Arquivo TXT / vCard</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Botão Novo Cliente */}
             <Button
               asChild
               className="h-12 w-full sm:w-auto px-8 rounded-xl font-medium shadow-sm transition-all"
@@ -410,7 +417,7 @@ export default function AdminClientsPage() {
             </div>
           ) : (
             <>
-              {/* Visualização Mobile */}
+              {/* Mobile */}
               <div className="flex flex-col md:hidden">
                 {clients.map((client) => (
                   <ClientMobileItem
@@ -422,7 +429,7 @@ export default function AdminClientsPage() {
                 ))}
               </div>
 
-              {/* Visualização Desktop */}
+              {/* Desktop */}
               <div className="hidden md:block overflow-x-auto rounded-md border border-border">
                 <Table>
                   <TableHeader className="bg-muted/50">
@@ -461,17 +468,30 @@ export default function AdminClientsPage() {
                       >
                         <TableCell className="font-medium text-foreground">
                           <div className="flex items-center gap-3">
-                            <div
-                              className={cn(
-                                "flex h-8 w-8 items-center justify-center rounded-full font-bold text-xs border-2",
-                                client.active && client.hasAnamnesis
-                                  ? "border-blue-500 bg-blue-500/10 text-blue-600"
-                                  : client.active
+                            {/* Avatar com badge de anamnese - Desktop */}
+                            <div className="relative">
+                              <div
+                                className={cn(
+                                  "flex h-8 w-8 items-center justify-center rounded-full font-bold text-xs border-2",
+                                  client.active
                                     ? "bg-primary/10 text-primary border-primary/20"
                                     : "bg-muted-foreground/10 text-muted-foreground border-muted-foreground/20",
+                                )}
+                              >
+                                {client.name.charAt(0).toUpperCase()}
+                              </div>
+                              {/* Badge de Anamnese - Desktop */}
+                              {client.active && client.hasAnamnesis && (
+                                <div
+                                  className="absolute -top-0.5 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-background z-10"
+                                  title="Possui Ficha de Anamnese"
+                                >
+                                  <Paperclip
+                                    size="xs"
+                                    className="text-foreground h-3 w-3"
+                                  />
+                                </div>
                               )}
-                            >
-                              {client.name.charAt(0).toUpperCase()}
                             </div>
                             <span className="font-semibold">{client.name}</span>
                           </div>
@@ -540,10 +560,7 @@ export default function AdminClientsPage() {
               {totalPages > 1 && (
                 <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-border pt-4">
                   <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                    {`Mostrando ${(page - 1) * ITEMS_PER_PAGE + 1}-${Math.min(
-                      page * ITEMS_PER_PAGE,
-                      totalClients,
-                    )} de ${totalClients}`}
+                    {`Mostrando ${(page - 1) * ITEMS_PER_PAGE + 1}-${Math.min(page * ITEMS_PER_PAGE, totalClients)} de ${totalClients}`}
                   </p>
                   <div className="flex gap-2 w-full sm:w-auto">
                     <Button
@@ -571,10 +588,11 @@ export default function AdminClientsPage() {
           )}
         </div>
       </div>
+
       <ImportClientsModal
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
-        onSuccess={() => mutate()} // Atualiza a lista automaticamente após importar!
+        onSuccess={() => mutate()}
       />
 
       <button

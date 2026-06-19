@@ -18,6 +18,7 @@ import {
   TrendingDown,
   Box,
 } from "@boxicons/react";
+import { Eye, EyeOff } from "lucide-react"; // 🔥 Novos ícones para o botão de ocultar
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -65,7 +66,6 @@ type PackageTemplate = {
   price: number;
   validity_days: number | null;
   active: boolean;
-  // 🔥 Adicionado o tipo do service para o TS não reclamar
   service?: {
     name: string;
   };
@@ -104,6 +104,9 @@ function ServicesTabs() {
   const initialTab = searchParams.get("tab") || "services";
   const [activeTab, setActiveTab] = useState(initialTab);
 
+  // 🔥 NOVO ESTADO: Ocultar/Mostrar Inativos (Inicia mostrando tudo, conforme você pediu)
+  const [showInactive, setShowInactive] = useState(true);
+
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
     null,
@@ -126,6 +129,14 @@ function ServicesTabs() {
     mutate: mutateCategories,
     isLoading: loadingCategories,
   } = useSWR<Category[]>("/api/categories", fetcher);
+
+  // 🔥 LÓGICA DE FILTRAGEM RÁPIDA
+  const visibleServices =
+    services?.filter((s) => showInactive || s.active) || [];
+  const visiblePackages =
+    packages?.filter((p) => showInactive || p.active) || [];
+  const visibleCategories =
+    categories?.filter((c) => showInactive || c.active) || [];
 
   return (
     <>
@@ -157,6 +168,25 @@ function ServicesTabs() {
               <Clock size="sm" /> Horários
             </TabsTrigger>
           </TabsList>
+
+          {/* 🔥 NOVO BOTÃO: Toggle global para limpar a tela de itens inativos */}
+          {activeTab !== "schedules" && (
+            <Button
+              variant="outline"
+              onClick={() => setShowInactive(!showInactive)}
+              className="h-11 rounded-xl text-muted-foreground border-border/60 hover:bg-muted/50 transition-all w-full md:w-auto shadow-sm"
+            >
+              {showInactive ? (
+                <>
+                  <EyeOff className="mr-2 h-4 w-4" /> Ocultar Inativos
+                </>
+              ) : (
+                <>
+                  <Eye className="mr-2 h-4 w-4 text-primary" /> Mostrar Inativos
+                </>
+              )}
+            </Button>
+          )}
         </div>
 
         {/* ABA: SERVIÇOS */}
@@ -187,13 +217,26 @@ function ServicesTabs() {
             <div className="flex justify-center py-12">
               <LoaderDots size="lg" className="text-muted-foreground" />
             </div>
-          ) : !services || services.length === 0 ? (
+          ) : services &&
+            services.length > 0 &&
+            visibleServices.length === 0 ? (
+            // 🔥 EMPTY STATE INTELIGENTE: Tem serviço, mas estão todos ocultos!
+            <div className="text-center py-12 text-muted-foreground bg-muted/20 border border-dashed rounded-xl">
+              <p>Todos os seus serviços estão inativos.</p>
+              <button
+                onClick={() => setShowInactive(true)}
+                className="text-primary hover:underline font-medium mt-2"
+              >
+                Mostrar serviços inativos
+              </button>
+            </div>
+          ) : visibleServices.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground bg-muted/20 border border-dashed rounded-xl">
               Nenhum serviço cadastrado ainda.
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {services.map((service) => (
+              {visibleServices.map((service) => (
                 <div
                   key={service.id}
                   onClick={() => setSelectedService(service)}
@@ -291,13 +334,25 @@ function ServicesTabs() {
             <div className="flex justify-center py-12">
               <LoaderDots size="lg" className="text-muted-foreground" />
             </div>
-          ) : !packages || packages.length === 0 ? (
+          ) : packages &&
+            packages.length > 0 &&
+            visiblePackages.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground bg-muted/20 border border-dashed rounded-xl">
+              <p>Todos os seus pacotes estão inativos.</p>
+              <button
+                onClick={() => setShowInactive(true)}
+                className="text-primary hover:underline font-medium mt-2"
+              >
+                Mostrar pacotes inativos
+              </button>
+            </div>
+          ) : visiblePackages.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground bg-muted/20 border border-dashed rounded-xl">
               Nenhum pacote cadastrado.
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {packages?.map((pkg) => (
+              {visiblePackages.map((pkg) => (
                 <div
                   key={pkg.id}
                   onClick={() => setSelectedPackage(pkg)}
@@ -319,7 +374,6 @@ function ServicesTabs() {
                         </span>
                       )}
                     </div>
-                    {/* 🔥 NOVO: Exibição elegante do Serviço Base */}
                     <div className="flex items-center gap-1.5 mt-1 text-muted-foreground">
                       <Cog size="xs" className="shrink-0" />
                       <span className="text-xs font-medium truncate">
@@ -377,9 +431,25 @@ function ServicesTabs() {
             <div className="flex justify-center py-12">
               <LoaderDots size="lg" className="text-muted-foreground" />
             </div>
+          ) : categories &&
+            categories.length > 0 &&
+            visibleCategories.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground bg-muted/20 border border-dashed rounded-xl">
+              <p>Todas as categorias estão inativas.</p>
+              <button
+                onClick={() => setShowInactive(true)}
+                className="text-primary hover:underline font-medium mt-2"
+              >
+                Mostrar categorias inativas
+              </button>
+            </div>
+          ) : visibleCategories.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground bg-muted/20 border border-dashed rounded-xl">
+              Nenhuma categoria cadastrada.
+            </div>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {categories?.map((category) => (
+              {visibleCategories.map((category) => (
                 <div
                   key={category.id}
                   onClick={() => setSelectedCategory(category)}

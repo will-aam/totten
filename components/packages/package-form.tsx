@@ -33,9 +33,9 @@ export function PackageForm() {
   const [loadingServices, setLoadingServices] = useState(true);
   const [services, setServices] = useState<any[]>([]);
 
-  // Constantes de proteção estabelecidas
-  const MAX_SESSIONS = 120;
-  const MAX_VALIDITY_DAYS = 730; // 2 anos
+  // Constantes de proteção estabelecidas (Ajustadas para a realidade do negócio)
+  const MAX_SESSIONS = 60; // Cobre 1 ano inteiro de visitas semanais (52 semanas) + margem
+  const MAX_VALIDITY_DAYS = 365; // 1 ano máximo de validade para evitar defasagem de preço (inflação)
 
   const [form, setForm] = useState({
     name: "",

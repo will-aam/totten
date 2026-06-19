@@ -243,7 +243,7 @@ export function CategorySelect({
         <kbd className="px-1.5 py-0.5 bg-muted border rounded text-[10px]">
           Enter
         </kbd>{" "}
-        para criar rapidamente
+        para criar uma nova categoria.
       </p>
     </div>
   );
