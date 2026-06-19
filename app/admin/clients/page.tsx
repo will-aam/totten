@@ -312,7 +312,7 @@ export default function AdminClientsPage() {
                     size="sm"
                     className="mr-2 text-muted-foreground"
                   />
-                  Importar Clientes
+                  Importar
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent

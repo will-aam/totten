@@ -24,10 +24,11 @@ import {
   LoaderDots,
   ChevronRight,
   ClockDashedHalf,
+  ArrowUpSquare,
+  ArrowDownSquare,
 } from "@boxicons/react";
 import * as XLSX from "xlsx";
 import { cn } from "@/lib/utils";
-import { FileUp, Download } from "lucide-react";
 
 const DB_FIELDS = [
   { key: "name", label: "Nome Completo", required: true },
@@ -41,7 +42,7 @@ const DB_FIELDS = [
   { key: "number", label: "Número", required: false },
 ];
 
-const COOLDOWN_MINUTES = 3; // Tempo de bloqueio (em minutos)
+const COOLDOWN_MINUTES = 3;
 
 interface ImportClientsModalProps {
   isOpen: boolean;
@@ -62,11 +63,8 @@ export function ImportClientsModal({
   const [excelHeaders, setExcelHeaders] = useState<string[]>([]);
   const [excelData, setExcelData] = useState<any[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
-
-  //  Estados do Cooldown
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
 
-  // Verifica o cooldown toda vez que o modal abre ou a cada segundo
   useEffect(() => {
     if (!isOpen) return;
 
@@ -75,7 +73,6 @@ export function ImportClientsModal({
       if (lastImport) {
         const timePassed = Date.now() - parseInt(lastImport, 10);
         const cooldownMs = COOLDOWN_MINUTES * 60 * 1000;
-
         if (timePassed < cooldownMs) {
           setCooldownRemaining(Math.ceil((cooldownMs - timePassed) / 1000));
         } else {
@@ -117,10 +114,9 @@ export function ImportClientsModal({
       const ws = XLSX.utils.aoa_to_sheet([headers, exampleRow]);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Modelo_Clientes");
-
       XLSX.writeFile(wb, "Modelo_Importacao_Totten.xlsx");
       toast.success("Planilha modelo baixada!");
-    } catch (error) {
+    } catch {
       toast.error("Erro ao gerar a planilha modelo.");
     }
   };
@@ -147,7 +143,6 @@ export function ImportClientsModal({
           return;
         }
 
-        //  Bloqueio de segurança: Limita a 1000 linhas
         if (data.length > 1000) {
           toast.error(
             "Por motivos de segurança, o limite é de 1000 clientes por arquivo.",
@@ -222,10 +217,7 @@ export function ImportClientsModal({
         if (result.skipped > 0) {
           toast.info(`${result.skipped} ignorados (CPF já cadastrado).`);
         }
-
-        //  REGISTRA O HORÁRIO DA IMPORTAÇÃO NO NAVEGADOR
         localStorage.setItem("totten_last_import", Date.now().toString());
-
         onSuccess();
         handleClose();
       } else {
@@ -238,7 +230,6 @@ export function ImportClientsModal({
     }
   };
 
-  //  Formata os segundos em MM:SS
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60)
       .toString()
@@ -265,7 +256,7 @@ export function ImportClientsModal({
         </DialogHeader>
 
         <div className="p-6">
-          {/*  TELA DE COOLDOWN */}
+          {/* TELA DE COOLDOWN */}
           {cooldownRemaining > 0 ? (
             <div className="flex flex-col items-center justify-center border border-border rounded-xl p-10 bg-muted/10 animate-in zoom-in-95 duration-300">
               <div className="h-16 w-16 bg-amber-500/10 text-amber-500 rounded-full flex items-center justify-center mb-4 relative">
@@ -278,7 +269,6 @@ export function ImportClientsModal({
                 Para garantir a estabilidade do banco de dados, aguarde o tempo
                 abaixo antes de enviar uma nova planilha.
               </p>
-
               <div className="text-3xl font-black text-foreground tracking-widest bg-background px-6 py-3 rounded-lg border shadow-sm">
                 {formatTime(cooldownRemaining)}
               </div>
@@ -296,7 +286,7 @@ export function ImportClientsModal({
                 {loading ? (
                   <LoaderDots size="md" className="animate-spin" />
                 ) : (
-                  <FileUp size="md" />
+                  <ArrowUpSquare size="md" />
                 )}
               </div>
               <h3 className="font-bold text-foreground text-lg mb-1">
@@ -313,10 +303,12 @@ export function ImportClientsModal({
                   disabled={loading}
                   className="rounded-xl px-6 h-11 border-border/60 shadow-sm"
                 >
-                  <Download size="sm" className="mr-2 text-muted-foreground" />
+                  <ArrowDownSquare
+                    size="sm"
+                    className="mr-2 text-muted-foreground"
+                  />
                   Baixar Modelo
                 </Button>
-
                 <Button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={loading}
