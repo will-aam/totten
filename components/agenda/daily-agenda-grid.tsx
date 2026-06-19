@@ -1,3 +1,4 @@
+// components/agenda/daily-agenda-grid.tsx
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -45,7 +46,7 @@ import { toast } from "sonner";
 import { updateAppointmentDateTime } from "@/app/actions/appointments";
 
 const DEFAULT_START_HOUR = 8;
-const HOUR_HEIGHT = 96; // 96px por hora (1.6px por minuto)
+const HOUR_HEIGHT = 96;
 
 export interface Appointment {
   id: string;
@@ -61,7 +62,7 @@ export interface Appointment {
   status?: string;
   payment_method?: string | null;
   paymentMethod?: string | null;
-  date_time?: Date;
+  date_time?: string;
   package_id?: string | null;
   session_number?: number | null;
   package?: {
@@ -70,6 +71,10 @@ export interface Appointment {
     active?: boolean;
   } | null;
   professionalName?: string | null;
+  // 🔥 Adicionado pro Typescript do Modal aceitar os snapshots
+  snapshot_service_name?: string | null;
+  snapshot_service_duration?: number | null;
+  snapshot_service_price?: number | null;
 }
 
 interface DailyAgendaGridProps {
@@ -104,7 +109,6 @@ function AppointmentCardContent({
   const isPackageArchived = appt.package && appt.package.active === false;
   const isCompact = height <= 40;
 
-  // 🔥 VISUAL EXCLUSIVO E RESPONSIVO PARA CANCELADOS
   if (isCancelled) {
     return (
       <div
@@ -129,7 +133,6 @@ function AppointmentCardContent({
     );
   }
 
-  // 👇 Abaixo fica o layout normal para agendamentos não-cancelados
   return (
     <div
       className={cn(
@@ -150,7 +153,6 @@ function AppointmentCardContent({
             : "flex-col justify-between items-start h-full",
         )}
       >
-        {/* Info Principal */}
         <div
           className={cn(
             "flex truncate pr-6",
@@ -183,11 +185,9 @@ function AppointmentCardContent({
                 {appt.service}
               </span>
             )}
-            {/* O profissional foi movido daqui para o rodapé! */}
           </div>
         </div>
 
-        {/* Rodapé / Status */}
         <div
           className={cn(
             "flex items-center text-[10px] font-bold opacity-80",
@@ -196,13 +196,11 @@ function AppointmentCardContent({
               : "mt-auto justify-between w-full pt-1.5 border-t border-black/5",
           )}
         >
-          {/* 🔥 AGRUPAMOS RELÓGIO E PROFISSIONAL JUNTOS */}
           <div className="flex items-center gap-2">
             <span className="flex items-center gap-1 shrink-0">
               <Clock className="h-3 w-3" /> {appt.time}
             </span>
 
-            {/* Etiqueta Profissional Movida para cá */}
             {appt.professionalName && (
               <div className="flex items-center gap-1 bg-background/50 px-1.5 py-0.5 rounded text-[9px] font-bold text-foreground/90 backdrop-blur-sm border border-black/5 shadow-sm shrink-0">
                 <User className="h-2.5 w-2.5" />
@@ -294,7 +292,6 @@ function DraggableAppointmentCard({
         onClick();
       }}
     >
-      {/* 🔥 MENU DE OPÇÕES: Oculto completamente se o agendamento foi cancelado */}
       {!isCancelled && (
         <div className="absolute top-1 right-1 z-50">
           <DropdownMenu>
@@ -480,7 +477,6 @@ export function DailyAgendaGrid({
       return h * 60 + m;
     };
 
-    // 🔥 SORT ESTÁVEL: Desempata pelo ID para os blocos não piscarem em re-renderizações!
     const sortedAppts = [...appointments].sort((a, b) => {
       const diff = timeToMinutes(a.time) - timeToMinutes(b.time);
       if (diff === 0) {

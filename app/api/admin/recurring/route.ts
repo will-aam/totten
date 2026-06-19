@@ -7,20 +7,17 @@ export async function GET(request: Request) {
   try {
     const admin = await requireAuth();
 
-    // 1. Captura parâmetros de paginação e busca
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "15", 10);
     const search = searchParams.get("q") || "";
     const skip = (page - 1) * limit;
 
-    // 2. Constrói o filtro base (Somente da org atual e que tem recurrence_id)
     const baseWhere: any = {
       organization_id: admin.organizationId,
       recurrence_id: { not: null },
     };
 
-    // Adiciona filtro de texto se houver busca (Busca por Nome do Cliente ou Serviço)
     if (search) {
       baseWhere.OR = [
         { client: { name: { contains: search, mode: "insensitive" } } },
@@ -28,25 +25,18 @@ export async function GET(request: Request) {
       ];
     }
 
-    // 3. OTIMIZAÇÃO: Primeiro, descobrimos quais são as Séries ÚNICAS que existem
-    // Isso é vital para não quebrar a paginação agrupando no JavaScript depois.
     const distinctRecurrences = await prisma.appointment.findMany({
       where: baseWhere,
       distinct: ["recurrence_id"],
       select: { recurrence_id: true },
-      // Note: Não podemos usar skip/take aqui de forma determinística sem um orderBy claro,
-      // mas como o número de SÉRIES ativas costuma ser gerenciável (ao contrário do número de agendamentos),
-      // pegamos as distintas e paginamos a lista em memória antes de buscar os detalhes.
     });
 
     const totalSeries = distinctRecurrences.length;
 
-    // Pagina os IDs das recorrências (Extrai apenas os IDs da página atual)
     const paginatedRecurrenceIds = distinctRecurrences
       .slice(skip, skip + limit)
       .map((r) => r.recurrence_id as string);
 
-    // Se não houver séries nesta página, retorna vazio rápido
     if (paginatedRecurrenceIds.length === 0) {
       return NextResponse.json({
         data: [],
@@ -56,7 +46,6 @@ export async function GET(request: Request) {
       });
     }
 
-    // 4. Agora sim, busca TODOS os agendamentos SOMENTE das séries dessa página
     const appointments = await prisma.appointment.findMany({
       where: {
         organization_id: admin.organizationId,
@@ -79,7 +68,6 @@ export async function GET(request: Request) {
       },
     });
 
-    // 5. Agrupa os agendamentos pelo recurrence_id
     const grouped: Record<string, typeof appointments> = {};
     for (const appt of appointments) {
       const rid = appt.recurrence_id as string;
@@ -89,13 +77,11 @@ export async function GET(request: Request) {
 
     const now = new Date();
 
-    // 6. Monta o objeto final calculando os Alertas, Início, Fim e Padrão
     const recurringSeries = Object.entries(grouped).map(
       ([recurrenceId, series]) => {
         const firstAppt = series[0];
         const lastAppt = series[series.length - 1];
 
-        // Descobre a próxima sessão pendente no futuro
         const nextSession = series.find(
           (a) =>
             new Date(a.date_time) >= now &&
@@ -103,7 +89,6 @@ export async function GET(request: Request) {
             a.status !== "REALIZADO",
         );
 
-        // Quantos agendamentos restam realizar nessa série?
         const remainingInSeries = series.filter(
           (a) =>
             new Date(a.date_time) >= now &&
@@ -111,7 +96,6 @@ export async function GET(request: Request) {
             a.status !== "REALIZADO",
         ).length;
 
-        // Monta a string do Padrão. Ex: "Toda terça-feira às 14:00"
         const startDate = new Date(firstAppt.date_time);
         const dayOfWeek = startDate
           .toLocaleDateString("pt-BR", { weekday: "long" })
@@ -122,7 +106,6 @@ export async function GET(request: Request) {
         });
         const pattern = `Toda ${dayOfWeek} às ${timeStr}`;
 
-        // Alertas Inteligentes (Onde a mágica acontece)
         const warnings: string[] = [];
         let packageBalance = null;
 
@@ -140,11 +123,13 @@ export async function GET(request: Request) {
         return {
           recurrenceId,
           client: firstAppt.client,
-          serviceName: firstAppt.service.name,
+          // 🔥 SNAPSHOT: Tenta ler o nome salvo no momento da criação, se não tiver cai pro atual
+          serviceName:
+            firstAppt.snapshot_service_name ?? firstAppt.service.name,
           package: firstAppt.package,
           startDate: firstAppt.date_time,
           endDate: lastAppt.date_time,
-          pattern, // Ex: "Toda terça às 08:00"
+          pattern,
           totalSessions: series.length,
           completedSessions: series.filter((a) => a.status === "REALIZADO")
             .length,
@@ -160,8 +145,6 @@ export async function GET(request: Request) {
       },
     );
 
-    // Filtra para exibir primeiro as Ativas que possuem Alertas, depois as outras Ativas.
-    // As finalizadas vão pro final.
     recurringSeries.sort((a, b) => {
       if (a.status !== b.status) return a.status === "ATIVA" ? -1 : 1;
       if (a.warnings.length !== b.warnings.length)
@@ -169,7 +152,6 @@ export async function GET(request: Request) {
       return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
     });
 
-    // 7. Retorna a página exata com a formatação que o frontend de paginação espera
     return NextResponse.json({
       data: recurringSeries,
       total: totalSeries,

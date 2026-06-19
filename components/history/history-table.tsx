@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ArrowUpDown, Trash, LoaderDots, User } from "@boxicons/react"; // 🔥 Ícone User adicionado
+import { ArrowUpDown, Trash, LoaderDots, User, Cog } from "@boxicons/react"; // 🔥 Ícone Cog adicionado para o serviço
 import {
   ColumnDef,
   SortingState,
@@ -20,7 +20,7 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { deleteCheckIn } from "@/app/actions/packages"; // 🔥 Importando a action
+import { deleteCheckIn } from "@/app/actions/packages";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -32,6 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 
 export interface EnrichedCheckIn {
   id: string;
@@ -40,10 +41,11 @@ export interface EnrichedCheckIn {
   date_time: string;
   client_name: string;
   client_cpf: string;
-  professional_name?: string | null; // 🔥 RASTREABILIDADE: Novo campo adicionado
+  professional_name?: string | null;
+  service_name?: string; // 🔥 RASTREABILIDADE: O nome da foto do Serviço vem aqui
 }
 
-// Atualizamos o Item Mobile para aceitar o clique de exclusão e exibir quem atendeu
+// Atualizamos o Item Mobile para aceitar o clique de exclusão e exibir quem atendeu e o serviço prestado
 function MobileHistoryItem({
   checkIn,
   onDelete,
@@ -70,14 +72,19 @@ function MobileHistoryItem({
           {initial}
         </div>
         <div className="flex flex-col">
-          <span className="text-sm font-semibold text-foreground leading-none mb-1.5">
+          <span className="text-sm font-semibold text-foreground leading-none mb-1">
             {checkIn.client_name}
           </span>
-          <div className="flex flex-col gap-1 text-xs text-muted-foreground capitalize">
+          {/* 🔥 Exibe o Serviço realizado no modo Mobile */}
+          {checkIn.service_name && (
+            <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1 mb-1.5 line-clamp-1">
+              <Cog size="xs" /> {checkIn.service_name}
+            </span>
+          )}
+          <div className="flex flex-col gap-1 text-[11px] text-muted-foreground capitalize">
             <span>
               {formattedDate} às {formattedTime}
             </span>
-            {/* 🔥 RASTREABILIDADE: Selo de quem atendeu */}
             {checkIn.professional_name && (
               <span className="flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
                 <User size="xs" /> {checkIn.professional_name}
@@ -87,12 +94,11 @@ function MobileHistoryItem({
         </div>
       </div>
 
-      {/* Lixeira Mobile */}
       <Button
         variant="ghost"
         size="icon"
         onClick={() => onDelete(checkIn)}
-        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full"
+        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full shrink-0"
       >
         <Trash className="h-4 w-4" />
       </Button>
@@ -111,7 +117,6 @@ export function HistoryTable({
     { id: "date_time", desc: true },
   ]);
 
-  // Estado para o Modal de Exclusão
   const [ciToDelete, setCiToDelete] = useState<EnrichedCheckIn | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -122,8 +127,8 @@ export function HistoryTable({
     try {
       const result = await deleteCheckIn(ciToDelete.id);
       if (result.success) {
-        toast.success("Check-in removido e saldo devolvido ao pacote.");
-        onUpdate(); // 🔥 Atualiza a tabela chamando a função do componente pai
+        toast.success("Check-in removido com sucesso.");
+        onUpdate();
       } else {
         toast.error(result.error || "Erro ao remover check-in.");
       }
@@ -149,23 +154,32 @@ export function HistoryTable({
       ),
       cell: ({ row }) => (
         <div className="flex items-center gap-3 font-medium text-foreground px-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs">
             {row.original.client_name.charAt(0).toUpperCase()}
           </div>
-          {row.getValue("client_name")}
+          <span className="truncate max-w-37.5 sm:max-w-none">
+            {row.getValue("client_name")}
+          </span>
         </div>
       ),
     },
     {
-      accessorKey: "client_cpf",
-      meta: { className: "hidden sm:table-cell" },
+      // 🔥 NOVA COLUNA: Serviço/Pacote
+      accessorKey: "service_name",
       header: () => (
-        <span className="text-muted-foreground font-semibold px-2">CPF</span>
+        <span className="text-muted-foreground font-semibold px-2">
+          Serviço
+        </span>
       ),
       cell: ({ row }) => (
-        <span className="font-semibold text-sm text-muted-foreground px-2">
-          {row.getValue("client_cpf")}
-        </span>
+        <div className="px-2">
+          <Badge
+            variant="secondary"
+            className="font-medium bg-muted text-muted-foreground hover:bg-muted/80 whitespace-nowrap"
+          >
+            {row.original.service_name || "---"}
+          </Badge>
+        </div>
       ),
     },
     {
@@ -195,12 +209,11 @@ export function HistoryTable({
 
         return (
           <div className="flex flex-col px-2">
-            <span className="font-medium text-foreground capitalize">
+            <span className="font-medium text-foreground capitalize whitespace-nowrap">
               {formattedDate}
             </span>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mt-0.5 whitespace-nowrap">
               <span>{formattedTime}</span>
-              {/* 🔥 RASTREABILIDADE na Tabela Desktop */}
               {professionalName && (
                 <>
                   <span>•</span>
@@ -249,6 +262,7 @@ export function HistoryTable({
 
   return (
     <div className="space-y-4">
+      {/* GRID MOBILE */}
       <div className="flex flex-col md:hidden">
         {table.getRowModel().rows.map((row) => (
           <MobileHistoryItem
@@ -259,6 +273,7 @@ export function HistoryTable({
         ))}
       </div>
 
+      {/* TABELA DESKTOP */}
       <div className="hidden md:block rounded-md border border-border overflow-hidden bg-background">
         <div className="max-h-150 overflow-auto relative custom-scrollbar">
           <table className="w-full text-sm text-left">
@@ -274,7 +289,7 @@ export function HistoryTable({
                     return (
                       <TableHead
                         key={header.id}
-                        className={`sticky top-0 z-10 bg-muted/50 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-px before:bg-border ${customClass}`}
+                        className={`sticky top-0 z-10 bg-muted/50 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-px before:bg-border whitespace-nowrap ${customClass}`}
                       >
                         {header.isPlaceholder
                           ? null
@@ -345,7 +360,7 @@ export function HistoryTable({
         </div>
       )}
 
-      {/* 🔥 MODAL DE CONFIRMAÇÃO (Shadcn UI) */}
+      {/* 🔥 MODAL DE CONFIRMAÇÃO */}
       <AlertDialog
         open={!!ciToDelete}
         onOpenChange={(open) => !open && setCiToDelete(null)}
@@ -355,7 +370,10 @@ export function HistoryTable({
             <AlertDialogTitle>Remover Check-in?</AlertDialogTitle>
             <AlertDialogDescription>
               Esta ação irá excluir o registro de presença de{" "}
-              {ciToDelete?.client_name}.
+              <strong className="text-foreground">
+                {ciToDelete?.client_name}
+              </strong>
+              .
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

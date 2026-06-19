@@ -1,3 +1,4 @@
+// components/agenda/weekly-agenda-grid.tsx
 "use client";
 
 import React, { useMemo, useEffect, useState } from "react";
@@ -15,6 +16,7 @@ import {
   Check,
   InfoCircle,
   Lock,
+  Cog, // 🔥 Import da engrenagem adicionado
 } from "@boxicons/react";
 import {
   DropdownMenu,
@@ -63,7 +65,6 @@ export function WeeklyAgendaGrid({
     [startHour, endHour],
   );
 
-  // 🔥 Estabiliza a referência do Date via Timestamp para evitar re-render desnecessário
   const weekStartMs = weekStart.getTime();
 
   const weekDays = useMemo(
@@ -83,7 +84,6 @@ export function WeeklyAgendaGrid({
     return groups;
   }, [appointments, weekDays]);
 
-  // 🔥 ALTURA VISUAL FIXA DE 25 MINUTOS PARA CANCELADOS
   const getAppointmentStyle = (
     appt: Appointment,
     layout: { width: string; left: string },
@@ -97,6 +97,7 @@ export function WeeklyAgendaGrid({
       (startH - startHour) * HOUR_HEIGHT + (apptMinute / 60) * HOUR_HEIGHT;
 
     const isCancelled = appt.status?.toUpperCase() === "CANCELADO";
+    // O appt.duration já vem mastigado do backend com o valor do Snapshot!
     const effectiveDuration = isCancelled ? 25 : appt.duration;
     const height = (effectiveDuration / 60) * HOUR_HEIGHT;
 
@@ -154,7 +155,6 @@ export function WeeklyAgendaGrid({
               const dayAppointments = groupedAppointments[dateKey] || [];
               const today = isToday(day);
 
-              // 🔥 Sort Estável: Desempata pelo ID para evitar troca de colunas
               const sortedAppts = [...dayAppointments].sort((a, b) => {
                 const timeA = new Date(a.date_time || new Date()).getTime();
                 const timeB = new Date(b.date_time || new Date()).getTime();
@@ -174,6 +174,7 @@ export function WeeklyAgendaGrid({
               sortedAppts.forEach((appt) => {
                 const start = new Date(appt.date_time || new Date()).getTime();
                 const isCancelled = appt.status?.toUpperCase() === "CANCELADO";
+                // Lendo a duração que o backend mandou (já com snapshot calculado)
                 const effectiveDuration = isCancelled ? 25 : appt.duration;
                 const end = start + effectiveDuration * 60000;
 
@@ -266,7 +267,10 @@ export function WeeklyAgendaGrid({
                       const isLocked = isCancelled || isRealizado || isPaid;
                       const profName = (appt as any).professionalName;
 
-                      // 🔥 VISUAL ULTRA COMPACTO SE CANCELADO (Removido transition-all)
+                      // 🔥 SNAPSHOT: Forçamos a leitura visual do Snapshot se disponível
+                      const serviceName =
+                        appt.snapshot_service_name ?? appt.service;
+
                       if (isCancelled) {
                         return (
                           <div
@@ -292,7 +296,6 @@ export function WeeklyAgendaGrid({
                         );
                       }
 
-                      // VISUAL NORMAL (NÃO CANCELADO) (Removido transition-all)
                       return (
                         <div
                           key={appt.id}
@@ -386,13 +389,23 @@ export function WeeklyAgendaGrid({
                               {appt.clientName.split(" ")[0]}
                             </div>
 
-                            <div className="text-[8px] font-bold opacity-70 truncate uppercase tracking-tighter">
-                              {appt.service}
+                            {/* 🔥 EXIBIÇÃO DO SERVIÇO COM O ÍCONE DA ENGRENAGEM E O NOME HISTÓRICO */}
+                            <div className="text-[8px] font-bold opacity-70 truncate uppercase tracking-tighter flex items-center gap-0.5">
+                              {isPackageArchived && !isCancelled ? (
+                                "Pacote Inativo"
+                              ) : isCancelled ? (
+                                "Cancelada"
+                              ) : (
+                                <>
+                                  <Cog className="w-2.5 h-2.5 shrink-0" />{" "}
+                                  {serviceName}
+                                </>
+                              )}
                             </div>
 
                             {profName && (
                               <div className="flex items-center gap-0.5 mt-0.5 bg-background/30 w-fit px-1 py-0.5 rounded-[3px] text-[8px] font-semibold text-foreground/80 backdrop-blur-sm">
-                                <User className="h-2 w-2" />
+                                <User className="h-2 w-2 shrink-0" />
                                 <span className="truncate max-w-12.5">
                                   {profName.split(" ")[0]}
                                 </span>

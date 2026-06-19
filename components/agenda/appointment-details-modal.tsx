@@ -1,3 +1,4 @@
+// components/agenda/appointment-details-modal.tsx
 "use client";
 
 import React, { useState, useEffect, useRef, memo, useMemo } from "react";
@@ -78,6 +79,12 @@ export const AppointmentDetailsModal = memo(
 
     const componentRef = useRef<HTMLDivElement>(null);
 
+    // 🔥 SNAPSHOT: Determina o nome do serviço (usando a foto da época se existir)
+    const serviceName = useMemo(() => {
+      if (!appointment) return "";
+      return appointment.snapshot_service_name ?? appointment.service;
+    }, [appointment]);
+
     const handlePrint = useReactToPrint({
       contentRef: componentRef,
       documentTitle: `Recibo_${appointment?.clientName || "Cliente"}`,
@@ -116,9 +123,18 @@ export const AppointmentDetailsModal = memo(
       if (!appointment?.time) return "";
       const [h, m] = appointment.time.split(":").map(Number);
       const date = new Date();
-      date.setHours(h, m + (appointment.duration || 0));
+
+      // 🔥 SNAPSHOT: Usa a duração da época em que foi agendado para calcular o fim
+      const durationToUse =
+        appointment.snapshot_service_duration ?? appointment.duration ?? 0;
+
+      date.setHours(h, m + durationToUse);
       return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
-    }, [appointment?.time, appointment?.duration]);
+    }, [
+      appointment?.time,
+      appointment?.duration,
+      appointment?.snapshot_service_duration,
+    ]);
 
     if (!appointment) return null;
     const isRecurrent = !!appointment.recurrence_id;
@@ -183,7 +199,6 @@ export const AppointmentDetailsModal = memo(
       }
     };
 
-    // Função para tratar a mudança de status e blindar as regras de negócio
     const handleStatusChange = (newStatus: string) => {
       setStatus(newStatus);
       if (newStatus === "cancelado") {
@@ -207,7 +222,12 @@ export const AppointmentDetailsModal = memo(
         >
           <ThermalReceipt
             ref={componentRef}
-            appointment={{ ...appointment, observations: obs }}
+            // Passamos o snapshot name mapeado para o recibo também
+            appointment={{
+              ...appointment,
+              observations: obs,
+              service: serviceName,
+            }}
             settings={settings}
           />
 
@@ -219,7 +239,7 @@ export const AppointmentDetailsModal = memo(
               </DialogTitle>
               <div className="flex items-center gap-2 flex-wrap mt-0.5">
                 <span className="text-muted-foreground text-sm font-medium">
-                  {appointment.service}
+                  {serviceName}
                 </span>
                 {isRecurrent && (
                   <Badge
@@ -230,7 +250,6 @@ export const AppointmentDetailsModal = memo(
                   </Badge>
                 )}
 
-                {/* ETIQUETA DE RASTREABILIDADE DO PROFISSIONAL */}
                 {appointment.professionalName && (
                   <>
                     <span className="text-muted-foreground/30 hidden sm:inline">

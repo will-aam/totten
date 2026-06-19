@@ -1,4 +1,4 @@
-// app/api/packages/templates/route.ts
+// app/api/packages/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin } from "@/lib/auth";
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
     }
 
-    // ✅ Validações extras para evitar “venda inconsistente”
+    // ✅ Validações extras para evitar "venda inconsistente"
     if (pay_upfront) {
       if (!payment_method) {
         return NextResponse.json(
@@ -98,6 +98,10 @@ export async function POST(request: Request) {
           service_id,
           organization_id: admin.organizationId,
           active: true,
+          // 🔥 SNAPSHOT INJETADO: A foto do serviço fica imortalizada no pacote!
+          snapshot_service_name: service.name,
+          snapshot_service_price: service.price,
+          snapshot_service_duration: service.duration,
         },
       });
 

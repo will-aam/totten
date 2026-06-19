@@ -69,6 +69,19 @@ export async function GET(request: Request) {
               cpf: true,
             },
           },
+          // 🔥 INCLUINDO RELAÇÕES PARA LER O SNAPSHOT CONGELADO
+          appointment: {
+            select: {
+              snapshot_service_name: true,
+              service: { select: { name: true } },
+            },
+          },
+          package: {
+            select: {
+              snapshot_service_name: true,
+              service: { select: { name: true } },
+            },
+          },
         },
         orderBy: {
           date_time: "desc",
@@ -78,14 +91,25 @@ export async function GET(request: Request) {
       }),
     ]);
 
-    const enriched = checkIns.map((ci) => ({
-      id: ci.id,
-      client_id: ci.client_id || "",
-      package_id: ci.package_id || "",
-      date_time: ci.date_time.toISOString(),
-      client_name: ci.client?.name || "Cliente Excluído/Avulso",
-      client_cpf: ci.client?.cpf || "---",
-    }));
+    const enriched = checkIns.map((ci) => {
+      // 🔥 LÓGICA DO SNAPSHOT: Tenta puxar o nome da época, se não achar, puxa o atual
+      const serviceName =
+        ci.appointment?.snapshot_service_name ||
+        ci.appointment?.service?.name ||
+        ci.package?.snapshot_service_name ||
+        ci.package?.service?.name ||
+        "Serviço não identificado";
+
+      return {
+        id: ci.id,
+        client_id: ci.client_id || "",
+        package_id: ci.package_id || "",
+        date_time: ci.date_time.toISOString(),
+        client_name: ci.client?.name || "Cliente Excluído/Avulso",
+        client_cpf: ci.client?.cpf || "---",
+        service_name: serviceName, // 🔥 Agora a tabela vai saber qual foi o serviço exato!
+      };
+    });
 
     return NextResponse.json({
       data: enriched,

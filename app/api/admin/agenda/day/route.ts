@@ -1,12 +1,8 @@
+// app/api/admin/agenda/day/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 
-/**
- * Lista agendamentos de um dia específico para a organização do admin logado.
- *
- * GET /api/admin/agenda/day?date=2026-03-04
- */
 export async function GET(req: NextRequest) {
   try {
     const admin = await requireAuth();
@@ -22,11 +18,9 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // FORÇANDO OS LIMITES DO DIA PARA O FUSO DO BRASIL (UTC-3)
     const from = new Date(`${dateParam}T00:00:00.000-03:00`);
     const to = new Date(`${dateParam}T23:59:59.999-03:00`);
 
-    // 🔥 TRAVA DE VISIBILIDADE
     const whereClause: any = {
       organization_id: admin.organizationId,
       date_time: {
@@ -66,7 +60,16 @@ export async function GET(req: NextRequest) {
       });
       const time = timeFormatter.format(date);
 
-      const duration = Number(appt.service.duration ?? 60);
+      // 🔥 SNAPSHOT LÓGICA: Prioriza o que foi congelado no agendamento
+      const duration = Number(
+        appt.snapshot_service_duration ?? appt.service.duration ?? 60,
+      );
+      const serviceName = appt.snapshot_service_name ?? appt.service.name;
+      const snapshotPrice = appt.snapshot_service_price
+        ? Number(appt.snapshot_service_price)
+        : null;
+      const rawPrice =
+        snapshotPrice ?? appt.package?.price ?? appt.service.price ?? 0;
 
       let sessionInfo = "Avulsa";
       if (appt.package) {
@@ -74,37 +77,28 @@ export async function GET(req: NextRequest) {
         sessionInfo = `Sessão ${current} de ${appt.package.total_sessions}`;
       }
 
-      const rawPrice = appt.package?.price ?? appt.service.price ?? 0;
-
-      // 🔥 NOVO COLOR-CODING COM SUPORTE PERFEITO A DARK MODE E REGRAS DE NEGÓCIO
       let color = "";
-      const serviceName = appt.service.name.toLowerCase();
+      const serviceNameLower = serviceName.toLowerCase();
 
       if (appt.status === "CANCELADO") {
-        // Cinza translúcido
         color =
           "bg-slate-100 border-slate-300 text-slate-600 dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-400";
       } else if (appt.status === "REALIZADO") {
-        // Azul para Realizado
         color =
           "bg-blue-100 border-blue-300 text-blue-800 dark:bg-blue-900/40 dark:border-blue-800 dark:text-blue-300";
-      } else if (serviceName.includes("contenção")) {
-        // Verde específico para serviço de contenção
+      } else if (serviceNameLower.includes("contenção")) {
         color =
           "bg-emerald-100 border-emerald-300 text-emerald-800 dark:bg-emerald-900/40 dark:border-emerald-800 dark:text-emerald-300";
       } else if (
         appt.check_in &&
         (appt.status === "PENDENTE" || appt.status === "CONFIRMADO")
       ) {
-        // Roxo/Indigo: Cliente já está na recepção (fez check-in) mas ainda não finalizou
         color =
           "bg-purple-100 border-purple-300 text-purple-800 dark:bg-purple-900/40 dark:border-purple-800 dark:text-purple-300";
       } else if (appt.recurrence_id || appt.package_id) {
-        // Teal (Verde-azulado) para pacotes/séries normais
         color =
           "bg-teal-100 border-teal-300 text-teal-800 dark:bg-teal-900/40 dark:border-teal-800 dark:text-teal-300";
       } else {
-        // Amarelo: Avulso a confirmar
         color =
           "bg-amber-100 border-amber-300 text-amber-800 dark:bg-amber-900/40 dark:border-amber-800 dark:text-amber-300";
       }
@@ -112,9 +106,9 @@ export async function GET(req: NextRequest) {
       return {
         id: appt.id,
         time,
-        duration,
+        duration, // Vai ditar a altura do bloco no frontend!
         clientName: appt.client.name,
-        service: appt.service.name,
+        service: serviceName, // Vai mostrar o nome correto no bloco!
         sessionInfo,
         isRecurring: Boolean(appt.recurrence_id),
         phone: appt.client.phone_whatsapp,
@@ -130,6 +124,10 @@ export async function GET(req: NextRequest) {
         session_number: appt.session_number,
         recurrence_id: appt.recurrence_id,
         professionalName: appt.professional?.display_name ?? null,
+        // Mandamos os snapshots explícitos pro Modal consumir, se precisar
+        snapshot_service_name: appt.snapshot_service_name,
+        snapshot_service_duration: appt.snapshot_service_duration,
+        snapshot_service_price: snapshotPrice,
         package: appt.package
           ? {
               total_sessions: appt.package.total_sessions,

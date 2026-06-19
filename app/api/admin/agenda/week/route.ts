@@ -4,11 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { startOfWeek, endOfWeek } from "date-fns";
 
-/**
- * Lista agendamentos de uma semana específica para a organização do admin logado.
- *
- * GET /api/admin/agenda/week?date=2026-03-16
- */
 export async function GET(req: NextRequest) {
   try {
     const admin = await requireAuth();
@@ -26,8 +21,8 @@ export async function GET(req: NextRequest) {
 
     const baseDate = new Date(`${dateParam}T12:00:00.000-03:00`);
 
-    const weekStart = startOfWeek(baseDate, { weekStartsOn: 0 }); // 0 = Domingo
-    const weekEnd = endOfWeek(baseDate, { weekStartsOn: 0 }); // Sábado
+    const weekStart = startOfWeek(baseDate, { weekStartsOn: 0 });
+    const weekEnd = endOfWeek(baseDate, { weekStartsOn: 0 });
 
     const from = new Date(weekStart.setHours(0, 0, 0, 0));
     const to = new Date(weekEnd.setHours(23, 59, 59, 999));
@@ -71,7 +66,16 @@ export async function GET(req: NextRequest) {
       });
       const time = timeFormatter.format(date);
 
-      const duration = Number(appt.service.duration ?? 60);
+      // 🔥 SNAPSHOT: Lógica injetada na Semana
+      const duration = Number(
+        appt.snapshot_service_duration ?? appt.service.duration ?? 60,
+      );
+      const serviceName = appt.snapshot_service_name ?? appt.service.name;
+      const snapshotPrice = appt.snapshot_service_price
+        ? Number(appt.snapshot_service_price)
+        : null;
+      const rawPrice =
+        snapshotPrice ?? appt.package?.price ?? appt.service.price ?? 0;
 
       let sessionInfo = "Avulsa";
       if (appt.package) {
@@ -79,11 +83,8 @@ export async function GET(req: NextRequest) {
         sessionInfo = `Sessão ${current} de ${appt.package.total_sessions}`;
       }
 
-      const rawPrice = appt.package?.price ?? appt.service.price ?? 0;
-
-      // 🔥 NOVO COLOR-CODING COM SUPORTE PERFEITO A DARK MODE E REGRAS DE NEGÓCIO
       let color = "";
-      const serviceName = appt.service.name.toLowerCase();
+      const serviceNameLower = serviceName.toLowerCase();
 
       if (appt.status === "CANCELADO") {
         color =
@@ -91,7 +92,7 @@ export async function GET(req: NextRequest) {
       } else if (appt.status === "REALIZADO") {
         color =
           "bg-blue-100 border-blue-300 text-blue-800 dark:bg-blue-900/40 dark:border-blue-800 dark:text-blue-300";
-      } else if (serviceName.includes("contenção")) {
+      } else if (serviceNameLower.includes("contenção")) {
         color =
           "bg-emerald-100 border-emerald-300 text-emerald-800 dark:bg-emerald-900/40 dark:border-emerald-800 dark:text-emerald-300";
       } else if (
@@ -113,7 +114,7 @@ export async function GET(req: NextRequest) {
         time,
         duration,
         clientName: appt.client.name,
-        service: appt.service.name,
+        service: serviceName, // 🔥 Nome histórico
         sessionInfo,
         isRecurring: Boolean(appt.package_id),
         phone: appt.client.phone_whatsapp,
@@ -129,6 +130,10 @@ export async function GET(req: NextRequest) {
         session_number: appt.session_number,
         recurrence_id: appt.recurrence_id,
         professionalName: appt.professional?.display_name ?? null,
+        // Mandamos os snapshots explícitos
+        snapshot_service_name: appt.snapshot_service_name,
+        snapshot_service_duration: appt.snapshot_service_duration,
+        snapshot_service_price: snapshotPrice,
         package: appt.package
           ? {
               total_sessions: appt.package.total_sessions,

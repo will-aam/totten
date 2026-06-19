@@ -178,24 +178,30 @@ model PackageTemplate {
 }
 
 model Package {
-  id              String        @id @default(cuid())
-  name            String
-  total_sessions  Int
-  used_sessions   Int           @default(0)
-  price           Decimal
-  active          Boolean       @default(true)
-  client_id       String
-  service_id      String
-  organization_id String
-  created_at      DateTime      @default(now())
-  updated_at      DateTime      @updatedAt
-  appointments    Appointment[]
-  check_ins       CheckIn[]
-  client          Client        @relation(fields: [client_id], references: [id], onDelete: Cascade)
-  organization    Organization  @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  service         Service       @relation(fields: [service_id], references: [id])
-  transactions    Transaction[]
-  vouchers        Voucher[]
+  id                        String        @id @default(cuid())
+  name                      String
+  total_sessions            Int
+  used_sessions             Int           @default(0)
+  price                     Decimal
+  active                    Boolean       @default(true)
+  client_id                 String
+  service_id                String
+  organization_id           String
+  created_at                DateTime      @default(now())
+  updated_at                DateTime      @updatedAt
+  
+  // SNAPSHOT
+  snapshot_service_name     String?
+  snapshot_service_price    Decimal?      @db.Decimal(10, 2)
+  snapshot_service_duration Int?
+
+  appointments              Appointment[]
+  check_ins                 CheckIn[]
+  client                    Client        @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  organization              Organization  @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  service                   Service       @relation(fields: [service_id], references: [id])
+  transactions              Transaction[]
+  vouchers                  Voucher[]
 
   @@map("packages")
 }
@@ -211,28 +217,34 @@ model Voucher {
 }
 
 model Appointment {
-  id              String            @id @default(cuid())
-  date_time       DateTime
-  status          AppointmentStatus @default(PENDENTE)
-  payment_method  PaymentMethod?
-  has_charge      Boolean           @default(false)
-  session_number  Int?
-  observations    String?
-  client_id       String
-  service_id      String
-  package_id      String?
-  organization_id String
-  created_at      DateTime          @default(now())
-  updated_at      DateTime          @updatedAt
-  recurrence_id   String?
-  professional_id String?
-  client          Client            @relation(fields: [client_id], references: [id], onDelete: Cascade)
-  organization    Organization      @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  package         Package?          @relation(fields: [package_id], references: [id])
-  professional    Admin?            @relation("ProfessionalToAppointment", fields: [professional_id], references: [id])
-  service         Service           @relation(fields: [service_id], references: [id])
-  check_in        CheckIn?
-  transaction     Transaction?
+  id                        String            @id @default(cuid())
+  date_time                 DateTime
+  status                    AppointmentStatus @default(PENDENTE)
+  payment_method            PaymentMethod?
+  has_charge                Boolean           @default(false)
+  session_number            Int?
+  observations              String?
+  client_id                 String
+  service_id                String
+  package_id                String?
+  organization_id           String
+  created_at                DateTime          @default(now())
+  updated_at                DateTime          @updatedAt
+  recurrence_id             String?
+  professional_id           String?
+  
+  // SNAPSHOT
+  snapshot_service_name     String?
+  snapshot_service_price    Decimal?          @db.Decimal(10, 2)
+  snapshot_service_duration Int?
+
+  client                    Client            @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  organization              Organization      @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  package                   Package?          @relation(fields: [package_id], references: [id])
+  professional              Admin?            @relation("ProfessionalToAppointment", fields: [professional_id], references: [id])
+  service                   Service           @relation(fields: [service_id], references: [id])
+  check_in                  CheckIn?
+  transaction               Transaction?
 
   @@index([organization_id, date_time])
   @@index([client_id, date_time])

@@ -1,7 +1,8 @@
+// app/actions/appointments.ts
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { Appointment, AppointmentStatus, PaymentMethod } from "@prisma/client";
+import { AppointmentStatus, PaymentMethod } from "@prisma/client";
 import { requireAuth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { generateRecurrentDates } from "@/lib/date-utils";
@@ -15,11 +16,11 @@ export type CreateAppointmentInput = {
   observations?: string;
   packageId?: string;
   repeatCount?: number;
-  professionalId?: string; // 🔥 ADICIONADO: Quem vai realizar o atendimento
+  professionalId?: string;
 };
 
 export type CreateAppointmentResult =
-  | { success: true; appointments: Appointment[] }
+  | { success: true; appointments: any[] } // 🔥 Ajustado para any[] para o TS não reclamar da conversão do Decimal
   | { success: false; error: string };
 
 // 🔥 FUNÇÃO AUXILIAR: Verifica colisão de horários
@@ -30,7 +31,6 @@ async function hasScheduleConflict(
   durationMinutes: number,
   excludeAppointmentId?: string,
 ): Promise<boolean> {
-  // Pega o início e o fim do dia para filtrar no banco e não trazer a base toda
   const startOfDay = new Date(newStartTime);
   startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(newStartTime);
@@ -38,7 +38,6 @@ async function hasScheduleConflict(
 
   const newEndTime = new Date(newStartTime.getTime() + durationMinutes * 60000);
 
-  // Busca os agendamentos do profissional naquele dia (exceto cancelados)
   const existingAppts = await prisma.appointment.findMany({
     where: {
       organization_id: organizationId,
@@ -50,7 +49,6 @@ async function hasScheduleConflict(
       status: {
         not: "CANCELADO",
       },
-      // Se estivermos editando via Drag&Drop, ignoramos o próprio agendamento
       id: excludeAppointmentId ? { not: excludeAppointmentId } : undefined,
     },
     include: {
@@ -60,12 +58,13 @@ async function hasScheduleConflict(
     },
   });
 
-  // Checa a sobreposição matemática (Overlap)
   for (const appt of existingAppts) {
     const existingStart = appt.date_time.getTime();
-    const existingEnd = existingStart + appt.service.duration * 60000;
+    // 🔥 SNAPSHOT: Usa a duração da época (ou fallback para o serviço atual se for antigo)
+    const durationToUse =
+      appt.snapshot_service_duration ?? appt.service.duration;
+    const existingEnd = existingStart + durationToUse * 60000;
 
-    // Regra de colisão: Inicio Novo < Fim Velho E Fim Novo > Inicio Velho
     if (
       newStartTime.getTime() < existingEnd &&
       newEndTime.getTime() > existingStart
@@ -102,7 +101,6 @@ export async function createAppointment(
     );
     const recurrenceId = totalSessionsToCreate > 1 ? randomUUID() : null;
 
-    // 1. Busca os dados do serviço para saber a duração
     const service = await prisma.service.findUnique({
       where: { id: serviceId, organization_id: admin.organizationId },
     });
@@ -113,7 +111,6 @@ export async function createAppointment(
 
     const targetProfessional = professionalId || admin.id;
 
-    // 🔥 PRE-CHECK: Verifica se ALGUMA das datas da recorrência tem conflito
     for (const date of appointmentDates) {
       const isOccupied = await hasScheduleConflict(
         admin.organizationId,
@@ -162,7 +159,7 @@ export async function createAppointment(
     }
 
     const appointments = await prisma.$transaction(async (tx) => {
-      const created: Appointment[] = [];
+      const created: any[] = [];
       for (let i = 0; i < appointmentDates.length; i++) {
         const appt = await tx.appointment.create({
           data: {
@@ -175,6 +172,9 @@ export async function createAppointment(
             recurrence_id: recurrenceId,
             session_number: packageId ? startSessionNumber + i + 1 : null,
             professional_id: targetProfessional,
+            snapshot_service_name: service.name,
+            snapshot_service_price: service.price,
+            snapshot_service_duration: service.duration,
           },
         });
         created.push(appt);
@@ -183,7 +183,16 @@ export async function createAppointment(
     });
 
     revalidatePath("/admin/agenda");
-    return { success: true, appointments };
+
+    // 🔥 CONVERSÃO DE DECIMAL PARA NUMBER AQUI PARA O NEXT.JS NÃO RECLAMAR
+    const sanitizedAppointments = appointments.map((appt) => ({
+      ...appt,
+      snapshot_service_price: appt.snapshot_service_price
+        ? Number(appt.snapshot_service_price)
+        : null,
+    }));
+
+    return { success: true, appointments: sanitizedAppointments };
   } catch (error) {
     console.error(error);
     return { success: false, error: "Erro ao criar agendamento." };
@@ -327,11 +336,14 @@ export async function updateAppointment(
         });
 
         if (!existingRevenue) {
+          const apptPrice = currentAppt.snapshot_service_price ?? service.price;
+          const apptName = currentAppt.snapshot_service_name ?? service.name;
+
           await tx.transaction.create({
             data: {
               type: "RECEITA",
-              description: `Serviço Realizado: ${service.name} (${currentAppt.client.name})`,
-              amount: service.price,
+              description: `Serviço Realizado: ${apptName} (${currentAppt.client.name})`,
+              amount: apptPrice,
               date: new Date(),
               status: "PAGO",
               organization_id: admin.organizationId,
@@ -476,7 +488,6 @@ export async function updateAppointmentDateTime(
   try {
     const admin = await requireAuth();
 
-    // 1. Busca os dados do agendamento que está sendo movido
     const apptToMove = await prisma.appointment.findUnique({
       where: { id, organization_id: admin.organizationId },
       include: {
@@ -490,13 +501,14 @@ export async function updateAppointmentDateTime(
 
     const newDate = new Date(newDateIso);
 
-    // 🔥 PRE-CHECK: Verifica se a nova posição está livre
-    // Passamos o `id` do agendamento para ele não colidir com ele mesmo
+    const durationToUse =
+      apptToMove.snapshot_service_duration ?? apptToMove.service.duration;
+
     const isOccupied = await hasScheduleConflict(
       admin.organizationId,
       apptToMove.professional_id || admin.id,
       newDate,
-      apptToMove.service.duration,
+      durationToUse,
       id,
     );
 
@@ -507,7 +519,6 @@ export async function updateAppointmentDateTime(
       };
     }
 
-    // 2. Se estiver livre, pode mover tranquilamente
     await prisma.appointment.update({
       where: { id, organization_id: admin.organizationId },
       data: { date_time: newDate },

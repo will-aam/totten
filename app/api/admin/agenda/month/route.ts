@@ -4,15 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 
-/**
- * Lista agendamentos de um mês específico (incluindo dias da primeira e última semana que vazam para outros meses).
- *
- * GET /api/admin/agenda/month?date=2026-03-16
- */
 export async function GET(req: NextRequest) {
   try {
     const admin = await requireAuth();
-    const role = (admin as any).role || "OWNER"; // 🔥 Pegamos a Role do usuário logado
+    const role = (admin as any).role || "OWNER";
 
     const { searchParams } = new URL(req.url);
     const dateParam = searchParams.get("date");
@@ -24,21 +19,17 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Forçando o horário de Brasília para evitar bugs de fuso
     const baseDate = new Date(`${dateParam}T12:00:00.000-03:00`);
 
-    // Calcula o primeiro e último dia que aparecem na grade do calendário
     const monthStart = startOfMonth(baseDate);
     const monthEnd = endOfMonth(baseDate);
 
-    const gridStart = startOfWeek(monthStart, { weekStartsOn: 0 }); // Domingo
-    const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 0 }); // Sábado
+    const gridStart = startOfWeek(monthStart, { weekStartsOn: 0 });
+    const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
 
-    // Ajusta as horas
     const from = new Date(gridStart.setHours(0, 0, 0, 0));
     const to = new Date(gridEnd.setHours(23, 59, 59, 999));
 
-    // 🔥 TRAVA DE VISIBILIDADE
     const whereClause: any = {
       organization_id: admin.organizationId,
       date_time: {
@@ -61,7 +52,7 @@ export async function GET(req: NextRequest) {
         service: true,
         package: true,
         check_in: true,
-        professional: { select: { display_name: true } }, // 🔥 RASTREABILIDADE
+        professional: { select: { display_name: true } },
       },
       orderBy: {
         date_time: "asc",
@@ -78,7 +69,16 @@ export async function GET(req: NextRequest) {
       });
       const time = timeFormatter.format(date);
 
-      const duration = Number(appt.service.duration ?? 60);
+      // 🔥 SNAPSHOT: Prioriza os dados congelados no momento do agendamento
+      const duration = Number(
+        appt.snapshot_service_duration ?? appt.service.duration ?? 60,
+      );
+      const serviceName = appt.snapshot_service_name ?? appt.service.name;
+      const snapshotPrice = appt.snapshot_service_price
+        ? Number(appt.snapshot_service_price)
+        : null;
+      const rawPrice =
+        snapshotPrice ?? appt.package?.price ?? appt.service.price ?? 0;
 
       let sessionInfo = "Avulsa";
       if (appt.package) {
@@ -86,11 +86,8 @@ export async function GET(req: NextRequest) {
         sessionInfo = `Sessão ${current} de ${appt.package.total_sessions}`;
       }
 
-      const rawPrice = appt.package?.price ?? appt.service.price ?? 0;
-
-      // 🔥 NOVO COLOR-CODING COM SUPORTE PERFEITO A DARK MODE E REGRAS DE NEGÓCIO
       let color = "";
-      const serviceName = appt.service.name.toLowerCase();
+      const serviceNameLower = serviceName.toLowerCase();
 
       if (appt.status === "CANCELADO") {
         color =
@@ -98,7 +95,7 @@ export async function GET(req: NextRequest) {
       } else if (appt.status === "REALIZADO") {
         color =
           "bg-blue-100 border-blue-300 text-blue-800 dark:bg-blue-900/40 dark:border-blue-800 dark:text-blue-300";
-      } else if (serviceName.includes("contenção")) {
+      } else if (serviceNameLower.includes("contenção")) {
         color =
           "bg-emerald-100 border-emerald-300 text-emerald-800 dark:bg-emerald-900/40 dark:border-emerald-800 dark:text-emerald-300";
       } else if (
@@ -120,7 +117,7 @@ export async function GET(req: NextRequest) {
         time,
         duration,
         clientName: appt.client.name,
-        service: appt.service.name,
+        service: serviceName, // 🔥 Nome histórico
         sessionInfo,
         isRecurring: Boolean(appt.package_id),
         phone: appt.client.phone_whatsapp,
@@ -131,12 +128,15 @@ export async function GET(req: NextRequest) {
         observations: appt.observations ?? "",
         paymentMethod: appt.payment_method ?? "nenhum",
         price: Number(rawPrice),
-
         date_time: appt.date_time.toISOString(),
         package_id: appt.package_id,
         session_number: appt.session_number,
         recurrence_id: appt.recurrence_id,
         professionalName: appt.professional?.display_name ?? null,
+        // Mandamos os snapshots explícitos pro Modal se ele precisar
+        snapshot_service_name: appt.snapshot_service_name,
+        snapshot_service_duration: appt.snapshot_service_duration,
+        snapshot_service_price: snapshotPrice,
         package: appt.package
           ? {
               total_sessions: appt.package.total_sessions,

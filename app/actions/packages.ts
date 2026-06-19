@@ -10,8 +10,6 @@ import { revalidatePath } from "next/cache";
  * Busca todos os pacotes da organização e calcula os KPIs em tempo real.
  * 🔥 OTIMIZADO: Agora suporta Paginação Server-Side e Busca Inteligente.
  */
-// app/actions/packages.ts (Trecho principal atualizado)
-
 export async function getPackagesDashboardData(params?: {
   page?: number;
   limit?: number;
@@ -23,14 +21,10 @@ export async function getPackagesDashboardData(params?: {
     const limit = params?.limit || 20;
     const skip = (page - 1) * limit;
 
-    // ... (KPIs continuam iguais) ...
-
     const baseWhere: any = { organization_id: admin.organizationId };
 
-    // 🔥 LÓGICA DO FILTRO SECRETO "..."
     const isEndingSoonFilter = params?.search === "...";
 
-    // Se não for o filtro especial, faz a busca normal
     if (params?.search && !isEndingSoonFilter) {
       const searchLower = params.search.toLowerCase();
       baseWhere.OR = [
@@ -39,9 +33,6 @@ export async function getPackagesDashboardData(params?: {
       ];
     }
 
-    // Se for o filtro especial, buscamos apenas os ativos para processar o filtro de "terminando"
-    // NOTA: Como você quer que funcione a paginação, vamos buscar todos os ativos
-    // e filtrar em memória (funciona perfeitamente para clínicas de tamanho padrão)
     const allActivePackages = await prisma.package.findMany({
       where: { organization_id: admin.organizationId, active: true },
       include: {
@@ -68,7 +59,6 @@ export async function getPackagesDashboardData(params?: {
       );
     }
 
-    // Paginação manual baseada no resultado filtrado
     const totalPackages = filteredPackages.length;
     const paginatedPackages = filteredPackages.slice(skip, skip + limit);
 
@@ -139,7 +129,6 @@ export async function getPackageHistory(packageId: string) {
 /**
  * Realiza uma baixa manual "robusta":
  * Cria um agendamento retroativo, marca como REALIZADO e desconta do pacote.
- * 🔥 NOVO: Recebe o `dateTimeString` do frontend para gravar a data/hora exata do check-in.
  */
 export async function createManualPackageCheckIn(
   packageId: string,
@@ -148,7 +137,6 @@ export async function createManualPackageCheckIn(
   try {
     const admin = await requireAuth();
 
-    // 1. Busca os dados do pacote para saber quem é o cliente e o serviço
     const pkg = await prisma.package.findUnique({
       where: { id: packageId, organization_id: admin.organizationId },
       include: { service: true, client: true },
@@ -159,15 +147,13 @@ export async function createManualPackageCheckIn(
       return { success: false, error: "Este pacote não possui mais saldo." };
     }
 
-    // Define a data do check-in. Se o front enviou uma data, usa ela, senão usa 'agora'
     const checkInDate = dateTimeString ? new Date(dateTimeString) : new Date();
 
-    // 2. Executa a transação para garantir que o histórico e o saldo batam sempre
     await prisma.$transaction(async (tx) => {
-      // Cria um agendamento com a data ESCOLHIDA, já marcado como REALIZADO
+      // 🔥 SNAPSHOT INJETADO: A sessão criada herda o snapshot do pacote!
       const appt = await tx.appointment.create({
         data: {
-          date_time: checkInDate, // 🔥 Usa a data informada no modal
+          date_time: checkInDate,
           status: AppointmentStatus.REALIZADO,
           client_id: pkg.client_id,
           service_id: pkg.service_id,
@@ -175,26 +161,29 @@ export async function createManualPackageCheckIn(
           organization_id: admin.organizationId,
           observations: "Baixa manual realizada via Gestão de Pacotes.",
           session_number: pkg.used_sessions + 1,
+          // Pega o snapshot salvo no pacote ou cai pro fallback do serviço atual se for pacote antigo
+          snapshot_service_name: pkg.snapshot_service_name ?? pkg.service.name,
+          snapshot_service_price:
+            pkg.snapshot_service_price ?? pkg.service.price,
+          snapshot_service_duration:
+            pkg.snapshot_service_duration ?? pkg.service.duration,
         },
       });
 
-      // Registra o Check-In com a mesma data para este agendamento
       await tx.checkIn.create({
         data: {
-          date_time: checkInDate, // 🔥 Usa a data informada no modal no histórico de checkin também
+          date_time: checkInDate,
           appointment_id: appt.id,
           client_id: pkg.client_id,
           package_id: pkg.id,
           organization_id: admin.organizationId,
-          admin_id: admin.id, // 🔥 CORREÇÃO: Usando admin.id em vez de admin.userId
+          admin_id: admin.id,
         },
       });
 
-      // Calcula se esta baixa vai zerar o pacote
       const newUsedSessions = pkg.used_sessions + 1;
       const willRemainActive = newUsedSessions < pkg.total_sessions;
 
-      // Desconta a sessão do pacote e já desativa caso tenha batido a cota
       await tx.package.update({
         where: { id: pkg.id },
         data: {
@@ -204,11 +193,9 @@ export async function createManualPackageCheckIn(
       });
     });
 
-    // Revalida todas as telas envolvidas para atualizar os números na hora
     revalidatePath("/admin/packages");
     revalidatePath("/admin/agenda");
     revalidatePath("/admin/history");
-    // Revalida também o perfil da cliente para a Timeline atualizar
     revalidatePath(`/admin/clients/${pkg.client_id}`);
 
     return { success: true };
@@ -225,27 +212,23 @@ export async function deleteCheckIn(checkInId: string) {
   try {
     const admin = await requireAuth();
 
-    // 1. Busca os detalhes do check-in para saber o que reverter
     const checkIn = await prisma.checkIn.findUnique({
       where: { id: checkInId, organization_id: admin.organizationId },
     });
 
     if (!checkIn) return { success: false, error: "Check-in não encontrado." };
 
-    // 2. Executa a reversão em uma transação
     await prisma.$transaction(async (tx) => {
-      // A. Se estava vinculado a um pacote, devolve a sessão
       if (checkIn.package_id) {
         await tx.package.update({
           where: { id: checkIn.package_id },
           data: {
             used_sessions: { decrement: 1 },
-            active: true, // Garante que o pacote volte a ficar ativo caso estivesse zerado
+            active: true,
           },
         });
       }
 
-      // B. Se estava vinculado a um agendamento, volta o status para 'CONFIRMADO'
       if (checkIn.appointment_id) {
         await tx.appointment.update({
           where: { id: checkIn.appointment_id },
@@ -253,13 +236,11 @@ export async function deleteCheckIn(checkInId: string) {
         });
       }
 
-      // C. Deleta o registro de check-in
       await tx.checkIn.delete({
         where: { id: checkInId },
       });
     });
 
-    // Revalida as páginas para atualizar os dados na tela
     revalidatePath("/admin/history");
     revalidatePath("/admin/packages");
     revalidatePath("/admin/dashboard");

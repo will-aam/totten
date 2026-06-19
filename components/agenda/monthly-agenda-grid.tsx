@@ -1,3 +1,4 @@
+// components/agenda/monthly-agenda-grid.tsx
 "use client";
 
 import { useState, useMemo } from "react";
@@ -20,7 +21,8 @@ import {
   Package as PackageIcon,
   ChevronRight,
   AlertTriangle,
-  User, // 🔥 Import do ícone
+  User,
+  Cog, // 🔥 Import do ícone para o serviço
 } from "@boxicons/react";
 import { Button } from "../ui/button";
 
@@ -186,9 +188,11 @@ export function MonthlyAgendaGrid({
             ) : (
               activeDayAppointments.map((appt) => {
                 const isCancelled = appt.status?.toUpperCase() === "CANCELADO";
-                // 🔥 Verifica pacote inativo
                 const isPackageArchived =
                   appt.package && appt.package.active === false;
+
+                // 🔥 SNAPSHOT: Forçamos a leitura visual do Snapshot se disponível
+                const serviceName = appt.snapshot_service_name ?? appt.service;
 
                 return (
                   <div
@@ -224,15 +228,20 @@ export function MonthlyAgendaGrid({
                         )}
                         {appt.clientName}
                       </p>
-                      <p className="text-[9px] font-bold opacity-70 truncate uppercase tracking-tighter">
-                        {isPackageArchived && !isCancelled
-                          ? "Pacote Inativo"
-                          : isCancelled
-                            ? "Sessão Cancelada"
-                            : appt.service}
+
+                      {/* 🔥 EXIBIÇÃO DO SERVIÇO COM O ÍCONE DA ENGRENAGEM */}
+                      <p className="text-[9px] font-bold opacity-70 truncate uppercase tracking-tighter flex items-center gap-1">
+                        {isPackageArchived && !isCancelled ? (
+                          "Pacote Inativo"
+                        ) : isCancelled ? (
+                          "Sessão Cancelada"
+                        ) : (
+                          <>
+                            <Cog size="xs" /> {serviceName}
+                          </>
+                        )}
                       </p>
 
-                      {/* 🔥 ETIQUETA DO PROFISSIONAL (MOBILE LIST) */}
                       {appt.professionalName && (
                         <div className="flex items-center gap-1 mt-1 bg-background/50 w-fit px-1.5 py-0.5 rounded text-[9px] font-semibold text-foreground/80 border border-border/30">
                           <User removePadding className="h-3 w-3" />
@@ -354,7 +363,6 @@ export function MonthlyAgendaGrid({
                           </span>
                         </div>
 
-                        {/* 🔥 ÍCONE DO PROFISSIONAL (DESKTOP GRID) */}
                         {appt.professionalName && (
                           <User className="h-2.5 w-2.5 opacity-60 shrink-0" />
                         )}
