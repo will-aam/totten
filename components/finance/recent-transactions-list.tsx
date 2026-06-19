@@ -53,7 +53,7 @@ function getPaymentMethodLabel(method: string | null | undefined): string {
   return "Outros";
 }
 
-// 🔥 Função de limpeza do texto aprimorada
+//  Função de limpeza do texto aprimorada
 function getCleanDescription(
   desc: string,
   type: string,

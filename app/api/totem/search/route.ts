@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: "NOT_FOUND" });
     }
 
-    // 🔥 CORREÇÃO DE FUSO HORÁRIO
+    //  CORREÇÃO DE FUSO HORÁRIO
     const now = new Date();
     const formatter = new Intl.DateTimeFormat("en-US", {
       timeZone: "America/Sao_Paulo",
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
         status: { in: ["PENDENTE", "CONFIRMADO"] },
         OR: [{ package_id: null }, { package: { active: true } }],
       },
-      // 🔥 AQUI: Pedimos pro Prisma trazer o estoque junto com o serviço
+      //  AQUI: Pedimos pro Prisma trazer o estoque junto com o serviço
       include: {
         service: {
           include: {
@@ -149,7 +149,7 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      // 🔥 --- O CORAÇÃO DO SISTEMA FINANCEIRO E DE ESTOQUE (AUTO CHECK-IN) --- 🔥
+      //  --- O CORAÇÃO DO SISTEMA FINANCEIRO E DE ESTOQUE (AUTO CHECK-IN) ---
       const service = agendamento.service;
 
       if (
@@ -178,14 +178,14 @@ export async function POST(req: NextRequest) {
               totalCost += itemCost;
               // Guarda o detalhe para a descrição (Ex: "2x Luva (R$ 1,00)")
               detailsArray.push(
-                `${usedQty}x ${stockData.name} (R$ ${itemCost.toFixed(2).replace(".", ",")})`
+                `${usedQty}x ${stockData.name} (R$ ${itemCost.toFixed(2).replace(".", ",")})`,
               );
             }
           }
         }
 
         // c) Lança a despesa consolidada (Apenas UMA transação)
-if (totalCost > 0) {
+        if (totalCost > 0) {
           await tx.transaction.create({
             data: {
               type: "DESPESA",

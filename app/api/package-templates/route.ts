@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
         service_id: true,
         active: true,
         validity_days: true,
-        // 🔥 AQUI ESTÁ A MÁGICA: Trazendo a relação do serviço para o front-end
+        //  AQUI ESTÁ A MÁGICA: Trazendo a relação do serviço para o front-end
         service: {
           select: {
             name: true,

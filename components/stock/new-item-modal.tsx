@@ -38,7 +38,7 @@ export function NewStockItemModal({
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState("");
   const [totalCost, setTotalCost] = useState("");
-  const [createExpense, setCreateExpense] = useState(true); // 🔥 Vem marcado por padrão
+  const [createExpense, setCreateExpense] = useState(true); //  Vem marcado por padrão
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Calcula o valor unitário dinamicamente para feedback visual
@@ -53,7 +53,7 @@ export function NewStockItemModal({
       name,
       quantity: parsedQty,
       unit_cost: unitCost,
-      isAutoDeduct: false, // 🔥 Sempre false, a inteligência agora é do Serviço!
+      isAutoDeduct: false, //  Sempre false, a inteligência agora é do Serviço!
       createExpense,
     };
 
@@ -68,7 +68,7 @@ export function NewStockItemModal({
     setName("");
     setQuantity("");
     setTotalCost("");
-    setCreateExpense(true); // 🔥 Volta pro padrão correto ao limpar o formulário
+    setCreateExpense(true); //  Volta pro padrão correto ao limpar o formulário
   };
 
   return (
@@ -139,7 +139,7 @@ export function NewStockItemModal({
 
           <div className="my-2 border-t border-border/50" />
 
-          {/* 🔥 ÚNICO Toggle de Configuração Restante (O do Dinheiro) */}
+          {/*  ÚNICO Toggle de Configuração Restante (O do Dinheiro) */}
           <div className="flex flex-row items-center justify-between rounded-lg border border-border/50 p-3 shadow-sm bg-muted/20">
             <div className="space-y-0.5 pr-4">
               <Label className="text-base font-medium">

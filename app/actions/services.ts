@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
-// 🔥 FUNÇÃO AUXILIAR: Converte Decimal do Prisma em Number puro para o Next.js
+//  FUNÇÃO AUXILIAR: Converte Decimal do Prisma em Number puro para o Next.js
 function sanitizeService(service: any) {
   if (!service) return null;
   return {
@@ -24,8 +24,8 @@ export async function createService(data: {
   duration: number;
   category_id: string;
   material_cost?: number | null;
-  track_stock?: boolean; // 🔥 Nova Flag
-  stock_items?: { stock_item_id: string; quantity_used: number }[]; // 🔥 Lista de Insumos
+  track_stock?: boolean; //  Nova Flag
+  stock_items?: { stock_item_id: string; quantity_used: number }[]; //  Lista de Insumos
 }) {
   try {
     const admin = await requireAuth();
@@ -41,7 +41,7 @@ export async function createService(data: {
         track_stock: data.track_stock || false,
         organization_id: admin.organizationId,
         active: true,
-        // 🔥 Salva os insumos na criação se a baixa inteligente estiver ativa
+        //  Salva os insumos na criação se a baixa inteligente estiver ativa
         ...(data.track_stock && data.stock_items && data.stock_items.length > 0
           ? {
               stock_items: {
@@ -72,8 +72,8 @@ export async function updateService(
     duration?: number;
     category_id?: string;
     material_cost?: number | null;
-    track_stock?: boolean; // 🔥 Nova Flag
-    stock_items?: { stock_item_id: string; quantity_used: number }[]; // 🔥 Lista de Insumos
+    track_stock?: boolean; //  Nova Flag
+    stock_items?: { stock_item_id: string; quantity_used: number }[]; //  Lista de Insumos
   },
 ) {
   try {
@@ -88,7 +88,7 @@ export async function updateService(
       return { success: false, error: "Serviço não encontrado." };
     }
 
-    // 🔥 2. Transação: Limpa as conexões velhas e cria as novas
+    //  2. Transação: Limpa as conexões velhas e cria as novas
     const updated = await prisma.$transaction(async (tx) => {
       // Deleta as vinculações antigas de estoque deste serviço
       await tx.serviceStockItem.deleteMany({

@@ -8,7 +8,7 @@ import { revalidatePath } from "next/cache";
 
 /**
  * Busca todos os pacotes da organização e calcula os KPIs em tempo real.
- * 🔥 OTIMIZADO: Agora suporta Paginação Server-Side e Busca Inteligente.
+ *  OTIMIZADO: Agora suporta Paginação Server-Side e Busca Inteligente.
  */
 export async function getPackagesDashboardData(params?: {
   page?: number;
@@ -150,7 +150,7 @@ export async function createManualPackageCheckIn(
     const checkInDate = dateTimeString ? new Date(dateTimeString) : new Date();
 
     await prisma.$transaction(async (tx) => {
-      // 🔥 SNAPSHOT INJETADO: A sessão criada herda o snapshot do pacote!
+      //  SNAPSHOT INJETADO: A sessão criada herda o snapshot do pacote!
       const appt = await tx.appointment.create({
         data: {
           date_time: checkInDate,

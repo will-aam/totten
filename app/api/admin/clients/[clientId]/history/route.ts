@@ -50,7 +50,7 @@ export async function GET(
       where: { client_id: clientId, organization_id: admin.organizationId },
     });
 
-    // 🔥 A MÁGICA ACONTECE AQUI: Montamos uma Linha do Tempo Unificada
+    //  A MÁGICA ACONTECE AQUI: Montamos uma Linha do Tempo Unificada
     const timelineEvents: any[] = [];
 
     // Evento A: Criação do Cliente
@@ -109,7 +109,7 @@ export async function GET(
       });
     });
 
-    // 🔥 Ordena todos os eventos misturados pela data (do mais recente pro mais antigo)
+    //  Ordena todos os eventos misturados pela data (do mais recente pro mais antigo)
     timelineEvents.sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
     );

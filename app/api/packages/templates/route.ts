@@ -57,7 +57,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 🔥 TRAVA DE SEGURANÇA SÊNIOR: Impede sobreposição de pacotes
+    //  TRAVA DE SEGURANÇA SÊNIOR: Impede sobreposição de pacotes
     const existingActivePackage = await prisma.package.findFirst({
       where: {
         client_id: client_id,
@@ -98,7 +98,7 @@ export async function POST(request: Request) {
           service_id,
           organization_id: admin.organizationId,
           active: true,
-          // 🔥 SNAPSHOT INJETADO: A foto do serviço fica imortalizada no pacote!
+          //  SNAPSHOT INJETADO: A foto do serviço fica imortalizada no pacote!
           snapshot_service_name: service.name,
           snapshot_service_price: service.price,
           snapshot_service_duration: service.duration,

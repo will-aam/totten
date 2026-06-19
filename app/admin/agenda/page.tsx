@@ -84,7 +84,7 @@ export default function AgendaPage() {
   const openingHourNumber = Number(openingTime.split(":")[0]);
   const closingHourNumber = Number(closingTime.split(":")[0]);
 
-  // 🔥 LÓGICA DE UNIFICAÇÃO DA ROTA: Calculando os limites com base na view atual
+  //  LÓGICA DE UNIFICAÇÃO DA ROTA: Calculando os limites com base na view atual
   const { fromISO, toISO } = useMemo(() => {
     let start: Date;
     let end: Date;
@@ -110,7 +110,7 @@ export default function AgendaPage() {
     };
   }, [selectedDate, viewMode]);
 
-  // 🔥 NOVA E ÚNICA REQUISIÇÃO (Busca a agenda completa para a visualização atual)
+  //  NOVA E ÚNICA REQUISIÇÃO (Busca a agenda completa para a visualização atual)
   const {
     data: agendaData,
     mutate: mutateAgenda,

@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 export function AppearanceSettings() {
   const { theme, setTheme } = useTheme();
 
-  // 🔥 A MÁGICA CORRIGIDA: Expande sempre a nova cor a partir do clique
+  //  A MÁGICA CORRIGIDA: Expande sempre a nova cor a partir do clique
   const handleThemeChange = (newTheme: string, e: React.MouseEvent) => {
     if (theme === newTheme) return;
 
@@ -121,7 +121,7 @@ export function AppearanceSettings() {
               </span>
             </button>
 
-            {/* 🔥 QUADRADO AZUL (BLOQUEADO / EM BREVE) */}
+            {/*  QUADRADO AZUL (BLOQUEADO / EM BREVE) */}
             <button
               disabled
               className="relative flex h-28 w-28 flex-col items-center justify-center rounded-2xl border-2 border-border/50 bg-muted/30 cursor-not-allowed opacity-70 transition-all group"

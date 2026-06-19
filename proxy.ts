@@ -7,10 +7,10 @@ import { getToken } from "next-auth/jwt";
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 🔥 ROTAS PÚBLICAS EXATAS (só permite se for estritamente igual)
+  //  ROTAS PÚBLICAS EXATAS (só permite se for estritamente igual)
   const exactPublicPaths = ["/"];
 
-  // 🔥 ROTAS PÚBLICAS POR PREFIXO (permite se começar com esses caminhos)
+  //  ROTAS PÚBLICAS POR PREFIXO (permite se começar com esses caminhos)
   const prefixPublicPaths = [
     "/totem/idle",
     "/totem/check-in",

@@ -20,10 +20,10 @@ export type CreateAppointmentInput = {
 };
 
 export type CreateAppointmentResult =
-  | { success: true; appointments: any[] } // 🔥 Ajustado para any[] para o TS não reclamar da conversão do Decimal
+  | { success: true; appointments: any[] } //  Ajustado para any[] para o TS não reclamar da conversão do Decimal
   | { success: false; error: string };
 
-// 🔥 FUNÇÃO AUXILIAR: Verifica colisão de horários
+//  FUNÇÃO AUXILIAR: Verifica colisão de horários
 async function hasScheduleConflict(
   organizationId: string,
   professionalId: string,
@@ -60,7 +60,7 @@ async function hasScheduleConflict(
 
   for (const appt of existingAppts) {
     const existingStart = appt.date_time.getTime();
-    // 🔥 SNAPSHOT: Usa a duração da época (ou fallback para o serviço atual se for antigo)
+    //  SNAPSHOT: Usa a duração da época (ou fallback para o serviço atual se for antigo)
     const durationToUse =
       appt.snapshot_service_duration ?? appt.service.duration;
     const existingEnd = existingStart + durationToUse * 60000;
@@ -184,7 +184,7 @@ export async function createAppointment(
 
     revalidatePath("/admin/agenda");
 
-    // 🔥 CONVERSÃO DE DECIMAL PARA NUMBER AQUI PARA O NEXT.JS NÃO RECLAMAR
+    //  CONVERSÃO DE DECIMAL PARA NUMBER AQUI PARA O NEXT.JS NÃO RECLAMAR
     const sanitizedAppointments = appointments.map((appt) => ({
       ...appt,
       snapshot_service_price: appt.snapshot_service_price

@@ -19,7 +19,7 @@ export async function POST(request: Request) {
       where: { email },
     });
 
-    // 🔥 SEGURANÇA: Sempre retorna sucesso (mesmo se o e-mail não existir)
+    //  SEGURANÇA: Sempre retorna sucesso (mesmo se o e-mail não existir)
     // Isso evita que hackers descubram quais e-mails estão cadastrados
     if (!admin) {
       return NextResponse.json({
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 🔥 GERA SENHA TEMPORÁRIA
+    //  GERA SENHA TEMPORÁRIA
     const tempPassword = generateRandomPassword();
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
 

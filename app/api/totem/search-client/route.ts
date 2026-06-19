@@ -2,7 +2,7 @@
 // rota importada no arquivo app/totem/check-in/totem-check-in-content.tsx, a função dela é buscar os dados do cliente e seus pacotes ativos (se houver) a partir do CPF, para exibir no resumo do check-in e também validar se o cliente tem pacotes ativos com sessões restantes antes de permitir o check-in pelo totem.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentAdmin } from "@/lib/auth"; // 🔥 Import adicionado
+import { getCurrentAdmin } from "@/lib/auth"; //  Import adicionado
 
 // GET - Busca cliente pelo CPF + organização (via sessão)
 export async function GET(request: Request) {
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const cpf = searchParams.get("cpf");
 
-    // 🔥 2. Removida a validação de slug
+    //  2. Removida a validação de slug
     if (!cpf) {
       return NextResponse.json({ error: "CPF é obrigatório" }, { status: 400 });
     }
@@ -36,7 +36,7 @@ export async function GET(request: Request) {
       new Set([cpf.trim(), cleanCpf, cpfFormatado]),
     );
 
-    // 🔥 3. Busca o cliente usando diretamente o ID da sessão
+    //  3. Busca o cliente usando diretamente o ID da sessão
     const client = await prisma.client.findFirst({
       where: {
         cpf: { in: cpfCandidates },

@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin } from "@/lib/auth";
-import { Prisma } from "@prisma/client"; // 🔥 Adicionamos os tipos do Prisma
+import { Prisma } from "@prisma/client"; //  Adicionamos os tipos do Prisma
 
 export async function GET(
   _request: Request,
@@ -17,7 +17,7 @@ export async function GET(
 
     const { id } = await params;
 
-    // 🔥 O SEGREDO ESTÁ AQUI: Precisamos trazer os pacotes ativos do cliente!
+    //  O SEGREDO ESTÁ AQUI: Precisamos trazer os pacotes ativos do cliente!
     const client = await prisma.client.findFirst({
       where: {
         id: id,
@@ -39,7 +39,7 @@ export async function GET(
       );
     }
 
-    // 🔥 LÓGICA DE NEGÓCIO: Acha o primeiro pacote que ainda tem saldo
+    //  LÓGICA DE NEGÓCIO: Acha o primeiro pacote que ainda tem saldo
     const activePkg = client.packages.find(
       (pkg) => pkg.used_sessions < pkg.total_sessions,
     );
@@ -59,7 +59,7 @@ export async function GET(
         created_at: client.created_at,
         active: client.active,
       },
-      // 🔥 MANDAMOS O PACOTE PARA O FRONT-END AQUI:
+      //  MANDAMOS O PACOTE PARA O FRONT-END AQUI:
       activePackage: activePkg
         ? {
             id: activePkg.id,
@@ -90,7 +90,7 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
-    // 🔥 Refatoração Sênior: Tipagem estrita com Prisma.ClientUpdateInput
+    //  Refatoração Sênior: Tipagem estrita com Prisma.ClientUpdateInput
     const updateData: Prisma.ClientUpdateInput = {};
 
     if (body.name !== undefined) updateData.name = body.name;

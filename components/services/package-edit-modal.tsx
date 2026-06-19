@@ -24,7 +24,7 @@ import {
   Package,
   Dollar,
   Rename,
-  Cog, // 🔥 Importamos o ícone Cog para o Serviço
+  Cog, //  Importamos o ícone Cog para o Serviço
 } from "@boxicons/react";
 import {
   updatePackageTemplate,
@@ -72,7 +72,7 @@ export const PackageEditModal = memo(
 
     if (!packageTemplate) return null;
 
-    // 🔥 Obtemos o nome do serviço base a partir do objeto packageTemplate
+    //  Obtemos o nome do serviço base a partir do objeto packageTemplate
     // Ajuste "service.name" caso a propriedade no seu backend se chame diferente (ex: "serviceName")
     const serviceName =
       packageTemplate.service?.name || "Serviço não identificado";
@@ -166,7 +166,7 @@ export const PackageEditModal = memo(
               />
             </div>
 
-            {/* 🔥 NOVO: Exibição do Serviço Base (Somente Leitura) */}
+            {/*  NOVO: Exibição do Serviço Base (Somente Leitura) */}
             <div className="space-y-1.5 opacity-70 pointer-events-none select-none">
               <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 ml-1">
                 <Cog size="xs" /> Serviço Base Vinculado

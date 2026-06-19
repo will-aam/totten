@@ -10,7 +10,7 @@ export async function GET(
   try {
     const admin = await requireAuth();
 
-    // 🔥 Next.js 15+: params precisa ser aguardado
+    //  Next.js 15+: params precisa ser aguardado
     const { clientId } = await params;
 
     if (!clientId) {
@@ -51,7 +51,7 @@ export async function GET(
         price: true,
         active: true,
         service_id: true,
-        created_at: true, // 🔥 NOVO: Busca a data de criação do pacote (Início do Ciclo)
+        created_at: true, //  NOVO: Busca a data de criação do pacote (Início do Ciclo)
         check_ins: {
           select: {
             date_time: true,
@@ -66,7 +66,7 @@ export async function GET(
       },
     });
 
-    // 🔥 NOVO: Mapeia o resultado para injetar o array 'sessionDates' e a data de criação
+    //  NOVO: Mapeia o resultado para injetar o array 'sessionDates' e a data de criação
     const formattedPackages = packages.map((pkg) => {
       return {
         id: pkg.id,
@@ -76,14 +76,14 @@ export async function GET(
         price: pkg.price,
         active: pkg.active,
         service_id: pkg.service_id,
-        created_at: pkg.created_at.toISOString(), // 🔥 NOVO: Envia a data formatada para o front-end
+        created_at: pkg.created_at.toISOString(), //  NOVO: Envia a data formatada para o front-end
         sessionDates: pkg.check_ins.map((checkin) =>
           checkin.date_time.toISOString(),
         ),
       };
     });
 
-    // 🔥 Retorna o array direto para bater perfeitamente com a tipagem do SWR no Front
+    //  Retorna o array direto para bater perfeitamente com a tipagem do SWR no Front
     return NextResponse.json(formattedPackages);
   } catch (error) {
     console.error("[GET /api/admin/clients/[clientId]/packages] ERRO:", error);

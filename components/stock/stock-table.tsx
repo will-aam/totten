@@ -28,7 +28,7 @@ interface StockTableProps {
   onDeleteItem: (id: string) => void;
 }
 
-// 🔥 NOVO: estado visual “editando/focado”
+//  NOVO: estado visual “editando/focado”
 const editableInputClass =
   "border-transparent bg-transparent shadow-none " +
   "hover:border-border/70 hover:bg-muted/20 " +
@@ -105,7 +105,7 @@ export function StockTable({
           <div className="flex items-center gap-1 px-2">
             <span className="text-muted-foreground text-xs">R$</span>
             <Input
-              type="text" // 🔥 Alterado para text
+              type="text" //  Alterado para text
               inputMode="decimal" // Chama o teclado numérico no celular
               className={cn("h-8 w-24", editableInputClass)}
               defaultValue={item.unit_cost}
@@ -149,7 +149,7 @@ export function StockTable({
         return (
           <div className="flex justify-center px-2">
             <Input
-              type="text" // 🔥 Alterado para text
+              type="text" //  Alterado para text
               inputMode="decimal"
               className={cn("h-8 w-24 text-center", editableInputClass)}
               defaultValue={item.quantity}

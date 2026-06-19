@@ -28,7 +28,7 @@ export function AdminHeader({ title }: { title: string }) {
       </div>
 
       <div className="flex items-center">
-        {/* 🔥 Removida a trava "isOwner". Agora a colaboradora também pode acessar o Totem para os clientes */}
+        {/*  Removida a trava "isOwner". Agora a colaboradora também pode acessar o Totem para os clientes */}
         <Button
           asChild
           variant="secondary"

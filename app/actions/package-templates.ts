@@ -48,7 +48,7 @@ export async function updatePackageTemplate(
   }
 }
 
-// 🔥 ESTA É A FUNÇÃO QUE O TS NÃO ESTAVA ACHANDO
+//  ESTA É A FUNÇÃO QUE O TS NÃO ESTAVA ACHANDO
 export async function togglePackageTemplateStatus(
   id: string,
   currentStatus: boolean,

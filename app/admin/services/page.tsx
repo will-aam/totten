@@ -18,7 +18,7 @@ import {
   TrendingDown,
   Box,
 } from "@boxicons/react";
-import { Eye, EyeOff } from "lucide-react"; // 🔥 Novos ícones para o botão de ocultar
+import { Eye, EyeOff } from "lucide-react"; //  Novos ícones para o botão de ocultar
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -104,7 +104,7 @@ function ServicesTabs() {
   const initialTab = searchParams.get("tab") || "services";
   const [activeTab, setActiveTab] = useState(initialTab);
 
-  // 🔥 NOVO ESTADO: Ocultar/Mostrar Inativos (Inicia mostrando tudo, conforme você pediu)
+  //  NOVO ESTADO: Ocultar/Mostrar Inativos (Inicia mostrando tudo, conforme você pediu)
   const [showInactive, setShowInactive] = useState(true);
 
   const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -130,7 +130,7 @@ function ServicesTabs() {
     isLoading: loadingCategories,
   } = useSWR<Category[]>("/api/categories", fetcher);
 
-  // 🔥 LÓGICA DE FILTRAGEM RÁPIDA
+  //  LÓGICA DE FILTRAGEM RÁPIDA
   const visibleServices =
     services?.filter((s) => showInactive || s.active) || [];
   const visiblePackages =
@@ -169,7 +169,7 @@ function ServicesTabs() {
             </TabsTrigger>
           </TabsList>
 
-          {/* 🔥 NOVO BOTÃO: Toggle global para limpar a tela de itens inativos */}
+          {/*  NOVO BOTÃO: Toggle global para limpar a tela de itens inativos */}
           {activeTab !== "schedules" && (
             <Button
               variant="outline"
@@ -220,7 +220,7 @@ function ServicesTabs() {
           ) : services &&
             services.length > 0 &&
             visibleServices.length === 0 ? (
-            // 🔥 EMPTY STATE INTELIGENTE: Tem serviço, mas estão todos ocultos!
+            //  EMPTY STATE INTELIGENTE: Tem serviço, mas estão todos ocultos!
             <div className="text-center py-12 text-muted-foreground bg-muted/20 border border-dashed rounded-xl">
               <p>Todos os seus serviços estão inativos.</p>
               <button

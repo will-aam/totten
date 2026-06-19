@@ -26,7 +26,7 @@ import { Clock, LoaderDots, Plus } from "@boxicons/react";
 import { toast } from "sonner";
 import { updateAppointmentDateTime } from "@/app/actions/appointments";
 
-// 🔥 IMPORTANDO AS PECINHAS DE LEGO
+//  IMPORTANDO AS PECINHAS DE LEGO
 import {
   Appointment,
   DraggableAppointmentCard,

@@ -21,7 +21,7 @@ export async function getTeam() {
         email: true,
         role: true,
         active: true,
-        permissions: true, // 🔥 Trazendo as permissões do banco
+        permissions: true, //  Trazendo as permissões do banco
         created_at: true,
       },
       orderBy: { created_at: "asc" },
@@ -68,7 +68,7 @@ export async function createCollaborator(data: {
         password: hashedPassword,
         role: "COLLABORATOR",
         active: true,
-        permissions: data.permissions || [], // 🔥 Salva as permissões garantindo que seja um array
+        permissions: data.permissions || [], //  Salva as permissões garantindo que seja um array
         email_verified: true,
         organizations: { connect: { id: admin.organizationId } },
       },
@@ -107,11 +107,11 @@ export async function updateCollaborator(
       };
     }
 
-    // 🔥 Usando tipagem estrita do Prisma ao invés de 'any' para evitar quebras
+    //  Usando tipagem estrita do Prisma ao invés de 'any' para evitar quebras
     const updateData: Prisma.AdminUpdateInput = {
       display_name: data.name,
       email: data.email,
-      permissions: data.permissions || [], // 🔥 Atualiza as permissões com segurança
+      permissions: data.permissions || [], //  Atualiza as permissões com segurança
     };
 
     if (data.password && data.password.trim().length >= 6) {
@@ -163,7 +163,7 @@ export async function deleteCollaborator(id: string) {
     if (id === admin.id)
       return { success: false, error: "Você não pode excluir a si mesmo." };
 
-    // 🔥 Proteção: O banco tem foreign keys (onDelete: SetNull no appointment).
+    //  Proteção: O banco tem foreign keys (onDelete: SetNull no appointment).
     // Ou seja, se deletar, o histórico financeiro não quebra, mas o "profissional_id" vira nulo nos atendimentos passados.
     await prisma.admin.delete({ where: { id } });
 

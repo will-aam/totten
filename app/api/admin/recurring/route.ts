@@ -123,7 +123,7 @@ export async function GET(request: Request) {
         return {
           recurrenceId,
           client: firstAppt.client,
-          // 🔥 SNAPSHOT: Tenta ler o nome salvo no momento da criação, se não tiver cai pro atual
+          //  SNAPSHOT: Tenta ler o nome salvo no momento da criação, se não tiver cai pro atual
           serviceName:
             firstAppt.snapshot_service_name ?? firstAppt.service.name,
           package: firstAppt.package,

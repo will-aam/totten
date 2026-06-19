@@ -5,14 +5,14 @@ import { useState, useEffect, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image"; // 🔥 Importação para a logo
+import Image from "next/image"; //  Importação para a logo
 import { ChevronLeft, Eye, EyeClosed } from "@boxicons/react"; // Removido o Bird
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
-// 🔥 FORÇA RENDERIZAÇÃO APENAS NO CLIENTE
+//  FORÇA RENDERIZAÇÃO APENAS NO CLIENTE
 export const dynamic = "force-dynamic";
 
 function LoginForm() {

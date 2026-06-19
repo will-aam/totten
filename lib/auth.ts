@@ -24,7 +24,7 @@ export async function getCurrentAdmin() {
     email: session.user.email,
     name: session.user.name,
     role: (session.user as any).role || "OWNER",
-    permissions: (session.user as any).permissions || [], // 🔥 ADICIONADO
+    permissions: (session.user as any).permissions || [], //  ADICIONADO
     organizationId: session.user.organizationId,
     organizationName: session.user.organizationName,
   };

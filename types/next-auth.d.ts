@@ -7,7 +7,7 @@ declare module "next-auth" {
     organizationName: string;
     organizationSlug: string;
     role: string;
-    permissions: string[]; // 🔥 ADICIONADO
+    permissions: string[]; //  ADICIONADO
   }
 
   interface Session {
@@ -19,7 +19,7 @@ declare module "next-auth" {
       organizationName: string;
       organizationSlug: string;
       role: string;
-      permissions: string[]; // 🔥 ADICIONADO
+      permissions: string[]; //  ADICIONADO
     };
   }
 }
@@ -31,6 +31,6 @@ declare module "next-auth/jwt" {
     organizationName: string;
     organizationSlug: string;
     role: string;
-    permissions: string[]; // 🔥 ADICIONADO
+    permissions: string[]; //  ADICIONADO
   }
 }

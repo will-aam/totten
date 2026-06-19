@@ -4,7 +4,7 @@ import { getCurrentAdmin } from "@/lib/auth";
 
 export async function GET(request: Request) {
   try {
-    // 🔥 Usando a sua função utilitária que já resolve tudo!
+    //  Usando a sua função utilitária que já resolve tudo!
     const admin = await getCurrentAdmin();
 
     if (!admin || !admin.organizationId) {

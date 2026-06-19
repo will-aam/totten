@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ArrowUpDown, Trash, LoaderDots, User, Cog } from "@boxicons/react"; // 🔥 Ícone Cog adicionado para o serviço
+import { ArrowUpDown, Trash, LoaderDots, User, Cog } from "@boxicons/react"; //  Ícone Cog adicionado para o serviço
 import {
   ColumnDef,
   SortingState,
@@ -42,7 +42,7 @@ export interface EnrichedCheckIn {
   client_name: string;
   client_cpf: string;
   professional_name?: string | null;
-  service_name?: string; // 🔥 RASTREABILIDADE: O nome da foto do Serviço vem aqui
+  service_name?: string; //  RASTREABILIDADE: O nome da foto do Serviço vem aqui
 }
 
 // Atualizamos o Item Mobile para aceitar o clique de exclusão e exibir quem atendeu e o serviço prestado
@@ -75,7 +75,7 @@ function MobileHistoryItem({
           <span className="text-sm font-semibold text-foreground leading-none mb-1">
             {checkIn.client_name}
           </span>
-          {/* 🔥 Exibe o Serviço realizado no modo Mobile */}
+          {/*  Exibe o Serviço realizado no modo Mobile */}
           {checkIn.service_name && (
             <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1 mb-1.5 line-clamp-1">
               <Cog size="xs" /> {checkIn.service_name}
@@ -164,7 +164,7 @@ export function HistoryTable({
       ),
     },
     {
-      // 🔥 NOVA COLUNA: Serviço/Pacote
+      //  NOVA COLUNA: Serviço/Pacote
       accessorKey: "service_name",
       header: () => (
         <span className="text-muted-foreground font-semibold px-2">
@@ -360,7 +360,7 @@ export function HistoryTable({
         </div>
       )}
 
-      {/* 🔥 MODAL DE CONFIRMAÇÃO */}
+      {/*  MODAL DE CONFIRMAÇÃO */}
       <AlertDialog
         open={!!ciToDelete}
         onOpenChange={(open) => !open && setCiToDelete(null)}

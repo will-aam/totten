@@ -33,7 +33,7 @@ export function MessageSettings() {
   const [msgWelcome, setMsgWelcome] = useState("");
   const [msgRenewal, setMsgRenewal] = useState("");
   const [msgReminder, setMsgReminder] = useState("");
-  const [msgManualConfirmation, setMsgManualConfirmation] = useState(""); // 🔥 Novo estado
+  const [msgManualConfirmation, setMsgManualConfirmation] = useState(""); //  Novo estado
 
   // Busca dados do banco quando carrega
   useEffect(() => {
@@ -58,7 +58,7 @@ export function MessageSettings() {
             data.msgReminder ||
               "Oi, {nome}! Passando para lembrar do nosso horário agendado para amanhã às {horario}. \n\nPodemos confirmar sua presença? 👍",
           );
-          // 🔥 Carregando a nova mensagem
+          //  Carregando a nova mensagem
           setMsgManualConfirmation(
             data.msgManualConfirmation ||
               "Olá {nome}! Passando para confirmar o seu horário amanhã às *{horario}* para o serviço de {servico}. Podemos confirmar? 🥰",
@@ -90,7 +90,7 @@ export function MessageSettings() {
           msgWelcome,
           msgRenewal,
           msgReminder,
-          msgManualConfirmation, // 🔥 Inclui no save
+          msgManualConfirmation, //  Inclui no save
         }),
       });
 
@@ -281,7 +281,7 @@ export function MessageSettings() {
                 </AccordionContent>
               </AccordionItem>
 
-              {/* 🔥 Novo Accordion Item para a confirmação manual */}
+              {/*  Novo Accordion Item para a confirmação manual */}
               <AccordionItem value="item-5" className="px-4 border-0">
                 <AccordionTrigger className="hover:no-underline hover:text-primary transition-colors">
                   5. Confirmação Manual (WhatsApp)

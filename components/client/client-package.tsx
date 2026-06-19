@@ -263,7 +263,7 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
             <Button
               size="sm"
               variant="outline"
-              // 🔥 A MÁGICA AQUI: Desabilita se o cliente estiver inativo OU se já tiver pacote ativo
+              //  A MÁGICA AQUI: Desabilita se o cliente estiver inativo OU se já tiver pacote ativo
               disabled={!clientActive || activePackages.length >= 1}
               title={
                 activePackages.length >= 1

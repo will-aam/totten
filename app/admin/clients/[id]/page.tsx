@@ -101,7 +101,7 @@ export default function ClientDetailPage({
           <ClientPackage clientId={id} clientActive={client.active} />
         </div>
 
-        {/* 🔥 A ORDEM EXATA QUE VOCÊ PEDIU */}
+        {/*  A ORDEM EXATA QUE VOCÊ PEDIU */}
         <ClientAnamnesis clientId={id} />
         <ClientVouchers clientId={id} clientName={client.name} />
         <ClientHistory clientId={id} />

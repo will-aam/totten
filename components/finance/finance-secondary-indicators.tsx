@@ -11,7 +11,7 @@ interface FinanceSecondaryIndicatorsProps {
   data: SecondaryIndicators;
 }
 
-// 🔥 OTIMIZAÇÃO: Formatador criado apenas uma vez
+//  OTIMIZAÇÃO: Formatador criado apenas uma vez
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
@@ -34,7 +34,7 @@ function translatePaymentMethod(method: string | null): string {
 export function FinanceSecondaryIndicators({
   data,
 }: FinanceSecondaryIndicatorsProps) {
-  // 🔥 Classes 100% Flat, sem fundos coloridos, sem sombras extravagantes
+  //  Classes 100% Flat, sem fundos coloridos, sem sombras extravagantes
   const cardClasses =
     "min-w-[85vw] md:min-w-0 snap-center shrink-0 border border-dashed bg-card rounded-2xl p-5 flex flex-row items-center gap-4 hover:border-primary/30 transition-colors";
 

@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
             name: true,
           },
         },
-        // 🔥 A MÁGICA AQUI: Pede pro Prisma trazer os insumos vinculados ao serviço
+        //  A MÁGICA AQUI: Pede pro Prisma trazer os insumos vinculados ao serviço
         stock_items: {
           include: {
             stock_item: true, // Traz os detalhes do insumo (nome, custo unitário, etc)
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
-    // 🔥 Adicionamos o track_stock e o array de stock_items
+    //  Adicionamos o track_stock e o array de stock_items
     const {
       name,
       description,
@@ -102,11 +102,11 @@ export async function POST(request: Request) {
         duration: Number(duration),
         price: Number(price),
         material_cost: material_cost ? Number(material_cost) : null,
-        track_stock: track_stock || false, // 🔥 Salva se usa Baixa Inteligente
+        track_stock: track_stock || false, //  Salva se usa Baixa Inteligente
         category_id: finalCategoryId,
         organization_id: admin.organizationId,
         active: true,
-        // 🔥 Se vier insumos na criação, já vincula eles na tabela pivô (ServiceStockItem)
+        //  Se vier insumos na criação, já vincula eles na tabela pivô (ServiceStockItem)
         ...(track_stock && stock_items && stock_items.length > 0
           ? {
               stock_items: {

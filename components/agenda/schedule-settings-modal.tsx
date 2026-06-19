@@ -44,7 +44,7 @@ interface ScheduleSettingsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialSettings: ScheduleSettings;
-  onSave: (settings: ScheduleSettings) => Promise<void>; // 🔥 Mudou para Promise
+  onSave: (settings: ScheduleSettings) => Promise<void>; //  Mudou para Promise
   onClearToday?: (deletedCount: number) => void;
 }
 

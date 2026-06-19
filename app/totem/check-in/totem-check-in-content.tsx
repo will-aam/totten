@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react"; // 🔥 Importamos a sessão
+import { useSession } from "next-auth/react"; //  Importamos a sessão
 import { CpfKeypad } from "@/components/cpf-keypad";
 import { ChevronLeft, LoaderDots } from "@boxicons/react";
 import Link from "next/link";
@@ -44,7 +44,7 @@ type SearchResponse =
 
 export default function TotemCheckInContent() {
   const router = useRouter();
-  const { status } = useSession(); // 🔥 Obtemos o status da sessão
+  const { status } = useSession(); //  Obtemos o status da sessão
 
   const [cpf, setCpf] = useState("");
   const [loading, setLoading] = useState(false);
@@ -60,7 +60,7 @@ export default function TotemCheckInContent() {
   const [showConfirmTime, setShowConfirmTime] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
 
-  // 🔥 Nova Lógica de Proteção: Usa a sessão em vez do slug
+  //  Nova Lógica de Proteção: Usa a sessão em vez do slug
   useEffect(() => {
     if (status === "unauthenticated") {
       router.replace("/totem/error?type=ORG_NOT_FOUND");
@@ -78,7 +78,7 @@ export default function TotemCheckInContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           cpf: digits,
-          // 🔥 Não enviamos mais o slug
+          //  Não enviamos mais o slug
         }),
       });
 
@@ -147,7 +147,7 @@ export default function TotemCheckInContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           appointment_id: appt.id,
-          // 🔥 Não enviamos mais o slug
+          //  Não enviamos mais o slug
         }),
       });
 
@@ -185,7 +185,7 @@ export default function TotemCheckInContent() {
   return (
     <div className="flex min-h-svh flex-col bg-background p-4 sm:p-8">
       <Link
-        href="/totem/idle" // 🔥 URL limpa
+        href="/totem/idle" //  URL limpa
         className="absolute top-4 left-4 sm:static sm:self-start flex w-fit items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group z-10"
       >
         <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-transparent sm:bg-muted/50 hover:bg-muted transition-colors">

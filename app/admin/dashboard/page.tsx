@@ -109,7 +109,7 @@ function CheckInListItem({ checkIn }: { checkIn: CheckIn }) {
 
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground leading-none">
             <span>{formattedDate}</span>
-            {/* 🔥 Selo visual de Rastreabilidade (Quem fez o atendimento) */}
+            {/*  Selo visual de Rastreabilidade (Quem fez o atendimento) */}
             {checkIn.professional_name && (
               <>
                 <span>•</span>
@@ -198,7 +198,7 @@ export default function AdminDashboardPage() {
 
   return (
     <>
-      {/* 🔥 Título Fixo da Página */}
+      {/*  Título Fixo da Página */}
       <AdminHeader title="Resumo Diário" />
 
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative">

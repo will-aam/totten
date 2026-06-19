@@ -96,7 +96,7 @@ export async function POST(
           },
         });
 
-        // 🔥 CALCULA SE O PACOTE DEVE SER ARQUIVADO
+        //  CALCULA SE O PACOTE DEVE SER ARQUIVADO
         const newUsedSessions = pkg.used_sessions + 1;
         const willRemainActive = newUsedSessions < pkg.total_sessions;
 
@@ -114,7 +114,7 @@ export async function POST(
           data: {
             appointment_id: created.id,
             package_id: packageId,
-            admin_id: admin.id, // 🔥 Rastreabilidade: Assina quem confirmou o pacote
+            admin_id: admin.id, //  Rastreabilidade: Assina quem confirmou o pacote
           },
         });
 
@@ -150,7 +150,7 @@ export async function POST(
         where: { id: checkInId },
         data: {
           appointment_id: created.id,
-          admin_id: admin.id, // 🔥 Rastreabilidade: Assina quem confirmou o serviço
+          admin_id: admin.id, //  Rastreabilidade: Assina quem confirmou o serviço
         },
       });
 

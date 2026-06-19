@@ -25,7 +25,7 @@ export async function getAnamnesisTemplates(organizationId: string) {
   }
 }
 
-// 🔥 NOVA: Busca TODOS os templates (Ativos e Inativos) para a tela de listagem/gerenciamento
+//  NOVA: Busca TODOS os templates (Ativos e Inativos) para a tela de listagem/gerenciamento
 export async function getAllAnamnesisTemplates(organizationId: string) {
   try {
     const templates = await prisma.anamnesisTemplate.findMany({
@@ -39,7 +39,7 @@ export async function getAllAnamnesisTemplates(organizationId: string) {
   }
 }
 
-// 🔥 NOVA: Busca um template específico pelo ID (para carregar na tela de edição)
+//  NOVA: Busca um template específico pelo ID (para carregar na tela de edição)
 export async function getAnamnesisTemplateById(templateId: string) {
   try {
     const template = await prisma.anamnesisTemplate.findUnique({
@@ -76,7 +76,7 @@ export async function createAnamnesisTemplate(data: {
   }
 }
 
-// 🔥 NOVA: Atualiza os dados do template (Nome e Campos)
+//  NOVA: Atualiza os dados do template (Nome e Campos)
 export async function updateAnamnesisTemplate(
   templateId: string,
   data: { name: string; fields: any },
@@ -97,7 +97,7 @@ export async function updateAnamnesisTemplate(
   }
 }
 
-// 🔥 NOVA: Alterna o status entre Ativo e Inativo (Desativar/Reativar)
+//  NOVA: Alterna o status entre Ativo e Inativo (Desativar/Reativar)
 export async function toggleAnamnesisTemplateStatus(
   templateId: string,
   currentStatus: boolean,
@@ -162,7 +162,7 @@ export async function saveAnamnesisResponse(data: {
   }
 }
 
-// 🔥 A MÁGICA DA IMUTABILIDADE ACONTECE AQUI
+//  A MÁGICA DA IMUTABILIDADE ACONTECE AQUI
 export async function signAnamnesisResponse(
   responseId: string,
   signatureBase64: string,
@@ -210,7 +210,7 @@ export async function getAnamnesisResponseById(responseId: string) {
         template: {
           select: { name: true },
         },
-        // 🔥 Removemos o select limitador. Agora traz a ficha completa do cliente!
+        //  Removemos o select limitador. Agora traz a ficha completa do cliente!
         client: true,
       },
     });

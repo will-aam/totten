@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
       });
       const time = timeFormatter.format(date);
 
-      // 🔥 SNAPSHOT: Prioriza os dados congelados no momento do agendamento
+      //  SNAPSHOT: Prioriza os dados congelados no momento do agendamento
       const duration = Number(
         appt.snapshot_service_duration ?? appt.service.duration ?? 60,
       );
@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
       let color = "";
       const serviceNameLower = serviceName.toLowerCase();
 
-      // 🔥 REGRAS DE CORES CENTRALIZADAS AQUI!
+      //  REGRAS DE CORES CENTRALIZADAS AQUI!
       if (appt.status === "CANCELADO") {
         color =
           "bg-slate-100 border-slate-300 text-slate-600 dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-400";
@@ -117,7 +117,7 @@ export async function GET(req: NextRequest) {
         time,
         duration,
         clientName: appt.client.name,
-        service: serviceName, // 🔥 Nome histórico
+        service: serviceName, //  Nome histórico
         sessionInfo,
         isRecurring: Boolean(appt.package_id),
         phone: appt.client.phone_whatsapp,

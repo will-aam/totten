@@ -60,7 +60,7 @@ export default function VouchersPage() {
     limit: "15",
   });
 
-  // 🔥 REGRA DE OURO: Só envia o parâmetro de busca se tiver 3 caracteres ou mais.
+  //  REGRA DE OURO: Só envia o parâmetro de busca se tiver 3 caracteres ou mais.
   // Se tiver 1 ou 2 caracteres, ignora a busca (evita consultas muito pesadas/amplas no banco)
   if (debouncedSearch && debouncedSearch.trim().length >= 3) {
     query.append("q", debouncedSearch.trim());
@@ -89,7 +89,7 @@ export default function VouchersPage() {
         {/* Cabeçalho e Busca - Responsivo com flex-col-reverse no mobile */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border/40 pb-6">
           <div className="flex flex-col">
-            {/* 🔥 Reduzimos o tamanho do título e descrição no mobile */}
+            {/*  Reduzimos o tamanho do título e descrição no mobile */}
             <h1 className="text-xl md:text-2xl font-black tracking-tight text-foreground">
               Vouchers Emitidos
             </h1>
@@ -104,7 +104,7 @@ export default function VouchersPage() {
               placeholder="Buscar cliente (mín. 3 letras)..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              // 🔥 Reduzimos a altura do input no mobile
+              //  Reduzimos a altura do input no mobile
               className="pl-10 bg-card border-border/50 rounded-2xl h-11 md:h-12 shadow-sm font-medium focus-visible:ring-primary/20 text-sm"
             />
           </div>
@@ -112,13 +112,13 @@ export default function VouchersPage() {
 
         {/* Título de Seção - Ajustado para alinhar perfeitamente */}
         <div className="flex items-center justify-between pt-1 pb-1">
-          {/* 🔥 Reduzimos o tamanho da fonte e ícone do título no mobile */}
+          {/*  Reduzimos o tamanho da fonte e ícone do título no mobile */}
           <h2 className="text-lg md:text-xl font-black text-foreground flex items-center gap-1.5 whitespace-nowrap">
             <MedalStarAlt className="h-5 w-5 md:h-6 md:w-6 text-primary" />
             Prontos para Envio
           </h2>
           {!isLoading && (
-            // 🔥 AJUSTE CRÍTICO: whitespace-nowrap para evitar quebra de texto, texto e padding menores
+            //  AJUSTE CRÍTICO: whitespace-nowrap para evitar quebra de texto, texto e padding menores
             <span className="text-[10px] md:text-[11px] font-bold bg-muted/60 text-muted-foreground px-2.5 py-1.5 rounded-full uppercase tracking-wide whitespace-nowrap leading-none shrink-0">
               {total} {total === 1 ? "Comprovante" : "Comprovantes"}
             </span>
@@ -161,23 +161,23 @@ export default function VouchersPage() {
               {vouchers.map((item, index) => (
                 <div
                   key={item.id}
-                  // 🔥 Reduzimos padding e gap no mobile
+                  //  Reduzimos padding e gap no mobile
                   className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 md:p-5 bg-card rounded-2xl md:rounded-3xl border border-border/50 shadow-sm hover:border-primary/40 hover:shadow-md transition-all gap-3 animate-in slide-in-from-bottom-2"
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   {/* Info do Cliente */}
                   <div className="flex items-start gap-3.5 w-full sm:w-auto">
                     <div className="flex flex-col w-full">
-                      {/* 🔥 Reduzimos fonte do nome do cliente */}
+                      {/*  Reduzimos fonte do nome do cliente */}
                       <span className="font-black text-foreground text-sm md:text-base leading-tight">
                         {item.clientName}
                       </span>
-                      {/* 🔥 Reduzimos fonte do pacote */}
+                      {/*  Reduzimos fonte do pacote */}
                       <span className="text-xs md:text-sm font-medium text-muted-foreground mt-0.5 leading-tight">
                         {item.packageName} • {item.totalSessions} Sessões
                       </span>
                       {item.hasVoucher && (
-                        // 🔥 Reduzimos badge de já emitido e adicionamos whitespace-nowrap
+                        //  Reduzimos badge de já emitido e adicionamos whitespace-nowrap
                         <Badge
                           variant="outline"
                           className="mt-1.5 w-fit text-[9px] md:text-[10px] font-bold uppercase tracking-wide bg-emerald-500/10 text-emerald-600 border-emerald-500/20 px-2.5 py-1 whitespace-nowrap"
@@ -190,16 +190,16 @@ export default function VouchersPage() {
                   </div>
 
                   {/* Data e Botão de Ação */}
-                  {/* 🔥 Reduzimos gap e pt no mobile */}
+                  {/*  Reduzimos gap e pt no mobile */}
                   <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto mt-1 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-0 border-border/40 shrink-0">
-                    {/* 🔥 Reduzimos badge da data e adicionamos whitespace-nowrap para garantir linha única */}
+                    {/*  Reduzimos badge da data e adicionamos whitespace-nowrap para garantir linha única */}
                     <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide text-muted-foreground px-3 py-1.5 bg-muted/50 rounded-full whitespace-nowrap leading-none shrink-0">
                       {item.completionDate}
                     </span>
 
                     <Button
                       onClick={() => handleOpenVoucher(item)}
-                      // 🔥 Reduzimos altura e tamanho da fonte do botão no mobile
+                      //  Reduzimos altura e tamanho da fonte do botão no mobile
                       className="rounded-xl md:rounded-2xl h-10 md:h-11 px-4 md:px-5 text-xs md:text-sm font-bold shadow-sm bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground active:scale-95 transition-all shrink-0"
                     >
                       <MedalStarAlt className="mr-1.5 md:mr-2 h-4 w-4" />
@@ -221,7 +221,7 @@ export default function VouchersPage() {
                       variant="outline"
                       onClick={() => setPage((p) => Math.max(1, p - 1))}
                       disabled={page === 1}
-                      // 🔥 Reduzimos tamanho do botão de paginação
+                      //  Reduzimos tamanho do botão de paginação
                       className="rounded-xl h-9 md:h-10 text-xs md:text-sm font-bold bg-background shadow-sm hover:bg-muted shrink-0"
                     >
                       <ChevronLeft removePadding className="h-4 w-4 mr-1" />{" "}

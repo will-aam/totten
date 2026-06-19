@@ -22,7 +22,7 @@ import {
   ChevronRight,
   AlertTriangle,
   User,
-  Cog, // 🔥 Import do ícone para o serviço
+  Cog, //  Import do ícone para o serviço
 } from "@boxicons/react";
 import { Button } from "../ui/button";
 
@@ -191,7 +191,7 @@ export function MonthlyAgendaGrid({
                 const isPackageArchived =
                   appt.package && appt.package.active === false;
 
-                // 🔥 SNAPSHOT: Forçamos a leitura visual do Snapshot se disponível
+                //  SNAPSHOT: Forçamos a leitura visual do Snapshot se disponível
                 const serviceName = appt.snapshot_service_name ?? appt.service;
 
                 return (
@@ -229,7 +229,7 @@ export function MonthlyAgendaGrid({
                         {appt.clientName}
                       </p>
 
-                      {/* 🔥 EXIBIÇÃO DO SERVIÇO COM O ÍCONE DA ENGRENAGEM */}
+                      {/*  EXIBIÇÃO DO SERVIÇO COM O ÍCONE DA ENGRENAGEM */}
                       <p className="text-[9px] font-bold opacity-70 truncate uppercase tracking-tighter flex items-center gap-1">
                         {isPackageArchived && !isCancelled ? (
                           "Pacote Inativo"

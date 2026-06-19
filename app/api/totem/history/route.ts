@@ -51,7 +51,7 @@ export async function GET(request: Request) {
       take: 10,
     });
 
-    // 🔥 Adicionado o "?." para prevenir erro se o check-in for avulso (sem pacote)
+    //  Adicionado o "?." para prevenir erro se o check-in for avulso (sem pacote)
     const formatted = checkIns.map((checkIn) => ({
       id: checkIn.id,
       dateTime: checkIn.date_time,

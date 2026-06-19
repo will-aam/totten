@@ -41,7 +41,7 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get("limit") || "10", 10);
     const search = searchParams.get("q") || "";
     const activeParam = searchParams.get("active");
-    // 🔥 Capturamos o parâmetro secreto da URL
+    //  Capturamos o parâmetro secreto da URL
     const multiplePackages = searchParams.get("multiple_packages") === "true";
 
     const skip = (page - 1) * limit;
@@ -75,7 +75,7 @@ export async function GET(request: Request) {
     let totalCount = 0;
     let finalClientsList = [];
 
-    // 🔥 SE O FILTRO ESTIVER ATIVO, FAZEMOS A BUSCA E PAGINAÇÃO MANUALMENTE
+    //  SE O FILTRO ESTIVER ATIVO, FAZEMOS A BUSCA E PAGINAÇÃO MANUALMENTE
     if (multiplePackages) {
       // 1. Busca TODOS que batem com as outras regras (sem skip/take)
       const allClients = await prisma.client.findMany({
@@ -121,7 +121,7 @@ export async function GET(request: Request) {
       // 3. Pagina a lista já filtrada
       finalClientsList = filteredClients.slice(skip, skip + limit);
     } else {
-      // 🔥 FLUXO NORMAL E OTIMIZADO (SEM FILTRO DOS 2 ASTERISCOS)
+      //  FLUXO NORMAL E OTIMIZADO (SEM FILTRO DOS 2 ASTERISCOS)
       const [count, paginatedClients] = await Promise.all([
         prisma.client.count({ where: whereClause }),
         prisma.client.findMany({

@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import Image from "next/image"; // 🔥 Importação para usar as imagens da pasta public
+import Image from "next/image"; //  Importação para usar as imagens da pasta public
 import { Lock, Dashboard } from "@boxicons/react"; // Removido o Bird
 
 export default function TotemIdleContent() {
@@ -56,7 +56,7 @@ export default function TotemIdleContent() {
 
       <div className="flex flex-col items-center gap-8 w-full max-w-sm animate-in fade-in zoom-in duration-700">
         <div className="flex flex-col items-center gap-4">
-          {/* 🔥 Logo com troca dinâmica de tema e sem cortes */}
+          {/*  Logo com troca dinâmica de tema e sem cortes */}
           <div className="flex items-center justify-center shrink-0">
             {/* Logo exibida no TEMA CLARO */}
             <Image

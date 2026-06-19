@@ -87,7 +87,7 @@ export async function POST(request: Request) {
       },
     });
 
-    // 🔥 CALCULA SE O PACOTE DEVE SER ARQUIVADO
+    //  CALCULA SE O PACOTE DEVE SER ARQUIVADO
     const newUsedSessions = activePackage.used_sessions + 1;
     const willRemainActive = newUsedSessions < activePackage.total_sessions;
 

@@ -4,7 +4,7 @@ import * as React from "react";
 import useEmblaCarousel, {
   type UseEmblaCarouselType,
 } from "embla-carousel-react";
-// 🔥 CORREÇÃO: Importamos o ChevronRight para fazer par com o ChevronLeft
+//  CORREÇÃO: Importamos o ChevronRight para fazer par com o ChevronLeft
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -226,7 +226,7 @@ function CarouselNext({
       onClick={scrollNext}
       {...props}
     >
-      {/* 🔥 CORREÇÃO: Setinha padronizada (V em vez de Arrow) */}
+      {/*  CORREÇÃO: Setinha padronizada (V em vez de Arrow) */}
       <ChevronRight className="h-4 w-4" />
       <span className="sr-only">Next slide</span>
     </Button>

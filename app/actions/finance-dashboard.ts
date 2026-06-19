@@ -2,12 +2,12 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth"; // 🔥 Padronizado com os outros arquivos
+import { requireAuth } from "@/lib/auth"; //  Padronizado com os outros arquivos
 import { PaymentMethod } from "@prisma/client";
 
 export async function getFinanceDashboardData(month?: number, year?: number) {
   try {
-    const admin = await requireAuth(); // 🔥 Garante a sessão e pega os dados do Admin
+    const admin = await requireAuth(); //  Garante a sessão e pega os dados do Admin
     const organizationId = admin.organizationId;
     const now = new Date();
 
@@ -56,7 +56,7 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
     );
 
     // ============================================================================
-    // 🔥 O SEGREDO DO ERP: Ler apenas a Tabela Transaction!
+    //  O SEGREDO DO ERP: Ler apenas a Tabela Transaction!
     // ============================================================================
     const monthlyTxRaw = await prisma.transaction.findMany({
       where: {
@@ -134,14 +134,14 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
     }
 
     // ============================================================================
-    // 🔥 HISTÓRICO RECENTE (As 10 Últimas Movimentações do Mês)
+    //  HISTÓRICO RECENTE (As 10 Últimas Movimentações do Mês)
     // ============================================================================
     const recentTx = await prisma.transaction.findMany({
       where: {
         organization_id: organizationId,
         date: { gte: monthStart, lte: monthEnd }, // Dentro do mês atual
       },
-      take: 10, // 🔥 AQUI: Limita exatamente às 10 últimas
+      take: 10, //  AQUI: Limita exatamente às 10 últimas
       select: {
         id: true,
         type: true,
@@ -151,12 +151,12 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
         status: true,
         client: { select: { name: true } },
         payment_method: { select: { type: true } },
-        admin: { select: { display_name: true } }, // 🔥 RASTREABILIDADE
+        admin: { select: { display_name: true } }, //  RASTREABILIDADE
         appointment: {
           select: {
             client: { select: { name: true } },
             payment_method: true,
-            professional: { select: { display_name: true } }, // 🔥 RASTREABILIDADE (Se gerado via agenda)
+            professional: { select: { display_name: true } }, //  RASTREABILIDADE (Se gerado via agenda)
           },
         },
       },
@@ -176,7 +176,7 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
       professionalName:
         t.admin?.display_name ||
         t.appointment?.professional?.display_name ||
-        undefined, // 🔥 Enviando o nome da colaboradora para a tela!
+        undefined, //  Enviando o nome da colaboradora para a tela!
     }));
 
     return {

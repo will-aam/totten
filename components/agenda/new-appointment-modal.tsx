@@ -188,7 +188,7 @@ export const NewAppointmentModal = memo(
       fetchTeam();
     }, [open, isOwner]);
 
-    // 🔥 Limpeza de estado e injeção de data/hora inicial
+    //  Limpeza de estado e injeção de data/hora inicial
     useEffect(() => {
       if (!open) {
         setSelectedClientId(undefined);
@@ -205,7 +205,7 @@ export const NewAppointmentModal = memo(
       }
     }, [open, initialDate, initialTime]);
 
-    // 🔥 BLINDAGEM DO PROFISSIONAL: Garante que o ID do usuário logado assuma assim que a sessão existir
+    //  BLINDAGEM DO PROFISSIONAL: Garante que o ID do usuário logado assuma assim que a sessão existir
     useEffect(() => {
       if (open && session?.user?.id && !selectedProfessionalId) {
         setSelectedProfessionalId(session.user.id);
@@ -243,7 +243,7 @@ export const NewAppointmentModal = memo(
           dateTime: fullDateTime,
           packageId: usePackage && activePackage ? activePackage.id : undefined,
           repeatCount: isRecurring ? repeatCount : 1,
-          professionalId: finalProfessionalId, // 🔥 Agora 100% seguro
+          professionalId: finalProfessionalId, //  Agora 100% seguro
         });
 
         if (!result.success) {
@@ -289,7 +289,7 @@ export const NewAppointmentModal = memo(
                     <SelectValue placeholder="Quem vai atender?" />
                   </SelectTrigger>
                   <SelectContent className="rounded-2xl border border-border/50 bg-background shadow-xl">
-                    {/* 🔥 Garante que o Admin logado apareça como opção default mesmo se getTeam não retornar ele explícito */}
+                    {/*  Garante que o Admin logado apareça como opção default mesmo se getTeam não retornar ele explícito */}
                     <SelectItem
                       value={session?.user?.id || ""}
                       className="rounded-xl py-2 font-medium"

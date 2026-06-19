@@ -63,7 +63,7 @@ export function PackageDetailsModal({
   const [isSyncing, setIsSyncing] = useState(false);
   const [isSyncDialogOpen, setIsSyncDialogOpen] = useState(false);
 
-  // 🔥 NOVO: Estados para o Dialog de Exclusão customizado
+  //  NOVO: Estados para o Dialog de Exclusão customizado
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [apptToDelete, setApptToDelete] = useState<string | null>(null);
 
@@ -121,13 +121,13 @@ export function PackageDetailsModal({
     }
   };
 
-  // 🔥 Função que prepara a exclusão
+  //  Função que prepara a exclusão
   const prepareDeleteItem = (apptId: string) => {
     setApptToDelete(apptId);
     setIsDeleteConfirmOpen(true);
   };
 
-  // 🔥 Função que executa a exclusão após confirmação
+  //  Função que executa a exclusão após confirmação
   const executeDelete = async () => {
     if (!apptToDelete) return;
 
@@ -396,7 +396,7 @@ export function PackageDetailsModal({
           </div>
         </div>
 
-        {/* 🔥 DIALOG DE CONFIRMAÇÃO DE DELEÇÃO */}
+        {/*  DIALOG DE CONFIRMAÇÃO DE DELEÇÃO */}
         <AlertDialog
           open={isDeleteConfirmOpen}
           onOpenChange={setIsDeleteConfirmOpen}

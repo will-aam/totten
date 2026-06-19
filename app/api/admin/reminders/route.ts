@@ -27,14 +27,14 @@ export async function GET(req: NextRequest) {
       day = tomorrow.getDate();
     }
 
-    // 🔥 CORREÇÃO DE FUSO HORÁRIO (UTC-3 BRASÍLIA)
+    //  CORREÇÃO DE FUSO HORÁRIO (UTC-3 BRASÍLIA)
     // Servidores Node (Vercel/Docker) rodam em UTC. Precisamos buscar a janela exata do Brasil
     // 00:00 no Brasil = 03:00 UTC
     const from = new Date(Date.UTC(year, month - 1, day, 3, 0, 0, 0));
     // 23:59:59 no Brasil = 02:59:59 UTC do dia seguinte
     const to = new Date(Date.UTC(year, month - 1, day + 1, 2, 59, 59, 999));
 
-    // 🔥 OTIMIZAÇÃO DE BANCO DE DADOS: Select para trazer apenas o necessário
+    //  OTIMIZAÇÃO DE BANCO DE DADOS: Select para trazer apenas o necessário
     const appointments = await prisma.appointment.findMany({
       where: {
         organization_id: admin.organizationId,
@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    // 🔥 CORREÇÃO VISUAL: Formatador fixado no horário de São Paulo
+    //  CORREÇÃO VISUAL: Formatador fixado no horário de São Paulo
     // Ignora completamente a hora física do servidor host
     const timeFormatter = new Intl.DateTimeFormat("pt-BR", {
       hour: "2-digit",

@@ -78,7 +78,7 @@ export function GeneralSettings() {
     fetchSettings();
   }, [session]);
 
-  // 🔥 MÁSCARA INTELIGENTE PARA TELEFONE (BR)
+  //  MÁSCARA INTELIGENTE PARA TELEFONE (BR)
   const formatPhone = (value: string) => {
     let v = value.replace(/\D/g, "");
     if (v.length <= 10) {

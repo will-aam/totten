@@ -11,7 +11,7 @@ export async function GET() {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    // 🔥 CORREÇÃO DO FUSO HORÁRIO (Forçando o fuso do Brasil UTC-3)
+    //  CORREÇÃO DO FUSO HORÁRIO (Forçando o fuso do Brasil UTC-3)
     const now = new Date();
     // Pega a data atual EXATAMENTE como é no Brasil (MM/DD/YYYY)
     const todayStr = now.toLocaleDateString("en-US", {

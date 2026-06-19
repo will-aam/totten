@@ -10,7 +10,7 @@ import {
   CreditCard,
   Package,
   Wallet,
-  LoaderDots, // 🔥 Adicionado para o estado de carregamento
+  LoaderDots, //  Adicionado para o estado de carregamento
 } from "@boxicons/react";
 
 const mobileNavItems = [
@@ -33,10 +33,10 @@ export default function FinanceLayout({
   const pathname = usePathname();
   const router = useRouter();
 
-  // 🔥 Pegando a sessão para verificar as permissões
+  //  Pegando a sessão para verificar as permissões
   const { data: session, status } = useSession();
 
-  // 🔥 LÓGICA DE PROTEÇÃO DE ROTA (RBAC)
+  //  LÓGICA DE PROTEÇÃO DE ROTA (RBAC)
   useEffect(() => {
     if (status === "loading") return; // Espera carregar
 
@@ -53,7 +53,7 @@ export default function FinanceLayout({
   const hideBottomNavRoutes = ["/admin/finance/reports"];
   const shouldHideBottomNav = hideBottomNavRoutes.includes(pathname);
 
-  // 🔥 Evita aquele "flash" na tela mostrando dados proibidos antes de redirecionar
+  //  Evita aquele "flash" na tela mostrando dados proibidos antes de redirecionar
   if (status === "loading") {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">

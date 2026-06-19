@@ -13,7 +13,7 @@ export default function HistoryLayout({
   const router = useRouter();
   const { data: session, status } = useSession();
 
-  // 🔥 LÓGICA DE PROTEÇÃO DE ROTA (RBAC)
+  //  LÓGICA DE PROTEÇÃO DE ROTA (RBAC)
   useEffect(() => {
     if (status === "loading") return;
 

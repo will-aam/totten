@@ -24,13 +24,13 @@ import {
   Trash,
   Block,
   Wallet,
-  ClipboardDetail, // 🔥 Importado para o Histórico
+  ClipboardDetail, //  Importado para o Histórico
 } from "@boxicons/react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
-// 🔥 Importando todas as suas actions
+//  Importando todas as suas actions
 import {
   getTeam,
   createCollaborator,
@@ -39,7 +39,7 @@ import {
   deleteCollaborator,
 } from "@/app/actions/team";
 
-// 🔥 Atualizamos o tipo com os novos campos
+//  Atualizamos o tipo com os novos campos
 type TeamMember = {
   id: string;
   display_name: string | null;
@@ -450,7 +450,7 @@ const TeamMemberCard = memo(
   }) => {
     const isOwner = member.role === "OWNER";
     const hasFinance = member.permissions.includes("FINANCE");
-    const hasHistory = member.permissions.includes("HISTORY"); // 🔥 Checando permissão de histórico
+    const hasHistory = member.permissions.includes("HISTORY"); //  Checando permissão de histórico
 
     return (
       <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border border-border/50 bg-card shadow-sm gap-4 transition-all hover:border-border">

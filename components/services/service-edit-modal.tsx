@@ -118,7 +118,7 @@ export function ServiceEditModal({
       });
 
       if (service.stock_items && service.stock_items.length > 0) {
-        // 🔥 LÓGICA SÊNIOR: Filtramos para ignorar insumos inativados
+        //  LÓGICA SÊNIOR: Filtramos para ignorar insumos inativados
         // Se o stock_item.active for false (ou seja, foi excluído/inativado pelo usuário), ele não entra na lista.
         const activeStockItems = service.stock_items.filter(
           (item: any) => item.stock_item.active !== false,

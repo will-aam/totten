@@ -25,7 +25,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 🔥 BUSCA O AGENDAMENTO COM O SERVIÇO E INSUMOS
+    //  BUSCA O AGENDAMENTO COM O SERVIÇO E INSUMOS
     const appt = await prisma.appointment.findUnique({
       where: { id: appointment_id },
       include: {
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 🔥 NOVO: Trava de segurança para pacotes inativos no Totem
+    //  NOVO: Trava de segurança para pacotes inativos no Totem
     if (appt.package && appt.package.active === false) {
       return NextResponse.json(
         {
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
 
     let packageInfo = null;
 
-    // 🔥 A GRANDE TRANSAÇÃO DO TOTEM
+    //  A GRANDE TRANSAÇÃO DO TOTEM
     const result = await prisma.$transaction(async (tx) => {
       // 1. Cria o registro de Check-in
       const checkIn = await tx.checkIn.create({
@@ -114,7 +114,7 @@ export async function POST(request: Request) {
         });
       }
 
-      // 🔥 --- O CORAÇÃO DO SISTEMA FINANCEIRO E DE ESTOQUE --- 🔥
+      //  --- O CORAÇÃO DO SISTEMA FINANCEIRO E DE ESTOQUE ---
       const service = appt.service;
 
       if (service.track_stock && service.stock_items.length > 0) {

@@ -77,7 +77,7 @@ const MONTHS = [
   { value: 12, label: "Dezembro" },
 ];
 
-// 🔥 Função de limpeza do texto aprimorada
+//  Função de limpeza do texto aprimorada
 function getCleanDescription(
   desc: string,
   type: string,
@@ -134,7 +134,7 @@ export default function TransactionsPage() {
   );
   const [isDeletingLoading, setIsDeletingLoading] = useState(false);
 
-  // 🔥 Novo estado para o Modal de Visualização Rápida
+  //  Novo estado para o Modal de Visualização Rápida
   const [viewingTx, setViewingTx] = useState<any | null>(null);
 
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);

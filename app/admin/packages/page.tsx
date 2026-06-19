@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label"; // 🔥 NOVO: Adicionado Label
+import { Label } from "@/components/ui/label"; //  NOVO: Adicionado Label
 import {
   Group,
   AlertTriangle,
@@ -215,7 +215,7 @@ export default function PackagesPage() {
   const [pkgToCheckIn, setPkgToCheckIn] = useState<any>(null);
   const [isCheckingIn, setIsCheckingIn] = useState(false);
 
-  // 🔥 NOVO: Estados de Data e Hora para o Check-in
+  //  NOVO: Estados de Data e Hora para o Check-in
   const [checkInDate, setCheckInDate] = useState("");
   const [checkInTime, setCheckInTime] = useState("");
 
@@ -273,7 +273,7 @@ export default function PackagesPage() {
     }
     setPkgToCheckIn(pkg);
 
-    // 🔥 NOVO: Injeta o dia e a hora atuais automaticamente
+    //  NOVO: Injeta o dia e a hora atuais automaticamente
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, "0");
@@ -297,7 +297,7 @@ export default function PackagesPage() {
     try {
       toast.loading("Registrando...", { id: "manual" });
 
-      // 🔥 NOVO: Monta a data ISO para mandar pro backend
+      //  NOVO: Monta a data ISO para mandar pro backend
       const dateTimeString = new Date(
         `${checkInDate}T${checkInTime}:00`,
       ).toISOString();
@@ -467,7 +467,7 @@ export default function PackagesPage() {
             </DialogDescription>
           </DialogHeader>
 
-          {/* 🔥 NOVO: Inputs de Data e Hora para o Check-in Manual */}
+          {/*  NOVO: Inputs de Data e Hora para o Check-in Manual */}
           <div className="flex flex-row gap-4 py-2">
             <div className="flex flex-col gap-2 flex-1">
               <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">

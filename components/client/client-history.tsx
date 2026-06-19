@@ -94,7 +94,7 @@ export function ClientHistory({ clientId }: { clientId: string }) {
     }).format(new Date(dateString));
   };
 
-  // 🔥 Função auxiliar para desenhar o item dependendo do tipo do evento
+  //  Função auxiliar para desenhar o item dependendo do tipo do evento
   const renderEventContent = (event: TimelineEvent) => {
     switch (event.type) {
       case "CLIENT_CREATED":

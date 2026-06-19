@@ -36,7 +36,7 @@ export async function registerAdmin(
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 🔥 GERA TOKEN DE VERIFICAÇÃO
+    //  GERA TOKEN DE VERIFICAÇÃO
     const verificationToken = randomBytes(32).toString("hex");
 
     const baseSlug = companyName
@@ -62,14 +62,14 @@ export async function registerAdmin(
         },
       });
 
-      // 🔥 CRIA ADMIN COM CONTA INATIVA
+      //  CRIA ADMIN COM CONTA INATIVA
       await tx.admin.create({
         data: {
           display_name: displayName,
           email: email,
           password: hashedPassword,
-          email_verified: false, // 🔥 INATIVO
-          verification_token: verificationToken, // 🔥 TOKEN
+          email_verified: false, //  INATIVO
+          verification_token: verificationToken, //  TOKEN
           organizations: {
             connect: { id: org.id },
           },
@@ -77,13 +77,13 @@ export async function registerAdmin(
       });
     });
 
-    // 🔥 ENVIA E-MAIL DE CONFIRMAÇÃO
+    //  ENVIA E-MAIL DE CONFIRMAÇÃO
     await sendVerificationEmail(email, verificationToken);
   } catch (error) {
     console.error("Erro no registro:", error);
     return { error: "Ocorreu um erro ao criar a conta. Tente novamente." };
   }
 
-  // 🔥 REDIRECIONA PARA PÁGINA DE AVISO
+  //  REDIRECIONA PARA PÁGINA DE AVISO
   redirect("/check-email");
 }

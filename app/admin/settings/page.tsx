@@ -47,7 +47,7 @@ export default function AdminSettingsPage() {
           className="w-full flex-1 flex flex-col"
         >
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            {/* 🔥 DESIGN IGUAL AO ARQUIVO SERVICES: Grid menor, p-1 bg-muted, rounded-xl e triggers com py-2 */}
+            {/*  DESIGN IGUAL AO ARQUIVO SERVICES: Grid menor, p-1 bg-muted, rounded-xl e triggers com py-2 */}
             <TabsList className="hidden md:grid w-full lg:w-200 grid-cols-5 h-auto gap-1 bg-muted p-1 rounded-xl">
               <TabsTrigger
                 value="general"

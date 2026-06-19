@@ -108,7 +108,7 @@ const navItems = [
     href: "/admin/history",
     icon: ClipboardDetail as BoxIcon,
     active: true,
-    permission: "HISTORY", // 🔥 Agora depende dessa permissão específica
+    permission: "HISTORY", //  Agora depende dessa permissão específica
   },
   {
     title: "Vouchers",
@@ -185,7 +185,7 @@ export function AdminSidebar() {
   );
   const whatsappUrl = `https://wa.me/${supportPhone}?text=${supportMessage}`;
 
-  // 🔥 RECUPERANDO AS REGRAS DA SESSÃO
+  //  RECUPERANDO AS REGRAS DA SESSÃO
   const isOwner = session?.user?.role === "OWNER";
   const hasFinancePermission = session?.user?.permissions?.includes("FINANCE");
   const canViewFinance = isOwner || hasFinancePermission;
@@ -384,10 +384,10 @@ export function AdminSidebar() {
 
               {/* Demais itens do menu principal */}
               {navItems.map((item) => {
-                // 🔥 Bloqueia se for exclusivo da dona
+                //  Bloqueia se for exclusivo da dona
                 if (item.ownerOnly && !isOwner) return null;
 
-                // 🔥 Bloqueia se exigir uma permissão que a colaboradora não tem
+                //  Bloqueia se exigir uma permissão que a colaboradora não tem
                 if (
                   item.permission &&
                   !isOwner &&

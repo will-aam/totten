@@ -42,7 +42,7 @@ export async function PUT(request: Request) {
       tradeName,
       document,
       contactPhone,
-      whatsapp, // 🔥 Agora extraímos o whatsapp do body
+      whatsapp, //  Agora extraímos o whatsapp do body
       openingTime,
       closingTime,
     } = body;
@@ -57,7 +57,7 @@ export async function PUT(request: Request) {
     if (tradeName !== undefined) updateData.trade_name = tradeName;
     if (document !== undefined) updateData.document = document;
     if (contactPhone !== undefined) updateData.phone_landline = contactPhone;
-    if (whatsapp !== undefined) updateData.phone_whatsapp = whatsapp; // 🔥 Corrigido: Agora atualiza no banco!
+    if (whatsapp !== undefined) updateData.phone_whatsapp = whatsapp; //  Corrigido: Agora atualiza no banco!
     if (openingTime !== undefined) updateData.opening_time = openingTime;
     if (closingTime !== undefined) updateData.closing_time = closingTime;
 
@@ -71,7 +71,7 @@ export async function PUT(request: Request) {
         trade_name: tradeName || "",
         document: document || "",
         phone_landline: contactPhone || "",
-        phone_whatsapp: whatsapp || "", // 🔥 Usa a variável correta
+        phone_whatsapp: whatsapp || "", //  Usa a variável correta
         opening_time: openingTime || "08:00",
         closing_time: closingTime || "19:00",
       },

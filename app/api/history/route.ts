@@ -69,7 +69,7 @@ export async function GET(request: Request) {
               cpf: true,
             },
           },
-          // 🔥 INCLUINDO RELAÇÕES PARA LER O SNAPSHOT CONGELADO
+          //  INCLUINDO RELAÇÕES PARA LER O SNAPSHOT CONGELADO
           appointment: {
             select: {
               snapshot_service_name: true,
@@ -92,7 +92,7 @@ export async function GET(request: Request) {
     ]);
 
     const enriched = checkIns.map((ci) => {
-      // 🔥 LÓGICA DO SNAPSHOT: Tenta puxar o nome da época, se não achar, puxa o atual
+      //  LÓGICA DO SNAPSHOT: Tenta puxar o nome da época, se não achar, puxa o atual
       const serviceName =
         ci.appointment?.snapshot_service_name ||
         ci.appointment?.service?.name ||
@@ -107,7 +107,7 @@ export async function GET(request: Request) {
         date_time: ci.date_time.toISOString(),
         client_name: ci.client?.name || "Cliente Excluído/Avulso",
         client_cpf: ci.client?.cpf || "---",
-        service_name: serviceName, // 🔥 Agora a tabela vai saber qual foi o serviço exato!
+        service_name: serviceName, //  Agora a tabela vai saber qual foi o serviço exato!
       };
     });
 

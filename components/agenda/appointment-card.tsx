@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-// 🔥 A interface que vai ser usada por TUDO na agenda
+//  A interface que vai ser usada por TUDO na agenda
 export interface Appointment {
   id: string;
   time: string;
@@ -76,7 +76,7 @@ export function AppointmentCardContent({
   const isPackageArchived = appt.package && appt.package.active === false;
   const isCompact = height <= 40;
 
-  // 🔥 Lendo o snapshot aqui dentro da nossa pecinha universal!
+  //  Lendo o snapshot aqui dentro da nossa pecinha universal!
   const serviceName = appt.snapshot_service_name ?? appt.service;
 
   if (isCancelled) {

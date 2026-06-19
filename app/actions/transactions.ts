@@ -2,7 +2,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth"; // 🔥 Substituído pela sua função robusta
+import { requireAuth } from "@/lib/auth"; //  Substituído pela sua função robusta
 import { revalidatePath } from "next/cache";
 import {
   TransactionType,
@@ -47,7 +47,7 @@ export async function createTransaction(data: {
           organization_id: admin.organizationId,
           recurrence_id: recurrenceId,
           installment: `${i + 1}/${data.duration}`,
-          admin_id: admin.id, // 🔥 RASTREABILIDADE
+          admin_id: admin.id, //  RASTREABILIDADE
         });
       }
 
@@ -64,7 +64,7 @@ export async function createTransaction(data: {
           status: data.status,
           payment_method_id: data.paymentMethodId || null,
           organization_id: admin.organizationId,
-          admin_id: admin.id, // 🔥 RASTREABILIDADE
+          admin_id: admin.id, //  RASTREABILIDADE
         },
       });
     }
@@ -193,7 +193,7 @@ export async function getFullTransactions(month: number, year: number) {
         payment_method: true,
         client: { select: { name: true } },
         service: { select: { name: true, price: true, material_cost: true } },
-        professional: { select: { display_name: true } }, // 🔥 RASTREABILIDADE
+        professional: { select: { display_name: true } }, //  RASTREABILIDADE
       },
     });
 
@@ -213,7 +213,7 @@ export async function getFullTransactions(month: number, year: number) {
         installment: true,
         client: { select: { name: true } },
         payment_method: { select: { type: true } },
-        admin: { select: { display_name: true } }, // 🔥 RASTREABILIDADE
+        admin: { select: { display_name: true } }, //  RASTREABILIDADE
       },
     });
 
@@ -231,7 +231,7 @@ export async function getFullTransactions(month: number, year: number) {
         status: (a.payment_method ? "PAGO" : "PENDENTE") as "PAGO" | "PENDENTE",
         clientName: a.client.name,
         paymentMethod: a.payment_method || undefined,
-        professionalName: a.professional?.display_name || undefined, // 🔥
+        professionalName: a.professional?.display_name || undefined, //
       });
 
       if (a.service.material_cost && Number(a.service.material_cost) > 0) {
@@ -264,7 +264,7 @@ export async function getFullTransactions(month: number, year: number) {
       paymentMethod: t.payment_method?.type || undefined,
       recurrence_id: t.recurrence_id,
       installment: t.installment,
-      professionalName: t.admin?.display_name || undefined, // 🔥
+      professionalName: t.admin?.display_name || undefined, //
     }));
 
     return [...historyFromAppts, ...historyFromTx].sort(
@@ -377,7 +377,7 @@ export async function processReceivablePayment(
         data: {
           payment_method: paymentMethod as PaymentMethod, // Cast seguro para Enum
           has_charge: false,
-          professional_id: admin.id, // 🔥 Assina o apontamento (baixa no caixa)
+          professional_id: admin.id, //  Assina o apontamento (baixa no caixa)
         },
       });
       revalidatePath("/admin/agenda");
@@ -387,7 +387,7 @@ export async function processReceivablePayment(
         data: {
           status: "PAGO",
           payment_method_id: paymentMethodId || null,
-          admin_id: admin.id, // 🔥 Assina quem quitou a pendência
+          admin_id: admin.id, //  Assina quem quitou a pendência
         },
       });
     }
@@ -461,7 +461,7 @@ export async function getPaginatedTransactions(params: {
           payment_method: true,
           client: { select: { name: true } },
           service: { select: { name: true, price: true, material_cost: true } },
-          professional: { select: { display_name: true } }, // 🔥
+          professional: { select: { display_name: true } }, //
         },
       }),
       prisma.transaction.findMany({
@@ -477,7 +477,7 @@ export async function getPaginatedTransactions(params: {
           installment: true,
           client: { select: { name: true } },
           payment_method: { select: { type: true } },
-          admin: { select: { display_name: true } }, // 🔥
+          admin: { select: { display_name: true } }, //
         },
       }),
     ]);
@@ -501,7 +501,7 @@ export async function getPaginatedTransactions(params: {
             | "PENDENTE",
           clientName: a.client.name,
           paymentMethod: a.payment_method || undefined,
-          professionalName: a.professional?.display_name || undefined, // 🔥
+          professionalName: a.professional?.display_name || undefined, //
         });
       }
 
@@ -539,7 +539,7 @@ export async function getPaginatedTransactions(params: {
       paymentMethod: t.payment_method?.type || undefined,
       recurrence_id: t.recurrence_id,
       installment: t.installment,
-      professionalName: t.admin?.display_name || undefined, // 🔥
+      professionalName: t.admin?.display_name || undefined, //
     }));
 
     // Une tudo e ordena

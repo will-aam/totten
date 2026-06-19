@@ -255,7 +255,7 @@ export default function StockPage() {
               Excluir Insumo?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {/* 🔥 MENTIRA PIADOSA: Texto padrão de exclusão. O backend cuida do soft delete silenciosamente. */}
+              {/*  MENTIRA PIADOSA: Texto padrão de exclusão. O backend cuida do soft delete silenciosamente. */}
               Tem certeza que deseja excluir este insumo do seu estoque? Essa
               ação não poderá ser desfeita.
             </AlertDialogDescription>

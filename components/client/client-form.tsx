@@ -59,7 +59,7 @@ function formatCepInput(value: string) {
   return `${d.slice(0, 5)}-${d.slice(5)}`;
 }
 
-// 🔥 Máscara Dinâmica para a Data de Nascimento
+//  Máscara Dinâmica para a Data de Nascimento
 function formatDateInput(value: string) {
   const d = value.replace(/\D/g, "").slice(0, 8);
   if (d.length <= 2) return d;
@@ -104,7 +104,7 @@ export function ClientForm() {
   const [generateInstallments, setGenerateInstallments] = useState(false);
   const [installmentsCount, setInstallmentsCount] = useState<number>(2);
 
-  // 🔥 Estados para o campo dinâmico de Nascimento
+  //  Estados para o campo dinâmico de Nascimento
   const [birthDateStr, setBirthDateStr] = useState("");
 
   const [form, setForm] = useState({
@@ -366,7 +366,7 @@ export function ClientForm() {
               </CollapsibleTrigger>
               <CollapsibleContent className="pt-6 space-y-6">
                 <div className="grid sm:grid-cols-2 gap-5">
-                  {/* 🔥 BLOCO DE NASCIMENTO LIMPO (SÓ DIGITAÇÃO) */}
+                  {/*  BLOCO DE NASCIMENTO LIMPO (SÓ DIGITAÇÃO) */}
                   <div className="space-y-2">
                     <Label>Nascimento</Label>
                     <Input

@@ -132,7 +132,7 @@ export default function BirthdaysPage() {
     const finalMessage = messageTemplate.replace(/{nome}/g, firstName);
     const phone = client.phone_whatsapp.replace(/\D/g, "");
 
-    // 🔥 Agora usando a API direta do WhatsApp igual à página de Lembretes!
+    //  Agora usando a API direta do WhatsApp igual à página de Lembretes!
     window.open(
       `https://api.whatsapp.com/send?phone=55${phone}&text=${encodeURIComponent(
         finalMessage,

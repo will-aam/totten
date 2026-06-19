@@ -22,7 +22,7 @@ export async function GET(
       where: { id: checkInId },
       include: {
         client: { select: { id: true, name: true } },
-        admin: { select: { display_name: true } }, // 🔥 Preparando para buscar quem atendeu (Rastreabilidade)
+        admin: { select: { display_name: true } }, //  Preparando para buscar quem atendeu (Rastreabilidade)
       },
     });
 
@@ -40,7 +40,7 @@ export async function GET(
         clientId: checkIn.client?.id ?? null,
         clientName: checkIn.client?.name ?? "Cliente desconhecido",
         dateTime: checkIn.date_time,
-        professionalName: checkIn.admin?.display_name ?? null, // 🔥 Devolvendo o nome pro Front-End
+        professionalName: checkIn.admin?.display_name ?? null, //  Devolvendo o nome pro Front-End
       },
     });
   } catch (error) {

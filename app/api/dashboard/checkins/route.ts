@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get("limit") || "8", 10);
     const skip = (page - 1) * limit;
 
-    // 🔥 CORREÇÃO DO FUSO HORÁRIO (Forçando o fuso do Brasil UTC-3)
+    //  CORREÇÃO DO FUSO HORÁRIO (Forçando o fuso do Brasil UTC-3)
     const now = new Date();
     // Pega a data atual EXATAMENTE como é no Brasil (MM/DD/YYYY)
     const todayStr = now.toLocaleDateString("en-US", {
@@ -46,7 +46,7 @@ export async function GET(request: Request) {
             name: true,
           },
         },
-        // 🔥 RASTREABILIDADE: Trazendo o nome de quem atendeu
+        //  RASTREABILIDADE: Trazendo o nome de quem atendeu
         admin: {
           select: {
             display_name: true,
@@ -57,7 +57,7 @@ export async function GET(request: Request) {
         date_time: "desc",
       },
       skip: skip,
-      take: limit + 1, // 🔥 Truque: Pede 1 a mais para saber se tem próxima página
+      take: limit + 1, //  Truque: Pede 1 a mais para saber se tem próxima página
     });
 
     // Verifica se pegou aquele "1 a mais"
@@ -73,7 +73,7 @@ export async function GET(request: Request) {
       client_id: checkIn.client?.id ?? "",
       client_name: checkIn.client?.name ?? "Cliente Avulso",
       date_time: checkIn.date_time,
-      professional_name: checkIn.admin?.display_name ?? null, // 🔥 Enviando o nome pro Dashboard
+      professional_name: checkIn.admin?.display_name ?? null, //  Enviando o nome pro Dashboard
     }));
 
     return NextResponse.json({

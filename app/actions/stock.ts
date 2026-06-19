@@ -136,7 +136,7 @@ export async function deleteStockItem(id: string) {
 
     if (!item) return { success: false, error: "Insumo não encontrado." };
 
-    // 🔥 LÓGICA SÊNIOR: O insumo já foi usado em serviços.
+    //  LÓGICA SÊNIOR: O insumo já foi usado em serviços.
     if (item.services.length > 0) {
       await prisma.$transaction(async (tx) => {
         // 1. ARRANCAMOS o insumo de todos os serviços (Hard Delete no vínculo).
@@ -153,7 +153,7 @@ export async function deleteStockItem(id: string) {
       });
 
       revalidatePath("/admin/stock");
-      revalidatePath("/admin/services"); // 🔥 Avisamos o Next.js para recarregar a tela de serviços!
+      revalidatePath("/admin/services"); //  Avisamos o Next.js para recarregar a tela de serviços!
 
       return {
         success: true,

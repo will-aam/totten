@@ -67,7 +67,7 @@ export function WhatsAppButton({
       .replace(/{horario}/g, "09:00");
   };
 
-  // 🔥 Nova função blindada usando o objeto URL nativo
+  //  Nova função blindada usando o objeto URL nativo
   const handleSend = (templateText: string) => {
     if (!clientPhone) {
       alert("Este cliente não tem um número de WhatsApp cadastrado.");

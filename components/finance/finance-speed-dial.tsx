@@ -33,7 +33,7 @@ export function FinanceSpeedDial({
     setIsOpen(false);
   };
 
-  // 🔥 Correção de Performance do React:
+  //  Correção de Performance do React:
   // Nunca altere estados soltos no corpo do componente. Sempre use useEffect.
   useEffect(() => {
     if (isHidden && isOpen) {
@@ -95,7 +95,7 @@ export function FinanceSpeedDial({
         </button>
       </div>
 
-      {/* 🔥 OTIMIZAÇÃO DE BANCO DE DADOS (Lazy Mount):
+      {/*  OTIMIZAÇÃO DE BANCO DE DADOS (Lazy Mount):
           O modal só passa a existir no código quando a variável isModalOpen for TRUE.
           Isso impede que o modal dispare consultas no BD desnecessariamente quando a página carrega.
       */}

@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { StockItem } from "./stock-table";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button"; // 🔥 Importamos o Button
-import { Trash } from "@boxicons/react"; // 🔥 Importamos o ícone da Lixeira
+import { Button } from "@/components/ui/button"; //  Importamos o Button
+import { Trash } from "@boxicons/react"; //  Importamos o ícone da Lixeira
 import { cn } from "@/lib/utils";
 
 interface StockMobileItemProps {
   item: StockItem;
   onUpdate: (id: string, updates: Partial<StockItem>) => void;
-  onDelete: (id: string) => void; // 🔥 Adicionamos a prop de deletar
+  onDelete: (id: string) => void; //  Adicionamos a prop de deletar
 }
 
 const hideArrowsClass =
@@ -50,7 +50,7 @@ export function StockMobileItem({
           </p>
         </div>
 
-        {/* 🔥 Botão de Excluir */}
+        {/*  Botão de Excluir */}
         <Button
           variant="ghost"
           size="icon"

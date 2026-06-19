@@ -43,7 +43,7 @@ function applyTemplate(
 }
 
 export default function RemindersPage() {
-  // 🔥 OTIMIZAÇÃO DE RENDERIZAÇÃO: Calcula as datas de forma síncrona com useMemo
+  //  OTIMIZAÇÃO DE RENDERIZAÇÃO: Calcula as datas de forma síncrona com useMemo
   const { dateQuery, formattedDate } = useMemo(() => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);

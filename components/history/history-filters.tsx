@@ -10,7 +10,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-// 🔥 Importamos o ícone de calendário com o apelido 'CalendarIcon' para não dar conflito
+//  Importamos o ícone de calendário com o apelido 'CalendarIcon' para não dar conflito
 import {
   Calendar as CalendarIcon,
   CalendarDetail,
@@ -42,7 +42,7 @@ export function HistoryFilters({
 }: HistoryFiltersProps) {
   const hasFilters = search || dateFrom || dateTo;
 
-  // 🔥 ATALHOS INTELIGENTES PARA MÊS
+  //  ATALHOS INTELIGENTES PARA MÊS
   const handleThisMonth = () => {
     const today = new Date();
     setDateFrom(startOfMonth(today));
@@ -68,7 +68,7 @@ export function HistoryFilters({
           onClick={handleThisMonth}
           className="h-8 rounded-xl text-xs font-bold bg-background shadow-sm hover:bg-primary/10 hover:text-primary transition-colors"
         >
-          {/* 🔥 Usando o Ícone aqui em vez do componente interativo */}
+          {/*  Usando o Ícone aqui em vez do componente interativo */}
           <CalendarIcon className="h-4 w-4 mr-1.5" /> Este Mês
         </Button>
         <Button
@@ -77,7 +77,7 @@ export function HistoryFilters({
           onClick={handleLastMonth}
           className="h-8 rounded-xl text-xs font-bold bg-background shadow-sm hover:bg-primary/10 hover:text-primary transition-colors"
         >
-          {/* 🔥 Usando o Ícone aqui em vez do componente interativo */}
+          {/*  Usando o Ícone aqui em vez do componente interativo */}
           <CalendarIcon className="h-4 w-4 mr-1.5" /> Mês Passado
         </Button>
       </div>

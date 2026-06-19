@@ -11,7 +11,7 @@ async function getAdminOrg() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) throw new Error("Não autorizado");
 
-  // 🔥 OTIMIZAÇÃO EXTREMA: O Select puxa APENAS o ID da organização,
+  //  OTIMIZAÇÃO EXTREMA: O Select puxa APENAS o ID da organização,
   // ignorando senhas, nomes, configurações e dados inúteis para esta validação.
   const admin = await prisma.admin.findUnique({
     where: { email: session.user.email },

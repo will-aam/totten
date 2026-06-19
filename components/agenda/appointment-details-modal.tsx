@@ -79,7 +79,7 @@ export const AppointmentDetailsModal = memo(
 
     const componentRef = useRef<HTMLDivElement>(null);
 
-    // 🔥 SNAPSHOT: Determina o nome do serviço (usando a foto da época se existir)
+    //  SNAPSHOT: Determina o nome do serviço (usando a foto da época se existir)
     const serviceName = useMemo(() => {
       if (!appointment) return "";
       return appointment.snapshot_service_name ?? appointment.service;
@@ -124,7 +124,7 @@ export const AppointmentDetailsModal = memo(
       const [h, m] = appointment.time.split(":").map(Number);
       const date = new Date();
 
-      // 🔥 SNAPSHOT: Usa a duração da época em que foi agendado para calcular o fim
+      //  SNAPSHOT: Usa a duração da época em que foi agendado para calcular o fim
       const durationToUse =
         appointment.snapshot_service_duration ?? appointment.duration ?? 0;
 

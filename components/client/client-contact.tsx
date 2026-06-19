@@ -45,7 +45,7 @@ interface ClientContactProps {
   client: ClientContactType;
 }
 
-// 🔥 Máscaras
+//  Máscaras
 function formatCpf(value: string) {
   const d = value.replace(/\D/g, "").slice(0, 11);
   if (d.length <= 3) return d;
@@ -413,7 +413,7 @@ export function ClientContact({ client }: ClientContactProps) {
           </div>
         ) : (
           <div className="flex flex-col animate-in fade-in duration-300">
-            {/* 🔥 NOVO: CABEÇALHO LIMPO DO PERFIL DIRETAMENTE NO CARD CONTENT */}
+            {/*  NOVO: CABEÇALHO LIMPO DO PERFIL DIRETAMENTE NO CARD CONTENT */}
             <div className="flex gap-4 w-full">
               {/* Avatar */}
               <div className="hidden sm:flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-black text-2xl">
@@ -503,7 +503,7 @@ export function ClientContact({ client }: ClientContactProps) {
 
             <div className="border-t border-border/50 my-5 md:my-6" />
 
-            {/* 🔥 GRID DE CONTATOS (Informações Adicionais) */}
+            {/*  GRID DE CONTATOS (Informações Adicionais) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="flex flex-col gap-1">
                 <span className="text-[11px] text-muted-foreground font-bold uppercase tracking-wider flex items-center gap-1.5">

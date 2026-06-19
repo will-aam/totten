@@ -50,7 +50,7 @@ export async function getReportsData() {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const key = `${d.getFullYear()}-${d.getMonth()}`;
       const label = `${monthNames[d.getMonth()]}/${String(d.getFullYear()).slice(-2)}`;
-      // 🔥 Adicionamos 'agendamentos' aqui para o novo gráfico de desempenho
+      //  Adicionamos 'agendamentos' aqui para o novo gráfico de desempenho
       monthlyDataMap.set(key, {
         month: label,
         receitas: 0,

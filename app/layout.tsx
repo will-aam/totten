@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     locale: "pt_BR",
     type: "website",
   },
-  // 🔥 ADIÇÕES: Cache Busting (Força o navegador a baixar os novos ícones)
+  //  ADIÇÕES: Cache Busting (Força o navegador a baixar os novos ícones)
   manifest: "/site.webmanifest?v=2",
   icons: {
     icon: "/favicon.ico?v=2",
