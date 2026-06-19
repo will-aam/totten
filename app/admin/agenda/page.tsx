@@ -40,10 +40,8 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 
-import {
-  DailyAgendaGrid,
-  Appointment,
-} from "@/components/agenda/daily-agenda-grid";
+import { DailyAgendaGrid } from "@/components/agenda/daily-agenda-grid";
+import { Appointment } from "@/components/agenda/appointment-card";
 import { WeeklyAgendaGrid } from "@/components/agenda/weekly-agenda-grid";
 import { MonthlyAgendaGrid } from "@/components/agenda/monthly-agenda-grid";
 

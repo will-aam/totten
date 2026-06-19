@@ -15,7 +15,7 @@ import {
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { Appointment } from "./daily-agenda-grid";
+import { Appointment } from "./appointment-card";
 import {
   Clock,
   Package as PackageIcon,
