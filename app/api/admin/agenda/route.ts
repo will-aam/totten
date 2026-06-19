@@ -1,31 +1,32 @@
-// app/api/admin/agenda/week/route.ts
+// app/api/admin/agenda/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
-import { startOfWeek, endOfWeek } from "date-fns";
 
+/**
+ * ROTA UNIFICADA DA AGENDA
+ * GET /api/admin/agenda?from=2026-06-01T00:00:00.000Z&to=2026-06-30T23:59:59.999Z
+ */
 export async function GET(req: NextRequest) {
   try {
     const admin = await requireAuth();
     const role = (admin as any).role || "OWNER";
 
     const { searchParams } = new URL(req.url);
-    const dateParam = searchParams.get("date");
+    const fromParam = searchParams.get("from");
+    const toParam = searchParams.get("to");
 
-    if (!dateParam) {
+    if (!fromParam || !toParam) {
       return NextResponse.json(
-        { error: "Parâmetro date é obrigatório (YYYY-MM-DD)." },
+        {
+          error: "Os parâmetros 'from' e 'to' são obrigatórios em formato ISO.",
+        },
         { status: 400 },
       );
     }
 
-    const baseDate = new Date(`${dateParam}T12:00:00.000-03:00`);
-
-    const weekStart = startOfWeek(baseDate, { weekStartsOn: 0 });
-    const weekEnd = endOfWeek(baseDate, { weekStartsOn: 0 });
-
-    const from = new Date(weekStart.setHours(0, 0, 0, 0));
-    const to = new Date(weekEnd.setHours(23, 59, 59, 999));
+    const from = new Date(fromParam);
+    const to = new Date(toParam);
 
     const whereClause: any = {
       organization_id: admin.organizationId,
@@ -38,6 +39,7 @@ export async function GET(req: NextRequest) {
       },
     };
 
+    // Trava de visibilidade para colaboradores
     if (role === "COLLABORATOR") {
       whereClause.professional_id = admin.id;
     }
@@ -66,7 +68,7 @@ export async function GET(req: NextRequest) {
       });
       const time = timeFormatter.format(date);
 
-      // 🔥 SNAPSHOT: Lógica injetada na Semana
+      // 🔥 SNAPSHOT: Prioriza os dados congelados no momento do agendamento
       const duration = Number(
         appt.snapshot_service_duration ?? appt.service.duration ?? 60,
       );
@@ -86,6 +88,7 @@ export async function GET(req: NextRequest) {
       let color = "";
       const serviceNameLower = serviceName.toLowerCase();
 
+      // 🔥 REGRAS DE CORES CENTRALIZADAS AQUI!
       if (appt.status === "CANCELADO") {
         color =
           "bg-slate-100 border-slate-300 text-slate-600 dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-400";
@@ -130,7 +133,7 @@ export async function GET(req: NextRequest) {
         session_number: appt.session_number,
         recurrence_id: appt.recurrence_id,
         professionalName: appt.professional?.display_name ?? null,
-        // Mandamos os snapshots explícitos
+        // Mandamos os snapshots explícitos pro Modal se ele precisar
         snapshot_service_name: appt.snapshot_service_name,
         snapshot_service_duration: appt.snapshot_service_duration,
         snapshot_service_price: snapshotPrice,
@@ -146,14 +149,14 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ appointments: mapped });
   } catch (error) {
-    console.error("[GET /api/admin/agenda/week] ERRO:", error);
+    console.error("[GET /api/admin/agenda] ERRO:", error);
 
     if (error instanceof Error && error.message === "Unauthorized") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     return NextResponse.json(
-      { error: "Erro ao carregar agenda da semana." },
+      { error: "Erro ao carregar agenda." },
       { status: 500 },
     );
   }

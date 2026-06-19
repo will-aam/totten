@@ -1,3 +1,4 @@
+// app/admin/agenda/page.tsx
 "use client";
 
 import { useEffect, useState, useMemo, useRef } from "react";
@@ -5,6 +6,11 @@ import useSWR from "swr";
 import {
   format,
   startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  startOfDay,
+  endOfDay,
   addDays,
   subDays,
   addMonths,
@@ -65,7 +71,6 @@ export default function AgendaPage() {
 
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  // REFS E ESTADOS PARA A ROLETA INFINITA DE DATAS
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isProgrammaticScroll = useRef(false);
@@ -76,41 +81,43 @@ export default function AgendaPage() {
     fetcher,
   );
 
-  // 🔥 Correção TS: Forçando para String para garantir o método .split()
   const openingTime = String(settings?.openingTime || "08:00");
   const closingTime = String(settings?.closingTime || "19:00");
   const openingHourNumber = Number(openingTime.split(":")[0]);
   const closingHourNumber = Number(closingTime.split(":")[0]);
 
-  const dateStr = format(selectedDate, "yyyy-MM-dd");
-  const weekStr = format(weekStart, "yyyy-MM-dd");
+  // 🔥 LÓGICA DE UNIFICAÇÃO DA ROTA: Calculando os limites com base na view atual
+  const { fromISO, toISO } = useMemo(() => {
+    let start: Date;
+    let end: Date;
 
-  const {
-    data: dayRaw,
-    mutate: mutateDay,
-    isLoading: loadingDay,
-  } = useSWR(
-    viewMode === "day" ? `/api/admin/agenda/day?date=${dateStr}` : null,
-    fetcher,
-  );
+    if (viewMode === "day") {
+      start = startOfDay(selectedDate);
+      end = endOfDay(selectedDate);
+    } else if (viewMode === "week") {
+      start = startOfWeek(selectedDate, { weekStartsOn: 0 });
+      end = endOfWeek(selectedDate, { weekStartsOn: 0 });
+    } else {
+      // Month
+      const mStart = startOfMonth(selectedDate);
+      const mEnd = endOfMonth(selectedDate);
+      // Pega a semana que contém o primeiro dia e a semana que contém o último dia
+      start = startOfWeek(mStart, { weekStartsOn: 0 });
+      end = endOfWeek(mEnd, { weekStartsOn: 0 });
+    }
 
-  const {
-    data: weekRaw,
-    mutate: mutateWeek,
-    isLoading: loadingWeek,
-  } = useSWR(
-    viewMode === "week" ? `/api/admin/agenda/week?date=${weekStr}` : null,
-    fetcher,
-  );
+    return {
+      fromISO: start.toISOString(),
+      toISO: end.toISOString(),
+    };
+  }, [selectedDate, viewMode]);
 
+  // 🔥 NOVA E ÚNICA REQUISIÇÃO (Busca a agenda completa para a visualização atual)
   const {
-    data: monthRaw,
-    mutate: mutateMonth,
-    isLoading: loadingMonth,
-  } = useSWR(
-    viewMode === "month" ? `/api/admin/agenda/month?date=${dateStr}` : null,
-    fetcher,
-  );
+    data: agendaData,
+    mutate: mutateAgenda,
+    isLoading: loadingAgenda,
+  } = useSWR(`/api/admin/agenda?from=${fromISO}&to=${toISO}`, fetcher);
 
   const mapAppointments = (raw: any) => {
     return (raw?.appointments ?? []).map((appt: any) => ({
@@ -120,14 +127,24 @@ export default function AgendaPage() {
     })) as Appointment[];
   };
 
-  const appointments = useMemo(() => mapAppointments(dayRaw), [dayRaw]);
-  const weekAppointments = useMemo(() => mapAppointments(weekRaw), [weekRaw]);
-  const monthAppointments = useMemo(
-    () => mapAppointments(monthRaw),
-    [monthRaw],
+  const currentViewAppointments = useMemo(
+    () => mapAppointments(agendaData),
+    [agendaData],
   );
 
-  // Se a data selecionada for muito longe do roster (ex: usuário escolheu no calendário), atualiza a base da roleta
+  // Filtros em memória (caso a view exija apenas os de hoje na roleta, por ex)
+  const appointments = useMemo(
+    () =>
+      currentViewAppointments.filter((a) =>
+        isSameDay(new Date(a.date_time || new Date()), selectedDate),
+      ),
+    [currentViewAppointments, selectedDate],
+  );
+
+  // Para a semana e para o mês usamos os dados puros (já filtrados pelo backend)
+  const weekAppointments = currentViewAppointments;
+  const monthAppointments = currentViewAppointments;
+
   useEffect(() => {
     const diff =
       Math.abs(selectedDate.getTime() - rosterBaseDate.getTime()) /
@@ -137,7 +154,6 @@ export default function AgendaPage() {
     }
   }, [selectedDate, rosterBaseDate]);
 
-  // GERA UMA LISTA DE 180 DIAS (Virtuamente Infinito pro usuário)
   const rouletteDays = useMemo(() => {
     return Array.from({ length: 181 }, (_, i) =>
       addDays(rosterBaseDate, i - 90),
@@ -171,9 +187,7 @@ export default function AgendaPage() {
   };
 
   const mutateAll = () => {
-    mutateDay();
-    mutateWeek();
-    mutateMonth();
+    mutateAgenda();
   };
 
   const handleSaveSettings = async (newSettings: {
@@ -219,7 +233,6 @@ export default function AgendaPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // EFEITO MÁGICO 1: Centraliza o botão clicado ou navegado via Setas perfeitamente no meio
   useEffect(() => {
     if (scrollContainerRef.current && viewMode !== "month") {
       const container = scrollContainerRef.current;
@@ -243,7 +256,6 @@ export default function AgendaPage() {
     }
   }, [selectedDate, viewMode, rosterBaseDate]);
 
-  // EFEITO MÁGICO 2: Detecta qual botão parou no meio quando o usuário arrasta o dedo
   const handleDaysScroll = () => {
     if (isProgrammaticScroll.current) return;
 
@@ -256,7 +268,6 @@ export default function AgendaPage() {
       const centerLine = container.scrollLeft + container.clientWidth / 2;
       let minDistance = Infinity;
 
-      // 🔥 Correção TS: Alterado para iniciar com String Vazia e evitar inferência de "never" no split
       let closestDateStr = "";
 
       const buttons = container.querySelectorAll(".day-btn");
@@ -272,7 +283,6 @@ export default function AgendaPage() {
         }
       });
 
-      // 🔥 Se a string não for vazia, garantimos pro Typescript que existe um split seguro.
       if (closestDateStr !== "") {
         const [y, m, d] = closestDateStr.split("-").map(Number);
         const newDate = new Date(y, m - 1, d);
@@ -320,7 +330,7 @@ export default function AgendaPage() {
                       />
                     </h1>
                     <p className="text-xs text-muted-foreground mt-0.5 font-medium">
-                      {loadingDay || loadingWeek || loadingMonth ? (
+                      {loadingAgenda ? (
                         <span className="flex items-center gap-1">
                           <LoaderDots size="xs" className="animate-spin" />{" "}
                           Atualizando...
@@ -490,7 +500,7 @@ export default function AgendaPage() {
             <DailyAgendaGrid
               appointments={appointments}
               onAppointmentClick={setSelectedAppointment}
-              onRefresh={mutateDay}
+              onRefresh={mutateAll}
               startHour={openingHourNumber}
               endHour={closingHourNumber}
               onEmptySlotClick={(time) => {
