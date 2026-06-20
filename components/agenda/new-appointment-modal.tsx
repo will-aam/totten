@@ -1,3 +1,4 @@
+// components/agenda/new-appointment-modal.tsx
 "use client";
 
 import React, { useEffect, useState, useMemo, memo } from "react";
@@ -188,7 +189,6 @@ export const NewAppointmentModal = memo(
       fetchTeam();
     }, [open, isOwner]);
 
-    //  Limpeza de estado e injeção de data/hora inicial
     useEffect(() => {
       if (!open) {
         setSelectedClientId(undefined);
@@ -198,14 +198,13 @@ export const NewAppointmentModal = memo(
         setRepeatCount(2);
         setTime(undefined);
         setActivePackage(null);
-        setSelectedProfessionalId(undefined); // Limpa para forçar re-injeção segura depois
+        setSelectedProfessionalId(undefined);
       } else {
         setDate(initialDate || new Date());
         if (initialTime) setTime(initialTime);
       }
     }, [open, initialDate, initialTime]);
 
-    //  BLINDAGEM DO PROFISSIONAL: Garante que o ID do usuário logado assuma assim que a sessão existir
     useEffect(() => {
       if (open && session?.user?.id && !selectedProfessionalId) {
         setSelectedProfessionalId(session.user.id);
@@ -217,7 +216,6 @@ export const NewAppointmentModal = memo(
       : 0;
 
     const handleSave = async () => {
-      // Usamos a sessão como fallback direto no click, caso o estado ainda esteja vazio por algum micro-delay
       const finalProfessionalId = selectedProfessionalId || session?.user?.id;
 
       if (
@@ -231,19 +229,23 @@ export const NewAppointmentModal = memo(
         return;
       }
 
+      // 🔥 VACINA CONTRA O "BUG DA MADRUGADA" E FUSO HORÁRIO
+      // Construímos a string ISO com o "-03:00" cravado nela
       const [hourStr, minuteStr] = time.split(":");
-      const fullDateTime = new Date(date);
-      fullDateTime.setHours(Number(hourStr), Number(minuteStr), 0, 0);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      const dateTimeString = `${year}-${month}-${day}T${hourStr}:${minuteStr}:00.000-03:00`;
 
       setSaving(true);
       try {
         const result = await createAppointment({
           clientId: selectedClientId,
           serviceId: selectedServiceId,
-          dateTime: fullDateTime,
+          dateTime: dateTimeString, // Mandamos a string super blindada aqui!
           packageId: usePackage && activePackage ? activePackage.id : undefined,
           repeatCount: isRecurring ? repeatCount : 1,
-          professionalId: finalProfessionalId, //  Agora 100% seguro
+          professionalId: finalProfessionalId,
         });
 
         if (!result.success) {
@@ -289,7 +291,6 @@ export const NewAppointmentModal = memo(
                     <SelectValue placeholder="Quem vai atender?" />
                   </SelectTrigger>
                   <SelectContent className="rounded-2xl border border-border/50 bg-background shadow-xl">
-                    {/*  Garante que o Admin logado apareça como opção default mesmo se getTeam não retornar ele explícito */}
                     <SelectItem
                       value={session?.user?.id || ""}
                       className="rounded-xl py-2 font-medium"
@@ -297,7 +298,7 @@ export const NewAppointmentModal = memo(
                       Admin
                     </SelectItem>
                     {team
-                      .filter((member) => member.id !== session?.user?.id) // Evita duplicação
+                      .filter((member) => member.id !== session?.user?.id)
                       .map((member) => (
                         <SelectItem
                           key={member.id}

@@ -24,7 +24,6 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { updateAppointmentDateTime } from "@/app/actions/appointments";
 
-//  IMPORTANDO AS PECINHAS DE LEGO
 import {
   Appointment,
   DraggableAppointmentCard,
@@ -176,7 +175,10 @@ export function DailyAgendaGrid({
       return diff;
     });
 
-    const columns: { appt: Appointment; start: number; end: number }[][] = [];
+    // 🔥 NOVO ALGORITMO: AGRUPAMENTO INTELIGENTE DE OVERBOOKING
+    const groups: Appointment[][] = [];
+    let currentGroup: Appointment[] = [];
+    let currentGroupEnd = -1;
 
     sortedAppts.forEach((appt) => {
       const start = timeToMinutes(appt.time);
@@ -184,34 +186,56 @@ export function DailyAgendaGrid({
       const effectiveDuration = isCancelled ? 25 : appt.duration;
       const end = start + effectiveDuration;
 
-      let placed = false;
-      for (let i = 0; i < columns.length; i++) {
-        const lastInCol = columns[i][columns[i].length - 1];
-        if (lastInCol.end <= start) {
-          columns[i].push({ appt, start, end });
-          placed = true;
-          break;
-        }
-      }
-      if (!placed) {
-        columns.push([{ appt, start, end }]);
+      if (start < currentGroupEnd) {
+        currentGroup.push(appt);
+        currentGroupEnd = Math.max(currentGroupEnd, end);
+      } else {
+        if (currentGroup.length > 0) groups.push(currentGroup);
+        currentGroup = [appt];
+        currentGroupEnd = end;
       }
     });
+    if (currentGroup.length > 0) groups.push(currentGroup);
 
-    const numColumns = columns.length || 1;
     const result: {
       appt: Appointment;
       layout: { width: string; left: string };
     }[] = [];
 
-    columns.forEach((col, colIndex) => {
-      col.forEach(({ appt }) => {
-        result.push({
-          appt,
-          layout: {
-            width: `calc(${100 / numColumns}% - 12px)`,
-            left: `calc(${(100 / numColumns) * colIndex}% + 8px)`,
-          },
+    groups.forEach((group) => {
+      const columns: { appt: Appointment; start: number; end: number }[][] = [];
+
+      group.forEach((appt) => {
+        const start = timeToMinutes(appt.time);
+        const isCancelled = appt.status?.toUpperCase() === "CANCELADO";
+        const effectiveDuration = isCancelled ? 25 : appt.duration;
+        const end = start + effectiveDuration;
+
+        let placed = false;
+        for (let i = 0; i < columns.length; i++) {
+          const lastInCol = columns[i][columns[i].length - 1];
+          if (lastInCol.end <= start) {
+            columns[i].push({ appt, start, end });
+            placed = true;
+            break;
+          }
+        }
+        if (!placed) {
+          columns.push([{ appt, start, end }]);
+        }
+      });
+
+      const numColumns = columns.length || 1;
+
+      columns.forEach((col, colIndex) => {
+        col.forEach(({ appt }) => {
+          result.push({
+            appt,
+            layout: {
+              width: `calc(${100 / numColumns}% - 12px)`,
+              left: `calc(${(100 / numColumns) * colIndex}% + 8px)`,
+            },
+          });
         });
       });
     });

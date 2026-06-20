@@ -26,7 +26,6 @@ import { Clock, LoaderDots, Plus } from "@boxicons/react";
 import { toast } from "sonner";
 import { updateAppointmentDateTime } from "@/app/actions/appointments";
 
-//  IMPORTANDO AS PECINHAS DE LEGO
 import {
   Appointment,
   DraggableAppointmentCard,
@@ -41,7 +40,7 @@ interface WeeklyAgendaGridProps {
   startHour?: number;
   endHour?: number;
   onQuickConfirm?: (appt: Appointment) => void;
-  onEmptySlotClick?: (time: string) => void; // Compatibilidade extra
+  onEmptySlotClick?: (time: string) => void;
 }
 
 const HOUR_HEIGHT = 96;
@@ -279,11 +278,10 @@ export function WeeklyAgendaGrid({
                   return timeA - timeB;
                 });
 
-                const columns: {
-                  appt: Appointment;
-                  start: number;
-                  end: number;
-                }[][] = [];
+                // 🔥 NOVO ALGORITMO: AGRUPAMENTO INTELIGENTE DE OVERBOOKING NA SEMANA
+                const groups: Appointment[][] = [];
+                let currentGroup: Appointment[] = [];
+                let currentGroupEnd = -1;
 
                 sortedAppts.forEach((appt) => {
                   const start = new Date(
@@ -294,34 +292,63 @@ export function WeeklyAgendaGrid({
                   const effectiveDuration = isCancelled ? 25 : appt.duration;
                   const end = start + effectiveDuration * 60000;
 
-                  let placed = false;
-                  for (let i = 0; i < columns.length; i++) {
-                    const lastInCol = columns[i][columns[i].length - 1];
-                    if (lastInCol.end <= start) {
-                      columns[i].push({ appt, start, end });
-                      placed = true;
-                      break;
-                    }
-                  }
-                  if (!placed) {
-                    columns.push([{ appt, start, end }]);
+                  if (start < currentGroupEnd) {
+                    currentGroup.push(appt);
+                    currentGroupEnd = Math.max(currentGroupEnd, end);
+                  } else {
+                    if (currentGroup.length > 0) groups.push(currentGroup);
+                    currentGroup = [appt];
+                    currentGroupEnd = end;
                   }
                 });
+                if (currentGroup.length > 0) groups.push(currentGroup);
 
-                const numColumns = columns.length || 1;
                 const positionedAppts: {
                   appt: Appointment;
                   layout: { width: string; left: string };
                 }[] = [];
 
-                columns.forEach((col, colIndex) => {
-                  col.forEach(({ appt }) => {
-                    positionedAppts.push({
-                      appt,
-                      layout: {
-                        width: `calc(${100 / numColumns}% - 4px)`,
-                        left: `calc(${(100 / numColumns) * colIndex}% + 2px)`,
-                      },
+                groups.forEach((group) => {
+                  const columns: {
+                    appt: Appointment;
+                    start: number;
+                    end: number;
+                  }[][] = [];
+
+                  group.forEach((appt) => {
+                    const start = new Date(
+                      appt.date_time || new Date(),
+                    ).getTime();
+                    const isCancelled =
+                      appt.status?.toUpperCase() === "CANCELADO";
+                    const effectiveDuration = isCancelled ? 25 : appt.duration;
+                    const end = start + effectiveDuration * 60000;
+
+                    let placed = false;
+                    for (let i = 0; i < columns.length; i++) {
+                      const lastInCol = columns[i][columns[i].length - 1];
+                      if (lastInCol.end <= start) {
+                        columns[i].push({ appt, start, end });
+                        placed = true;
+                        break;
+                      }
+                    }
+                    if (!placed) {
+                      columns.push([{ appt, start, end }]);
+                    }
+                  });
+
+                  const numColumns = columns.length || 1;
+
+                  columns.forEach((col, colIndex) => {
+                    col.forEach(({ appt }) => {
+                      positionedAppts.push({
+                        appt,
+                        layout: {
+                          width: `calc(${100 / numColumns}% - 4px)`,
+                          left: `calc(${(100 / numColumns) * colIndex}% + 2px)`,
+                        },
+                      });
                     });
                   });
                 });
