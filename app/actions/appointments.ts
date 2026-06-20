@@ -20,61 +20,12 @@ export type CreateAppointmentInput = {
 };
 
 export type CreateAppointmentResult =
-  | { success: true; appointments: any[] } //  Ajustado para any[] para o TS não reclamar da conversão do Decimal
+  | { success: true; appointments: any[] }
   | { success: false; error: string };
 
-//  FUNÇÃO AUXILIAR: Verifica colisão de horários
-async function hasScheduleConflict(
-  organizationId: string,
-  professionalId: string,
-  newStartTime: Date,
-  durationMinutes: number,
-  excludeAppointmentId?: string,
-): Promise<boolean> {
-  const startOfDay = new Date(newStartTime);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(newStartTime);
-  endOfDay.setHours(23, 59, 59, 999);
-
-  const newEndTime = new Date(newStartTime.getTime() + durationMinutes * 60000);
-
-  const existingAppts = await prisma.appointment.findMany({
-    where: {
-      organization_id: organizationId,
-      professional_id: professionalId,
-      date_time: {
-        gte: startOfDay,
-        lte: endOfDay,
-      },
-      status: {
-        not: "CANCELADO",
-      },
-      id: excludeAppointmentId ? { not: excludeAppointmentId } : undefined,
-    },
-    include: {
-      service: {
-        select: { duration: true },
-      },
-    },
-  });
-
-  for (const appt of existingAppts) {
-    const existingStart = appt.date_time.getTime();
-    //  SNAPSHOT: Usa a duração da época (ou fallback para o serviço atual se for antigo)
-    const durationToUse =
-      appt.snapshot_service_duration ?? appt.service.duration;
-    const existingEnd = existingStart + durationToUse * 60000;
-
-    if (
-      newStartTime.getTime() < existingEnd &&
-      newEndTime.getTime() > existingStart
-    ) {
-      return true; // 🚨 CONFLITO DETECTADO
-    }
-  }
-
-  return false; // ✅ HORÁRIO LIVRE
-}
+// 🔥 FUNÇÃO hasScheduleConflict FOI REMOVIDA DAQUI!
+// A clínica agora tem liberdade total para sobrepor agendamentos (overbooking/assistentes).
+// Ninguém mais será bloqueado de agendar o horário que desejar.
 
 // --- 1. CRIAR AGENDAMENTO (RECORRÊNCIA) ---
 export async function createAppointment(
@@ -111,26 +62,8 @@ export async function createAppointment(
 
     const targetProfessional = professionalId || admin.id;
 
-    for (const date of appointmentDates) {
-      const isOccupied = await hasScheduleConflict(
-        admin.organizationId,
-        targetProfessional,
-        date,
-        service.duration,
-      );
-
-      if (isOccupied) {
-        const timeStr = date.toLocaleTimeString("pt-BR", {
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-        const dateStr = date.toLocaleDateString("pt-BR");
-        return {
-          success: false,
-          error: `Horário indisponível! O profissional já possui atendimento no dia ${dateStr} às ${timeStr}.`,
-        };
-      }
-    }
+    // 🔥 O BLOQUEIO DE HORÁRIOS FOI REMOVIDO DAQUI
+    // Os agendamentos agora passam direto para o banco de dados sem restrições.
 
     let startSessionNumber = 0;
 
@@ -184,7 +117,7 @@ export async function createAppointment(
 
     revalidatePath("/admin/agenda");
 
-    //  CONVERSÃO DE DECIMAL PARA NUMBER AQUI PARA O NEXT.JS NÃO RECLAMAR
+    // CONVERSÃO DE DECIMAL PARA NUMBER AQUI PARA O NEXT.JS NÃO RECLAMAR
     const sanitizedAppointments = appointments.map((appt) => ({
       ...appt,
       snapshot_service_price: appt.snapshot_service_price
@@ -490,9 +423,6 @@ export async function updateAppointmentDateTime(
 
     const apptToMove = await prisma.appointment.findUnique({
       where: { id, organization_id: admin.organizationId },
-      include: {
-        service: { select: { duration: true } },
-      },
     });
 
     if (!apptToMove) {
@@ -501,23 +431,8 @@ export async function updateAppointmentDateTime(
 
     const newDate = new Date(newDateIso);
 
-    const durationToUse =
-      apptToMove.snapshot_service_duration ?? apptToMove.service.duration;
-
-    const isOccupied = await hasScheduleConflict(
-      admin.organizationId,
-      apptToMove.professional_id || admin.id,
-      newDate,
-      durationToUse,
-      id,
-    );
-
-    if (isOccupied) {
-      return {
-        success: false,
-        error: "Esse horário já está ocupado por outro atendimento!",
-      };
-    }
+    // 🔥 BLOQUEIO DE DRAG AND DROP REMOVIDO!
+    // Você pode arrastar um agendamento para cima do outro livremente agora.
 
     await prisma.appointment.update({
       where: { id, organization_id: admin.organizationId },
