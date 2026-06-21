@@ -1,31 +1,27 @@
+// app/admin/login/page.tsx
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
-import { ChevronLeft, Eye, EyeClosed } from "@boxicons/react";
+import Image from "next/image"; //  Importação para a logo
+import { ChevronLeft, Eye, EyeClosed } from "@boxicons/react"; // Removido o Bird
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
-// 🔥 FORÇA RENDERIZAÇÃO APENAS NO CLIENTE
+//  FORÇA RENDERIZAÇÃO APENAS NO CLIENTE
 export const dynamic = "force-dynamic";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
-  // ✅ Toggle: login de teste (sem senha)
-  const [devEmailOnly, setDevEmailOnly] = useState(false);
 
   const verified = searchParams.get("verified");
   const error = searchParams.get("error");
@@ -42,11 +38,6 @@ function LoginForm() {
     }
   }, [verified, error]);
 
-  // Opcional: quando marcar "sem senha", limpa o campo
-  useEffect(() => {
-    if (devEmailOnly) setPassword("");
-  }, [devEmailOnly]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -54,9 +45,7 @@ function LoginForm() {
     try {
       const result = await signIn("credentials", {
         email,
-        // ✅ Se devEmailOnly estiver marcado, manda senha vazia.
-        // O servidor só aceitará se DEV_EMAIL_LOGIN=true e NODE_ENV !== "production"
-        password: devEmailOnly ? "" : password,
+        password,
         redirect: false,
       });
 
@@ -65,10 +54,7 @@ function LoginForm() {
           toast.error(
             "Você precisa verificar seu e-mail primeiro. Verifique sua caixa de entrada.",
           );
-        } else if (result.error.includes("Credenciais inválidas")) {
-          toast.error("Credenciais inválidas");
         } else {
-          // fallback genérico (evita vazar mensagens internas)
           toast.error("E-mail ou senha inválidos");
         }
       } else if (result?.ok) {
@@ -133,20 +119,6 @@ function LoginForm() {
               />
             </div>
 
-            {/* ✅ Checkbox do login sem senha (só para facilitar em localhost) */}
-            <div className="flex items-center gap-2">
-              <input
-                id="devEmailOnly"
-                type="checkbox"
-                checked={devEmailOnly}
-                onChange={(e) => setDevEmailOnly(e.target.checked)}
-                disabled={loading}
-              />
-              <Label htmlFor="devEmailOnly" className="text-base sm:text-sm">
-                Entrar sem senha (somente DEV/localhost)
-              </Label>
-            </div>
-
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password" className="text-base sm:text-sm">
@@ -159,21 +131,15 @@ function LoginForm() {
                   Esqueceu a senha?
                 </Link>
               </div>
-
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder={
-                    devEmailOnly
-                      ? "Desativada (modo DEV sem senha)"
-                      : "Sua senha"
-                  }
+                  placeholder="Sua senha"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  // ✅ Só exige senha quando NÃO estiver em modo "sem senha"
-                  required={!devEmailOnly}
-                  disabled={loading || devEmailOnly}
+                  required
+                  disabled={loading}
                   className="h-12 sm:h-11 bg-muted/50 border-transparent hover:border-border focus-visible:bg-transparent text-base sm:text-sm pr-10"
                 />
                 <button
@@ -181,8 +147,6 @@ function LoginForm() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   tabIndex={-1}
-                  disabled={devEmailOnly}
-                  aria-disabled={devEmailOnly}
                 >
                   {showPassword ? (
                     <EyeClosed className="h-5 w-5" />
@@ -202,17 +166,6 @@ function LoginForm() {
               >
                 {loading ? "Entrando..." : "Entrar"}
               </Button>
-
-              {/* dica rápida pro caso de erro */}
-              <p className="mt-2 text-xs text-muted-foreground">
-                Dica: para o login sem senha funcionar, o servidor precisa ter{" "}
-                <code className="px-1 py-0.5 rounded bg-muted">
-                  DEV_EMAIL_LOGIN=true
-                </code>{" "}
-                no{" "}
-                <code className="px-1 py-0.5 rounded bg-muted">.env.local</code>
-                .
-              </p>
             </div>
 
             <div className="text-center text-base sm:text-sm text-muted-foreground">
