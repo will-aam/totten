@@ -264,16 +264,16 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
               size="sm"
               variant="outline"
               //  A MÁGICA AQUI: Desabilita se o cliente estiver inativo OU se já tiver pacote ativo
-              disabled={!clientActive || activePackages.length >= 1}
+              disabled={!clientActive || activePackages.length >= 15}
               title={
-                activePackages.length >= 1
+                activePackages.length >= 15
                   ? "Encerre o Pacote atual para vender outro"
                   : ""
               }
               className="h-8 rounded-full border-primary/20 text-primary select-none transition-transform duration-100 ease-out hover:bg-transparent hover:text-primary active:scale-95 active:bg-primary/10 text-xs font-medium px-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus className="h-3.5 w-3.5 mr-1" strokeWidth={2} />
-              {activePackages.length >= 1 ? "Limite Atingido" : "Novo"}
+              {activePackages.length >= 15 ? "Limite Atingido" : "Novo"}
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md rounded-2xl">

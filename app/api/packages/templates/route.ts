@@ -58,23 +58,23 @@ export async function POST(request: Request) {
     }
 
     //  TRAVA DE SEGURANÇA SÊNIOR: Impede sobreposição de pacotes
-    const existingActivePackage = await prisma.package.findFirst({
-      where: {
-        client_id: client_id,
-        organization_id: admin.organizationId,
-        active: true,
-      },
-    });
+    //const existingActivePackage = await prisma.package.findFirst({
+    // where: {
+    //  client_id: client_id,
+    //  organization_id: admin.organizationId,
+    //  active: true,
+    // },
+    // });
 
-    if (existingActivePackage) {
-      return NextResponse.json(
-        {
-          error:
-            "Este cliente já possui um Pacote ativo. Encerre o atual antes de vender um novo pacote.",
-        },
-        { status: 400 },
-      );
-    }
+    //  if (existingActivePackage) {
+    //   return NextResponse.json(
+    //  {
+    //       error:
+    //    "Este cliente já possui um Pacote ativo. Encerre o atual antes de vender um novo pacote.",
+    //    },
+    //     { status: 400 },
+    //    );
+    //  }
 
     const service = await prisma.service.findUnique({
       where: { id: service_id, organization_id: admin.organizationId },
