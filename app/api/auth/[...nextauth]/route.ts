@@ -1,8 +1,38 @@
-// app/api/auth/[...nextauth]/route.ts
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import type { NextRequest } from "next/server";
+
+function isDevEmailLoginEnabled() {
+  return (
+    process.env.NODE_ENV !== "production" &&
+    process.env.DEV_EMAIL_LOGIN === "true"
+  );
+}
+
+// opcional: restringe a localhost. Em Next/Node, IP pode variar conforme proxy.
+// Em dev geralmente funciona bem; se te bloquear, você pode remover essa checagem.
+function isLocalhostRequest(req: any) {
+  try {
+    // NextAuth passa um "req" estilo Request/NextRequest em App Router
+    // mas pode variar. Vamos checar headers comuns.
+    const forwardedFor =
+      req?.headers?.get?.("x-forwarded-for") ||
+      req?.headers?.["x-forwarded-for"];
+    const realIp =
+      req?.headers?.get?.("x-real-ip") || req?.headers?.["x-real-ip"];
+
+    const ip = (realIp || forwardedFor || "").split(",")[0].trim();
+
+    // se não veio IP (comum em dev), a gente deixa passar
+    if (!ip) return true;
+
+    return ip === "127.0.0.1" || ip === "::1";
+  } catch {
+    return true;
+  }
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -10,20 +40,30 @@ export const authOptions: NextAuthOptions = {
       name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
+        // Continuamos exibindo o campo senha no form,
+        // mas em DEV vamos permitir vazio.
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
-        console.log("👉 1. Iniciando login para o email:", credentials?.email);
 
-        if (!credentials?.email || !credentials?.password) {
-          console.log("❌ Erro: Credenciais vazias");
+      async authorize(credentials, req) {
+        const email = credentials?.email?.trim()?.toLowerCase();
+        const password = credentials?.password ?? "";
+
+        console.log("👉 1. Iniciando login para o email:", email);
+
+        if (!email) {
+          console.log("❌ Erro: Email vazio");
           throw new Error("Credenciais inválidas");
         }
+
+        // 🔐 Se quiser travar ainda mais, só permitir o bypass quando a requisição for local
+        const allowDevEmailLogin =
+          isDevEmailLoginEnabled() && isLocalhostRequest(req);
 
         try {
           console.log("👉 2. Buscando usuário no Prisma/Neon...");
           const admin = await prisma.admin.findUnique({
-            where: { email: credentials.email },
+            where: { email },
             include: {
               organizations: {
                 select: {
@@ -53,7 +93,7 @@ export const authOptions: NextAuthOptions = {
             );
           }
 
-          //  NOVA TRAVA: Bloqueia acesso se a dona desativou a colaboradora
+          // 🔥 TRAVA: Bloqueia acesso se a dona desativou a colaboradora
           if (!admin.active) {
             console.log("❌ Erro: Usuário desativado");
             throw new Error(
@@ -61,9 +101,33 @@ export const authOptions: NextAuthOptions = {
             );
           }
 
+          // ✅ BYPASS DEV: se senha vier vazia, autentica só com e-mail (APENAS DEV/LOCAL)
+          if (allowDevEmailLogin && password.length === 0) {
+            console.log(
+              "🧪 DEV LOGIN: autenticando sem senha (apenas e-mail).",
+            );
+
+            return {
+              id: admin.id,
+              email: admin.email,
+              name: admin.display_name || admin.email,
+              role: admin.role,
+              permissions: admin.permissions || [], // 🔥 PEGA DO BANCO
+              organizationId: admin.organizations[0].id,
+              organizationName: admin.organizations[0].name,
+              organizationSlug: admin.organizations[0].slug,
+            };
+          }
+
+          // 🔒 Fluxo normal: exige senha
+          if (!password) {
+            console.log("❌ Erro: Senha vazia");
+            throw new Error("Credenciais inválidas");
+          }
+
           console.log("👉 4. Comparando senhas com Bcrypt...");
           const isValidPassword = await bcrypt.compare(
-            credentials.password,
+            password,
             admin.password,
           );
 
@@ -78,52 +142,62 @@ export const authOptions: NextAuthOptions = {
             email: admin.email,
             name: admin.display_name || admin.email,
             role: admin.role,
-            permissions: admin.permissions || [], //  PEGA DO BANCO
+            permissions: admin.permissions || [], // 🔥 PEGA DO BANCO
             organizationId: admin.organizations[0].id,
             organizationName: admin.organizations[0].name,
             organizationSlug: admin.organizations[0].slug,
           };
         } catch (error) {
-          console.error(" ERRO FATAL NO AUTHORIZE:", error);
+          console.error("🔥 ERRO FATAL NO AUTHORIZE:", error);
           throw error;
         }
       },
     }),
   ],
+
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
+        token.id = (user as any).id;
         token.role = (user as any).role;
-        token.permissions = (user as any).permissions; //  SALVANDO NO TOKEN
+        token.permissions = (user as any).permissions;
         token.organizationId = (user as any).organizationId;
         token.organizationName = (user as any).organizationName;
         token.organizationSlug = (user as any).organizationSlug;
       }
       return token;
     },
+
     async session({ session, token }) {
       if (token) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
-        session.user.permissions = (token.permissions as string[]) || []; //  ENVIANDO PRO FRONTEND
-        session.user.organizationId = token.organizationId as string;
-        session.user.organizationName = token.organizationName as string;
-        session.user.organizationSlug = token.organizationSlug as string;
+        // Observação: isso assume que você já estendeu o tipo de session.user
+        (session.user as any).id = token.id as string;
+        (session.user as any).role = token.role as string;
+        (session.user as any).permissions =
+          (token.permissions as string[]) || [];
+        (session.user as any).organizationId = token.organizationId as string;
+        (session.user as any).organizationName =
+          token.organizationName as string;
+        (session.user as any).organizationSlug =
+          token.organizationSlug as string;
       }
       return session;
     },
   },
+
   pages: {
     signIn: "/admin/login",
   },
+
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60,
   },
+
   jwt: {
-    maxAge: 30 * 24 * 60 * 60, // 30 dias
+    maxAge: 30 * 24 * 60 * 60,
   },
+
   secret: process.env.NEXTAUTH_SECRET,
   debug: true,
 };

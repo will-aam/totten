@@ -225,7 +225,7 @@ export async function updateAppointment(
           },
         });
 
-        if (isMarkingAsDone && currentAppt.package_id) {
+        if (isMarkingAsDone && currentAppt.package_id && currentAppt.package) {
           const updateResult = await tx.appointment.count({
             where: {
               recurrence_id: recurrenceId,
@@ -233,9 +233,17 @@ export async function updateAppointment(
               status: finalStatus,
             },
           });
+
+          // 🔥 AUTO-ENCERRAMENTO DE PACOTE (Recorrente)
+          const newUsedSessions =
+            currentAppt.package.used_sessions + updateResult;
+
           await tx.package.update({
             where: { id: currentAppt.package_id },
-            data: { used_sessions: { increment: updateResult } },
+            data: {
+              used_sessions: { increment: updateResult },
+              active: newUsedSessions < currentAppt.package.total_sessions,
+            },
           });
         }
       } else {
@@ -249,10 +257,16 @@ export async function updateAppointment(
           },
         });
 
-        if (isMarkingAsDone && currentAppt.package_id) {
+        if (isMarkingAsDone && currentAppt.package_id && currentAppt.package) {
+          // 🔥 AUTO-ENCERRAMENTO DE PACOTE (Individual)
+          const newUsedSessions = currentAppt.package.used_sessions + 1;
+
           await tx.package.update({
             where: { id: currentAppt.package_id },
-            data: { used_sessions: { increment: 1 } },
+            data: {
+              used_sessions: { increment: 1 },
+              active: newUsedSessions < currentAppt.package.total_sessions,
+            },
           });
         }
       }
@@ -372,6 +386,7 @@ export async function deleteAppointment(
 
     await prisma.$transaction(async (tx) => {
       for (const appt of appointmentsToDelete) {
+        // 🔥 Se o pacote estava ativo ou arquivado, ao deletar uma sessão realizada ele sempre volta a ficar ativo para ser usado!
         if (appt.status === AppointmentStatus.REALIZADO && appt.package_id) {
           await tx.package.update({
             where: { id: appt.package_id },
