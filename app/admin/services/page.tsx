@@ -1,7 +1,6 @@
-// app/admin/services/page.tsx
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import useSWR from "swr";
@@ -31,6 +30,7 @@ import { ServiceEditModal } from "@/components/services/service-edit-modal";
 import { CategoryEditModal } from "@/components/services/category-edit-modal";
 import { PackageEditModal } from "@/components/services/package-edit-modal";
 
+const STORAGE_KEY = "totem_catalog_show_inactive";
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 type ServiceStockItem = {
@@ -104,8 +104,21 @@ function ServicesTabs() {
   const initialTab = searchParams.get("tab") || "services";
   const [activeTab, setActiveTab] = useState(initialTab);
 
-  //  NOVO ESTADO: Ocultar/Mostrar Inativos (Inicia mostrando tudo, conforme você pediu)
+  // 1. Inicializa com 'true' (padrão)
   const [showInactive, setShowInactive] = useState(true);
+
+  // 2. Carrega a preferência do usuário assim que o componente montar no navegador
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved !== null) {
+      setShowInactive(JSON.parse(saved));
+    }
+  }, []);
+
+  // 3. Salva no localStorage sempre que o estado mudar
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(showInactive));
+  }, [showInactive]);
 
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
