@@ -496,13 +496,24 @@ function ServicesTabs() {
           <DurationManager />
         </TabsContent>
       </Tabs>
-
       <ServiceEditModal
         open={!!selectedService}
         onOpenChange={(open) => !open && setSelectedService(null)}
         service={selectedService}
         categories={categories || []}
-        onSuccess={() => mutateServices()}
+        onSuccess={() => {
+          mutateServices();
+          mutatePackages();
+        }}
+      />
+      <PackageEditModal
+        open={!!selectedPackage}
+        onOpenChange={(open) => !open && setSelectedPackage(null)}
+        packageTemplate={selectedPackage}
+        onSuccess={() => {
+          mutatePackages();
+          mutateServices();
+        }}
       />
       <CategoryEditModal
         open={!!selectedCategory}
@@ -513,13 +524,6 @@ function ServicesTabs() {
           mutateServices();
         }}
       />
-      <PackageEditModal
-        open={!!selectedPackage}
-        onOpenChange={(open) => !open && setSelectedPackage(null)}
-        packageTemplate={selectedPackage}
-        onSuccess={() => mutatePackages()}
-      />
-
       <MobileBottomNav
         items={mobileNavItems}
         activeId={activeTab}

@@ -24,7 +24,8 @@ import {
   Package,
   Dollar,
   Rename,
-  Cog, //  Importamos o ícone Cog para o Serviço
+  Cog,
+  AlertTriangle,
 } from "@boxicons/react";
 import {
   updatePackageTemplate,
@@ -72,10 +73,12 @@ export const PackageEditModal = memo(
 
     if (!packageTemplate) return null;
 
-    //  Obtemos o nome do serviço base a partir do objeto packageTemplate
-    // Ajuste "service.name" caso a propriedade no seu backend se chame diferente (ex: "serviceName")
     const serviceName =
       packageTemplate.service?.name || "Serviço não identificado";
+
+    // Variáveis para controlar a lógica de status
+    const isServiceActive = packageTemplate.service?.active ?? true;
+    const isPackageActive = packageTemplate.active;
 
     const handleSave = async () => {
       if (!formData.name || !formData.total_sessions || !formData.price) {
@@ -110,6 +113,14 @@ export const PackageEditModal = memo(
     };
 
     const handleToggleStatus = async () => {
+      // Regra de Ouro: Bloqueia a ativação se o serviço estiver inativo
+      if (!isPackageActive && !isServiceActive) {
+        toast.error(
+          "Você não pode ativar este pacote pois o serviço base está inativo.",
+        );
+        return;
+      }
+
       setLoading(true);
       try {
         const res = await togglePackageTemplateStatus(
@@ -122,6 +133,8 @@ export const PackageEditModal = memo(
           );
           onSuccess();
           onOpenChange(false);
+        } else {
+          toast.error(res.error || "Erro ao mudar estado.");
         }
       } catch (error) {
         toast.error("Erro ao mudar estado.");
@@ -166,7 +179,7 @@ export const PackageEditModal = memo(
               />
             </div>
 
-            {/*  NOVO: Exibição do Serviço Base (Somente Leitura) */}
+            {/* Exibição do Serviço Base (Somente Leitura) */}
             <div className="space-y-1.5 opacity-70 pointer-events-none select-none">
               <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 ml-1">
                 <Cog size="xs" /> Serviço Base Vinculado
@@ -252,30 +265,43 @@ export const PackageEditModal = memo(
 
           {/* FOOTER */}
           <div className="p-6 border-t border-border/40 flex flex-col-reverse sm:flex-row gap-3 bg-muted/10">
-            <Button
-              type="button"
-              variant={packageTemplate.active ? "outline" : "secondary"}
-              className={cn(
-                "rounded-2xl h-12 font-bold w-full sm:w-auto",
-                packageTemplate.active
-                  ? "text-destructive border-destructive/20 hover:bg-destructive/10"
-                  : "text-emerald-600 bg-emerald-500/10 hover:bg-emerald-500/20",
+            <div className="flex flex-col w-full sm:w-auto">
+              {/* Aviso educacional se tentar ativar pacote com serviço inativo */}
+              {!isPackageActive && !isServiceActive && (
+                <p className="text-[11px] text-destructive font-bold mb-2 flex items-center gap-1">
+                  <AlertTriangle size="xs" /> O serviço base está inativo.
+                </p>
               )}
-              onClick={handleToggleStatus}
-              disabled={loading}
-            >
-              {loading ? (
-                <LoaderDots size="sm" className="animate-spin" />
-              ) : packageTemplate.active ? (
-                <>
-                  <Power size="sm" className="mr-2" /> Desativar Pacote
-                </>
-              ) : (
-                <>
-                  <Power size="sm" className="mr-2" /> Ativar Pacote
-                </>
-              )}
-            </Button>
+
+              <Button
+                type="button"
+                variant={isPackageActive ? "outline" : "secondary"}
+                className={cn(
+                  "rounded-2xl h-12 font-bold w-full",
+                  isPackageActive
+                    ? "text-destructive border-destructive/20 hover:bg-destructive/10"
+                    : "text-emerald-600 bg-emerald-500/10 hover:bg-emerald-500/20",
+                  // Desabilita visualmente se for ativar mas o serviço está inativo
+                  !isPackageActive &&
+                    !isServiceActive &&
+                    "opacity-50 cursor-not-allowed",
+                )}
+                onClick={handleToggleStatus}
+                disabled={loading || (!isPackageActive && !isServiceActive)}
+              >
+                {loading ? (
+                  <LoaderDots size="sm" className="animate-spin" />
+                ) : isPackageActive ? (
+                  <>
+                    <Power size="sm" className="mr-2" /> Desativar Pacote
+                  </>
+                ) : (
+                  <>
+                    <Power size="sm" className="mr-2" /> Ativar Pacote
+                  </>
+                )}
+              </Button>
+            </div>
 
             <div className="flex-1" />
 

@@ -3,17 +3,22 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin } from "@/lib/auth";
 
 // GET - Lista todas as categorias da organização
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const admin = await getCurrentAdmin();
-
     if (!admin) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
+    // 🔥 Adicionamos a captura do parâmetro 'active'
+    const { searchParams } = new URL(request.url);
+    const onlyActive = searchParams.get("active") === "true";
+
     const categories = await prisma.category.findMany({
       where: {
         organization_id: admin.organizationId,
+        // Se onlyActive for true, filtra apenas ativas. Se não, traz tudo.
+        ...(onlyActive ? { active: true } : {}),
       },
       orderBy: {
         name: "asc",
@@ -21,7 +26,7 @@ export async function GET() {
       include: {
         _count: {
           select: {
-            services: true, // Conta quantos serviços usam essa categoria
+            services: true,
           },
         },
       },
@@ -33,7 +38,6 @@ export async function GET() {
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }
-
 // POST - Cria uma nova categoria
 export async function POST(request: Request) {
   try {

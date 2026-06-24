@@ -48,21 +48,38 @@ export async function updatePackageTemplate(
   }
 }
 
-//  ESTA É A FUNÇÃO QUE O TS NÃO ESTAVA ACHANDO
 export async function togglePackageTemplateStatus(
   id: string,
-  currentStatus: boolean,
+  currentStatus: boolean, // O status atual (true = ativo, false = inativo)
 ) {
   try {
     const admin = await requireAuth();
 
+    // LÓGICA DE DEFESA: Se a intenção é ATIVAR (currentStatus era false)
+    if (currentStatus === false) {
+      const pkg = await prisma.packageTemplate.findUnique({
+        where: { id, organization_id: admin.organizationId },
+        include: { service: true },
+      });
+
+      if (!pkg) return { success: false, error: "Pacote não encontrado." };
+
+      // Verifica se o serviço base está inativo
+      if (pkg.service && !pkg.service.active) {
+        return {
+          success: false,
+          error: `Erro: O serviço base '${pkg.service.name}' está inativo. Ative o serviço antes de ativar o pacote.`,
+        };
+      }
+    }
+
+    // Se passou na trava (ou se a intenção é apenas inativar), executa o update
     const updated = await prisma.packageTemplate.update({
       where: { id, organization_id: admin.organizationId },
       data: { active: !currentStatus },
     });
 
     revalidatePath("/admin/services");
-
     return { success: true, package: sanitizePackage(updated) };
   } catch (error) {
     console.error("Erro ao mudar status do pacote:", error);

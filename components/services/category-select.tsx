@@ -1,3 +1,4 @@
+// components/services/category-select.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -48,7 +49,7 @@ export function CategorySelect({
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch("/api/categories");
+      const res = await fetch("/api/categories?active=true");
       if (res.ok) {
         const data = await res.json();
         setCategories(data);

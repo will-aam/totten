@@ -130,16 +130,52 @@ export async function updateService(
   }
 }
 
-export async function toggleServiceStatus(id: string, currentStatus: boolean) {
+export async function toggleServiceStatus(
+  id: string,
+  currentStatus: boolean,
+  forceCascade: boolean = false,
+) {
   try {
     const admin = await requireAuth();
 
-    await prisma.service.update({
-      where: { id, organization_id: admin.organizationId },
-      data: { active: !currentStatus },
+    // 🔥 TRAVA DE INTEGRIDADE: Se for inativar (currentStatus === true) e não forçou a cascata
+    if (currentStatus === true && !forceCascade) {
+      const linkedPackages = await prisma.packageTemplate.count({
+        where: {
+          service_id: id,
+          organization_id: admin.organizationId,
+          active: true, // Só nos importamos se o pacote estiver ativo na vitrine
+        },
+      });
+
+      if (linkedPackages > 0) {
+        return {
+          success: false,
+          requiresConfirmation: true, // Flag mágica para o front-end
+          error: `Este serviço está vinculado a ${linkedPackages} Pacote(s) ativo(s). Deseja inativar o Serviço e o(s) Pacote(s) juntos?`,
+        };
+      }
+    }
+
+    // Executa a inativação
+    await prisma.$transaction(async (tx) => {
+      // 1. Muda o status do serviço
+      await tx.service.update({
+        where: { id, organization_id: admin.organizationId },
+        data: { active: !currentStatus },
+      });
+
+      // 2. Se for inativação com cascata forçada, derruba os pacotes vinculados
+      if (currentStatus === true && forceCascade) {
+        await tx.packageTemplate.updateMany({
+          where: { service_id: id, organization_id: admin.organizationId },
+          data: { active: false },
+        });
+      }
     });
 
     revalidatePath("/admin/services");
+    revalidatePath("/admin/packages"); // Importante revalidar a vitrine de pacotes
     return { success: true };
   } catch (error) {
     return { success: false, error: "Erro ao mudar status do serviço." };
@@ -164,13 +200,51 @@ export async function updateCategory(id: string, name: string) {
   }
 }
 
-export async function toggleCategoryStatus(id: string, currentStatus: boolean) {
+export async function toggleCategoryStatus(
+  id: string,
+  currentStatus: boolean,
+  forceCascade: boolean = false,
+) {
   try {
     const admin = await requireAuth();
 
-    await prisma.category.update({
-      where: { id, organization_id: admin.organizationId },
-      data: { active: !currentStatus },
+    // 🔥 TRAVA DE INTEGRIDADE: Se for inativar a Categoria
+    if (currentStatus === true && !forceCascade) {
+      const linkedServices = await prisma.service.count({
+        where: {
+          category_id: id,
+          organization_id: admin.organizationId,
+          active: true, // Conta serviços que ainda estão ativos nela
+        },
+      });
+
+      if (linkedServices > 0) {
+        return {
+          success: false,
+          requiresConfirmation: true, // Flag mágica para o front-end
+          error: `Esta categoria possui ${linkedServices} Serviço(s) ativo(s). Deseja inativar a Categoria e todos os Serviços vinculados a ela?`,
+        };
+      }
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Muda o status da categoria
+      await tx.category.update({
+        where: { id, organization_id: admin.organizationId },
+        data: { active: !currentStatus },
+      });
+
+      // 2. Se for inativação com cascata forçada, derruba os serviços
+      if (currentStatus === true && forceCascade) {
+        await tx.service.updateMany({
+          where: { category_id: id, organization_id: admin.organizationId },
+          data: { active: false },
+        });
+
+        // Nota Sênior: Aqui nós inativamos os serviços. Se quiser que a cascata desça
+        // até os pacotes vinculados a esses serviços, precisaríamos de uma query a mais aqui.
+        // Por ora, matamos a categoria e os serviços.
+      }
     });
 
     revalidatePath("/admin/services");
