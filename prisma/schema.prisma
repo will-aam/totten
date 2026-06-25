@@ -126,7 +126,6 @@ model LinkBio {
   @@map("link_bio")
 }
 
-
 model Category {
   id              String       @id @default(cuid())
   name            String
@@ -173,6 +172,7 @@ model PackageTemplate {
   validity_days   Int?
   organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   service         Service      @relation(fields: [service_id], references: [id])
+  packages        Package[]    // Pacotes vendidos baseados neste template
 
   @@map("package_templates")
 }
@@ -190,6 +190,9 @@ model Package {
   created_at                DateTime      @default(now())
   updated_at                DateTime      @updatedAt
   
+  // Apenas UMA linha aqui:
+  package_template_id       String?       
+
   // SNAPSHOT
   snapshot_service_name     String?
   snapshot_service_price    Decimal?      @db.Decimal(10, 2)
@@ -200,6 +203,7 @@ model Package {
   client                    Client        @relation(fields: [client_id], references: [id], onDelete: Cascade)
   organization              Organization  @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   service                   Service       @relation(fields: [service_id], references: [id])
+  package_template          PackageTemplate? @relation(fields: [package_template_id], references: [id])
   transactions              Transaction[]
   vouchers                  Voucher[]
 
@@ -232,7 +236,7 @@ model Appointment {
   updated_at                DateTime          @updatedAt
   recurrence_id             String?
   professional_id           String?
-  
+
   // SNAPSHOT
   snapshot_service_name     String?
   snapshot_service_price    Decimal?          @db.Decimal(10, 2)

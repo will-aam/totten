@@ -143,6 +143,15 @@ export async function createManualPackageCheckIn(
     });
 
     if (!pkg) return { success: false, error: "Pacote não encontrado." };
+
+    // 🔥 TRAVA DE INTEGRIDADE: Não permitir baixa em pacote arquivado
+    if (!pkg.active) {
+      return {
+        success: false,
+        error: "Este pacote foi encerrado e não permite novos check-ins.",
+      };
+    }
+
     if (pkg.used_sessions >= pkg.total_sessions) {
       return { success: false, error: "Este pacote não possui mais saldo." };
     }

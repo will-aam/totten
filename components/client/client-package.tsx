@@ -148,6 +148,8 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
           payment_method: payUpfront ? selectedMethod : null,
           generate_installments: !payUpfront ? generateInstallments : false,
           installments_count: installmentsCount,
+          // 🔥 AQUI ESTÁ A PEÇA QUE FALTAVA PARA CONECTAR COM A ROTA:
+          package_template_id: selectedTemplate.id,
         }),
       });
 
@@ -270,7 +272,7 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
               className="h-8 rounded-full border-primary/20 text-primary select-none transition-transform duration-100 ease-out hover:bg-transparent hover:text-primary active:scale-95 active:bg-primary/10 text-xs font-medium px-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus className="h-3.5 w-3.5 mr-1" strokeWidth={2} />
-              {activePackages.length >= 1 ? "Limite Atingido" : "Novo"}
+              {activePackages.length >= 1 ? "Limite Atingido" : "Nova venda"}
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md rounded-2xl">

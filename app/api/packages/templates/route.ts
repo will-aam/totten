@@ -1,4 +1,4 @@
-// app/api/packages/route.ts
+// app/api/packages/templates/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin } from "@/lib/auth";
@@ -20,6 +20,7 @@ export async function POST(request: Request) {
       payment_method,
       generate_installments,
       installments_count,
+      package_template_id, // 🔥 1. Agora nós recebemos o ID do Molde (Template) do Front-end
     } = body;
 
     if (!client_id || !service_id || !total_sessions || price === undefined) {
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
       );
     }
 
-    //  TRAVA DE SEGURANÇA SÊNIOR: Impede sobreposição de pacotes
+    // TRAVA DE SEGURANÇA SÊNIOR: Impede sobreposição de pacotes
     const existingActivePackage = await prisma.package.findFirst({
       where: {
         client_id: client_id,
@@ -98,7 +99,8 @@ export async function POST(request: Request) {
           service_id,
           organization_id: admin.organizationId,
           active: true,
-          //  SNAPSHOT INJETADO: A foto do serviço fica imortalizada no pacote!
+          package_template_id: package_template_id || null, // 🔥 2. Gravamos a ligação no banco!
+          // SNAPSHOT INJETADO: A foto do serviço fica imortalizada no pacote!
           snapshot_service_name: service.name,
           snapshot_service_price: service.price,
           snapshot_service_duration: service.duration,

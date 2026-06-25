@@ -112,21 +112,16 @@ export const PackageEditModal = memo(
       }
     };
 
-    const handleToggleStatus = async () => {
-      // Regra de Ouro: Bloqueia a ativação se o serviço estiver inativo
-      if (!isPackageActive && !isServiceActive) {
-        toast.error(
-          "Você não pode ativar este pacote pois o serviço base está inativo.",
-        );
-        return;
-      }
+    // Dentro do seu components/services/package-edit-modal.tsx
 
+    const handleToggleStatus = async () => {
       setLoading(true);
       try {
         const res = await togglePackageTemplateStatus(
           packageTemplate.id,
           packageTemplate.active,
         );
+
         if (res.success) {
           toast.success(
             packageTemplate.active ? "Pacote desativado" : "Pacote ativado",
@@ -134,7 +129,12 @@ export const PackageEditModal = memo(
           onSuccess();
           onOpenChange(false);
         } else {
-          toast.error(res.error || "Erro ao mudar estado.");
+          // 🔥 AQUI ESTÁ O AJUSTE:
+          // Em vez de só toast, você pode disparar um modal de aviso ou um toast mais detalhado
+          toast.error("Não foi possível realizar a alteração", {
+            description: res.error, // Isso vai destacar a mensagem clara do validador
+            duration: 6000,
+          });
         }
       } catch (error) {
         toast.error("Erro ao mudar estado.");

@@ -1,9 +1,13 @@
-// app/actions/package-templates.ts
 "use server";
 
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+// Importando as regras de negócio centralizadas
+import {
+  validatePackageDeactivation,
+  validatePackageActivation,
+} from "@/lib/validation/catalog";
 
 // Função auxiliar para limpar dados sensíveis/decimais
 function sanitizePackage(pkg: any) {
@@ -28,6 +32,10 @@ export async function updatePackageTemplate(
   try {
     const admin = await requireAuth();
 
+    // Nota: Se você quiser garantir que uma alteração via formulário de edição
+    // também respeite as regras de inativação, você poderia chamar os validadores aqui também.
+    // Por enquanto, focamos na ação de Toggle que é onde o status muda diretamente.
+
     const updated = await prisma.packageTemplate.update({
       where: { id, organization_id: admin.organizationId },
       data: {
@@ -35,7 +43,7 @@ export async function updatePackageTemplate(
         description: data.description,
         total_sessions: data.total_sessions,
         price: data.price,
-        validity_days: data.validity_days, // ✅ Sincronizado com o Prisma
+        validity_days: data.validity_days,
         active: data.active,
       },
     });
@@ -50,36 +58,41 @@ export async function updatePackageTemplate(
 
 export async function togglePackageTemplateStatus(
   id: string,
-  currentStatus: boolean, // O status atual (true = ativo, false = inativo)
+  currentStatus: boolean, // true = estava ativo, false = estava inativo
 ) {
   try {
     const admin = await requireAuth();
 
-    // LÓGICA DE DEFESA: Se a intenção é ATIVAR (currentStatus era false)
-    if (currentStatus === false) {
-      const pkg = await prisma.packageTemplate.findUnique({
-        where: { id, organization_id: admin.organizationId },
-        include: { service: true },
-      });
-
-      if (!pkg) return { success: false, error: "Pacote não encontrado." };
-
-      // Verifica se o serviço base está inativo
-      if (pkg.service && !pkg.service.active) {
-        return {
-          success: false,
-          error: `Erro: O serviço base '${pkg.service.name}' está inativo. Ative o serviço antes de ativar o pacote.`,
-        };
+    // 1. LÓGICA DE INATIVAÇÃO (está ativo e quer inativar)
+    if (currentStatus === true) {
+      const validation = await validatePackageDeactivation(
+        id,
+        admin.organizationId,
+      );
+      if (!validation.success) {
+        return { success: false, error: validation.message };
       }
     }
 
-    // Se passou na trava (ou se a intenção é apenas inativar), executa o update
+    // 2. LÓGICA DE ATIVAÇÃO (estava inativo e quer ativar)
+    if (currentStatus === false) {
+      const validation = await validatePackageActivation(
+        id,
+        admin.organizationId,
+      );
+      if (!validation.success) {
+        return { success: false, error: validation.message };
+      }
+    }
+
+    // Se passou na validação, executa o update
     const updated = await prisma.packageTemplate.update({
       where: { id, organization_id: admin.organizationId },
       data: { active: !currentStatus },
     });
 
     revalidatePath("/admin/services");
+    revalidatePath("/admin/packages"); // Garantir que a lista de pacotes atualize
     return { success: true, package: sanitizePackage(updated) };
   } catch (error) {
     console.error("Erro ao mudar status do pacote:", error);
