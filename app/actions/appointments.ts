@@ -461,3 +461,113 @@ export async function updateAppointmentDateTime(
     return { success: false, error: "Falha ao reagendar." };
   }
 }
+// --- 5. PROCESSAMENTO AUTOMÁTICO DE FALTAS (CRON JOB) ---
+export async function processDailyNoShows(secretKey?: string) {
+  try {
+    if (secretKey !== process.env.CRON_SECRET) {
+      return { success: false, error: "Acesso não autorizado." };
+    }
+
+    const now = new Date();
+
+    const overdueAppointments = await prisma.appointment.findMany({
+      where: {
+        date_time: { lt: now },
+        status: {
+          in: [AppointmentStatus.PENDENTE, AppointmentStatus.CONFIRMADO],
+        },
+        check_in: { is: null },
+      },
+      include: {
+        package: true,
+        client: true,
+      },
+    });
+
+    if (overdueAppointments.length === 0) {
+      return {
+        success: true,
+        processed: 0,
+        message: "Nenhuma falta pendente.",
+      };
+    }
+
+    let processedCount = 0;
+
+    // 🔥 MUDANÇA AQUI: O Loop agora fica por FORA da transação.
+    for (const appt of overdueAppointments) {
+      try {
+        // 🔥 Cada agendamento tem sua própria "mini-transação" super rápida
+        await prisma.$transaction(async (tx) => {
+          // A. Altera o status para CANCELADO
+          await tx.appointment.update({
+            where: { id: appt.id },
+            data: {
+              status: AppointmentStatus.CANCELADO,
+              has_charge: false,
+              observations: appt.observations
+                ? `${appt.observations}\n(Falta automática)`
+                : "Falta não justificada. Baixa automática pelo sistema.",
+            },
+          });
+
+          // B. Desconta a sessão do Pacote
+          if (appt.package_id && appt.package) {
+            const newUsedSessions = appt.package.used_sessions + 1;
+            const stillActive = newUsedSessions < appt.package.total_sessions;
+
+            await tx.package.update({
+              where: { id: appt.package_id },
+              data: {
+                used_sessions: newUsedSessions,
+                active: stillActive,
+              },
+            });
+          }
+
+          // C. Cria uma nota no histórico da cliente com texto dinâmico
+          const formattedDate = new Intl.DateTimeFormat("pt-BR", {
+            dateStyle: "short",
+            timeStyle: "short",
+          }).format(appt.date_time);
+
+          // Aqui é a inteligência: Verifica se era pacote ou avulso para gerar o texto certo
+          const noteText = appt.package_id
+            ? `Falta Automática: A cliente não compareceu ao agendamento do dia ${formattedDate}. A sessão foi descontada do pacote conforme a política de faltas.`
+            : `Falta Automática: A cliente não compareceu ao agendamento do dia ${formattedDate} (Serviço Avulso). A consulta foi cancelada automaticamente.`;
+
+          await tx.clientNote.create({
+            data: {
+              text: noteText,
+              client_id: appt.client_id,
+              organization_id: appt.organization_id,
+              date: now,
+            },
+          });
+        });
+
+        // Se a mini-transação deu certo, conta +1
+        processedCount++;
+      } catch (itemError) {
+        // Se um agendamento falhar, loga o erro e CONTINUA para o próximo!
+        console.error(
+          `Erro ao processar falta do agendamento ${appt.id}:`,
+          itemError,
+        );
+      }
+    }
+
+    // Atualiza os painéis do sistema
+    revalidatePath("/admin/agenda");
+    revalidatePath("/admin/packages");
+    revalidatePath("/admin/clients");
+
+    return { success: true, processed: processedCount };
+  } catch (error) {
+    console.error("Erro no processDailyNoShows:", error);
+    return {
+      success: false,
+      error: "Falha ao processar faltas automaticamente.",
+    };
+  }
+}

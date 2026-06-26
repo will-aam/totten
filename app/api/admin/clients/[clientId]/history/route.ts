@@ -13,7 +13,7 @@ export async function GET(
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "10", 10); // Aumentei pra 10 para ver mais eventos por vez
+    const limit = parseInt(searchParams.get("limit") || "10", 10);
     const skip = (page - 1) * limit;
 
     if (!clientId) {
@@ -50,6 +50,11 @@ export async function GET(
       where: { client_id: clientId, organization_id: admin.organizationId },
     });
 
+    // 4. Busca as Notas / Histórico (ONDE ESTÃO AS FALTAS AUTOMÁTICAS!)
+    const clientNotes = await prisma.clientNote.findMany({
+      where: { client_id: clientId, organization_id: admin.organizationId },
+    });
+
     //  A MÁGICA ACONTECE AQUI: Montamos uma Linha do Tempo Unificada
     const timelineEvents: any[] = [];
 
@@ -64,7 +69,6 @@ export async function GET(
 
     // Evento B e C: Pacotes (Compra e Encerramento)
     packages.forEach((pkg) => {
-      // Evento de Compra do Pacote
       timelineEvents.push({
         id: `pkg-purchased-${pkg.id}`,
         type: "PACKAGE_PURCHASED",
@@ -77,12 +81,10 @@ export async function GET(
         },
       });
 
-      // Se o pacote foi encerrado/arquivado (active = false)
       if (!pkg.active) {
         timelineEvents.push({
           id: `pkg-archived-${pkg.id}`,
           type: "PACKAGE_ARCHIVED",
-          // Usamos a data de atualização como a data em que foi encerrado
           date: pkg.updated_at,
           title: "Pacote Encerrado",
           meta: {
@@ -105,6 +107,22 @@ export async function GET(
           isPackage: !!ci.package_id,
           packageName: ci.package?.name ?? "Desconhecido",
           professionalName: ci.admin?.display_name ?? null,
+        },
+      });
+    });
+
+    // Evento E: Notas do Cliente (Faltas e anotações manuais)
+    clientNotes.forEach((note) => {
+      // Se a nota tiver a palavra chave do Cron, personalizamos o título!
+      const isAutoNoShow = note.text.includes("Falta Automática");
+
+      timelineEvents.push({
+        id: `note-${note.id}`,
+        type: "CLIENT_NOTE",
+        date: note.date, // Data em que a nota (ou a falta) ocorreu
+        title: isAutoNoShow ? "Falta Registrada" : "Anotação Adicionada",
+        meta: {
+          text: note.text,
         },
       });
     });

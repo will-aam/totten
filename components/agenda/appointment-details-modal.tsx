@@ -41,6 +41,7 @@ import {
   Printer,
   Repeat,
   AlertTriangle,
+  Lock,
 } from "@boxicons/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -79,7 +80,7 @@ export const AppointmentDetailsModal = memo(
 
     const componentRef = useRef<HTMLDivElement>(null);
 
-    //  SNAPSHOT: Determina o nome do serviço (usando a foto da época se existir)
+    // SNAPSHOT: Determina o nome do serviço
     const serviceName = useMemo(() => {
       if (!appointment) return "";
       return appointment.snapshot_service_name ?? appointment.service;
@@ -124,7 +125,6 @@ export const AppointmentDetailsModal = memo(
       const [h, m] = appointment.time.split(":").map(Number);
       const date = new Date();
 
-      //  SNAPSHOT: Usa a duração da época em que foi agendado para calcular o fim
       const durationToUse =
         appointment.snapshot_service_duration ?? appointment.duration ?? 0;
 
@@ -137,15 +137,22 @@ export const AppointmentDetailsModal = memo(
     ]);
 
     if (!appointment) return null;
-    const isRecurrent = !!appointment.recurrence_id;
 
+    // --- REGRAS DE NEGÓCIO DE ESTADO ---
+    const isRecurrent = !!appointment.recurrence_id;
     const isPackageArchived =
       appointment.package && appointment.package.active === false;
+
+    // Se veio do banco como CANCELADO, bloqueamos a edição completamente
+    const isAlreadyCanceled = appointment.status?.toLowerCase() === "cancelado";
+    const isLocked = isAlreadyCanceled; // Podemos expandir isso no futuro (ex: isAlreadyRealizado)
 
     const handleSave = async (
       targetStatus?: string,
       updateAllSeries = false,
     ) => {
+      if (isLocked) return; // Segurança extra
+
       const finalStatus = targetStatus || status;
       if (isPackageArchived && finalStatus !== "cancelado") {
         toast.error(
@@ -185,6 +192,8 @@ export const AppointmentDetailsModal = memo(
     };
 
     const handleDelete = async (deleteAll = false) => {
+      if (isLocked) return; // Segurança extra
+
       try {
         await deleteAppointment(
           appointment.id,
@@ -213,16 +222,20 @@ export const AppointmentDetailsModal = memo(
         <DialogContent
           className={cn(
             "w-[95vw] sm:max-w-125 p-4 sm:p-6 rounded-3xl flex flex-col max-h-[90dvh] bg-background border border-border/20 transition-all duration-300",
-            hasCharge && status !== "cancelado" && !isPackageArchived
+            hasCharge &&
+              status !== "cancelado" &&
+              !isPackageArchived &&
+              !isLocked
               ? "ring-2 ring-destructive border-destructive/50"
               : "",
             isPackageArchived &&
+              !isLocked &&
               "ring-2 ring-destructive/80 border-destructive/50",
+            isLocked && "opacity-95", // Leve transparência para indicar modo leitura
           )}
         >
           <ThermalReceipt
             ref={componentRef}
-            // Passamos o snapshot name mapeado para o recibo também
             appointment={{
               ...appointment,
               observations: obs,
@@ -269,7 +282,25 @@ export const AppointmentDetailsModal = memo(
           </DialogHeader>
 
           <div className="flex flex-col gap-5 overflow-y-auto py-2 pr-1 custom-scrollbar">
+            {/* BANNER DE BLOQUEIO: Se o agendamento já estava cancelado */}
+            {isAlreadyCanceled && (
+              <div className="bg-muted/50 border border-border p-4 rounded-2xl flex items-start gap-3 animate-in fade-in zoom-in-95">
+                <Lock className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-black text-foreground uppercase tracking-tight">
+                    Registro Bloqueado
+                  </span>
+                  <span className="text-xs font-medium text-muted-foreground mt-1">
+                    Esta sessão foi cancelada. Por motivos de segurança fiscal e
+                    de pacotes, ela não pode ser alterada ou excluída.
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* BANNER DE PACOTE ARQUIVADO */}
             {isPackageArchived &&
+              !isAlreadyCanceled &&
               status !== "cancelado" &&
               status !== "realizado" && (
                 <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-2xl flex items-start gap-3 animate-in fade-in zoom-in-95">
@@ -280,8 +311,8 @@ export const AppointmentDetailsModal = memo(
                     </span>
                     <span className="text-xs font-medium text-destructive/80 mt-1">
                       O pacote atrelado a este agendamento foi arquivado antes
-                      da hora. Esta sessão tornou-se inválida e você não pode
-                      mais dar baixa nela. Por favor, exclua ou cancele.
+                      da hora. Esta sessão tornou-se inválida. Por favor,
+                      cancele ou exclua.
                     </span>
                   </div>
                 </div>
@@ -290,7 +321,7 @@ export const AppointmentDetailsModal = memo(
             <div
               className={cn(
                 "bg-muted/30 p-4 rounded-2xl flex flex-col gap-3 border border-border/40",
-                isPackageArchived && "opacity-70 grayscale",
+                (isPackageArchived || isLocked) && "opacity-70 grayscale",
               )}
             >
               <div className="flex justify-between items-center text-sm font-bold uppercase tracking-tighter text-muted-foreground">
@@ -312,7 +343,7 @@ export const AppointmentDetailsModal = memo(
                 >
                   {status === "cancelado"
                     ? "Cancelado"
-                    : isPackageArchived
+                    : isPackageArchived && !isAlreadyCanceled
                       ? "Pacote Inativo"
                       : appointment.sessionInfo || "Avulso"}
                 </Badge>
@@ -331,20 +362,17 @@ export const AppointmentDetailsModal = memo(
                 <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">
                   Status
                 </Label>
-                <Select value={status} onValueChange={handleStatusChange}>
-                  <SelectTrigger className="rounded-2xl h-12 bg-muted/20 border-none font-semibold">
+                <Select
+                  value={status}
+                  onValueChange={handleStatusChange}
+                  disabled={isLocked || isPackageArchived}
+                >
+                  <SelectTrigger className="rounded-2xl h-12 bg-muted/20 border-none font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-2xl border-border/50 bg-background">
-                    <SelectItem
-                      value="a_confirmar"
-                      disabled={isPackageArchived}
-                    >
-                      A Confirmar
-                    </SelectItem>
-                    <SelectItem value="realizado" disabled={isPackageArchived}>
-                      Realizado
-                    </SelectItem>
+                    <SelectItem value="a_confirmar">A Confirmar</SelectItem>
+                    <SelectItem value="realizado">Realizado</SelectItem>
                     <SelectItem value="cancelado">Cancelado</SelectItem>
                   </SelectContent>
                 </Select>
@@ -357,9 +385,11 @@ export const AppointmentDetailsModal = memo(
                 <Select
                   value={payment}
                   onValueChange={setPayment}
-                  disabled={isPackageArchived || status === "cancelado"}
+                  disabled={
+                    isLocked || isPackageArchived || status === "cancelado"
+                  }
                 >
-                  <SelectTrigger className="rounded-2xl h-12 bg-muted/20 border-none font-semibold disabled:opacity-50">
+                  <SelectTrigger className="rounded-2xl h-12 bg-muted/20 border-none font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-2xl border-border/50 bg-background">
@@ -383,13 +413,13 @@ export const AppointmentDetailsModal = memo(
               <Textarea
                 value={obs}
                 onChange={(e) => setObs(e.target.value)}
-                disabled={status === "cancelado"}
+                disabled={isLocked || status === "cancelado"}
                 placeholder={
-                  status === "cancelado"
+                  status === "cancelado" || isLocked
                     ? "Indisponível para agendamentos cancelados"
                     : "Digite detalhes que aparecerão no recibo..."
                 }
-                className="bg-muted/20 border-none resize-none h-24 rounded-2xl p-4 disabled:opacity-50"
+                className="bg-muted/20 border-none resize-none h-24 rounded-2xl p-4 disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -402,6 +432,7 @@ export const AppointmentDetailsModal = memo(
                 )}
                 onClick={() => setHasCharge(!hasCharge)}
                 disabled={
+                  isLocked ||
                   status === "realizado" ||
                   isPackageArchived ||
                   status === "cancelado"
@@ -413,7 +444,6 @@ export const AppointmentDetailsModal = memo(
               <Button
                 variant="secondary"
                 className="bg-primary/10 text-primary font-black rounded-2xl h-12"
-                disabled={status === "cancelado"}
                 onClick={() => {
                   handlePrint();
                   toast.success("Gerando recibo...");
@@ -424,96 +454,99 @@ export const AppointmentDetailsModal = memo(
             </div>
           </div>
 
-          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-3 pt-6 border-t border-border/40 mt-auto">
-            {status !== "realizado" && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="text-destructive hover:bg-destructive/5 font-bold w-full sm:w-auto rounded-2xl h-12"
-                  >
-                    <Trash className="mr-2 h-5 w-5" /> Excluir Sessão
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent className="rounded-3xl border border-border/50 p-6 bg-background">
-                  <AlertDialogHeader>
-                    <AlertDialogTitle className="text-xl font-bold">
-                      Excluir Agendamento?
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {isRecurrent
-                        ? "Este agendamento faz parte de uma série. Como deseja proceder?"
-                        : "Isso apagará este agendamento permanentemente."}
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
-                    <AlertDialogCancel className="rounded-2xl border-none bg-muted">
-                      Voltar
-                    </AlertDialogCancel>
-                    {isRecurrent && (
-                      <AlertDialogAction
-                        onClick={() => handleDelete(true)}
-                        className="bg-destructive/10 text-destructive rounded-2xl border-none font-bold hover:bg-destructive/20"
-                      >
-                        Excluir Toda a Série
-                      </AlertDialogAction>
-                    )}
-                    <AlertDialogAction
-                      onClick={() => handleDelete(false)}
-                      className="rounded-xl bg-destructive text-white hover:bg-destructive/90"
+          {/* O Footer inteiro é escondido se estiver bloqueado */}
+          {!isLocked && (
+            <DialogFooter className="flex flex-col-reverse sm:flex-row gap-3 pt-6 border-t border-border/40 mt-auto">
+              {status !== "realizado" && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="text-destructive hover:bg-destructive/5 font-bold w-full sm:w-auto rounded-2xl h-12"
                     >
-                      Sim, excluir
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
+                      <Trash className="mr-2 h-5 w-5" /> Excluir Sessão
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="rounded-3xl border border-border/50 p-6 bg-background">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="text-xl font-bold">
+                        Excluir Agendamento?
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {isRecurrent
+                          ? "Este agendamento faz parte de uma série. Como deseja proceder?"
+                          : "Isso apagará este agendamento permanentemente."}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
+                      <AlertDialogCancel className="rounded-2xl border-none bg-muted">
+                        Voltar
+                      </AlertDialogCancel>
+                      {isRecurrent && (
+                        <AlertDialogAction
+                          onClick={() => handleDelete(true)}
+                          className="bg-destructive/10 text-destructive rounded-2xl border-none font-bold hover:bg-destructive/20"
+                        >
+                          Excluir Toda a Série
+                        </AlertDialogAction>
+                      )}
+                      <AlertDialogAction
+                        onClick={() => handleDelete(false)}
+                        className="rounded-xl bg-destructive text-white hover:bg-destructive/90"
+                      >
+                        Sim, excluir
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
 
-            <div className="flex-1" />
+              <div className="flex-1" />
 
-            {!showSaveOptions ? (
-              <Button
-                onClick={() =>
-                  isRecurrent ? setShowSaveOptions(true) : handleSave()
-                }
-                disabled={
-                  isSaving || (isPackageArchived && status !== "cancelado")
-                }
-                className="rounded-2xl bg-primary text-primary-foreground h-12 px-8 font-bold w-full sm:w-auto"
-              >
-                {isSaving ? (
-                  <LoaderDots className="h-5 w-5 animate-spin" />
-                ) : (
-                  <>
-                    <span className="flex items-center">
-                      <Save className="mr-2 h-5 w-5" /> Salvar
-                    </span>
-                  </>
-                )}
-              </Button>
-            ) : (
-              <div className="flex gap-2 w-full sm:w-auto animate-in slide-in-from-right-2">
+              {!showSaveOptions ? (
                 <Button
-                  onClick={() => handleSave(status, true)}
+                  onClick={() =>
+                    isRecurrent ? setShowSaveOptions(true) : handleSave()
+                  }
                   disabled={
                     isSaving || (isPackageArchived && status !== "cancelado")
                   }
-                  className="rounded-2xl h-12 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs uppercase"
+                  className="rounded-2xl bg-primary text-primary-foreground h-12 px-8 font-bold w-full sm:w-auto"
                 >
-                  Toda a Série
+                  {isSaving ? (
+                    <LoaderDots className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <>
+                      <span className="flex items-center">
+                        <Save className="mr-2 h-5 w-5" /> Salvar
+                      </span>
+                    </>
+                  )}
                 </Button>
-                <Button
-                  onClick={() => handleSave(status, false)}
-                  disabled={
-                    isSaving || (isPackageArchived && status !== "cancelado")
-                  }
-                  className="rounded-2xl h-12 bg-primary text-white font-bold text-xs uppercase"
-                >
-                  Só Este
-                </Button>
-              </div>
-            )}
-          </DialogFooter>
+              ) : (
+                <div className="flex gap-2 w-full sm:w-auto animate-in slide-in-from-right-2">
+                  <Button
+                    onClick={() => handleSave(status, true)}
+                    disabled={
+                      isSaving || (isPackageArchived && status !== "cancelado")
+                    }
+                    className="rounded-2xl h-12 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs uppercase"
+                  >
+                    Toda a Série
+                  </Button>
+                  <Button
+                    onClick={() => handleSave(status, false)}
+                    disabled={
+                      isSaving || (isPackageArchived && status !== "cancelado")
+                    }
+                    className="rounded-2xl h-12 bg-primary text-white font-bold text-xs uppercase"
+                  >
+                    Só Este
+                  </Button>
+                </div>
+              )}
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
     );

@@ -13,17 +13,19 @@ import {
   ShoppingBag,
   Archive,
   UserPlus,
+  MessageCircle, // Novo ícone importado para as notas
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
-// Tipagem unificada para a linha do tempo (Padrão Novo)
+// Tipagem unificada para a linha do tempo atualizada
 export type TimelineEvent = {
   id: string;
   type:
     | "CLIENT_CREATED"
     | "PACKAGE_PURCHASED"
     | "PACKAGE_ARCHIVED"
-    | "CHECK_IN";
+    | "CHECK_IN"
+    | "CLIENT_NOTE"; // Novo tipo adicionado
   date: string;
   title: string;
   meta: any;
@@ -94,7 +96,7 @@ export function ClientHistory({ clientId }: { clientId: string }) {
     }).format(new Date(dateString));
   };
 
-  //  Função auxiliar para desenhar o item dependendo do tipo do evento
+  // Renderização dinâmica dos itens
   const renderEventContent = (event: TimelineEvent) => {
     switch (event.type) {
       case "CLIENT_CREATED":
@@ -162,6 +164,16 @@ export function ClientHistory({ clientId }: { clientId: string }) {
           </div>
         );
 
+      // NOVO BLOCO RENDERIZANDO AS NOTAS E FALTAS AUTOMÁTICAS
+      case "CLIENT_NOTE":
+        return (
+          <div className="flex flex-col mt-1.5">
+            <p className="text-xs text-muted-foreground italic border-l-2 border-muted-foreground/30 pl-2 py-0.5 whitespace-pre-wrap">
+              "{event.meta.text}"
+            </p>
+          </div>
+        );
+
       default:
         return null;
     }
@@ -186,6 +198,11 @@ export function ClientHistory({ clientId }: { clientId: string }) {
               icon: Feather,
               color: "border-muted-foreground/30 text-muted-foreground",
             };
+      case "CLIENT_NOTE": // NOVO ÍCONE E COR PARA NOTAS
+        return {
+          icon: MessageCircle,
+          color: "border-amber-500/30 text-amber-600 bg-amber-500/5",
+        };
       default:
         return {
           icon: CalendarCheck,
