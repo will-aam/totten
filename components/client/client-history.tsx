@@ -13,11 +13,11 @@ import {
   ShoppingBag,
   Archive,
   UserPlus,
-  MessageCircle, // Novo ícone importado para as notas
+  MessageCircle,
+  UserX,
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
-// Tipagem unificada para a linha do tempo atualizada
 export type TimelineEvent = {
   id: string;
   type:
@@ -25,7 +25,8 @@ export type TimelineEvent = {
     | "PACKAGE_PURCHASED"
     | "PACKAGE_ARCHIVED"
     | "CHECK_IN"
-    | "CLIENT_NOTE"; // Novo tipo adicionado
+    | "CLIENT_NOTE"
+    | "NO_SHOW";
   date: string;
   title: string;
   meta: any;
@@ -96,7 +97,6 @@ export function ClientHistory({ clientId }: { clientId: string }) {
     }).format(new Date(dateString));
   };
 
-  // Renderização dinâmica dos itens
   const renderEventContent = (event: TimelineEvent) => {
     switch (event.type) {
       case "CLIENT_CREATED":
@@ -164,7 +164,28 @@ export function ClientHistory({ clientId }: { clientId: string }) {
           </div>
         );
 
-      // NOVO BLOCO RENDERIZANDO AS NOTAS E FALTAS AUTOMÁTICAS
+      case "NO_SHOW":
+        return (
+          <div className="flex flex-col gap-1 mt-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1 bg-destructive/10 text-destructive text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded max-w-full truncate">
+                FALTA:{" "}
+                {event.meta.isPackage
+                  ? event.meta.packageName
+                  : "Serviço Avulso"}
+              </span>
+              {event.meta.professionalName && (
+                <span className="flex items-center gap-1 text-[11px] text-muted-foreground font-medium">
+                  <User className="h-3 w-3" /> {event.meta.professionalName}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-destructive/80 font-medium">
+              A cliente não compareceu. Sessão descontada pelo sistema.
+            </p>
+          </div>
+        );
+
       case "CLIENT_NOTE":
         return (
           <div className="flex flex-col mt-1.5">
@@ -179,7 +200,6 @@ export function ClientHistory({ clientId }: { clientId: string }) {
     }
   };
 
-  // Define os ícones e cores do "Ponto" na linha do tempo
   const getEventIcon = (type: string, isPackageCheckin?: boolean) => {
     switch (type) {
       case "CLIENT_CREATED":
@@ -198,7 +218,12 @@ export function ClientHistory({ clientId }: { clientId: string }) {
               icon: Feather,
               color: "border-muted-foreground/30 text-muted-foreground",
             };
-      case "CLIENT_NOTE": // NOVO ÍCONE E COR PARA NOTAS
+      case "NO_SHOW":
+        return {
+          icon: UserX,
+          color: "border-destructive/30 text-destructive bg-destructive/5",
+        };
+      case "CLIENT_NOTE":
         return {
           icon: MessageCircle,
           color: "border-amber-500/30 text-amber-600 bg-amber-500/5",
@@ -280,7 +305,6 @@ export function ClientHistory({ clientId }: { clientId: string }) {
                       </div>
                     </div>
 
-                    {/* Renderiza o conteúdo dinâmico baseado no tipo */}
                     {renderEventContent(event)}
                   </div>
                 </div>

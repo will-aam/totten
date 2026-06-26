@@ -571,3 +571,76 @@ export async function processDailyNoShows(secretKey?: string) {
     };
   }
 }
+// --- 6. DESFAZER FALTA AUTOMÁTICA (VÁLVULA DE ESCAPE) ---
+export async function undoAutoNoShow(appointmentId: string) {
+  try {
+    const admin = await requireAuth();
+
+    // 1. Busca o agendamento bloqueado
+    const appt = await prisma.appointment.findUnique({
+      where: { id: appointmentId, organization_id: admin.organizationId },
+      include: { package: true },
+    });
+
+    if (!appt || appt.status !== AppointmentStatus.CANCELADO) {
+      return {
+        success: false,
+        error: "Agendamento não encontrado ou não está cancelado.",
+      };
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // A. Devolve o status para PENDENTE e limpa o texto de falta automática
+      const cleanObs = appt.observations
+        ? appt.observations
+            .replace("\n(Falta automática)", "")
+            .replace(
+              "Falta não justificada. Baixa automática pelo sistema.",
+              "",
+            )
+        : null;
+
+      await tx.appointment.update({
+        where: { id: appt.id },
+        data: {
+          status: AppointmentStatus.PENDENTE,
+          observations: cleanObs?.trim() === "" ? null : cleanObs,
+        },
+      });
+
+      // B. Se tinha pacote, devolve o saldo (decrementa o used_sessions)
+      if (appt.package_id && appt.package) {
+        // Como estamos devolvendo uma sessão, o pacote obrigatoriamente tem que estar ativo de novo
+        await tx.package.update({
+          where: { id: appt.package_id },
+          data: {
+            used_sessions: { decrement: 1 },
+            active: true,
+          },
+        });
+      }
+
+      // C. Limpa a nota de "Falta Automática" que o robô criou no histórico da cliente
+      // Como o robô gera notas com a frase "Falta Automática", podemos buscar e apagar
+      await tx.clientNote.deleteMany({
+        where: {
+          client_id: appt.client_id,
+          organization_id: admin.organizationId,
+          text: { contains: "Falta Automática" },
+          // Pegamos notas criadas nos últimos 2 dias para não apagar notas erradas
+          date: { gte: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) },
+        },
+      });
+    });
+
+    // Atualiza os painéis do sistema
+    revalidatePath("/admin/agenda");
+    revalidatePath("/admin/packages");
+    revalidatePath("/admin/clients");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao desfazer falta:", error);
+    return { success: false, error: "Falha ao estornar a falta do cliente." };
+  }
+}

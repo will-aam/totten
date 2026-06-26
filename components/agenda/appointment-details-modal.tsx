@@ -42,12 +42,14 @@ import {
   Repeat,
   AlertTriangle,
   Lock,
+  Undo, // Ícone adicionado para o botão de desfazer
 } from "@boxicons/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   updateAppointment,
   deleteAppointment,
+  undoAutoNoShow, // Import da nova action que você acabou de criar
 } from "@/app/actions/appointments";
 import { ThermalReceipt } from "./thermal-receipt";
 import { getPaymentMethods } from "@/app/actions/payment-methods";
@@ -72,6 +74,7 @@ export const AppointmentDetailsModal = memo(
     const [obs, setObs] = useState("");
     const [hasCharge, setHasCharge] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [isUndoing, setIsUndoing] = useState(false); // Estado de loading para o estorno
     const [settings, setSettings] = useState<any>(null);
     const [paymentMethods, setPaymentMethods] = useState<
       OrganizationPaymentMethod[]
@@ -143,15 +146,42 @@ export const AppointmentDetailsModal = memo(
     const isPackageArchived =
       appointment.package && appointment.package.active === false;
 
-    // Se veio do banco como CANCELADO, bloqueamos a edição completamente
+    // Bloqueia se já estiver cancelado
     const isAlreadyCanceled = appointment.status?.toLowerCase() === "cancelado";
-    const isLocked = isAlreadyCanceled; // Podemos expandir isso no futuro (ex: isAlreadyRealizado)
+    const isLocked = isAlreadyCanceled;
+
+    // O "Faro" para descobrir se é uma Falta Automática
+    const isAutoNoShow =
+      isAlreadyCanceled &&
+      (appointment.observations?.includes("Falta automática") ||
+        appointment.observations?.includes("Baixa automática"));
+
+    // Função que chama a Action de Estorno
+    const handleUndoNoShow = async () => {
+      setIsUndoing(true);
+      try {
+        const result = await undoAutoNoShow(appointment.id);
+        if (result.success) {
+          toast.success(
+            "Falta desfeita! A sessão voltou para o status Pendente.",
+          );
+          onRefresh?.();
+          onOpenChange(false);
+        } else {
+          toast.error(result.error || "Não foi possível estornar a falta.");
+        }
+      } catch (error) {
+        toast.error("Erro ao conectar com o servidor.");
+      } finally {
+        setIsUndoing(false);
+      }
+    };
 
     const handleSave = async (
       targetStatus?: string,
       updateAllSeries = false,
     ) => {
-      if (isLocked) return; // Segurança extra
+      if (isLocked) return;
 
       const finalStatus = targetStatus || status;
       if (isPackageArchived && finalStatus !== "cancelado") {
@@ -192,7 +222,7 @@ export const AppointmentDetailsModal = memo(
     };
 
     const handleDelete = async (deleteAll = false) => {
-      if (isLocked) return; // Segurança extra
+      if (isLocked) return;
 
       try {
         await deleteAppointment(
@@ -231,7 +261,7 @@ export const AppointmentDetailsModal = memo(
             isPackageArchived &&
               !isLocked &&
               "ring-2 ring-destructive/80 border-destructive/50",
-            isLocked && "opacity-95", // Leve transparência para indicar modo leitura
+            isLocked && "opacity-95",
           )}
         >
           <ThermalReceipt
@@ -282,8 +312,41 @@ export const AppointmentDetailsModal = memo(
           </DialogHeader>
 
           <div className="flex flex-col gap-5 overflow-y-auto py-2 pr-1 custom-scrollbar">
-            {/* BANNER DE BLOQUEIO: Se o agendamento já estava cancelado */}
-            {isAlreadyCanceled && (
+            {/* NOVO BANNER: Se for Falta Automática do Robô */}
+            {isAutoNoShow && (
+              <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl flex flex-col gap-3 animate-in fade-in zoom-in-95">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="flex flex-col">
+                    <span className="text-sm font-black text-amber-700 dark:text-amber-500 uppercase tracking-tight">
+                      Falta Automática
+                    </span>
+                    <span className="text-xs font-medium text-amber-700/80 dark:text-amber-500/80 mt-1">
+                      O sistema registrou falta pois não houve check-in no
+                      totem. Se a cliente compareceu e foi um esquecimento,
+                      estorne a falta abaixo para liberar o check-in novamente.
+                    </span>
+                  </div>
+                </div>
+                <Button
+                  onClick={handleUndoNoShow}
+                  disabled={isUndoing}
+                  variant="outline"
+                  className="bg-background border-amber-500/30 text-amber-700 hover:bg-amber-500/10 self-end rounded-xl h-9 text-xs font-bold"
+                >
+                  {isUndoing ? (
+                    <LoaderDots className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Undo className="mr-2 h-4 w-4" /> Estornar Falta
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+
+            {/* BANNER ANTIGO: Se for um Cancelamento Normal (Manual) */}
+            {isAlreadyCanceled && !isAutoNoShow && (
               <div className="bg-muted/50 border border-border p-4 rounded-2xl flex items-start gap-3 animate-in fade-in zoom-in-95">
                 <Lock className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
                 <div className="flex flex-col">

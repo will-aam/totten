@@ -23,7 +23,6 @@ export async function GET(
       );
     }
 
-    // 1. Busca os dados do Cliente
     const client = await prisma.client.findFirst({
       where: { id: clientId, organization_id: admin.organizationId },
       select: { id: true, created_at: true, name: true },
@@ -36,7 +35,6 @@ export async function GET(
       );
     }
 
-    // 2. Busca os Check-ins
     const checkIns = await prisma.checkIn.findMany({
       where: { client_id: clientId, organization_id: admin.organizationId },
       include: {
@@ -45,20 +43,37 @@ export async function GET(
       },
     });
 
-    // 3. Busca os Pacotes (para ver compras e arquivamentos)
     const packages = await prisma.package.findMany({
       where: { client_id: clientId, organization_id: admin.organizationId },
     });
 
-    // 4. Busca as Notas / Histórico (ONDE ESTÃO AS FALTAS AUTOMÁTICAS!)
     const clientNotes = await prisma.clientNote.findMany({
       where: { client_id: clientId, organization_id: admin.organizationId },
     });
 
-    //  A MÁGICA ACONTECE AQUI: Montamos uma Linha do Tempo Unificada
+    // 🔥 NOVIDADE: Buscamos os agendamentos cancelados para achar as faltas automáticas
+    const cancelledAppointments = await prisma.appointment.findMany({
+      where: {
+        client_id: clientId,
+        organization_id: admin.organizationId,
+        status: "CANCELADO",
+      },
+      include: {
+        package: { select: { name: true } },
+        professional: { select: { display_name: true } },
+      },
+    });
+
+    // Filtramos apenas os que foram cancelados pelo robô (que tem a nossa palavra-chave)
+    const noShowAppointments = cancelledAppointments.filter(
+      (appt) =>
+        appt.observations?.includes("Falta automática") ||
+        appt.observations?.includes("Baixa automática pelo sistema"),
+    );
+
     const timelineEvents: any[] = [];
 
-    // Evento A: Criação do Cliente
+    // A: Criação
     timelineEvents.push({
       id: `client-created-${client.id}`,
       type: "CLIENT_CREATED",
@@ -67,7 +82,7 @@ export async function GET(
       meta: { name: client.name },
     });
 
-    // Evento B e C: Pacotes (Compra e Encerramento)
+    // B e C: Pacotes
     packages.forEach((pkg) => {
       timelineEvents.push({
         id: `pkg-purchased-${pkg.id}`,
@@ -96,7 +111,7 @@ export async function GET(
       }
     });
 
-    // Evento D: Check-ins
+    // D: Check-ins normais
     checkIns.forEach((ci) => {
       timelineEvents.push({
         id: `checkin-${ci.id}`,
@@ -111,28 +126,39 @@ export async function GET(
       });
     });
 
-    // Evento E: Notas do Cliente (Faltas e anotações manuais)
-    clientNotes.forEach((note) => {
-      // Se a nota tiver a palavra chave do Cron, personalizamos o título!
-      const isAutoNoShow = note.text.includes("Falta Automática");
-
+    // 🔥 E: FALTAS (Como se fossem check-ins, mas vermelhos)
+    noShowAppointments.forEach((appt) => {
       timelineEvents.push({
-        id: `note-${note.id}`,
-        type: "CLIENT_NOTE",
-        date: note.date, // Data em que a nota (ou a falta) ocorreu
-        title: isAutoNoShow ? "Falta Registrada" : "Anotação Adicionada",
+        id: `noshow-${appt.id}`,
+        type: "NO_SHOW",
+        date: appt.date_time,
+        title: "Falta Registrada",
         meta: {
-          text: note.text,
+          isPackage: !!appt.package_id,
+          packageName: appt.package?.name ?? "Avulso",
+          professionalName: appt.professional?.display_name ?? null,
+          appointmentId: appt.id, // Guardamos o ID para o botão "Desfazer" no futuro!
         },
       });
     });
 
-    //  Ordena todos os eventos misturados pela data (do mais recente pro mais antigo)
+    // F: Notas (Omitimos as notas de falta automática para não duplicar com o evento acima)
+    clientNotes.forEach((note) => {
+      if (note.text.includes("Falta Automática")) return; // Ignora as notas geradas pelo robô
+
+      timelineEvents.push({
+        id: `note-${note.id}`,
+        type: "CLIENT_NOTE",
+        date: note.date,
+        title: "Anotação Adicionada",
+        meta: { text: note.text },
+      });
+    });
+
     timelineEvents.sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
     );
 
-    // Faz a paginação manualmente no Array
     const paginatedEvents = timelineEvents.slice(skip, skip + limit);
     const hasMore = timelineEvents.length > skip + limit;
 
