@@ -9,16 +9,19 @@ export default async function VerifyEmailPage({
 }) {
   const { token } = await searchParams;
 
+  // 1. Validação inicial fora do try/catch
   if (!token) {
     redirect("/login?error=invalid_token");
   }
 
+  // 2. Tenta encontrar o usuário e atualizar
   try {
     const admin = await prisma.admin.findUnique({
       where: { verification_token: token },
     });
 
     if (!admin) {
+      // Se não achar o token, redireciona direto (fora do bloco de erro de banco)
       redirect("/login?error=invalid_token");
     }
 
@@ -30,14 +33,12 @@ export default async function VerifyEmailPage({
         verification_token: null,
       },
     });
-
-    // app/verify-email/page.tsx (apenas o catch)
-  } catch (error: any) {
-    // Isso vai mostrar no log da Vercel o erro real (ex: uma conexão de banco, um problema de redirect, etc)
-    console.error("DEBUG - Erro detalhado na verificação:", {
-      message: error.message,
-      stack: error.stack,
-    });
+  } catch (error) {
+    // Aqui só caem erros de banco de dados ou rede
+    console.error("Erro no banco durante verificação:", error);
     redirect("/login?error=server_error");
   }
+
+  // 3. Se chegou aqui, deu tudo certo!
+  redirect("/login?verified=true");
 }
