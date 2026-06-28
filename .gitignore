@@ -20,3 +20,7 @@ public/swe-worker-*.js
 public/swe-worker-*.js.map
 public/workbox-*.js
 public/workbox-*.js.map
+
+
+# rota de desenvolvimento para testar cores de botão de F5 na pagina
+app/api/dev/
