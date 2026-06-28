@@ -46,7 +46,7 @@ export default function TotemIdleContent() {
     if (status === "authenticated") {
       router.push("/admin/dashboard");
     } else {
-      router.push("/admin/login");
+      router.push("/login");
     }
   };
 

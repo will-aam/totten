@@ -36,7 +36,7 @@ export default function CheckEmailPage() {
           </div>
 
           <Button asChild className="w-full" variant="outline">
-            <Link href="/admin/login">Voltar para o Login</Link>
+            <Link href="/login">Voltar para o Login</Link>
           </Button>
         </CardContent>
       </Card>

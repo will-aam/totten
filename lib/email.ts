@@ -63,7 +63,7 @@ export async function sendPasswordResetEmail(
             ⚠️ Recomendamos que você altere esta senha nas configurações assim que fizer login.
           </p>
           
-          <a href="${process.env.NEXTAUTH_URL}/admin/login" 
+          <a href="${process.env.NEXTAUTH_URL}/login" 
              style="display: inline-block; padding: 12px 24px; background: #18181b; color: white; text-decoration: none; border-radius: 8px; margin: 20px 0;">
             Fazer Login
           </a>

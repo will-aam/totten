@@ -16,7 +16,7 @@ export async function proxy(request: NextRequest) {
     "/totem/check-in",
     "/totem/success",
     "/totem/error",
-    "/admin/login",
+    "/login",
     "/admin/register",
     "/forgot-password",
     "/check-email",
@@ -43,7 +43,7 @@ export async function proxy(request: NextRequest) {
 
   // Se não tem token e está tentando acessar rota protegida
   if (!token && pathname.startsWith("/admin")) {
-    const url = new URL("/admin/login", request.url);
+    const url = new URL("/login", request.url);
     url.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(url);
   }

@@ -112,7 +112,7 @@ export default function RegisterPage() {
   return (
     <div className="relative flex min-h-svh flex-col items-center justify-center bg-background px-4 py-12 sm:px-6">
       <Link
-        href="/admin/login"
+        href="/login"
         className="absolute top-4 left-4 sm:top-8 sm:left-8 flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group z-10"
       >
         <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-transparent sm:bg-muted/50 hover:bg-muted transition-colors">
@@ -334,7 +334,7 @@ export default function RegisterPage() {
           <div className="text-center text-base sm:text-sm text-muted-foreground">
             Já possui uma conta?{" "}
             <Link
-              href="/admin/login"
+              href="/login"
               className="font-semibold text-primary hover:underline"
             >
               Faça login aqui

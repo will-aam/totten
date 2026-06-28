@@ -1,4 +1,4 @@
-// app/admin/login/page.tsx
+// app/login/page.tsx
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
@@ -84,13 +84,23 @@ function LoginForm() {
       <div className="flex flex-1 items-center justify-center w-full">
         <div className="w-full max-w-sm">
           <div className="text-center mb-10">
-            <div className="flex flex-col items-center gap-4">
+            <div className="flex items-center justify-center shrink-0">
+              {/* Logo exibida no TEMA CLARO */}
               <Image
                 src="/totten.png"
                 alt="Totten Logo"
-                width={80}
-                height={80}
-                className="rounded-full overflow-hidden aspect-square h-24 w-24 md:h-32 md:w-32 object-cover animate-pulse-slow"
+                width={128}
+                height={128}
+                className="object-contain h-24 w-24 md:h-32 md:w-32 animate-pulse-slow dark:hidden block"
+                priority
+              />
+              {/* Logo exibida no TEMA ESCURO */}
+              <Image
+                src="/totten-brac.png"
+                alt="Totten Logo"
+                width={128}
+                height={128}
+                className="object-contain h-24 w-24 md:h-32 md:w-32 animate-pulse-slow hidden dark:block"
                 priority
               />
             </div>

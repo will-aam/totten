@@ -1,3 +1,4 @@
+// app/verify-email/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -7,7 +8,7 @@ export async function GET(request: Request) {
 
   if (!token) {
     return NextResponse.redirect(
-      new URL("/admin/login?error=invalid_token", request.url),
+      new URL("/login?error=invalid_token", request.url),
     );
   }
 
@@ -18,26 +19,24 @@ export async function GET(request: Request) {
 
     if (!admin) {
       return NextResponse.redirect(
-        new URL("/admin/login?error=invalid_token", request.url),
+        new URL("/login?error=invalid_token", request.url),
       );
     }
 
-    // ✅ ATIVA A CONTA
+    // ATIVA A CONTA
     await prisma.admin.update({
       where: { id: admin.id },
       data: {
         email_verified: true,
-        verification_token: null, // Remove o token
+        verification_token: null,
       },
     });
 
-    return NextResponse.redirect(
-      new URL("/admin/login?verified=true", request.url),
-    );
+    return NextResponse.redirect(new URL("/login?verified=true", request.url));
   } catch (error) {
     console.error("Erro na verificação:", error);
     return NextResponse.redirect(
-      new URL("/admin/login?error=server_error", request.url),
+      new URL("/login?error=server_error", request.url),
     );
   }
 }

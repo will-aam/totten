@@ -8,6 +8,7 @@ import { SessionProvider } from "@/components/session-provider";
 import { InstallPrompt } from "@/components/install-prompt";
 import { SWRProvider } from "@/components/swr-provider";
 import { PWAUpdater } from "@/components/pwa-updater";
+// @ts-expect-error CSS module declaration is provided by Next.js build tooling.
 import "./globals.css";
 
 const inter = Inter({

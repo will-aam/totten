@@ -80,7 +80,7 @@ export default function ForgotPasswordPage() {
             </div>
 
             <Button asChild className="w-full">
-              <Link href="/admin/login">Ir para o Login</Link>
+              <Link href="/login">Ir para o Login</Link>
             </Button>
           </CardContent>
         </Card>
@@ -92,7 +92,7 @@ export default function ForgotPasswordPage() {
     <div className="relative flex min-h-svh items-center justify-center bg-background p-4">
       {/* Botão Voltar */}
       <Link
-        href="/admin/login"
+        href="/login"
         className="absolute top-6 left-6 md:top-8 md:left-8 flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group"
       >
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-card shadow-sm border border-border group-hover:bg-[#D9C6BF]/20 transition-colors">
@@ -146,7 +146,7 @@ export default function ForgotPasswordPage() {
             <p className="text-xs text-center text-muted-foreground">
               Lembrou a senha?{" "}
               <Link
-                href="/admin/login"
+                href="/login"
                 className="font-medium text-primary hover:underline"
               >
                 Voltar para o login
