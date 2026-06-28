@@ -46,6 +46,23 @@ export function StockTable({
 
   const columns: ColumnDef<StockItem>[] = [
     {
+      accessorKey: "id",
+      enableSorting: false,
+      header: () => (
+        <div className="font-semibold px-2 text-muted-foreground">Cód.</div>
+      ),
+      cell: ({ row }) => {
+        const shortId = row.original.id.slice(-5).toUpperCase();
+        return (
+          <div className="px-2 flex items-center">
+            <span className="text-[11px] font-mono font-bold text-muted-foreground bg-muted/50 border border-border/50 px-2 py-0.5 rounded-md">
+              #{shortId}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
       accessorKey: "name",
       header: ({ column }) => (
         <Button
@@ -139,7 +156,7 @@ export function StockTable({
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="hover:bg-muted font-semibold rounded-full px-2"
+          className="hover:bg-muted font-semibold rounded-full px-2 w-full justify-center"
         >
           Quantidade <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>

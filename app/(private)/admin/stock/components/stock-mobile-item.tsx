@@ -29,6 +29,12 @@ export function StockMobileItem({
       {/* Cabeçalho: Nome do Insumo + Botão de Excluir */}
       <div className="flex justify-between items-start mb-5 min-h-7 gap-4">
         <div className="flex-1" onDoubleClick={() => setIsEditingName(true)}>
+          <div className="mb-1.5">
+            <span className="text-[10px] font-mono font-bold text-muted-foreground bg-muted/50 border border-border/50 px-1.5 py-0.5 rounded-md">
+              #{item.id.slice(-5).toUpperCase()}
+            </span>
+          </div>
+
           {isEditingName ? (
             <Input
               autoFocus
