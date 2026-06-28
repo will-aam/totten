@@ -1,4 +1,4 @@
-// app/login/page.tsx
+// app/(public)/login/page.tsx
 "use client";
 
 import { useState, useEffect, Suspense } from "react";

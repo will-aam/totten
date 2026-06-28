@@ -31,10 +31,13 @@ export default async function VerifyEmailPage({
       },
     });
 
-    // Redireciona para o login com sucesso
-    redirect("/login?verified=true");
-  } catch (error) {
-    console.error("Erro na verificação:", error);
+    // app/verify-email/page.tsx (apenas o catch)
+  } catch (error: any) {
+    // Isso vai mostrar no log da Vercel o erro real (ex: uma conexão de banco, um problema de redirect, etc)
+    console.error("DEBUG - Erro detalhado na verificação:", {
+      message: error.message,
+      stack: error.stack,
+    });
     redirect("/login?error=server_error");
   }
 }
