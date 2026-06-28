@@ -3,7 +3,7 @@ import Link from "next/link";
 import { AdminHeader } from "@/components/admin-header";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "@boxicons/react";
-import { ClientForm } from "@/components/client/client-form";
+import { ClientForm } from "@/app/(private)/admin/clients/components/client-form";
 
 export default function NewClientPage() {
   return (

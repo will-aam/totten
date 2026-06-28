@@ -4,11 +4,11 @@
 import { useState, useEffect } from "react";
 import useSWR from "swr";
 import { AdminHeader } from "@/components/admin-header";
-import { FinanceHeader } from "@/components/finance/finance-header";
-import { FinanceSecondaryIndicators } from "@/components/finance/finance-secondary-indicators";
-import { FinanceSummaryCards } from "@/components/finance/finance-summary-cards";
-import { RecentTransactionsList } from "@/components/finance/recent-transactions-list";
-import { FinanceSpeedDial } from "@/components/finance/finance-speed-dial";
+import { FinanceHeader } from "../components/finance-header";
+import { FinanceSecondaryIndicators } from "../components/finance-secondary-indicators";
+import { FinanceSummaryCards } from "../components/finance-summary-cards";
+import { RecentTransactionsList } from "../components/recent-transactions-list";
+import { FinanceSpeedDial } from "../components/finance-speed-dial";
 import { ChevronUp, WalletAlt, ChevronRight } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { getFinanceDashboardData } from "@/app/actions/finance-dashboard";

@@ -16,11 +16,8 @@ import {
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
-import {
-  HistoryTable,
-  type EnrichedCheckIn,
-} from "@/components/history/history-table";
-import { HistoryFilters } from "@/components/history/history-filters";
+import { HistoryTable, type EnrichedCheckIn } from "./components/history-table";
+import { HistoryFilters } from "./components/history-filters";
 import { useDebounce } from "@/hooks/use-debounce";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());

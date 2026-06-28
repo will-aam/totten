@@ -23,7 +23,7 @@ import {
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { OrganizationPaymentMethod } from "@/types/finance";
-import { PaymentMethodModal } from "@/components/finance/payment-method-modal";
+import { PaymentMethodModal } from "@/app/(private)/admin/finance/components/payment-method-modal";
 import { getPaymentMethods } from "@/app/actions/payment-methods";
 import { Skeleton } from "@/components/ui/skeleton";
 

@@ -5,14 +5,8 @@ import useSWR from "swr";
 import useSWRInfinite from "swr/infinite";
 import Link from "next/link";
 import { AdminHeader } from "@/components/admin-header";
-import { PendingCheckInsCard } from "@/components/admin/pending-checkins-card";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { PendingCheckInsCard } from "../dashboard/components/pending-checkins-card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   CalendarCheck,

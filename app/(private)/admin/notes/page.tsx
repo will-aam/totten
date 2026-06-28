@@ -4,9 +4,9 @@ import { useState } from "react";
 import useSWR from "swr";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useToast } from "@/hooks/use-toast";
-import { ClientListView } from "@/components/notes/client-list-view";
-import { ChatView } from "@/components/notes/chat-view";
-import { Note } from "@/components/notes/chat-bubble";
+import { ClientListView } from "./components/client-list-view";
+import { ChatView } from "./components/chat-view";
+import { Note } from "./components/chat-bubble";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 

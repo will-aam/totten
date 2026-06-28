@@ -38,15 +38,6 @@ Referências:
 
 - `app/api/totem/check-in/route.ts` (validações de status e atualização de pacote).
 
-### 3) Agendamento recorrente
-
-- A API de séries recorrentes reconhece em comentário que `distinct` sem ordenação estável não é determinístico antes da paginação em memória.
-- Isso impacta previsibilidade de paginação no administrativo.
-
-Referências:
-
-- `app/api/admin/recurring/route.ts` (coleta de recorrências distintas e paginação por `slice`).
-
 ### 4) Check-in avulso
 
 - A rota avulsa usa `organizationSlug` no corpo e não exige sessão/admin autenticado.

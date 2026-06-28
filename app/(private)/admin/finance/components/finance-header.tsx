@@ -5,7 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { MinusCircle, PlusCircle, FileDetail } from "@boxicons/react";
-import { TransactionModal } from "@/components/finance/transaction-modal";
+import { TransactionModal } from "@/app/(private)/admin/finance/components/transaction-modal";
 import {
   Select,
   SelectContent,

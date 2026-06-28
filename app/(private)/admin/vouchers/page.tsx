@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PackageVoucher } from "@/components/client/package-voucher";
+import { PackageVoucher } from "@/app/(private)/admin/clients/components/package-voucher";
 import {
   Search,
   MedalStarAlt,

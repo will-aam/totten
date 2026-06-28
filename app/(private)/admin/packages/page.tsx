@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label"; //  NOVO: Adicionado Label
+import { Label } from "@/components/ui/label";
 import {
   Group,
   AlertTriangle,
@@ -27,7 +27,7 @@ import {
   Plus,
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
-import { PackageDetailsModal } from "@/components/packages/package-details-modal";
+import { PackageDetailsModal } from "./components/package-details-modal";
 import {
   getPackagesDashboardData,
   createManualPackageCheckIn,

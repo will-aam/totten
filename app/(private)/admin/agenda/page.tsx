@@ -40,14 +40,13 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 
-import { DailyAgendaGrid } from "@/components/agenda/daily-agenda-grid";
-import { Appointment } from "@/components/agenda/appointment-card";
-import { WeeklyAgendaGrid } from "@/components/agenda/weekly-agenda-grid";
-import { MonthlyAgendaGrid } from "@/components/agenda/monthly-agenda-grid";
-
-import { NewAppointmentModal } from "@/components/agenda/new-appointment-modal";
-import { AppointmentDetailsModal } from "@/components/agenda/appointment-details-modal";
-import { ScheduleSettingsModal } from "@/components/agenda/schedule-settings-modal";
+import { DailyAgendaGrid } from "./components/daily-agenda-grid";
+import { Appointment } from "./components/appointment-card";
+import { WeeklyAgendaGrid } from "./components/weekly-agenda-grid";
+import { MonthlyAgendaGrid } from "./components/monthly-agenda-grid";
+import { NewAppointmentModal } from "./components/new-appointment-modal";
+import { AppointmentDetailsModal } from "./components/appointment-details-modal";
+import { ScheduleSettingsModal } from "./components/schedule-settings-modal";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 

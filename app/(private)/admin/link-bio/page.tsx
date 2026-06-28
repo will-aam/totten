@@ -18,10 +18,10 @@ import {
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
-import { ProfileSettings } from "@/components/link-bio/profile-settings";
-import { ThemeSettings } from "@/components/link-bio/theme-settings";
-import { SocialSettings } from "@/components/link-bio/social-settings";
-import { AdditionalLinks } from "@/components/link-bio/additional-links";
+import { ProfileSettings } from "./components/profile-settings";
+import { ThemeSettings } from "./components/theme-settings";
+import { SocialSettings } from "./components/social-settings";
+import { AdditionalLinks } from "./components/additional-links";
 
 export default function LinkBioPage() {
   const [currentStep, setCurrentStep] = useState(0);

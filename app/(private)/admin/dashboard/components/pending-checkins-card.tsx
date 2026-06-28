@@ -1,3 +1,4 @@
+// components/admin/pending-checkins-card.tsx
 import Link from "next/link";
 import { AlertCircle, User, CalendarPlus } from "@boxicons/react";
 import useSWR from "swr";

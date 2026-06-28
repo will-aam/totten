@@ -24,7 +24,7 @@ import {
   User,
   Cog, //  Import do ícone para o serviço
 } from "@boxicons/react";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 
 interface MonthlyAgendaGridProps {
   appointments: Appointment[];
