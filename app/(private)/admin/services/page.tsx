@@ -1,3 +1,4 @@
+// app/(private)/admin/services/page.tsx
 "use client";
 
 import { Suspense, useState, useEffect } from "react";
@@ -16,12 +17,23 @@ import {
   CalendarDetail,
   TrendingDown,
   Box,
+  Save,
 } from "@boxicons/react";
 import { Eye, EyeOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 import { AdminHeader } from "@/components/admin-header";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
@@ -104,10 +116,8 @@ function ServicesTabs() {
   const initialTab = searchParams.get("tab") || "services";
   const [activeTab, setActiveTab] = useState(initialTab);
 
-  // 1. Inicializa com 'true' (padrão)
   const [showInactive, setShowInactive] = useState(true);
 
-  // 2. Carrega a preferência do usuário assim que o componente montar no navegador
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved !== null) {
@@ -115,7 +125,6 @@ function ServicesTabs() {
     }
   }, []);
 
-  // 3. Salva no localStorage sempre que o estado mudar
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(showInactive));
   }, [showInactive]);
@@ -126,6 +135,11 @@ function ServicesTabs() {
   );
   const [selectedPackage, setSelectedPackage] =
     useState<PackageTemplate | null>(null);
+
+  // Nova Categoria
+  const [createCategoryOpen, setCreateCategoryOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [creatingCategory, setCreatingCategory] = useState(false);
 
   const {
     data: services,
@@ -143,13 +157,37 @@ function ServicesTabs() {
     isLoading: loadingCategories,
   } = useSWR<Category[]>("/api/categories", fetcher);
 
-  //  LÓGICA DE FILTRAGEM RÁPIDA
   const visibleServices =
     services?.filter((s) => showInactive || s.active) || [];
   const visiblePackages =
     packages?.filter((p) => showInactive || p.active) || [];
   const visibleCategories =
     categories?.filter((c) => showInactive || c.active) || [];
+
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) return;
+    setCreatingCategory(true);
+    try {
+      const res = await fetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newCategoryName.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(`Categoria "${data.category.name}" criada!`);
+        mutateCategories();
+        setCreateCategoryOpen(false);
+        setNewCategoryName("");
+      } else {
+        toast.error(data.error || "Erro ao criar categoria");
+      }
+    } catch {
+      toast.error("Erro de conexão");
+    } finally {
+      setCreatingCategory(false);
+    }
+  };
 
   return (
     <>
@@ -182,7 +220,6 @@ function ServicesTabs() {
             </TabsTrigger>
           </TabsList>
 
-          {/*  NOVO BOTÃO: Toggle global para limpar a tela de itens inativos */}
           {activeTab !== "schedules" && (
             <Button
               variant="outline"
@@ -233,7 +270,6 @@ function ServicesTabs() {
           ) : services &&
             services.length > 0 &&
             visibleServices.length === 0 ? (
-            //  EMPTY STATE INTELIGENTE: Tem serviço, mas estão todos ocultos!
             <div className="text-center py-12 text-muted-foreground bg-muted/20 border border-dashed rounded-xl">
               <p>Todos os seus serviços estão inativos.</p>
               <button
@@ -438,6 +474,12 @@ function ServicesTabs() {
                 Agrupe seus serviços para facilitar a busca.
               </p>
             </div>
+            <Button
+              className="h-12 px-8 rounded-xl font-medium shadow-sm"
+              onClick={() => setCreateCategoryOpen(true)}
+            >
+              <Plus className="mr-2 h-4 w-4" /> Nova Categoria
+            </Button>
           </div>
 
           {loadingCategories ? (
@@ -509,6 +551,7 @@ function ServicesTabs() {
           <DurationManager />
         </TabsContent>
       </Tabs>
+
       <ServiceEditModal
         open={!!selectedService}
         onOpenChange={(open) => !open && setSelectedService(null)}
@@ -537,6 +580,65 @@ function ServicesTabs() {
           mutateServices();
         }}
       />
+
+      {/* Modal: Nova Categoria */}
+      <Dialog
+        open={createCategoryOpen}
+        onOpenChange={(open) => {
+          setCreateCategoryOpen(open);
+          if (!open) setNewCategoryName("");
+        }}
+      >
+        <DialogContent className="sm:max-w-100 rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">
+              Nova Categoria
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="new-cat-name" className="text-sm font-medium">
+                Nome da Categoria
+              </Label>
+              <Input
+                id="new-cat-name"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleCreateCategory()}
+                placeholder="Ex: Massagens, Estética, Terapias..."
+                className="rounded-xl"
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-4 border-t mt-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCreateCategoryOpen(false);
+                setNewCategoryName("");
+              }}
+              className="rounded-xl"
+            >
+              Cancelar
+            </Button>
+            <div className="flex-1" />
+            <Button
+              onClick={handleCreateCategory}
+              disabled={creatingCategory || !newCategoryName.trim()}
+              className="rounded-xl bg-primary hover:bg-primary/90 font-bold"
+            >
+              {creatingCategory ? (
+                <LoaderDots size="sm" className="animate-spin" />
+              ) : (
+                <>
+                  <Save size="sm" className="mr-2" /> Criar
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <MobileBottomNav
         items={mobileNavItems}
         activeId={activeTab}

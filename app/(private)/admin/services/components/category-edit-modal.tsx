@@ -33,7 +33,6 @@ export function CategoryEditModal({
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState("");
 
-  // 🔥 Estado para o modal de confirmação de cascata
   const [confirmCascade, setConfirmCascade] = useState<{
     show: boolean;
     message: string;
@@ -47,6 +46,9 @@ export function CategoryEditModal({
   }, [category]);
 
   if (!category) return null;
+
+  const hasLinkedServices = (category._count?.services ?? 0) > 0;
+  const showDeactivateButton = !(category.active && hasLinkedServices);
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -71,7 +73,6 @@ export function CategoryEditModal({
     }
   };
 
-  // 🔥 Nova lógica de Toggle que aceita a confirmação do backend
   const handleToggleStatus = async (forceCascade: boolean = false) => {
     setLoading(true);
     try {
@@ -139,29 +140,31 @@ export function CategoryEditModal({
           </div>
 
           <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-4 border-t mt-4">
-            <Button
-              type="button"
-              variant="outline"
-              className={
-                category.active
-                  ? "text-destructive hover:bg-destructive/10 border-destructive/20 rounded-xl"
-                  : "text-emerald-600 hover:bg-emerald-50 border-emerald-200 rounded-xl"
-              }
-              onClick={() => handleToggleStatus(false)}
-              disabled={loading}
-            >
-              {loading ? (
-                <LoaderDots size="sm" className="animate-spin" />
-              ) : category.active ? (
-                <>
-                  <Power size="sm" className="mr-2" /> Desativar
-                </>
-              ) : (
-                <>
-                  <Power size="sm" className="mr-2" /> Ativar
-                </>
-              )}
-            </Button>
+            {showDeactivateButton && (
+              <Button
+                type="button"
+                variant="outline"
+                className={
+                  category.active
+                    ? "text-destructive hover:bg-destructive/10 border-destructive/20 rounded-xl"
+                    : "text-emerald-600 hover:bg-emerald-50 border-emerald-200 rounded-xl"
+                }
+                onClick={() => handleToggleStatus(false)}
+                disabled={loading}
+              >
+                {loading ? (
+                  <LoaderDots size="sm" className="animate-spin" />
+                ) : category.active ? (
+                  <>
+                    <Power size="sm" className="mr-2" /> Desativar
+                  </>
+                ) : (
+                  <>
+                    <Power size="sm" className="mr-2" /> Ativar
+                  </>
+                )}
+              </Button>
+            )}
 
             <div className="flex-1" />
 
@@ -182,7 +185,7 @@ export function CategoryEditModal({
         </DialogContent>
       </Dialog>
 
-      {/* 🔥 Modal de Confirmação para Cascata */}
+      {/* Modal de Confirmação para Cascata */}
       <Dialog
         open={confirmCascade.show}
         onOpenChange={(open) => {
