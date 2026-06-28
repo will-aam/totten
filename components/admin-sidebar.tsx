@@ -151,7 +151,7 @@ const autoatendimentoSubItems = [
     href: "/admin/auto/requests",
     active: false,
   },
-  { title: "Link Bio", href: "/admin/link-bio", icon: LinkAlt, active: false },
+  { title: "Link Bio", href: "/admin/link-bio", icon: LinkAlt, active: true },
   { title: "WhatsApp Automático", href: "/admin/whatsapp-auto", active: false },
   { title: "Regras e Horários", href: "/admin/auto/rules", active: false },
 ];

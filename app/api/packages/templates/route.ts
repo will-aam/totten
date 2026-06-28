@@ -87,11 +87,24 @@ export async function POST(request: Request) {
         { status: 404 },
       );
     }
+    let finalPackageName = service.name;
+    if (package_template_id) {
+      const template = await prisma.packageTemplate.findUnique({
+        where: {
+          id: package_template_id,
+          organization_id: admin.organizationId,
+        },
+        select: { name: true },
+      });
+      if (template) {
+        finalPackageName = template.name;
+      }
+    }
 
     const result = await prisma.$transaction(async (tx) => {
       const novoPacote = await tx.package.create({
         data: {
-          name: service.name,
+          name: finalPackageName,
           total_sessions: total_sessions,
           used_sessions: 0,
           price: price,
@@ -99,7 +112,7 @@ export async function POST(request: Request) {
           service_id,
           organization_id: admin.organizationId,
           active: true,
-          package_template_id: package_template_id || null, // 🔥 2. Gravamos a ligação no banco!
+          package_template_id: package_template_id || null,
           // SNAPSHOT INJETADO: A foto do serviço fica imortalizada no pacote!
           snapshot_service_name: service.name,
           snapshot_service_price: service.price,

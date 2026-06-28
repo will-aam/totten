@@ -38,6 +38,7 @@ export async function getPackagesDashboardData(params?: {
       include: {
         client: { select: { name: true } },
         service: { select: { name: true } },
+        package_template: { select: { name: true } }, // <--- ADICIONE ESTA LINHA
       },
       orderBy: { created_at: "desc" },
     });
@@ -68,7 +69,8 @@ export async function getPackagesDashboardData(params?: {
         id: p.id,
         clientId: p.client_id,
         clientName: p.client.name,
-        packageName: p.service.name,
+        // CORREÇÃO: Puxa do template primeiro, depois tenta do pacote
+        packageName: p.package_template?.name || p.name,
         usedSessions: p.used_sessions,
         totalSessions: p.total_sessions,
         active: p.active,

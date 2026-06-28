@@ -230,7 +230,8 @@ export function ClientForm() {
       if (!clientRes.ok)
         throw new Error(clientData.error || "Erro ao criar cliente");
 
-      // 2) se selecionou pacote, vende
+      // 2) cria pacote vinculado, se houver
+
       if (form.package_template_id !== "none") {
         const template = packageTemplates.find(
           (t) => t.id === form.package_template_id,
@@ -249,6 +250,7 @@ export function ClientForm() {
               payment_method: payUpfront ? selectedMethod : null,
               generate_installments: !payUpfront ? generateInstallments : false,
               installments_count: installmentsCount,
+              package_template_id: template.id,
             }),
           });
 

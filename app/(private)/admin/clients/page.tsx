@@ -203,11 +203,19 @@ export default function AdminClientsPage() {
   if (cleanSearch.length >= 3)
     apiUrl += `&q=${encodeURIComponent(cleanSearch)}`;
 
+  // Dentro do AdminClientsPage
   const {
     data: apiResponse,
     isLoading,
     mutate,
   } = useSWR<ApiResponse>(apiUrl, fetcher);
+
+  // ADICIONE ISSO AQUI:
+  useEffect(() => {
+    if (apiResponse) {
+      console.log("DADOS DA API:", apiResponse);
+    }
+  }, [apiResponse]);
 
   const clients = apiResponse?.data || [];
   const totalPages = apiResponse?.totalPages || 1;

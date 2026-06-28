@@ -40,8 +40,6 @@ export async function GET(
       where: {
         client_id: clientId,
         organization_id: admin.organizationId,
-        // Deixamos de forçar active: true aqui caso queiramos ver histórico no futuro,
-        // pois o frontend já filtra (pkg.active) para achar o pacote ativo.
       },
       select: {
         id: true,
@@ -51,7 +49,12 @@ export async function GET(
         price: true,
         active: true,
         service_id: true,
-        created_at: true, //  NOVO: Busca a data de criação do pacote (Início do Ciclo)
+        created_at: true,
+        package_template: {
+          select: {
+            name: true,
+          },
+        },
         check_ins: {
           select: {
             date_time: true,
@@ -66,17 +69,16 @@ export async function GET(
       },
     });
 
-    //  NOVO: Mapeia o resultado para injetar o array 'sessionDates' e a data de criação
     const formattedPackages = packages.map((pkg) => {
       return {
         id: pkg.id,
-        name: pkg.name,
+        name: pkg.package_template?.name || pkg.name,
         total_sessions: pkg.total_sessions,
         used_sessions: pkg.used_sessions,
         price: pkg.price,
         active: pkg.active,
         service_id: pkg.service_id,
-        created_at: pkg.created_at.toISOString(), //  NOVO: Envia a data formatada para o front-end
+        created_at: pkg.created_at.toISOString(),
         sessionDates: pkg.check_ins.map((checkin) =>
           checkin.date_time.toISOString(),
         ),

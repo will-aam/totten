@@ -41,7 +41,6 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get("limit") || "10", 10);
     const search = searchParams.get("q") || "";
     const activeParam = searchParams.get("active");
-    //  Capturamos o parâmetro secreto da URL
     const multiplePackages = searchParams.get("multiple_packages") === "true";
 
     const skip = (page - 1) * limit;
@@ -75,53 +74,57 @@ export async function GET(request: Request) {
     let totalCount = 0;
     let finalClientsList = [];
 
-    //  SE O FILTRO ESTIVER ATIVO, FAZEMOS A BUSCA E PAGINAÇÃO MANUALMENTE
-    if (multiplePackages) {
-      // 1. Busca TODOS que batem com as outras regras (sem skip/take)
-      const allClients = await prisma.client.findMany({
-        where: whereClause,
-        orderBy: { name: "asc" },
+    // app/api/clients/route.ts (trecho a ser corrigido)
+
+    // Definição comum do SELECT para manter consistência entre queries
+    const clientSelect = {
+      id: true,
+      name: true,
+      cpf: true,
+      phone_whatsapp: true,
+      email: true,
+      active: true,
+      packages: {
+        where: { active: true },
         select: {
           id: true,
-          name: true,
-          cpf: true,
-          phone_whatsapp: true,
-          email: true,
-          active: true,
-          packages: {
-            where: { active: true },
+          name: true, // <-- ADICIONADO: Pega o nome do pacote diretamente
+          used_sessions: true,
+          total_sessions: true,
+          package_template: {
             select: {
-              id: true,
               name: true,
-              used_sessions: true,
-              total_sessions: true,
-            },
-          },
-          _count: {
-            select: {
-              appointments: true,
-              check_ins: true,
-              packages: true,
-              anamnesis_responses: true,
             },
           },
         },
+      },
+      _count: {
+        select: {
+          appointments: true,
+          check_ins: true,
+          packages: true,
+          anamnesis_responses: true,
+        },
+      },
+    };
+
+    if (multiplePackages) {
+      const allClients = await prisma.client.findMany({
+        where: whereClause,
+        orderBy: { name: "asc" },
+        select: clientSelect,
       });
 
-      // 2. Filtra via JavaScript quem tem > 1 pacote
       const filteredClients = allClients.filter((client) => {
         const activePackages = client.packages.filter(
           (pkg) => pkg.used_sessions < pkg.total_sessions,
         );
-        return activePackages.length > 1; // ✨ A MÁGICA ACONTECE AQUI
+        return activePackages.length > 1;
       });
 
       totalCount = filteredClients.length;
-
-      // 3. Pagina a lista já filtrada
       finalClientsList = filteredClients.slice(skip, skip + limit);
     } else {
-      //  FLUXO NORMAL E OTIMIZADO (SEM FILTRO DOS 2 ASTERISCOS)
       const [count, paginatedClients] = await Promise.all([
         prisma.client.count({ where: whereClause }),
         prisma.client.findMany({
@@ -129,38 +132,15 @@ export async function GET(request: Request) {
           orderBy: { name: "asc" },
           skip,
           take: limit,
-          select: {
-            id: true,
-            name: true,
-            cpf: true,
-            phone_whatsapp: true,
-            email: true,
-            active: true,
-            packages: {
-              where: { active: true },
-              select: {
-                id: true,
-                name: true,
-                used_sessions: true,
-                total_sessions: true,
-              },
-            },
-            _count: {
-              select: {
-                appointments: true,
-                check_ins: true,
-                packages: true,
-                anamnesis_responses: true,
-              },
-            },
-          },
+          select: clientSelect,
         }),
       ]);
       totalCount = count;
       finalClientsList = paginatedClients;
     }
 
-    // Formata o retorno para os dois fluxos
+    // app/api/clients/route.ts (trecho a ser corrigido)
+
     const formattedClients = finalClientsList.map((client) => {
       const activePackages = client.packages.filter(
         (pkg) => pkg.used_sessions < pkg.total_sessions,
@@ -179,7 +159,9 @@ export async function GET(request: Request) {
         email: client.email,
         active: client.active,
         activePackageName:
-          activePackages.length > 0 ? activePackages[0].name : null,
+          activePackages.length > 0
+            ? activePackages[0].package_template?.name || activePackages[0].name
+            : null,
         activePackagesCount: activePackages.length,
         hasHistory,
         hasAnamnesis: client._count.anamnesis_responses > 0,
@@ -199,7 +181,6 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  // ... Código POST não sofreu nenhuma alteração ...
   try {
     const admin = await getCurrentAdmin();
     if (!admin)
