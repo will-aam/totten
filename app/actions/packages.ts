@@ -107,6 +107,9 @@ export async function getPackageHistory(packageId: string) {
         package_id: packageId,
         organization_id: admin.organizationId,
       },
+      include: {
+        check_in: true, // 🔥 NOVO: Traz o registro de check-in (se existir)
+      },
       orderBy: {
         date_time: "asc",
       },
@@ -114,13 +117,22 @@ export async function getPackageHistory(packageId: string) {
 
     return {
       success: true,
-      history: appointments.map((appt) => ({
-        id: appt.id,
-        session: appt.session_number,
-        date: appt.date_time,
-        status: appt.status,
-        obs: appt.observations,
-      })),
+      history: appointments.map((appt) => {
+        // 🔥 NOVO: Lógica para decidir qual data mostrar
+        // Se foi realizado e tem check-in, pega a hora real que bateu no totem
+        const displayDate =
+          appt.status === "REALIZADO" && appt.check_in
+            ? appt.check_in.date_time
+            : appt.date_time;
+
+        return {
+          id: appt.id,
+          session: appt.session_number,
+          date: displayDate,
+          status: appt.status,
+          obs: appt.observations,
+        };
+      }),
     };
   } catch (error) {
     console.error("Erro ao buscar histórico do pacote:", error);
