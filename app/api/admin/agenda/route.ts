@@ -78,11 +78,10 @@ export async function GET(req: NextRequest) {
         : null;
       const rawPrice =
         snapshotPrice ?? appt.package?.price ?? appt.service.price ?? 0;
-
       let sessionInfo = "Avulsa";
       if (appt.package) {
         const current = appt.session_number ?? 1;
-        sessionInfo = `Sessão ${current} de ${appt.package.total_sessions}`;
+        sessionInfo = `${current}/${appt.package.total_sessions}`;
       }
 
       let color = "";

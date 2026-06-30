@@ -66,25 +66,32 @@ export function AppointmentCardContent({
   isOverlay = false,
   isCancelled = false,
   isLocked = false,
+  isEmployee = false, // 🔥 NOVO: Recebendo a prop para identificar a funcionária
 }: {
   appt: Appointment;
   height: number;
   isOverlay?: boolean;
   isCancelled?: boolean;
   isLocked?: boolean;
+  isEmployee?: boolean;
 }) {
   const isPackageArchived = appt.package && appt.package.active === false;
   const isCompact = height <= 40;
 
-  //  Lendo o snapshot aqui dentro da nossa pecinha universal!
+  // Lendo o snapshot aqui dentro da nossa pecinha universal!
   const serviceName = appt.snapshot_service_name ?? appt.service;
+
+  // 🔥 NOVO: Definindo a cor do card dinamicamente
+  const cardColor = isEmployee
+    ? "bg-purple-100 border-purple-300 text-purple-900" // Cor de destaque para a funcionária
+    : appt.color; // Cor padrão do sistema para a Cris
 
   if (isCancelled) {
     return (
       <div
         className={cn(
           "h-full w-full rounded-xl border border-dashed flex items-center justify-between px-2 py-1 shadow-sm transition-transform overflow-hidden",
-          appt.color,
+          cardColor, // Aplicando a cor
           "opacity-50 grayscale-[0.8]",
           isOverlay && "shadow-2xl scale-105 rotate-1 cursor-grabbing",
         )}
@@ -108,7 +115,7 @@ export function AppointmentCardContent({
       className={cn(
         "h-full w-full rounded-xl border flex shadow-sm group overflow-hidden transition-transform relative",
         isCompact ? "flex-row items-center px-2 py-1 gap-2" : "flex-col p-3",
-        appt.color,
+        cardColor, // Aplicando a cor
         appt.hasCharge && !isPackageArchived && "border-2 border-destructive",
         isPackageArchived && "border-2 border-destructive/80 opacity-80",
         isOverlay &&
@@ -190,10 +197,7 @@ export function AppointmentCardContent({
                   : "bg-white/30",
               )}
             >
-              {!isPackageArchived && appt.package_id && !isCompact && (
-                <PackageIcon className="h-3 w-3" />
-              )}
-              {isPackageArchived && <AlertTriangle className="h-3 w-3" />}
+              {isPackageArchived}
               {isPackageArchived ? "Inativo" : appt.sessionInfo}
             </span>
           )}
@@ -212,6 +216,7 @@ export function DraggableAppointmentCard({
   onClick,
   onWhatsApp,
   onQuickConfirm,
+  isEmployee = false, // 🔥 NOVO: Recebendo na casca do Draggable
 }: {
   appt: Appointment;
   top: number;
@@ -221,6 +226,7 @@ export function DraggableAppointmentCard({
   onClick: () => void;
   onWhatsApp: (e: React.MouseEvent) => void;
   onQuickConfirm?: (appt: Appointment) => void;
+  isEmployee?: boolean;
 }) {
   const isCancelled = appt.status?.toUpperCase() === "CANCELADO";
   const isRealizado = appt.status?.toUpperCase() === "REALIZADO";
@@ -319,6 +325,7 @@ export function DraggableAppointmentCard({
         height={height}
         isCancelled={isCancelled}
         isLocked={isLocked}
+        isEmployee={isEmployee} // 🔥 NOVO: Repassando pro conteúdo interno
       />
     </div>
   );

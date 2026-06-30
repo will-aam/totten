@@ -396,6 +396,14 @@ export function WeeklyAgendaGrid({
                       ))}
 
                       {positionedAppts.map(({ appt, layout }) => {
+                        // 🔥 Lógica simples para identificar se não é a Cris
+                        // Ajuste "cris" para o nome exato que está cadastrado no sistema dela.
+                        const isEmployee = appt.professionalName
+                          ? !appt.professionalName
+                              .toLowerCase()
+                              .includes("cris")
+                          : false;
+
                         return (
                           <div
                             key={appt.id}
@@ -404,12 +412,13 @@ export function WeeklyAgendaGrid({
                           >
                             <DraggableAppointmentCard
                               appt={appt}
-                              top={0} // O top já está no parent div
+                              top={0}
                               height={parseInt(
                                 getAppointmentStyle(appt, layout).height,
                               )}
                               width="100%"
                               left="0px"
+                              isEmployee={isEmployee} // 🔥 ADICIONE ESTA LINHA AQUI
                               onClick={() => onAppointmentClick(appt)}
                               onQuickConfirm={onQuickConfirm}
                               onWhatsApp={(e) => {
