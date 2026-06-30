@@ -36,6 +36,7 @@ import {
   ArrowOutDownSquareHalf,
   Layers,
   Paperclip,
+  Share,
 } from "@boxicons/react";
 import {
   AlertDialog,
@@ -84,10 +85,12 @@ function ClientMobileItem({
   client,
   onClick,
   onActionClick,
+  onShareClick,
 }: {
   client: Client;
   onClick: () => void;
   onActionClick: (c: Client, e: React.MouseEvent) => void;
+  onShareClick: (c: Client, e: React.MouseEvent) => void;
 }) {
   const initial = client.name.charAt(0).toUpperCase();
 
@@ -102,7 +105,6 @@ function ClientMobileItem({
       )}
     >
       <div className="flex items-center gap-3">
-        {/* Avatar com badge de anamnese */}
         <div className="relative">
           <div
             className={cn(
@@ -114,7 +116,6 @@ function ClientMobileItem({
           >
             {initial}
           </div>
-          {/* Badge de Anamnese */}
           {client.active && client.hasAnamnesis && (
             <div
               className="absolute top-0 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-background z-10"
@@ -136,9 +137,9 @@ function ClientMobileItem({
           </span>
         </div>
       </div>
-      <div className="flex items-center gap-2 text-muted-foreground/50 shrink-0">
+      <div className="flex items-center gap-1 text-muted-foreground/50 shrink-0">
         {client.activePackageName && client.active && (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 mr-1">
             <span
               className="text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-md truncate max-w-32.5"
               title={client.activePackageName}
@@ -154,6 +155,18 @@ function ClientMobileItem({
             ) : null}
           </div>
         )}
+
+        {/* 🔥 NOVO: Botão de Compartilhar Portal (Mobile) */}
+        {client.active && (
+          <button
+            onClick={(e) => onShareClick(client, e)}
+            className="p-2 rounded-full transition-all active:scale-95 text-blue-600 hover:text-blue-700 hover:bg-blue-500/10 active:bg-blue-500/20"
+            title="Compartilhar Portal com a Cliente"
+          >
+            <Share size="sm" />
+          </button>
+        )}
+
         <button
           onClick={(e) => onActionClick(client, e)}
           className={cn(
@@ -180,7 +193,7 @@ function ClientMobileItem({
         </button>
         <ChevronRight
           size="sm"
-          className={cn("shrink-0", !client.active && "hidden")}
+          className={cn("shrink-0 ml-1", !client.active && "hidden")}
         />
       </div>
     </div>
@@ -203,19 +216,11 @@ export default function AdminClientsPage() {
   if (cleanSearch.length >= 3)
     apiUrl += `&q=${encodeURIComponent(cleanSearch)}`;
 
-  // Dentro do AdminClientsPage
   const {
     data: apiResponse,
     isLoading,
     mutate,
   } = useSWR<ApiResponse>(apiUrl, fetcher);
-
-  // ADICIONE ISSO AQUI:
-  useEffect(() => {
-    if (apiResponse) {
-      console.log("DADOS DA API:", apiResponse);
-    }
-  }, [apiResponse]);
 
   const clients = apiResponse?.data || [];
   const totalPages = apiResponse?.totalPages || 1;
@@ -239,6 +244,37 @@ export default function AdminClientsPage() {
     e.preventDefault();
     e.stopPropagation();
     setClientToProcess(client);
+  };
+
+  // 🔥 NOVA FUNÇÃO: Gera o link seguro e envia pro WhatsApp
+  const handleSharePortal = (client: Client, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const origin = window.location.origin;
+    const shareLink = `${origin}/cliente/${client.id}`;
+
+    let phone = client.phone_whatsapp?.replace(/\D/g, "") || "";
+    // Adiciona o DDI (55) se a clínica salvou o número só com DDD
+    if (phone && (phone.length === 10 || phone.length === 11)) {
+      phone = `55${phone}`;
+    }
+
+    const firstName = client.name.split(" ")[0];
+    const message = `Olá, ${firstName}! Acompanhe seu pacote de sessões e histórico no nosso portal exclusivo: ${shareLink}`;
+
+    if (phone) {
+      window.open(
+        `https://wa.me/${phone}?text=${encodeURIComponent(message)}`,
+        "_blank",
+      );
+    } else {
+      // Fallback elegante caso a cliente não tenha telefone salvo
+      navigator.clipboard.writeText(message);
+      toast.success(
+        "Cliente sem número. Link copiado para a área de transferência!",
+      );
+    }
   };
 
   const confirmProcess = async () => {
@@ -292,7 +328,6 @@ export default function AdminClientsPage() {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="relative w-full lg:max-w-md">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            {/* Input de busca por asterisco com destaque para filtro de múltiplos pacotes */}
             <Input
               placeholder="Buscar por nome, CPF ou telefone..."
               value={search}
@@ -433,6 +468,7 @@ export default function AdminClientsPage() {
                     client={client}
                     onClick={() => router.push(`/admin/clients/${client.id}`)}
                     onActionClick={handleActionClick}
+                    onShareClick={handleSharePortal}
                   />
                 ))}
               </div>
@@ -454,7 +490,7 @@ export default function AdminClientsPage() {
                       <TableHead className="text-center text-muted-foreground font-semibold">
                         Pacote
                       </TableHead>
-                      <TableHead className="text-center text-muted-foreground font-semibold w-24">
+                      <TableHead className="text-center text-muted-foreground font-semibold w-32">
                         Ações
                       </TableHead>
                     </TableRow>
@@ -476,7 +512,6 @@ export default function AdminClientsPage() {
                       >
                         <TableCell className="font-medium text-foreground">
                           <div className="flex items-center gap-3">
-                            {/* Avatar com badge de anamnese - Desktop */}
                             <div className="relative">
                               <div
                                 className={cn(
@@ -488,7 +523,6 @@ export default function AdminClientsPage() {
                               >
                                 {client.name.charAt(0).toUpperCase()}
                               </div>
-                              {/* Badge de Anamnese - Desktop */}
                               {client.active && client.hasAnamnesis && (
                                 <div
                                   className="absolute -top-0.5 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-background z-10"
@@ -533,30 +567,43 @@ export default function AdminClientsPage() {
                           )}
                         </TableCell>
                         <TableCell className="text-center">
-                          <button
-                            onClick={(e) => handleActionClick(client, e)}
-                            className={cn(
-                              "inline-flex p-2 rounded-full transition-all active:scale-95",
-                              client.active
-                                ? "text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:bg-destructive/20"
-                                : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10 active:bg-emerald-500/20",
+                          <div className="flex justify-center items-center gap-1">
+                            {/* 🔥 NOVO: Botão de Compartilhar Portal (Desktop) */}
+                            {client.active && (
+                              <button
+                                onClick={(e) => handleSharePortal(client, e)}
+                                className="p-2 rounded-full transition-all active:scale-95 text-blue-600 hover:text-blue-700 hover:bg-blue-500/10 active:bg-blue-500/20"
+                                title="Compartilhar Portal com a Cliente"
+                              >
+                                <Share size="sm" />
+                              </button>
                             )}
-                            title={
-                              !client.active
-                                ? "Reativar Cliente"
-                                : client.hasHistory
-                                  ? "Desativar Cliente"
-                                  : "Excluir Cliente"
-                            }
-                          >
-                            {!client.active ? (
-                              <UserCheck size="sm" />
-                            ) : client.hasHistory ? (
-                              <UserMinus size="sm" />
-                            ) : (
-                              <Trash size="sm" />
-                            )}
-                          </button>
+
+                            <button
+                              onClick={(e) => handleActionClick(client, e)}
+                              className={cn(
+                                "p-2 rounded-full transition-all active:scale-95",
+                                client.active
+                                  ? "text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:bg-destructive/20"
+                                  : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10 active:bg-emerald-500/20",
+                              )}
+                              title={
+                                !client.active
+                                  ? "Reativar Cliente"
+                                  : client.hasHistory
+                                    ? "Desativar Cliente"
+                                    : "Excluir Cliente"
+                              }
+                            >
+                              {!client.active ? (
+                                <UserCheck size="sm" />
+                              ) : client.hasHistory ? (
+                                <UserMinus size="sm" />
+                              ) : (
+                                <Trash size="sm" />
+                              )}
+                            </button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

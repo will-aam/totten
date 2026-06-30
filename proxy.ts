@@ -25,6 +25,8 @@ export async function proxy(request: NextRequest) {
     "/api/auth",
     "/api/totem",
     "/api/settings/public",
+    "/cliente", // <--- NOVA ROTA DO PORTAL DO CLIENTE UI
+    "/api/cliente", // <--- NOVA ROTA DA API DO PORTAL DO CLIENTE
   ];
 
   // Verifica se a rota bate com a exata OU com algum dos prefixos
