@@ -1,4 +1,4 @@
-// app/admin/stock/page.tsx
+// app/(private)/admin/stock/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -9,6 +9,7 @@ import {
   ChevronUp,
   Filter,
   LoaderDots,
+  FolderDownArrow, // <-- Ícone atualizado conforme seu pedido
 } from "@boxicons/react";
 import { Button } from "@/components/ui/button";
 import { AdminHeader } from "@/components/admin-header";
@@ -112,7 +113,6 @@ export default function StockPage() {
 
     const res = await deleteStockItem(id);
     if (res.success) {
-      // Exibindo a mensagem unificada e direta que vem do nosso backend
       toast.success(res.message || "Ação realizada com sucesso!");
     } else {
       toast.error(res.error || "Erro ao excluir insumo.");
@@ -131,6 +131,41 @@ export default function StockPage() {
       }
       return (b[sortBy] as number) - (a[sortBy] as number);
     });
+
+  const handleExportExcel = () => {
+    if (filteredAndSortedItems.length === 0) {
+      toast.error("Não há itens para exportar.");
+      return;
+    }
+
+    // Removi a coluna 'Unidade' para respeitar a interface StockItem
+    const headers = ["Nome,Quantidade,Custo Unitário (R$),Custo Total (R$)"];
+
+    const rows = filteredAndSortedItems.map((item) => {
+      const totalCost = (item.quantity * item.unit_cost).toFixed(2);
+      const unitCost = item.unit_cost.toFixed(2);
+      // Sem o item.unit_measurement, o TypeScript vai parar de reclamar
+      return `"${item.name}",${item.quantity},"${unitCost}","${totalCost}"`;
+    });
+
+    const csvContent = headers.concat(rows).join("\n");
+    const blob = new Blob(["\uFEFF" + csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+
+    const dateStr = new Date().toLocaleDateString("pt-BR").replace(/\//g, "-");
+    link.setAttribute("download", `Estoque_Totten_${dateStr}.csv`);
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast.success("Planilha baixada com sucesso!");
+  };
 
   return (
     <>
@@ -176,6 +211,15 @@ export default function StockPage() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+
+            {/* Novo Botão de Exportar com o seu ícone */}
+            <Button
+              onClick={handleExportExcel}
+              variant="outline"
+              className="h-12 px-4 rounded-xl font-medium shadow-sm border-border"
+            >
+              <FolderDownArrow className="mr-2 h-4 w-4" /> Exportar
+            </Button>
 
             <Button
               onClick={() => setIsModalOpen(true)}
@@ -255,7 +299,6 @@ export default function StockPage() {
               Excluir Insumo?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {/*  MENTIRA PIADOSA: Texto padrão de exclusão. O backend cuida do soft delete silenciosamente. */}
               Tem certeza que deseja excluir este insumo do seu estoque? Essa
               ação não poderá ser desfeita.
             </AlertDialogDescription>
