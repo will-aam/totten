@@ -42,14 +42,15 @@ import {
   Repeat,
   AlertTriangle,
   Lock,
-  Undo, // Ícone adicionado para o botão de desfazer
+  Undo,
 } from "@boxicons/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   updateAppointment,
   deleteAppointment,
-  undoAutoNoShow, // Import da nova action que você acabou de criar
+  undoNoShow,
+  registerManualNoShow, // 🔥 A nova action manual importada
 } from "@/app/actions/appointments";
 import { ThermalReceipt } from "./thermal-receipt";
 import { getPaymentMethods } from "@/app/actions/payment-methods";
@@ -74,7 +75,7 @@ export const AppointmentDetailsModal = memo(
     const [obs, setObs] = useState("");
     const [hasCharge, setHasCharge] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [isUndoing, setIsUndoing] = useState(false); // Estado de loading para o estorno
+    const [isUndoing, setIsUndoing] = useState(false);
     const [settings, setSettings] = useState<any>(null);
     const [paymentMethods, setPaymentMethods] = useState<
       OrganizationPaymentMethod[]
@@ -83,7 +84,6 @@ export const AppointmentDetailsModal = memo(
 
     const componentRef = useRef<HTMLDivElement>(null);
 
-    // SNAPSHOT: Determina o nome do serviço
     const serviceName = useMemo(() => {
       if (!appointment) return "";
       return appointment.snapshot_service_name ?? appointment.service;
@@ -145,22 +145,24 @@ export const AppointmentDetailsModal = memo(
     const isRecurrent = !!appointment.recurrence_id;
     const isPackageArchived =
       appointment.package && appointment.package.active === false;
-
-    // Bloqueia se já estiver cancelado
     const isAlreadyCanceled = appointment.status?.toLowerCase() === "cancelado";
     const isLocked = isAlreadyCanceled;
 
-    // O "Faro" para descobrir se é uma Falta Automática
+    // 🔥 O FARO DE FALTAS: Descobre se foi Automática ou Manual
     const isAutoNoShow =
       isAlreadyCanceled &&
       (appointment.observations?.includes("Falta automática") ||
         appointment.observations?.includes("Baixa automática"));
+    const isManualNoShow =
+      isAlreadyCanceled &&
+      appointment.observations?.includes("(Falta Registrada)");
+    const isAnyNoShow = isAutoNoShow || isManualNoShow;
 
-    // Função que chama a Action de Estorno
+    // Função que chama a Action de Estorno Unificada
     const handleUndoNoShow = async () => {
       setIsUndoing(true);
       try {
-        const result = await undoAutoNoShow(appointment.id);
+        const result = await undoNoShow(appointment.id);
         if (result.success) {
           toast.success(
             "Falta desfeita! A sessão voltou para o status Pendente.",
@@ -184,7 +186,11 @@ export const AppointmentDetailsModal = memo(
       if (isLocked) return;
 
       const finalStatus = targetStatus || status;
-      if (isPackageArchived && finalStatus !== "cancelado") {
+      if (
+        isPackageArchived &&
+        finalStatus !== "cancelado" &&
+        finalStatus !== "nao_compareceu"
+      ) {
         toast.error(
           "Este pacote foi arquivado. Você só pode excluir ou cancelar esta sessão.",
         );
@@ -193,6 +199,20 @@ export const AppointmentDetailsModal = memo(
 
       setIsSaving(true);
       try {
+        // 🔥 INTERCEPTAÇÃO: Se escolheu "Faltou", rodamos a nova Action Manual!
+        if (finalStatus === "nao_compareceu") {
+          const result = await registerManualNoShow(appointment.id, obs);
+          if (result.success) {
+            toast.success("Falta registrada e sessão descontada do pacote!");
+            onRefresh?.();
+            onOpenChange(false);
+          } else {
+            toast.error(result.error || "Erro ao registrar a falta.");
+          }
+          return;
+        }
+
+        // Se for outro status, roda o update normal
         const result = await updateAppointment(
           appointment.id,
           {
@@ -223,7 +243,6 @@ export const AppointmentDetailsModal = memo(
 
     const handleDelete = async (deleteAll = false) => {
       if (isLocked) return;
-
       try {
         await deleteAppointment(
           appointment.id,
@@ -240,9 +259,8 @@ export const AppointmentDetailsModal = memo(
 
     const handleStatusChange = (newStatus: string) => {
       setStatus(newStatus);
-      if (newStatus === "cancelado") {
+      if (newStatus === "cancelado" || newStatus === "nao_compareceu") {
         setPayment("nenhum");
-        setObs("");
         setHasCharge(false);
       }
     };
@@ -292,7 +310,6 @@ export const AppointmentDetailsModal = memo(
                     <Repeat className="h-3 w-3" /> Série
                   </Badge>
                 )}
-
                 {appointment.professionalName && (
                   <>
                     <span className="text-muted-foreground/30 hidden sm:inline">
@@ -312,19 +329,19 @@ export const AppointmentDetailsModal = memo(
           </DialogHeader>
 
           <div className="flex flex-col gap-5 overflow-y-auto py-2 pr-1 custom-scrollbar">
-            {/* NOVO BANNER: Se for Falta Automática do Robô */}
-            {isAutoNoShow && (
+            {/* 🔥 BANNER INTELIGENTE DE FALTAS */}
+            {isAnyNoShow && (
               <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl flex flex-col gap-3 animate-in fade-in zoom-in-95">
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
                   <div className="flex flex-col">
                     <span className="text-sm font-black text-amber-700 dark:text-amber-500 uppercase tracking-tight">
-                      Falta Automática
+                      {isAutoNoShow ? "Falta Automática" : "Falta Registrada"}
                     </span>
                     <span className="text-xs font-medium text-amber-700/80 dark:text-amber-500/80 mt-1">
-                      O sistema registrou falta pois não houve check-in no
-                      totem. Se a cliente compareceu e foi um esquecimento,
-                      estorne a falta abaixo para liberar o check-in novamente.
+                      {isAutoNoShow
+                        ? "O sistema registrou falta pois não houve check-in no totem. Se a cliente compareceu, estorne a falta abaixo."
+                        : "Esta falta foi registrada manualmente e a sessão foi descontada. Se foi um erro, estorne abaixo."}
                     </span>
                   </div>
                 </div>
@@ -345,23 +362,22 @@ export const AppointmentDetailsModal = memo(
               </div>
             )}
 
-            {/* BANNER ANTIGO: Se for um Cancelamento Normal (Manual) */}
-            {isAlreadyCanceled && !isAutoNoShow && (
+            {isAlreadyCanceled && !isAnyNoShow && (
               <div className="bg-muted/50 border border-border p-4 rounded-2xl flex items-start gap-3 animate-in fade-in zoom-in-95">
                 <Lock className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
                 <div className="flex flex-col">
                   <span className="text-sm font-black text-foreground uppercase tracking-tight">
-                    Registro Bloqueado
+                    Registro Cancelado
                   </span>
                   <span className="text-xs font-medium text-muted-foreground mt-1">
-                    Esta sessão foi cancelada. Por motivos de segurança fiscal e
-                    de pacotes, ela não pode ser alterada ou excluída.
+                    Esta consulta foi cancelada amigavelmente e nenhuma sessão
+                    foi descontada. Por motivos de segurança ela não pode ser
+                    alterada.
                   </span>
                 </div>
               </div>
             )}
 
-            {/* BANNER DE PACOTE ARQUIVADO */}
             {isPackageArchived &&
               !isAlreadyCanceled &&
               status !== "cancelado" &&
@@ -436,7 +452,16 @@ export const AppointmentDetailsModal = memo(
                   <SelectContent className="rounded-2xl border-border/50 bg-background">
                     <SelectItem value="a_confirmar">A Confirmar</SelectItem>
                     <SelectItem value="realizado">Realizado</SelectItem>
-                    <SelectItem value="cancelado">Cancelado</SelectItem>
+                    <SelectItem value="cancelado">
+                      Cancelado (Sem Cobrar)
+                    </SelectItem>
+                    {/* 🔥 NOVA OPÇÃO DE FALTA MANUAL AQUI */}
+                    <SelectItem
+                      value="nao_compareceu"
+                      className="text-amber-600 font-bold focus:text-amber-700"
+                    >
+                      Faltou (Desconta Sessão)
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -449,7 +474,10 @@ export const AppointmentDetailsModal = memo(
                   value={payment}
                   onValueChange={setPayment}
                   disabled={
-                    isLocked || isPackageArchived || status === "cancelado"
+                    isLocked ||
+                    isPackageArchived ||
+                    status === "cancelado" ||
+                    status === "nao_compareceu"
                   }
                 >
                   <SelectTrigger className="rounded-2xl h-12 bg-muted/20 border-none font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
@@ -476,11 +504,11 @@ export const AppointmentDetailsModal = memo(
               <Textarea
                 value={obs}
                 onChange={(e) => setObs(e.target.value)}
-                disabled={isLocked || status === "cancelado"}
+                disabled={isLocked}
                 placeholder={
-                  status === "cancelado" || isLocked
+                  isLocked
                     ? "Indisponível para agendamentos cancelados"
-                    : "Digite detalhes que aparecerão no recibo..."
+                    : "Digite detalhes..."
                 }
                 className="bg-muted/20 border-none resize-none h-24 rounded-2xl p-4 disabled:opacity-50 disabled:cursor-not-allowed"
               />
@@ -498,7 +526,8 @@ export const AppointmentDetailsModal = memo(
                   isLocked ||
                   status === "realizado" ||
                   isPackageArchived ||
-                  status === "cancelado"
+                  status === "cancelado" ||
+                  status === "nao_compareceu"
                 }
               >
                 {hasCharge ? "Cobrança Ativa" : "Tudo Pago"}
@@ -517,7 +546,6 @@ export const AppointmentDetailsModal = memo(
             </div>
           </div>
 
-          {/* O Footer inteiro é escondido se estiver bloqueado */}
           {!isLocked && (
             <DialogFooter className="flex flex-col-reverse sm:flex-row gap-3 pt-6 border-t border-border/40 mt-auto">
               {status !== "realizado" && (
@@ -572,7 +600,10 @@ export const AppointmentDetailsModal = memo(
                     isRecurrent ? setShowSaveOptions(true) : handleSave()
                   }
                   disabled={
-                    isSaving || (isPackageArchived && status !== "cancelado")
+                    isSaving ||
+                    (isPackageArchived &&
+                      status !== "cancelado" &&
+                      status !== "nao_compareceu")
                   }
                   className="rounded-2xl bg-primary text-primary-foreground h-12 px-8 font-bold w-full sm:w-auto"
                 >
@@ -580,9 +611,7 @@ export const AppointmentDetailsModal = memo(
                     <LoaderDots className="h-5 w-5 animate-spin" />
                   ) : (
                     <>
-                      <span className="flex items-center">
-                        <Save className="mr-2 h-5 w-5" /> Salvar
-                      </span>
+                      <Save className="mr-2 h-5 w-5" /> Salvar
                     </>
                   )}
                 </Button>
@@ -591,7 +620,10 @@ export const AppointmentDetailsModal = memo(
                   <Button
                     onClick={() => handleSave(status, true)}
                     disabled={
-                      isSaving || (isPackageArchived && status !== "cancelado")
+                      isSaving ||
+                      (isPackageArchived &&
+                        status !== "cancelado" &&
+                        status !== "nao_compareceu")
                     }
                     className="rounded-2xl h-12 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs uppercase"
                   >
@@ -600,7 +632,10 @@ export const AppointmentDetailsModal = memo(
                   <Button
                     onClick={() => handleSave(status, false)}
                     disabled={
-                      isSaving || (isPackageArchived && status !== "cancelado")
+                      isSaving ||
+                      (isPackageArchived &&
+                        status !== "cancelado" &&
+                        status !== "nao_compareceu")
                     }
                     className="rounded-2xl h-12 bg-primary text-white font-bold text-xs uppercase"
                   >

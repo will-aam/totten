@@ -8,7 +8,6 @@ import { revalidatePath } from "next/cache";
 import { generateRecurrentDates } from "@/lib/date-utils";
 import { randomUUID } from "crypto";
 
-// --- TIPOS ---
 export type CreateAppointmentInput = {
   clientId: string;
   serviceId: string;
@@ -22,10 +21,6 @@ export type CreateAppointmentInput = {
 export type CreateAppointmentResult =
   | { success: true; appointments: any[] }
   | { success: false; error: string };
-
-// 🔥 FUNÇÃO hasScheduleConflict FOI REMOVIDA DAQUI!
-// A clínica agora tem liberdade total para sobrepor agendamentos (overbooking/assistentes).
-// Ninguém mais será bloqueado de agendar o horário que desejar.
 
 // --- 1. CRIAR AGENDAMENTO (RECORRÊNCIA) ---
 export async function createAppointment(
@@ -61,9 +56,6 @@ export async function createAppointment(
     }
 
     const targetProfessional = professionalId || admin.id;
-
-    // 🔥 O BLOQUEIO DE HORÁRIOS FOI REMOVIDO DAQUI
-    // Os agendamentos agora passam direto para o banco de dados sem restrições.
 
     let startSessionNumber = 0;
 
@@ -117,7 +109,6 @@ export async function createAppointment(
 
     revalidatePath("/admin/agenda");
 
-    // CONVERSÃO DE DECIMAL PARA NUMBER AQUI PARA O NEXT.JS NÃO RECLAMAR
     const sanitizedAppointments = appointments.map((appt) => ({
       ...appt,
       snapshot_service_price: appt.snapshot_service_price
@@ -234,7 +225,6 @@ export async function updateAppointment(
             },
           });
 
-          // 🔥 AUTO-ENCERRAMENTO DE PACOTE (Recorrente)
           const newUsedSessions =
             currentAppt.package.used_sessions + updateResult;
 
@@ -258,7 +248,6 @@ export async function updateAppointment(
         });
 
         if (isMarkingAsDone && currentAppt.package_id && currentAppt.package) {
-          // 🔥 AUTO-ENCERRAMENTO DE PACOTE (Individual)
           const newUsedSessions = currentAppt.package.used_sessions + 1;
 
           await tx.package.update({
@@ -386,7 +375,6 @@ export async function deleteAppointment(
 
     await prisma.$transaction(async (tx) => {
       for (const appt of appointmentsToDelete) {
-        // 🔥 Se o pacote estava ativo ou arquivado, ao deletar uma sessão realizada ele sempre volta a ficar ativo para ser usado!
         if (appt.status === AppointmentStatus.REALIZADO && appt.package_id) {
           await tx.package.update({
             where: { id: appt.package_id },
@@ -446,9 +434,6 @@ export async function updateAppointmentDateTime(
 
     const newDate = new Date(newDateIso);
 
-    // 🔥 BLOQUEIO DE DRAG AND DROP REMOVIDO!
-    // Você pode arrastar um agendamento para cima do outro livremente agora.
-
     await prisma.appointment.update({
       where: { id, organization_id: admin.organizationId },
       data: { date_time: newDate },
@@ -461,122 +446,23 @@ export async function updateAppointmentDateTime(
     return { success: false, error: "Falha ao reagendar." };
   }
 }
-// --- 5. PROCESSAMENTO AUTOMÁTICO DE FALTAS (CRON JOB) ---
+
+// --- 5. PROCESSAMENTO AUTOMÁTICO DE FALTAS (NEUTRALIZADO) ---
 export async function processDailyNoShows(secretKey?: string) {
-  try {
-    if (secretKey !== process.env.CRON_SECRET) {
-      return { success: false, error: "Acesso não autorizado." };
-    }
-
-    const now = new Date();
-
-    const overdueAppointments = await prisma.appointment.findMany({
-      where: {
-        date_time: { lt: now },
-        status: {
-          in: [AppointmentStatus.PENDENTE, AppointmentStatus.CONFIRMADO],
-        },
-        check_in: { is: null },
-      },
-      include: {
-        package: true,
-        client: true,
-      },
-    });
-
-    if (overdueAppointments.length === 0) {
-      return {
-        success: true,
-        processed: 0,
-        message: "Nenhuma falta pendente.",
-      };
-    }
-
-    let processedCount = 0;
-
-    // 🔥 MUDANÇA AQUI: O Loop agora fica por FORA da transação.
-    for (const appt of overdueAppointments) {
-      try {
-        // 🔥 Cada agendamento tem sua própria "mini-transação" super rápida
-        await prisma.$transaction(async (tx) => {
-          // A. Altera o status para CANCELADO
-          await tx.appointment.update({
-            where: { id: appt.id },
-            data: {
-              status: AppointmentStatus.CANCELADO,
-              has_charge: false,
-              observations: appt.observations
-                ? `${appt.observations}\n(Falta automática)`
-                : "Falta não justificada. Baixa automática pelo sistema.",
-            },
-          });
-
-          // B. Desconta a sessão do Pacote
-          if (appt.package_id && appt.package) {
-            const newUsedSessions = appt.package.used_sessions + 1;
-            const stillActive = newUsedSessions < appt.package.total_sessions;
-
-            await tx.package.update({
-              where: { id: appt.package_id },
-              data: {
-                used_sessions: newUsedSessions,
-                active: stillActive,
-              },
-            });
-          }
-
-          // C. Cria uma nota no histórico da cliente com texto dinâmico
-          const formattedDate = new Intl.DateTimeFormat("pt-BR", {
-            dateStyle: "short",
-            timeStyle: "short",
-          }).format(appt.date_time);
-
-          // Aqui é a inteligência: Verifica se era pacote ou avulso para gerar o texto certo
-          const noteText = appt.package_id
-            ? `Falta Automática: A cliente não compareceu ao agendamento do dia ${formattedDate}. A sessão foi descontada do pacote conforme a política de faltas.`
-            : `Falta Automática: A cliente não compareceu ao agendamento do dia ${formattedDate} (Serviço Avulso). A consulta foi cancelada automaticamente.`;
-
-          await tx.clientNote.create({
-            data: {
-              text: noteText,
-              client_id: appt.client_id,
-              organization_id: appt.organization_id,
-              date: now,
-            },
-          });
-        });
-
-        // Se a mini-transação deu certo, conta +1
-        processedCount++;
-      } catch (itemError) {
-        // Se um agendamento falhar, loga o erro e CONTINUA para o próximo!
-        console.error(
-          `Erro ao processar falta do agendamento ${appt.id}:`,
-          itemError,
-        );
-      }
-    }
-
-    // Atualiza os painéis do sistema
-    revalidatePath("/admin/agenda");
-    revalidatePath("/admin/packages");
-    revalidatePath("/admin/clients");
-
-    return { success: true, processed: processedCount };
-  } catch (error) {
-    console.error("Erro no processDailyNoShows:", error);
-    return {
-      success: false,
-      error: "Falha ao processar faltas automaticamente.",
-    };
-  }
+  // 🔥 Automação desativada a pedido da clínica.
+  // A falta agora deve ser tratada manualmente pela UI (Admin).
+  return {
+    success: true,
+    processed: 0,
+    message: "Automação de faltas desativada. O controle agora é 100% manual.",
+  };
 }
-// --- 6. DESFAZER FALTA AUTOMÁTICA (VÁLVULA DE ESCAPE) ---
-export async function undoAutoNoShow(appointmentId: string) {
+
+// --- 6. DESFAZER FALTA (MANUAL OU AUTOMÁTICA) ---
+export async function undoNoShow(appointmentId: string) {
   try {
     const admin = await requireAuth();
 
-    // 1. Busca o agendamento bloqueado
     const appt = await prisma.appointment.findUnique({
       where: { id: appointmentId, organization_id: admin.organizationId },
       include: { package: true },
@@ -590,10 +476,11 @@ export async function undoAutoNoShow(appointmentId: string) {
     }
 
     await prisma.$transaction(async (tx) => {
-      // A. Devolve o status para PENDENTE e limpa o texto de falta automática
       const cleanObs = appt.observations
         ? appt.observations
             .replace("\n(Falta automática)", "")
+            .replace("\n(Falta Registrada)", "")
+            .replace("(Falta Registrada)", "")
             .replace(
               "Falta não justificada. Baixa automática pelo sistema.",
               "",
@@ -608,32 +495,29 @@ export async function undoAutoNoShow(appointmentId: string) {
         },
       });
 
-      // B. Se tinha pacote, devolve o saldo (decrementa o used_sessions)
       if (appt.package_id && appt.package) {
-        // Como estamos devolvendo uma sessão, o pacote obrigatoriamente tem que estar ativo de novo
         await tx.package.update({
           where: { id: appt.package_id },
           data: {
             used_sessions: { decrement: 1 },
-            active: true,
+            active: true, // Garante que o pacote volta a ficar ativo caso tenha sido encerrado por essa falta
           },
         });
       }
 
-      // C. Limpa a nota de "Falta Automática" que o robô criou no histórico da cliente
-      // Como o robô gera notas com a frase "Falta Automática", podemos buscar e apagar
+      // Limpa a nota de "Falta" do histórico da cliente (busca pela data exata da consulta)
+      const dateStr = new Intl.DateTimeFormat("pt-BR", {
+        dateStyle: "short",
+      }).format(appt.date_time);
       await tx.clientNote.deleteMany({
         where: {
           client_id: appt.client_id,
           organization_id: admin.organizationId,
-          text: { contains: "Falta Automática" },
-          // Pegamos notas criadas nos últimos 2 dias para não apagar notas erradas
-          date: { gte: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) },
+          text: { contains: dateStr },
         },
       });
     });
 
-    // Atualiza os painéis do sistema
     revalidatePath("/admin/agenda");
     revalidatePath("/admin/packages");
     revalidatePath("/admin/clients");
@@ -642,5 +526,83 @@ export async function undoAutoNoShow(appointmentId: string) {
   } catch (error) {
     console.error("Erro ao desfazer falta:", error);
     return { success: false, error: "Falha ao estornar a falta do cliente." };
+  }
+}
+
+// --- 7. REGISTRAR FALTA MANUALMENTE ---
+export async function registerManualNoShow(
+  appointmentId: string,
+  observation: string,
+) {
+  try {
+    const admin = await requireAuth();
+    const appt = await prisma.appointment.findUnique({
+      where: { id: appointmentId, organization_id: admin.organizationId },
+      include: { package: true },
+    });
+
+    if (!appt) return { success: false, error: "Agendamento não encontrado." };
+    if (
+      appt.status === AppointmentStatus.CANCELADO ||
+      appt.status === AppointmentStatus.REALIZADO
+    ) {
+      return { success: false, error: "Este agendamento já está fechado." };
+    }
+
+    await prisma.$transaction(async (tx) => {
+      const newObs = observation
+        ? `${observation}\n(Falta Registrada)`
+        : "(Falta Registrada)";
+
+      await tx.appointment.update({
+        where: { id: appt.id },
+        data: {
+          status: AppointmentStatus.CANCELADO,
+          has_charge: false,
+          payment_method: null,
+          observations: newObs,
+        },
+      });
+
+      if (appt.package_id && appt.package) {
+        const newUsedSessions = appt.package.used_sessions + 1;
+        const stillActive = newUsedSessions < appt.package.total_sessions;
+
+        await tx.package.update({
+          where: { id: appt.package_id },
+          data: {
+            used_sessions: newUsedSessions,
+            active: stillActive,
+          },
+        });
+      }
+
+      // Cria nota no histórico da cliente
+      const formattedDate = new Intl.DateTimeFormat("pt-BR", {
+        dateStyle: "short",
+        timeStyle: "short",
+      }).format(appt.date_time);
+      const noteText = appt.package_id
+        ? `Falta Manual: A cliente não compareceu ao agendamento do dia ${formattedDate}. A sessão foi descontada do pacote.`
+        : `Falta Manual: A cliente não compareceu ao agendamento do dia ${formattedDate} (Serviço Avulso).`;
+
+      await tx.clientNote.create({
+        data: {
+          text: noteText,
+          client_id: appt.client_id,
+          organization_id: admin.organizationId,
+          date: new Date(),
+        },
+      });
+    });
+
+    revalidatePath("/admin/agenda");
+    revalidatePath("/admin/packages");
+    revalidatePath("/admin/clients");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao registrar falta:", error);
+    return { success: false, error: "Falha ao registrar a falta." };
   }
 }
