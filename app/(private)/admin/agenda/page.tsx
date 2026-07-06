@@ -18,27 +18,17 @@ import {
   isSameDay,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { AdminHeader } from "@/components/admin-header";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
   ChevronUp,
-  Slider,
   LoaderDots,
   Plus,
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 
 import { DailyAgendaGrid } from "./components/daily-agenda-grid";
 import { Appointment } from "./components/appointment-card";
@@ -47,6 +37,7 @@ import { MonthlyAgendaGrid } from "./components/monthly-agenda-grid";
 import { NewAppointmentModal } from "./components/new-appointment-modal";
 import { AppointmentDetailsModal } from "./components/appointment-details-modal";
 import { ScheduleSettingsModal } from "./components/schedule-settings-modal";
+import { AgendaHeader } from "./components/agenda-header";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -300,78 +291,44 @@ export default function AgendaPage() {
     .replace(/^\w/, (c) => c.toUpperCase())
     .replace("-feira", "");
 
+  const headerTitle =
+    viewMode === "week"
+      ? `Semana de ${format(weekStart, "dd MMM", { locale: ptBR })}`
+      : viewMode === "month"
+        ? format(selectedDate, "MMMM 'de' yyyy", { locale: ptBR }).replace(
+            /^\w/,
+            (c) => c.toUpperCase(),
+          )
+        : formattedDateDesktop;
+
   return (
     <>
-      <AdminHeader title="Agenda" />
+      <AgendaHeader
+        selectedDate={selectedDate}
+        onSelectDate={(date) => {
+          isProgrammaticScroll.current = true;
+          setSelectedDate(date);
+          setWeekStart(startOfWeek(date, { weekStartsOn: 0 }));
+        }}
+        title={headerTitle}
+        subtitle={
+          loadingAgenda ? (
+            <span className="flex items-center gap-1">
+              <LoaderDots size="xs" className="animate-spin" /> Atualizando...
+            </span>
+          ) : viewMode === "day" ? (
+            `${appointments.length} agendamentos`
+          ) : viewMode === "week" ? (
+            `${weekAppointments.length} na semana`
+          ) : (
+            `${monthAppointments.length} no mês`
+          )
+        }
+        onOpenSettings={() => setIsSettingsOpen(true)}
+      />
 
       <div className="flex flex-col gap-4 p-4 md:p-6 max-w-400 mx-auto w-full pb-32 md:pb-6 relative min-h-[calc(100vh-100px)]">
-        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 border-b border-border/50 pb-4">
-          <div className="flex w-full xl:w-auto justify-between items-center">
-            <Popover>
-              <PopoverTrigger asChild>
-                <div className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:bg-muted/50 p-2 -ml-2 rounded-2xl transition-colors group w-fit">
-                  <div className="text-left">
-                    <h1 className="text-lg sm:text-xl font-bold tracking-tight text-foreground leading-tight flex items-center gap-1.5">
-                      <span>
-                        {viewMode === "week"
-                          ? `Semana de ${format(weekStart, "dd MMM", { locale: ptBR })}`
-                          : viewMode === "month"
-                            ? format(selectedDate, "MMMM 'de' yyyy", {
-                                locale: ptBR,
-                              }).replace(/^\w/, (c) => c.toUpperCase())
-                            : formattedDateDesktop}
-                      </span>
-                      <ChevronDown
-                        size="sm"
-                        className="text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity"
-                      />
-                    </h1>
-                    <p className="text-xs text-muted-foreground mt-0.5 font-medium">
-                      {loadingAgenda ? (
-                        <span className="flex items-center gap-1">
-                          <LoaderDots size="xs" className="animate-spin" />{" "}
-                          Atualizando...
-                        </span>
-                      ) : viewMode === "day" ? (
-                        `${appointments.length} agendamentos`
-                      ) : viewMode === "week" ? (
-                        `${weekAppointments.length} na semana`
-                      ) : (
-                        `${monthAppointments.length} no mês`
-                      )}
-                    </p>
-                  </div>
-                </div>
-              </PopoverTrigger>
-              <PopoverContent
-                className="w-auto p-0 rounded-2xl shadow-xl"
-                align="start"
-              >
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={(date) => {
-                    if (date) {
-                      isProgrammaticScroll.current = true;
-                      setSelectedDate(date);
-                      setWeekStart(startOfWeek(date, { weekStartsOn: 0 }));
-                    }
-                  }}
-                  locale={ptBR}
-                />
-              </PopoverContent>
-            </Popover>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsSettingsOpen(true)}
-              className="rounded-full h-10 w-10 shrink-0 text-muted-foreground hover:bg-muted xl:hidden"
-            >
-              <Slider size="sm" />
-            </Button>
-          </div>
-
+        <div className="flex justify-end pb-4">
           <div className="flex flex-col lg:flex-row items-center justify-end gap-3 w-full xl:w-auto flex-wrap">
             <Tabs
               value={viewMode}
@@ -393,7 +350,7 @@ export default function AgendaPage() {
               </TabsList>
             </Tabs>
 
-            <div className="flex items-center w-full lg:w-auto justify-between bg-muted/20 lg:bg-transparent rounded-2xl p-1 lg:p-0 border lg:border-0 border-border/50 shrink-0 overflow-hidden">
+            <div className="hidden md:flex items-center w-full lg:w-auto justify-between bg-muted/20 lg:bg-transparent rounded-2xl p-1 lg:p-0 shrink-0 overflow-hidden">
               <Button
                 variant="ghost"
                 size="icon"
@@ -479,15 +436,6 @@ export default function AgendaPage() {
                 <ChevronRight removePadding size="sm" />
               </Button>
             </div>
-
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setIsSettingsOpen(true)}
-              className="rounded-xl h-11 w-11 shrink-0 bg-card shadow-sm hidden xl:flex"
-            >
-              <Slider size="sm" />
-            </Button>
           </div>
         </div>
 
