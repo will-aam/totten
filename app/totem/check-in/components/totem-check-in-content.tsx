@@ -1,12 +1,10 @@
-// app/totem/check-in/totem-check-in-content.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react"; //  Importamos a sessão
-import { CpfKeypad } from "@/components/cpf-keypad";
-import { ChevronLeft, LoaderDots } from "@boxicons/react";
-import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { IdentificationKeypad, InputMode } from "./identification-keypad";
+import { LoaderDots } from "@boxicons/react";
 import {
   Dialog,
   DialogContent,
@@ -44,10 +42,11 @@ type SearchResponse =
 
 export default function TotemCheckInContent() {
   const router = useRouter();
-  const { status } = useSession(); //  Obtemos o status da sessão
+  const { status } = useSession();
 
-  const [cpf, setCpf] = useState("");
+  const [inputValue, setInputValue] = useState("");
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<InputMode>("CPF");
 
   const [multipleAppointments, setMultipleAppointments] = useState<
     AppointmentOption[]
@@ -60,32 +59,36 @@ export default function TotemCheckInContent() {
   const [showConfirmTime, setShowConfirmTime] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
 
-  //  Nova Lógica de Proteção: Usa a sessão em vez do slug
+  // Proteção de rota baseada na sessão do Totem
   useEffect(() => {
     if (status === "unauthenticated") {
       router.replace("/totem/error?type=ORG_NOT_FOUND");
     }
   }, [status, router]);
 
-  const handleConfirm = async () => {
-    const digits = cpf.replace(/\D/g, "");
-    if (digits.length !== 11) return;
+  const handleConfirm = async (mode: InputMode) => {
+    const digits = inputValue.replace(/\D/g, "");
+    // Validação estrita: CPF precisa de 11 dígitos, Telefone aceita 10 ou 11
+    if (mode === "CPF" && digits.length !== 11) return;
+    if (mode === "PHONE" && digits.length < 10) return;
 
     setLoading(true);
     try {
+      // Enviamos o valor limpo e o modo (CPF ou PHONE) para a API saber como buscar
       const res = await fetch("/api/totem/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          cpf: digits,
-          //  Não enviamos mais o slug
+          value: digits,
+          mode: mode,
         }),
       });
 
       const data: SearchResponse = await res.json();
 
       if (data.status === "NOT_FOUND") {
-        router.push(`/totem/error?type=CPF_NOT_FOUND`);
+        // Se não encontrar por Telefone, podemos usar um parâmetro genérico de erro no futuro
+        router.push(`/totem/error?type=${mode}_NOT_FOUND`);
         return;
       }
 
@@ -95,7 +98,10 @@ export default function TotemCheckInContent() {
           service: data.appointment.service_name,
           time: new Date(data.appointment.date_time).toLocaleTimeString(
             "pt-BR",
-            { hour: "2-digit", minute: "2-digit" },
+            {
+              hour: "2-digit",
+              minute: "2-digit",
+            },
           ),
         });
 
@@ -147,7 +153,6 @@ export default function TotemCheckInContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           appointment_id: appt.id,
-          //  Não enviamos mais o slug
         }),
       });
 
@@ -177,52 +182,31 @@ export default function TotemCheckInContent() {
     }
   };
 
-  // Se a sessão estiver carregando, mostra uma tela vazia para evitar piscar o componente
   if (status === "loading") {
-    return <div className="min-h-svh bg-background" />;
+    return <div className="h-full w-full bg-background" />;
   }
 
   return (
-    <div className="flex min-h-svh flex-col bg-background p-4 sm:p-8">
-      <Link
-        href="/totem/idle" //  URL limpa
-        className="absolute top-4 left-4 sm:static sm:self-start flex w-fit items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group z-10"
-      >
-        <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-transparent sm:bg-muted/50 hover:bg-muted transition-colors">
-          <ChevronLeft removePadding className="h-5 w-5" />
-        </div>
-        <span className="hidden sm:inline font-medium">Voltar</span>
-      </Link>
-
-      <div className="flex flex-1 items-center justify-center w-full mt-16 sm:mt-0">
-        <div className="flex w-full max-w-sm flex-col items-center gap-8">
-          <div className="text-center">
-            <h1 className="font-serif text-4xl sm:text-5xl font-bold text-foreground mb-3">
-              Check-in
-            </h1>
-            <p className="text-base sm:text-lg text-muted-foreground">
-              Digite seu CPF para registrar sua presença
-            </p>
-          </div>
-
-          <div className="w-full">
-            <CpfKeypad
-              value={cpf}
-              onChange={setCpf}
-              onConfirm={handleConfirm}
-              disabled={loading}
-            />
-          </div>
-
-          {loading && (
-            <div className="flex items-center gap-2 text-sm font-medium text-primary mt-2">
-              <LoaderDots className="h-5 w-5 animate-spin" />
-              <span>Verificando agendamentos...</span>
-            </div>
-          )}
-        </div>
+    <div className="flex w-full max-w-[90%] sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl flex-col items-center gap-6 md:gap-10">
+      {" "}
+      <div className="w-full">
+        <IdentificationKeypad
+          value={inputValue}
+          onChange={setInputValue}
+          onConfirm={handleConfirm}
+          disabled={loading}
+          mode={mode} // Nova prop
+          onModeChange={setMode} // Nova prop
+        />
       </div>
-
+      {/* Loader de verificação */}
+      {loading && (
+        <div className="flex items-center gap-2 text-sm font-medium text-primary mt-2 md:text-base">
+          <LoaderDots className="h-5 w-5 animate-spin" />
+          <span>Verificando agendamentos...</span>
+        </div>
+      )}
+      {/* Modal: Múltiplos Agendamentos Encontrados */}
       <Dialog open={showSelection} onOpenChange={setShowSelection}>
         <DialogContent className="w-[95vw] max-w-md rounded-3xl p-6">
           <DialogHeader>
@@ -256,7 +240,7 @@ export default function TotemCheckInContent() {
           </div>
         </DialogContent>
       </Dialog>
-
+      {/* Modal: Confirmar Horário Antecipado/Atrasado */}
       <Dialog open={showConfirmTime} onOpenChange={setShowConfirmTime}>
         <DialogContent className="w-[95vw] max-w-md rounded-3xl p-6">
           <DialogHeader>
@@ -269,7 +253,10 @@ export default function TotemCheckInContent() {
                 {pendingAppointment
                   ? new Date(pendingAppointment.date_time).toLocaleTimeString(
                       "pt-BR",
-                      { hour: "2-digit", minute: "2-digit" },
+                      {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      },
                     )
                   : "--:--"}
               </strong>
@@ -291,6 +278,7 @@ export default function TotemCheckInContent() {
               onClick={() =>
                 pendingAppointment && handleCheckIn(pendingAppointment)
               }
+              disabled={checkingIn}
             >
               Confirmar
             </Button>

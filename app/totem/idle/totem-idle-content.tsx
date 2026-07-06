@@ -1,39 +1,14 @@
-// app/totem/idle/totem-idle-content.tsx
 "use client";
 
-import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import Image from "next/image"; //  Importação para usar as imagens da pasta public
-import { Lock, Dashboard } from "@boxicons/react"; // Removido o Bird
+import Image from "next/image";
+import { Lock, Dashboard } from "@boxicons/react";
 
 export default function TotemIdleContent() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
-
-  const [clinicName, setClinicName] = useState("Totten");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const res = await fetch("/api/settings/public");
-        if (res.ok) {
-          const data = await res.json();
-          setClinicName(data.tradeName || data.companyName || "Totten");
-        }
-      } catch (error) {
-        console.error("Erro ao buscar configurações:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (status !== "loading") {
-      fetchSettings();
-    }
-  }, [status]);
 
   const handleCheckInClick = (e: React.MouseEvent) => {
     if (status !== "authenticated") {
@@ -51,12 +26,23 @@ export default function TotemIdleContent() {
   };
 
   return (
-    <div className="relative flex h-dvh w-full flex-col items-center justify-between p-6 pb-12 overflow-hidden bg-background">
+    // Adicionamos a classe font-philosopher na raiz para herança global na página
+    <div className="relative flex h-dvh w-full flex-col items-center justify-between p-6 pb-12 overflow-hidden bg-background font-philosopher">
+      {/* Injeção da fonte exclusiva para esta página */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        @import url('https://fonts.googleapis.com/css2?family=Philosopher:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+        .font-philosopher { font-family: 'Philosopher', sans-serif; }
+      `,
+        }}
+      />
+
       <div className="h-10 w-full" />
 
       <div className="flex flex-col items-center gap-8 w-full max-w-sm animate-in fade-in zoom-in duration-700">
         <div className="flex flex-col items-center gap-4">
-          {/*  Logo com troca dinâmica de tema e sem cortes */}
+          {/* Logo com troca dinâmica de tema e sem cortes */}
           <div className="flex items-center justify-center shrink-0">
             {/* Logo exibida no TEMA CLARO */}
             <Image
@@ -79,11 +65,12 @@ export default function TotemIdleContent() {
           </div>
 
           <div className="space-y-1 text-center min-h-15 flex items-center justify-center w-full">
-            {loading || status === "loading" ? (
+            {status === "loading" ? (
               <div className="h-12 w-48 md:h-15 md:w-64 rounded-xl bg-muted animate-pulse mx-auto" />
             ) : (
-              <h1 className="font-serif text-5xl font-bold tracking-tight text-foreground md:text-6xl animate-in fade-in duration-700">
-                {clinicName}
+              // O título já puxa a fonte do pai, mas a mantemos limpa
+              <h1 className="text-5xl font-bold tracking-tight text-foreground md:text-6xl animate-in fade-in duration-700">
+                Totten
               </h1>
             )}
           </div>

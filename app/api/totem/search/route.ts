@@ -1,4 +1,3 @@
-// app/api/totem/search/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin } from "@/lib/auth";
@@ -16,30 +15,57 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { cpf } = body as { cpf?: string };
+    // AGORA RECEBEMOS 'value' E 'mode' DO FRONT-END
+    const { value, mode } = body as { value?: string; mode?: "CPF" | "PHONE" };
 
-    if (!cpf) {
+    if (!value || !mode) {
       return NextResponse.json(
-        { error: "CPF é obrigatório." },
+        { error: "Valor e modo de busca são obrigatórios." },
         { status: 400 },
       );
     }
 
-    const cpfLimpo = cpf.replace(/\D/g, "");
-    const cpfFormatado =
-      cpfLimpo.length === 11
-        ? cpfLimpo.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
-        : cpf;
+    const valorLimpo = value.replace(/\D/g, "");
+    let whereClause: any = {
+      organization_id: admin.organizationId,
+    };
 
-    const cpfCandidates = Array.from(
-      new Set([cpf.trim(), cpfLimpo, cpfFormatado]),
-    );
+    // 🔍 2. PREPARAÇÃO DA BUSCA (CPF OU TELEFONE)
+    if (mode === "CPF") {
+      const cpfFormatado =
+        valorLimpo.length === 11
+          ? valorLimpo.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
+          : value;
 
+      const cpfCandidates = Array.from(
+        new Set([value.trim(), valorLimpo, cpfFormatado]),
+      );
+      whereClause.cpf = { in: cpfCandidates };
+    } else if (mode === "PHONE") {
+      let phoneFormatado = value;
+      // Formata como (11) 99999-9999 ou (11) 9999-9999
+      if (valorLimpo.length === 11) {
+        phoneFormatado = `(${valorLimpo.slice(0, 2)}) ${valorLimpo.slice(2, 7)}-${valorLimpo.slice(7)}`;
+      } else if (valorLimpo.length === 10) {
+        phoneFormatado = `(${valorLimpo.slice(0, 2)}) ${valorLimpo.slice(2, 6)}-${valorLimpo.slice(6)}`;
+      }
+
+      // Cobrimos todas as variações possíveis que podem estar no banco
+      const phoneCandidates = Array.from(
+        new Set([
+          value.trim(),
+          valorLimpo,
+          phoneFormatado,
+          `+55${valorLimpo}`,
+          `+55 ${phoneFormatado}`,
+        ]),
+      );
+      whereClause.phone_whatsapp = { in: phoneCandidates };
+    }
+
+    // 🔍 3. BUSCA O CLIENTE NO BANCO
     const cliente = await prisma.client.findFirst({
-      where: {
-        cpf: { in: cpfCandidates },
-        organization_id: admin.organizationId,
-      },
+      where: whereClause,
     });
 
     if (!cliente) {
