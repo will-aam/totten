@@ -237,11 +237,41 @@ export async function deleteCheckIn(checkInId: string) {
 
     const checkIn = await prisma.checkIn.findUnique({
       where: { id: checkInId, organization_id: admin.organizationId },
+      include: {
+        appointment: true,
+        package: { include: { service: true } },
+      },
     });
 
     if (!checkIn) return { success: false, error: "Check-in não encontrado." };
 
     await prisma.$transaction(async (tx) => {
+      const adminName = admin.name || "Administrador";
+
+      // A. Auditoria: nota legível, com nome (não ID)
+      if (checkIn.client_id) {
+        const dateStr = new Intl.DateTimeFormat("pt-BR", {
+          dateStyle: "short",
+          timeStyle: "short",
+        }).format(checkIn.date_time);
+
+        const serviceName =
+          checkIn.appointment?.snapshot_service_name ||
+          checkIn.package?.snapshot_service_name ||
+          checkIn.package?.service?.name ||
+          "Serviço";
+
+        await tx.clientNote.create({
+          data: {
+            text: `Check-in de ${serviceName} do dia ${dateStr} foi removido por ${adminName}.`,
+            client_id: checkIn.client_id,
+            organization_id: admin.organizationId,
+            date: new Date(),
+          },
+        });
+      }
+
+      // B. Estorno do pacote (lógica original mantida)
       if (checkIn.package_id) {
         await tx.package.update({
           where: { id: checkIn.package_id },
@@ -252,6 +282,7 @@ export async function deleteCheckIn(checkInId: string) {
         });
       }
 
+      // C. Agendamento volta para CONFIRMADO (lógica original mantida)
       if (checkIn.appointment_id) {
         await tx.appointment.update({
           where: { id: checkIn.appointment_id },
@@ -259,6 +290,7 @@ export async function deleteCheckIn(checkInId: string) {
         });
       }
 
+      // D. Exclusão de fato
       await tx.checkIn.delete({
         where: { id: checkInId },
       });
@@ -275,7 +307,6 @@ export async function deleteCheckIn(checkInId: string) {
     return { success: false, error: "Falha ao excluir o registro." };
   }
 }
-
 /**
  * Encerra/Arquiva um pacote manualmente antes da hora.
  */
@@ -285,6 +316,7 @@ export async function archivePackage(packageId: string) {
 
     const pkg = await prisma.package.findUnique({
       where: { id: packageId, organization_id: admin.organizationId },
+      include: { client: true, service: true },
     });
 
     if (!pkg) {
@@ -295,9 +327,26 @@ export async function archivePackage(packageId: string) {
       return { success: false, error: "Este pacote já está encerrado." };
     }
 
-    await prisma.package.update({
-      where: { id: pkg.id },
-      data: { active: false },
+    await prisma.$transaction(async (tx) => {
+      // A. Auditoria: registra o encerramento manual no histórico do cliente
+      const packageName = pkg.package_template_id
+        ? pkg.name
+        : pkg.snapshot_service_name || pkg.service?.name || "Pacote";
+
+      await tx.clientNote.create({
+        data: {
+          text: `Ação: Pacote "${packageName}" (${pkg.used_sessions}/${pkg.total_sessions} sessões usadas) foi ENCERRADO manualmente pelo admin ID: ${admin.id}`,
+          client_id: pkg.client_id,
+          organization_id: admin.organizationId,
+          date: new Date(),
+        },
+      });
+
+      // B. Encerramento de fato (lógica original mantida)
+      await tx.package.update({
+        where: { id: pkg.id },
+        data: { active: false },
+      });
     });
 
     revalidatePath("/admin/packages");

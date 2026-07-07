@@ -351,7 +351,7 @@ export async function updateAppointment(
   }
 }
 
-// --- 3. DELETAR (INDIVIDUAL OU SÉRIE) COM SEGURANÇA ---
+// --- 3. DELETAR (INDIVIDUAL OU SÉRIE) COM LOG DE AUDITORIA ---
 export async function deleteAppointment(
   id: string,
   deleteAll: boolean = false,
@@ -360,6 +360,7 @@ export async function deleteAppointment(
   try {
     const admin = await requireAuth();
 
+    // 1. Busca os registros ANTES de deletar para termos os dados para o log
     const appointmentsToDelete = await prisma.appointment.findMany({
       where: {
         ...(deleteAll && recurrenceId
@@ -367,14 +368,42 @@ export async function deleteAppointment(
           : { id }),
         organization_id: admin.organizationId,
       },
-      include: { package: true },
+      include: { package: true, client: true },
     });
 
     if (appointmentsToDelete.length === 0)
       return { success: false, error: "Agendamento não encontrado." };
 
+    // 2. Trava de segurança para agendamentos realizados (opcional, mas recomendado)
+    const hasFinishedAppointments = appointmentsToDelete.some(
+      (appt) => appt.status === AppointmentStatus.REALIZADO,
+    );
+
+    if (hasFinishedAppointments) {
+      return {
+        success: false,
+        error: "Não é permitido excluir agendamentos já realizados.",
+      };
+    }
+
     await prisma.$transaction(async (tx) => {
       for (const appt of appointmentsToDelete) {
+        // A. Auditoria: Registra a exclusão no histórico do cliente
+        const dateStr = new Intl.DateTimeFormat("pt-BR", {
+          dateStyle: "short",
+          timeStyle: "short",
+        }).format(appt.date_time);
+
+        await tx.clientNote.create({
+          data: {
+            text: `Ação: Agendamento de ${appt.snapshot_service_name || "Serviço"} no dia ${dateStr} foi EXCLUÍDO pelo admin ID: ${admin.id}`,
+            client_id: appt.client_id,
+            organization_id: admin.organizationId,
+            date: new Date(),
+          },
+        });
+
+        // B. Lógica de estorno de sessão de pacote (se necessário)
         if (appt.status === AppointmentStatus.REALIZADO && appt.package_id) {
           await tx.package.update({
             where: { id: appt.package_id },
@@ -385,11 +414,13 @@ export async function deleteAppointment(
           });
         }
 
+        // C. Deleta o Check-in se existir
         await tx.checkIn.deleteMany({
           where: { appointment_id: appt.id },
         });
       }
 
+      // 3. Executa a exclusão propriamente dita
       if (deleteAll && recurrenceId) {
         await tx.appointment.deleteMany({
           where: {
