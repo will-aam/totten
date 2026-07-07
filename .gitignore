@@ -24,3 +24,6 @@ public/workbox-*.js.map
 
 # rota de desenvolvimento para testar cores de botão de F5 na pagina
 app/api/dev/
+
+cleint-d.tsx
+route.tsx
