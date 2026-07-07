@@ -368,7 +368,7 @@ export async function deleteAppointment(
           : { id }),
         organization_id: admin.organizationId,
       },
-      include: { package: true, client: true },
+      include: { package: true, client: true, check_in: true },
     });
 
     if (appointmentsToDelete.length === 0)
@@ -394,9 +394,13 @@ export async function deleteAppointment(
           timeStyle: "short",
         }).format(appt.date_time);
 
+        const checkInText = appt.check_in
+          ? "e seu Check-in correspondente foram EXCLUÍDOS"
+          : "foi EXCLUÍDO";
+
         await tx.clientNote.create({
           data: {
-            text: `Ação: Agendamento de ${appt.snapshot_service_name || "Serviço"} no dia ${dateStr} foi EXCLUÍDO pelo admin ID: ${admin.id}`,
+            text: `Ação: Agendamento de ${appt.snapshot_service_name || "Serviço"} no dia ${dateStr} ${checkInText} por: ${admin.name || "Administrador"}`,
             client_id: appt.client_id,
             organization_id: admin.organizationId,
             date: new Date(),
