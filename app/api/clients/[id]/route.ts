@@ -90,11 +90,9 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
-    //  Refatoração Sênior: Tipagem estrita com Prisma.ClientUpdateInput
     const updateData: Prisma.ClientUpdateInput = {};
 
     if (body.name !== undefined) updateData.name = body.name;
-    if (body.cpf !== undefined) updateData.cpf = body.cpf;
     if (body.phone_whatsapp !== undefined)
       updateData.phone_whatsapp = body.phone_whatsapp;
     if (body.email !== undefined) updateData.email = body.email;
@@ -103,6 +101,31 @@ export async function PUT(
     if (body.street !== undefined) updateData.street = body.street;
     if (body.number !== undefined) updateData.number = body.number;
     if (body.active !== undefined) updateData.active = body.active;
+
+    // Tratamento e Validação do CPF no modo Edição
+    if (body.cpf !== undefined) {
+      const cpfLimpo = body.cpf && body.cpf.trim() !== "" ? body.cpf : null;
+
+      // Se o usuário estiver tentando salvar um CPF, checamos se já existe em OUTRO cliente
+      if (cpfLimpo) {
+        const existingClient = await prisma.client.findFirst({
+          where: {
+            cpf: cpfLimpo,
+            organization_id: admin.organizationId,
+            id: { not: id }, // Garante que não é o próprio cliente que estamos editando
+          },
+        });
+
+        if (existingClient) {
+          return NextResponse.json(
+            { error: "Este CPF já está cadastrado em outro cliente." },
+            { status: 409 },
+          );
+        }
+      }
+
+      updateData.cpf = cpfLimpo;
+    }
 
     // Converte a string de data ("YYYY-MM-DD") para objeto Date aceito pelo Prisma
     if (body.birth_date !== undefined) {

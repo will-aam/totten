@@ -59,7 +59,7 @@ import {
 } from "@/app/actions/transactions";
 import { toast } from "sonner";
 import { TransactionStatus } from "@/types/finance";
-import { TransactionModal } from "@/app/(private)/admin/finance/components/transaction-modal";
+import { TransactionModal } from "../_components/transaction-modal";
 import { useDebounce } from "@/hooks/use-debounce";
 
 const MONTHS = [

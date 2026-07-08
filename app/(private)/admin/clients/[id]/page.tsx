@@ -10,12 +10,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { User, ChevronUp } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
-import { ClientHeader } from "../components/client-header";
-import { ClientContact } from "../components/client-contact";
-import { ClientPackage } from "../components/client-package";
-import { ClientAnamnesis } from "../components/client-anamnesis";
-import { ClientVouchers } from "../components/client-vouchers";
-import { ClientHistory } from "../components/client-history";
+import { ClientHeader } from "../_components/client-header";
+import { ClientContact } from "../_components/client-contact";
+import { ClientPackage } from "../_components/client-package";
+import { ClientAnamnesis } from "../_components/client-anamnesis";
+import { ClientVouchers } from "../_components/client-vouchers";
+import { ClientHistory } from "../_components/client-history";
 
 export type ClientType = {
   id: string;

@@ -1,15 +1,15 @@
-// app/admin/layout.tsx
 "use client";
 
 import { usePathname } from "next/navigation";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { AdminSidebar } from "./_components/AdminSidebar/admin-sidebar";
+import { AdminSidebar } from "./AdminSidebar/admin-sidebar";
 
-export default function AdminLayout({
-  children,
-}: {
+interface AdminShellProps {
+  clinicName: string;
   children: React.ReactNode;
-}) {
+}
+
+export function AdminShell({ clinicName, children }: AdminShellProps) {
   const pathname = usePathname();
   const isLogin = pathname === "/login";
 

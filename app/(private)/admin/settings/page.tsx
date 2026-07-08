@@ -6,11 +6,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 
 // Seções
-import { GeneralSettings } from "./sections/general-settings";
-import { AppearanceSettings } from "./sections/appearance-settings";
-import { MessageSettings } from "./sections/message-settings";
-import { SecuritySettings } from "./sections/security-settings";
-import { NotificationsSettings } from "./sections/notifications-settings";
+import { GeneralSettings } from "./_components/general-settings";
+import { AppearanceSettings } from "./_components/appearance-settings";
+import { MessageSettings } from "./_components/message-settings";
+import { SecuritySettings } from "./_components/security-settings";
+import { NotificationsSettings } from "./_components/notifications-settings";
 
 import {
   Building,

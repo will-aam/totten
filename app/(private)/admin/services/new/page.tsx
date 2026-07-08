@@ -3,7 +3,7 @@ import Link from "next/link";
 import { AdminHeader } from "@/components/admin-header";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "@boxicons/react";
-import { ServiceForm } from "../components/service-form";
+import { ServiceForm } from "../_components/service-form";
 
 export default function NewServicePage() {
   return (

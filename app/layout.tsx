@@ -1,6 +1,6 @@
 // app/layout.tsx
 import type { Metadata, Viewport } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Inter, Playfair_Display, Philosopher } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -19,6 +19,12 @@ const inter = Inter({
 const playfair = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-playfair",
+});
+
+const philosopher = Philosopher({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-philosopher",
 });
 
 export const metadata: Metadata = {
@@ -73,7 +79,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${playfair.variable} font-sans antialiased`}
+        className={`${inter.variable} ${playfair.variable} ${philosopher.variable} font-sans antialiased`}
       >
         <SessionProvider>
           <SWRProvider>
@@ -83,13 +89,19 @@ export default function RootLayout({
               enableSystem={false}
               disableTransitionOnChange
             >
+              {/* PWAUpdater e InstallPrompt são componentes para gerenciar atualizações e prompt de instalação do PWA */}
               <PWAUpdater />
               <InstallPrompt />
               {children}
+              {/* Toaster é um componente para exibir notificações ao usuário */}
               <Toaster position="top-right" richColors />
+              {/* Analytics é um componente para rastreamento de análises, como o Vercel Analytics */}
               <Analytics />
+              {/* ThemeProvider é um componente para gerenciar o tema da aplicação */}
             </ThemeProvider>
+            {/* SWRProvider é um componente para gerenciar o estado da aplicação */}
           </SWRProvider>
+          {/* SessionProvider é um componente para gerenciar a sessão do usuário */}
         </SessionProvider>
       </body>
     </html>

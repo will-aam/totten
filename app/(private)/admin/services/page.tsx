@@ -37,10 +37,10 @@ import { toast } from "sonner";
 
 import { AdminHeader } from "@/components/admin-header";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
-import { DurationManager } from "./components/duration-manager";
-import { ServiceEditModal } from "./components/service-edit-modal";
-import { CategoryEditModal } from "./components/category-edit-modal";
-import { PackageEditModal } from "./components/package-edit-modal";
+import { DurationManager } from "./_components/duration-manager";
+import { ServiceEditModal } from "./_components/service-edit-modal";
+import { CategoryEditModal } from "./_components/category-edit-modal";
+import { PackageEditModal } from "./_components/package-edit-modal";
 
 const STORAGE_KEY = "totem_catalog_show_inactive";
 const fetcher = (url: string) => fetch(url).then((r) => r.json());

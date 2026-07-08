@@ -169,8 +169,13 @@ export function ClientContact({ client }: ClientContactProps) {
 
   const handleSave = async () => {
     if (!editName.trim()) return toast.error("O nome é obrigatório.");
-    if (editCpf.replace(/\D/g, "").length !== 11)
-      return toast.error("CPF deve ter 11 dígitos.");
+
+    // Valida o CPF apenas se o usuário tiver digitado algo
+    const cpfLimpo = editCpf.replace(/\D/g, "");
+    if (cpfLimpo.length > 0 && cpfLimpo.length !== 11) {
+      return toast.error("O CPF deve ter 11 dígitos.");
+    }
+
     if (editPhone.replace(/\D/g, "").length < 10)
       return toast.error("WhatsApp inválido.");
     if (editEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editEmail))
@@ -199,7 +204,8 @@ export function ClientContact({ client }: ClientContactProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: editName.trim(),
-          cpf: editCpf,
+          // Se estiver vazio, envia null para respeitar o banco de dados
+          cpf: editCpf.trim() !== "" ? editCpf : null,
           phone_whatsapp: editPhone,
           email: editEmail || null,
           birth_date: formattedBirthDate,
@@ -221,7 +227,6 @@ export function ClientContact({ client }: ClientContactProps) {
       setSaving(false);
     }
   };
-
   const handleSendWhatsApp = (templateText: string) => {
     if (!client.phone_whatsapp) return toast.error("Cliente sem WhatsApp.");
     const rawPhone = client.phone_whatsapp.replace(/\D/g, "");
@@ -297,7 +302,7 @@ export function ClientContact({ client }: ClientContactProps) {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-muted-foreground">
-                  CPF *
+                  CPF
                 </Label>
                 <div className="relative">
                   <UserIdCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -427,7 +432,7 @@ export function ClientContact({ client }: ClientContactProps) {
                       {client.name}
                     </h2>
                     <p className="text-sm font-medium text-muted-foreground mt-0.5">
-                      CPF: {client.cpf}
+                      CPF: {client.cpf || "Não informado"}
                     </p>
                   </div>
                   {/* Botão de Editar super elegante à direita */}

@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { Plus, MinusCircle, PlusCircle, X } from "@boxicons/react";
 import { cn } from "@/lib/utils";
-import { TransactionModal } from "@/app/(private)/admin/finance/components/transaction-modal";
+import { TransactionModal } from "./transaction-modal";
 
 interface FinanceSpeedDialProps {
   isHidden: boolean;

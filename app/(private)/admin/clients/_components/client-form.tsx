@@ -181,7 +181,12 @@ export function ClientForm() {
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!form.name.trim()) errs.name = "Nome é obrigatório";
-    if (form.cpf.replace(/\D/g, "").length !== 11) errs.cpf = "CPF incompleto";
+
+    const cpfLimpo = form.cpf.replace(/\D/g, "");
+    if (cpfLimpo.length > 0 && cpfLimpo.length !== 11) {
+      errs.cpf = "CPF incompleto";
+    }
+
     if (form.phone_whatsapp.replace(/\D/g, "").length < 10)
       errs.phone_whatsapp = "WhatsApp inválido";
 
@@ -213,8 +218,9 @@ export function ClientForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.name,
-          cpf: form.cpf,
+          cpf: form.cpf.trim() !== "" ? form.cpf : null,
           phone_whatsapp: form.phone_whatsapp,
+
           email: form.email || null,
           birth_date: form.birth_date
             ? format(form.birth_date, "yyyy-MM-dd")
@@ -326,7 +332,7 @@ export function ClientForm() {
               </div>
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
-                  <CreditCard className="h-4 w-4" /> CPF *
+                  <CreditCard className="h-4 w-4" /> CPF
                 </Label>
                 <Input
                   value={form.cpf}

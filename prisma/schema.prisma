@@ -55,7 +55,6 @@ model Admin {
 
   @@map("admins")
 }
-
 model Settings {
   id               String       @id @default(cuid())
   company_name     String
@@ -69,6 +68,9 @@ model Settings {
   organization_id  String       @unique
   updated_at       DateTime     @updatedAt
   trade_name       String?
+  
+  require_cpf      Boolean      @default(true)
+
   organization     Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@map("settings")
@@ -77,7 +79,9 @@ model Settings {
 model Client {
   id                  String              @id @default(cuid())
   name                String
-  cpf                 String
+  
+  cpf                 String?
+  
   phone_whatsapp      String
   email               String?
   birth_date          DateTime?

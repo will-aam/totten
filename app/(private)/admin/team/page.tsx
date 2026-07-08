@@ -192,7 +192,7 @@ export default function TeamPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/50 pb-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <Group size="sm" className="text-primary" /> Minha Equipe
+              <Group size="sm" className="text-primary" /> Profissionais
             </h1>
             <p className="text-sm text-muted-foreground mt-0.5">
               Gerencie os acessos das suas funcionárias e parceiras.
@@ -263,9 +263,7 @@ export default function TeamPage() {
             </div>
             <div className="grid gap-2">
               <Label>
-                {modalView === "create"
-                  ? "Senha Temporária"
-                  : "Nova Senha (opcional)"}
+                {modalView === "create" ? "Senha Temporária" : "Nova Senha"}
               </Label>
               <Input
                 type="text"

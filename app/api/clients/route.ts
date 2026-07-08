@@ -199,27 +199,31 @@ export async function POST(request: Request) {
       number,
     } = body;
 
-    if (!name || !cpf || !phone_whatsapp) {
+    // 1. CPF removido da validação de obrigatoriedade
+    if (!name || !phone_whatsapp) {
       return NextResponse.json(
-        { error: "Campos obrigatórios faltando" },
+        { error: "Nome e WhatsApp são obrigatórios." },
         { status: 400 },
       );
     }
 
-    const existingClient = await prisma.client.findUnique({
-      where: {
-        cpf_organization_id: {
-          cpf: cpf,
-          organization_id: admin.organizationId,
+    // 2. Só verificamos duplicação de CPF *SE* um CPF foi enviado
+    if (cpf && cpf.trim() !== "") {
+      const existingClient = await prisma.client.findUnique({
+        where: {
+          cpf_organization_id: {
+            cpf: cpf,
+            organization_id: admin.organizationId,
+          },
         },
-      },
-    });
+      });
 
-    if (existingClient) {
-      return NextResponse.json(
-        { error: "CPF já cadastrado nesta organização" },
-        { status: 409 },
-      );
+      if (existingClient) {
+        return NextResponse.json(
+          { error: "CPF já cadastrado nesta organização" },
+          { status: 409 },
+        );
+      }
     }
 
     const formattedBirthDate = birth_date
@@ -229,7 +233,8 @@ export async function POST(request: Request) {
     const client = await prisma.client.create({
       data: {
         name,
-        cpf,
+        // 3. Se o CPF vier vazio ou nulo, forçamos o null para o banco aceitar
+        cpf: cpf && cpf.trim() !== "" ? cpf : null,
         phone_whatsapp,
         email: email || null,
         birth_date: formattedBirthDate,

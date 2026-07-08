@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { AdminHeader } from "@/components/admin-header";
-import { ImportClientsModal } from "./components/import-clients-modal";
+import { ImportClientsModal } from "./_components/import-clients-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useDebounce } from "@/hooks/use-debounce";

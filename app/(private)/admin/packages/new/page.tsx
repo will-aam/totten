@@ -3,7 +3,7 @@ import Link from "next/link";
 import { AdminHeader } from "@/components/admin-header";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "@boxicons/react";
-import { PackageForm } from "../components/package-form";
+import { PackageForm } from "../_components/package-form";
 
 export default function NewPackagePage() {
   return (

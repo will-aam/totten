@@ -18,14 +18,17 @@ export async function GET() {
       timeZone: "America/Sao_Paulo",
     });
 
-    // Início do dia no Brasil (00:00:00) convertido para o timestamp real
+    // Início e Fim do dia atual no Brasil
     const startOfDay = new Date(`${todayStr} 00:00:00 GMT-0300`);
-
-    // Fim do dia no Brasil (Início do próximo dia)
     const tomorrow = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
 
-    // 1. Check-ins de hoje (Toda a equipe vê o volume da clínica)
-    const todayCheckInsCount = await prisma.checkIn.count({
+    // Início do dia de ontem
+    const startOfYesterday = new Date(
+      startOfDay.getTime() - 24 * 60 * 60 * 1000,
+    );
+
+    // 1. Total de Agendamentos de Hoje
+    const appointmentsToday = await prisma.appointment.count({
       where: {
         organization_id: admin.organizationId,
         date_time: {
@@ -35,8 +38,30 @@ export async function GET() {
       },
     });
 
-    // 2. Clientes com pacotes ativos
-    const activeClientsCount = await prisma.client.count({
+    // 2. Total de Agendamentos de Ontem (Para cálculo da métrica)
+    const appointmentsYesterday = await prisma.appointment.count({
+      where: {
+        organization_id: admin.organizationId,
+        date_time: {
+          gte: startOfYesterday,
+          lt: startOfDay,
+        },
+      },
+    });
+
+    // 3. Check-ins Realizados Hoje
+    const checkInsToday = await prisma.checkIn.count({
+      where: {
+        organization_id: admin.organizationId,
+        date_time: {
+          gte: startOfDay,
+          lt: tomorrow,
+        },
+      },
+    });
+
+    // 4. Clientes com pacotes ativos
+    const activeClients = await prisma.client.count({
       where: {
         organization_id: admin.organizationId,
         packages: {
@@ -50,29 +75,50 @@ export async function GET() {
       },
     });
 
-    // 3. Pacotes finalizando (2 ou menos sessões restantes)
-    const packagesEndingSoon = await prisma.package.findMany({
+    // 5. Faltas e Cancelamentos de Hoje
+    // Baseado na sua cron de faltas automáticas, elas são marcadas como CANCELADO
+    const noShowsToday = await prisma.appointment.count({
       where: {
         organization_id: admin.organizationId,
-        active: true,
-      },
-      select: {
-        total_sessions: true,
-        used_sessions: true,
+        date_time: {
+          gte: startOfDay,
+          lt: tomorrow,
+        },
+        status: "CANCELADO",
       },
     });
 
-    const packagesEndingSoonCount = packagesEndingSoon.filter(
-      (pkg) =>
-        pkg.total_sessions - pkg.used_sessions <= 2 &&
-        pkg.total_sessions - pkg.used_sessions > 0,
-    ).length;
+    // --- 🧮 CÁLCULO DOS KPIs ---
 
+    // Métrica de Agendamentos (Em relação a ontem)
+    let appointmentsVsYesterday = 0;
+    if (appointmentsYesterday > 0) {
+      appointmentsVsYesterday = Math.round(
+        ((appointmentsToday - appointmentsYesterday) / appointmentsYesterday) *
+          100,
+      );
+    } else if (appointmentsToday > 0) {
+      appointmentsVsYesterday = 100; // Se ontem foi 0 e hoje teve agendamento, +100%
+    }
+
+    // Métrica de Check-ins (Porcentagem de aproveitamento da agenda)
+    let checkInsPercentage = 0;
+    if (appointmentsToday > 0) {
+      checkInsPercentage = Math.round(
+        (checkInsToday / appointmentsToday) * 100,
+      );
+    } else if (checkInsToday > 0) {
+      checkInsPercentage = 100; // Tratamento para caso atípico de check-in avulso sem agenda
+    }
+
+    // 🔥 Retornamos exatamente as chaves que o nosso KpiData no Front-end espera
     return NextResponse.json({
-      organizationId: admin.organizationId,
-      todayCheckInsCount,
-      activeClientsCount,
-      packagesEndingSoonCount,
+      appointmentsToday,
+      appointmentsVsYesterday,
+      checkInsToday,
+      checkInsPercentage,
+      activeClients,
+      noShowsToday,
     });
   } catch (error) {
     console.error("Erro ao buscar KPIs do dashboard:", error);

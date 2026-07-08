@@ -30,14 +30,14 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-import { DailyAgendaGrid } from "./components/daily-agenda-grid";
-import { Appointment } from "./components/appointment-card";
-import { WeeklyAgendaGrid } from "./components/weekly-agenda-grid";
-import { MonthlyAgendaGrid } from "./components/monthly-agenda-grid";
-import { NewAppointmentModal } from "./components/new-appointment-modal";
-import { AppointmentDetailsModal } from "./components/appointment-details-modal";
-import { ScheduleSettingsModal } from "./components/schedule-settings-modal";
-import { AgendaHeader } from "./components/agenda-header";
+import { DailyAgendaGrid } from "./_components/daily-agenda-grid";
+import { Appointment } from "./_components/appointment-card";
+import { WeeklyAgendaGrid } from "./_components/weekly-agenda-grid";
+import { MonthlyAgendaGrid } from "./_components/monthly-agenda-grid";
+import { NewAppointmentModal } from "./_components/new-appointment-modal";
+import { AppointmentDetailsModal } from "./_components/appointment-details-modal";
+import { ScheduleSettingsModal } from "./_components/schedule-settings-modal";
+import { AgendaHeader } from "./_components/agenda-header";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 

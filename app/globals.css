@@ -150,3 +150,6 @@
   animation: none;
   mix-blend-mode: normal;
 }
+.font-philosopher {
+  font-family: var(--font-philosopher), serif;
+}

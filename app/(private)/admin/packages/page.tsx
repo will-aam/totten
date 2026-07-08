@@ -27,7 +27,7 @@ import {
   Plus,
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
-import { PackageDetailsModal } from "./components/package-details-modal";
+import { PackageDetailsModal } from "./_components/package-details-modal";
 import {
   getPackagesDashboardData,
   createManualPackageCheckIn,
