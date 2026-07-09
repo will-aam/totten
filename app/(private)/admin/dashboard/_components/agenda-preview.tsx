@@ -52,13 +52,12 @@ export function AgendaPreview() {
         </div>
       </CardHeader>
 
-      {/* flex-1 + min-h-0: ocupa exatamente o espaço restante do card, com scroll interno */}
       <CardContent className="p-0 flex-1 min-h-0 flex flex-col">
         <div className="flex-1 min-h-0 overflow-y-auto p-4 custom-scrollbar">
           {isLoading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="flex gap-3">
+                <div key={i} className="flex gap-4">
                   <Skeleton className="w-10 h-4 shrink-0" />
                   <Skeleton className="h-12 w-full rounded-lg" />
                 </div>
@@ -76,22 +75,30 @@ export function AgendaPreview() {
                 const isLast = index === sortedTimes.length - 1;
 
                 return (
-                  <div key={time} className="flex gap-3 relative">
-                    {/* Horário menor e mais discreto */}
+                  // Adicionado gap-4 para dar mais respiro entre o tempo, a linha e o card
+                  <div key={time} className="flex gap-4 relative">
+                    {/* Horário alinhado e estável */}
                     <div className="w-10 shrink-0 text-right pt-0.5">
-                      <span className="text-xs font-bold text-muted-foreground">
+                      <span className="text-xs font-semibold text-muted-foreground tabular-nums">
                         {time}
                       </span>
                     </div>
 
-                    <div
-                      className={cn(
-                        "flex-1 pl-4 pb-4 relative",
-                        !isLast && "border-l border-muted", // Linha mais fina
-                      )}
-                    >
-                      <div className="absolute w-2 h-2 bg-primary/30 rounded-full -left-[4.5px] top-1.5 ring-2 ring-background" />
+                    {/* Coluna dedicada para a linha do tempo moderna */}
+                    <div className="relative flex w-3 shrink-0 justify-center">
+                      {/* O traço (fio sutil) */}
+                      <span
+                        className={cn(
+                          "absolute left-1/2 -translate-x-1/2 w-px bg-border",
+                          isLast ? "top-2 bottom-1/2" : "top-2 bottom-0",
+                        )}
+                      />
+                      {/* A bolinha (com anel para recortar a linha e dar profundidade) */}
+                      <span className="absolute top-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-primary ring-4 ring-background z-10 shadow-sm" />
+                    </div>
 
+                    {/* Conteúdo do agendamento */}
+                    <div className="flex-1 pb-5">
                       <div className="flex flex-col gap-2">
                         {appts.map((appt: any) => (
                           <div

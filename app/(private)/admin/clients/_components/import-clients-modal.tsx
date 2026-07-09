@@ -32,8 +32,8 @@ import { cn } from "@/lib/utils";
 
 const DB_FIELDS = [
   { key: "name", label: "Nome Completo", required: true },
-  { key: "cpf", label: "CPF", required: true },
   { key: "phone_whatsapp", label: "WhatsApp", required: true },
+  { key: "cpf", label: "CPF", required: false },
   { key: "birth_date", label: "Nascimento", required: false },
   { key: "email", label: "E-mail", required: false },
   { key: "zip_code", label: "CEP", required: false },
@@ -101,7 +101,7 @@ export function ImportClientsModal({
       const headers = DB_FIELDS.map((f) => f.label);
       const exampleRow = [
         "Maria da Silva (Obrigatório)",
-        "000.000.000-00 (Obrigatório)",
+        "000.000.000-00 (Opcional)",
         "(11) 99999-9999 (Obrigatório)",
         "10/05/1990",
         "maria@email.com",
