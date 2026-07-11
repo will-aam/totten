@@ -1,15 +1,12 @@
+// app/api/service-durations/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentAdmin } from "@/lib/auth";
+import { requireAuth, AuthError } from "@/lib/auth";
 
 // GET - Lista todas as durações cadastradas
 export async function GET() {
   try {
-    const admin = await getCurrentAdmin();
-
-    if (!admin) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
+    const admin = await requireAuth();
 
     const durations = await prisma.serviceDuration.findMany({
       where: {
@@ -23,7 +20,10 @@ export async function GET() {
 
     return NextResponse.json(durations);
   } catch (error) {
-    console.error("Erro ao buscar durações:", error);
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    console.error("[SERVICE_DURATIONS_GET]", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }
@@ -31,11 +31,7 @@ export async function GET() {
 // POST - Cria uma nova duração
 export async function POST(request: Request) {
   try {
-    const admin = await getCurrentAdmin();
-
-    if (!admin) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
+    const admin = await requireAuth();
 
     const body = await request.json();
     const { label, minutes } = body;
@@ -82,7 +78,10 @@ export async function POST(request: Request) {
       duration,
     });
   } catch (error) {
-    console.error("Erro ao criar duração:", error);
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    console.error("[SERVICE_DURATIONS_POST]", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }
@@ -90,11 +89,7 @@ export async function POST(request: Request) {
 // DELETE - Remove uma duração
 export async function DELETE(request: Request) {
   try {
-    const admin = await getCurrentAdmin();
-
-    if (!admin) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
+    const admin = await requireAuth();
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
@@ -114,7 +109,10 @@ export async function DELETE(request: Request) {
       success: true,
     });
   } catch (error) {
-    console.error("Erro ao deletar duração:", error);
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    console.error("[SERVICE_DURATIONS_DELETE]", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }

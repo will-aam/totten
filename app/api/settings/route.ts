@@ -1,12 +1,12 @@
+// app/api/settings/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentAdmin } from "@/lib/auth";
+import { requireAuth, AuthError } from "@/lib/auth";
 
 export async function GET() {
   try {
-    const admin = await getCurrentAdmin();
-    if (!admin)
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    // 🛡️ Autenticação centralizada
+    const admin = await requireAuth();
 
     const settings = await prisma.settings.findUnique({
       where: { organization_id: admin.organizationId },
@@ -20,21 +20,24 @@ export async function GET() {
       tradeName: settings.trade_name || "",
       document: settings.document || "",
       contactPhone: settings.phone_landline || "",
-      whatsapp: settings.phone_whatsapp || "", // Retorna como está no banco
+      whatsapp: settings.phone_whatsapp || "",
       email: settings.email_admin || "",
       openingTime: settings.opening_time,
       closingTime: settings.closing_time,
     });
   } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    console.error("[SETTINGS_GET]", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }
 
 export async function PUT(request: Request) {
   try {
-    const admin = await getCurrentAdmin();
-    if (!admin)
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    // 🛡️ Autenticação centralizada
+    const admin = await requireAuth();
 
     const body = await request.json();
     const {
@@ -42,7 +45,7 @@ export async function PUT(request: Request) {
       tradeName,
       document,
       contactPhone,
-      whatsapp, //  Agora extraímos o whatsapp do body
+      whatsapp,
       openingTime,
       closingTime,
     } = body;
@@ -57,7 +60,7 @@ export async function PUT(request: Request) {
     if (tradeName !== undefined) updateData.trade_name = tradeName;
     if (document !== undefined) updateData.document = document;
     if (contactPhone !== undefined) updateData.phone_landline = contactPhone;
-    if (whatsapp !== undefined) updateData.phone_whatsapp = whatsapp; //  Corrigido: Agora atualiza no banco!
+    if (whatsapp !== undefined) updateData.phone_whatsapp = whatsapp;
     if (openingTime !== undefined) updateData.opening_time = openingTime;
     if (closingTime !== undefined) updateData.closing_time = closingTime;
 
@@ -71,7 +74,7 @@ export async function PUT(request: Request) {
         trade_name: tradeName || "",
         document: document || "",
         phone_landline: contactPhone || "",
-        phone_whatsapp: whatsapp || "", //  Usa a variável correta
+        phone_whatsapp: whatsapp || "",
         opening_time: openingTime || "08:00",
         closing_time: closingTime || "19:00",
       },
@@ -79,7 +82,10 @@ export async function PUT(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Erro ao atualizar settings:", error);
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    console.error("[SETTINGS_PUT]", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }

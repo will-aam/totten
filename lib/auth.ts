@@ -1,3 +1,4 @@
+// auth.ts
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
@@ -30,15 +31,23 @@ export async function getCurrentAdmin() {
   };
 }
 
+// Adicione esta classe no arquivo para ajudar as rotas API a identificarem o 401
+export class AuthError extends Error {
+  constructor(message = "Não autorizado") {
+    super(message);
+    this.name = "AuthError";
+  }
+}
+
 /**
- * 🛡️ Garante que há um admin logado ou lança erro 401
- * Use em API Routes que exigem autenticação
+ * 🛡️ Garante que há um admin logado ou lança erro AuthError (401)
+ * Use em Server Actions e API Routes que exigem autenticação
  */
 export async function requireAuth() {
   const admin = await getCurrentAdmin();
 
   if (!admin) {
-    throw new Error("Unauthorized");
+    throw new AuthError();
   }
 
   return admin;

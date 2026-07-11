@@ -1,23 +1,17 @@
 // app/api/clients/[id]/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentAdmin } from "@/lib/auth";
-import { Prisma } from "@prisma/client"; //  Adicionamos os tipos do Prisma
+import { requireAuth, AuthError } from "@/lib/auth";
+import { Prisma } from "@prisma/client";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const admin = await getCurrentAdmin();
-
-    if (!admin) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
-
+    const admin = await requireAuth();
     const { id } = await params;
 
-    //  O SEGREDO ESTÁ AQUI: Precisamos trazer os pacotes ativos do cliente!
     const client = await prisma.client.findFirst({
       where: {
         id: id,
@@ -26,7 +20,7 @@ export async function GET(
       include: {
         packages: {
           where: {
-            active: true, // Traz apenas pacotes que não foram desativados
+            active: true,
           },
         },
       },
@@ -39,7 +33,7 @@ export async function GET(
       );
     }
 
-    //  LÓGICA DE NEGÓCIO: Acha o primeiro pacote que ainda tem saldo
+    // Busca o primeiro pacote com sessões disponíveis
     const activePkg = client.packages.find(
       (pkg) => pkg.used_sessions < pkg.total_sessions,
     );
@@ -59,7 +53,6 @@ export async function GET(
         created_at: client.created_at,
         active: client.active,
       },
-      //  MANDAMOS O PACOTE PARA O FRONT-END AQUI:
       activePackage: activePkg
         ? {
             id: activePkg.id,
@@ -71,7 +64,10 @@ export async function GET(
         : null,
     });
   } catch (error) {
-    console.error("Erro ao buscar cliente:", error);
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    console.error("[CLIENT_GET]", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }
@@ -81,12 +77,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const admin = await getCurrentAdmin();
-
-    if (!admin) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
-
+    const admin = await requireAuth();
     const { id } = await params;
     const body = await request.json();
 
@@ -102,17 +93,15 @@ export async function PUT(
     if (body.number !== undefined) updateData.number = body.number;
     if (body.active !== undefined) updateData.active = body.active;
 
-    // Tratamento e Validação do CPF no modo Edição
     if (body.cpf !== undefined) {
       const cpfLimpo = body.cpf && body.cpf.trim() !== "" ? body.cpf : null;
 
-      // Se o usuário estiver tentando salvar um CPF, checamos se já existe em OUTRO cliente
       if (cpfLimpo) {
         const existingClient = await prisma.client.findFirst({
           where: {
             cpf: cpfLimpo,
             organization_id: admin.organizationId,
-            id: { not: id }, // Garante que não é o próprio cliente que estamos editando
+            id: { not: id },
           },
         });
 
@@ -123,11 +112,9 @@ export async function PUT(
           );
         }
       }
-
       updateData.cpf = cpfLimpo;
     }
 
-    // Converte a string de data ("YYYY-MM-DD") para objeto Date aceito pelo Prisma
     if (body.birth_date !== undefined) {
       updateData.birth_date = body.birth_date
         ? new Date(`${body.birth_date}T12:00:00Z`)
@@ -144,7 +131,10 @@ export async function PUT(
 
     return NextResponse.json(client);
   } catch (error) {
-    console.error("Erro ao atualizar cliente:", error);
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    console.error("[CLIENT_PUT]", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }
@@ -154,12 +144,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const admin = await getCurrentAdmin();
-
-    if (!admin) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
-
+    const admin = await requireAuth();
     const { id } = await params;
 
     const client = await prisma.client.findFirst({
@@ -200,7 +185,10 @@ export async function DELETE(
       return NextResponse.json({ message: "Cliente excluído com sucesso" });
     }
   } catch (error) {
-    console.error("Erro ao excluir/desativar cliente:", error);
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    console.error("[CLIENT_DELETE]", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }

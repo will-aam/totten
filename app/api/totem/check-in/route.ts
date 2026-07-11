@@ -1,19 +1,12 @@
 // app/api/totem/check-in/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentAdmin } from "@/lib/auth";
+import { requireAuth, AuthError } from "@/lib/auth";
 
 export async function POST(request: Request) {
   try {
-    // 🔒 1. Valida a sessão do totem
-    const admin = await getCurrentAdmin();
-
-    if (!admin || !admin.organizationId) {
-      return NextResponse.json(
-        { error: "Não autorizado. Totem não está autenticado." },
-        { status: 401 },
-      );
-    }
+    // 🛡️ Validação unificada de sessão e tenant
+    const admin = await requireAuth();
 
     const body = await request.json();
     const { appointment_id } = body;
@@ -25,7 +18,7 @@ export async function POST(request: Request) {
       );
     }
 
-    //  BUSCA O AGENDAMENTO COM O SERVIÇO E INSUMOS
+    // BUSCA O AGENDAMENTO COM O SERVIÇO E INSUMOS
     const appt = await prisma.appointment.findUnique({
       where: { id: appointment_id },
       include: {
@@ -41,6 +34,7 @@ export async function POST(request: Request) {
       },
     });
 
+    // Validação de segurança: o agendamento deve pertencer à org do totem
     if (!appt || appt.organization_id !== admin.organizationId) {
       return NextResponse.json(
         { error: "Agendamento inválido" },
@@ -55,7 +49,7 @@ export async function POST(request: Request) {
       );
     }
 
-    //  NOVO: Trava de segurança para pacotes inativos no Totem
+    // Trava de segurança para pacotes inativos
     if (appt.package && appt.package.active === false) {
       return NextResponse.json(
         {
@@ -79,7 +73,7 @@ export async function POST(request: Request) {
 
     let packageInfo = null;
 
-    //  A GRANDE TRANSAÇÃO DO TOTEM
+    // A GRANDE TRANSAÇÃO DO TOTEM
     const result = await prisma.$transaction(async (tx) => {
       // 1. Cria o registro de Check-in
       const checkIn = await tx.checkIn.create({
@@ -88,7 +82,7 @@ export async function POST(request: Request) {
           client_id: appt.client_id,
           package_id: appt.package_id ?? null,
           organization_id: appt.organization_id,
-          auto_processed: true, // 🔥 este check-in dispara reversão de estoque/financeiro
+          auto_processed: true, // dispara reversão de estoque/financeiro
         },
       });
 
@@ -115,11 +109,10 @@ export async function POST(request: Request) {
         });
       }
 
-      //  --- O CORAÇÃO DO SISTEMA FINANCEIRO E DE ESTOQUE ---
+      // --- O CORAÇÃO DO SISTEMA FINANCEIRO E DE ESTOQUE ---
       const service = appt.service;
 
       if (service.track_stock && service.stock_items.length > 0) {
-        // FLUXO A e B: A Cliente Organizada / Híbrida (Tem Estoque)
         for (const item of service.stock_items) {
           const stockData = item.stock_item;
           const usedQty = item.quantity_used;
@@ -130,7 +123,7 @@ export async function POST(request: Request) {
             data: { quantity: { decrement: usedQty } },
           });
 
-          // b) Regra de Caixa: Só gera despesa se NÃO marcou "Lançar como Despesa" na compra
+          // b) Regra de Caixa
           if (!stockData.was_expensed) {
             const costOfUsedQty = Number(usedQty) * Number(stockData.unit_cost);
 
@@ -154,7 +147,7 @@ export async function POST(request: Request) {
         service.material_cost &&
         Number(service.material_cost) > 0
       ) {
-        // FLUXO C: A Cliente Preguiçosa (O Chute Manual)
+        // Fluxo de Custo Fixo de Material
         await tx.transaction.create({
           data: {
             type: "DESPESA",
@@ -183,7 +176,10 @@ export async function POST(request: Request) {
       package_info: packageInfo,
     });
   } catch (error) {
-    console.error("Erro ao fazer check-in no Totem:", error);
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    console.error("[TOTEM_CHECKIN_POST]", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }

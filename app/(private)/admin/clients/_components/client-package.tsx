@@ -136,7 +136,7 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/packages/templates", {
+      const res = await fetch("/api/packages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

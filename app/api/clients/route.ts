@@ -1,7 +1,7 @@
 // app/api/clients/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentAdmin } from "@/lib/auth";
+import { requireAuth, AuthError } from "@/lib/auth";
 import { Prisma } from "@prisma/client";
 
 function getSearchVariations(searchQuery: string) {
@@ -30,11 +30,8 @@ function getSearchVariations(searchQuery: string) {
 
 export async function GET(request: Request) {
   try {
-    const admin = await getCurrentAdmin();
-
-    if (!admin) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
+    // 🛡️ Validação unificada de sessão e tenant
+    const admin = await requireAuth();
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1", 10);
@@ -74,9 +71,6 @@ export async function GET(request: Request) {
     let totalCount = 0;
     let finalClientsList = [];
 
-    // app/api/clients/route.ts (trecho a ser corrigido)
-
-    // Definição comum do SELECT para manter consistência entre queries
     const clientSelect = {
       id: true,
       name: true,
@@ -88,7 +82,7 @@ export async function GET(request: Request) {
         where: { active: true },
         select: {
           id: true,
-          name: true, // <-- ADICIONADO: Pega o nome do pacote diretamente
+          name: true,
           used_sessions: true,
           total_sessions: true,
           package_template: {
@@ -139,8 +133,6 @@ export async function GET(request: Request) {
       finalClientsList = paginatedClients;
     }
 
-    // app/api/clients/route.ts (trecho a ser corrigido)
-
     const formattedClients = finalClientsList.map((client) => {
       const activePackages = client.packages.filter(
         (pkg) => pkg.used_sessions < pkg.total_sessions,
@@ -175,6 +167,9 @@ export async function GET(request: Request) {
       totalPages: Math.ceil(totalCount / limit) || 1,
     });
   } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
     console.error("Erro ao buscar clientes:", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
@@ -182,9 +177,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const admin = await getCurrentAdmin();
-    if (!admin)
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    // 🛡️ Garante autenticação
+    const admin = await requireAuth();
 
     const body = await request.json();
     const {
@@ -199,7 +193,6 @@ export async function POST(request: Request) {
       number,
     } = body;
 
-    // 1. CPF removido da validação de obrigatoriedade
     if (!name || !phone_whatsapp) {
       return NextResponse.json(
         { error: "Nome e WhatsApp são obrigatórios." },
@@ -207,7 +200,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 2. Só verificamos duplicação de CPF *SE* um CPF foi enviado
+    // Validação de duplicidade estrita ao tenant
     if (cpf && cpf.trim() !== "") {
       const existingClient = await prisma.client.findUnique({
         where: {
@@ -233,7 +226,6 @@ export async function POST(request: Request) {
     const client = await prisma.client.create({
       data: {
         name,
-        // 3. Se o CPF vier vazio ou nulo, forçamos o null para o banco aceitar
         cpf: cpf && cpf.trim() !== "" ? cpf : null,
         phone_whatsapp,
         email: email || null,
@@ -252,6 +244,9 @@ export async function POST(request: Request) {
       client: { id: client.id, name: client.name },
     });
   } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
     console.error("Erro ao criar cliente:", error);
     return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }

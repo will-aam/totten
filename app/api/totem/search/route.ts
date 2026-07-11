@@ -1,22 +1,14 @@
 // app/api/totem/search/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentAdmin } from "@/lib/auth";
+import { requireAuth, AuthError } from "@/lib/auth";
 
-export async function POST(req: NextRequest) {
+export async function POST(request: Request) {
   try {
-    // 🔒 1. Valida a sessão do totem
-    const admin = await getCurrentAdmin();
+    // 🛡️ Validação unificada de sessão e tenant
+    const admin = await requireAuth();
 
-    if (!admin || !admin.organizationId) {
-      return NextResponse.json(
-        { error: "Não autorizado. Totem não está autenticado." },
-        { status: 401 },
-      );
-    }
-
-    const body = await req.json();
-    // AGORA RECEBEMOS 'value' E 'mode' DO FRONT-END
+    const body = await request.json();
     const { value, mode } = body as { value?: string; mode?: "CPF" | "PHONE" };
 
     if (!value || !mode) {
@@ -31,7 +23,7 @@ export async function POST(req: NextRequest) {
       organization_id: admin.organizationId,
     };
 
-    // 🔍 2. PREPARAÇÃO DA BUSCA (CPF OU TELEFONE)
+    // 🔍 PREPARAÇÃO DA BUSCA (CPF OU TELEFONE)
     if (mode === "CPF") {
       const cpfFormatado =
         valorLimpo.length === 11
@@ -51,7 +43,6 @@ export async function POST(req: NextRequest) {
         phoneFormatado = `(${valorLimpo.slice(0, 2)}) ${valorLimpo.slice(2, 6)}-${valorLimpo.slice(6)}`;
       }
 
-      // Cobrimos todas as variações possíveis que podem estar no banco
       const phoneCandidates = Array.from(
         new Set([
           value.trim(),
@@ -64,7 +55,7 @@ export async function POST(req: NextRequest) {
       whereClause.phone_whatsapp = { in: phoneCandidates };
     }
 
-    // 🔍 3. BUSCA O CLIENTE NO BANCO
+    // 🔍 BUSCA O CLIENTE NO BANCO
     const cliente = await prisma.client.findFirst({
       where: whereClause,
     });
@@ -73,7 +64,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: "NOT_FOUND" });
     }
 
-    //  CORREÇÃO DE FUSO HORÁRIO
+    // CORREÇÃO DE FUSO HORÁRIO
     const now = new Date();
     const formatter = new Intl.DateTimeFormat("en-US", {
       timeZone: "America/Sao_Paulo",
@@ -103,7 +94,6 @@ export async function POST(req: NextRequest) {
         status: { in: ["PENDENTE", "CONFIRMADO"] },
         OR: [{ package_id: null }, { package: { active: true } }],
       },
-      //  AQUI: Pedimos pro Prisma trazer o estoque junto com o serviço
       include: {
         service: {
           include: {
@@ -122,7 +112,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: "NOT_FOUND" });
     }
 
-    // Se tiver mais de um, manda pro front-end escolher e chamar a rota oficial
+    // Se tiver mais de um, manda pro front-end escolher
     if (agendamentos.length > 1) {
       return NextResponse.json({
         status: "MULTIPLE_FOUND",
@@ -130,14 +120,14 @@ export async function POST(req: NextRequest) {
         appointments: agendamentos.map((appt) => ({
           id: appt.id,
           date_time: appt.date_time,
-          service_name: appt.service.name, // Acessa normalmente
+          service_name: appt.service.name,
         })),
       });
     }
 
     // ==========================================================
     // SE CHEGOU AQUI: O Cliente tem apenas 1 agendamento.
-    // Vamos fazer o AUTO CHECK-IN!
+    // Fazemos o AUTO CHECK-IN!
     // ==========================================================
     const agendamento = agendamentos[0];
     let packageInfo = null;
@@ -150,7 +140,7 @@ export async function POST(req: NextRequest) {
           client_id: cliente.id,
           package_id: agendamento.package_id ?? null,
           organization_id: admin.organizationId,
-          auto_processed: true, // 🔥 adicionar
+          auto_processed: true,
         },
       });
 
@@ -177,7 +167,7 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      //  --- O CORAÇÃO DO SISTEMA FINANCEIRO E DE ESTOQUE (AUTO CHECK-IN) ---
+      // --- O CORAÇÃO DO SISTEMA FINANCEIRO E DE ESTOQUE (AUTO CHECK-IN) ---
       const service = agendamento.service;
 
       if (
@@ -185,7 +175,6 @@ export async function POST(req: NextRequest) {
         service.stock_items &&
         service.stock_items.length > 0
       ) {
-        // FLUXO A e B (Baixa Inteligente com Lançamento Único Consolidado)
         let totalCost = 0;
         let detailsArray: string[] = [];
 
@@ -193,18 +182,15 @@ export async function POST(req: NextRequest) {
           const stockData = item.stock_item;
           const usedQty = item.quantity_used;
 
-          // a) Baixa a quantidade física no estoque (mantém individual)
           await tx.stockItem.update({
             where: { id: stockData.id },
             data: { quantity: { decrement: usedQty } },
           });
 
-          // b) Acumula o custo financeiro
           if (!stockData.was_expensed) {
             const itemCost = Number(usedQty) * Number(stockData.unit_cost);
             if (itemCost > 0) {
               totalCost += itemCost;
-              // Guarda o detalhe para a descrição (Ex: "2x Luva (R$ 1,00)")
               detailsArray.push(
                 `${usedQty}x ${stockData.name} (R$ ${itemCost.toFixed(2).replace(".", ",")})`,
               );
@@ -212,8 +198,6 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // c) Lança a despesa consolidada (Apenas UMA transação)
-        // No bloco de estoque consolidado:
         if (totalCost > 0) {
           await tx.transaction.create({
             data: {
@@ -223,7 +207,7 @@ export async function POST(req: NextRequest) {
               date: new Date(),
               status: "PAGO",
               organization_id: admin.organizationId,
-              appointment_id: agendamento.id, // 🔥 adicionar
+              appointment_id: agendamento.id,
             },
           });
         }
@@ -232,8 +216,6 @@ export async function POST(req: NextRequest) {
         service.material_cost &&
         Number(service.material_cost) > 0
       ) {
-        // FLUXO C (Chute Manual)
-        // No bloco de material_cost fixo:
         await tx.transaction.create({
           data: {
             type: "DESPESA",
@@ -242,11 +224,11 @@ export async function POST(req: NextRequest) {
             date: new Date(),
             status: "PAGO",
             organization_id: admin.organizationId,
-            appointment_id: agendamento.id, // 🔥 adicionar
+            appointment_id: agendamento.id,
           },
         });
       }
-    }); // Fim da transação
+    });
 
     return NextResponse.json({
       status: "FOUND",
@@ -260,7 +242,10 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Erro na busca do Totem:", error);
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    console.error("[TOTEM_SEARCH_POST]", error);
     return NextResponse.json(
       { error: "Erro interno do servidor." },
       { status: 500 },

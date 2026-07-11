@@ -1,14 +1,12 @@
+// app/api/admin/notes/route.ts
 import { NextResponse } from "next/server";
-import { getCurrentAdmin } from "@/lib/auth"; // Usando a sua função auxiliar
-import { prisma } from "@/lib/prisma"; // Importação com chaves {}
+import { requireAuth, AuthError } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
-// GET: Busca todas as anotações de um cliente específico
+// GET: Recupera anotações ordenadas cronologicamente
 export async function GET(request: Request) {
   try {
-    const admin = await getCurrentAdmin();
-    if (!admin?.organizationId) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
+    const admin = await requireAuth();
 
     const { searchParams } = new URL(request.url);
     const clientId = searchParams.get("clientId");
@@ -26,12 +24,15 @@ export async function GET(request: Request) {
         organization_id: admin.organizationId,
       },
       orderBy: {
-        date: "asc", // Traz da mais antiga para a mais nova (ideal para formato de chat)
+        date: "asc",
       },
     });
 
     return NextResponse.json({ data: notes });
   } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
     console.error("[NOTES_GET]", error);
     return NextResponse.json(
       { error: "Erro interno do servidor" },
@@ -40,14 +41,10 @@ export async function GET(request: Request) {
   }
 }
 
-// POST: Cria uma nova anotação
+// POST: Insere nova anotação
 export async function POST(request: Request) {
   try {
-    const admin = await getCurrentAdmin();
-    if (!admin?.organizationId) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
-
+    const admin = await requireAuth();
     const body = await request.json();
     const { clientId, text } = body;
 
@@ -65,6 +62,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ data: newNote }, { status: 201 });
   } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
     console.error("[NOTES_POST]", error);
     return NextResponse.json(
       { error: "Erro interno do servidor" },
@@ -73,14 +73,10 @@ export async function POST(request: Request) {
   }
 }
 
-// PUT: Atualiza o texto de uma anotação existente
+// PUT: Altera conteúdo de anotação existente com verificação de tenant
 export async function PUT(request: Request) {
   try {
-    const admin = await getCurrentAdmin();
-    if (!admin?.organizationId) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
-
+    const admin = await requireAuth();
     const body = await request.json();
     const { noteId, text } = body;
 
@@ -88,7 +84,6 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Dados incompletos" }, { status: 400 });
     }
 
-    // Segurança: Verifica se a nota existe e se pertence à organização do admin logado
     const existingNote = await prisma.clientNote.findUnique({
       where: { id: noteId },
     });
@@ -110,6 +105,9 @@ export async function PUT(request: Request) {
 
     return NextResponse.json({ data: updatedNote });
   } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
     console.error("[NOTES_PUT]", error);
     return NextResponse.json(
       { error: "Erro interno do servidor" },
@@ -118,13 +116,10 @@ export async function PUT(request: Request) {
   }
 }
 
-// DELETE: Exclui uma anotação
+// DELETE: Remove anotação com verificação de tenant
 export async function DELETE(request: Request) {
   try {
-    const admin = await getCurrentAdmin();
-    if (!admin?.organizationId) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
+    const admin = await requireAuth();
 
     const { searchParams } = new URL(request.url);
     const noteId = searchParams.get("noteId");
@@ -136,7 +131,6 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // Mesma validação de segurança
     const existingNote = await prisma.clientNote.findUnique({
       where: { id: noteId },
     });
@@ -157,6 +151,9 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
     console.error("[NOTES_DELETE]", error);
     return NextResponse.json(
       { error: "Erro interno do servidor" },

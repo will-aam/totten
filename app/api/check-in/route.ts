@@ -1,22 +1,12 @@
 // app/api/check-in/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentAdmin } from "@/lib/auth";
+import { requireAuth, AuthError } from "@/lib/auth";
 
 export async function POST(request: Request) {
   try {
-    // 🔒 PASSO 1: Extrai o organization_id da sessão do Admin logado
-    const admin = await getCurrentAdmin();
-
-    if (!admin) {
-      return NextResponse.json(
-        {
-          error: "UNAUTHORIZED",
-          message: "Sessão expirada. Faça login novamente.",
-        },
-        { status: 401 },
-      );
-    }
+    // 🛡️ Validação unificada: se falhar, cai direto no catch como AuthError
+    const admin = await requireAuth();
 
     const { cpf } = await request.json();
 
@@ -27,11 +17,11 @@ export async function POST(request: Request) {
       );
     }
 
-    // 🔒 PASSO 2: Busca o cliente APENAS dentro da organização da sessão
+    // Busca o cliente dentro do escopo da organização
     const client = await prisma.client.findFirst({
       where: {
         cpf: cpf,
-        organization_id: admin.organizationId, // 🎯 ISOLAMENTO TOTAL
+        organization_id: admin.organizationId,
       },
       include: {
         packages: {
@@ -46,7 +36,6 @@ export async function POST(request: Request) {
       },
     });
 
-    // Cliente não existe nessa organização
     if (!client) {
       return NextResponse.json(
         {
@@ -57,7 +46,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Cliente existe mas não tem pacote ativo
     if (!client.packages || client.packages.length === 0) {
       return NextResponse.json(
         { error: "NO_ACTIVE_PACKAGE", message: "Você não possui pacote ativo" },
@@ -67,7 +55,6 @@ export async function POST(request: Request) {
 
     const activePackage = client.packages[0];
 
-    // Pacote já foi totalmente usado
     if (activePackage.used_sessions >= activePackage.total_sessions) {
       return NextResponse.json(
         {
@@ -78,25 +65,23 @@ export async function POST(request: Request) {
       );
     }
 
-    // 🔒 PASSO 3: Registra o check-in DENTRO da organização
+    // Registra o check-in na organização correta
     const checkIn = await prisma.checkIn.create({
       data: {
         client_id: client.id,
         package_id: activePackage.id,
-        organization_id: admin.organizationId, // 🎯 REGISTRA NA ORGANIZAÇÃO CERTA
+        organization_id: admin.organizationId,
       },
     });
 
-    //  CALCULA SE O PACOTE DEVE SER ARQUIVADO
     const newUsedSessions = activePackage.used_sessions + 1;
     const willRemainActive = newUsedSessions < activePackage.total_sessions;
 
-    // Atualiza o contador de sessões usadas e inativa se bateu o limite
     await prisma.package.update({
       where: { id: activePackage.id },
       data: {
         used_sessions: newUsedSessions,
-        active: willRemainActive, // 🎯 A mágica acontece aqui
+        active: willRemainActive,
       },
     });
 
@@ -116,6 +101,17 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
+    // 🛡️ Intercepta o erro de autenticação e mantém o contrato da API
+    if (error instanceof AuthError) {
+      return NextResponse.json(
+        {
+          error: "UNAUTHORIZED",
+          message: "Sessão expirada. Faça login novamente.",
+        },
+        { status: 401 },
+      );
+    }
+
     console.error("Erro no check-in:", error);
     return NextResponse.json(
       { error: "SERVER_ERROR", message: "Erro ao processar check-in" },

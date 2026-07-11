@@ -1,15 +1,12 @@
 // app/api/dashboard/kpis/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentAdmin } from "@/lib/auth";
+import { requireAuth, AuthError } from "@/lib/auth"; // 🔄 Importação atualizada
 
 export async function GET() {
   try {
-    const admin = await getCurrentAdmin();
-
-    if (!admin) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
+    // 🛡️ O requireAuth agora garante a sessão ou joga um erro direto pro catch
+    const admin = await requireAuth();
 
     //  CORREÇÃO DO FUSO HORÁRIO (Forçando o fuso do Brasil UTC-3)
     const now = new Date();
@@ -76,7 +73,6 @@ export async function GET() {
     });
 
     // 5. Faltas e Cancelamentos de Hoje
-    // Baseado na sua cron de faltas automáticas, elas são marcadas como CANCELADO
     const noShowsToday = await prisma.appointment.count({
       where: {
         organization_id: admin.organizationId,
@@ -90,7 +86,6 @@ export async function GET() {
 
     // --- 🧮 CÁLCULO DOS KPIs ---
 
-    // Métrica de Agendamentos (Em relação a ontem)
     let appointmentsVsYesterday = 0;
     if (appointmentsYesterday > 0) {
       appointmentsVsYesterday = Math.round(
@@ -98,20 +93,18 @@ export async function GET() {
           100,
       );
     } else if (appointmentsToday > 0) {
-      appointmentsVsYesterday = 100; // Se ontem foi 0 e hoje teve agendamento, +100%
+      appointmentsVsYesterday = 100;
     }
 
-    // Métrica de Check-ins (Porcentagem de aproveitamento da agenda)
     let checkInsPercentage = 0;
     if (appointmentsToday > 0) {
       checkInsPercentage = Math.round(
         (checkInsToday / appointmentsToday) * 100,
       );
     } else if (checkInsToday > 0) {
-      checkInsPercentage = 100; // Tratamento para caso atípico de check-in avulso sem agenda
+      checkInsPercentage = 100;
     }
 
-    // 🔥 Retornamos exatamente as chaves que o nosso KpiData no Front-end espera
     return NextResponse.json({
       appointmentsToday,
       appointmentsVsYesterday,
@@ -121,6 +114,11 @@ export async function GET() {
       noShowsToday,
     });
   } catch (error) {
+    // 🛡️ NOVO TRATAMENTO DE ERRO: intercepta o AuthError e devolve 401 JSON
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+
     console.error("Erro ao buscar KPIs do dashboard:", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
