@@ -35,7 +35,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
-import { AdminHeader } from "@/components/admin-header";
+import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { DurationManager } from "./_components/duration-manager";
 import { ServiceEditModal } from "./_components/service-edit-modal";

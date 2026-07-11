@@ -6,7 +6,7 @@ import useSWR from "swr";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { AdminHeader } from "@/components/admin-header";
+import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { ImportClientsModal } from "./_components/import-clients-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

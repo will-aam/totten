@@ -13,7 +13,7 @@ import {
   ArchiveArrowUp,
 } from "@boxicons/react";
 
-import { AdminHeader } from "@/components/admin-header";
+import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

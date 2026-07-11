@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { AdminHeader } from "@/components/admin-header";
+import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import {
   Card,
   CardContent,

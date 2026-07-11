@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from "react";
 import useSWR from "swr";
-import { AdminHeader } from "@/components/admin-header";
+import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {

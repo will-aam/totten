@@ -1,6 +1,6 @@
 // app/admin/packages/new/page.tsx
 import Link from "next/link";
-import { AdminHeader } from "@/components/admin-header";
+import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "@boxicons/react";
 import { PackageForm } from "../_components/package-form";

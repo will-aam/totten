@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AdminHeader } from "@/components/admin-header";
+import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 

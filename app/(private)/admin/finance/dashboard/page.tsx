@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import useSWR from "swr";
-import { AdminHeader } from "@/components/admin-header";
+import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { FinanceHeader } from "../_components/finance-header";
 import { FinanceSecondaryIndicators } from "../_components/finance-secondary-indicators";
 import { FinanceSummaryCards } from "../_components/finance-summary-cards";

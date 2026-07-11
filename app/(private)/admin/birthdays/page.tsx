@@ -19,7 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Gift, Whatsapp, LoaderDots } from "@boxicons/react";
-import { AdminHeader } from "@/components/admin-header";
+import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 

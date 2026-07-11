@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AdminHeader } from "@/components/admin-header";
+import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import {
   Card,
   CardContent,

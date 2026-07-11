@@ -12,7 +12,7 @@ import {
   FolderDownArrow, // <-- Ícone atualizado conforme seu pedido
 } from "@boxicons/react";
 import { Button } from "@/components/ui/button";
-import { AdminHeader } from "@/components/admin-header";
+import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { cn } from "@/lib/utils";
 
 // Importando as ações do estoque (Get, Create, Update, Delete)

@@ -1,6 +1,6 @@
 "use client";
 
-import { AdminHeader } from "@/components/admin-header";
+import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { DashboardCards } from "./_components/dashboard-cards";
 import { AgendaPreview } from "./_components/agenda-preview";
 import { RecentCheckIns } from "./_components/recent-checkins";
