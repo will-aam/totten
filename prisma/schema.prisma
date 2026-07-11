@@ -275,20 +275,24 @@ model ServiceDuration {
 }
 
 model CheckIn {
-  id              String       @id @default(cuid())
-  date_time       DateTime     @default(now())
-  appointment_id  String?      @unique
-  client_id       String?
-  package_id      String?
-  organization_id String
-  admin_id        String?
-  admin           Admin?       @relation("AdminToCheckIn", fields: [admin_id], references: [id])
-  appointment     Appointment? @relation(fields: [appointment_id], references: [id], onDelete: Cascade)
-  client          Client?      @relation(fields: [client_id], references: [id], onDelete: Cascade)
-  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  package         Package?     @relation(fields: [package_id], references: [id], onDelete: Cascade)
+  id                  String       @id @default(cuid())
+  date_time           DateTime     @default(now())
+  appointment_id      String?      @unique
+  client_id           String?
+  package_id          String?
+  organization_id     String
+  admin_id            String?
+  deleted_at          DateTime?
+  deleted_by_admin_id String?
+  deleted_by_name     String?
+  admin               Admin?       @relation("AdminToCheckIn", fields: [admin_id], references: [id])
+  appointment         Appointment? @relation(fields: [appointment_id], references: [id], onDelete: Cascade)
+  client              Client?      @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  organization        Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  package             Package?     @relation(fields: [package_id], references: [id], onDelete: Cascade)
 
   @@index([organization_id, date_time])
+  @@index([deleted_at])
   @@map("check_ins")
 }
 

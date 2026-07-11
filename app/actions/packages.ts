@@ -229,7 +229,9 @@ export async function createManualPackageCheckIn(
 }
 
 /**
- * Exclui um check-in e reverte o consumo no pacote do cliente.
+ * Remove um check-in (soft delete) e reverte o consumo no pacote do cliente.
+ * O registro original é preservado para a Jornada do Cliente,
+ * apenas marcado como removido.
  */
 export async function deleteCheckIn(checkInId: string) {
   try {
@@ -244,6 +246,9 @@ export async function deleteCheckIn(checkInId: string) {
     });
 
     if (!checkIn) return { success: false, error: "Check-in não encontrado." };
+    if (checkIn.deleted_at) {
+      return { success: false, error: "Este check-in já foi removido." };
+    }
 
     await prisma.$transaction(async (tx) => {
       const adminName = admin.name || "Administrador";
@@ -271,18 +276,15 @@ export async function deleteCheckIn(checkInId: string) {
         });
       }
 
-      // B. Estorno do pacote (lógica original mantida)
+      // B. Estorno do pacote (mantido igual)
       if (checkIn.package_id) {
         await tx.package.update({
           where: { id: checkIn.package_id },
-          data: {
-            used_sessions: { decrement: 1 },
-            active: true,
-          },
+          data: { used_sessions: { decrement: 1 }, active: true },
         });
       }
 
-      // C. Agendamento volta para CONFIRMADO (lógica original mantida)
+      // C. Agendamento volta pra CONFIRMADO (mantido igual)
       if (checkIn.appointment_id) {
         await tx.appointment.update({
           where: { id: checkIn.appointment_id },
@@ -290,9 +292,14 @@ export async function deleteCheckIn(checkInId: string) {
         });
       }
 
-      // D. Exclusão de fato
-      await tx.checkIn.delete({
+      // D. Soft delete — o registro original sobrevive para a timeline
+      await tx.checkIn.update({
         where: { id: checkInId },
+        data: {
+          deleted_at: new Date(),
+          deleted_by_admin_id: admin.id,
+          deleted_by_name: adminName,
+        },
       });
     });
 

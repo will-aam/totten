@@ -23,6 +23,7 @@ export async function GET(request: Request) {
     // Construção robusta e segura da query
     const whereClause: any = {
       organization_id: admin.organizationId,
+      deleted_at: null,
     };
 
     const andConditions: any[] = [];

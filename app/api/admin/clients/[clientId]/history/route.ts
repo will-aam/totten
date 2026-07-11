@@ -111,17 +111,21 @@ export async function GET(
       }
     });
 
-    // D: Check-ins normais
+    // D: Check-ins (incluindo os removidos, agora marcados)
     checkIns.forEach((ci) => {
+      const isDeleted = !!ci.deleted_at;
       timelineEvents.push({
         id: `checkin-${ci.id}`,
         type: "CHECK_IN",
         date: ci.date_time,
-        title: "Sessão Realizada",
+        title: isDeleted ? "Check-in Removido" : "Sessão Realizada",
         meta: {
           isPackage: !!ci.package_id,
           packageName: ci.package?.name ?? "Desconhecido",
           professionalName: ci.admin?.display_name ?? null,
+          deleted: isDeleted,
+          deletedByName: ci.deleted_by_name ?? null,
+          deletedAt: ci.deleted_at,
         },
       });
     });

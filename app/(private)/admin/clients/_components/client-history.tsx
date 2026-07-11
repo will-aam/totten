@@ -15,6 +15,7 @@ import {
   UserPlus,
   MessageCircle,
   UserX,
+  Trash,
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
@@ -147,7 +148,14 @@ export function ClientHistory({ clientId }: { clientId: string }) {
         return (
           <div className="flex flex-wrap items-center gap-2 mt-1">
             {event.meta.isPackage ? (
-              <span className="inline-flex items-center gap-1 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded max-w-full truncate">
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded max-w-full truncate",
+                  event.meta.deleted
+                    ? "bg-muted text-muted-foreground line-through"
+                    : "bg-primary/10 text-primary",
+                )}
+              >
                 PACOTE: {event.meta.packageName}
               </span>
             ) : (
@@ -159,6 +167,13 @@ export function ClientHistory({ clientId }: { clientId: string }) {
             {event.meta.professionalName && (
               <span className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-500 font-medium">
                 <User className="h-3 w-3" /> {event.meta.professionalName}
+              </span>
+            )}
+
+            {event.meta.deleted && (
+              <span className="flex items-center gap-1 text-[11px] text-destructive font-medium">
+                <Trash className="h-3 w-3" /> Removido por{" "}
+                {event.meta.deletedByName}
               </span>
             )}
           </div>
@@ -200,7 +215,11 @@ export function ClientHistory({ clientId }: { clientId: string }) {
     }
   };
 
-  const getEventIcon = (type: string, isPackageCheckin?: boolean) => {
+  const getEventIcon = (
+    type: string,
+    isPackageCheckin?: boolean,
+    isDeleted?: boolean,
+  ) => {
     switch (type) {
       case "CLIENT_CREATED":
         return {
@@ -212,6 +231,13 @@ export function ClientHistory({ clientId }: { clientId: string }) {
       case "PACKAGE_ARCHIVED":
         return { icon: Archive, color: "border-red-500/30 text-red-600" };
       case "CHECK_IN":
+        if (isDeleted) {
+          return {
+            icon: Trash,
+            color:
+              "border-muted-foreground/30 text-muted-foreground/60 bg-muted/30",
+          };
+        }
         return isPackageCheckin
           ? { icon: Package, color: "border-primary/30 text-primary" }
           : {
@@ -273,6 +299,7 @@ export function ClientHistory({ clientId }: { clientId: string }) {
               const { icon: Icon, color } = getEventIcon(
                 event.type,
                 event.meta?.isPackage,
+                event.meta?.deleted,
               );
 
               return (
@@ -292,7 +319,14 @@ export function ClientHistory({ clientId }: { clientId: string }) {
 
                   <div className="flex flex-col flex-1 pt-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <span className="text-sm font-bold text-foreground leading-none mt-1">
+                      <span
+                        className={cn(
+                          "text-sm font-bold leading-none mt-1",
+                          event.meta?.deleted
+                            ? "text-muted-foreground line-through"
+                            : "text-foreground",
+                        )}
+                      >
                         {event.title}
                       </span>
                       <div className="flex flex-col items-end shrink-0">
