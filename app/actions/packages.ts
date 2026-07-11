@@ -240,7 +240,13 @@ export async function deleteCheckIn(checkInId: string) {
     const checkIn = await prisma.checkIn.findUnique({
       where: { id: checkInId, organization_id: admin.organizationId },
       include: {
-        appointment: true,
+        appointment: {
+          include: {
+            service: {
+              include: { stock_items: { include: { stock_item: true } } },
+            },
+          },
+        },
         package: { include: { service: true } },
       },
     });
@@ -253,7 +259,7 @@ export async function deleteCheckIn(checkInId: string) {
     await prisma.$transaction(async (tx) => {
       const adminName = admin.name || "Administrador";
 
-      // A. Auditoria: nota legível, com nome (não ID)
+      // A. Auditoria
       if (checkIn.client_id) {
         const dateStr = new Intl.DateTimeFormat("pt-BR", {
           dateStyle: "short",
@@ -276,7 +282,7 @@ export async function deleteCheckIn(checkInId: string) {
         });
       }
 
-      // B. Estorno do pacote (mantido igual)
+      // B. Estorno do pacote
       if (checkIn.package_id) {
         await tx.package.update({
           where: { id: checkIn.package_id },
@@ -284,15 +290,34 @@ export async function deleteCheckIn(checkInId: string) {
         });
       }
 
-      // C. Agendamento volta pra CONFIRMADO (mantido igual)
+      // C. Agendamento volta ao estado anterior
       if (checkIn.appointment_id) {
         await tx.appointment.update({
           where: { id: checkIn.appointment_id },
-          data: { status: "CONFIRMADO" },
+          data: { status: "CONFIRMADO", has_charge: false },
         });
       }
 
-      // D. Soft delete — o registro original sobrevive para a timeline
+      // D. Desfaz estoque e financeiro SÓ se a automação do totem gerou isso
+      if (checkIn.auto_processed && checkIn.appointment?.service) {
+        const service = checkIn.appointment.service;
+
+        if (service.track_stock && service.stock_items.length > 0) {
+          for (const item of service.stock_items) {
+            await tx.stockItem.update({
+              where: { id: item.stock_item_id },
+              data: { quantity: { increment: item.quantity_used } },
+            });
+          }
+        }
+
+        // Remove a(s) despesa(s) automáticas geradas na criação
+        await tx.transaction.deleteMany({
+          where: { appointment_id: checkIn.appointment_id, type: "DESPESA" },
+        });
+      }
+
+      // E. Soft delete do check-in
       await tx.checkIn.update({
         where: { id: checkInId },
         data: {
@@ -306,6 +331,7 @@ export async function deleteCheckIn(checkInId: string) {
     revalidatePath("/admin/history");
     revalidatePath("/admin/packages");
     revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/stock");
     revalidatePath(`/admin/clients/${checkIn.client_id}`);
 
     return { success: true };

@@ -88,6 +88,7 @@ export async function POST(request: Request) {
           client_id: appt.client_id,
           package_id: appt.package_id ?? null,
           organization_id: appt.organization_id,
+          auto_processed: true, // 🔥 este check-in dispara reversão de estoque/financeiro
         },
       });
 

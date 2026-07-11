@@ -285,6 +285,7 @@ model CheckIn {
   deleted_at          DateTime?
   deleted_by_admin_id String?
   deleted_by_name     String?
+  auto_processed      Boolean      @default(false)
   admin               Admin?       @relation("AdminToCheckIn", fields: [admin_id], references: [id])
   appointment         Appointment? @relation(fields: [appointment_id], references: [id], onDelete: Cascade)
   client              Client?      @relation(fields: [client_id], references: [id], onDelete: Cascade)

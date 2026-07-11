@@ -1,4 +1,4 @@
-// app/admin/packages/page.tsx
+// app/(private)/admin/packages/page.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from "react";

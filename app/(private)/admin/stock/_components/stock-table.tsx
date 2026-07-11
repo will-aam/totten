@@ -1,4 +1,4 @@
-// components/stock/stock-table.tsx
+// app/(private)/admin/stock/_components/stock-table.tsx
 "use client";
 
 import { useState } from "react";

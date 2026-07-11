@@ -1,3 +1,4 @@
+// app/api/totem/search/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin } from "@/lib/auth";
@@ -149,6 +150,7 @@ export async function POST(req: NextRequest) {
           client_id: cliente.id,
           package_id: agendamento.package_id ?? null,
           organization_id: admin.organizationId,
+          auto_processed: true, // 🔥 adicionar
         },
       });
 
@@ -211,6 +213,7 @@ export async function POST(req: NextRequest) {
         }
 
         // c) Lança a despesa consolidada (Apenas UMA transação)
+        // No bloco de estoque consolidado:
         if (totalCost > 0) {
           await tx.transaction.create({
             data: {
@@ -220,6 +223,7 @@ export async function POST(req: NextRequest) {
               date: new Date(),
               status: "PAGO",
               organization_id: admin.organizationId,
+              appointment_id: agendamento.id, // 🔥 adicionar
             },
           });
         }
@@ -229,6 +233,7 @@ export async function POST(req: NextRequest) {
         Number(service.material_cost) > 0
       ) {
         // FLUXO C (Chute Manual)
+        // No bloco de material_cost fixo:
         await tx.transaction.create({
           data: {
             type: "DESPESA",
@@ -237,6 +242,7 @@ export async function POST(req: NextRequest) {
             date: new Date(),
             status: "PAGO",
             organization_id: admin.organizationId,
+            appointment_id: agendamento.id, // 🔥 adicionar
           },
         });
       }
