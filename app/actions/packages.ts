@@ -153,19 +153,21 @@ export async function createManualPackageCheckIn(
 
     const pkg = await prisma.package.findUnique({
       where: { id: packageId, organization_id: admin.organizationId },
-      include: { service: true, client: true },
+      include: {
+        service: {
+          include: { stock_items: { include: { stock_item: true } } },
+        },
+        client: true,
+      },
     });
 
     if (!pkg) return { success: false, error: "Pacote não encontrado." };
-
-    // 🔥 TRAVA DE INTEGRIDADE: Não permitir baixa em pacote arquivado
     if (!pkg.active) {
       return {
         success: false,
         error: "Este pacote foi encerrado e não permite novos check-ins.",
       };
     }
-
     if (pkg.used_sessions >= pkg.total_sessions) {
       return { success: false, error: "Este pacote não possui mais saldo." };
     }
@@ -173,7 +175,6 @@ export async function createManualPackageCheckIn(
     const checkInDate = dateTimeString ? new Date(dateTimeString) : new Date();
 
     await prisma.$transaction(async (tx) => {
-      //  SNAPSHOT INJETADO: A sessão criada herda o snapshot do pacote!
       const appt = await tx.appointment.create({
         data: {
           date_time: checkInDate,
@@ -184,7 +185,6 @@ export async function createManualPackageCheckIn(
           organization_id: admin.organizationId,
           observations: "Baixa manual realizada via Gestão de Pacotes.",
           session_number: pkg.used_sessions + 1,
-          // Pega o snapshot salvo no pacote ou cai pro fallback do serviço atual se for pacote antigo
           snapshot_service_name: pkg.snapshot_service_name ?? pkg.service.name,
           snapshot_service_price:
             pkg.snapshot_service_price ?? pkg.service.price,
@@ -192,6 +192,67 @@ export async function createManualPackageCheckIn(
             pkg.snapshot_service_duration ?? pkg.service.duration,
         },
       });
+
+      // 🔥 NOVO: mesmo motor de estoque/financeiro do totem, aplicado no fluxo manual
+      let stockProcessed = false;
+      const service = pkg.service;
+
+      if (service.track_stock && service.stock_items.length > 0) {
+        let totalCost = 0;
+        const detailsArray: string[] = [];
+
+        for (const item of service.stock_items) {
+          const stockData = item.stock_item;
+          const usedQty = item.quantity_used;
+
+          await tx.stockItem.update({
+            where: { id: stockData.id },
+            data: { quantity: { decrement: usedQty } },
+          });
+          stockProcessed = true;
+
+          if (!stockData.was_expensed) {
+            const itemCost = Number(usedQty) * Number(stockData.unit_cost);
+            if (itemCost > 0) {
+              totalCost += itemCost;
+              detailsArray.push(
+                `${usedQty}x ${stockData.name} (R$ ${itemCost.toFixed(2).replace(".", ",")})`,
+              );
+            }
+          }
+        }
+
+        if (totalCost > 0) {
+          await tx.transaction.create({
+            data: {
+              type: "DESPESA",
+              description: `Custo Insumos (Baixa Manual) | Detalhes: ${detailsArray.join(" | ")}`,
+              amount: totalCost,
+              date: new Date(),
+              status: "PAGO",
+              organization_id: admin.organizationId,
+              appointment_id: appt.id,
+            },
+          });
+        }
+      } else if (
+        !service.track_stock &&
+        service.material_cost &&
+        Number(service.material_cost) > 0
+      ) {
+        await tx.transaction.create({
+          data: {
+            type: "DESPESA",
+            description: `Custo Fixo de Material (Baixa Manual): ${service.name}`,
+            amount: service.material_cost,
+            date: new Date(),
+            status: "PAGO",
+            organization_id: admin.organizationId,
+            appointment_id: appt.id,
+          },
+        });
+        stockProcessed = true;
+      }
 
       await tx.checkIn.create({
         data: {
@@ -201,6 +262,7 @@ export async function createManualPackageCheckIn(
           package_id: pkg.id,
           organization_id: admin.organizationId,
           admin_id: admin.id,
+          auto_processed: stockProcessed, // 🔥 reflete se de fato mexeu em estoque/financeiro
         },
       });
 
@@ -209,16 +271,14 @@ export async function createManualPackageCheckIn(
 
       await tx.package.update({
         where: { id: pkg.id },
-        data: {
-          used_sessions: { increment: 1 },
-          active: willRemainActive,
-        },
+        data: { used_sessions: { increment: 1 }, active: willRemainActive },
       });
     });
 
     revalidatePath("/admin/packages");
     revalidatePath("/admin/agenda");
     revalidatePath("/admin/history");
+    revalidatePath("/admin/stock");
     revalidatePath(`/admin/clients/${pkg.client_id}`);
 
     return { success: true };
