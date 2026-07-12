@@ -1,15 +1,15 @@
 // app/api/dashboard/checkins/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, AuthError } from "@/lib/auth";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     // 🛡️ Validação unificada de sessão e tenant
     const admin = await requireAuth();
 
-    // Pega os parâmetros da URL para a paginação
-    const { searchParams } = new URL(request.url);
+    // Pega os parâmetros da URL para a paginação usando o NextRequest nativo
+    const { searchParams } = request.nextUrl;
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "8", 10);
     const skip = (page - 1) * limit;

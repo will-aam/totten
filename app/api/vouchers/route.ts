@@ -1,10 +1,10 @@
 // app/api/vouchers/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, AuthError } from "@/lib/auth";
 
 // GET - Lista pacotes concluídos com Paginação e Busca Server-Side
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const admin = await requireAuth();
 
@@ -106,7 +106,7 @@ export async function GET(request: Request) {
 }
 
 // POST - Registra que um voucher foi emitido
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const admin = await requireAuth();
 
@@ -132,6 +132,7 @@ export async function POST(request: Request) {
       );
     }
 
+    // TODO: pendente decisão — voucher.create leva organization_id no data? (ver pergunta acima)
     const voucher = await prisma.voucher.create({
       data: {
         package_id,

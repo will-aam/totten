@@ -1,9 +1,9 @@
 // app/api/totem/check-in/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, AuthError } from "@/lib/auth";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     // 🛡️ Validação unificada de sessão e tenant
     const admin = await requireAuth();
@@ -19,8 +19,9 @@ export async function POST(request: Request) {
     }
 
     // BUSCA O AGENDAMENTO COM O SERVIÇO E INSUMOS
+    // organization_id embutido no where: escopo de tenant garantido já na leitura
     const appt = await prisma.appointment.findUnique({
-      where: { id: appointment_id },
+      where: { id: appointment_id, organization_id: admin.organizationId },
       include: {
         client: true,
         package: true,
@@ -34,8 +35,7 @@ export async function POST(request: Request) {
       },
     });
 
-    // Validação de segurança: o agendamento deve pertencer à org do totem
-    if (!appt || appt.organization_id !== admin.organizationId) {
+    if (!appt) {
       return NextResponse.json(
         { error: "Agendamento inválido" },
         { status: 404 },
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     }
 
     const existingCheckIn = await prisma.checkIn.findFirst({
-      where: { appointment_id: appt.id },
+      where: { appointment_id: appt.id, organization_id: admin.organizationId },
     });
 
     if (existingCheckIn) {
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
           appointment_id: appt.id,
           client_id: appt.client_id,
           package_id: appt.package_id ?? null,
-          organization_id: appt.organization_id,
+          organization_id: admin.organizationId,
           auto_processed: true, // dispara reversão de estoque/financeiro
         },
       });
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
       // 2. Atualiza Pacote e Agendamento
       if (appt.package_id) {
         const pacote = await tx.package.update({
-          where: { id: appt.package_id },
+          where: { id: appt.package_id, organization_id: admin.organizationId },
           data: { used_sessions: { increment: 1 } },
         });
 
@@ -99,12 +99,12 @@ export async function POST(request: Request) {
         };
 
         await tx.appointment.update({
-          where: { id: appt.id },
+          where: { id: appt.id, organization_id: admin.organizationId },
           data: { status: "REALIZADO" },
         });
       } else {
         await tx.appointment.update({
-          where: { id: appt.id },
+          where: { id: appt.id, organization_id: admin.organizationId },
           data: { status: "REALIZADO", has_charge: true },
         });
       }
@@ -119,7 +119,7 @@ export async function POST(request: Request) {
 
           // a) Baixa a quantidade física da prateleira (Sempre)
           await tx.stockItem.update({
-            where: { id: stockData.id },
+            where: { id: stockData.id, organization_id: admin.organizationId },
             data: { quantity: { decrement: usedQty } },
           });
 
@@ -135,7 +135,7 @@ export async function POST(request: Request) {
                   amount: costOfUsedQty,
                   date: new Date(),
                   status: "PAGO",
-                  organization_id: appt.organization_id,
+                  organization_id: admin.organizationId,
                   appointment_id: appt.id,
                 },
               });
@@ -155,7 +155,7 @@ export async function POST(request: Request) {
             amount: service.material_cost,
             date: new Date(),
             status: "PAGO",
-            organization_id: appt.organization_id,
+            organization_id: admin.organizationId,
             appointment_id: appt.id,
           },
         });

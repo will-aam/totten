@@ -1,5 +1,5 @@
 // app/api/clients/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, AuthError } from "@/lib/auth";
 import { Prisma } from "@prisma/client";
@@ -28,12 +28,13 @@ function getSearchVariations(searchQuery: string) {
   return variations;
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     // 🛡️ Validação unificada de sessão e tenant
     const admin = await requireAuth();
 
-    const { searchParams } = new URL(request.url);
+    // Utilizando request.nextUrl (padrão NextRequest)
+    const { searchParams } = request.nextUrl;
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "10", 10);
     const search = searchParams.get("q") || "";
@@ -170,12 +171,12 @@ export async function GET(request: Request) {
     if (error instanceof AuthError) {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }
-    console.error("Erro ao buscar clientes:", error);
+    console.error("[GET /api/clients] Erro ao buscar clientes:", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     // 🛡️ Garante autenticação
     const admin = await requireAuth();
@@ -247,7 +248,7 @@ export async function POST(request: Request) {
     if (error instanceof AuthError) {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }
-    console.error("Erro ao criar cliente:", error);
+    console.error("[POST /api/clients] Erro ao criar cliente:", error);
     return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
 }

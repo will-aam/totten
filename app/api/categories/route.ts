@@ -1,10 +1,10 @@
 // app/api/categories/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, AuthError } from "@/lib/auth";
 
 // GET - Lista todas as categorias da organização
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     // 🛡️ Validação unificada de tenant/sessão
     const admin = await requireAuth();
@@ -42,7 +42,7 @@ export async function GET(request: Request) {
 }
 
 // POST - Cria uma nova categoria
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     // 🛡️ Garante escopo de tenant antes de processar o payload
     const admin = await requireAuth();

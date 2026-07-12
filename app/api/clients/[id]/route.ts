@@ -1,11 +1,11 @@
 // app/api/clients/[id]/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, AuthError } from "@/lib/auth";
 import { Prisma } from "@prisma/client";
 
 export async function GET(
-  _request: Request,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
@@ -73,13 +73,28 @@ export async function GET(
 }
 
 export async function PUT(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const admin = await requireAuth();
     const { id } = await params;
     const body = await request.json();
+
+    // Camada 1: confere posse do registro antes de qualquer escrita
+    const existingClient = await prisma.client.findUnique({
+      where: { id },
+    });
+
+    if (
+      !existingClient ||
+      existingClient.organization_id !== admin.organizationId
+    ) {
+      return NextResponse.json(
+        { error: "Cliente não encontrado ou acesso negado" },
+        { status: 404 },
+      );
+    }
 
     const updateData: Prisma.ClientUpdateInput = {};
 
@@ -97,7 +112,7 @@ export async function PUT(
       const cpfLimpo = body.cpf && body.cpf.trim() !== "" ? body.cpf : null;
 
       if (cpfLimpo) {
-        const existingClient = await prisma.client.findFirst({
+        const cpfEmUso = await prisma.client.findFirst({
           where: {
             cpf: cpfLimpo,
             organization_id: admin.organizationId,
@@ -105,7 +120,7 @@ export async function PUT(
           },
         });
 
-        if (existingClient) {
+        if (cpfEmUso) {
           return NextResponse.json(
             { error: "Este CPF já está cadastrado em outro cliente." },
             { status: 409 },
@@ -121,11 +136,9 @@ export async function PUT(
         : null;
     }
 
+    // Camada 2: Atualiza o registro já sabendo que pertence à org correta
     const client = await prisma.client.update({
-      where: {
-        id: id,
-        organization_id: admin.organizationId,
-      },
+      where: { id },
       data: updateData,
     });
 
@@ -134,19 +147,30 @@ export async function PUT(
     if (error instanceof AuthError) {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }
+    // Fallback de segurança do Prisma
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      return NextResponse.json(
+        { error: "Cliente não encontrado ou acesso negado" },
+        { status: 404 },
+      );
+    }
     console.error("[CLIENT_PUT]", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }
 
 export async function DELETE(
-  _request: Request,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const admin = await requireAuth();
     const { id } = await params;
 
+    // Camada 1: Verifica existência, tenant e pendências tudo em uma query só
     const client = await prisma.client.findFirst({
       where: { id: id, organization_id: admin.organizationId },
       include: {
@@ -160,7 +184,7 @@ export async function DELETE(
 
     if (!client) {
       return NextResponse.json(
-        { error: "Cliente não encontrado" },
+        { error: "Cliente não encontrado ou acesso negado" },
         { status: 404 },
       );
     }
@@ -173,12 +197,14 @@ export async function DELETE(
       client.anamnesis_responses.length > 0;
 
     if (hasHistory) {
+      // Soft delete: O cliente tem histórico, então apenas desativamos
       await prisma.client.update({
         where: { id: client.id },
         data: { active: false },
       });
       return NextResponse.json({ message: "Cliente desativado com sucesso" });
     } else {
+      // Hard delete: Sem histórico atrelado
       await prisma.client.delete({
         where: { id: client.id },
       });
@@ -187,6 +213,15 @@ export async function DELETE(
   } catch (error) {
     if (error instanceof AuthError) {
       return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      return NextResponse.json(
+        { error: "Cliente não encontrado ou acesso negado" },
+        { status: 404 },
+      );
     }
     console.error("[CLIENT_DELETE]", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });

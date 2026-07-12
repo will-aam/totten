@@ -1,10 +1,10 @@
 // app/api/totem/search-client/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, AuthError } from "@/lib/auth";
 
 // GET - Busca cliente pelo CPF + organização (via sessão do admin do totem)
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     // 🛡️ Validação unificada de tenant
     const admin = await requireAuth();

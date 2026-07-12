@@ -1,9 +1,9 @@
 // app/api/totem/search/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, AuthError } from "@/lib/auth";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     // 🛡️ Validação unificada de sessão e tenant
     const admin = await requireAuth();
@@ -145,9 +145,14 @@ export async function POST(request: Request) {
       });
 
       // 2. LÓGICA DE PACOTE OU AVULSO
+      // organization_id embutido no where: blinda a mutação mesmo com o
+      // vínculo já garantido pela busca escopada do agendamento acima
       if (agendamento.package_id) {
         const pacote = await tx.package.update({
-          where: { id: agendamento.package_id },
+          where: {
+            id: agendamento.package_id,
+            organization_id: admin.organizationId,
+          },
           data: { used_sessions: { increment: 1 } },
         });
 
@@ -157,12 +162,12 @@ export async function POST(request: Request) {
         };
 
         await tx.appointment.update({
-          where: { id: agendamento.id },
+          where: { id: agendamento.id, organization_id: admin.organizationId },
           data: { status: "REALIZADO" },
         });
       } else {
         await tx.appointment.update({
-          where: { id: agendamento.id },
+          where: { id: agendamento.id, organization_id: admin.organizationId },
           data: { status: "REALIZADO", has_charge: true },
         });
       }
@@ -183,7 +188,10 @@ export async function POST(request: Request) {
           const usedQty = item.quantity_used;
 
           await tx.stockItem.update({
-            where: { id: stockData.id },
+            where: {
+              id: stockData.id,
+              organization_id: admin.organizationId,
+            },
             data: { quantity: { decrement: usedQty } },
           });
 

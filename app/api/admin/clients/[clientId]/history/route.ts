@@ -1,10 +1,10 @@
 // app/api/admin/clients/[clientId]/history/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, AuthError } from "@/lib/auth";
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ clientId: string }> },
 ) {
   try {
@@ -172,6 +172,9 @@ export async function GET(
       page,
     });
   } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
     console.error("[GET /api/admin/clients/[clientId]/history] ERRO:", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }

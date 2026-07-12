@@ -1,5 +1,5 @@
 // app/api/service-durations/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, AuthError } from "@/lib/auth";
 
@@ -29,7 +29,7 @@ export async function GET() {
 }
 
 // POST - Cria uma nova duração
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const admin = await requireAuth();
 
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
 }
 
 // DELETE - Remove uma duração
-export async function DELETE(request: Request) {
+export async function DELETE(request: NextRequest) {
   try {
     const admin = await requireAuth();
 

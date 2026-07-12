@@ -1,9 +1,9 @@
 // app/api/check-in/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, AuthError } from "@/lib/auth";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     // 🛡️ Validação unificada: se falhar, cai direto no catch como AuthError
     const admin = await requireAuth();
@@ -77,8 +77,10 @@ export async function POST(request: Request) {
     const newUsedSessions = activePackage.used_sessions + 1;
     const willRemainActive = newUsedSessions < activePackage.total_sessions;
 
+    // organization_id embutido no where: blinda a mutação mesmo que o
+    // vínculo via client deixe de garantir o escopo em uma refatoração futura
     await prisma.package.update({
-      where: { id: activePackage.id },
+      where: { id: activePackage.id, organization_id: admin.organizationId },
       data: {
         used_sessions: newUsedSessions,
         active: willRemainActive,

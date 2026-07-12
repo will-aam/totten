@@ -1,5 +1,5 @@
 // app/api/settings/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, AuthError } from "@/lib/auth";
 
@@ -34,7 +34,7 @@ export async function GET() {
   }
 }
 
-export async function PUT(request: Request) {
+export async function PUT(request: NextRequest) {
   try {
     // 🛡️ Autenticação centralizada
     const admin = await requireAuth();
