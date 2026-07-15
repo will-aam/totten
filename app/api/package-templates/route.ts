@@ -1,7 +1,7 @@
 // app/api/package-templates/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, AuthError } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   try {
@@ -36,6 +36,10 @@ export async function GET(req: NextRequest) {
       templates.map((t) => ({ ...t, price: Number(t.price) })),
     );
   } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    console.error("[PACKAGE_TEMPLATES_GET]", error);
     return NextResponse.json(
       { error: "Erro ao buscar templates" },
       { status: 500 },
@@ -43,7 +47,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const admin = await requireAuth();
     const body = await request.json();
@@ -72,7 +76,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, template });
   } catch (error) {
-    console.error("Erro na API POST:", error);
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    console.error("[PACKAGE_TEMPLATES_POST]", error);
     return NextResponse.json(
       { error: "Erro ao criar template" },
       { status: 500 },

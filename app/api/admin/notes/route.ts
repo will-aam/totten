@@ -1,14 +1,13 @@
-import { NextResponse } from "next/server";
-import { getCurrentAdmin } from "@/lib/auth"; // Usando a sua função auxiliar
-import { prisma } from "@/lib/prisma"; // Importação com chaves {}
+// app/api/admin/notes/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import { requireAuth, AuthError } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
-// GET: Busca todas as anotações de um cliente específico
-export async function GET(request: Request) {
+// GET: Recupera anotações ordenadas cronologicamente
+export async function GET(request: NextRequest) {
   try {
-    const admin = await getCurrentAdmin();
-    if (!admin?.organizationId) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
+    const admin = await requireAuth();
 
     const { searchParams } = new URL(request.url);
     const clientId = searchParams.get("clientId");
@@ -26,12 +25,15 @@ export async function GET(request: Request) {
         organization_id: admin.organizationId,
       },
       orderBy: {
-        date: "asc", // Traz da mais antiga para a mais nova (ideal para formato de chat)
+        date: "asc",
       },
     });
 
     return NextResponse.json({ data: notes });
   } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
     console.error("[NOTES_GET]", error);
     return NextResponse.json(
       { error: "Erro interno do servidor" },
@@ -40,14 +42,10 @@ export async function GET(request: Request) {
   }
 }
 
-// POST: Cria uma nova anotação
-export async function POST(request: Request) {
+// POST: Insere nova anotação
+export async function POST(request: NextRequest) {
   try {
-    const admin = await getCurrentAdmin();
-    if (!admin?.organizationId) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
-
+    const admin = await requireAuth();
     const body = await request.json();
     const { clientId, text } = body;
 
@@ -65,6 +63,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ data: newNote }, { status: 201 });
   } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
     console.error("[NOTES_POST]", error);
     return NextResponse.json(
       { error: "Erro interno do servidor" },
@@ -73,14 +74,10 @@ export async function POST(request: Request) {
   }
 }
 
-// PUT: Atualiza o texto de uma anotação existente
-export async function PUT(request: Request) {
+// PUT: Altera conteúdo de anotação existente com verificação de tenant em duas camadas
+export async function PUT(request: NextRequest) {
   try {
-    const admin = await getCurrentAdmin();
-    if (!admin?.organizationId) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
-
+    const admin = await requireAuth();
     const body = await request.json();
     const { noteId, text } = body;
 
@@ -88,7 +85,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Dados incompletos" }, { status: 400 });
     }
 
-    // Segurança: Verifica se a nota existe e se pertence à organização do admin logado
+    // Camada 1: confere posse do registro antes de qualquer escrita
     const existingNote = await prisma.clientNote.findUnique({
       where: { id: noteId },
     });
@@ -103,13 +100,29 @@ export async function PUT(request: Request) {
       );
     }
 
+    // Camada 2: organization_id embutido no where da própria mutação,
+    // blindando a query mesmo que a checagem acima seja removida no futuro
     const updatedNote = await prisma.clientNote.update({
-      where: { id: noteId },
+      where: { id: noteId, organization_id: admin.organizationId },
       data: { text },
     });
 
     return NextResponse.json({ data: updatedNote });
   } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    // Fallback de segurança: se o where composto não achar o registro
+    // (nota de outro tenant, por ex.), o Prisma lança P2025 em vez de null
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      return NextResponse.json(
+        { error: "Nota não encontrada ou acesso negado" },
+        { status: 404 },
+      );
+    }
     console.error("[NOTES_PUT]", error);
     return NextResponse.json(
       { error: "Erro interno do servidor" },
@@ -118,13 +131,10 @@ export async function PUT(request: Request) {
   }
 }
 
-// DELETE: Exclui uma anotação
-export async function DELETE(request: Request) {
+// DELETE: Remove anotação com verificação de tenant em duas camadas
+export async function DELETE(request: NextRequest) {
   try {
-    const admin = await getCurrentAdmin();
-    if (!admin?.organizationId) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
+    const admin = await requireAuth();
 
     const { searchParams } = new URL(request.url);
     const noteId = searchParams.get("noteId");
@@ -136,7 +146,7 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // Mesma validação de segurança
+    // Camada 1: confere posse do registro antes de qualquer escrita
     const existingNote = await prisma.clientNote.findUnique({
       where: { id: noteId },
     });
@@ -151,12 +161,28 @@ export async function DELETE(request: Request) {
       );
     }
 
+    // Camada 2: organization_id embutido no where da própria mutação,
+    // blindando a query mesmo que a checagem acima seja removida no futuro
     await prisma.clientNote.delete({
-      where: { id: noteId },
+      where: { id: noteId, organization_id: admin.organizationId },
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    // Fallback de segurança: se o where composto não achar o registro
+    // (nota de outro tenant, por ex.), o Prisma lança P2025 em vez de null
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      return NextResponse.json(
+        { error: "Nota não encontrada ou acesso negado" },
+        { status: 404 },
+      );
+    }
     console.error("[NOTES_DELETE]", error);
     return NextResponse.json(
       { error: "Erro interno do servidor" },

@@ -1,26 +1,17 @@
 // app/api/totem/search-client/route.ts
-// rota importada no arquivo app/totem/check-in/totem-check-in-content.tsx, a função dela é buscar os dados do cliente e seus pacotes ativos (se houver) a partir do CPF, para exibir no resumo do check-in e também validar se o cliente tem pacotes ativos com sessões restantes antes de permitir o check-in pelo totem.
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentAdmin } from "@/lib/auth"; //  Import adicionado
+import { requireAuth, AuthError } from "@/lib/auth";
 
-// GET - Busca cliente pelo CPF + organização (via sessão)
-export async function GET(request: Request) {
+// GET - Busca cliente pelo CPF + organização (via sessão do admin do totem)
+export async function GET(request: NextRequest) {
   try {
-    // 🔒 1. Valida a sessão do totem
-    const admin = await getCurrentAdmin();
-
-    if (!admin || !admin.organizationId) {
-      return NextResponse.json(
-        { error: "Não autorizado. Totem não está autenticado." },
-        { status: 401 },
-      );
-    }
+    // 🛡️ Validação unificada de tenant
+    const admin = await requireAuth();
 
     const { searchParams } = new URL(request.url);
     const cpf = searchParams.get("cpf");
 
-    //  2. Removida a validação de slug
     if (!cpf) {
       return NextResponse.json({ error: "CPF é obrigatório" }, { status: 400 });
     }
@@ -36,7 +27,7 @@ export async function GET(request: Request) {
       new Set([cpf.trim(), cleanCpf, cpfFormatado]),
     );
 
-    //  3. Busca o cliente usando diretamente o ID da sessão
+    // Busca o cliente dentro do escopo da organização do totem
     const client = await prisma.client.findFirst({
       where: {
         cpf: { in: cpfCandidates },
@@ -47,7 +38,7 @@ export async function GET(request: Request) {
           where: {
             active: true,
             used_sessions: {
-              lt: prisma.package.fields.total_sessions,
+              lt: prisma.package.fields.total_sessions, // Verifica saldo de sessões
             },
           },
           include: {
@@ -85,7 +76,14 @@ export async function GET(request: Request) {
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error("Erro ao buscar cliente:", error);
+    // 🛡️ Tratamento de erro centralizado
+    if (error instanceof AuthError) {
+      return NextResponse.json(
+        { error: "Não autorizado. Totem não está autenticado." },
+        { status: 401 },
+      );
+    }
+    console.error("[TOTEM_SEARCH_CLIENT]", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }

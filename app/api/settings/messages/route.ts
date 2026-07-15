@@ -1,17 +1,13 @@
-import { NextResponse } from "next/server";
+// app/api/settings/messages/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentAdmin } from "@/lib/auth";
+import { requireAuth, AuthError } from "@/lib/auth";
 
-// GET - Busca templates de mensagem
+// GET - Busca templates de mensagem formatados para a organização
 export async function GET() {
   try {
-    const admin = await getCurrentAdmin();
+    const admin = await requireAuth();
 
-    if (!admin) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
-
-    // (mantive porque você já retornava phone)
     const settings = await prisma.settings.findUnique({
       where: { organization_id: admin.organizationId },
     });
@@ -31,23 +27,21 @@ export async function GET() {
       msgWelcome: templatesMap["WELCOME"] || "",
       msgRenewal: templatesMap["RENEWAL"] || "",
       msgReminder: templatesMap["REMINDER"] || "",
-      // ✅ novo
       msgManualConfirmation: templatesMap["MANUAL_CONFIRMATION"] || "",
     });
   } catch (error) {
-    console.error("Erro ao buscar mensagens:", error);
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    console.error("[MESSAGES_GET]", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }
 
-// PUT - Atualiza templates
-export async function PUT(request: Request) {
+// PUT - Atualiza templates utilizando upsert via transação
+export async function PUT(request: NextRequest) {
   try {
-    const admin = await getCurrentAdmin();
-
-    if (!admin) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
+    const admin = await requireAuth();
 
     const body = await request.json();
     const {
@@ -55,7 +49,6 @@ export async function PUT(request: Request) {
       msgWelcome,
       msgRenewal,
       msgReminder,
-      // ✅ novo
       msgManualConfirmation,
     } = body;
 
@@ -65,12 +58,11 @@ export async function PUT(request: Request) {
         { type: "WELCOME", content: msgWelcome },
         { type: "RENEWAL", content: msgRenewal },
         { type: "REMINDER", content: msgReminder },
-        // ✅ novo
         { type: "MANUAL_CONFIRMATION", content: msgManualConfirmation },
       ];
 
       for (const template of templates) {
-        // Ignora se a mensagem não foi enviada no payload
+        // Ignora campos não fornecidos no request
         if (template.content === undefined) continue;
 
         await tx.messageTemplate.upsert({
@@ -95,7 +87,10 @@ export async function PUT(request: Request) {
       message: "Mensagens atualizadas com sucesso",
     });
   } catch (error) {
-    console.error("Erro ao atualizar mensagens:", error);
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    console.error("[MESSAGES_PUT]", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }

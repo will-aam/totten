@@ -1,13 +1,12 @@
+// app/api/admin/notes/clients/route.ts
 import { NextResponse } from "next/server";
-import { getCurrentAdmin } from "@/lib/auth";
+import { requireAuth, AuthError } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    const admin = await getCurrentAdmin();
-    if (!admin?.organizationId) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
+    // 🛡️ O requireAuth garante a sessão
+    const admin = await requireAuth();
 
     // Busca APENAS os clientes da organização que possuam pelo menos 1 anotação
     const clientsWithNotes = await prisma.client.findMany({
@@ -29,6 +28,11 @@ export async function GET() {
 
     return NextResponse.json({ data: clientsWithNotes });
   } catch (error) {
+    // 🛡️ Captura o erro de autenticação e retorna 401
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+
     console.error("[NOTES_CLIENTS_GET]", error);
     return NextResponse.json(
       { error: "Erro interno do servidor" },

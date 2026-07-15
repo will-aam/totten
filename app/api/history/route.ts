@@ -1,15 +1,13 @@
 // app/api/history/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentAdmin } from "@/lib/auth";
+import { requireAuth, AuthError } from "@/lib/auth";
+import { Prisma } from "@prisma/client";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const admin = await getCurrentAdmin();
-
-    if (!admin) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
+    // 🛡️ Validação unificada de sessão e tenant
+    const admin = await requireAuth();
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1", 10);
@@ -21,12 +19,12 @@ export async function GET(request: Request) {
     const skip = (page - 1) * limit;
 
     // Construção robusta e segura da query
-    const whereClause: any = {
+    const whereClause: Prisma.CheckInWhereInput = {
       organization_id: admin.organizationId,
       deleted_at: null,
     };
 
-    const andConditions: any[] = [];
+    const andConditions: Prisma.CheckInWhereInput[] = [];
 
     // Busca por Nome ou CPF
     if (search) {
@@ -58,7 +56,7 @@ export async function GET(request: Request) {
       whereClause.AND = andConditions;
     }
 
-    // Fazemos a contagem total e a busca paginada em paralelo para ser muito mais rápido!
+    // Execução em paralelo para performance
     const [totalCount, checkIns] = await Promise.all([
       prisma.checkIn.count({ where: whereClause }),
       prisma.checkIn.findMany({
@@ -70,7 +68,6 @@ export async function GET(request: Request) {
               cpf: true,
             },
           },
-          //  INCLUINDO RELAÇÕES PARA LER O SNAPSHOT CONGELADO
           appointment: {
             select: {
               snapshot_service_name: true,
@@ -87,13 +84,13 @@ export async function GET(request: Request) {
         orderBy: {
           date_time: "desc",
         },
-        skip,
+        skip: skip,
         take: limit,
       }),
     ]);
 
     const enriched = checkIns.map((ci) => {
-      //  LÓGICA DO SNAPSHOT: Tenta puxar o nome da época, se não achar, puxa o atual
+      // Lógica do snapshot: Prioriza dados imutáveis da época, fallback para atual
       const serviceName =
         ci.appointment?.snapshot_service_name ||
         ci.appointment?.service?.name ||
@@ -108,7 +105,7 @@ export async function GET(request: Request) {
         date_time: ci.date_time.toISOString(),
         client_name: ci.client?.name || "Cliente Excluído/Avulso",
         client_cpf: ci.client?.cpf || "---",
-        service_name: serviceName, //  Agora a tabela vai saber qual foi o serviço exato!
+        service_name: serviceName,
       };
     });
 
@@ -119,7 +116,10 @@ export async function GET(request: Request) {
       totalPages: Math.ceil(totalCount / limit) || 1,
     });
   } catch (error) {
-    console.error("Erro ao buscar histórico:", error);
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    console.error("[HISTORY_GET]", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }

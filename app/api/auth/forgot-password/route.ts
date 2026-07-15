@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+// app/api/auth/forgot-password/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendPasswordResetEmail, generateRandomPassword } from "@/lib/email";
 import bcrypt from "bcryptjs";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const { email } = await request.json();
 

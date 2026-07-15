@@ -1,16 +1,12 @@
 // app/api/vouchers/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentAdmin } from "@/lib/auth";
+import { requireAuth, AuthError } from "@/lib/auth";
 
 // GET - Lista pacotes concluídos com Paginação e Busca Server-Side
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const admin = await getCurrentAdmin();
-
-    if (!admin) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
+    const admin = await requireAuth();
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1", 10);
@@ -48,12 +44,10 @@ export async function GET(request: Request) {
             orderBy: { issue_date: "desc" },
             take: 1,
           },
-          // Busca os check-ins vinculados ao pacote
           check_ins: {
             select: { date_time: true },
             orderBy: { date_time: "asc" },
           },
-          // Busca também os agendamentos realizados caso falte um check-in
           appointments: {
             where: { status: "REALIZADO" },
             select: { date_time: true },
@@ -69,13 +63,11 @@ export async function GET(request: Request) {
     ]);
 
     const formatted = completedPackages.map((pkg) => {
-      // Junta e ordena cronologicamente as datas de check-in e de agendamentos
       const rawDates = [
         ...pkg.check_ins.map((c) => c.date_time),
         ...pkg.appointments.map((a) => a.date_time),
       ].sort((a, b) => a.getTime() - b.getTime());
 
-      // Filtra datas duplicadas (ex: agendamento e check-in feitos no mesmo dia)
       const uniqueDates = Array.from(
         new Set(rawDates.map((d) => d.toISOString().split("T")[0])),
       ).map((dateStr) => new Date(dateStr).toISOString());
@@ -94,7 +86,7 @@ export async function GET(request: Request) {
         }),
         hasVoucher: pkg.vouchers.length > 0,
         lastVoucherDate: pkg.vouchers[0]?.issue_date,
-        sessionDates: uniqueDates, // Envia as datas consolidadas
+        sessionDates: uniqueDates,
       };
     });
 
@@ -105,20 +97,18 @@ export async function GET(request: Request) {
       totalPages: Math.ceil(totalCount / limit) || 1,
     });
   } catch (error) {
-    console.error("Erro ao buscar vouchers:", error);
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    console.error("[VOUCHERS_GET]", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }
 
 // POST - Registra que um voucher foi emitido
-export async function POST(request: Request) {
-  // ... Código do POST continua idêntico (não alterado)
+export async function POST(request: NextRequest) {
   try {
-    const admin = await getCurrentAdmin();
-
-    if (!admin) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
+    const admin = await requireAuth();
 
     const body = await request.json();
     const { package_id, image_url } = body;
@@ -130,6 +120,19 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validação de segurança: garante que o pacote pertence à org do admin antes de criar
+    const pkg = await prisma.package.findFirst({
+      where: { id: package_id, organization_id: admin.organizationId },
+    });
+
+    if (!pkg) {
+      return NextResponse.json(
+        { error: "Pacote não encontrado ou não pertence a esta empresa" },
+        { status: 404 },
+      );
+    }
+
+    // TODO: pendente decisão — voucher.create leva organization_id no data? (ver pergunta acima)
     const voucher = await prisma.voucher.create({
       data: {
         package_id,
@@ -142,7 +145,10 @@ export async function POST(request: Request) {
       voucher,
     });
   } catch (error) {
-    console.error("Erro ao registrar voucher:", error);
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    console.error("[VOUCHERS_POST]", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }

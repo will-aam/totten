@@ -1,14 +1,12 @@
-// app/api/packages/templates/route.ts
-import { NextResponse } from "next/server";
+// app/api/packages/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentAdmin } from "@/lib/auth";
+import { requireAuth, AuthError } from "@/lib/auth";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const admin = await getCurrentAdmin();
-    if (!admin || !admin.organizationId) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
+    // 🛡️ Validação unificada de sessão e tenant
+    const admin = await requireAuth();
 
     const body = await request.json();
     const {
@@ -20,21 +18,19 @@ export async function POST(request: Request) {
       payment_method,
       generate_installments,
       installments_count,
-      package_template_id, // 🔥 1. Agora nós recebemos o ID do Molde (Template) do Front-end
+      package_template_id,
     } = body;
 
+    // Validações de payload
     if (!client_id || !service_id || !total_sessions || price === undefined) {
       return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
     }
 
-    // ✅ Validações extras para evitar "venda inconsistente"
-    if (pay_upfront) {
-      if (!payment_method) {
-        return NextResponse.json(
-          { error: "Selecione a forma de pagamento para venda à vista." },
-          { status: 400 },
-        );
-      }
+    if (pay_upfront && !payment_method) {
+      return NextResponse.json(
+        { error: "Selecione a forma de pagamento para venda à vista." },
+        { status: 400 },
+      );
     }
 
     if (!pay_upfront && generate_installments) {
@@ -47,6 +43,7 @@ export async function POST(request: Request) {
       }
     }
 
+    // Validação de existência do cliente no tenant
     const client = await prisma.client.findUnique({
       where: { id: client_id, organization_id: admin.organizationId },
     });
@@ -58,7 +55,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // TRAVA DE SEGURANÇA SÊNIOR: Impede sobreposição de pacotes
+    // TRAVA DE SEGURANÇA: Impede sobreposição de pacotes
     const existingActivePackage = await prisma.package.findFirst({
       where: {
         client_id: client_id,
@@ -87,6 +84,7 @@ export async function POST(request: Request) {
         { status: 404 },
       );
     }
+
     let finalPackageName = service.name;
     if (package_template_id) {
       const template = await prisma.packageTemplate.findUnique({
@@ -101,6 +99,7 @@ export async function POST(request: Request) {
       }
     }
 
+    // Transação de criação do pacote e financeiro
     const result = await prisma.$transaction(async (tx) => {
       const novoPacote = await tx.package.create({
         data: {
@@ -113,7 +112,6 @@ export async function POST(request: Request) {
           organization_id: admin.organizationId,
           active: true,
           package_template_id: package_template_id || null,
-          // SNAPSHOT INJETADO: A foto do serviço fica imortalizada no pacote!
           snapshot_service_name: service.name,
           snapshot_service_price: service.price,
           snapshot_service_duration: service.duration,
@@ -196,7 +194,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Erro ao vincular pacote:", error);
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    console.error("[PACKAGES_POST]", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }

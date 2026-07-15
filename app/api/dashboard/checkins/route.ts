@@ -1,33 +1,26 @@
 // app/api/dashboard/checkins/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentAdmin } from "@/lib/auth";
+import { requireAuth, AuthError } from "@/lib/auth";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const admin = await getCurrentAdmin();
+    // 🛡️ Validação unificada de sessão e tenant
+    const admin = await requireAuth();
 
-    if (!admin) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
-
-    // Pega os parâmetros da URL para a paginação
-    const { searchParams } = new URL(request.url);
+    // Pega os parâmetros da URL para a paginação usando o NextRequest nativo
+    const { searchParams } = request.nextUrl;
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "8", 10);
     const skip = (page - 1) * limit;
 
-    //  CORREÇÃO DO FUSO HORÁRIO (Forçando o fuso do Brasil UTC-3)
+    // CORREÇÃO DO FUSO HORÁRIO (Forçando o fuso do Brasil UTC-3)
     const now = new Date();
-    // Pega a data atual EXATAMENTE como é no Brasil (MM/DD/YYYY)
     const todayStr = now.toLocaleDateString("en-US", {
       timeZone: "America/Sao_Paulo",
     });
 
-    // Início do dia no Brasil (00:00:00) convertido para o timestamp real
     const startOfDay = new Date(`${todayStr} 00:00:00 GMT-0300`);
-
-    // Fim do dia no Brasil (Início do próximo dia)
     const tomorrow = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
 
     // Busca apenas os check-ins daquela página
@@ -46,7 +39,7 @@ export async function GET(request: Request) {
             name: true,
           },
         },
-        //  RASTREABILIDADE: Trazendo o nome de quem atendeu
+        // RASTREABILIDADE: Trazendo o nome de quem atendeu
         admin: {
           select: {
             display_name: true,
@@ -57,7 +50,7 @@ export async function GET(request: Request) {
         date_time: "desc",
       },
       skip: skip,
-      take: limit + 1, //  Truque: Pede 1 a mais para saber se tem próxima página
+      take: limit + 1, // Truque: Pede 1 a mais para saber se tem próxima página
     });
 
     // Verifica se pegou aquele "1 a mais"
@@ -73,16 +66,20 @@ export async function GET(request: Request) {
       client_id: checkIn.client?.id ?? "",
       client_name: checkIn.client?.name ?? "Cliente Avulso",
       date_time: checkIn.date_time,
-      professional_name: checkIn.admin?.display_name ?? null, //  Enviando o nome pro Dashboard
+      professional_name: checkIn.admin?.display_name ?? null,
     }));
 
     return NextResponse.json({
       data: formattedCheckIns,
-      hasMore: hasMore, // Frontend usa isso para parar de pedir páginas
+      hasMore: hasMore,
       page: page,
     });
   } catch (error) {
-    console.error("Erro ao buscar check-ins do dashboard:", error);
+    // 🛡️ Tratamento centralizado para o 401
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    console.error("[DASHBOARD_CHECKINS_GET]", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }

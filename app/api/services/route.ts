@@ -1,15 +1,12 @@
 // app/api/services/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, AuthError } from "@/lib/auth";
 
 // GET - Lista os serviços da organização (com filtro opcional de ativos)
 export async function GET(req: NextRequest) {
   try {
     const admin = await requireAuth();
-    if (!admin) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
 
     const { searchParams } = new URL(req.url);
     const onlyActive = searchParams.get("active") === "true";
@@ -40,18 +37,18 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(services);
   } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
     console.error("Erro ao buscar serviços:", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }
 
 // POST - Cria um novo serviço
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const admin = await requireAuth();
-    if (!admin) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
 
     const body = await request.json();
 
@@ -133,6 +130,9 @@ export async function POST(request: Request) {
       service,
     });
   } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
     console.error("Erro ao criar serviço:", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }

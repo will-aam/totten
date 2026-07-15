@@ -244,7 +244,7 @@ export function ClientForm() {
         );
 
         if (template) {
-          const packageRes = await fetch("/api/packages/templates", {
+          const packageRes = await fetch("/api/packages", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

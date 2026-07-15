@@ -1,20 +1,17 @@
-import { NextResponse } from "next/server";
+// app/api/birthdays/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentAdmin } from "@/lib/auth";
+import { requireAuth, AuthError } from "@/lib/auth";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    //  Usando a sua função utilitária que já resolve tudo!
-    const admin = await getCurrentAdmin();
-
-    if (!admin || !admin.organizationId) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
+    // 🛡️ O requireAuth garante a sessão ativa e lança o AuthError se falhar
+    const admin = await requireAuth();
 
     // Busca apenas clientes ativos e que possuem data de nascimento preenchida
     const clients = await prisma.client.findMany({
       where: {
-        organization_id: admin.organizationId, // Pega direto do admin logado
+        organization_id: admin.organizationId, // Pega direto do admin garantido
         active: true,
         birth_date: {
           not: null,
@@ -30,7 +27,12 @@ export async function GET(request: Request) {
 
     return NextResponse.json(clients);
   } catch (error) {
-    console.error("Erro ao buscar aniversariantes:", error);
+    // 🛡️ Tratamento centralizado para o 401
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+
+    console.error("[BIRTHDAYS_GET]", error);
     return NextResponse.json(
       { error: "Erro interno ao buscar aniversariantes" },
       { status: 500 },

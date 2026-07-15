@@ -1,19 +1,12 @@
 // app/api/totem/check-in/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentAdmin } from "@/lib/auth";
+import { requireAuth, AuthError } from "@/lib/auth";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    // 🔒 1. Valida a sessão do totem
-    const admin = await getCurrentAdmin();
-
-    if (!admin || !admin.organizationId) {
-      return NextResponse.json(
-        { error: "Não autorizado. Totem não está autenticado." },
-        { status: 401 },
-      );
-    }
+    // 🛡️ Validação unificada de sessão e tenant
+    const admin = await requireAuth();
 
     const body = await request.json();
     const { appointment_id } = body;
@@ -25,9 +18,10 @@ export async function POST(request: Request) {
       );
     }
 
-    //  BUSCA O AGENDAMENTO COM O SERVIÇO E INSUMOS
+    // BUSCA O AGENDAMENTO COM O SERVIÇO E INSUMOS
+    // organization_id embutido no where: escopo de tenant garantido já na leitura
     const appt = await prisma.appointment.findUnique({
-      where: { id: appointment_id },
+      where: { id: appointment_id, organization_id: admin.organizationId },
       include: {
         client: true,
         package: true,
@@ -41,7 +35,7 @@ export async function POST(request: Request) {
       },
     });
 
-    if (!appt || appt.organization_id !== admin.organizationId) {
+    if (!appt) {
       return NextResponse.json(
         { error: "Agendamento inválido" },
         { status: 404 },
@@ -55,7 +49,7 @@ export async function POST(request: Request) {
       );
     }
 
-    //  NOVO: Trava de segurança para pacotes inativos no Totem
+    // Trava de segurança para pacotes inativos
     if (appt.package && appt.package.active === false) {
       return NextResponse.json(
         {
@@ -67,7 +61,7 @@ export async function POST(request: Request) {
     }
 
     const existingCheckIn = await prisma.checkIn.findFirst({
-      where: { appointment_id: appt.id },
+      where: { appointment_id: appt.id, organization_id: admin.organizationId },
     });
 
     if (existingCheckIn) {
@@ -79,7 +73,7 @@ export async function POST(request: Request) {
 
     let packageInfo = null;
 
-    //  A GRANDE TRANSAÇÃO DO TOTEM
+    // A GRANDE TRANSAÇÃO DO TOTEM
     const result = await prisma.$transaction(async (tx) => {
       // 1. Cria o registro de Check-in
       const checkIn = await tx.checkIn.create({
@@ -87,15 +81,15 @@ export async function POST(request: Request) {
           appointment_id: appt.id,
           client_id: appt.client_id,
           package_id: appt.package_id ?? null,
-          organization_id: appt.organization_id,
-          auto_processed: true, // 🔥 este check-in dispara reversão de estoque/financeiro
+          organization_id: admin.organizationId,
+          auto_processed: true, // dispara reversão de estoque/financeiro
         },
       });
 
       // 2. Atualiza Pacote e Agendamento
       if (appt.package_id) {
         const pacote = await tx.package.update({
-          where: { id: appt.package_id },
+          where: { id: appt.package_id, organization_id: admin.organizationId },
           data: { used_sessions: { increment: 1 } },
         });
 
@@ -105,32 +99,31 @@ export async function POST(request: Request) {
         };
 
         await tx.appointment.update({
-          where: { id: appt.id },
+          where: { id: appt.id, organization_id: admin.organizationId },
           data: { status: "REALIZADO" },
         });
       } else {
         await tx.appointment.update({
-          where: { id: appt.id },
+          where: { id: appt.id, organization_id: admin.organizationId },
           data: { status: "REALIZADO", has_charge: true },
         });
       }
 
-      //  --- O CORAÇÃO DO SISTEMA FINANCEIRO E DE ESTOQUE ---
+      // --- O CORAÇÃO DO SISTEMA FINANCEIRO E DE ESTOQUE ---
       const service = appt.service;
 
       if (service.track_stock && service.stock_items.length > 0) {
-        // FLUXO A e B: A Cliente Organizada / Híbrida (Tem Estoque)
         for (const item of service.stock_items) {
           const stockData = item.stock_item;
           const usedQty = item.quantity_used;
 
           // a) Baixa a quantidade física da prateleira (Sempre)
           await tx.stockItem.update({
-            where: { id: stockData.id },
+            where: { id: stockData.id, organization_id: admin.organizationId },
             data: { quantity: { decrement: usedQty } },
           });
 
-          // b) Regra de Caixa: Só gera despesa se NÃO marcou "Lançar como Despesa" na compra
+          // b) Regra de Caixa
           if (!stockData.was_expensed) {
             const costOfUsedQty = Number(usedQty) * Number(stockData.unit_cost);
 
@@ -142,7 +135,7 @@ export async function POST(request: Request) {
                   amount: costOfUsedQty,
                   date: new Date(),
                   status: "PAGO",
-                  organization_id: appt.organization_id,
+                  organization_id: admin.organizationId,
                   appointment_id: appt.id,
                 },
               });
@@ -154,7 +147,7 @@ export async function POST(request: Request) {
         service.material_cost &&
         Number(service.material_cost) > 0
       ) {
-        // FLUXO C: A Cliente Preguiçosa (O Chute Manual)
+        // Fluxo de Custo Fixo de Material
         await tx.transaction.create({
           data: {
             type: "DESPESA",
@@ -162,7 +155,7 @@ export async function POST(request: Request) {
             amount: service.material_cost,
             date: new Date(),
             status: "PAGO",
-            organization_id: appt.organization_id,
+            organization_id: admin.organizationId,
             appointment_id: appt.id,
           },
         });
@@ -183,7 +176,10 @@ export async function POST(request: Request) {
       package_info: packageInfo,
     });
   } catch (error) {
-    console.error("Erro ao fazer check-in no Totem:", error);
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    console.error("[TOTEM_CHECKIN_POST]", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }

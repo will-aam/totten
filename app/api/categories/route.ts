@@ -1,23 +1,22 @@
-import { NextResponse } from "next/server";
+// app/api/categories/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentAdmin } from "@/lib/auth";
+import { requireAuth, AuthError } from "@/lib/auth";
 
 // GET - Lista todas as categorias da organização
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const admin = await getCurrentAdmin();
-    if (!admin) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
+    // 🛡️ Validação unificada de tenant/sessão
+    const admin = await requireAuth();
 
-    // 🔥 Adicionamos a captura do parâmetro 'active'
+    // 🔍 Captura query param para filtragem condicional
     const { searchParams } = new URL(request.url);
     const onlyActive = searchParams.get("active") === "true";
 
     const categories = await prisma.category.findMany({
       where: {
         organization_id: admin.organizationId,
-        // Se onlyActive for true, filtra apenas ativas. Se não, traz tudo.
+        // Aplica filtro de categorias ativas dinamicamente na query
         ...(onlyActive ? { active: true } : {}),
       },
       orderBy: {
@@ -26,7 +25,7 @@ export async function GET(request: Request) {
       include: {
         _count: {
           select: {
-            services: true,
+            services: true, // Agregação para exibir volume de serviços atrelados
           },
         },
       },
@@ -34,18 +33,19 @@ export async function GET(request: Request) {
 
     return NextResponse.json(categories);
   } catch (error) {
-    console.error("Erro ao buscar categorias:", error);
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    console.error("[CATEGORIES_GET]", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }
-// POST - Cria uma nova categoria
-export async function POST(request: Request) {
-  try {
-    const admin = await getCurrentAdmin();
 
-    if (!admin) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
+// POST - Cria uma nova categoria
+export async function POST(request: NextRequest) {
+  try {
+    // 🛡️ Garante escopo de tenant antes de processar o payload
+    const admin = await requireAuth();
 
     const body = await request.json();
     const { name } = body;
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verifica se já existe
+    // Previne colisão de nomes estrita dentro do tenant
     const existing = await prisma.category.findFirst({
       where: {
         name: name.trim(),
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Cria a categoria
+    // Persiste a entidade vinculada ao tenant atual
     const category = await prisma.category.create({
       data: {
         name: name.trim(),
@@ -85,7 +85,10 @@ export async function POST(request: Request) {
       category,
     });
   } catch (error) {
-    console.error("Erro ao criar categoria:", error);
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    console.error("[CATEGORIES_POST]", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }
