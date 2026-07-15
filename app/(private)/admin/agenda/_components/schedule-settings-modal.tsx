@@ -34,11 +34,16 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { apiClient } from "@/lib/api-client";
 
 type ScheduleSettings = {
   openingTime: string;
   closingTime: string;
 };
+
+interface ClearTodayResponse {
+  deleted?: number;
+}
 
 interface ScheduleSettingsModalProps {
   open: boolean;
@@ -102,21 +107,22 @@ export const ScheduleSettingsModal = memo(
 
       setIsClearing(true);
       try {
-        const res = await fetch("/api/admin/agenda/clear-today", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ password: clearPassword }),
-        });
+        const data = await apiClient<ClearTodayResponse>(
+          "admin/agenda/clear-today",
+          {
+            method: "POST",
+            body: JSON.stringify({ password: clearPassword }),
+          },
+        );
 
-        if (!res.ok) throw new Error("Senha incorreta ou erro no servidor.");
-
-        const data = await res.json();
         toast.success(`Agenda limpa! ${data.deleted ?? 0} removidos.`);
         setClearPassword("");
         setIsClearDialogOpen(false);
         onClearToday?.(data.deleted ?? 0);
-      } catch (error: any) {
-        toast.error(error.message);
+      } catch (error) {
+        // Mantém a mensagem genérica original em vez do texto real do
+        // apiClient — comportamento preservado da versão anterior
+        toast.error("Senha incorreta ou erro no servidor.");
       } finally {
         setIsClearing(false);
       }

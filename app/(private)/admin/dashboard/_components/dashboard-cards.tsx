@@ -1,13 +1,13 @@
+// app/(private)/admin/dashboard/_components/dashboard-cards.tsx
 "use client";
 
 import useSWR from "swr";
+import { apiClient } from "@/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CalendarAlt, CalendarCheck, Group, UserX } from "@boxicons/react";
 import type { BoxIconProps } from "@boxicons/react";
 import { cn } from "@/lib/utils";
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 // Preparando a interface para a API que vamos ajustar no backend
 interface KpiData {
@@ -86,7 +86,7 @@ function KpiCard({
 
 export function DashboardCards() {
   // Vamos buscar da mesma rota, mas depois ajustaremos o backend dela
-  const { data, isLoading } = useSWR<KpiData>("/api/dashboard/kpis", fetcher, {
+  const { data, isLoading } = useSWR<KpiData>("dashboard/kpis", apiClient, {
     refreshInterval: 15000,
   });
 

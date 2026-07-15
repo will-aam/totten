@@ -1,8 +1,9 @@
-// components/client/client-history.tsx
+// components/(private)/admin/clients/client-history.tsx
 "use client";
 
 import { useRef, useCallback, useEffect } from "react";
 import useSWRInfinite from "swr/infinite";
+import { apiClient } from "@/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   CalendarCheck,
@@ -33,12 +34,10 @@ export type TimelineEvent = {
   meta: any;
 };
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
-
 export function ClientHistory({ clientId }: { clientId: string }) {
   const getHistoryKey = (pageIndex: number, previousPageData: any) => {
     if (previousPageData && !previousPageData.hasMore) return null;
-    return `/api/admin/clients/${clientId}/history?page=${pageIndex + 1}&limit=10`;
+    return `admin/clients/${clientId}/history?page=${pageIndex + 1}&limit=10`;
   };
 
   const {
@@ -46,7 +45,7 @@ export function ClientHistory({ clientId }: { clientId: string }) {
     isLoading: isLoadingFirst,
     size,
     setSize,
-  } = useSWRInfinite(getHistoryKey, fetcher);
+  } = useSWRInfinite<any>(getHistoryKey, apiClient);
 
   const events = historyPages ? historyPages.flatMap((page) => page.data) : [];
 

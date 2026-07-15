@@ -1,3 +1,4 @@
+// app/totem/check-in/_components/totem-check-in-content.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -13,6 +14,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { apiClient } from "@/lib/api-client";
 
 type AppointmentOption = {
   id: string;
@@ -39,6 +41,14 @@ type SearchResponse =
       clientName: string;
       appointments: AppointmentOption[];
     };
+
+type CheckInResponse = {
+  success: boolean;
+  clientName: string;
+  serviceName: string;
+  time: string;
+  package_info?: { used: number; total: number } | null;
+};
 
 export default function TotemCheckInContent() {
   const router = useRouter();
@@ -75,16 +85,13 @@ export default function TotemCheckInContent() {
     setLoading(true);
     try {
       // Enviamos o valor limpo e o modo (CPF ou PHONE) para a API saber como buscar
-      const res = await fetch("/api/totem/search", {
+      const data = await apiClient<SearchResponse>("totem/search", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           value: digits,
           mode: mode,
         }),
       });
-
-      const data: SearchResponse = await res.json();
 
       if (data.status === "NOT_FOUND") {
         // Se não encontrar por Telefone, podemos usar um parâmetro genérico de erro no futuro
@@ -148,15 +155,12 @@ export default function TotemCheckInContent() {
   const handleCheckIn = async (appt: AppointmentOption) => {
     setCheckingIn(true);
     try {
-      const res = await fetch("/api/totem/check-in", {
+      const data = await apiClient<CheckInResponse>("totem/check-in", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           appointment_id: appt.id,
         }),
       });
-
-      const data = await res.json();
 
       if (data.success) {
         const params = new URLSearchParams({

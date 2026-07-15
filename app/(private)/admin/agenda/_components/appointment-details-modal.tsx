@@ -55,6 +55,14 @@ import {
 import { ThermalReceipt } from "./thermal-receipt";
 import { getPaymentMethods } from "@/app/actions/payment-methods";
 import { OrganizationPaymentMethod } from "@/types/finance";
+import { apiClient } from "@/lib/api-client";
+
+interface PublicSettings {
+  companyName: string;
+  tradeName: string | null;
+  openingTime: string;
+  closingTime: string;
+}
 
 interface AppointmentDetailsModalProps {
   open: boolean;
@@ -76,7 +84,7 @@ export const AppointmentDetailsModal = memo(
     const [hasCharge, setHasCharge] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isUndoing, setIsUndoing] = useState(false);
-    const [settings, setSettings] = useState<any>(null);
+    const [settings, setSettings] = useState<PublicSettings | null>(null);
     const [paymentMethods, setPaymentMethods] = useState<
       OrganizationPaymentMethod[]
     >([]);
@@ -96,9 +104,17 @@ export const AppointmentDetailsModal = memo(
 
     useEffect(() => {
       async function loadData() {
+        // Duas buscas independentes: uma falhar não deve impedir a outra
+        // (comportamento preservado do fetch original)
         try {
-          const res = await fetch("/api/settings/public");
-          if (res.ok) setSettings(await res.json());
+          const settingsData =
+            await apiClient<PublicSettings>("settings/public");
+          setSettings(settingsData);
+        } catch (e) {
+          console.error(e);
+        }
+
+        try {
           const methodsData = await getPaymentMethods();
           setPaymentMethods(methodsData as OrganizationPaymentMethod[]);
         } catch (e) {

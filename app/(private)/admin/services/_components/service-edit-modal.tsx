@@ -36,6 +36,7 @@ import { updateService, toggleServiceStatus } from "@/app/actions/services";
 import { getStockItems } from "@/app/actions/stock";
 import { cn } from "@/lib/utils";
 import { CategorySelect } from "./category-select";
+import { apiClient } from "@/lib/api-client";
 
 interface ServiceEditModalProps {
   open: boolean;
@@ -101,8 +102,7 @@ export function ServiceEditModal({
 
   useEffect(() => {
     if (open) {
-      fetch("/api/service-durations")
-        .then((res) => res.json())
+      apiClient<Duration[]>("service-durations")
         .then((data) => setDurations(data))
         .catch((err) => console.error("Erro ao buscar durações:", err));
 

@@ -1,3 +1,4 @@
+// app/(private)/admin/services/_components/service-form.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -30,6 +31,7 @@ import { toast } from "sonner";
 import { CategorySelect } from "./category-select";
 import { getStockItems } from "@/app/actions/stock";
 import { cn } from "@/lib/utils";
+import { apiClient } from "@/lib/api-client";
 
 type Duration = {
   id: string;
@@ -82,11 +84,8 @@ export function ServiceForm() {
   useEffect(() => {
     const fetchDurations = async () => {
       try {
-        const res = await fetch("/api/service-durations");
-        if (res.ok) {
-          const data = await res.json();
-          setDurations(data);
-        }
+        const data = await apiClient<Duration[]>("service-durations");
+        setDurations(data);
       } catch (error) {
         console.error("Erro ao buscar durações:", error);
       } finally {
@@ -161,9 +160,8 @@ export function ServiceForm() {
     }
     setLoading(true);
     try {
-      const res = await fetch("/api/services", {
+      const data = await apiClient<{ success: boolean }>("services", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.name,
           category_id: form.category,
@@ -184,16 +182,16 @@ export function ServiceForm() {
             : [],
         }),
       });
-      const data = await res.json();
-      if (res.ok && data.success) {
+
+      if (data.success) {
         toast.success("Serviço cadastrado com sucesso!");
         router.push("/admin/services");
       } else {
-        toast.error(data.error || "Erro ao cadastrar serviço");
+        toast.error("Erro ao cadastrar serviço");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao salvar serviço:", error);
-      toast.error("Erro de conexão");
+      toast.error(error.message || "Erro de conexão");
     } finally {
       setLoading(false);
     }

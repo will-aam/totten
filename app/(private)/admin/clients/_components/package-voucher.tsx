@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ArrowToBottom, Share, BadgeCheck, LoaderDots } from "@boxicons/react";
 import { toast } from "sonner";
+import { apiClient } from "@/lib/api-client";
 
 interface PackageVoucherProps {
   open: boolean;
@@ -32,9 +33,8 @@ export function PackageVoucher({
 
   const registerVoucher = async () => {
     try {
-      await fetch("/api/vouchers", {
+      await apiClient("vouchers", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ package_id: packageId }),
       });
     } catch (error) {
@@ -75,6 +75,8 @@ export function PackageVoucher({
       }
 
       if (action === "share") {
+        // Conversão de data URI para Blob — mecanismo nativo do browser,
+        // não é uma chamada à nossa API, fica fora do escopo do apiClient
         const blob = await (await fetch(dataUrl)).blob();
         const file = new File([blob], "comprovante.png", { type: blob.type });
 

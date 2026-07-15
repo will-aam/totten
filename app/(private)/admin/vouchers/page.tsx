@@ -1,8 +1,9 @@
-// app/admin/vouchers/page.tsx
+// app/(private)/admin/vouchers/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import useSWR from "swr";
+import { apiClient } from "@/lib/api-client";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,8 +18,6 @@ import {
   ChevronRight,
 } from "@boxicons/react";
 import { useDebounce } from "@/hooks/use-debounce";
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 type CompletedPackage = {
   id: string;
@@ -67,8 +66,8 @@ export default function VouchersPage() {
   }
 
   const { data: response, isLoading } = useSWR<VouchersResponse>(
-    `/api/vouchers?${query.toString()}`,
-    fetcher,
+    `vouchers?${query.toString()}`,
+    apiClient,
   );
 
   const vouchers = response?.data || [];

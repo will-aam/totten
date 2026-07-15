@@ -29,6 +29,7 @@ import {
 } from "@boxicons/react";
 import * as XLSX from "xlsx";
 import { cn } from "@/lib/utils";
+import { apiClient } from "@/lib/api-client";
 
 const DB_FIELDS = [
   { key: "name", label: "Nome Completo", required: true },
@@ -48,6 +49,11 @@ interface ImportClientsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+}
+
+interface ImportClientsResponse {
+  imported: number;
+  skipped: number;
 }
 
 export function ImportClientsModal({
@@ -204,27 +210,20 @@ export function ImportClientsModal({
         return client;
       });
 
-      const res = await fetch("/api/clients/import", {
+      const result = await apiClient<ImportClientsResponse>("clients/import", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ clients: clientsToImport }),
       });
 
-      const result = await res.json();
-
-      if (res.ok) {
-        toast.success(`${result.imported} clientes importados com sucesso!`);
-        if (result.skipped > 0) {
-          toast.info(`${result.skipped} ignorados (CPF já cadastrado).`);
-        }
-        localStorage.setItem("totten_last_import", Date.now().toString());
-        onSuccess();
-        handleClose();
-      } else {
-        toast.error(result.error || "Erro ao importar clientes");
+      toast.success(`${result.imported} clientes importados com sucesso!`);
+      if (result.skipped > 0) {
+        toast.info(`${result.skipped} ignorados (CPF já cadastrado).`);
       }
-    } catch {
-      toast.error("Erro de conexão ao importar.");
+      localStorage.setItem("totten_last_import", Date.now().toString());
+      onSuccess();
+      handleClose();
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao importar clientes");
     } finally {
       setLoading(false);
     }

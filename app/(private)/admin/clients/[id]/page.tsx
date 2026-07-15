@@ -16,6 +16,7 @@ import { ClientPackage } from "../_components/client-package";
 import { ClientAnamnesis } from "../_components/client-anamnesis";
 import { ClientVouchers } from "../_components/client-vouchers";
 import { ClientHistory } from "../_components/client-history";
+import { apiClient } from "@/lib/api-client"; // ✅ Import do nosso apiClient
 
 export type ClientType = {
   id: string;
@@ -32,7 +33,7 @@ export type ClientType = {
   active: boolean;
 };
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+// ❌ fetcher legado removido!
 
 export default function ClientDetailPage({
   params,
@@ -42,9 +43,10 @@ export default function ClientDetailPage({
   const { id } = use(params);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
+  // ✅ SWR agora usa o apiClient e a chave relativa que "conversa" com os mutates
   const { data, isLoading } = useSWR<{ client: ClientType }>(
-    `/api/clients/${id}`,
-    fetcher,
+    `clients/${id}`,
+    apiClient,
   );
 
   useEffect(() => {

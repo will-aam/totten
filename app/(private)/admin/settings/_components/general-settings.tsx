@@ -22,6 +22,15 @@ import {
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { apiClient, ApiError } from "@/lib/api-client";
+
+interface GeneralSettingsResponse {
+  companyName: string;
+  tradeName: string;
+  document: string;
+  contactPhone: string;
+  whatsapp: string;
+}
 
 export function GeneralSettings() {
   const { data: session } = useSession();
@@ -44,32 +53,34 @@ export function GeneralSettings() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await fetch("/api/settings");
-        if (res.ok) {
-          const data = await res.json();
-          setFormData({
-            companyName: data.companyName || "",
-            tradeName: data.tradeName || "",
-            document: data.document || "",
-            contactPhone: data.contactPhone || "",
-            whatsapp: data.whatsapp || "",
-          });
-          const cleanDoc = data.document?.replace(/\D/g, "") || "";
-          if (cleanDoc.length > 0) {
-            if (cleanDoc.length <= 11) {
-              setDocType("CPF");
-              setCpfCache(data.document);
-            } else {
-              setDocType("CNPJ");
-              setCnpjCache(data.document);
-            }
+        const data = await apiClient<GeneralSettingsResponse>("settings");
+
+        setFormData({
+          companyName: data.companyName || "",
+          tradeName: data.tradeName || "",
+          document: data.document || "",
+          contactPhone: data.contactPhone || "",
+          whatsapp: data.whatsapp || "",
+        });
+        const cleanDoc = data.document?.replace(/\D/g, "") || "";
+        if (cleanDoc.length > 0) {
+          if (cleanDoc.length <= 11) {
+            setDocType("CPF");
+            setCpfCache(data.document);
+          } else {
+            setDocType("CNPJ");
+            setCnpjCache(data.document);
           }
-        } else {
-          toast.error("Erro ao carregar configurações");
         }
       } catch (error) {
         console.error("Erro ao buscar configurações:", error);
-        toast.error("Erro de conexão");
+        // Distingue erro de API (apiClient lança ApiError) de falha de rede,
+        // preservando as duas mensagens que já existiam antes da refatoração
+        if (error instanceof ApiError) {
+          toast.error("Erro ao carregar configurações");
+        } else {
+          toast.error("Erro de conexão");
+        }
       } finally {
         setLoading(false);
       }
@@ -133,21 +144,20 @@ export function GeneralSettings() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await fetch("/api/settings", {
+      await apiClient("settings", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-
-      const data = await res.json();
-      if (data.success) {
-        toast.success("Configurações salvas com sucesso!");
-      } else {
-        toast.error(data.error || "Erro ao salvar");
-      }
-    } catch (error) {
+      toast.success("Configurações salvas com sucesso!");
+    } catch (error: any) {
       console.error("Erro ao salvar:", error);
-      toast.error("Erro de conexão");
+      // ApiError: erro de API, usa a mensagem parseada do corpo (equivalente
+      // ao "data.error" original); senão, falha de rede genérica
+      if (error instanceof ApiError) {
+        toast.error(error.message || "Erro ao salvar");
+      } else {
+        toast.error("Erro de conexão");
+      }
     } finally {
       setSaving(false);
     }

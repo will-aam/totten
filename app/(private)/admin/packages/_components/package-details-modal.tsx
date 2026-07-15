@@ -41,6 +41,7 @@ import { getPackageHistory, archivePackage } from "@/app/actions/packages";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/components/ui/use-toast";
+import { apiClient, ApiError } from "@/lib/api-client";
 
 interface PackageDetailsModalProps {
   open: boolean;
@@ -135,21 +136,22 @@ export function PackageDetailsModal({
     setIsDeleteConfirmOpen(false);
 
     try {
-      const res = await fetch("/api/admin/packages/fix-appointment", {
+      await apiClient("admin/packages/fix-appointment", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ appointmentId: apptToDelete }),
       });
 
-      if (res.ok) {
-        toast({ title: "Registro apagado!" });
-        await loadHistory();
-        onOpenChange(false); // Força recarregar a tela principal
-      } else {
+      toast({ title: "Registro apagado!" });
+      await loadHistory();
+      onOpenChange(false); // Força recarregar a tela principal
+    } catch (error) {
+      // Distingue erro de API (apiClient lança ApiError) de falha de rede,
+      // preservando as duas mensagens que já existiam antes da refatoração
+      if (error instanceof ApiError) {
         toast({ title: "Erro ao apagar registro.", variant: "destructive" });
+      } else {
+        toast({ title: "Erro de conexão.", variant: "destructive" });
       }
-    } catch {
-      toast({ title: "Erro de conexão.", variant: "destructive" });
     } finally {
       setIsDeletingId(null);
       setApptToDelete(null);
@@ -159,20 +161,20 @@ export function PackageDetailsModal({
   const handleSyncBalance = async () => {
     setIsSyncing(true);
     try {
-      const res = await fetch("/api/admin/packages/sync-balance", {
+      await apiClient("admin/packages/sync-balance", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ packageId: packageData.id }),
       });
-      if (res.ok) {
-        toast({ title: "Saldo Sincronizado com sucesso!" });
-        setIsSyncDialogOpen(false);
-        onOpenChange(false);
-      } else {
+
+      toast({ title: "Saldo Sincronizado com sucesso!" });
+      setIsSyncDialogOpen(false);
+      onOpenChange(false);
+    } catch (error) {
+      if (error instanceof ApiError) {
         toast({ title: "Erro ao sincronizar.", variant: "destructive" });
+      } else {
+        toast({ title: "Erro de conexão.", variant: "destructive" });
       }
-    } catch {
-      toast({ title: "Erro de conexão.", variant: "destructive" });
     } finally {
       setIsSyncing(false);
     }

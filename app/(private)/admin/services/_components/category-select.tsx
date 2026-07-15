@@ -20,6 +20,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { toast } from "sonner";
+import { apiClient, ApiError } from "@/lib/api-client";
 
 type Category = {
   id: string;
@@ -49,11 +50,10 @@ export function CategorySelect({
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch("/api/categories?active=true");
-      if (res.ok) {
-        const data = await res.json();
-        setCategories(data);
-      }
+      const data = await apiClient<Category[]>("categories", {
+        params: { active: "true" },
+      });
+      setCategories(data);
     } catch (error) {
       console.error("Erro ao buscar categorias:", error);
     } finally {
@@ -66,30 +66,36 @@ export function CategorySelect({
 
     setCreating(true);
     try {
-      const res = await fetch("/api/categories", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim() }),
-      });
+      const data = await apiClient<{ success: boolean; category: Category }>(
+        "categories",
+        {
+          method: "POST",
+          body: JSON.stringify({ name: name.trim() }),
+        },
+      );
 
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        setCategories([...categories, data.category]);
-        onValueChange(data.category.id);
-        setSearchQuery("");
-        setOpen(false);
-        toast.success(`Categoria "${data.category.name}" criada!`);
-      } else if (res.status === 409) {
-        onValueChange(data.category.id);
+      setCategories([...categories, data.category]);
+      onValueChange(data.category.id);
+      setSearchQuery("");
+      setOpen(false);
+      toast.success(`Categoria "${data.category.name}" criada!`);
+    } catch (error) {
+      // 409: categoria já existe — a rota devolve a categoria existente no
+      // corpo do erro, e a gente auto-seleciona ela (error.body preserva isso)
+      if (
+        error instanceof ApiError &&
+        error.status === 409 &&
+        (error.body as { category?: Category })?.category
+      ) {
+        const existingCategory = (error.body as { category: Category })
+          .category;
+        onValueChange(existingCategory.id);
         setOpen(false);
         toast.info("Categoria já existe, selecionada automaticamente");
       } else {
-        toast.error(data.error || "Erro ao criar categoria");
+        console.error("Erro ao criar categoria:", error);
+        toast.error(error instanceof Error ? error.message : "Erro de conexão");
       }
-    } catch (error) {
-      console.error("Erro ao criar categoria:", error);
-      toast.error("Erro de conexão");
     } finally {
       setCreating(false);
     }

@@ -21,6 +21,15 @@ import {
 import { Whatsapp, HelpCircle, Save, LoaderDots, Plus } from "@boxicons/react";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { apiClient, ApiError } from "@/lib/api-client";
+
+interface MessageSettingsResponse {
+  msgUpdate?: string;
+  msgWelcome?: string;
+  msgRenewal?: string;
+  msgReminder?: string;
+  msgManualConfirmation?: string;
+}
 
 export function MessageSettings() {
   const isMobile = useIsMobile();
@@ -39,36 +48,39 @@ export function MessageSettings() {
   useEffect(() => {
     const fetchMessages = async () => {
       try {
-        const res = await fetch("/api/settings/messages");
-        if (res.ok) {
-          const data = await res.json();
-          setMsgUpdate(
-            data.msgUpdate ||
-              "Olá, {nome}! Tudo bem? 💆‍♀️✨\n\nPassando para avisar que seu check-in foi registrado. Você já realizou {usadas} de {total} sessões do seu pacote.",
-          );
-          setMsgWelcome(
-            data.msgWelcome ||
-              "Olá, {nome}! Que alegria ter você aqui na nossa empresa. 🥰\n\nSeu pacote de {total} sessões já está ativo no nosso sistema. Qualquer dúvida, é só chamar!",
-          );
-          setMsgRenewal(
-            data.msgRenewal ||
-              "Parabéns, {nome}! 🎉 Você concluiu hoje a última sessão do seu pacote.\n\nComo o seu bem-estar é nossa prioridade, que tal já deixarmos o seu próximo pacote garantido? Responda SIM para vermos os horários!",
-          );
-          setMsgReminder(
-            data.msgReminder ||
-              "Oi, {nome}! Passando para lembrar do nosso horário agendado para amanhã às {horario}. \n\nPodemos confirmar sua presença? 👍",
-          );
-          //  Carregando a nova mensagem
-          setMsgManualConfirmation(
-            data.msgManualConfirmation ||
-              "Olá {nome}! Passando para confirmar o seu horário amanhã às *{horario}* para o serviço de {servico}. Podemos confirmar? 🥰",
-          );
-        } else {
-          toast.error("Erro ao carregar mensagens");
-        }
+        const data =
+          await apiClient<MessageSettingsResponse>("settings/messages");
+
+        setMsgUpdate(
+          data.msgUpdate ||
+            "Olá, {nome}! Tudo bem? 💆‍♀️✨\n\nPassando para avisar que seu check-in foi registrado. Você já realizou {usadas} de {total} sessões do seu pacote.",
+        );
+        setMsgWelcome(
+          data.msgWelcome ||
+            "Olá, {nome}! Que alegria ter você aqui na nossa empresa. 🥰\n\nSeu pacote de {total} sessões já está ativo no nosso sistema. Qualquer dúvida, é só chamar!",
+        );
+        setMsgRenewal(
+          data.msgRenewal ||
+            "Parabéns, {nome}! 🎉 Você concluiu hoje a última sessão do seu pacote.\n\nComo o seu bem-estar é nossa prioridade, que tal já deixarmos o seu próximo pacote garantido? Responda SIM para vermos os horários!",
+        );
+        setMsgReminder(
+          data.msgReminder ||
+            "Oi, {nome}! Passando para lembrar do nosso horário agendado para amanhã às {horario}. \n\nPodemos confirmar sua presença? 👍",
+        );
+        //  Carregando a nova mensagem
+        setMsgManualConfirmation(
+          data.msgManualConfirmation ||
+            "Olá {nome}! Passando para confirmar o seu horário amanhã às *{horario}* para o serviço de {servico}. Podemos confirmar? 🥰",
+        );
       } catch (error) {
         console.error("Erro ao buscar mensagens:", error);
-        toast.error("Erro de conexão");
+        // Distingue erro de API (apiClient lança ApiError) de falha de rede,
+        // preservando as duas mensagens que já existiam antes da refatoração
+        if (error instanceof ApiError) {
+          toast.error("Erro ao carregar mensagens");
+        } else {
+          toast.error("Erro de conexão");
+        }
       } finally {
         setLoading(false);
       }
@@ -82,9 +94,8 @@ export function MessageSettings() {
     setSaving(true);
 
     try {
-      const res = await fetch("/api/settings/messages", {
+      await apiClient("settings/messages", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           msgUpdate,
           msgWelcome,
@@ -94,16 +105,14 @@ export function MessageSettings() {
         }),
       });
 
-      const data = await res.json();
-
-      if (data.success) {
-        toast.success("Mensagens salvas com sucesso!");
-      } else {
-        toast.error(data.error || "Erro ao salvar");
-      }
-    } catch (error) {
+      toast.success("Mensagens salvas com sucesso!");
+    } catch (error: any) {
       console.error("Erro ao salvar:", error);
-      toast.error("Erro de conexão");
+      if (error instanceof ApiError) {
+        toast.error(error.message || "Erro ao salvar");
+      } else {
+        toast.error("Erro de conexão");
+      }
     } finally {
       setSaving(false);
     }

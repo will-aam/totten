@@ -43,8 +43,7 @@ import { toast } from "sonner";
 import { createAppointment } from "@/app/actions/appointments";
 import { useSession } from "next-auth/react";
 import { getTeam } from "@/app/actions/team";
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+import { apiClient } from "@/lib/api-client";
 
 interface NewAppointmentModalProps {
   open: boolean;
@@ -127,15 +126,15 @@ export const NewAppointmentModal = memo(
       [openingTime, closingTime],
     );
 
-    const { data: clientsResponse, isLoading: loadingClients } = useSWR(
-      open ? "/api/clients?active=true&limit=1000" : null,
-      fetcher,
+    const { data: clientsResponse, isLoading: loadingClients } = useSWR<any>(
+      open ? "clients?active=true&limit=1000" : null,
+      apiClient,
     );
     const clients = clientsResponse?.data || [];
 
-    const { data: servicesResponse, isLoading: loadingServices } = useSWR(
-      open ? "/api/services?active=true" : null,
-      fetcher,
+    const { data: servicesResponse, isLoading: loadingServices } = useSWR<any>(
+      open ? "services?active=true" : null,
+      apiClient,
     );
     const services = Array.isArray(servicesResponse)
       ? servicesResponse
@@ -149,9 +148,7 @@ export const NewAppointmentModal = memo(
           return;
         }
         try {
-          const res = await fetch(`/api/clients/${selectedClientId}`);
-          if (!res.ok) return;
-          const data = await res.json();
+          const data = await apiClient<any>(`clients/${selectedClientId}`);
 
           const pkg =
             data.activePackage ||

@@ -41,9 +41,9 @@ import { DurationManager } from "./_components/duration-manager";
 import { ServiceEditModal } from "./_components/service-edit-modal";
 import { CategoryEditModal } from "./_components/category-edit-modal";
 import { PackageEditModal } from "./_components/package-edit-modal";
+import { apiClient } from "@/lib/api-client";
 
 const STORAGE_KEY = "totem_catalog_show_inactive";
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 type ServiceStockItem = {
   id: string;
@@ -145,17 +145,17 @@ function ServicesTabs() {
     data: services,
     mutate: mutateServices,
     isLoading: loadingServices,
-  } = useSWR<Service[]>("/api/services", fetcher);
+  } = useSWR<Service[]>("services", apiClient);
   const {
     data: packages,
     mutate: mutatePackages,
     isLoading: loadingPackages,
-  } = useSWR<PackageTemplate[]>("/api/package-templates", fetcher);
+  } = useSWR<PackageTemplate[]>("package-templates", apiClient);
   const {
     data: categories,
     mutate: mutateCategories,
     isLoading: loadingCategories,
-  } = useSWR<Category[]>("/api/categories", fetcher);
+  } = useSWR<Category[]>("categories", apiClient);
 
   const visibleServices =
     services?.filter((s) => showInactive || s.active) || [];
@@ -168,22 +168,24 @@ function ServicesTabs() {
     if (!newCategoryName.trim()) return;
     setCreatingCategory(true);
     try {
-      const res = await fetch("/api/categories", {
+      const data = await apiClient<{
+        success: boolean;
+        category: { name: string };
+      }>("categories", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newCategoryName.trim() }),
       });
-      const data = await res.json();
-      if (res.ok && data.success) {
+
+      if (data.success) {
         toast.success(`Categoria "${data.category.name}" criada!`);
         mutateCategories();
         setCreateCategoryOpen(false);
         setNewCategoryName("");
       } else {
-        toast.error(data.error || "Erro ao criar categoria");
+        toast.error("Erro ao criar categoria");
       }
-    } catch {
-      toast.error("Erro de conexão");
+    } catch (error: any) {
+      toast.error(error.message || "Erro de conexão");
     } finally {
       setCreatingCategory(false);
     }

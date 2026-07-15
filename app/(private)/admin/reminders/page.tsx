@@ -1,8 +1,9 @@
-// app/admin/reminders/page.tsx
+// app/(private)/admin/reminders/page.tsx
 "use client";
 
 import { useState, useMemo } from "react";
 import useSWR from "swr";
+import { apiClient } from "@/lib/api-client";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,8 +14,6 @@ import {
   CheckCircle,
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 interface Reminder {
   id: string;
@@ -63,14 +62,14 @@ export default function RemindersPage() {
   }, []);
 
   const { data, isLoading } = useSWR<{ appointments: Reminder[] }>(
-    `/api/admin/reminders?date=${dateQuery}`,
-    fetcher,
+    `admin/reminders?date=${dateQuery}`,
+    apiClient,
   );
 
   // ✅ Busca o template dinâmico das configurações
   const { data: settingsMsgs } = useSWR<SettingsMessagesResponse>(
-    "/api/settings/messages",
-    fetcher,
+    "settings/messages",
+    apiClient,
   );
 
   const manualTemplate =

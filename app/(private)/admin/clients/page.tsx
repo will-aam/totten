@@ -1,4 +1,4 @@
-// app/admin/clients/page.tsx
+// app/(private)/admin/clients/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -57,6 +57,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { apiClient } from "@/lib/api-client";
 
 type Client = {
   id: string;
@@ -76,8 +77,6 @@ type ApiResponse = {
   page: number;
   totalPages: number;
 };
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 const ITEMS_PER_PAGE = 8;
 
@@ -211,7 +210,8 @@ export default function AdminClientsPage() {
   const hasMultiplePackagesFilter = debouncedSearch.includes("**");
   let cleanSearch = debouncedSearch.replace(/\*\*/g, "").trim();
 
-  let apiUrl = `/api/clients?page=${page}&limit=${ITEMS_PER_PAGE}`;
+  // Chave sem prefixo /api: o apiClient já resolve o base path sozinho
+  let apiUrl = `clients?page=${page}&limit=${ITEMS_PER_PAGE}`;
   if (hasMultiplePackagesFilter) apiUrl += `&multiple_packages=true`;
   if (cleanSearch.length >= 3)
     apiUrl += `&q=${encodeURIComponent(cleanSearch)}`;
@@ -220,7 +220,7 @@ export default function AdminClientsPage() {
     data: apiResponse,
     isLoading,
     mutate,
-  } = useSWR<ApiResponse>(apiUrl, fetcher);
+  } = useSWR<ApiResponse>(apiUrl, apiClient);
 
   const clients = apiResponse?.data || [];
   const totalPages = apiResponse?.totalPages || 1;
@@ -282,12 +282,10 @@ export default function AdminClientsPage() {
 
     if (!clientToProcess.active) {
       try {
-        const res = await fetch(`/api/clients/${clientToProcess.id}`, {
+        await apiClient(`clients/${clientToProcess.id}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ active: true }),
         });
-        if (!res.ok) throw new Error("Erro ao reativar");
         toast.success("Cliente reativado com sucesso!");
         mutate();
       } catch {
@@ -300,10 +298,9 @@ export default function AdminClientsPage() {
 
     const actionText = clientToProcess.hasHistory ? "desativar" : "excluir";
     try {
-      const res = await fetch(`/api/clients/${clientToProcess.id}`, {
+      await apiClient(`clients/${clientToProcess.id}`, {
         method: "DELETE",
       });
-      if (!res.ok) throw new Error("Erro na requisição");
       toast.success(
         clientToProcess.hasHistory
           ? "Cliente desativado com sucesso!"

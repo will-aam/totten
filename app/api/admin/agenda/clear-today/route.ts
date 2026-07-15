@@ -1,11 +1,11 @@
 // app/api/admin/agenda/clear-today/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, AuthError } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { startOfDay, endOfDay } from "date-fns";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const admin = await requireAuth();
     const body = await req.json();
@@ -44,7 +44,15 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ success: true, deleted: result.count });
-  } catch (error) {
+  } catch (error: any) {
+    if (
+      error instanceof AuthError ||
+      error.name === "AuthError" ||
+      error.message === "Unauthorized"
+    ) {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    }
+
     console.error("[POST /api/admin/agenda/clear-today] ERRO:", error);
     return NextResponse.json(
       { error: "Erro ao limpar agenda de hoje." },

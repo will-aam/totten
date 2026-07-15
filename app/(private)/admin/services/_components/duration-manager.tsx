@@ -10,14 +10,13 @@ import { Clock, LoaderDots, Trash, Timer } from "@boxicons/react";
 import { Plus } from "@boxicons/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { apiClient, ApiError } from "@/lib/api-client";
 
 type Duration = {
   id: string;
   label: string;
   minutes: number;
 };
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 const formatDurationDisplay = (minutes: number) => {
   if (minutes < 60) return `${minutes}min`;
@@ -44,7 +43,7 @@ export function DurationManager() {
     data: durations,
     mutate,
     isLoading,
-  } = useSWR<Duration[]>("/api/service-durations", fetcher);
+  } = useSWR<Duration[]>("service-durations", apiClient);
 
   const calculateMinutes = () => {
     const h = Number(form.hours) || 0;
@@ -83,26 +82,26 @@ export function DurationManager() {
     setSaving(true);
 
     try {
-      const res = await fetch("/api/service-durations", {
+      await apiClient("service-durations", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           label: form.label,
           minutes: totalMinutes,
         }),
       });
 
-      if (res.ok) {
-        toast.success("Duração cadastrada!");
-        setForm({ label: "", hours: "", minutes: "" });
-        setIsCustomLabel(false);
-        mutate();
-      } else {
-        const errorData = await res.json();
-        toast.error(errorData.error || "Erro ao cadastrar");
-      }
+      toast.success("Duração cadastrada!");
+      setForm({ label: "", hours: "", minutes: "" });
+      setIsCustomLabel(false);
+      mutate();
     } catch (error) {
-      toast.error("Erro de conexão ao salvar.");
+      // Distingue erro de API (apiClient lança ApiError) de falha de rede,
+      // preservando as duas mensagens que já existiam antes da refatoração
+      if (error instanceof ApiError) {
+        toast.error(error.message);
+      } else {
+        toast.error("Erro de conexão ao salvar.");
+      }
     } finally {
       setSaving(false);
     }
@@ -113,7 +112,10 @@ export function DurationManager() {
 
     try {
       toast.promise(
-        fetch(`/api/service-durations?id=${id}`, { method: "DELETE" }),
+        apiClient("service-durations", {
+          method: "DELETE",
+          params: { id },
+        }),
         {
           loading: "Removendo...",
           success: () => {

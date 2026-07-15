@@ -1,8 +1,9 @@
-// app/admin/history/page.tsx
+// app/(private)/admin/history/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import useSWR from "swr";
+import { apiClient } from "@/lib/api-client";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -22,8 +23,6 @@ import {
 } from "./_components/history-table";
 import { HistoryFilters } from "./_components/history-filters";
 import { useDebounce } from "@/hooks/use-debounce";
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 type HistoryResponse = {
   data: EnrichedCheckIn[];
@@ -70,7 +69,7 @@ export default function AdminHistoryPage() {
     data: response,
     isLoading,
     mutate,
-  } = useSWR<HistoryResponse>(`/api/history?${query.toString()}`, fetcher);
+  } = useSWR<HistoryResponse>(`history?${query.toString()}`, apiClient);
 
   const checkIns = response?.data || [];
   const total = response?.total || 0;

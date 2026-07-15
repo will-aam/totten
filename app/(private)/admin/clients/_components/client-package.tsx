@@ -1,4 +1,4 @@
-// components/client/client-package.tsx
+// app/(private)/admin/clients/_components/client-package.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -37,6 +37,7 @@ import { cn } from "@/lib/utils";
 import { getPaymentMethods } from "@/app/actions/payment-methods";
 import { OrganizationPaymentMethod } from "@/types/finance";
 import { archivePackage } from "@/app/actions/packages";
+import { apiClient } from "@/lib/api-client";
 
 export type PackageType = {
   id: string;
@@ -63,12 +64,12 @@ interface ClientPackageProps {
   clientActive: boolean;
 }
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
-
 export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
+  // Alterado para usar o path relativo e passar o apiClient diretamente como fetcher
+  const packageCacheKey = `admin/clients/${clientId}/packages`;
   const { data: packages, isLoading: isLoadingPackages } = useSWR<
     PackageType[]
-  >(`/api/admin/clients/${clientId}/packages`, fetcher);
+  >(packageCacheKey, apiClient);
 
   const activePackages = packages?.filter((pkg) => pkg.active) || [];
 
@@ -104,13 +105,17 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const res = await fetch("/api/package-templates?active=true");
-        if (res.ok) {
-          const data = await res.json();
-          setTemplates(data);
-          if (data.length > 0) setTemplateId(data[0].id);
-        }
-        const methodsData = await getPaymentMethods();
+        // Fetch de templates com apiClient e actions
+        const [templatesData, methodsData] = await Promise.all([
+          apiClient<PackageTemplate[]>("package-templates", {
+            params: { active: "true" },
+          }),
+          getPaymentMethods(),
+        ]);
+
+        setTemplates(templatesData);
+        if (templatesData.length > 0) setTemplateId(templatesData[0].id);
+
         setPaymentMethods(methodsData as OrganizationPaymentMethod[]);
       } catch (e) {
         console.error("Erro ao carregar dados:", e);
@@ -136,9 +141,8 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/packages", {
+      await apiClient("packages", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           client_id: clientId,
           service_id: selectedTemplate.service_id,
@@ -148,24 +152,18 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
           payment_method: payUpfront ? selectedMethod : null,
           generate_installments: !payUpfront ? generateInstallments : false,
           installments_count: installmentsCount,
-          // 🔥 AQUI ESTÁ A PEÇA QUE FALTAVA PARA CONECTAR COM A ROTA:
           package_template_id: selectedTemplate.id,
         }),
       });
 
-      if (res.ok) {
-        toast.success("Pacote vendido com sucesso!");
-        mutate(`/api/admin/clients/${clientId}/packages`);
-        setAddPkgOpen(false);
-        setPayUpfront(false);
-        setGenerateInstallments(false);
-        setInstallmentsCount(2);
-      } else {
-        const data = await res.json();
-        toast.error(data.error || "Erro ao vender pacote");
-      }
-    } catch (error) {
-      toast.error("Erro de conexão");
+      toast.success("Pacote vendido com sucesso!");
+      mutate(packageCacheKey); // Utilizando a mesma chave padronizada
+      setAddPkgOpen(false);
+      setPayUpfront(false);
+      setGenerateInstallments(false);
+      setInstallmentsCount(2);
+    } catch (error: any) {
+      toast.error(error.message);
     } finally {
       setLoading(false);
     }
@@ -178,7 +176,7 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
       const result = await archivePackage(pkgToArchive.id);
       if (result.success) {
         toast.success("Pacote encerrado com sucesso!");
-        mutate(`/api/admin/clients/${clientId}/packages`);
+        mutate(packageCacheKey); // Utilizando a mesma chave padronizada
         setIsArchiveDialogOpen(false);
         setPkgToArchive(null);
       } else {
@@ -262,7 +260,6 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
             <Button
               size="sm"
               variant="outline"
-              //  A MÁGICA AQUI: Desabilita se o cliente estiver inativo OU se já tiver pacote ativo
               disabled={!clientActive || activePackages.length >= 1}
               title={
                 activePackages.length >= 1
@@ -467,9 +464,8 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
               >
                 {loading ? (
                   <>
-                    {" "}
-                    <LoaderDots className="h-4 w-4 mr-2 animate-spin" />{" "}
-                    Processando...{" "}
+                    <LoaderDots className="h-4 w-4 mr-2 animate-spin" />
+                    Processando...
                   </>
                 ) : (
                   "Confirmar Venda"

@@ -27,6 +27,7 @@ import {
 } from "@boxicons/react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { apiClient } from "@/lib/api-client";
 
 export type ClientContactType = {
   id: string;
@@ -119,11 +120,9 @@ export function ClientContact({ client }: ClientContactProps) {
   useEffect(() => {
     const fetchTemplates = async () => {
       try {
-        const res = await fetch("/api/settings/messages");
-        if (res.ok) {
-          const data = await res.json();
-          setTemplates((prev) => ({ ...prev, ...data }));
-        }
+        const data =
+          await apiClient<Partial<typeof templates>>("settings/messages");
+        setTemplates((prev) => ({ ...prev, ...data }));
       } catch (e) {
         console.error("Erro ao carregar templates", e);
       }
@@ -155,6 +154,7 @@ export function ClientContact({ client }: ClientContactProps) {
     const pureCep = formattedCep.replace(/\D/g, "");
     if (pureCep.length === 8) {
       try {
+        // Mantido fetch nativo: API externa (ViaCEP), fora do escopo do apiClient
         const res = await fetch(`https://viacep.com.br/ws/${pureCep}/json/`);
         const data = await res.json();
         if (data.erro) return toast.error("CEP não encontrado.");
@@ -199,9 +199,8 @@ export function ClientContact({ client }: ClientContactProps) {
 
     setSaving(true);
     try {
-      const res = await fetch(`/api/clients/${client.id}`, {
+      await apiClient(`clients/${client.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: editName.trim(),
           // Se estiver vazio, envia null para respeitar o banco de dados
@@ -216,11 +215,10 @@ export function ClientContact({ client }: ClientContactProps) {
         }),
       });
 
-      if (!res.ok)
-        throw new Error((await res.json())?.error || "Erro ao salvar.");
       toast.success("Ficha atualizada com sucesso!");
       setIsEditing(false);
-      mutate(`/api/clients/${client.id}`);
+      // Chave sem prefixo /api, consistente com o restante do projeto
+      mutate(`clients/${client.id}`);
     } catch (err: any) {
       toast.error(err.message || "Erro ao salvar.");
     } finally {

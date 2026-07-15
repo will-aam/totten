@@ -1,3 +1,4 @@
+// app/(private)/admin/clients/_components/whatsapp-button.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -11,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { apiClient } from "@/lib/api-client";
 
 interface WhatsAppButtonProps {
   clientName: string;
@@ -40,16 +42,14 @@ export function WhatsAppButton({
   useEffect(() => {
     const fetchTemplates = async () => {
       try {
-        const res = await fetch("/api/settings/messages");
-        if (res.ok) {
-          const data = await res.json();
-          setTemplates((prev) => ({
-            msgUpdate: data.msgUpdate || prev.msgUpdate,
-            msgWelcome: data.msgWelcome || prev.msgWelcome,
-            msgRenewal: data.msgRenewal || prev.msgRenewal,
-            msgReminder: data.msgReminder || prev.msgReminder,
-          }));
-        }
+        const data =
+          await apiClient<Partial<typeof templates>>("settings/messages");
+        setTemplates((prev) => ({
+          msgUpdate: data.msgUpdate || prev.msgUpdate,
+          msgWelcome: data.msgWelcome || prev.msgWelcome,
+          msgRenewal: data.msgRenewal || prev.msgRenewal,
+          msgReminder: data.msgReminder || prev.msgReminder,
+        }));
       } catch (e) {
         console.error("Erro ao carregar templates do WhatsApp", e);
       }

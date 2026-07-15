@@ -1,4 +1,4 @@
-// components/client/client-form.tsx
+// app/(private)/admin/clients/_components/client-form.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -33,9 +33,9 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 
-// ✅ Mesma fonte do ClientPackage
 import { getPaymentMethods } from "@/app/actions/payment-methods";
 import { OrganizationPaymentMethod } from "@/types/finance";
+import { apiClient } from "@/lib/api-client";
 
 // Máscaras
 function formatCpfInput(value: string) {
@@ -59,7 +59,7 @@ function formatCepInput(value: string) {
   return `${d.slice(0, 5)}-${d.slice(5)}`;
 }
 
-//  Máscara Dinâmica para a Data de Nascimento
+// Máscara Dinâmica para a Data de Nascimento
 function formatDateInput(value: string) {
   const d = value.replace(/\D/g, "").slice(0, 8);
   if (d.length <= 2) return d;
@@ -93,18 +93,18 @@ export function ClientForm() {
     [],
   );
 
-  // ✅ Formas de pagamento
+  // Formas de pagamento
   const [paymentMethods, setPaymentMethods] = useState<
     OrganizationPaymentMethod[]
   >([]);
 
-  // ✅ Estados de venda
+  // Estados de venda
   const [payUpfront, setPayUpfront] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<string>("");
   const [generateInstallments, setGenerateInstallments] = useState(false);
   const [installmentsCount, setInstallmentsCount] = useState<number>(2);
 
-  //  Estados para o campo dinâmico de Nascimento
+  // Estados para o campo dinâmico de Nascimento
   const [birthDateStr, setBirthDateStr] = useState("");
 
   const [form, setForm] = useState({
@@ -125,12 +125,14 @@ export function ClientForm() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const res = await fetch("/api/package-templates?active=true");
-        if (res.ok) {
-          const data = await res.json();
-          setPackageTemplates(data);
-        }
-        const methodsData = await getPaymentMethods();
+        const [templatesData, methodsData] = await Promise.all([
+          apiClient<PackageTemplate[]>("package-templates", {
+            params: { active: "true" },
+          }),
+          getPaymentMethods(),
+        ]);
+
+        setPackageTemplates(templatesData);
         setPaymentMethods(methodsData as OrganizationPaymentMethod[]);
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
@@ -157,6 +159,7 @@ export function ClientForm() {
     if (rawCep.length === 8) {
       setLoadingCep(true);
       try {
+        // Mantemos o fetch nativo aqui pois é uma API externa
         const res = await fetch(`https://viacep.com.br/ws/${rawCep}/json/`);
         const data = await res.json();
 
@@ -212,41 +215,36 @@ export function ClientForm() {
 
     setLoading(true);
     try {
-      // 1) cria cliente
-      const clientRes = await fetch("/api/clients", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: form.name,
-          cpf: form.cpf.trim() !== "" ? form.cpf : null,
-          phone_whatsapp: form.phone_whatsapp,
-
-          email: form.email || null,
-          birth_date: form.birth_date
-            ? format(form.birth_date, "yyyy-MM-dd")
-            : null,
-          zip_code: form.zip_code || null,
-          street: form.street || null,
-          number: form.number || null,
-          city: form.city || null,
-        }),
-      });
-
-      const clientData = await clientRes.json();
-      if (!clientRes.ok)
-        throw new Error(clientData.error || "Erro ao criar cliente");
+      // 1) cria cliente utilizando apiClient
+      const clientData = await apiClient<{ client: { id: string } }>(
+        "clients",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            name: form.name,
+            cpf: form.cpf.trim() !== "" ? form.cpf : null,
+            phone_whatsapp: form.phone_whatsapp,
+            email: form.email || null,
+            birth_date: form.birth_date
+              ? format(form.birth_date, "yyyy-MM-dd")
+              : null,
+            zip_code: form.zip_code || null,
+            street: form.street || null,
+            number: form.number || null,
+            city: form.city || null,
+          }),
+        },
+      );
 
       // 2) cria pacote vinculado, se houver
-
       if (form.package_template_id !== "none") {
         const template = packageTemplates.find(
           (t) => t.id === form.package_template_id,
         );
 
         if (template) {
-          const packageRes = await fetch("/api/packages", {
+          await apiClient("packages", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               client_id: clientData.client.id,
               service_id: template.service_id,
@@ -259,20 +257,13 @@ export function ClientForm() {
               package_template_id: template.id,
             }),
           });
-
-          if (!packageRes.ok) {
-            const errorText = await packageRes.text();
-            console.error("Erro detalhado da API de Pacotes:", errorText);
-            throw new Error(
-              "Cliente criado, mas falha ao gerar o pacote vinculado.",
-            );
-          }
         }
       }
 
       toast.success("Cadastro realizado com sucesso!");
       router.push("/admin/clients");
     } catch (error: any) {
+      // O apiClient já formata o erro corretamente lançando a mensagem tratada
       toast.error(error.message);
       console.error(error);
     } finally {

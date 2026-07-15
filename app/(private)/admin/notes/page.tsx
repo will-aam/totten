@@ -7,8 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ClientListView } from "./_components/client-list-view";
 import { ChatView } from "./_components/chat-view";
 import { Note } from "./_components/chat-bubble";
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+import { apiClient } from "@/lib/api-client";
 
 // Tipo baseado no retorno real da sua API de clientes
 type Client = {
@@ -34,16 +33,16 @@ export default function AdminNotesPage() {
     data: Client[];
   }>(
     shouldSearch
-      ? `/api/clients?q=${encodeURIComponent(debouncedSearch.trim())}&limit=10`
-      : `/api/admin/notes/clients`,
-    fetcher,
+      ? `clients?q=${encodeURIComponent(debouncedSearch.trim())}&limit=10`
+      : `admin/notes/clients`,
+    apiClient,
   );
   const displayClients = clientsResponse?.data || [];
 
   // 2. Busca as notas APENAS do cliente selecionado (SWR faz cache e auto-atualiza)
   const { data: notesResponse, mutate: mutateNotes } = useSWR<{ data: Note[] }>(
-    selectedClient ? `/api/admin/notes?clientId=${selectedClient.id}` : null,
-    fetcher,
+    selectedClient ? `admin/notes?clientId=${selectedClient.id}` : null,
+    apiClient,
   );
   const clientNotes = notesResponse?.data || [];
 
@@ -62,13 +61,11 @@ export default function AdminNotesPage() {
     mutateNotes({ data: [...previousNotes, tempNote] }, false);
 
     try {
-      const res = await fetch("/api/admin/notes", {
+      await apiClient("admin/notes", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ clientId: selectedClient.id, text }),
       });
 
-      if (!res.ok) throw new Error("Falha ao salvar");
       mutateNotes(); // Revalida com o ID real gerado pelo banco
       mutateClients(); // Atualiza a lista inicial para o cliente aparecer lá caso seja a 1ª nota
     } catch (error) {
@@ -95,16 +92,14 @@ export default function AdminNotesPage() {
     );
 
     try {
-      const res = await fetch("/api/admin/notes", {
+      await apiClient("admin/notes", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           noteId: updatedNote.id,
           text: updatedNote.text,
         }),
       });
 
-      if (!res.ok) throw new Error("Falha ao editar");
       mutateNotes();
     } catch (error) {
       toast({
@@ -123,11 +118,10 @@ export default function AdminNotesPage() {
     mutateNotes({ data: previousNotes.filter((n) => n.id !== noteId) }, false);
 
     try {
-      const res = await fetch(`/api/admin/notes?noteId=${noteId}`, {
+      await apiClient("admin/notes", {
         method: "DELETE",
+        params: { noteId },
       });
-
-      if (!res.ok) throw new Error("Falha ao deletar");
 
       toast({
         description: "Anotação excluída com sucesso.",

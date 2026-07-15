@@ -1,3 +1,4 @@
+// app/(private)/admin/settings/_components/security-settings.tsx
 "use client";
 
 import { useState } from "react";
@@ -15,6 +16,7 @@ import { SealCheck, LoaderDots, Save } from "@boxicons/react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { apiClient, ApiError } from "@/lib/api-client";
 
 export function SecuritySettings() {
   const { data: session } = useSession();
@@ -41,24 +43,23 @@ export function SecuritySettings() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/change-password", {
+      await apiClient("auth/change-password", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ currentPassword, newPassword }),
       });
 
-      const data = await res.json();
-
-      if (data.success) {
-        toast.success("Senha alterada com sucesso!");
-        setCurrentPassword("");
-        setNewPassword("");
-        setConfirmPassword("");
+      toast.success("Senha alterada com sucesso!");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error) {
+      // Distingue erro de API (apiClient lança ApiError) de falha de rede,
+      // preservando as duas mensagens que já existiam antes da refatoração
+      if (error instanceof ApiError) {
+        toast.error(error.message || "Erro ao alterar senha");
       } else {
-        toast.error(data.error || "Erro ao alterar senha");
+        toast.error("Erro de conexão. Tente novamente.");
       }
-    } catch {
-      toast.error("Erro de conexão. Tente novamente.");
     } finally {
       setLoading(false);
     }

@@ -26,12 +26,18 @@ import {
   Briefcase,
 } from "@boxicons/react";
 import { toast } from "sonner";
+import { apiClient } from "@/lib/api-client";
+
+interface ServiceOption {
+  id: string;
+  name: string;
+}
 
 export function PackageForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [loadingServices, setLoadingServices] = useState(true);
-  const [services, setServices] = useState<any[]>([]);
+  const [services, setServices] = useState<ServiceOption[]>([]);
 
   // Constantes de proteção estabelecidas (Ajustadas para a realidade do negócio)
   const MAX_SESSIONS = 60; // Cobre 1 ano inteiro de visitas semanais (52 semanas) + margem
@@ -52,11 +58,10 @@ export function PackageForm() {
   useEffect(() => {
     async function loadServices() {
       try {
-        const res = await fetch("/api/services?active=true");
-        if (res.ok) {
-          const data = await res.json();
-          setServices(data);
-        }
+        const data = await apiClient<ServiceOption[]>("services", {
+          params: { active: "true" },
+        });
+        setServices(data);
       } catch (error) {
         console.error("Erro ao carregar serviços:", error);
       } finally {
@@ -89,9 +94,8 @@ export function PackageForm() {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/package-templates", {
+      const data = await apiClient<{ success: boolean }>("package-templates", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.name,
           description: form.description || null,
@@ -104,16 +108,14 @@ export function PackageForm() {
         }),
       });
 
-      const data = await res.json();
-
-      if (res.ok && data.success) {
+      if (data.success) {
         toast.success("Pacote cadastrado com sucesso!");
         router.push("/admin/services?tab=packages");
       } else {
-        toast.error(data.error || "Erro ao salvar.");
+        toast.error("Erro ao salvar.");
       }
-    } catch (error) {
-      toast.error("Erro de conexão com o servidor.");
+    } catch (error: any) {
+      toast.error(error.message || "Erro de conexão com o servidor.");
     } finally {
       setLoading(false);
     }

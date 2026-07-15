@@ -5,6 +5,7 @@ import useSWR from "swr";
 import Link from "next/link";
 import { format, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { apiClient } from "@/lib/api-client";
 import {
   Card,
   CardHeader,
@@ -16,16 +17,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, ChevronRight } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
-
 export function AgendaPreview() {
   const now = new Date();
   const from = startOfDay(now).toISOString();
   const to = endOfDay(now).toISOString();
 
-  const { data, isLoading } = useSWR(
-    `/api/admin/agenda?from=${from}&to=${to}`,
-    fetcher,
+  const { data, isLoading } = useSWR<any>(
+    `admin/agenda?from=${from}&to=${to}`,
+    apiClient,
     { refreshInterval: 30000 },
   );
 

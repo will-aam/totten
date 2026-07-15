@@ -1,7 +1,7 @@
 // app/api/clients/import/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentAdmin } from "@/lib/auth";
+import { requireAuth, AuthError } from "@/lib/auth";
 
 // As mesmas máscaras usadas no frontend para garantir padrão no banco!
 function formatCpfInput(value: string) {
@@ -19,11 +19,11 @@ function formatPhoneInput(value: string) {
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
 }
 
-export async function POST(request: Request) {
+// ✅ Padronizado para NextRequest
+export async function POST(request: NextRequest) {
   try {
-    const admin = await getCurrentAdmin();
-    if (!admin)
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    // ✅ Padronizado para requireAuth (lança AuthError se falhar)
+    const admin = await requireAuth();
 
     const body = await request.json();
     const clientsData = body.clients;
@@ -79,7 +79,12 @@ export async function POST(request: Request) {
       imported: result.count,
       skipped: validData.length - result.count,
     });
-  } catch (error) {
+  } catch (error: any) {
+    // ✅ Tratamento centralizado do erro de autenticação
+    if (error instanceof AuthError || error.name === "AuthError") {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+
     console.error("Erro na importação:", error);
     return NextResponse.json(
       { error: "Erro interno no servidor ao importar." },

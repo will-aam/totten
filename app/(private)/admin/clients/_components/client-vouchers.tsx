@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import useSWR from "swr";
+import { apiClient } from "@/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,12 +25,10 @@ interface ClientVouchersProps {
   clientName: string;
 }
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
-
 export function ClientVouchers({ clientId, clientName }: ClientVouchersProps) {
   const { data: packages, isLoading } = useSWR<PackageType[]>(
-    `/api/admin/clients/${clientId}/packages`,
-    fetcher,
+    `admin/clients/${clientId}/packages`,
+    apiClient,
   );
 
   // Filtra apenas os pacotes que já foram 100% consumidos

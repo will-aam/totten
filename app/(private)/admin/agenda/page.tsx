@@ -38,8 +38,12 @@ import { NewAppointmentModal } from "./_components/new-appointment-modal";
 import { AppointmentDetailsModal } from "./_components/appointment-details-modal";
 import { ScheduleSettingsModal } from "./_components/schedule-settings-modal";
 import { AgendaHeader } from "./_components/agenda-header";
+import { apiClient, ApiError } from "@/lib/api-client";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+interface AgendaSettings {
+  openingTime: string;
+  closingTime: string;
+}
 
 export default function AgendaPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -64,9 +68,10 @@ export default function AgendaPage() {
   const isProgrammaticScroll = useRef(false);
   const [rosterBaseDate, setRosterBaseDate] = useState(new Date());
 
-  const { data: settings, mutate: mutateSettings } = useSWR(
-    "/api/settings",
-    fetcher,
+  // Chave sem prefixo /api: o apiClient já resolve o base path sozinho
+  const { data: settings, mutate: mutateSettings } = useSWR<AgendaSettings>(
+    "settings",
+    apiClient,
   );
 
   const openingTime = String(settings?.openingTime || "08:00");
@@ -105,7 +110,7 @@ export default function AgendaPage() {
     data: agendaData,
     mutate: mutateAgenda,
     isLoading: loadingAgenda,
-  } = useSWR(`/api/admin/agenda?from=${fromISO}&to=${toISO}`, fetcher);
+  } = useSWR(`admin/agenda?from=${fromISO}&to=${toISO}`, apiClient);
 
   const mapAppointments = (raw: any) => {
     return (raw?.appointments ?? []).map((appt: any) => ({
@@ -183,12 +188,10 @@ export default function AgendaPage() {
     closingTime: string;
   }) => {
     try {
-      const res = await fetch("/api/settings", {
+      await apiClient("settings", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newSettings),
       });
-      if (!res.ok) throw new Error("Erro ao salvar");
       await mutateSettings();
       toast.success("Horários de funcionamento atualizados!");
     } catch (error) {
@@ -199,19 +202,20 @@ export default function AgendaPage() {
 
   const handleQuickConfirm = async (appt: Appointment) => {
     try {
-      const res = await fetch(`/api/admin/appointments/${appt.id}`, {
+      await apiClient(`admin/appointments/${appt.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "CONFIRMADO" }),
       });
-      if (res.ok) {
-        toast.success("Agendamento confirmado!");
-        mutateAll();
-      } else {
-        toast.error("Falha ao confirmar agendamento.");
-      }
+      toast.success("Agendamento confirmado!");
+      mutateAll();
     } catch (error) {
-      toast.error("Erro na conexão.");
+      // Distingue erro de API (apiClient lança ApiError) de falha de rede,
+      // preservando as duas mensagens que já existiam antes da refatoração
+      if (error instanceof ApiError) {
+        toast.error("Falha ao confirmar agendamento.");
+      } else {
+        toast.error("Erro na conexão.");
+      }
     }
   };
 

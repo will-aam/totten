@@ -4,6 +4,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import useSWRInfinite from "swr/infinite";
 import Link from "next/link";
+import { apiClient } from "@/lib/api-client";
 import {
   Card,
   CardHeader,
@@ -13,8 +14,6 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CalendarCheck, ChevronRight, RefreshCw, User } from "@boxicons/react";
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 type CheckIn = {
   id: string;
@@ -79,7 +78,7 @@ function CheckInListItem({ checkIn }: { checkIn: CheckIn }) {
 export function RecentCheckIns() {
   const getCheckInsKey = (pageIndex: number, previousPageData: any) => {
     if (previousPageData && !previousPageData.hasMore) return null;
-    return `/api/dashboard/checkins?page=${pageIndex + 1}&limit=8`;
+    return `dashboard/checkins?page=${pageIndex + 1}&limit=8`;
   };
 
   const {
@@ -87,7 +86,7 @@ export function RecentCheckIns() {
     isLoading: isLoadingFirstCheckins,
     size,
     setSize,
-  } = useSWRInfinite(getCheckInsKey, fetcher);
+  } = useSWRInfinite<any>(getCheckInsKey, apiClient);
 
   const checkIns = checkinsPages
     ? checkinsPages.flatMap((page) => page.data)

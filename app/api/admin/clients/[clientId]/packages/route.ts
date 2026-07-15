@@ -1,16 +1,16 @@
 // app/api/admin/clients/[clientId]/packages/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 
 export async function GET(
-  _req: Request,
+  _req: NextRequest,
   { params }: { params: Promise<{ clientId: string }> },
 ) {
   try {
     const admin = await requireAuth();
 
-    //  Next.js 15+: params precisa ser aguardado
+    // Next.js 15+: params precisa ser aguardado
     const { clientId } = await params;
 
     if (!clientId) {
@@ -85,7 +85,7 @@ export async function GET(
       };
     });
 
-    //  Retorna o array direto para bater perfeitamente com a tipagem do SWR no Front
+    // Retorna o array direto para bater perfeitamente com a tipagem do SWR no Front
     return NextResponse.json(formattedPackages);
   } catch (error) {
     console.error("[GET /api/admin/clients/[clientId]/packages] ERRO:", error);

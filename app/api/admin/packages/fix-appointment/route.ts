@@ -1,10 +1,10 @@
 // app/api/admin/packages/fix-appointment/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, AuthError } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const admin = await requireAuth();
     const { appointmentId } = await req.json();
@@ -41,7 +41,17 @@ export async function POST(req: Request) {
 
     revalidatePath("/admin/packages");
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
+    // Tratamento correto do 401
+    if (
+      error instanceof AuthError ||
+      error.name === "AuthError" ||
+      error.message === "Unauthorized"
+    ) {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    }
+
+    console.error("[POST /api/admin/packages/fix-appointment] ERRO:", error);
     return NextResponse.json(
       { error: "Erro ao deletar registro" },
       { status: 500 },
