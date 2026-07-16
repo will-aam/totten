@@ -1,18 +1,21 @@
 // app/api/settings/messages/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getTenantPrisma } from "@/lib/prisma";
 import { requireAuth, AuthError } from "@/lib/auth";
 
 // GET - Busca templates de mensagem formatados para a organização
 export async function GET() {
   try {
     const admin = await requireAuth();
+    // Instancia o Prisma blindado para a organização atual
+    const prisma = getTenantPrisma(admin.organizationId);
 
     const settings = await prisma.settings.findUnique({
       where: { organization_id: admin.organizationId },
     });
 
     const templates = await prisma.messageTemplate.findMany({
+      // A trava de segurança injetará silenciosamente o organization_id aqui
       where: { organization_id: admin.organizationId },
     });
 
@@ -42,6 +45,8 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
   try {
     const admin = await requireAuth();
+    // Instancia o Prisma blindado para a organização atual
+    const prisma = getTenantPrisma(admin.organizationId);
 
     const body = await request.json();
     const {

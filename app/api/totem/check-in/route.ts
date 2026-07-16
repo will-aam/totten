@@ -1,12 +1,14 @@
 // app/api/totem/check-in/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getTenantPrisma } from "@/lib/prisma";
 import { requireAuth, AuthError } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
     // 🛡️ Validação unificada de sessão e tenant
     const admin = await requireAuth();
+    // Instancia o Prisma blindado para a organização atual
+    const prisma = getTenantPrisma(admin.organizationId);
 
     const body = await request.json();
     const { appointment_id } = body;
@@ -60,6 +62,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // O getTenantPrisma garante a injeção do organization_id por baixo dos panos aqui
     const existingCheckIn = await prisma.checkIn.findFirst({
       where: { appointment_id: appt.id, organization_id: admin.organizationId },
     });
