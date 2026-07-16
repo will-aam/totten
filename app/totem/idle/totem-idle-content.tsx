@@ -1,3 +1,4 @@
+// app/totem/idle/totem-idle-content.tsx
 "use client";
 
 import { useSession } from "next-auth/react";
@@ -68,7 +69,6 @@ export default function TotemIdleContent() {
             {status === "loading" ? (
               <div className="h-12 w-48 md:h-15 md:w-64 rounded-xl bg-muted animate-pulse mx-auto" />
             ) : (
-              // O título já puxa a fonte do pai, mas a mantemos limpa
               <h1 className="text-5xl font-bold tracking-tight text-foreground md:text-6xl animate-in fade-in duration-700">
                 Totten
               </h1>
