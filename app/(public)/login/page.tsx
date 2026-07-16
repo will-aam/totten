@@ -135,7 +135,7 @@ function LoginForm() {
                   Senha
                 </Label>
                 <Link
-                  href="/admin/forgot-password"
+                  href="/forgot-password"
                   className="text-sm sm:text-xs text-primary hover:underline font-medium"
                 >
                   Esqueceu a senha?

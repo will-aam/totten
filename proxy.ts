@@ -19,7 +19,6 @@ export async function proxy(request: NextRequest) {
     "/login",
     "/admin/register",
     "/forgot-password",
-    "/admin/forgot-password",
     "/check-email",
     "/verify-email",
     "/api/auth",
