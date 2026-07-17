@@ -21,7 +21,7 @@ export default function AgendaSection() {
     { d: 4, h: 4, dur: 2, t: "Pacote · Fábio", tone: "bg-white/30" },
   ];
   return (
-    <section id="agenda" className="bg-[#0b0b0d] py-24">
+    <section id="agenda" className="bg-zinc-900/10 py-24">
       <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:items-center lg:px-8">
         <div className="order-2 lg:order-1">
           <Badge

@@ -46,7 +46,7 @@ export default function DemoRequestSection() {
   return (
     <section
       id="demo"
-      className="mx-auto w-full px-8 py-24 sm:px-28 lg:px-28 bg-[#0b0b0d]"
+      className="mx-auto w-full px-8 py-24 sm:px-28 lg:px-28 bg-zinc-900/10"
     >
       <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
         <div>

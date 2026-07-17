@@ -1,13 +1,20 @@
 import { CheckCircle2 } from "lucide-react";
 import PhoneMockup from "./phone-mockup";
 import { Badge } from "@/components/ui/badge";
+import Image from "next/image";
 
 export default function TotemSection() {
   return (
     <section id="totem" className="py-24">
       <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:items-center lg:px-8">
         <div className="order-2 md:flex justify-center lg:order-1 hidden">
-          <PhoneMockup />
+          {/* <PhoneMockup /> */}
+          <Image
+            src="/totem.png"
+            alt="Totem de autoatendimento"
+            width={400}
+            height={400}
+          />
         </div>
         <div className="order-1 lg:order-2">
           <Badge

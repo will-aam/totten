@@ -1,5 +1,6 @@
 import { Github, Instagram, Linkedin, Youtube } from "lucide-react";
 import Image from "next/image";
+import { LightRays } from "@/components/ui/light-rays";
 
 export default function Footer() {
   const cols = [
@@ -8,7 +9,8 @@ export default function Footer() {
     { t: "Legal", l: ["Privacidade", "Termos", "Segurança", "LGPD"] },
   ];
   return (
-    <footer className="border-t border-totten py-16">
+    <footer className="border-t border-totten py-16 relative overflow-hidden">
+      <LightRays />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid gap-10 md:grid-cols-[1.5fr_repeat(3,1fr)]">
           <div>

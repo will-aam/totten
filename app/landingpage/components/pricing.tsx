@@ -58,7 +58,7 @@ export default function PricingSection() {
   return (
     <section
       id="preços"
-      className="mx-auto w-full px-4 py-24 sm:px-6 lg:px-48 bg-[#0b0b0d]"
+      className="mx-auto w-full px-4 py-24 sm:px-6 lg:px-48 bg-zinc-900/10"
     >
       <a id="precos" />
       <SectionHeader

@@ -7,11 +7,12 @@ export default function Navbar() {
     { label: "Recursos", href: "#recursos" },
     { label: "Agenda", href: "#agenda" },
     { label: "Totem", href: "#totem" },
-    { label: "Preços", href: "#precos" }, // sem acento
+    { label: "Preços", href: "#precos" },
     { label: "FAQ", href: "#faq" },
+    { label: "Demonstração", href: "#demo" },
   ];
   return (
-    <header className="sticky top-0 z-50 border-b border-totten/60 bg-[#09090B]/70 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 bg-zinc-950/70 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <div className={`flex items-center gap-2`}>
           <Image
@@ -39,19 +40,8 @@ export default function Navbar() {
         </nav>
         <div className="flex items-center gap-2">
           {/* <ThemeToggle /> */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="hidden text-zinc-soft hover:bg-white/5 hover:text-white sm:inline-flex"
-          >
+          <Button variant="default" size="sm" className="hidden sm:inline-flex">
             Entrar
-          </Button>
-          <Button
-            asChild
-            size="sm"
-            className="bg-white text-black hover:bg-zinc-200"
-          >
-            <a href="#precos">Começar agora</a>
           </Button>
           <Button size="icon" variant="ghost" className="md:hidden">
             <Menu className="h-5 w-5" />
