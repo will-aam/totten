@@ -1,12 +1,15 @@
 // app/api/admin/packages/fix-appointment/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getTenantPrisma } from "@/lib/prisma";
 import { requireAuth, AuthError } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
 export async function POST(req: NextRequest) {
   try {
     const admin = await requireAuth();
+    // Instancia o Prisma blindado para a organização atual
+    const prisma = getTenantPrisma(admin.organizationId);
+
     const { appointmentId } = await req.json();
 
     if (!appointmentId)
@@ -23,6 +26,7 @@ export async function POST(req: NextRequest) {
 
     await prisma.$transaction(async (tx) => {
       // 1. Se estava como realizado, devolve o saldo ao pacote
+      // A trava de segurança injetará silenciosamente o organization_id aqui
       if (appointment.status === "REALIZADO" && appointment.package_id) {
         await tx.package.update({
           where: { id: appointment.package_id },
@@ -31,6 +35,7 @@ export async function POST(req: NextRequest) {
       }
 
       // 2. Deleta o Check-in se existir
+      // A trava de segurança injetará silenciosamente o organization_id aqui
       await tx.checkIn.deleteMany({
         where: { appointment_id: appointment.id },
       });

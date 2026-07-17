@@ -1,12 +1,14 @@
 // app/api/packages/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getTenantPrisma } from "@/lib/prisma";
 import { requireAuth, AuthError } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
     // 🛡️ Validação unificada de sessão e tenant
     const admin = await requireAuth();
+    // Instancia o Prisma blindado para a organização atual
+    const prisma = getTenantPrisma(admin.organizationId);
 
     const body = await request.json();
     const {
@@ -109,7 +111,7 @@ export async function POST(request: NextRequest) {
           price: price,
           client_id,
           service_id,
-          organization_id: admin.organizationId,
+          organization_id: admin.organizationId, // Mantido explicitamente no create
           active: true,
           package_template_id: package_template_id || null,
           snapshot_service_name: service.name,

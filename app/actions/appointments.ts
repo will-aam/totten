@@ -1,7 +1,7 @@
 // app/actions/appointments.ts
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { getTenantPrisma } from "@/lib/prisma";
 import { AppointmentStatus, PaymentMethod } from "@prisma/client";
 import { requireAuth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
@@ -28,6 +28,8 @@ export async function createAppointment(
 ): Promise<CreateAppointmentResult> {
   try {
     const admin = await requireAuth();
+    const prisma = getTenantPrisma(admin.organizationId);
+
     const {
       clientId,
       serviceId,
@@ -137,6 +139,7 @@ export async function updateAppointment(
 ) {
   try {
     const admin = await requireAuth();
+    const prisma = getTenantPrisma(admin.organizationId);
 
     const statusMap: Record<string, AppointmentStatus> = {
       a_confirmar: AppointmentStatus.PENDENTE,
@@ -359,6 +362,7 @@ export async function deleteAppointment(
 ) {
   try {
     const admin = await requireAuth();
+    const prisma = getTenantPrisma(admin.organizationId);
 
     // 1. Busca os registros ANTES de deletar para termos os dados para o log
     const appointmentsToDelete = await prisma.appointment.findMany({
@@ -458,6 +462,7 @@ export async function updateAppointmentDateTime(
 ) {
   try {
     const admin = await requireAuth();
+    const prisma = getTenantPrisma(admin.organizationId);
 
     const apptToMove = await prisma.appointment.findUnique({
       where: { id, organization_id: admin.organizationId },
@@ -497,6 +502,7 @@ export async function processDailyNoShows(secretKey?: string) {
 export async function undoNoShow(appointmentId: string) {
   try {
     const admin = await requireAuth();
+    const prisma = getTenantPrisma(admin.organizationId);
 
     const appt = await prisma.appointment.findUnique({
       where: { id: appointmentId, organization_id: admin.organizationId },
@@ -544,6 +550,7 @@ export async function undoNoShow(appointmentId: string) {
       const dateStr = new Intl.DateTimeFormat("pt-BR", {
         dateStyle: "short",
       }).format(appt.date_time);
+
       await tx.clientNote.deleteMany({
         where: {
           client_id: appt.client_id,
@@ -571,6 +578,8 @@ export async function registerManualNoShow(
 ) {
   try {
     const admin = await requireAuth();
+    const prisma = getTenantPrisma(admin.organizationId);
+
     const appt = await prisma.appointment.findUnique({
       where: { id: appointmentId, organization_id: admin.organizationId },
       include: { package: true },

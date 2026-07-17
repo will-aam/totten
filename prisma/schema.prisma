@@ -138,6 +138,7 @@ model Category {
   organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   services        Service[]
 
+  @@index([organization_id])
   @@map("categories")
 }
 
@@ -159,6 +160,8 @@ model Service {
   category          Category           @relation(fields: [category_id], references: [id])
   organization      Organization       @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
+  @@index([organization_id])
+  @@index([category_id])
   @@map("services")
 }
 
@@ -178,6 +181,7 @@ model PackageTemplate {
   service         Service      @relation(fields: [service_id], references: [id])
   packages        Package[]    // Pacotes vendidos baseados neste template
 
+  @@index([organization_id])
   @@map("package_templates")
 }
 
@@ -193,9 +197,7 @@ model Package {
   organization_id           String
   created_at                DateTime      @default(now())
   updated_at                DateTime      @updatedAt
-  
-  // Apenas UMA linha aqui:
-  package_template_id       String?       
+  package_template_id       String?
 
   // SNAPSHOT
   snapshot_service_name     String?
@@ -211,6 +213,8 @@ model Package {
   transactions              Transaction[]
   vouchers                  Voucher[]
 
+  @@index([organization_id])
+  @@index([client_id])
   @@map("packages")
 }
 
@@ -396,6 +400,7 @@ model StockItem {
   organization    Organization       @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   transactions    Transaction[]
 
+  @@index([organization_id])
   @@map("stock_items")
 }
 
