@@ -1,6 +1,7 @@
+// app/actions/package-templates.ts
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { getTenantPrisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 // Importando as regras de negócio centralizadas
@@ -31,6 +32,8 @@ export async function updatePackageTemplate(
 ) {
   try {
     const admin = await requireAuth();
+    // Instancia o Prisma blindado para a organização atual
+    const prisma = getTenantPrisma(admin.organizationId);
 
     // Nota: Se você quiser garantir que uma alteração via formulário de edição
     // também respeite as regras de inativação, você poderia chamar os validadores aqui também.
@@ -62,6 +65,8 @@ export async function togglePackageTemplateStatus(
 ) {
   try {
     const admin = await requireAuth();
+    // Instancia o Prisma blindado para a organização atual
+    const prisma = getTenantPrisma(admin.organizationId);
 
     // 1. LÓGICA DE INATIVAÇÃO (está ativo e quer inativar)
     if (currentStatus === true) {

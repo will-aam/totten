@@ -1,4 +1,4 @@
-// components/packages/package-details-modal.tsx
+// app/(private)/admin/packages/_components/package-details-modal.tsx
 "use client";
 
 import { useState, useEffect } from "react";

@@ -1,3 +1,4 @@
+// app/(private)/admin/finance/layout.tsx
 "use client";
 
 import { useEffect } from "react";

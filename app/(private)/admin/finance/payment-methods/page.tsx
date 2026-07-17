@@ -1,4 +1,4 @@
-// app/admin/finance/payment-methods/page.tsx
+// app/(private)/admin/finance/payment-methods/page.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from "react";

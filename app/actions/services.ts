@@ -1,7 +1,7 @@
 // app/actions/services.ts
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { getTenantPrisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 // Importando nossa nova camada de validação profissional
@@ -31,6 +31,7 @@ export async function createService(data: {
 }) {
   try {
     const admin = await requireAuth();
+    const prisma = getTenantPrisma(admin.organizationId);
 
     const service = await prisma.service.create({
       data: {
@@ -79,6 +80,7 @@ export async function updateService(
 ) {
   try {
     const admin = await requireAuth();
+    const prisma = getTenantPrisma(admin.organizationId);
 
     const existingService = await prisma.service.findFirst({
       where: { id, organization_id: admin.organizationId },
@@ -127,10 +129,6 @@ export async function updateService(
   }
 }
 
-// app/actions/services.ts
-
-// ... (mantenha os imports e funções create/update iguais)
-
 export async function toggleServiceStatus(
   id: string,
   currentStatus: boolean,
@@ -138,8 +136,9 @@ export async function toggleServiceStatus(
 ) {
   try {
     const admin = await requireAuth();
+    const prisma = getTenantPrisma(admin.organizationId);
 
-    // 🔥 CORREÇÃO: A validação SEMPRE deve rodar ao inativar, tiramos o !forceCascade daqui
+    // 🔥 CORREÇÃO: A validação SEMPRE deve rodar ao inativar
     if (currentStatus === true) {
       const validation = await validateServiceDeactivation(
         id,
@@ -147,13 +146,9 @@ export async function toggleServiceStatus(
       );
 
       if (!validation.success) {
-        // Se o erro for APENAS o aviso de cascade (HAS_ACTIVE_PACKAGES) e o usuário JÁ confirmou,
-        // nós deixamos o código seguir.
         if (validation.code === "HAS_ACTIVE_PACKAGES" && forceCascade) {
           // Segue o fluxo normalmente para inativar em cascata
         } else {
-          // BLOQUEIO REAL: Tem agendamento futuro ou Cliente usando o pacote!
-          // O sistema não deixa inativar de jeito nenhum.
           return {
             success: false,
             requiresConfirmation: validation.code === "HAS_ACTIVE_PACKAGES",
@@ -186,12 +181,12 @@ export async function toggleServiceStatus(
   }
 }
 
-// ... (mantenha o resto das categorias igual)
-
 // --- AÇÕES DE CATEGORIA ---
 export async function updateCategory(id: string, name: string) {
   try {
     const admin = await requireAuth();
+    const prisma = getTenantPrisma(admin.organizationId);
+
     await prisma.category.update({
       where: { id, organization_id: admin.organizationId },
       data: { name },
@@ -210,6 +205,7 @@ export async function toggleCategoryStatus(
 ) {
   try {
     const admin = await requireAuth();
+    const prisma = getTenantPrisma(admin.organizationId);
 
     if (currentStatus === true && !forceCascade) {
       const linkedServices = await prisma.service.count({

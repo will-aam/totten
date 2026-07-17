@@ -1,4 +1,4 @@
-// app/admin/finance/reports/page.tsx
+// app/(private)/admin/finance/reports/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";

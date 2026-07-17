@@ -2,17 +2,21 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth"; //  Padronizado com os outros arquivos
+import { requireAuth } from "@/lib/auth";
 import { PaymentMethod } from "@prisma/client";
 
+// Tipagem de retorno inferida para garantir contrato com o Frontend
 export async function getFinanceDashboardData(month?: number, year?: number) {
   try {
-    const admin = await requireAuth(); //  Garante a sessão e pega os dados do Admin
+    const admin = await requireAuth();
     const organizationId = admin.organizationId;
-    const now = new Date();
 
+    // Trabalhando com datas de forma mais segura para evitar bugs de UTC no servidor
+    const now = new Date();
     const targetMonth = month ? month - 1 : now.getMonth();
     const targetYear = year || now.getFullYear();
+    const isCurrentMonth =
+      targetMonth === now.getMonth() && targetYear === now.getFullYear();
 
     // 1. LIMITES DE DATA
     const monthStart = new Date(targetYear, targetMonth, 1, 0, 0, 0);
@@ -58,33 +62,60 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
     // ============================================================================
     //  O SEGREDO DO ERP: Ler apenas a Tabela Transaction!
     // ============================================================================
-    const monthlyTxRaw = await prisma.transaction.findMany({
-      where: {
-        organization_id: organizationId,
-        date: { gte: monthStart, lte: monthEnd },
-      },
-      select: {
-        type: true,
-        status: true,
-        amount: true,
-        date: true,
-        payment_method: { select: { type: true } },
-      },
-    });
-
-    // Para saber o que está PENDENTE, ainda precisamos olhar a Agenda
-    const pendingApptsRaw = await prisma.appointment.findMany({
-      where: {
-        organization_id: organizationId,
-        status: "REALIZADO",
-        payment_method: null,
-        package_id: null,
-        date_time: { gte: monthStart, lte: monthEnd },
-      },
-      select: {
-        service: { select: { price: true } },
-      },
-    });
+    const [monthlyTxRaw, pendingApptsRaw, recentTx] = await Promise.all([
+      prisma.transaction.findMany({
+        where: {
+          organization_id: organizationId,
+          date: { gte: monthStart, lte: monthEnd },
+        },
+        select: {
+          type: true,
+          status: true,
+          amount: true,
+          date: true,
+          payment_method: { select: { type: true } },
+        },
+      }),
+      prisma.appointment.findMany({
+        where: {
+          organization_id: organizationId,
+          status: "REALIZADO",
+          payment_method: null,
+          package_id: null, // Evita cobrar do fiado se for pacote
+          date_time: { gte: monthStart, lte: monthEnd },
+        },
+        select: {
+          service: { select: { price: true } },
+        },
+      }),
+      // Já buscamos as recentes paralelamente para ganhar performance
+      prisma.transaction.findMany({
+        where: {
+          organization_id: organizationId,
+          date: { gte: monthStart, lte: monthEnd },
+        },
+        take: 10,
+        select: {
+          id: true,
+          type: true,
+          description: true,
+          amount: true,
+          date: true,
+          status: true,
+          client: { select: { name: true } },
+          payment_method: { select: { type: true } },
+          admin: { select: { display_name: true } },
+          appointment: {
+            select: {
+              client: { select: { name: true } },
+              payment_method: true,
+              professional: { select: { display_name: true } },
+            },
+          },
+        },
+        orderBy: { date: "desc" },
+      }),
+    ]);
 
     let incomeMonth = 0;
     let expensesMonth = 0;
@@ -97,8 +128,12 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
     // 1. Processa o Dinheiro Real (Transactions)
     monthlyTxRaw.forEach((t) => {
       const amount = Number(t.amount);
-      const isToday = t.date >= todayStart && t.date <= todayEnd;
-      const isThisWeek = t.date >= weekStart && t.date <= weekEnd;
+
+      // Só calcula hoje e semana se estivermos olhando para o mês atual
+      const isToday =
+        isCurrentMonth && t.date >= todayStart && t.date <= todayEnd;
+      const isThisWeek =
+        isCurrentMonth && t.date >= weekStart && t.date <= weekEnd;
 
       if (t.type === "RECEITA" && t.status === "PAGO") {
         incomeMonth += amount;
@@ -119,7 +154,7 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
 
     // 2. Processa o "Fiado" (Agenda Pendente)
     pendingApptsRaw.forEach((a) => {
-      pendingMonth += Number(a.service.price);
+      pendingMonth += Number(a.service?.price || 0);
       pendingItemsCount++;
     });
 
@@ -133,36 +168,6 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
       }
     }
 
-    // ============================================================================
-    //  HISTÓRICO RECENTE (As 10 Últimas Movimentações do Mês)
-    // ============================================================================
-    const recentTx = await prisma.transaction.findMany({
-      where: {
-        organization_id: organizationId,
-        date: { gte: monthStart, lte: monthEnd }, // Dentro do mês atual
-      },
-      take: 10, //  AQUI: Limita exatamente às 10 últimas
-      select: {
-        id: true,
-        type: true,
-        description: true,
-        amount: true,
-        date: true,
-        status: true,
-        client: { select: { name: true } },
-        payment_method: { select: { type: true } },
-        admin: { select: { display_name: true } }, //  RASTREABILIDADE
-        appointment: {
-          select: {
-            client: { select: { name: true } },
-            payment_method: true,
-            professional: { select: { display_name: true } }, //  RASTREABILIDADE (Se gerado via agenda)
-          },
-        },
-      },
-      orderBy: { date: "desc" },
-    });
-
     const allHistory = recentTx.map((t) => ({
       id: t.id,
       type: t.type,
@@ -170,13 +175,13 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
       amount: Number(t.amount),
       date: t.date.toISOString(),
       status: t.status,
-      clientName: t.client?.name || t.appointment?.client.name || undefined,
+      clientName: t.client?.name || t.appointment?.client?.name || undefined,
       paymentMethod:
         t.payment_method?.type || t.appointment?.payment_method || undefined,
       professionalName:
         t.admin?.display_name ||
         t.appointment?.professional?.display_name ||
-        undefined, //  Enviando o nome da colaboradora para a tela!
+        undefined,
     }));
 
     return {
@@ -192,10 +197,12 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
         pendingCount: pendingItemsCount,
         topPaymentMethod,
       },
-      recentTransactions: allHistory, // Retorna as 10 últimas perfeitamente
+      recentTransactions: allHistory,
     };
   } catch (error) {
-    console.error("Dashboard Error:", error);
-    return null;
+    console.error("[FINANCE_DASHBOARD_ACTION_ERROR]:", error);
+    throw new Error(
+      "Não foi possível carregar os dados financeiros. Tente novamente.",
+    );
   }
 }

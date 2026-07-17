@@ -1,4 +1,4 @@
-// components/finance/finance-header.tsx
+// app/(private)/admin/finance/_components/finance-header.tsx
 "use client";
 
 import { useState } from "react";
@@ -74,30 +74,32 @@ export function FinanceHeader({
 
   return (
     <>
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Financeiro</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Acompanhe e gira as movimentações do seu negócio.
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-20">
+        <div className="flex flex-col">
+          <h1 className="text-3xl font-black tracking-tight bg-linear-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+            Financeiro
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1.5 font-medium">
+            Acompanhe e faça a gestão das movimentações do seu negócio.
           </p>
         </div>
 
-        <div className="flex flex-row items-center justify-between w-full lg:w-auto mt-2 lg:mt-0 gap-2">
-          {/*  FILTROS DE MÊS E ANO - DESIGN ORIGINAL RESTAURADO */}
-          <div className="flex items-center justify-start gap-1 shrink-0">
+        <div className="flex flex-wrap md:flex-nowrap items-center gap-3 w-full md:w-auto">
+          {/* FILTROS DE DATA - DESIGN CAPSULA (GLASSMORPHISM) */}
+          <div className="flex items-center bg-muted/40 backdrop-blur-md border border-border/60 rounded-2xl p-1 shadow-sm shrink-0">
             <Select
               value={selectedMonth.toString()}
               onValueChange={(val) => onMonthChange(Number(val))}
             >
-              <SelectTrigger className="h-10 w-28 sm:w-32 border-none bg-transparent shadow-none focus:ring-0 font-bold text-base sm:text-lg px-2 hover:text-primary transition-colors">
+              <SelectTrigger className="h-10 w-28 sm:w-32 border-none bg-transparent shadow-none focus:ring-0 font-bold text-sm sm:text-base px-3 hover:bg-background/60 rounded-xl transition-all">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="rounded-xl">
+              <SelectContent className="rounded-2xl border-border/50 shadow-xl">
                 {MONTHS.map((m) => (
                   <SelectItem
                     key={m.value}
                     value={m.value.toString()}
-                    className="rounded-lg"
+                    className="rounded-xl font-medium focus:bg-primary/10 focus:text-primary"
                   >
                     {m.label}
                   </SelectItem>
@@ -105,19 +107,21 @@ export function FinanceHeader({
               </SelectContent>
             </Select>
 
+            <div className="w-px h-5 bg-border/80 mx-1" />
+
             <Select
               value={selectedYear.toString()}
               onValueChange={(val) => onYearChange(Number(val))}
             >
-              <SelectTrigger className="h-10 w-20 sm:w-24 border-none bg-transparent shadow-none focus:ring-0 font-bold text-base sm:text-lg px-2 hover:text-primary transition-colors">
+              <SelectTrigger className="h-10 w-20 sm:w-24 border-none bg-transparent shadow-none focus:ring-0 font-bold text-sm sm:text-base px-3 hover:bg-background/60 rounded-xl transition-all">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="rounded-xl">
+              <SelectContent className="rounded-2xl border-border/50 shadow-xl">
                 {YEARS.map((y) => (
                   <SelectItem
                     key={y}
                     value={y.toString()}
-                    className="rounded-lg"
+                    className="rounded-xl font-medium focus:bg-primary/10 focus:text-primary"
                   >
                     {y}
                   </SelectItem>
@@ -126,23 +130,24 @@ export function FinanceHeader({
             </Select>
           </div>
 
-          <div className="h-8 w-px bg-border/50 hidden sm:block mx-1" />
-
-          {/*  BOTÕES DE AÇÃO - DESIGN ORIGINAL RESTAURADO */}
+          {/* BOTÕES DE AÇÃO - DESIGN PREMIUM */}
           <TooltipProvider delayDuration={200}>
-            <div className="flex flex-row items-center justify-end gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 ml-auto md:ml-0">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
                     size="icon"
-                    className="hidden md:flex text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200 dark:text-rose-500 dark:border-rose-900 dark:hover:bg-rose-950/50 h-11 w-11 sm:h-10 sm:w-10 rounded-xl shrink-0 transition-transform active:scale-95"
+                    className="hidden md:flex bg-rose-500/10 text-rose-600 hover:text-rose-700 hover:bg-rose-500/20 border-rose-500/20 dark:text-rose-400 dark:hover:bg-rose-500/20 h-12 w-12 rounded-2xl shrink-0 transition-all duration-300 active:scale-95 shadow-sm"
                     onClick={handleNewExpense}
                   >
-                    <MinusCircle className="h-5 w-5" />
+                    <MinusCircle className="h-6 w-6" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">
+                <TooltipContent
+                  side="bottom"
+                  className="text-xs font-semibold rounded-xl"
+                >
                   <p>Adicionar Despesa</p>
                 </TooltipContent>
               </Tooltip>
@@ -151,13 +156,16 @@ export function FinanceHeader({
                 <TooltipTrigger asChild>
                   <Button
                     size="icon"
-                    className="hidden md:flex bg-emerald-600 hover:bg-emerald-700 text-white h-11 w-11 sm:h-10 sm:w-10 rounded-xl shrink-0 transition-transform active:scale-95"
+                    className="hidden md:flex bg-emerald-500 hover:bg-emerald-600 text-white h-12 w-12 rounded-2xl shrink-0 transition-all duration-300 active:scale-95 shadow-[0_4px_20px_rgb(16,185,129,0.3)] hover:shadow-[0_4px_25px_rgb(16,185,129,0.5)] border-none"
                     onClick={handleNewIncome}
                   >
-                    <PlusCircle className="h-5 w-5" />
+                    <PlusCircle className="h-6 w-6" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">
+                <TooltipContent
+                  side="bottom"
+                  className="text-xs font-semibold rounded-xl"
+                >
                   <p>Adicionar Receita</p>
                 </TooltipContent>
               </Tooltip>
@@ -165,11 +173,11 @@ export function FinanceHeader({
               <Button
                 variant="outline"
                 asChild
-                className="h-11 sm:h-10 px-3 sm:px-4 rounded-xl shrink-0 border-border/50 text-muted-foreground hover:text-foreground transition-transform active:scale-95 flex items-center gap-2"
+                className="h-12 px-4 rounded-2xl shrink-0 border-border/60 bg-background/50 backdrop-blur-sm text-foreground hover:bg-muted shadow-sm transition-all duration-300 active:scale-95 flex items-center gap-2"
               >
                 <Link href="/admin/finance/reports">
-                  <FileDetail className="h-4 w-4 sm:h-5 sm:w-5" />
-                  <span className="font-medium text-sm">Relatórios</span>
+                  <FileDetail className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-bold text-sm">Relatórios</span>
                 </Link>
               </Button>
             </div>
@@ -177,7 +185,7 @@ export function FinanceHeader({
         </div>
       </div>
 
-      {/*  OTIMIZAÇÃO: Modal só é montado quando necessário (Lazy Mount) */}
+      {/* OTIMIZAÇÃO: Modal só é montado quando necessário (Lazy Mount) */}
       {isModalOpen && (
         <TransactionModal
           isOpen={isModalOpen}

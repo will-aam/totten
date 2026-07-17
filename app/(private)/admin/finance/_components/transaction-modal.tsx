@@ -1,4 +1,4 @@
-// components/finance/transaction-modal.tsx
+// app/(private)/admin/finance/_components/transaction-modal.tsx
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
@@ -186,17 +186,16 @@ export function TransactionModal({
       open={isOpen}
       onOpenChange={(open) => !open && !isPending && onClose()}
     >
-      {/*  Aplicado border radius estilo Gaveta Moderna no Desktop */}
-      <SheetContent className="flex flex-col w-full sm:max-w-md p-0 overflow-hidden sm:rounded-l-4xl border-l-0">
-        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <SheetContent className="flex flex-col w-full sm:max-w-md p-0 overflow-hidden sm:rounded-l-[2.5rem] border-l border-border/40 bg-background/95 backdrop-blur-2xl shadow-2xl">
+        <div className="flex-1 overflow-y-auto p-6 md:p-8 flex flex-col gap-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <SheetHeader className="text-left mt-2">
             <div className="flex items-center gap-4">
               <div
                 className={cn(
-                  "flex items-center justify-center h-14 w-14 rounded-2xl shrink-0 border",
+                  "flex items-center justify-center h-14 w-14 rounded-2xl shrink-0 border shadow-sm",
                   isIncome
-                    ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
-                    : "bg-rose-500/10 text-rose-600 border-rose-500/20",
+                    ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                    : "bg-rose-500/10 text-rose-500 border-rose-500/20",
                 )}
               >
                 {isIncome ? (
@@ -215,30 +214,32 @@ export function TransactionModal({
                       ? "Nova Receita"
                       : "Nova Despesa"}
                 </SheetTitle>
-                <SheetDescription className="font-medium text-muted-foreground">
+                <SheetDescription className="font-medium text-muted-foreground text-xs uppercase tracking-widest">
                   {isEditing
-                    ? "Atualize os dados."
+                    ? "Atualize os dados financeiros"
                     : isIncome
-                      ? "Registe uma entrada."
-                      : "Registe uma saída ou custo."}
+                      ? "Registre uma entrada de valor"
+                      : "Registre uma saída ou custo"}
                 </SheetDescription>
               </div>
             </div>
           </SheetHeader>
 
-          <div className="flex flex-col gap-5 py-2">
+          <div className="flex flex-col gap-5 py-4">
             {/* Valor */}
             <div className="space-y-2">
               <Label
                 className={cn(
-                  "text-[11px] font-black uppercase tracking-widest ml-1",
-                  isIncome ? "text-emerald-600" : "text-rose-600",
+                  "text-[10px] font-black uppercase tracking-widest ml-1",
+                  isIncome
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : "text-rose-600 dark:text-rose-400",
                 )}
               >
                 Valor da {isIncome ? "Receita" : "Despesa"} *
               </Label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">
+              <div className="relative group">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold transition-colors group-focus-within:text-foreground">
                   R$
                 </span>
                 <Input
@@ -251,7 +252,7 @@ export function TransactionModal({
                   }
                   disabled={isPending}
                   className={cn(
-                    "h-14 rounded-2xl pl-12 text-xl font-black bg-card border-border/50 focus-visible:ring-primary/20",
+                    "h-14 rounded-2xl pl-12 text-xl font-black bg-muted/20 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 transition-all shadow-inner",
                     hideNumberArrows,
                   )}
                   placeholder="0.00"
@@ -261,7 +262,7 @@ export function TransactionModal({
 
             {/* Descrição */}
             <div className="space-y-2">
-              <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                 Descrição *
               </Label>
               <Input
@@ -271,14 +272,14 @@ export function TransactionModal({
                 placeholder={
                   isIncome ? "Ex: Venda de Produto" : "Ex: Conta de Luz"
                 }
-                className="h-12 rounded-2xl font-bold bg-card border-border/50 focus-visible:ring-primary/20"
+                className="h-12 rounded-2xl font-bold bg-muted/20 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 transition-all shadow-inner"
               />
             </div>
 
             {/* Data e Status */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                   Data *
                 </Label>
                 <Input
@@ -286,12 +287,12 @@ export function TransactionModal({
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   disabled={isPending}
-                  className="h-12 rounded-2xl font-bold bg-card border-border/50 focus-visible:ring-primary/20"
+                  className="h-12 rounded-2xl font-bold bg-muted/20 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 transition-all shadow-inner"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                   Status
                 </Label>
                 <Select
@@ -299,19 +300,19 @@ export function TransactionModal({
                   onValueChange={(val) => setStatus(val as TransactionStatus)}
                   disabled={isPending}
                 >
-                  <SelectTrigger className="h-12 rounded-2xl font-bold bg-card border-border/50 focus-visible:ring-primary/20">
+                  <SelectTrigger className="h-12 rounded-2xl font-bold bg-muted/20 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 transition-all shadow-inner">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="rounded-2xl">
+                  <SelectContent className="rounded-2xl border-border/50 shadow-xl">
                     <SelectItem
                       value="PAGO"
-                      className="font-bold text-emerald-600 focus:text-emerald-700"
+                      className="font-bold text-emerald-600 focus:text-emerald-700 focus:bg-emerald-500/10 rounded-xl my-0.5"
                     >
                       Pago
                     </SelectItem>
                     <SelectItem
                       value="PENDENTE"
-                      className="font-bold text-amber-600 focus:text-amber-700"
+                      className="font-bold text-amber-600 focus:text-amber-700 focus:bg-amber-500/10 rounded-xl my-0.5"
                     >
                       Pendente
                     </SelectItem>
@@ -322,7 +323,7 @@ export function TransactionModal({
 
             {/* Meio de Pagamento */}
             <div className="space-y-2">
-              <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                 Meio de Pagamento
               </Label>
               <Select
@@ -330,13 +331,13 @@ export function TransactionModal({
                 onValueChange={setPaymentMethodId}
                 disabled={isPending}
               >
-                <SelectTrigger className="h-12 rounded-2xl font-bold bg-card border-border/50 focus-visible:ring-primary/20">
+                <SelectTrigger className="h-12 rounded-2xl font-bold bg-muted/20 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 transition-all shadow-inner">
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl">
+                <SelectContent className="rounded-2xl border-border/50 shadow-xl">
                   <SelectItem
                     value="none"
-                    className="font-medium text-muted-foreground"
+                    className="font-medium text-muted-foreground rounded-xl"
                   >
                     Não especificado
                   </SelectItem>
@@ -346,7 +347,7 @@ export function TransactionModal({
                       <SelectItem
                         key={pm.id}
                         value={pm.id}
-                        className="font-bold"
+                        className="font-bold rounded-xl my-0.5"
                       >
                         {pm.name}
                       </SelectItem>
@@ -357,8 +358,8 @@ export function TransactionModal({
 
             {/* BLOCO DE RECORRÊNCIA (CRIAÇÃO) */}
             {!isEditing && (
-              <div className="pt-4 border-t border-border/40 mt-2">
-                <div className="flex items-center justify-between bg-card p-5 rounded-3xl border border-border/50">
+              <div className="pt-4 border-t border-border/30 mt-2">
+                <div className="flex items-center justify-between bg-linear-to-r from-muted/30 to-muted/10 p-5 rounded-3xl border border-border/40 shadow-sm transition-all hover:border-primary/20">
                   <div className="flex items-center gap-3">
                     <div className="p-2.5 bg-primary/10 rounded-xl">
                       <Repeat className="h-5 w-5 text-primary" />
@@ -373,14 +374,14 @@ export function TransactionModal({
                     checked={isRecurring}
                     onCheckedChange={setIsRecurring}
                     disabled={isPending}
-                    className="data-[state=checked]:bg-primary"
+                    className="data-[state=checked]:bg-primary shadow-sm"
                   />
                 </div>
 
                 {isRecurring && (
-                  <div className="grid grid-cols-2 gap-4 mt-3 p-4 bg-card rounded-3xl border border-border/50 animate-in fade-in slide-in-from-top-2">
+                  <div className="grid grid-cols-2 gap-4 mt-3 p-5 bg-muted/10 rounded-3xl border border-border/40 animate-in fade-in slide-in-from-top-2">
                     <div className="space-y-2">
-                      <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                         Intervalo
                       </Label>
                       <Select
@@ -388,14 +389,20 @@ export function TransactionModal({
                         onValueChange={setFrequency}
                         disabled={isPending}
                       >
-                        <SelectTrigger className="h-12 rounded-2xl font-bold bg-muted/30 border-border/50 focus-visible:ring-primary/20">
+                        <SelectTrigger className="h-12 rounded-2xl font-bold bg-background border-border/40 focus-visible:ring-primary/30 shadow-sm">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="rounded-2xl">
-                          <SelectItem value="MONTHLY" className="font-bold">
+                        <SelectContent className="rounded-2xl border-border/50">
+                          <SelectItem
+                            value="MONTHLY"
+                            className="font-bold rounded-xl my-0.5"
+                          >
                             Mensal
                           </SelectItem>
-                          <SelectItem value="WEEKLY" className="font-bold">
+                          <SelectItem
+                            value="WEEKLY"
+                            className="font-bold rounded-xl my-0.5"
+                          >
                             Semanal
                           </SelectItem>
                         </SelectContent>
@@ -403,7 +410,7 @@ export function TransactionModal({
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                         Quantidade
                       </Label>
                       <Input
@@ -419,7 +426,7 @@ export function TransactionModal({
                         disabled={isPending}
                         placeholder="Ex: 12"
                         className={cn(
-                          "h-12 rounded-2xl font-bold bg-muted/30 border-border/50 focus-visible:ring-primary/20",
+                          "h-12 rounded-2xl font-bold bg-background border-border/40 focus-visible:ring-primary/30 shadow-sm",
                           hideNumberArrows,
                         )}
                       />
@@ -431,19 +438,19 @@ export function TransactionModal({
 
             {/* BLOCO DE EDIÇÃO EM LOTE */}
             {isEditing && initialData?.recurrence_id && (
-              <div className="pt-4 border-t border-border/40 mt-2">
-                <label className="flex items-start gap-4 p-5 border border-border/50 rounded-3xl bg-card cursor-pointer hover:border-primary/30 transition-colors">
+              <div className="pt-4 border-t border-border/30 mt-2">
+                <label className="flex items-start gap-4 p-5 border border-border/40 rounded-3xl bg-linear-to-r from-muted/30 to-muted/10 cursor-pointer hover:border-primary/40 transition-all shadow-sm group">
                   <Checkbox
                     checked={updateFuture}
                     onCheckedChange={(checked) => setUpdateFuture(!!checked)}
                     disabled={isPending}
-                    className="mt-0.5 rounded-md h-5 w-5 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                    className="mt-0.5 rounded-md h-5 w-5 data-[state=checked]:bg-primary data-[state=checked]:border-primary shadow-sm"
                   />
                   <div className="flex flex-col">
-                    <span className="text-sm font-black text-foreground uppercase tracking-widest">
+                    <span className="text-sm font-black text-foreground uppercase tracking-widest group-hover:text-primary transition-colors">
                       Aplicar no futuro
                     </span>
-                    <span className="text-xs font-medium text-muted-foreground mt-1 leading-relaxed">
+                    <span className="text-xs font-medium text-muted-foreground mt-1.5 leading-relaxed">
                       As alterações de nome e valor serão aplicadas nesta e nas
                       repetições seguintes.
                     </span>
@@ -454,12 +461,12 @@ export function TransactionModal({
           </div>
         </div>
 
-        {/* Rodapé Flat */}
-        <div className="p-6 pt-4 border-t border-border/40 bg-background">
+        {/* Rodapé Glassmorphism */}
+        <div className="p-6 md:p-8 pt-4 border-t border-border/30 bg-background/50 backdrop-blur-md">
           <SheetFooter className="flex-row gap-3">
             <Button
               variant="outline"
-              className="flex-1 h-12 rounded-2xl font-bold border-border/50 hover:bg-muted/50"
+              className="flex-1 h-12 rounded-2xl font-bold border-border/50 hover:bg-muted/50 bg-background/50"
               onClick={onClose}
               disabled={isPending}
             >
@@ -467,10 +474,10 @@ export function TransactionModal({
             </Button>
             <Button
               className={cn(
-                "flex-1 h-12 rounded-2xl font-bold shadow-md",
+                "flex-1 h-12 rounded-2xl font-bold transition-all duration-300",
                 isIncome
-                  ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20"
-                  : "bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/20",
+                  ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-[0_4px_20px_rgb(16,185,129,0.3)] hover:shadow-[0_6px_25px_rgb(16,185,129,0.4)]"
+                  : "bg-rose-500 hover:bg-rose-600 text-white shadow-[0_4px_20px_rgb(244,63,94,0.3)] hover:shadow-[0_6px_25px_rgb(244,63,94,0.4)]",
               )}
               onClick={handleSave}
               disabled={isSaveDisabled}

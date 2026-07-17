@@ -1,4 +1,4 @@
-// components/finance/payment-method-modal.tsx
+// app/(private)/admin/finance/_components/payment-method-modal.tsx
 "use client";
 
 import { useEffect, useState, useTransition } from "react";

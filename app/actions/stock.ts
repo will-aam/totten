@@ -1,7 +1,7 @@
 // app/actions/stock.ts
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { getTenantPrisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
@@ -18,6 +18,8 @@ async function getOrgId() {
 export async function getStockItems() {
   try {
     const orgId = await getOrgId();
+    const prisma = getTenantPrisma(orgId);
+
     const items = await prisma.stockItem.findMany({
       where: { organization_id: orgId, active: true },
       orderBy: { name: "asc" },
@@ -45,6 +47,7 @@ export async function createStockItem(data: {
 }) {
   try {
     const orgId = await getOrgId();
+    const prisma = getTenantPrisma(orgId);
 
     await prisma.$transaction(async (tx) => {
       const newItem = await tx.stockItem.create({
@@ -95,6 +98,7 @@ export async function updateStockItem(
 ) {
   try {
     const orgId = await getOrgId();
+    const prisma = getTenantPrisma(orgId);
 
     const existing = await prisma.stockItem.findFirst({
       where: { id, organization_id: orgId },
@@ -122,10 +126,12 @@ export async function updateStockItem(
     return { success: false, error: "Erro ao atualizar insumo." };
   }
 }
+
 // 4. EXCLUIR INSUMO (Padrão Sênior: Limpeza de Vínculos + Soft Delete)
 export async function deleteStockItem(id: string) {
   try {
     const orgId = await getOrgId();
+    const prisma = getTenantPrisma(orgId);
 
     const item = await prisma.stockItem.findUnique({
       where: { id, organization_id: orgId },
@@ -136,7 +142,7 @@ export async function deleteStockItem(id: string) {
 
     if (!item) return { success: false, error: "Insumo não encontrado." };
 
-    //  LÓGICA SÊNIOR: O insumo já foi usado em serviços.
+    // LÓGICA SÊNIOR: O insumo já foi usado em serviços.
     if (item.services.length > 0) {
       await prisma.$transaction(async (tx) => {
         // 1. ARRANCAMOS o insumo de todos os serviços (Hard Delete no vínculo).
@@ -153,7 +159,7 @@ export async function deleteStockItem(id: string) {
       });
 
       revalidatePath("/admin/stock");
-      revalidatePath("/admin/services"); //  Avisamos o Next.js para recarregar a tela de serviços!
+      revalidatePath("/admin/services"); // Avisamos o Next.js para recarregar a tela de serviços!
 
       return {
         success: true,

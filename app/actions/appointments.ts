@@ -1,652 +1,460 @@
-// app/actions/appointments.ts
+// app/actions/packages.ts
 "use server";
 
 import { getTenantPrisma } from "@/lib/prisma";
-import { AppointmentStatus, PaymentMethod } from "@prisma/client";
 import { requireAuth } from "@/lib/auth";
+import { AppointmentStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
-import { generateRecurrentDates } from "@/lib/date-utils";
-import { randomUUID } from "crypto";
 
-export type CreateAppointmentInput = {
-  clientId: string;
-  serviceId: string;
-  dateTime: Date | string;
-  observations?: string;
-  packageId?: string;
-  repeatCount?: number;
-  professionalId?: string;
-};
-
-export type CreateAppointmentResult =
-  | { success: true; appointments: any[] }
-  | { success: false; error: string };
-
-// --- 1. CRIAR AGENDAMENTO (RECORRÊNCIA) ---
-export async function createAppointment(
-  input: CreateAppointmentInput,
-): Promise<CreateAppointmentResult> {
+/**
+ * Busca todos os pacotes da organização e calcula os KPIs em tempo real.
+ *  OTIMIZADO: Agora suporta Paginação Server-Side e Busca Inteligente.
+ */
+export async function getPackagesDashboardData(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+}) {
   try {
     const admin = await requireAuth();
     const prisma = getTenantPrisma(admin.organizationId);
 
-    const {
-      clientId,
-      serviceId,
-      dateTime,
-      observations,
-      packageId,
-      repeatCount = 1,
-      professionalId,
-    } = input;
+    const page = params?.page || 1;
+    const limit = params?.limit || 20;
+    const skip = (page - 1) * limit;
 
-    const firstDateTime =
-      typeof dateTime === "string" ? new Date(dateTime) : dateTime;
-    const totalSessionsToCreate = Math.max(1, repeatCount);
-    const appointmentDates = generateRecurrentDates(
-      firstDateTime,
-      totalSessionsToCreate,
-    );
-    const recurrenceId = totalSessionsToCreate > 1 ? randomUUID() : null;
+    const baseWhere: any = { organization_id: admin.organizationId };
 
-    const service = await prisma.service.findUnique({
-      where: { id: serviceId, organization_id: admin.organizationId },
-    });
+    const isEndingSoonFilter = params?.search === "...";
 
-    if (!service) {
-      return { success: false, error: "Serviço não encontrado." };
+    if (params?.search && !isEndingSoonFilter) {
+      const searchLower = params.search.toLowerCase();
+      baseWhere.OR = [
+        { client: { name: { contains: searchLower, mode: "insensitive" } } },
+        { service: { name: { contains: searchLower, mode: "insensitive" } } },
+      ];
     }
 
-    const targetProfessional = professionalId || admin.id;
-
-    let startSessionNumber = 0;
-
-    if (packageId) {
-      const pkg = await prisma.package.findUnique({ where: { id: packageId } });
-      if (!pkg || pkg.organization_id !== admin.organizationId) {
-        return { success: false, error: "Pacote não encontrado." };
-      }
-
-      if (!pkg.active) {
-        return {
-          success: false,
-          error:
-            "Este pacote está arquivado e não pode receber novos agendamentos.",
-        };
-      }
-
-      const sessionsAvailable = pkg.total_sessions - pkg.used_sessions;
-      if (sessionsAvailable < totalSessionsToCreate) {
-        return {
-          success: false,
-          error: `Saldo insuficiente. O pacote tem apenas ${sessionsAvailable} sessões disponíveis.`,
-        };
-      }
-      startSessionNumber = pkg.used_sessions;
-    }
-
-    const appointments = await prisma.$transaction(async (tx) => {
-      const created: any[] = [];
-      for (let i = 0; i < appointmentDates.length; i++) {
-        const appt = await tx.appointment.create({
-          data: {
-            date_time: appointmentDates[i],
-            observations,
-            client_id: clientId,
-            service_id: serviceId,
-            package_id: packageId || null,
-            organization_id: admin.organizationId,
-            recurrence_id: recurrenceId,
-            session_number: packageId ? startSessionNumber + i + 1 : null,
-            professional_id: targetProfessional,
-            snapshot_service_name: service.name,
-            snapshot_service_price: service.price,
-            snapshot_service_duration: service.duration,
-          },
-        });
-        created.push(appt);
-      }
-      return created;
+    const allActivePackages = await prisma.package.findMany({
+      where: { organization_id: admin.organizationId, active: true },
+      include: {
+        client: { select: { name: true } },
+        service: { select: { name: true } },
+        package_template: { select: { name: true } }, // <--- ADICIONE ESTA LINHA
+      },
+      orderBy: { created_at: "desc" },
     });
 
-    revalidatePath("/admin/agenda");
+    let filteredPackages = allActivePackages;
 
-    const sanitizedAppointments = appointments.map((appt) => ({
-      ...appt,
-      snapshot_service_price: appt.snapshot_service_price
-        ? Number(appt.snapshot_service_price)
-        : null,
-    }));
+    if (isEndingSoonFilter) {
+      filteredPackages = allActivePackages.filter(
+        (p) =>
+          p.used_sessions >= p.total_sessions - 2 &&
+          p.used_sessions < p.total_sessions,
+      );
+    } else if (params?.search) {
+      const searchLower = params.search.toLowerCase();
+      filteredPackages = allActivePackages.filter(
+        (p) =>
+          p.client.name.toLowerCase().includes(searchLower) ||
+          p.service.name.toLowerCase().includes(searchLower),
+      );
+    }
 
-    return { success: true, appointments: sanitizedAppointments };
+    const totalPackages = filteredPackages.length;
+    const paginatedPackages = filteredPackages.slice(skip, skip + limit);
+
+    return {
+      success: true,
+      packages: paginatedPackages.map((p) => ({
+        id: p.id,
+        clientId: p.client_id,
+        clientName: p.client.name,
+        // CORREÇÃO: Puxa do template primeiro, depois tenta do pacote
+        packageName: p.package_template?.name || p.name,
+        usedSessions: p.used_sessions,
+        totalSessions: p.total_sessions,
+        active: p.active,
+      })),
+      kpis: {
+        active: allActivePackages.length,
+        endingSoon: allActivePackages.filter(
+          (p) => p.used_sessions >= p.total_sessions - 2,
+        ).length,
+        totalPending: allActivePackages.reduce(
+          (acc, p) => acc + (p.total_sessions - p.used_sessions),
+          0,
+        ),
+      },
+      total: totalPackages,
+      page,
+      totalPages: Math.ceil(totalPackages / limit) || 1,
+    };
   } catch (error) {
-    console.error(error);
-    return { success: false, error: "Erro ao criar agendamento." };
+    console.error("Erro ao carregar dashboard:", error);
+    return { success: false, error: "Falha ao carregar dados." };
   }
 }
 
-// --- 2. ATUALIZAR E GERAR DESPESA AUTOMÁTICA ---
-export async function updateAppointment(
-  id: string,
-  data: {
-    status: string;
-    paymentMethod: string | null;
-    observations: string;
-    hasCharge: boolean;
-  },
-  updateAll: boolean = false,
-  recurrenceId?: string | null,
+/**
+ * Busca o histórico de agendamentos vinculados a um pacote específico.
+ */
+export async function getPackageHistory(packageId: string) {
+  try {
+    const admin = await requireAuth();
+    const prisma = getTenantPrisma(admin.organizationId);
+
+    const appointments = await prisma.appointment.findMany({
+      where: {
+        package_id: packageId,
+        organization_id: admin.organizationId,
+      },
+      include: {
+        check_in: true, // 🔥 NOVO: Traz o registro de check-in (se existir)
+      },
+      orderBy: {
+        date_time: "asc",
+      },
+    });
+
+    return {
+      success: true,
+      history: appointments.map((appt) => {
+        // 🔥 NOVO: Lógica para decidir qual data mostrar
+        // Se foi realizado e tem check-in, pega a hora real que bateu no totem
+        const displayDate =
+          appt.status === "REALIZADO" && appt.check_in
+            ? appt.check_in.date_time
+            : appt.date_time;
+
+        return {
+          id: appt.id,
+          session: appt.session_number,
+          date: displayDate,
+          status: appt.status,
+          obs: appt.observations,
+        };
+      }),
+    };
+  } catch (error) {
+    console.error("Erro ao buscar histórico do pacote:", error);
+    return { success: false, error: "Falha ao carregar histórico." };
+  }
+}
+
+/**
+ * Realiza uma baixa manual "robusta":
+ * Cria um agendamento retroativo, marca como REALIZADO e desconta do pacote.
+ */
+export async function createManualPackageCheckIn(
+  packageId: string,
+  dateTimeString?: string,
 ) {
   try {
     const admin = await requireAuth();
     const prisma = getTenantPrisma(admin.organizationId);
 
-    const statusMap: Record<string, AppointmentStatus> = {
-      a_confirmar: AppointmentStatus.PENDENTE,
-      confirmado: AppointmentStatus.CONFIRMADO,
-      atrasou: AppointmentStatus.PENDENTE,
-      nao_compareceu: AppointmentStatus.CANCELADO,
-      cancelado: AppointmentStatus.CANCELADO,
-      realizado: AppointmentStatus.REALIZADO,
-    };
-
-    const finalStatus = statusMap[data.status] || AppointmentStatus.PENDENTE;
-    const finalPaymentMethod = data.paymentMethod
-      ? (data.paymentMethod as PaymentMethod)
-      : null;
-    let finalHasCharge = data.hasCharge;
-
-    if (
-      finalStatus === AppointmentStatus.REALIZADO &&
-      finalPaymentMethod !== null
-    )
-      finalHasCharge = false;
-    if (finalStatus === AppointmentStatus.CANCELADO) finalHasCharge = false;
-
-    const currentAppt = await prisma.appointment.findUnique({
-      where: { id, organization_id: admin.organizationId },
+    const pkg = await prisma.package.findUnique({
+      where: { id: packageId, organization_id: admin.organizationId },
       include: {
-        client: true,
-        package: true,
         service: {
-          include: {
-            stock_items: {
-              include: { stock_item: true },
-            },
-          },
+          include: { stock_items: { include: { stock_item: true } } },
         },
+        client: true,
       },
     });
 
-    if (!currentAppt)
-      return { success: false, error: "Agendamento não encontrado." };
-
-    const isMarkingAsDone =
-      finalStatus === AppointmentStatus.REALIZADO &&
-      currentAppt.status !== AppointmentStatus.REALIZADO;
-
-    if (isMarkingAsDone && currentAppt.package) {
-      if (!currentAppt.package.active) {
-        return {
-          success: false,
-          error:
-            "Este pacote foi arquivado. Esta sessão foi invalidada e não pode receber baixa.",
-        };
-      }
-      if (
-        currentAppt.package.used_sessions >= currentAppt.package.total_sessions
-      ) {
-        return {
-          success: false,
-          error: "Este pacote já atingiu o limite total de sessões permitidas.",
-        };
-      }
+    if (!pkg) return { success: false, error: "Pacote não encontrado." };
+    if (!pkg.active) {
+      return {
+        success: false,
+        error: "Este pacote foi encerrado e não permite novos check-ins.",
+      };
+    }
+    if (pkg.used_sessions >= pkg.total_sessions) {
+      return { success: false, error: "Este pacote não possui mais saldo." };
     }
 
+    const checkInDate = dateTimeString ? new Date(dateTimeString) : new Date();
+
     await prisma.$transaction(async (tx) => {
-      if (updateAll && recurrenceId) {
-        await tx.appointment.updateMany({
-          where: {
-            recurrence_id: recurrenceId,
-            organization_id: admin.organizationId,
-            status: { not: AppointmentStatus.REALIZADO },
-          },
-          data: {
-            status: finalStatus,
-            payment_method: finalPaymentMethod,
-            has_charge: finalHasCharge,
-            observations: data.observations,
-          },
-        });
+      const appt = await tx.appointment.create({
+        data: {
+          date_time: checkInDate,
+          status: AppointmentStatus.REALIZADO,
+          client_id: pkg.client_id,
+          service_id: pkg.service_id,
+          package_id: pkg.id,
+          organization_id: admin.organizationId,
+          observations: "Baixa manual realizada via Gestão de Pacotes.",
+          session_number: pkg.used_sessions + 1,
+          snapshot_service_name: pkg.snapshot_service_name ?? pkg.service.name,
+          snapshot_service_price:
+            pkg.snapshot_service_price ?? pkg.service.price,
+          snapshot_service_duration:
+            pkg.snapshot_service_duration ?? pkg.service.duration,
+        },
+      });
 
-        if (isMarkingAsDone && currentAppt.package_id && currentAppt.package) {
-          const updateResult = await tx.appointment.count({
-            where: {
-              recurrence_id: recurrenceId,
-              organization_id: admin.organizationId,
-              status: finalStatus,
-            },
+      // 🔥 NOVO: mesmo motor de estoque/financeiro do totem, aplicado no fluxo manual
+      let stockProcessed = false;
+      const service = pkg.service;
+
+      if (service.track_stock && service.stock_items.length > 0) {
+        let totalCost = 0;
+        const detailsArray: string[] = [];
+
+        for (const item of service.stock_items) {
+          const stockData = item.stock_item;
+          const usedQty = item.quantity_used;
+
+          await tx.stockItem.update({
+            where: { id: stockData.id },
+            data: { quantity: { decrement: usedQty } },
           });
+          stockProcessed = true;
 
-          const newUsedSessions =
-            currentAppt.package.used_sessions + updateResult;
-
-          await tx.package.update({
-            where: { id: currentAppt.package_id },
-            data: {
-              used_sessions: { increment: updateResult },
-              active: newUsedSessions < currentAppt.package.total_sessions,
-            },
-          });
-        }
-      } else {
-        await tx.appointment.update({
-          where: { id, organization_id: admin.organizationId },
-          data: {
-            status: finalStatus,
-            observations: data.observations,
-            payment_method: finalPaymentMethod,
-            has_charge: finalHasCharge,
-          },
-        });
-
-        if (isMarkingAsDone && currentAppt.package_id && currentAppt.package) {
-          const newUsedSessions = currentAppt.package.used_sessions + 1;
-
-          await tx.package.update({
-            where: { id: currentAppt.package_id },
-            data: {
-              used_sessions: { increment: 1 },
-              active: newUsedSessions < currentAppt.package.total_sessions,
-            },
-          });
-        }
-      }
-
-      const service = currentAppt.service;
-      const requiresRevenue =
-        finalStatus === AppointmentStatus.REALIZADO &&
-        !currentAppt.package_id &&
-        finalPaymentMethod !== null;
-
-      if (requiresRevenue) {
-        const existingRevenue = await tx.transaction.findFirst({
-          where: { appointment_id: currentAppt.id, type: "RECEITA" },
-        });
-
-        if (!existingRevenue) {
-          const apptPrice = currentAppt.snapshot_service_price ?? service.price;
-          const apptName = currentAppt.snapshot_service_name ?? service.name;
-
-          await tx.transaction.create({
-            data: {
-              type: "RECEITA",
-              description: `Serviço Realizado: ${apptName} (${currentAppt.client.name})`,
-              amount: apptPrice,
-              date: new Date(),
-              status: "PAGO",
-              organization_id: admin.organizationId,
-              appointment_id: currentAppt.id,
-            },
-          });
-        }
-      }
-
-      if (isMarkingAsDone) {
-        if (service.track_stock && service.stock_items.length > 0) {
-          for (const item of service.stock_items) {
-            const stockData = item.stock_item;
-            const usedQty = item.quantity_used;
-
-            await tx.stockItem.update({
-              where: { id: stockData.id },
-              data: { quantity: { decrement: usedQty } },
-            });
-
-            if (!stockData.was_expensed) {
-              const costOfUsedQty =
-                Number(usedQty) * Number(stockData.unit_cost);
-
-              if (costOfUsedQty > 0) {
-                await tx.transaction.create({
-                  data: {
-                    type: "DESPESA",
-                    description: `Custo de Insumo (Sessão): ${stockData.name}`,
-                    amount: costOfUsedQty,
-                    date: new Date(),
-                    status: "PAGO",
-                    organization_id: admin.organizationId,
-                    appointment_id: currentAppt.id,
-                  },
-                });
-              }
+          if (!stockData.was_expensed) {
+            const itemCost = Number(usedQty) * Number(stockData.unit_cost);
+            if (itemCost > 0) {
+              totalCost += itemCost;
+              detailsArray.push(
+                `${usedQty}x ${stockData.name} (R$ ${itemCost.toFixed(2).replace(".", ",")})`,
+              );
             }
           }
-        } else if (
-          !service.track_stock &&
-          service.material_cost &&
-          Number(service.material_cost) > 0
-        ) {
+        }
+
+        if (totalCost > 0) {
           await tx.transaction.create({
             data: {
               type: "DESPESA",
-              description: `Custo Fixo de Material: ${service.name}`,
-              amount: service.material_cost,
+              description: `Custo Insumos (Baixa Manual) | Detalhes: ${detailsArray.join(" | ")}`,
+              amount: totalCost,
               date: new Date(),
               status: "PAGO",
               organization_id: admin.organizationId,
-              appointment_id: currentAppt.id,
+              appointment_id: appt.id,
             },
           });
         }
+      } else if (
+        !service.track_stock &&
+        service.material_cost &&
+        Number(service.material_cost) > 0
+      ) {
+        await tx.transaction.create({
+          data: {
+            type: "DESPESA",
+            description: `Custo Fixo de Material (Baixa Manual): ${service.name}`,
+            amount: service.material_cost,
+            date: new Date(),
+            status: "PAGO",
+            organization_id: admin.organizationId,
+            appointment_id: appt.id,
+          },
+        });
+        stockProcessed = true;
       }
+
+      await tx.checkIn.create({
+        data: {
+          date_time: checkInDate,
+          appointment_id: appt.id,
+          client_id: pkg.client_id,
+          package_id: pkg.id,
+          organization_id: admin.organizationId,
+          admin_id: admin.id,
+          auto_processed: stockProcessed, // 🔥 reflete se de fato mexeu em estoque/financeiro
+        },
+      });
+
+      const newUsedSessions = pkg.used_sessions + 1;
+      const willRemainActive = newUsedSessions < pkg.total_sessions;
+
+      await tx.package.update({
+        where: { id: pkg.id },
+        data: { used_sessions: { increment: 1 }, active: willRemainActive },
+      });
     });
 
-    revalidatePath("/admin/agenda");
     revalidatePath("/admin/packages");
+    revalidatePath("/admin/agenda");
+    revalidatePath("/admin/history");
     revalidatePath("/admin/stock");
-    revalidatePath("/admin/finance/dashboard");
+    revalidatePath(`/admin/clients/${pkg.client_id}`);
 
     return { success: true };
   } catch (error) {
-    console.error(error);
-    return { success: false, error: "Erro ao atualizar agendamento." };
+    console.error("Erro na baixa manual:", error);
+    return { success: false, error: "Falha ao processar registro." };
   }
 }
 
-// --- 3. DELETAR (INDIVIDUAL OU SÉRIE) COM LOG DE AUDITORIA ---
-export async function deleteAppointment(
-  id: string,
-  deleteAll: boolean = false,
-  recurrenceId?: string | null,
-) {
+/**
+ * Remove um check-in (soft delete) e reverte o consumo no pacote do cliente.
+ * O registro original é preservado para a Jornada do Cliente,
+ * apenas marcado como removido.
+ */
+export async function deleteCheckIn(checkInId: string) {
   try {
     const admin = await requireAuth();
     const prisma = getTenantPrisma(admin.organizationId);
 
-    // 1. Busca os registros ANTES de deletar para termos os dados para o log
-    const appointmentsToDelete = await prisma.appointment.findMany({
-      where: {
-        ...(deleteAll && recurrenceId
-          ? { recurrence_id: recurrenceId }
-          : { id }),
-        organization_id: admin.organizationId,
+    const checkIn = await prisma.checkIn.findUnique({
+      where: { id: checkInId, organization_id: admin.organizationId },
+      include: {
+        appointment: {
+          include: {
+            service: {
+              include: { stock_items: { include: { stock_item: true } } },
+            },
+          },
+        },
+        package: { include: { service: true } },
       },
-      include: { package: true, client: true, check_in: true },
     });
 
-    if (appointmentsToDelete.length === 0)
-      return { success: false, error: "Agendamento não encontrado." };
-
-    // 2. Trava de segurança para agendamentos realizados (opcional, mas recomendado)
-    const hasFinishedAppointments = appointmentsToDelete.some(
-      (appt) => appt.status === AppointmentStatus.REALIZADO,
-    );
-
-    if (hasFinishedAppointments) {
-      return {
-        success: false,
-        error: "Não é permitido excluir agendamentos já realizados.",
-      };
+    if (!checkIn) return { success: false, error: "Check-in não encontrado." };
+    if (checkIn.deleted_at) {
+      return { success: false, error: "Este check-in já foi removido." };
     }
 
     await prisma.$transaction(async (tx) => {
-      for (const appt of appointmentsToDelete) {
-        // A. Auditoria: Registra a exclusão no histórico do cliente
+      const adminName = admin.name || "Administrador";
+
+      // A. Auditoria
+      if (checkIn.client_id) {
         const dateStr = new Intl.DateTimeFormat("pt-BR", {
           dateStyle: "short",
           timeStyle: "short",
-        }).format(appt.date_time);
+        }).format(checkIn.date_time);
 
-        const checkInText = appt.check_in
-          ? "e seu Check-in correspondente foram EXCLUÍDOS"
-          : "foi EXCLUÍDO";
+        const serviceName =
+          checkIn.appointment?.snapshot_service_name ||
+          checkIn.package?.snapshot_service_name ||
+          checkIn.package?.service?.name ||
+          "Serviço";
 
         await tx.clientNote.create({
           data: {
-            text: `Ação: Agendamento de ${appt.snapshot_service_name || "Serviço"} no dia ${dateStr} ${checkInText} por: ${admin.name || "Administrador"}`,
-            client_id: appt.client_id,
+            text: `Check-in de ${serviceName} do dia ${dateStr} foi removido por ${adminName}.`,
+            client_id: checkIn.client_id,
             organization_id: admin.organizationId,
             date: new Date(),
           },
         });
+      }
 
-        // B. Lógica de estorno de sessão de pacote (se necessário)
-        if (appt.status === AppointmentStatus.REALIZADO && appt.package_id) {
-          await tx.package.update({
-            where: { id: appt.package_id },
-            data: {
-              used_sessions: { decrement: 1 },
-              active: true,
-            },
-          });
+      // B. Estorno do pacote
+      if (checkIn.package_id) {
+        await tx.package.update({
+          where: { id: checkIn.package_id },
+          data: { used_sessions: { decrement: 1 }, active: true },
+        });
+      }
+
+      // C. Agendamento volta ao estado anterior
+      if (checkIn.appointment_id) {
+        await tx.appointment.update({
+          where: { id: checkIn.appointment_id },
+          data: { status: "CONFIRMADO", has_charge: false },
+        });
+      }
+
+      // D. Desfaz estoque e financeiro SÓ se a automação do totem gerou isso
+      if (checkIn.auto_processed && checkIn.appointment?.service) {
+        const service = checkIn.appointment.service;
+
+        if (service.track_stock && service.stock_items.length > 0) {
+          for (const item of service.stock_items) {
+            await tx.stockItem.update({
+              where: { id: item.stock_item_id },
+              data: { quantity: { increment: item.quantity_used } },
+            });
+          }
         }
 
-        // C. Deleta o Check-in se existir
-        await tx.checkIn.deleteMany({
-          where: { appointment_id: appt.id },
+        // Remove a(s) despesa(s) automáticas geradas na criação
+        await tx.transaction.deleteMany({
+          where: { appointment_id: checkIn.appointment_id, type: "DESPESA" },
         });
       }
 
-      // 3. Executa a exclusão propriamente dita
-      if (deleteAll && recurrenceId) {
-        await tx.appointment.deleteMany({
-          where: {
-            recurrence_id: recurrenceId,
-            organization_id: admin.organizationId,
-          },
-        });
-      } else {
-        await tx.appointment.delete({
-          where: { id, organization_id: admin.organizationId },
-        });
-      }
+      // E. Soft delete do check-in
+      await tx.checkIn.update({
+        where: { id: checkInId },
+        data: {
+          deleted_at: new Date(),
+          deleted_by_admin_id: admin.id,
+          deleted_by_name: adminName,
+        },
+      });
     });
 
-    revalidatePath("/admin/agenda");
+    revalidatePath("/admin/history");
     revalidatePath("/admin/packages");
     revalidatePath("/admin/dashboard");
-    revalidatePath("/admin/history");
+    revalidatePath("/admin/stock");
+    revalidatePath(`/admin/clients/${checkIn.client_id}`);
 
     return { success: true };
   } catch (error) {
-    console.error("Erro ao excluir agendamento:", error);
-    return { success: false, error: "Erro ao excluir agendamento." };
+    console.error("Erro ao excluir check-in:", error);
+    return { success: false, error: "Falha ao excluir o registro." };
   }
 }
-
-// --- 4. DRAG AND DROP ---
-export async function updateAppointmentDateTime(
-  id: string,
-  newDateIso: string,
-) {
+/**
+ * Encerra/Arquiva um pacote manualmente antes da hora.
+ */
+export async function archivePackage(packageId: string) {
   try {
     const admin = await requireAuth();
     const prisma = getTenantPrisma(admin.organizationId);
 
-    const apptToMove = await prisma.appointment.findUnique({
-      where: { id, organization_id: admin.organizationId },
+    const pkg = await prisma.package.findUnique({
+      where: { id: packageId, organization_id: admin.organizationId },
+      include: { client: true, service: true },
     });
 
-    if (!apptToMove) {
-      return { success: false, error: "Agendamento não encontrado." };
+    if (!pkg) {
+      return { success: false, error: "Pacote não encontrado." };
     }
 
-    const newDate = new Date(newDateIso);
-
-    await prisma.appointment.update({
-      where: { id, organization_id: admin.organizationId },
-      data: { date_time: newDate },
-    });
-
-    revalidatePath("/admin/agenda");
-    return { success: true };
-  } catch (error) {
-    console.error(error);
-    return { success: false, error: "Falha ao reagendar." };
-  }
-}
-
-// --- 5. PROCESSAMENTO AUTOMÁTICO DE FALTAS (NEUTRALIZADO) ---
-export async function processDailyNoShows(secretKey?: string) {
-  // 🔥 Automação desativada a pedido da clínica.
-  // A falta agora deve ser tratada manualmente pela UI (Admin).
-  return {
-    success: true,
-    processed: 0,
-    message: "Automação de faltas desativada. O controle agora é 100% manual.",
-  };
-}
-
-// --- 6. DESFAZER FALTA (MANUAL OU AUTOMÁTICA) ---
-export async function undoNoShow(appointmentId: string) {
-  try {
-    const admin = await requireAuth();
-    const prisma = getTenantPrisma(admin.organizationId);
-
-    const appt = await prisma.appointment.findUnique({
-      where: { id: appointmentId, organization_id: admin.organizationId },
-      include: { package: true },
-    });
-
-    if (!appt || appt.status !== AppointmentStatus.CANCELADO) {
-      return {
-        success: false,
-        error: "Agendamento não encontrado ou não está cancelado.",
-      };
+    if (!pkg.active) {
+      return { success: false, error: "Este pacote já está encerrado." };
     }
 
     await prisma.$transaction(async (tx) => {
-      const cleanObs = appt.observations
-        ? appt.observations
-            .replace("\n(Falta automática)", "")
-            .replace("\n(Falta Registrada)", "")
-            .replace("(Falta Registrada)", "")
-            .replace(
-              "Falta não justificada. Baixa automática pelo sistema.",
-              "",
-            )
-        : null;
-
-      await tx.appointment.update({
-        where: { id: appt.id },
-        data: {
-          status: AppointmentStatus.PENDENTE,
-          observations: cleanObs?.trim() === "" ? null : cleanObs,
-        },
-      });
-
-      if (appt.package_id && appt.package) {
-        await tx.package.update({
-          where: { id: appt.package_id },
-          data: {
-            used_sessions: { decrement: 1 },
-            active: true, // Garante que o pacote volta a ficar ativo caso tenha sido encerrado por essa falta
-          },
-        });
-      }
-
-      // Limpa a nota de "Falta" do histórico da cliente (busca pela data exata da consulta)
-      const dateStr = new Intl.DateTimeFormat("pt-BR", {
-        dateStyle: "short",
-      }).format(appt.date_time);
-
-      await tx.clientNote.deleteMany({
-        where: {
-          client_id: appt.client_id,
-          organization_id: admin.organizationId,
-          text: { contains: dateStr },
-        },
-      });
-    });
-
-    revalidatePath("/admin/agenda");
-    revalidatePath("/admin/packages");
-    revalidatePath("/admin/clients");
-
-    return { success: true };
-  } catch (error) {
-    console.error("Erro ao desfazer falta:", error);
-    return { success: false, error: "Falha ao estornar a falta do cliente." };
-  }
-}
-
-// --- 7. REGISTRAR FALTA MANUALMENTE ---
-export async function registerManualNoShow(
-  appointmentId: string,
-  observation: string,
-) {
-  try {
-    const admin = await requireAuth();
-    const prisma = getTenantPrisma(admin.organizationId);
-
-    const appt = await prisma.appointment.findUnique({
-      where: { id: appointmentId, organization_id: admin.organizationId },
-      include: { package: true },
-    });
-
-    if (!appt) return { success: false, error: "Agendamento não encontrado." };
-    if (
-      appt.status === AppointmentStatus.CANCELADO ||
-      appt.status === AppointmentStatus.REALIZADO
-    ) {
-      return { success: false, error: "Este agendamento já está fechado." };
-    }
-
-    await prisma.$transaction(async (tx) => {
-      const newObs = observation
-        ? `${observation}\n(Falta Registrada)`
-        : "(Falta Registrada)";
-
-      await tx.appointment.update({
-        where: { id: appt.id },
-        data: {
-          status: AppointmentStatus.CANCELADO,
-          has_charge: false,
-          payment_method: null,
-          observations: newObs,
-        },
-      });
-
-      if (appt.package_id && appt.package) {
-        const newUsedSessions = appt.package.used_sessions + 1;
-        const stillActive = newUsedSessions < appt.package.total_sessions;
-
-        await tx.package.update({
-          where: { id: appt.package_id },
-          data: {
-            used_sessions: newUsedSessions,
-            active: stillActive,
-          },
-        });
-      }
-
-      // Cria nota no histórico da cliente
-      const formattedDate = new Intl.DateTimeFormat("pt-BR", {
-        dateStyle: "short",
-        timeStyle: "short",
-      }).format(appt.date_time);
-      const noteText = appt.package_id
-        ? `Falta Manual: A cliente não compareceu ao agendamento do dia ${formattedDate}. A sessão foi descontada do pacote.`
-        : `Falta Manual: A cliente não compareceu ao agendamento do dia ${formattedDate} (Serviço Avulso).`;
+      // A. Auditoria: registra o encerramento manual no histórico do cliente
+      const packageName = pkg.package_template_id
+        ? pkg.name
+        : pkg.snapshot_service_name || pkg.service?.name || "Pacote";
 
       await tx.clientNote.create({
         data: {
-          text: noteText,
-          client_id: appt.client_id,
+          text: `Ação: Pacote "${packageName}" (${pkg.used_sessions}/${pkg.total_sessions} sessões usadas) foi ENCERRADO manualmente pelo admin ID: ${admin.id}`,
+          client_id: pkg.client_id,
           organization_id: admin.organizationId,
           date: new Date(),
         },
       });
+
+      // B. Encerramento de fato (lógica original mantida)
+      await tx.package.update({
+        where: { id: pkg.id },
+        data: { active: false },
+      });
     });
 
-    revalidatePath("/admin/agenda");
     revalidatePath("/admin/packages");
-    revalidatePath("/admin/clients");
+    revalidatePath("/admin/dashboard");
+    revalidatePath(`/admin/clients/${pkg.client_id}`);
 
     return { success: true };
   } catch (error) {
-    console.error("Erro ao registrar falta:", error);
-    return { success: false, error: "Falha ao registrar a falta." };
+    console.error("Erro ao encerrar pacote:", error);
+    return { success: false, error: "Falha ao encerrar o pacote." };
   }
 }

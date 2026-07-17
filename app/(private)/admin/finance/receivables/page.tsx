@@ -1,4 +1,4 @@
-// app/admin/finance/receivables/page.tsx
+// app/(private)/admin/finance/receivables/page.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
