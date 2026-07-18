@@ -257,8 +257,12 @@ export const NewAppointmentModal = memo(
         );
         onOpenChange(false);
         onCreated?.();
-      } catch (error) {
-        toast.error("Erro inesperado ao salvar.");
+      } catch (error: any) {
+        console.error("Erro no modal de agendamento:", error);
+        // Agora ele pega a mensagem real do erro (se existir) em vez de ser genérico
+        toast.error(
+          error.message || "Erro inesperado ao salvar o agendamento.",
+        );
       } finally {
         setSaving(false);
       }
