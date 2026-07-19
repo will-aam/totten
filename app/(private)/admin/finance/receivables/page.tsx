@@ -35,6 +35,7 @@ import {
 import { getPaymentMethods } from "@/app/actions/payment-methods";
 import { OrganizationPaymentMethod } from "@/types/finance";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export default function ReceivablesPage() {
   const [receivables, setReceivables] = useState<any[]>([]);
@@ -164,19 +165,21 @@ export default function ReceivablesPage() {
     <>
       <AdminHeader title="Contas a Receber" />
 
-      <div className="flex flex-col gap-4 p-4 md:p-6 max-w-5xl mx-auto w-full pb-24 md:pb-6">
-        {/* Resumo */}
+      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-7xl mx-auto w-full pb-24 md:pb-6 animate-in fade-in duration-700 min-h-[calc(100vh-100px)]">
+        {/* RESUMO PREMIUM GLASSMORPHISM */}
         {!isLoading && receivables.length > 0 && (
-          <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/50 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-2">
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 bg-emerald-100 dark:bg-emerald-900/50 rounded-full flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                <Dollar className="h-6 w-6" />
+          <div className="relative overflow-hidden bg-background/50 backdrop-blur-md border border-emerald-500/20 rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 shadow-sm">
+            <div className="absolute top-0 right-0 -mt-8 -mr-8 w-40 h-40 bg-emerald-500/10 blur-3xl rounded-full -z-10 pointer-events-none" />
+
+            <div className="flex items-center gap-4 relative z-10">
+              <div className="h-14 w-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-500/20">
+                <Dollar className="h-7 w-7" />
               </div>
-              <div>
-                <p className="text-sm font-medium text-emerald-800 dark:text-emerald-400">
-                  Total a Receber
+              <div className="flex flex-col">
+                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600/80 dark:text-emerald-400/80">
+                  Total Pendente
                 </p>
-                <h2 className="text-2xl font-bold text-emerald-900 dark:text-emerald-300">
+                <h2 className="text-3xl font-black text-foreground tracking-tighter mt-0.5">
                   {formatCurrency(totalReceivables)}
                 </h2>
               </div>
@@ -184,99 +187,107 @@ export default function ReceivablesPage() {
 
             <Button
               onClick={() => setSelectedItem("ALL")}
-              className="w-full sm:w-auto rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+              className="w-full sm:w-auto rounded-2xl h-12 px-8 bg-emerald-500 hover:bg-emerald-600 text-white font-black shadow-[0_8px_25px_rgb(16,185,129,0.3)] hover:shadow-[0_10px_30px_rgb(16,185,129,0.4)] active:scale-95 transition-all relative z-10"
             >
               Dar Baixa em Todos
             </Button>
           </div>
         )}
 
-        {/* Lista de Pendências */}
-        {isLoading ? (
-          <div className="flex justify-center items-center py-20">
-            <LoaderDots className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : receivables.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center bg-muted/10 rounded-2xl border border-dashed border-border">
-            <CheckCircle className="h-12 w-12 text-emerald-500/50 mb-4" />
-            <h3 className="text-lg font-semibold text-foreground">
-              Tudo em dia!
-            </h3>
-            <p className="text-muted-foreground font-medium mt-1">
-              Não há pagamentos pendentes para receber no momento.
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {receivables.map((item) => (
-              <div
-                key={item.id}
-                className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-card border border-border/50 rounded-2xl shadow-sm gap-4"
-              >
-                <div className="flex items-center gap-4 w-full sm:w-auto">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-100/50 text-amber-600 dark:bg-amber-900/30">
-                    <ArrowDownRight className="h-6 w-6" />
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-base font-semibold text-foreground truncate flex items-center gap-2">
-                      {item.description}
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] bg-background"
-                      >
-                        {item.sourceType === "APPOINTMENT"
-                          ? "Agenda"
-                          : "Manual"}
-                      </Badge>
-                    </span>
-                    <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <User className="h-3.5 w-3.5" />
-                        {item.clientName}
+        {/* LISTA DE PENDÊNCIAS */}
+        <div className="flex flex-col w-full bg-background/40 backdrop-blur-sm rounded-3xl border border-border/40 p-2 sm:p-4 shadow-sm">
+          {isLoading ? (
+            <div className="flex justify-center items-center py-24">
+              <LoaderDots className="h-10 w-10 animate-spin text-primary/40" />
+            </div>
+          ) : receivables.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 text-center bg-muted/10 rounded-2xl border border-dashed border-border/60 mx-2">
+              <div className="p-4 bg-emerald-500/10 rounded-full mb-4">
+                <CheckCircle className="h-10 w-10 text-emerald-500" />
+              </div>
+              <h3 className="text-xl font-black text-foreground">
+                Tudo em dia!
+              </h3>
+              <p className="text-sm font-medium text-muted-foreground mt-1.5">
+                Não há pagamentos pendentes para receber no momento.
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col">
+              {receivables.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b border-border/40 last:border-0 hover:bg-muted/40 transition-all duration-300 rounded-2xl group gap-4"
+                >
+                  <div className="flex items-center gap-4 w-full sm:w-auto">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400 font-bold shadow-sm transition-transform duration-300 group-hover:scale-110">
+                      <ArrowDownRight className="h-6 w-6" />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-sm font-bold text-foreground truncate flex flex-wrap items-center gap-2 group-hover:text-primary transition-colors">
+                        {item.description}
+                        <Badge
+                          variant="secondary"
+                          className="text-[9px] uppercase tracking-widest bg-muted/50 border-none font-bold"
+                        >
+                          {item.sourceType === "APPOINTMENT"
+                            ? "Agenda"
+                            : "Manual"}
+                        </Badge>
                       </span>
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-3.5 w-3.5" />
-                        {formatDate(item.date)}
-                      </span>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px] font-medium text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <User className="h-3.5 w-3.5" />
+                          <span className="truncate max-w-30 sm:max-w-xs">
+                            {item.clientName}
+                          </span>
+                        </span>
+                        <span className="w-1 h-1 rounded-full bg-border mx-0.5"></span>
+                        <span className="flex items-center gap-1 font-semibold">
+                          <Calendar className="h-3.5 w-3.5" />
+                          {formatDate(item.date)}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4 border-t sm:border-t-0 pt-3 sm:pt-0 border-border/50">
-                  <span className="text-lg font-bold text-amber-600 dark:text-amber-500">
-                    {formatCurrency(item.amount)}
-                  </span>
-                  <Button
-                    onClick={() => setSelectedItem(item)}
-                    className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
-                  >
-                    Dar Baixa
-                  </Button>
+                  <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4 border-t border-border/30 sm:border-none pt-3 sm:pt-0">
+                    <span className="text-lg font-black tracking-tight text-amber-600 dark:text-amber-500">
+                      {formatCurrency(item.amount)}
+                    </span>
+                    <Button
+                      onClick={() => setSelectedItem(item)}
+                      variant="outline"
+                      className="rounded-xl font-bold bg-background border-border/40 hover:bg-emerald-500/10 hover:text-emerald-600 hover:border-emerald-500/30 transition-all shadow-sm h-10"
+                    >
+                      Dar Baixa
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* MODAL DE PAGAMENTO */}
+      {/* MODAL DE PAGAMENTO PREMIUM */}
       <Dialog
         open={!!selectedItem}
         onOpenChange={(open) => !open && handleCloseModal()}
       >
-        <DialogContent className="rounded-3xl sm:max-w-md border-border/50 shadow-2xl">
+        <DialogContent className="rounded-4xl sm:max-w-md border-border/40 shadow-2xl bg-background/95 backdrop-blur-xl">
           <DialogHeader>
-            <DialogTitle className="text-xl">
+            <DialogTitle className="text-xl font-black text-foreground">
               {selectedItem === "ALL"
                 ? "Registrar Todos os Recebimentos"
                 : "Registrar Recebimento"}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="font-medium text-muted-foreground text-sm leading-relaxed pt-1">
               Selecione a forma de pagamento utilizada para dar baixa{" "}
               {selectedItem === "ALL" ? (
                 <>
                   em todos os valores pendentes, totalizando{" "}
-                  <strong className="text-foreground">
+                  <strong className="text-foreground font-black">
                     {formatCurrency(totalReceivables)}
                   </strong>
                   .
@@ -284,7 +295,7 @@ export default function ReceivablesPage() {
               ) : (
                 <>
                   no valor de{" "}
-                  <strong className="text-foreground">
+                  <strong className="text-foreground font-black">
                     {selectedItem &&
                       selectedItem !== "ALL" &&
                       formatCurrency(selectedItem.amount)}
@@ -297,24 +308,25 @@ export default function ReceivablesPage() {
 
           <div className="py-4 space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                 Forma de Pagamento
               </label>
               <Select
                 value={paymentMethodId}
                 onValueChange={setPaymentMethodId}
+                disabled={isProcessing}
               >
-                <SelectTrigger className="h-12 rounded-xl bg-muted/30 border-border/50">
+                <SelectTrigger className="h-14 rounded-2xl bg-muted/20 border-border/40 hover:bg-muted/30 font-bold focus:ring-primary/30 transition-all shadow-inner">
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl">
+                <SelectContent className="rounded-2xl border-border/50 shadow-xl">
                   {paymentMethods
                     .filter((pm) => pm.isActive)
                     .map((method) => (
                       <SelectItem
                         key={method.id}
                         value={method.id}
-                        className="rounded-lg py-2.5"
+                        className="rounded-xl py-2.5 font-bold"
                       >
                         {method.name}
                       </SelectItem>
@@ -324,11 +336,11 @@ export default function ReceivablesPage() {
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="gap-2 sm:gap-0 mt-2">
             <Button
               variant="outline"
               onClick={handleCloseModal}
-              className="rounded-xl border-border/50"
+              className="rounded-2xl h-12 font-bold border-border/40 bg-muted/30 hover:bg-muted/50 px-6"
               disabled={isProcessing}
             >
               Cancelar
@@ -336,11 +348,11 @@ export default function ReceivablesPage() {
             <Button
               onClick={handleConfirmPayment}
               disabled={isProcessing}
-              className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="rounded-2xl h-12 font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-[0_4px_20px_rgb(16,185,129,0.3)] hover:shadow-[0_6px_25px_rgb(16,185,129,0.4)] transition-all px-6"
             >
               {isProcessing ? (
                 <>
-                  <LoaderDots className="mr-2 h-4 w-4 animate-spin" />{" "}
+                  <LoaderDots className="mr-2 h-5 w-5 animate-spin" />{" "}
                   Processando
                 </>
               ) : (

@@ -67,24 +67,24 @@ function PaymentMethodListItem({
   return (
     <div
       onClick={onClick}
-      className="flex items-center justify-between py-3 md:py-4 border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors px-2 -mx-2 rounded-lg group cursor-pointer"
+      className="flex items-center justify-between p-4 md:p-5 border-b border-border/40 last:border-0 hover:bg-muted/30 transition-all duration-300 rounded-2xl group cursor-pointer"
     >
-      <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 pr-4">
+      <div className="flex items-center gap-4 md:gap-5 flex-1 min-w-0 pr-4">
         <div
           className={cn(
-            "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-bold shadow-sm border transition-transform group-hover:scale-105",
+            "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl font-bold shadow-sm border transition-transform duration-300 group-hover:scale-110",
             method.isActive
-              ? "bg-primary/10 text-primary border-primary/20"
-              : "bg-muted text-muted-foreground border-border",
+              ? "bg-primary/10 text-primary border-primary/20 group-hover:bg-primary group-hover:text-primary-foreground group-hover:shadow-[0_4px_15px_rgb(var(--primary)/0.2)]"
+              : "bg-muted/50 text-muted-foreground border-border/50",
           )}
         >
           {getIcon()}
         </div>
 
-        <div className="flex flex-col min-w-0">
+        <div className="flex flex-col min-w-0 gap-0.5">
           <span
             className={cn(
-              "text-sm font-semibold leading-tight mb-1 truncate group-hover:underline transition-colors",
+              "text-base font-black leading-tight truncate transition-colors",
               method.isActive
                 ? "text-foreground group-hover:text-primary"
                 : "text-muted-foreground",
@@ -92,7 +92,7 @@ function PaymentMethodListItem({
           >
             {method.name}
           </span>
-          <span className="text-xs text-muted-foreground leading-none flex items-center gap-1.5 truncate">
+          <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest leading-none flex items-center gap-1.5 truncate mt-0.5">
             {method.daysToReceive === 0
               ? "Recebimento na hora"
               : `Recebimento em ${method.daysToReceive} dia(s)`}
@@ -100,11 +100,11 @@ function PaymentMethodListItem({
         </div>
       </div>
 
-      <div className="flex flex-col items-end gap-1.5 shrink-0">
+      <div className="flex flex-col items-end gap-2 shrink-0">
         <span
           className={cn(
-            "text-sm font-bold",
-            method.isActive ? "text-foreground" : "text-muted-foreground",
+            "text-base font-black tracking-tight",
+            method.isActive ? "text-foreground" : "text-muted-foreground/60",
           )}
         >
           {getTaxString()}
@@ -112,14 +112,14 @@ function PaymentMethodListItem({
         {method.isActive ? (
           <Badge
             variant="secondary"
-            className="bg-emerald-100/50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 border-none text-[10px] px-1.5 py-0 h-4"
+            className="bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400 border-none text-[10px] px-2 py-0.5 h-5 font-bold uppercase tracking-wider"
           >
             Ativo
           </Badge>
         ) : (
           <Badge
             variant="secondary"
-            className="bg-muted text-muted-foreground border-none text-[10px] px-1.5 py-0 h-4"
+            className="bg-muted/50 text-muted-foreground border-none text-[10px] px-2 py-0.5 h-5 font-bold uppercase tracking-wider"
           >
             Inativo
           </Badge>
@@ -173,19 +173,26 @@ export default function PaymentMethodsPage() {
     <>
       <AdminHeader title="Meios de Pagamento" />
 
-      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
+      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-7xl mx-auto w-full pb-24 md:pb-6 relative animate-in fade-in duration-700 min-h-[calc(100vh-100px)]">
+        {/* CABEÇALHO PREMIUM GLASSMORPHISM */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 bg-background/50 backdrop-blur-md p-5 sm:p-6 rounded-3xl border border-border/40 shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 left-0 -mt-8 -ml-8 w-40 h-40 bg-primary/10 blur-3xl rounded-full -z-10 pointer-events-none" />
+
+          <div className="flex flex-col gap-1.5 relative z-10">
+            <h1 className="text-3xl font-black tracking-tight bg-linear-to-br from-foreground to-foreground/70 bg-clip-text text-transparent flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-xl text-primary hidden sm:flex">
+                <Landmark size="sm" />
+              </div>
               Meios de Pagamento
             </h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              Configure as formas de pagamento que o seu negócio aceita.
+            <p className="text-muted-foreground text-sm font-medium mt-1 sm:ml-12">
+              Configure as formas de pagamento que o seu negócio aceita e suas
+              respectivas taxas.
             </p>
           </div>
 
           <Button
-            className="h-12 px-8 rounded-xl font-medium shadow-sm"
+            className="h-12 px-6 rounded-2xl font-black shadow-[0_8px_25px_rgb(var(--primary)/0.3)] hover:shadow-[0_10px_30px_rgb(var(--primary)/0.4)] active:scale-95 transition-all relative z-10 w-full sm:w-auto"
             onClick={handleNewPaymentMethod}
           >
             <PlusCircle size="sm" className="mr-2" />
@@ -193,42 +200,48 @@ export default function PaymentMethodsPage() {
           </Button>
         </div>
 
-        <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card mt-2 md:mt-0">
-          <CardHeader className="px-0 pt-0 md:pt-6 md:px-6">
-            <CardTitle className="flex items-center gap-2 text-card-foreground">
-              <Slider size="sm" className="text-primary" />
+        {/* LISTAGEM PRINCIPAL */}
+        <Card className="relative overflow-hidden rounded-4xl border-border/40 shadow-sm bg-background/50 backdrop-blur-md">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-3xl rounded-full -z-10 pointer-events-none" />
+          <CardHeader className="px-6 pt-6 pb-4 border-b border-border/30 relative z-10">
+            <CardTitle className="flex items-center gap-3 text-xl font-black text-foreground">
+              <div className="p-2 bg-primary/10 rounded-xl text-primary">
+                <Slider size="sm" />
+              </div>
               Configurações Atuais
             </CardTitle>
-            <CardDescription>
-              Clique num item para editar taxas e prazos.
+            <CardDescription className="font-medium text-xs uppercase tracking-widest text-muted-foreground ml-12">
+              Clique num item para editar suas taxas e prazos.
             </CardDescription>
           </CardHeader>
 
-          <CardContent className="px-0 pb-0 md:pb-6 md:px-6">
+          <CardContent className="p-2 sm:p-4 relative z-10">
             <div className="flex flex-col">
               {isLoading ? (
                 Array.from({ length: 3 }).map((_, i) => (
                   <div
                     key={i}
-                    className="flex items-center justify-between py-4 border-b border-border/50"
+                    className="flex items-center justify-between p-4 border-b border-border/30"
                   >
                     <div className="flex items-center gap-4 flex-1">
-                      <Skeleton className="h-10 w-10 rounded-full" />
+                      <Skeleton className="h-12 w-12 rounded-2xl bg-muted/50" />
                       <div className="space-y-2">
-                        <Skeleton className="h-4 w-32" />
-                        <Skeleton className="h-3 w-20" />
+                        <Skeleton className="h-5 w-32 bg-muted/50" />
+                        <Skeleton className="h-3 w-24 bg-muted/50" />
                       </div>
                     </div>
                     <div className="space-y-2 flex flex-col items-end">
-                      <Skeleton className="h-4 w-16" />
-                      <Skeleton className="h-3 w-10" />
+                      <Skeleton className="h-5 w-20 bg-muted/50" />
+                      <Skeleton className="h-4 w-12 bg-muted/50" />
                     </div>
                   </div>
                 ))
               ) : methods.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/30 rounded-lg border border-dashed border-border">
-                  <Landmark size="lg" className="text-muted-foreground/40" />
-                  <p className="mt-4 text-sm font-medium text-muted-foreground">
+                <div className="flex flex-col items-center justify-center py-16 text-center bg-muted/10 rounded-2xl border border-dashed border-border/60 mx-2 mt-2">
+                  <div className="p-4 bg-muted/30 rounded-full mb-4">
+                    <Landmark className="h-10 w-10 text-muted-foreground/50" />
+                  </div>
+                  <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
                     Nenhum meio de pagamento configurado.
                   </p>
                 </div>
@@ -249,9 +262,9 @@ export default function PaymentMethodsPage() {
       <button
         onClick={scrollToTop}
         className={cn(
-          "fixed bottom-20 right-4 md:bottom-8 md:right-8 h-14 w-14 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 z-50",
+          "fixed bottom-20 right-4 md:bottom-8 md:right-8 h-14 w-14 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_8px_30px_rgb(var(--primary)/0.4)] hover:bg-primary/90 transition-all duration-300 z-50",
           showScrollTop
-            ? "translate-y-0 opacity-100 hover:scale-110"
+            ? "translate-y-0 opacity-100 hover:scale-105"
             : "translate-y-16 opacity-0 pointer-events-none",
         )}
         aria-label="Voltar ao topo"
@@ -259,6 +272,7 @@ export default function PaymentMethodsPage() {
         <ChevronUp size="base" removePadding />
       </button>
 
+      {/* O Modal (payment-method-modal.tsx) será renderizado aqui. O design interno dele deve herdar a base que já arrumamos nos outros modais */}
       {isModalOpen && (
         <PaymentMethodModal
           isOpen={isModalOpen}

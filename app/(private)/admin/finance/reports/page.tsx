@@ -27,7 +27,7 @@ import {
   MedalStarAlt,
   Pulse,
   Send,
-  BarChart as BarChartIcon, // alias para evitar conflito com Recharts
+  BarChart as BarChartIcon,
   ArrowToBottom,
   Dollar,
 } from "@boxicons/react";
@@ -40,7 +40,7 @@ import {
   Area,
   AreaChart,
   Bar,
-  BarChart, // Recharts — nome original mantido
+  BarChart,
   CartesianGrid,
   XAxis,
   YAxis,
@@ -148,14 +148,17 @@ export default function ReportsPage() {
 
   return (
     <>
-      <AdminHeader title="Relatórios" />
+      <AdminHeader title="Relatórios Financeiros" />
 
-      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full min-w-0 pb-32 md:pb-12 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
-        <div className="flex flex-col gap-1 border-b border-border/40 pb-4">
-          <h2 className="text-2xl font-black tracking-tight text-foreground flex items-center gap-2">
-            <BarChartIcon size="sm" className="text-primary" /> Relatórios
+      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-7xl mx-auto w-full min-w-0 pb-32 md:pb-12 relative animate-in fade-in duration-700 min-h-[calc(100vh-100px)]">
+        <div className="flex flex-col gap-1.5 border-b border-border/40 pb-5">
+          <h2 className="text-3xl font-black tracking-tight bg-linear-to-br from-foreground to-foreground/70 bg-clip-text text-transparent flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-xl text-primary">
+              <BarChartIcon size="sm" />
+            </div>
+            Desempenho
           </h2>
-          <p className="text-muted-foreground text-sm font-medium mt-1">
+          <p className="text-muted-foreground text-sm font-medium mt-1 ml-12">
             Acompanhe o crescimento, faturamento e os melhores serviços da sua
             clínica.
           </p>
@@ -163,9 +166,9 @@ export default function ReportsPage() {
 
         {isLoading || !data ? (
           <div className="flex flex-col items-center justify-center py-32 flex-1">
-            <LoaderDots size="lg" className="text-primary/50" />
-            <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest mt-4">
-              Carregando dados...
+            <LoaderDots size="lg" className="text-primary/50 animate-pulse" />
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-4">
+              Carregando dados do relatório...
             </p>
           </div>
         ) : (
@@ -174,22 +177,22 @@ export default function ReportsPage() {
             onValueChange={setActiveTab}
             className="w-full flex-1 flex flex-col min-w-0"
           >
-            <TabsList className="hidden md:grid w-full grid-cols-3 bg-muted/40 h-14 rounded-2xl p-1 border border-border/50 shadow-sm">
+            <TabsList className="hidden md:grid w-full max-w-2xl grid-cols-3 bg-background/50 backdrop-blur-md h-16 rounded-3xl p-1.5 border border-border/40 shadow-sm">
               <TabsTrigger
                 value="desempenho"
-                className="flex gap-2 rounded-xl font-bold h-full data-[state=active]:shadow-sm transition-all"
+                className="flex gap-2 rounded-2xl font-bold text-sm h-full data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all"
               >
                 <Pulse size="sm" /> Desempenho
               </TabsTrigger>
               <TabsTrigger
                 value="servicos"
-                className="flex gap-2 rounded-xl font-bold h-full data-[state=active]:shadow-sm transition-all"
+                className="flex gap-2 rounded-2xl font-bold text-sm h-full data-[state=active]:bg-amber-500/10 data-[state=active]:text-amber-600 data-[state=active]:shadow-sm transition-all"
               >
                 <MedalStarAlt size="sm" /> Curva ABC
               </TabsTrigger>
               <TabsTrigger
                 value="exportar"
-                className="flex gap-2 rounded-xl font-bold h-full data-[state=active]:shadow-sm transition-all"
+                className="flex gap-2 rounded-2xl font-bold text-sm h-full data-[state=active]:bg-foreground/5 data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all"
               >
                 <ArrowToBottom size="sm" /> Exportar
               </TabsTrigger>
@@ -199,22 +202,25 @@ export default function ReportsPage() {
               {/* ABA 1: DESEMPENHO */}
               <TabsContent
                 value="desempenho"
-                className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500 space-y-6 min-w-0"
+                className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-6 min-w-0"
               >
-                <Card className="rounded-3xl border-border/50 shadow-sm bg-card overflow-hidden">
-                  <CardHeader className="px-6 pt-6 pb-2 border-b border-border/40">
-                    <CardTitle className="flex items-center gap-2 text-lg font-black text-foreground">
-                      <TrendingUp size="sm" className="text-indigo-500" />
+                <Card className="relative overflow-hidden rounded-4xl border-border/40 shadow-sm bg-background/50 backdrop-blur-md">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 blur-3xl rounded-full -z-10 pointer-events-none" />
+                  <CardHeader className="px-6 pt-6 pb-2 border-b border-border/30">
+                    <CardTitle className="flex items-center gap-3 text-xl font-black text-foreground">
+                      <div className="p-2 bg-indigo-500/10 rounded-xl text-indigo-500">
+                        <TrendingUp size="sm" />
+                      </div>
                       Volume de Agendamentos
                     </CardTitle>
-                    <CardDescription className="font-medium text-muted-foreground pb-2">
+                    <CardDescription className="font-medium text-xs uppercase tracking-widest text-muted-foreground pb-2 ml-12">
                       Quantidade de atendimentos realizados nos últimos 6 meses.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="px-2 sm:px-6 pt-6 pb-6 min-w-0">
                     <ChartContainer
                       config={performanceChartConfig}
-                      className="h-64 w-full"
+                      className="h-75 w-full"
                     >
                       <ResponsiveContainer width="100%" height="100%">
                         <AreaChart
@@ -245,7 +251,7 @@ export default function ReportsPage() {
                             strokeDasharray="3 3"
                             vertical={false}
                             stroke="currentColor"
-                            className="opacity-10"
+                            className="opacity-5"
                           />
                           <XAxis
                             dataKey="month"
@@ -265,14 +271,14 @@ export default function ReportsPage() {
                             cursor={{
                               stroke: "currentColor",
                               strokeWidth: 1,
-                              opacity: 0.2,
+                              opacity: 0.1,
                             }}
                           />
                           <Area
                             type="monotone"
                             dataKey="agendamentos"
                             stroke="var(--color-agendamentos)"
-                            strokeWidth={3}
+                            strokeWidth={4}
                             fillOpacity={1}
                             fill="url(#colorAgendamentos)"
                           />
@@ -282,20 +288,23 @@ export default function ReportsPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="rounded-3xl border-border/50 shadow-sm bg-card overflow-hidden">
-                  <CardHeader className="px-6 pt-6 pb-2 border-b border-border/40">
-                    <CardTitle className="flex items-center gap-2 text-lg font-black text-foreground">
-                      <Dollar size="sm" className="text-emerald-500" />
+                <Card className="relative overflow-hidden rounded-4xl border-border/40 shadow-sm bg-background/50 backdrop-blur-md">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-3xl rounded-full -z-10 pointer-events-none" />
+                  <CardHeader className="px-6 pt-6 pb-2 border-b border-border/30">
+                    <CardTitle className="flex items-center gap-3 text-xl font-black text-foreground">
+                      <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-500">
+                        <Dollar size="sm" />
+                      </div>
                       Receitas x Despesas
                     </CardTitle>
-                    <CardDescription className="font-medium text-muted-foreground pb-2">
+                    <CardDescription className="font-medium text-xs uppercase tracking-widest text-muted-foreground pb-2 ml-12">
                       Comparativo financeiro mensal.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="px-2 sm:px-6 pt-6 pb-6 min-w-0">
                     <ChartContainer
                       config={financialChartConfig}
-                      className="h-64 w-full"
+                      className="h-75 w-full"
                     >
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart
@@ -306,7 +315,7 @@ export default function ReportsPage() {
                             strokeDasharray="3 3"
                             vertical={false}
                             stroke="currentColor"
-                            className="opacity-10"
+                            className="opacity-5"
                           />
                           <XAxis
                             dataKey="month"
@@ -333,12 +342,12 @@ export default function ReportsPage() {
                           <Bar
                             dataKey="receitas"
                             fill="var(--color-receitas)"
-                            radius={[6, 6, 0, 0]}
+                            radius={[8, 8, 0, 0]}
                           />
                           <Bar
                             dataKey="despesas"
                             fill="var(--color-despesas)"
-                            radius={[6, 6, 0, 0]}
+                            radius={[8, 8, 0, 0]}
                           />
                         </BarChart>
                       </ResponsiveContainer>
@@ -350,64 +359,70 @@ export default function ReportsPage() {
               {/* ABA 2: CURVA ABC */}
               <TabsContent
                 value="servicos"
-                className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500 min-w-0"
+                className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-4 duration-700 min-w-0"
               >
-                <Card className="rounded-3xl border-border/50 shadow-sm overflow-hidden bg-card">
-                  <CardHeader className="px-6 pt-6 pb-4 border-b border-border/40">
-                    <CardTitle className="flex items-center gap-2 text-lg font-black text-foreground">
-                      <MedalStarAlt size="sm" className="text-amber-500" />
+                <Card className="relative overflow-hidden rounded-4xl border-border/40 shadow-sm bg-background/50 backdrop-blur-md">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 blur-3xl rounded-full -z-10 pointer-events-none" />
+                  <CardHeader className="px-6 pt-6 pb-4 border-b border-border/30">
+                    <CardTitle className="flex items-center gap-3 text-xl font-black text-foreground">
+                      <div className="p-2 bg-amber-500/10 rounded-xl text-amber-500">
+                        <MedalStarAlt size="sm" />
+                      </div>
                       Top Serviços
                     </CardTitle>
-                    <CardDescription className="font-medium text-muted-foreground">
+                    <CardDescription className="font-medium text-xs uppercase tracking-widest text-muted-foreground ml-12">
                       Os serviços que mais trouxeram receita nos últimos 6
                       meses.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="p-0">
                     {data.topServices.length === 0 ? (
-                      <div className="flex items-center justify-center py-12 text-muted-foreground font-bold">
-                        Nenhum serviço finalizado ainda.
+                      <div className="flex flex-col items-center justify-center py-16 text-center bg-muted/10">
+                        <MedalStarAlt className="h-10 w-10 text-muted-foreground/30 mb-3" />
+                        <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
+                          Nenhum serviço finalizado ainda.
+                        </p>
                       </div>
                     ) : (
-                      <div className="flex flex-col divide-y divide-border/40">
+                      <div className="flex flex-col divide-y divide-border/30">
                         {data.topServices.map((service, index) => {
                           const percent =
                             (service.faturamento / maxFaturamento) * 100;
                           return (
                             <div
                               key={index}
-                              className="relative flex items-center justify-between p-5 sm:px-6 hover:bg-muted/10 transition-colors"
+                              className="relative flex items-center justify-between p-5 sm:px-6 hover:bg-muted/30 transition-colors group"
                             >
                               <div
-                                className="absolute left-0 top-0 bottom-0 bg-primary/5 -z-10"
+                                className="absolute left-0 top-0 bottom-0 bg-primary/5 -z-10 transition-all duration-500"
                                 style={{ width: `${percent}%` }}
                               />
                               <div className="flex items-center gap-4">
                                 <div
                                   className={cn(
-                                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl font-black text-sm border",
+                                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl font-black text-sm shadow-sm transition-transform group-hover:scale-105",
                                     index === 0
-                                      ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                                      ? "bg-amber-500/10 text-amber-600 border border-amber-500/20"
                                       : index === 1
-                                        ? "bg-slate-500/10 text-slate-600 border-slate-500/20"
+                                        ? "bg-slate-500/10 text-slate-600 border border-slate-500/20"
                                         : index === 2
-                                          ? "bg-orange-500/10 text-orange-600 border-orange-500/20"
-                                          : "bg-muted/50 text-muted-foreground border-transparent",
+                                          ? "bg-orange-500/10 text-orange-600 border border-orange-500/20"
+                                          : "bg-background/80 text-muted-foreground border border-border/50",
                                   )}
                                 >
-                                  {index + 1}
+                                  {index + 1}º
                                 </div>
                                 <div className="flex flex-col gap-0.5">
-                                  <span className="font-black text-foreground leading-tight">
+                                  <span className="font-black text-foreground leading-tight text-base group-hover:text-primary transition-colors">
                                     {service.name}
                                   </span>
-                                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
                                     {service.sessoes} atendimentos
                                   </span>
                                 </div>
                               </div>
                               <div className="text-right">
-                                <span className="font-black text-base sm:text-lg text-primary tracking-tight">
+                                <span className="font-black text-lg sm:text-xl text-primary tracking-tighter">
                                   {formatCurrency(service.faturamento)}
                                 </span>
                               </div>
@@ -423,30 +438,33 @@ export default function ReportsPage() {
               {/* ABA 3: EXPORTAR */}
               <TabsContent
                 value="exportar"
-                className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500 min-w-0"
+                className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-4 duration-700 min-w-0"
               >
-                <Card className="rounded-3xl border-border/50 shadow-sm bg-card p-2 md:p-0">
-                  <CardHeader className="px-4 md:px-6 pt-4 md:pt-6 pb-4 border-b border-border/40">
-                    <CardTitle className="flex items-center gap-2 text-lg font-black text-foreground">
-                      <ArrowToBottom size="sm" className="text-primary" />
+                <Card className="relative overflow-hidden rounded-4xl border-border/40 shadow-sm bg-background/50 backdrop-blur-md">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-3xl rounded-full -z-10 pointer-events-none" />
+                  <CardHeader className="px-6 pt-6 pb-4 border-b border-border/30">
+                    <CardTitle className="flex items-center gap-3 text-xl font-black text-foreground">
+                      <div className="p-2 bg-primary/10 rounded-xl text-primary">
+                        <ArrowToBottom size="sm" />
+                      </div>
                       Exportar Fechamento
                     </CardTitle>
-                    <CardDescription className="font-medium text-muted-foreground">
+                    <CardDescription className="font-medium text-xs uppercase tracking-widest text-muted-foreground ml-12">
                       Gere um PDF detalhado das receitas e despesas para envio
-                      ao e-mail informado.
+                      ao e-mail.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-6 px-4 md:px-6 pt-6 pb-6">
-                    <div className="space-y-2">
+                  <CardContent className="space-y-8 px-6 pt-8 pb-8">
+                    <div className="space-y-3">
                       <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                         Selecione o Período
                       </Label>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-4">
                         <Select
                           value={selectedMonth.toString()}
                           onValueChange={(val) => setSelectedMonth(Number(val))}
                         >
-                          <SelectTrigger className="h-12 w-full sm:w-40 rounded-2xl bg-card border border-border/50 font-bold focus:ring-primary/20">
+                          <SelectTrigger className="h-14 w-full sm:w-48 rounded-2xl bg-muted/20 border-border/40 hover:bg-muted/30 font-bold focus:ring-primary/30 transition-all shadow-inner">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="rounded-2xl border-border/50 shadow-xl">
@@ -454,7 +472,7 @@ export default function ReportsPage() {
                               <SelectItem
                                 key={m.value}
                                 value={m.value.toString()}
-                                className="font-bold rounded-xl"
+                                className="font-bold rounded-xl my-0.5"
                               >
                                 {m.label}
                               </SelectItem>
@@ -466,7 +484,7 @@ export default function ReportsPage() {
                           value={selectedYear.toString()}
                           onValueChange={(val) => setSelectedYear(Number(val))}
                         >
-                          <SelectTrigger className="h-12 w-full sm:w-32 rounded-2xl bg-card border border-border/50 font-bold focus:ring-primary/20">
+                          <SelectTrigger className="h-14 w-full sm:w-36 rounded-2xl bg-muted/20 border-border/40 hover:bg-muted/30 font-bold focus:ring-primary/30 transition-all shadow-inner">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="rounded-2xl border-border/50 shadow-xl">
@@ -474,7 +492,7 @@ export default function ReportsPage() {
                               <SelectItem
                                 key={y}
                                 value={y.toString()}
-                                className="font-bold rounded-xl"
+                                className="font-bold rounded-xl my-0.5"
                               >
                                 {y}
                               </SelectItem>
@@ -484,7 +502,7 @@ export default function ReportsPage() {
                       </div>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-3 max-w-md">
                       <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                         E-mail de Destino
                       </Label>
@@ -493,13 +511,13 @@ export default function ReportsPage() {
                         placeholder="contato@exemplo.com"
                         value={emailTo}
                         onChange={(e) => setEmailTo(e.target.value)}
-                        className="h-12 rounded-2xl bg-card border border-border/50 font-bold focus-visible:ring-primary/20 pl-4"
+                        className="h-14 rounded-2xl bg-muted/20 border-border/40 hover:bg-muted/30 font-bold focus-visible:ring-primary/30 pl-4 transition-all shadow-inner text-base"
                       />
                     </div>
 
                     <div className="flex justify-start pt-2">
                       <Button
-                        className="rounded-2xl h-12 px-8 font-black hover:scale-[1.02] active:scale-95 transition-all w-full md:w-auto shadow-md shadow-primary/20"
+                        className="rounded-2xl h-14 px-8 font-black active:scale-95 transition-all w-full md:w-auto shadow-[0_8px_25px_rgb(var(--primary)/0.3)] hover:shadow-[0_10px_30px_rgb(var(--primary)/0.4)] text-base"
                         onClick={handleSendReport}
                         disabled={isSendingEmail}
                       >
@@ -508,7 +526,9 @@ export default function ReportsPage() {
                         ) : (
                           <Send size="sm" className="mr-2" />
                         )}
-                        {isSendingEmail ? "Enviando..." : "Enviar Fechamento"}
+                        {isSendingEmail
+                          ? "Processando e Enviando..."
+                          : "Enviar Fechamento PDF"}
                       </Button>
                     </div>
                   </CardContent>
