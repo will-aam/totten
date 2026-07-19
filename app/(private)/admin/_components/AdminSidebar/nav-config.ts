@@ -30,8 +30,27 @@ export type OpenModule =
   | "agenda"
   | "autoatendimento"
   | "finance"
+  | "termos"
   | null;
 
+export const termosSubItems: SubNavItem[] = [
+  { title: "Criar/Editar Termo", href: "/admin/termos/editor", active: false },
+  {
+    title: "Ver Assinaturas",
+    href: "/admin/termos/assinaturas",
+    active: false,
+  },
+  {
+    title: "Status",
+    href: "/admin/termos/status",
+    active: false,
+  },
+  {
+    title: "Data/Hora e Histórico",
+    href: "/admin/termos/historico",
+    active: false,
+  },
+];
 export const navItems: NavItem[] = [
   {
     title: "Agendamento",
@@ -98,7 +117,7 @@ export const autoatendimentoSubItems: SubNavItem[] = [
     title: "Link Bio",
     href: "/admin/link-bio",
     icon: LinkAlt as BoxIcon,
-    active: true,
+    active: false,
   },
   { title: "WhatsApp Automático", href: "/admin/whatsapp-auto", active: false },
   { title: "Regras e Horários", href: "/admin/auto/rules", active: false },

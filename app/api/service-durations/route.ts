@@ -1,22 +1,17 @@
 // app/api/service-durations/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { requireAuth, AuthError } from "@/lib/auth";
+import { ServiceDurationService } from "@/lib/server/services/service-durations/duration.service";
 
 // GET - Lista todas as durações cadastradas
 export async function GET() {
   try {
     const admin = await requireAuth();
 
-    const durations = await prisma.serviceDuration.findMany({
-      where: {
-        organization_id: admin.organizationId,
-        is_active: true,
-      },
-      orderBy: {
-        minutes: "asc",
-      },
-    });
+    // Delega a busca para a camada de serviço
+    const durations = await ServiceDurationService.getDurations(
+      admin.organizationId,
+    );
 
     return NextResponse.json(durations);
   } catch (error) {
@@ -43,44 +38,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (Number(minutes) < 1) {
+    // Delega a regra de negócio e inserção para o serviço
+    const duration = await ServiceDurationService.createDuration(
+      admin.organizationId,
+      label,
+      minutes,
+    );
+
+    return NextResponse.json({
+      success: true,
+      duration,
+    });
+  } catch (error: any) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+
+    // Mapeamento de erros de negócio
+    if (error.message === "INVALID_DURATION") {
       return NextResponse.json(
         { error: "Duração deve ser maior que zero" },
         { status: 400 },
       );
     }
-
-    // Verifica se já existe
-    const existing = await prisma.serviceDuration.findFirst({
-      where: {
-        minutes: Number(minutes),
-        organization_id: admin.organizationId,
-      },
-    });
-
-    if (existing) {
+    if (error.message === "DURATION_ALREADY_EXISTS") {
       return NextResponse.json(
         { error: "Duração já cadastrada" },
         { status: 409 },
       );
     }
 
-    const duration = await prisma.serviceDuration.create({
-      data: {
-        label,
-        minutes: Number(minutes),
-        organization_id: admin.organizationId,
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      duration,
-    });
-  } catch (error) {
-    if (error instanceof AuthError) {
-      return NextResponse.json({ error: error.message }, { status: 401 });
-    }
     console.error("[SERVICE_DURATIONS_POST]", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
@@ -98,12 +85,8 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "ID é obrigatório" }, { status: 400 });
     }
 
-    await prisma.serviceDuration.delete({
-      where: {
-        id,
-        organization_id: admin.organizationId,
-      },
-    });
+    // Delega a exclusão para o serviço
+    await ServiceDurationService.deleteDuration(admin.organizationId, id);
 
     return NextResponse.json({
       success: true,

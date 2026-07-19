@@ -12,6 +12,7 @@ import {
   Mobile,
   Database,
   CalendarDetail,
+  Shield, // 👈 novo ícone para "Termos de Uso" (ajuste se @boxicons/react tiver outro nome, ex: FileBlank)
 } from "@boxicons/react";
 import {
   Sidebar,
@@ -36,6 +37,7 @@ import {
   agendaSubItems,
   autoatendimentoSubItems,
   financeSubItems,
+  termosSubItems, // 👈 novo array de subitens (declarar em nav-config.ts)
   type OpenModule,
 } from "./nav-config";
 
@@ -70,6 +72,8 @@ export function AdminSidebar() {
       setOpenModule("autoatendimento");
     } else if (financeSubItems.some((i) => pathname.startsWith(i.href))) {
       setOpenModule("finance");
+    } else if (termosSubItems.some((i) => pathname.startsWith(i.href))) {
+      setOpenModule("termos");
     }
   }, [pathname]);
 
@@ -90,6 +94,9 @@ export function AdminSidebar() {
     pathname.startsWith(i.href),
   );
   const isFinanceActive = financeSubItems.some((i) =>
+    pathname.startsWith(i.href),
+  );
+  const isTermosActive = termosSubItems.some((i) =>
     pathname.startsWith(i.href),
   );
 
@@ -230,6 +237,20 @@ export function AdminSidebar() {
                 pathname={pathname}
                 onNavigate={closeMobile}
               />
+
+              {/* Módulo: Termos de Uso - Apenas Owner */}
+              {isOwner && (
+                <NavCollapsibleGroup
+                  label="Termos de Uso"
+                  icon={Shield}
+                  isOpen={openModule === "termos"}
+                  onOpenChange={(open) => setOpenModule(open ? "termos" : null)}
+                  isActive={isTermosActive}
+                  items={termosSubItems}
+                  pathname={pathname}
+                  onNavigate={closeMobile}
+                />
+              )}
 
               {/* Módulo: Autoatendimento - Apenas Owner */}
               {isOwner && (
