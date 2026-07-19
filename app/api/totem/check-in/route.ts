@@ -44,9 +44,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (appt.status === "REALIZADO") {
+    if (appt.status === "REALIZADO" || appt.status === "CANCELADO") {
       return NextResponse.json(
-        { error: "Este agendamento já foi realizado." },
+        { error: "Este agendamento já foi realizado ou está cancelado." },
         { status: 400 },
       );
     }
@@ -90,15 +90,28 @@ export async function POST(request: NextRequest) {
       });
 
       // 2. Atualiza Pacote e Agendamento
-      if (appt.package_id) {
-        const pacote = await tx.package.update({
-          where: { id: appt.package_id, organization_id: admin.organizationId },
+      if (appt.package) {
+        // 👈 Mudança chave aqui: validamos o objeto inteiro
+        // Utilizamos updateMany para poder injetar a condição de saldo no banco
+        const pacoteUpdate = await tx.package.updateMany({
+          where: {
+            id: appt.package.id, // Usamos o ID do objeto garantido pelo TS
+            organization_id: admin.organizationId,
+            used_sessions: { lt: appt.package.total_sessions }, // Trava atômica livre de erros
+          },
           data: { used_sessions: { increment: 1 } },
         });
 
+        // Se count for 0, significa que o update falhou (ou não achou, ou falhou na trava de saldo)
+        if (pacoteUpdate.count === 0) {
+          throw new Error(
+            "Saldo de sessões esgotado devido a requisições simultâneas.",
+          );
+        }
+
         packageInfo = {
-          used: pacote.used_sessions,
-          total: pacote.total_sessions,
+          used: appt.package.used_sessions + 1, // TS agora sabe que não é null
+          total: appt.package.total_sessions, // TS agora sabe que não é null
         };
 
         await tx.appointment.update({
@@ -106,6 +119,7 @@ export async function POST(request: NextRequest) {
           data: { status: "REALIZADO" },
         });
       } else {
+        // Fluxo para agendamento avulso (sem pacote)
         await tx.appointment.update({
           where: { id: appt.id, organization_id: admin.organizationId },
           data: { status: "REALIZADO", has_charge: true },
