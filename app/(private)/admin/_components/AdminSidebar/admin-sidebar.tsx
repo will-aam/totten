@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
 import {
-  DashboardAlt,
+  GridCircleDiagonalLeft,
   Lock,
   Wallet,
   Mobile,
@@ -149,7 +149,7 @@ export function AdminSidebar() {
                 >
                   <Link href="/admin/dashboard" onClick={closeMobile}>
                     <NavIcon
-                      icon={DashboardAlt}
+                      icon={GridCircleDiagonalLeft}
                       isActive={pathname.startsWith("/admin/dashboard")}
                     />
                     <span>Dashboard</span>

@@ -1,7 +1,7 @@
 import {
   Group,
   ClipboardDetail,
-  Ticket,
+  Tickets,
   Note,
   Gift,
   CalendarDetail,
@@ -79,7 +79,7 @@ export const navItems: NavItem[] = [
   {
     title: "Vouchers",
     href: "/admin/vouchers",
-    icon: Ticket as BoxIcon,
+    icon: Tickets as BoxIcon,
     active: true,
     ownerOnly: true,
   },
