@@ -1,4 +1,4 @@
-// components/client/package-voucher.tsx
+// app/(private)/admin/clients/_components/package-voucher.tsx
 "use client";
 
 import { useRef, useState } from "react";

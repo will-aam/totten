@@ -16,7 +16,7 @@ import { ClientPackage } from "../_components/client-package";
 import { ClientAnamnesis } from "../_components/client-anamnesis";
 import { ClientVouchers } from "../_components/client-vouchers";
 import { ClientHistory } from "../_components/client-history";
-import { apiClient } from "@/lib/api-client"; // ✅ Import do nosso apiClient
+import { apiClient } from "@/lib/api-client";
 
 export type ClientType = {
   id: string;

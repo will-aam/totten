@@ -14,9 +14,10 @@ export class VoucherService {
     const prisma = getTenantPrisma(organizationId);
     const skip = (page - 1) * limit;
 
+    // 🔥 CORREÇÃO: Removemos o 'active: true'.
+    // Um pacote 100% consumido tem direito ao voucher mesmo se for arquivado depois.
     const whereClause: any = {
       organization_id: organizationId,
-      active: true,
       used_sessions: {
         gte: prisma.package.fields.total_sessions,
       },
@@ -42,7 +43,7 @@ export class VoucherService {
           },
           vouchers: {
             orderBy: { issue_date: "desc" },
-            take: 1,
+            take: 1, // Pega o log do último voucher gerado
           },
           check_ins: {
             select: { date_time: true },
@@ -84,6 +85,7 @@ export class VoucherService {
           month: "short",
           year: "numeric",
         }),
+        // 🔥 AQUI USAMOS A TABELA COMO LOG!
         hasVoucher: pkg.vouchers.length > 0,
         lastVoucherDate: pkg.vouchers[0]?.issue_date,
         sessionDates: uniqueDates,
