@@ -105,10 +105,11 @@ export const AppointmentDetailsModal = memo(
     useEffect(() => {
       async function loadData() {
         // Duas buscas independentes: uma falhar não deve impedir a outra
-        // (comportamento preservado do fetch original)
         try {
-          const settingsData =
-            await apiClient<PublicSettings>("settings/public");
+          // 🔌 ATUALIZADO: Apontando para a nova rota pública
+          const settingsData = await apiClient<PublicSettings>(
+            "public/organization",
+          );
           setSettings(settingsData);
         } catch (e) {
           console.error(e);

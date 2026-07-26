@@ -242,4 +242,65 @@ export class TotemSearchService {
       },
     };
   }
+  /**
+   * Busca os detalhes de um cliente (e seus pacotes ativos) pelo CPF
+   * no contexto do Totem (usando a organização do admin logado no dispositivo).
+   */
+  static async searchClientByCpf(cpf: string, organizationId: string) {
+    const prisma = getTenantPrisma(organizationId);
+    const cleanCpf = cpf.replace(/\D/g, "");
+
+    const cpfFormatado =
+      cleanCpf.length === 11
+        ? cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
+        : cpf;
+
+    const cpfCandidates = Array.from(
+      new Set([cpf.trim(), cleanCpf, cpfFormatado]),
+    );
+
+    // Busca o cliente dentro do escopo da organização do totem
+    const client = await prisma.client.findFirst({
+      where: {
+        cpf: { in: cpfCandidates },
+        organization_id: organizationId,
+      },
+      include: {
+        packages: {
+          where: {
+            active: true,
+            used_sessions: {
+              lt: prisma.package.fields.total_sessions, // Verifica saldo de sessões
+            },
+          },
+          include: {
+            service: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!client) {
+      throw new Error("CLIENT_NOT_FOUND");
+    }
+
+    return {
+      id: client.id,
+      name: client.name,
+      phone: client.phone_whatsapp,
+      packages: client.packages.map((pkg: any) => ({
+        id: pkg.id,
+        name: pkg.name,
+        serviceName: pkg.service.name,
+        totalSessions: pkg.total_sessions,
+        usedSessions: pkg.used_sessions,
+        remainingSessions: pkg.total_sessions - pkg.used_sessions,
+        price: pkg.price,
+      })),
+    };
+  }
 }

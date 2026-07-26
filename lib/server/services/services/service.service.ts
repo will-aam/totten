@@ -3,7 +3,27 @@ import { getTenantPrisma } from "@/lib/prisma";
 
 export class ServiceCatalogService {
   /**
-   * Lista os serviços da organização (com filtro opcional de ativos)
+   * Lista de forma otimizada os serviços (apenas id e name) para listagens simples e dropdowns.
+   */
+  static async getSimpleServicesList(organizationId: string) {
+    const prisma = getTenantPrisma(organizationId);
+
+    return await prisma.service.findMany({
+      where: {
+        organization_id: organizationId,
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+      orderBy: {
+        name: "asc",
+      },
+    });
+  }
+
+  /**
+   * Lista os serviços da organização de forma completa (com filtro opcional de ativos)
    */
   static async getServices(organizationId: string, onlyActive: boolean) {
     const prisma = getTenantPrisma(organizationId);

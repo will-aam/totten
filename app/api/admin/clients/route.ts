@@ -1,7 +1,7 @@
 // app/api/admin/clients/route.ts
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
+import { ClientService } from "@/lib/server/services/clients/client.service";
 
 /**
  * Lista clientes da organização do admin logado.
@@ -10,23 +10,14 @@ import { requireAuth } from "@/lib/auth";
  */
 export async function GET() {
   try {
+    // 🛡️ Validação unificada de sessão e tenant
     const admin = await requireAuth();
 
-    const clients = await prisma.client.findMany({
-      where: {
-        organization_id: admin.organizationId,
-      },
-      select: {
-        id: true,
-        name: true,
-      },
-      orderBy: {
-        name: "asc",
-      },
-    });
+    // Delega a busca no banco (com isolamento de tenant) para o serviço
+    const clients = await ClientService.getClients(admin.organizationId);
 
     return NextResponse.json({ clients });
-  } catch (error) {
+  } catch (error: any) {
     console.error("[GET /api/admin/clients] ERRO:", error);
 
     if (error instanceof Error && error.message === "Unauthorized") {

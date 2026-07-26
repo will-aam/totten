@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { AppointmentStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { PackageService } from "@/lib/server/services/packages/package.service";
 
 /**
  * Busca todos os pacotes da organização e calcula os KPIs em tempo real.
@@ -92,6 +93,48 @@ export async function getPackagesDashboardData(params?: {
   } catch (error) {
     console.error("Erro ao carregar dashboard:", error);
     return { success: false, error: "Falha ao carregar dados." };
+  }
+}
+
+/**
+ * Sincroniza o saldo de um pacote contando os check-ins reais vinculados a ele.
+ */
+export async function syncPackageBalance(packageId: string) {
+  try {
+    // 🛡️ Validação unificada de sessão e tenant
+    const admin = await requireAuth();
+
+    if (!packageId) {
+      return { error: "ID do pacote é obrigatório." };
+    }
+
+    // 1. Conta quantos check-ins reais existem para este pacote
+    const realCount = await prisma.checkIn.count({
+      where: {
+        package_id: packageId,
+        organization_id: admin.organizationId,
+      },
+    });
+
+    // 2. Atualiza o saldo do pacote para esse valor real
+    await prisma.package.update({
+      where: {
+        id: packageId,
+        organization_id: admin.organizationId,
+      },
+      data: { used_sessions: realCount },
+    });
+
+    revalidatePath("/admin/packages");
+    return { success: true, count: realCount };
+  } catch (error: any) {
+    console.error("[ACTION syncPackageBalance] ERRO:", error);
+
+    if (error.message === "Unauthorized") {
+      return { error: "Não autorizado" };
+    }
+
+    return { error: "Erro ao sincronizar saldo" };
   }
 }
 
@@ -450,5 +493,51 @@ export async function archivePackage(packageId: string) {
   } catch (error) {
     console.error("Erro ao encerrar pacote:", error);
     return { success: false, error: "Falha ao encerrar o pacote." };
+  }
+}
+// Adicione no final do arquivo app/actions/packages.ts
+
+export async function createPackageAction(data: any) {
+  try {
+    // 🛡️ Validação unificada de sessão e extração do tenant
+    const admin = await requireAuth();
+
+    // Delega toda a validação de regras de negócio, travas de pacote ativo
+    // e transações financeiras para a camada de serviço.
+    const result = await PackageService.createPackage(
+      admin.organizationId,
+      data,
+    );
+
+    return { success: true, data: result };
+  } catch (error: any) {
+    if (error.name === "AuthError" || error.message === "Não autorizado") {
+      return {
+        success: false,
+        error: "Sessão expirada. Faça login novamente.",
+      };
+    }
+
+    // Mapeamento de erros de domínio para mensagens amigáveis no frontend
+    const domainErrors: Record<string, string> = {
+      INVALID_DATA: "Dados inválidos",
+      UPFRONT_PAYMENT_METHOD_REQUIRED:
+        "Selecione a forma de pagamento para venda à vista.",
+      INVALID_INSTALLMENTS_COUNT: "O número de parcelas deve ser entre 2 e 48.",
+      CLIENT_NOT_FOUND: "Cliente não encontrado",
+      ACTIVE_PACKAGE_EXISTS:
+        "Este cliente já possui um Pacote ativo. Encerre o atual antes de vender um novo pacote.",
+      SERVICE_NOT_FOUND: "Serviço não encontrado",
+    };
+
+    if (error.message && domainErrors[error.message]) {
+      return { success: false, error: domainErrors[error.message] };
+    }
+
+    console.error("[ACTION createPackage]", error);
+    return {
+      success: false,
+      error: "Erro interno do servidor ao criar pacote.",
+    };
   }
 }

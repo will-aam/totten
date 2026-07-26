@@ -9,7 +9,6 @@ import {
   Dashboard,
   ArrowRightLeft,
   CreditCard,
-  Package,
   Wallet,
   LoaderDots, //  Adicionado para o estado de carregamento
 } from "@boxicons/react";
@@ -23,7 +22,6 @@ const mobileNavItems = [
     label: "Pagamentos",
     icon: CreditCard,
   },
-  { id: "/admin/packages", label: "Pacotes", icon: Package },
 ];
 
 export default function FinanceLayout({

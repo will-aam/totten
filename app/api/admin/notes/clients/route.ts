@@ -1,30 +1,17 @@
 // app/api/admin/notes/clients/route.ts
 import { NextResponse } from "next/server";
 import { requireAuth, AuthError } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { ClientNoteService } from "@/lib/server/services/notes/client-note.service";
 
 export async function GET() {
   try {
-    // 🛡️ O requireAuth garante a sessão
+    // 🛡️ O requireAuth garante a sessão e extrai o tenant
     const admin = await requireAuth();
 
-    // Busca APENAS os clientes da organização que possuam pelo menos 1 anotação
-    const clientsWithNotes = await prisma.client.findMany({
-      where: {
-        organization_id: admin.organizationId,
-        notes: {
-          some: {}, // O Prisma exige que a relação "notes" não esteja vazia
-        },
-      },
-      orderBy: {
-        name: "asc", // Ordena alfabeticamente para ficar organizado
-      },
-      select: {
-        id: true,
-        name: true,
-        cpf: true,
-      },
-    });
+    // Delega a busca dos clientes com anotações (e o isolamento de tenant) para o serviço
+    const clientsWithNotes = await ClientNoteService.getClientsWithNotes(
+      admin.organizationId,
+    );
 
     return NextResponse.json({ data: clientsWithNotes });
   } catch (error) {
@@ -33,7 +20,7 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }
 
-    console.error("[NOTES_CLIENTS_GET]", error);
+    console.error("[NOTES_CLIENTS_GET] ERRO:", error);
     return NextResponse.json(
       { error: "Erro interno do servidor" },
       { status: 500 },

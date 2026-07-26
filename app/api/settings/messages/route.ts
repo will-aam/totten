@@ -1,101 +1,23 @@
 // app/api/settings/messages/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { getTenantPrisma } from "@/lib/prisma";
+import { NextResponse } from "next/server";
 import { requireAuth, AuthError } from "@/lib/auth";
+import { MessagesService } from "@/lib/server/services/settings/messages.service";
 
-// GET - Busca templates de mensagem formatados para a organização
+// GET - Busca templates de mensagem formatados para a organização (Para o SWR)
 export async function GET() {
   try {
+    // 🛡️ Autenticação centralizada
     const admin = await requireAuth();
-    // Instancia o Prisma blindado para a organização atual
-    const prisma = getTenantPrisma(admin.organizationId);
 
-    const settings = await prisma.settings.findUnique({
-      where: { organization_id: admin.organizationId },
-    });
+    // Delega a busca dos dados para a camada de Serviço
+    const templates = await MessagesService.getTemplates(admin.organizationId);
 
-    const templates = await prisma.messageTemplate.findMany({
-      // A trava de segurança injetará silenciosamente o organization_id aqui
-      where: { organization_id: admin.organizationId },
-    });
-
-    const templatesMap: Record<string, string> = {};
-    templates.forEach((t) => {
-      templatesMap[t.type] = t.content;
-    });
-
-    return NextResponse.json({
-      phone: settings?.phone_whatsapp || "",
-      msgUpdate: templatesMap["CHECK_IN"] || "",
-      msgWelcome: templatesMap["WELCOME"] || "",
-      msgRenewal: templatesMap["RENEWAL"] || "",
-      msgReminder: templatesMap["REMINDER"] || "",
-      msgManualConfirmation: templatesMap["MANUAL_CONFIRMATION"] || "",
-    });
+    return NextResponse.json(templates);
   } catch (error) {
     if (error instanceof AuthError) {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }
     console.error("[MESSAGES_GET]", error);
-    return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
-  }
-}
-
-// PUT - Atualiza templates utilizando upsert via transação
-export async function PUT(request: NextRequest) {
-  try {
-    const admin = await requireAuth();
-    // Instancia o Prisma blindado para a organização atual
-    const prisma = getTenantPrisma(admin.organizationId);
-
-    const body = await request.json();
-    const {
-      msgUpdate,
-      msgWelcome,
-      msgRenewal,
-      msgReminder,
-      msgManualConfirmation,
-    } = body;
-
-    await prisma.$transaction(async (tx) => {
-      const templates = [
-        { type: "CHECK_IN", content: msgUpdate },
-        { type: "WELCOME", content: msgWelcome },
-        { type: "RENEWAL", content: msgRenewal },
-        { type: "REMINDER", content: msgReminder },
-        { type: "MANUAL_CONFIRMATION", content: msgManualConfirmation },
-      ];
-
-      for (const template of templates) {
-        // Ignora campos não fornecidos no request
-        if (template.content === undefined) continue;
-
-        await tx.messageTemplate.upsert({
-          where: {
-            type_organization_id: {
-              type: template.type,
-              organization_id: admin.organizationId,
-            },
-          },
-          update: { content: template.content },
-          create: {
-            type: template.type,
-            content: template.content,
-            organization_id: admin.organizationId,
-          },
-        });
-      }
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: "Mensagens atualizadas com sucesso",
-    });
-  } catch (error) {
-    if (error instanceof AuthError) {
-      return NextResponse.json({ error: error.message }, { status: 401 });
-    }
-    console.error("[MESSAGES_PUT]", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }

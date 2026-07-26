@@ -9,6 +9,8 @@ import {
   validatePackageDeactivation,
   validatePackageActivation,
 } from "@/lib/validation/catalog";
+// Importando nosso novo Service
+import { PackageTemplateService } from "@/lib/server/services/packages/package-template.service";
 
 // Função auxiliar para limpar dados sensíveis/decimais
 function sanitizePackage(pkg: any) {
@@ -18,6 +20,47 @@ function sanitizePackage(pkg: any) {
     price: Number(pkg.price || 0),
   };
 }
+
+// --- NOVA ACTION: CRIAÇÃO ---
+export async function createPackageTemplateAction(data: {
+  name: string;
+  total_sessions: string | number;
+  price: string | number;
+  service_id: string;
+  validity_days?: string | number | null;
+  active?: boolean;
+}) {
+  try {
+    const admin = await requireAuth();
+
+    // Delega a criação para a camada de serviço
+    const template = await PackageTemplateService.createTemplate(
+      admin.organizationId,
+      data,
+    );
+
+    // Revalida as rotas que exibem listas de pacotes e serviços
+    revalidatePath("/admin/services");
+    revalidatePath("/admin/packages");
+
+    return { success: true, template: sanitizePackage(template) };
+  } catch (error: any) {
+    if (error.name === "AuthError" || error.message === "Não autorizado") {
+      return { success: false, error: "Sessão expirada ou não autorizado" };
+    }
+    if (error.message === "MISSING_DATA") {
+      return { success: false, error: "Dados obrigatórios incompletos." };
+    }
+
+    console.error("[ACTION createPackageTemplate] Erro:", error);
+    return {
+      success: false,
+      error: "Erro interno ao criar template de pacote.",
+    };
+  }
+}
+
+// --- ACTIONS EXISTENTES ---
 
 export async function updatePackageTemplate(
   id: string,

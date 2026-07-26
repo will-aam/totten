@@ -160,4 +160,84 @@ export class TotemCheckInService {
       package_info: packageInfo,
     };
   }
+
+  /**
+   * Processa o check-in avulso via CPF, validando o pacote ativo do cliente
+   * e consumindo a sessão de forma atômica.
+   */
+  static async processCheckInByCpf(cpf: string, organizationId: string) {
+    const prisma = getTenantPrisma(organizationId);
+
+    // Busca o cliente dentro do escopo da organização
+    const client = await prisma.client.findFirst({
+      where: {
+        cpf: cpf,
+        organization_id: organizationId,
+      },
+      include: {
+        packages: {
+          where: {
+            active: true,
+          },
+          orderBy: {
+            created_at: "desc",
+          },
+          take: 1,
+        },
+      },
+    });
+
+    if (!client) {
+      throw new Error("CLIENT_NOT_FOUND");
+    }
+
+    if (!client.packages || client.packages.length === 0) {
+      throw new Error("NO_ACTIVE_PACKAGE");
+    }
+
+    const activePackage = client.packages[0];
+
+    if (activePackage.used_sessions >= activePackage.total_sessions) {
+      throw new Error("PACKAGE_COMPLETED");
+    }
+
+    const newUsedSessions = activePackage.used_sessions + 1;
+    const willRemainActive = newUsedSessions < activePackage.total_sessions;
+
+    // Registra o check-in e atualiza o pacote de forma atômica
+    const result = await prisma.$transaction(async (tx) => {
+      const checkIn = await tx.checkIn.create({
+        data: {
+          client_id: client.id,
+          package_id: activePackage.id,
+          organization_id: organizationId,
+        },
+      });
+
+      await tx.package.update({
+        where: { id: activePackage.id, organization_id: organizationId },
+        data: {
+          used_sessions: newUsedSessions,
+          active: willRemainActive,
+        },
+      });
+
+      return checkIn;
+    });
+
+    return {
+      client: {
+        id: client.id,
+        name: client.name,
+      },
+      package_info: {
+        used_sessions: newUsedSessions,
+        total_sessions: activePackage.total_sessions,
+      },
+      check_in: {
+        id: result.id,
+        date_time: result.date_time,
+      },
+    };
+  }
 }

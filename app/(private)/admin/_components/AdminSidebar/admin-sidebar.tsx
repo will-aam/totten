@@ -10,9 +10,8 @@ import {
   Lock,
   Wallet,
   Mobile,
-  Database,
-  CalendarDetail,
-  Shield, // 👈 novo ícone para "Termos de Uso" (ajuste se @boxicons/react tiver outro nome, ex: FileBlank)
+  Cloud,
+  Shield,
 } from "@boxicons/react";
 import {
   Sidebar,
@@ -24,6 +23,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
@@ -34,10 +36,9 @@ import { SidebarUserFooter } from "./sidebar-footer";
 import {
   navItems,
   cadastrosSubItems,
-  agendaSubItems,
   autoatendimentoSubItems,
   financeSubItems,
-  termosSubItems, // 👈 novo array de subitens (declarar em nav-config.ts)
+  termosSubItems,
   type OpenModule,
 } from "./nav-config";
 
@@ -62,8 +63,6 @@ export function AdminSidebar() {
   useEffect(() => {
     if (cadastrosSubItems.some((i) => pathname.startsWith(i.href))) {
       setOpenModule("cadastros");
-    } else if (agendaSubItems.some((i) => pathname.startsWith(i.href))) {
-      setOpenModule("agenda");
     } else if (
       autoatendimentoSubItems.some(
         (i) => pathname.startsWith(i.href) && i.href !== "#",
@@ -87,9 +86,6 @@ export function AdminSidebar() {
   const isCadastrosActive = cadastrosSubItems.some((i) =>
     pathname.startsWith(i.href),
   );
-  const isAgendaActive = agendaSubItems.some((i) =>
-    pathname.startsWith(i.href),
-  );
   const isAutoActive = autoatendimentoSubItems.some((i) =>
     pathname.startsWith(i.href),
   );
@@ -99,6 +95,10 @@ export function AdminSidebar() {
   const isTermosActive = termosSubItems.some((i) =>
     pathname.startsWith(i.href),
   );
+
+  // Rota fixa do sub-item de Agendamento
+  const remindersHref = "/admin/reminders";
+  const isRemindersActive = pathname.startsWith(remindersHref);
 
   return (
     <Sidebar>
@@ -161,7 +161,7 @@ export function AdminSidebar() {
               {isOwner && (
                 <NavCollapsibleGroup
                   label="Cadastros"
-                  icon={Database}
+                  icon={Cloud}
                   isOpen={openModule === "cadastros"}
                   onOpenChange={(open) =>
                     setOpenModule(open ? "cadastros" : null)
@@ -187,6 +187,43 @@ export function AdminSidebar() {
                   return null;
 
                 const isActive = pathname.startsWith(item.href) && item.active;
+
+                // 👇 Agendamento ganha um sub-item FIXO (Confirmações Manuais),
+                // sem colapsar/expandir — sempre visível, com a linha de hierarquia.
+                if (item.title === "Agendamento") {
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                        className="hover:bg-muted/50"
+                      >
+                        <Link href={item.href} onClick={closeMobile}>
+                          <NavIcon icon={item.icon} isActive={isActive} />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+
+                      <div className="mx-3.5 my-0.5 flex items-stretch">
+                        {/* Conector curvo: desce e curva à direita até o item */}
+                        <div className="relative w-3 shrink-0">
+                          <span className="absolute left-0 top-0 h-4 w-3 rounded-bl-lg border-b border-l border-sidebar-border" />
+                        </div>
+
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={isRemindersActive}
+                          className="flex-1 pl-1"
+                        >
+                          <Link href={remindersHref} onClick={closeMobile}>
+                            <span>Confirmações Manuais</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </div>
+                    </SidebarMenuItem>
+                  );
+                }
+
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
@@ -226,18 +263,6 @@ export function AdminSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {/* Módulo: Agenda - Todos veem */}
-              <NavCollapsibleGroup
-                label="Gestão de Agenda"
-                icon={CalendarDetail}
-                isOpen={openModule === "agenda"}
-                onOpenChange={(open) => setOpenModule(open ? "agenda" : null)}
-                isActive={isAgendaActive}
-                items={agendaSubItems}
-                pathname={pathname}
-                onNavigate={closeMobile}
-              />
-
               {/* Módulo: Termos de Uso - Apenas Owner */}
               {isOwner && (
                 <NavCollapsibleGroup

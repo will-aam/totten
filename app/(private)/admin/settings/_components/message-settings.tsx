@@ -1,4 +1,4 @@
-// app/admin/settings/sections/message-settings.tsx
+// app/(private)/admin/settings/_components/message-settings.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -22,6 +22,8 @@ import { Whatsapp, HelpCircle, Save, LoaderDots, Plus } from "@boxicons/react";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { apiClient, ApiError } from "@/lib/api-client";
+// 🔌 Importando a nossa Server Action nativa
+import { updateMessagesAction } from "@/app/actions/messages";
 
 interface MessageSettingsResponse {
   msgUpdate?: string;
@@ -42,7 +44,7 @@ export function MessageSettings() {
   const [msgWelcome, setMsgWelcome] = useState("");
   const [msgRenewal, setMsgRenewal] = useState("");
   const [msgReminder, setMsgReminder] = useState("");
-  const [msgManualConfirmation, setMsgManualConfirmation] = useState(""); //  Novo estado
+  const [msgManualConfirmation, setMsgManualConfirmation] = useState("");
 
   // Busca dados do banco quando carrega
   useEffect(() => {
@@ -67,15 +69,12 @@ export function MessageSettings() {
           data.msgReminder ||
             "Oi, {nome}! Passando para lembrar do nosso horário agendado para amanhã às {horario}. \n\nPodemos confirmar sua presença? 👍",
         );
-        //  Carregando a nova mensagem
         setMsgManualConfirmation(
           data.msgManualConfirmation ||
             "Olá {nome}! Passando para confirmar o seu horário amanhã às *{horario}* para o serviço de {servico}. Podemos confirmar? 🥰",
         );
       } catch (error) {
         console.error("Erro ao buscar mensagens:", error);
-        // Distingue erro de API (apiClient lança ApiError) de falha de rede,
-        // preservando as duas mensagens que já existiam antes da refatoração
         if (error instanceof ApiError) {
           toast.error("Erro ao carregar mensagens");
         } else {
@@ -89,30 +88,30 @@ export function MessageSettings() {
     fetchMessages();
   }, []);
 
-  // Salva TUDO
+  // 🔌 Salva TUDO usando a Server Action
   const handleSaveAll = async () => {
     setSaving(true);
 
     try {
-      await apiClient("settings/messages", {
-        method: "PUT",
-        body: JSON.stringify({
-          msgUpdate,
-          msgWelcome,
-          msgRenewal,
-          msgReminder,
-          msgManualConfirmation, //  Inclui no save
-        }),
+      const result = await updateMessagesAction({
+        msgUpdate,
+        msgWelcome,
+        msgRenewal,
+        msgReminder,
+        msgManualConfirmation,
       });
 
-      toast.success("Mensagens salvas com sucesso!");
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+
+      if (result.success) {
+        toast.success(result.message || "Mensagens salvas com sucesso!");
+      }
     } catch (error: any) {
       console.error("Erro ao salvar:", error);
-      if (error instanceof ApiError) {
-        toast.error(error.message || "Erro ao salvar");
-      } else {
-        toast.error("Erro de conexão");
-      }
+      toast.error("Erro de conexão com o servidor");
     } finally {
       setSaving(false);
     }
@@ -145,9 +144,7 @@ export function MessageSettings() {
             </div>
 
             {/* Grupo de Botões */}
-            <div
-              className={`flex ${isMobile ? "justify-end" : "justify-between"} items-center  gap-2 shrink-0`}
-            >
+            <div className="flex justify-end md:justify-between items-center gap-2 shrink-0">
               <Button
                 variant="outline"
                 onClick={() =>
@@ -158,10 +155,12 @@ export function MessageSettings() {
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Modelo
               </Button>
+
+              {/* 📱 Escondemos este botão no mobile para não duplicar com o flutuante */}
               <Button
                 onClick={handleSaveAll}
                 disabled={saving}
-                className="h-12 px-8 rounded-xl font-medium shadow-sm"
+                className="hidden md:flex h-12 px-8 rounded-xl font-medium shadow-sm"
               >
                 {saving ? (
                   <>
@@ -290,7 +289,6 @@ export function MessageSettings() {
                 </AccordionContent>
               </AccordionItem>
 
-              {/*  Novo Accordion Item para a confirmação manual */}
               <AccordionItem value="item-5" className="px-4 border-0">
                 <AccordionTrigger className="hover:no-underline hover:text-primary transition-colors">
                   5. Confirmação Manual (WhatsApp)
@@ -315,12 +313,18 @@ export function MessageSettings() {
             </Accordion>
           </div>
         </CardContent>
+
+        {/* 📱 Botão flutuante corrigido para ficar acima da nav bottom (bottom-24) */}
         <button
           onClick={handleSaveAll}
           disabled={saving}
-          className={`${!isMobile ? "hidden" : "fixed bottom-0 right-4 md:bottom-8 md:right-8 h-14 w-14 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 z-50 translate-y-16 opacity-100 hover:scale-110"} `}
+          className={`${!isMobile ? "hidden" : "fixed bottom-24 right-4 h-14 w-14 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform duration-300 z-50 hover:scale-105 active:scale-95"} `}
         >
-          <Save className="h-6 w-6" strokeWidth={2.5} />
+          {saving ? (
+            <LoaderDots className="h-6 w-6 animate-spin" />
+          ) : (
+            <Save className="h-6 w-6" strokeWidth={2.5} />
+          )}
         </button>
       </Card>
     </div>

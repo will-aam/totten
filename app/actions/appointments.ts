@@ -1,12 +1,65 @@
 // app/actions/appointments.ts
 "use server";
 
+import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
+import { startOfDay, endOfDay } from "date-fns";
+
 import { getTenantPrisma } from "@/lib/prisma";
 import { AppointmentStatus, PaymentMethod } from "@prisma/client";
 import { requireAuth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { generateRecurrentDates } from "@/lib/date-utils";
 import { randomUUID } from "crypto";
+
+/**
+ * Limpa todos os agendamentos do dia atual para a organização.
+ * Exige a confirmação da senha do admin.
+ */
+export async function clearTodayAgenda(password: string) {
+  try {
+    // 🛡️ Validação unificada de sessão e tenant
+    const admin = await requireAuth();
+
+    if (!password) {
+      return { error: "Senha é obrigatória." };
+    }
+
+    const dbAdmin = await prisma.admin.findUnique({
+      where: { id: admin.id },
+      select: { password: true },
+    });
+
+    if (!dbAdmin) {
+      return { error: "Não autorizado." };
+    }
+
+    const ok = await bcrypt.compare(password, dbAdmin.password);
+    if (!ok) {
+      return { error: "Senha inválida." };
+    }
+
+    const today = new Date();
+    const from = startOfDay(today);
+    const to = endOfDay(today);
+
+    // Trava de segurança: Deleta apenas os agendamentos da organização atual
+    const result = await prisma.appointment.deleteMany({
+      where: {
+        organization_id: admin.organizationId,
+        date_time: { gte: from, lte: to },
+      },
+    });
+
+    return { success: true, deleted: result.count };
+  } catch (error: any) {
+    console.error("[ACTION clearTodayAgenda] ERRO:", error);
+    if (error.message === "Unauthorized") {
+      return { error: "Não autorizado." };
+    }
+    return { error: "Erro ao limpar agenda de hoje." };
+  }
+}
 
 export type CreateAppointmentInput = {
   clientId: string;

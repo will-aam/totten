@@ -1,7 +1,7 @@
 // app/api/totem/search-client/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { requireAuth, AuthError } from "@/lib/auth";
+import { TotemSearchService } from "@/lib/server/services/totem/search.service";
 
 // GET - Busca cliente pelo CPF + organização (via sessão do admin do totem)
 export async function GET(request: NextRequest) {
@@ -16,66 +16,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "CPF é obrigatório" }, { status: 400 });
     }
 
-    const cleanCpf = cpf.replace(/\D/g, "");
-
-    const cpfFormatado =
-      cleanCpf.length === 11
-        ? cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
-        : cpf;
-
-    const cpfCandidates = Array.from(
-      new Set([cpf.trim(), cleanCpf, cpfFormatado]),
+    // Delega a inteligência de busca, formatação e regras de negócio para o Service
+    const clientData = await TotemSearchService.searchClientByCpf(
+      cpf,
+      admin.organizationId,
     );
 
-    // Busca o cliente dentro do escopo da organização do totem
-    const client = await prisma.client.findFirst({
-      where: {
-        cpf: { in: cpfCandidates },
-        organization_id: admin.organizationId,
-      },
-      include: {
-        packages: {
-          where: {
-            active: true,
-            used_sessions: {
-              lt: prisma.package.fields.total_sessions, // Verifica saldo de sessões
-            },
-          },
-          include: {
-            service: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!client) {
-      return NextResponse.json(
-        { error: "Cliente não encontrado" },
-        { status: 404 },
-      );
-    }
-
-    const response = {
-      id: client.id,
-      name: client.name,
-      phone: client.phone_whatsapp,
-      packages: client.packages.map((pkg) => ({
-        id: pkg.id,
-        name: pkg.name,
-        serviceName: pkg.service.name,
-        totalSessions: pkg.total_sessions,
-        usedSessions: pkg.used_sessions,
-        remainingSessions: pkg.total_sessions - pkg.used_sessions,
-        price: pkg.price,
-      })),
-    };
-
-    return NextResponse.json(response);
-  } catch (error) {
+    return NextResponse.json(clientData);
+  } catch (error: any) {
     // 🛡️ Tratamento de erro centralizado
     if (error instanceof AuthError) {
       return NextResponse.json(
@@ -83,7 +31,15 @@ export async function GET(request: NextRequest) {
         { status: 401 },
       );
     }
-    console.error("[TOTEM_SEARCH_CLIENT]", error);
+
+    if (error.message === "CLIENT_NOT_FOUND") {
+      return NextResponse.json(
+        { error: "Cliente não encontrado" },
+        { status: 404 },
+      );
+    }
+
+    console.error("[TOTEM_SEARCH_CLIENT_GET]", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }

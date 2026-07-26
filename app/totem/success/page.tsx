@@ -32,8 +32,11 @@ function SuccessContent() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
+        // 🔌 ATUALIZADO: Apontando para a nova rota pública
         const res = await fetch(
-          slug ? `/api/settings/public?slug=${slug}` : "/api/settings/public",
+          slug
+            ? `/api/public/organization?slug=${slug}`
+            : "/api/public/organization",
         );
         if (res.ok) {
           const data = await res.json();

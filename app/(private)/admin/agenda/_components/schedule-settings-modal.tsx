@@ -34,22 +34,18 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { apiClient } from "@/lib/api-client";
+import { clearTodayAgenda } from "@/app/actions/appointments";
 
 type ScheduleSettings = {
   openingTime: string;
   closingTime: string;
 };
 
-interface ClearTodayResponse {
-  deleted?: number;
-}
-
 interface ScheduleSettingsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialSettings: ScheduleSettings;
-  onSave: (settings: ScheduleSettings) => Promise<void>; //  Mudou para Promise
+  onSave: (settings: ScheduleSettings) => Promise<void>;
   onClearToday?: (deletedCount: number) => void;
 }
 
@@ -107,22 +103,20 @@ export const ScheduleSettingsModal = memo(
 
       setIsClearing(true);
       try {
-        const data = await apiClient<ClearTodayResponse>(
-          "admin/agenda/clear-today",
-          {
-            method: "POST",
-            body: JSON.stringify({ password: clearPassword }),
-          },
-        );
+        // Agora chamamos a Server Action diretamente!
+        const result = await clearTodayAgenda(clearPassword);
 
-        toast.success(`Agenda limpa! ${data.deleted ?? 0} removidos.`);
+        if (result.error) {
+          toast.error(result.error);
+          return;
+        }
+
+        toast.success(`Agenda limpa! ${result.deleted ?? 0} removidos.`);
         setClearPassword("");
         setIsClearDialogOpen(false);
-        onClearToday?.(data.deleted ?? 0);
+        onClearToday?.(result.deleted ?? 0);
       } catch (error) {
-        // Mantém a mensagem genérica original em vez do texto real do
-        // apiClient — comportamento preservado da versão anterior
-        toast.error("Senha incorreta ou erro no servidor.");
+        toast.error("Erro ao conectar com o servidor.");
       } finally {
         setIsClearing(false);
       }

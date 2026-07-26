@@ -16,7 +16,8 @@ import { SealCheck, LoaderDots, Save } from "@boxicons/react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { apiClient, ApiError } from "@/lib/api-client";
+// Importamos a nova Server Action aqui:
+import { changePassword } from "@/app/actions/auth";
 
 export function SecuritySettings() {
   const { data: session } = useSession();
@@ -43,23 +44,20 @@ export function SecuritySettings() {
     setLoading(true);
 
     try {
-      await apiClient("auth/change-password", {
-        method: "POST",
-        body: JSON.stringify({ currentPassword, newPassword }),
-      });
+      // Chamada direta para a Server Action
+      const result = await changePassword(currentPassword, newPassword);
 
-      toast.success("Senha alterada com sucesso!");
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+
+      toast.success(result.message || "Senha alterada com sucesso!");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (error) {
-      // Distingue erro de API (apiClient lança ApiError) de falha de rede,
-      // preservando as duas mensagens que já existiam antes da refatoração
-      if (error instanceof ApiError) {
-        toast.error(error.message || "Erro ao alterar senha");
-      } else {
-        toast.error("Erro de conexão. Tente novamente.");
-      }
+      toast.error("Erro de conexão. Tente novamente.");
     } finally {
       setLoading(false);
     }

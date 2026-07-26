@@ -23,7 +23,7 @@ export async function proxy(request: NextRequest) {
     "/verify-email",
     "/api/auth",
     "/api/totem",
-    "/api/settings/public",
+    "/api/public/organization", // <--- ROTA NOVA ATUALIZADA AQUI
     "/cliente", // <--- NOVA ROTA DO PORTAL DO CLIENTE UI
     "/api/cliente", // <--- NOVA ROTA DA API DO PORTAL DO CLIENTE
   ];

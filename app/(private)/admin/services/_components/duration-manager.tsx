@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Clock, LoaderDots, Trash, Timer } from "@boxicons/react";
-import { Plus } from "@boxicons/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { apiClient, ApiError } from "@/lib/api-client";

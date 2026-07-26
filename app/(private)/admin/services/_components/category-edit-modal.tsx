@@ -1,4 +1,4 @@
-// components/services/category-edit-modal.tsx
+// app/(private)/admin/services/_components/category-edit-modal.tsx
 "use client";
 
 import { useState, useEffect } from "react";

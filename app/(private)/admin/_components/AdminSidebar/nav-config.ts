@@ -6,6 +6,7 @@ import {
   Gift,
   CalendarDetail,
   LinkAlt,
+  Layers,
 } from "@boxicons/react";
 import type { BoxIcon } from "./nav-icon";
 
@@ -27,36 +28,39 @@ export type SubNavItem = {
 
 export type OpenModule =
   | "cadastros"
-  | "agenda"
   | "autoatendimento"
   | "finance"
   | "termos"
   | null;
 
 export const termosSubItems: SubNavItem[] = [
-  { title: "Criar/Editar Termo", href: "/admin/termos/editor", active: false },
+  { title: "Criar/Editar Termo", href: "/admin/termos/editor", active: true },
+  { title: "Ver Assinaturas", href: "/admin/termos/assinaturas", active: true },
   {
-    title: "Ver Assinaturas",
-    href: "/admin/termos/assinaturas",
-    active: false,
-  },
-  {
-    title: "Status",
+    title: "Status (Assinado/Pendente)",
     href: "/admin/termos/status",
-    active: false,
+    active: true,
   },
   {
     title: "Data/Hora e Histórico",
     href: "/admin/termos/historico",
-    active: false,
+    active: true,
   },
 ];
+
 export const navItems: NavItem[] = [
   {
     title: "Agendamento",
     href: "/admin/agenda",
     icon: CalendarDetail as BoxIcon,
     active: true,
+  },
+  {
+    title: "Pacotes e Planos",
+    href: "/admin/packages",
+    icon: Layers as BoxIcon,
+    active: true,
+    permission: "FINANCE", // mantém a mesma regra de acesso de antes (owner ou permissão FINANCE) — remova essa linha se quiser liberar geral
   },
   {
     title: "Profissionais",
@@ -101,11 +105,6 @@ export const cadastrosSubItems: SubNavItem[] = [
   { title: "Fichas de Anamnese", href: "/admin/anamnesis", active: true },
 ];
 
-export const agendaSubItems: SubNavItem[] = [
-  { title: "Calendário Diário", href: "/admin/agenda/calendar", active: false },
-  { title: "Confirmações Manuais", href: "/admin/reminders", active: true },
-];
-
 export const autoatendimentoSubItems: SubNavItem[] = [
   { title: "Dashboard", href: "/admin/auto/dashboard", active: false },
   {
@@ -117,7 +116,7 @@ export const autoatendimentoSubItems: SubNavItem[] = [
     title: "Link Bio",
     href: "/admin/link-bio",
     icon: LinkAlt as BoxIcon,
-    active: false,
+    active: true,
   },
   { title: "WhatsApp Automático", href: "/admin/whatsapp-auto", active: false },
   { title: "Regras e Horários", href: "/admin/auto/rules", active: false },
@@ -131,5 +130,4 @@ export const financeSubItems: SubNavItem[] = [
     href: "/admin/finance/payment-methods",
     active: true,
   },
-  { title: "Pacotes e Planos", href: "/admin/packages", active: true },
 ];

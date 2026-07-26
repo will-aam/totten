@@ -37,7 +37,12 @@ import {
   Trash,
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
-import { getPackageHistory, archivePackage } from "@/app/actions/packages";
+// Importamos a nova Server Action aqui:
+import {
+  getPackageHistory,
+  archivePackage,
+  syncPackageBalance,
+} from "@/app/actions/packages";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/components/ui/use-toast";
@@ -64,7 +69,7 @@ export function PackageDetailsModal({
   const [isSyncing, setIsSyncing] = useState(false);
   const [isSyncDialogOpen, setIsSyncDialogOpen] = useState(false);
 
-  //  NOVO: Estados para o Dialog de Exclusão customizado
+  // Estados para o Dialog de Exclusão customizado
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [apptToDelete, setApptToDelete] = useState<string | null>(null);
 
@@ -122,13 +127,13 @@ export function PackageDetailsModal({
     }
   };
 
-  //  Função que prepara a exclusão
+  // Função que prepara a exclusão
   const prepareDeleteItem = (apptId: string) => {
     setApptToDelete(apptId);
     setIsDeleteConfirmOpen(true);
   };
 
-  //  Função que executa a exclusão após confirmação
+  // Função que executa a exclusão após confirmação
   const executeDelete = async () => {
     if (!apptToDelete) return;
 
@@ -145,8 +150,6 @@ export function PackageDetailsModal({
       await loadHistory();
       onOpenChange(false); // Força recarregar a tela principal
     } catch (error) {
-      // Distingue erro de API (apiClient lança ApiError) de falha de rede,
-      // preservando as duas mensagens que já existiam antes da refatoração
       if (error instanceof ApiError) {
         toast({ title: "Erro ao apagar registro.", variant: "destructive" });
       } else {
@@ -158,23 +161,26 @@ export function PackageDetailsModal({
     }
   };
 
+  // Nova versão chamando a Server Action
   const handleSyncBalance = async () => {
     setIsSyncing(true);
     try {
-      await apiClient("admin/packages/sync-balance", {
-        method: "POST",
-        body: JSON.stringify({ packageId: packageData.id }),
-      });
+      const result = await syncPackageBalance(packageData.id);
+
+      if (result.error) {
+        toast({
+          title: "Erro",
+          description: result.error,
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({ title: "Saldo Sincronizado com sucesso!" });
       setIsSyncDialogOpen(false);
       onOpenChange(false);
     } catch (error) {
-      if (error instanceof ApiError) {
-        toast({ title: "Erro ao sincronizar.", variant: "destructive" });
-      } else {
-        toast({ title: "Erro de conexão.", variant: "destructive" });
-      }
+      toast({ title: "Erro de conexão.", variant: "destructive" });
     } finally {
       setIsSyncing(false);
     }
@@ -398,7 +404,7 @@ export function PackageDetailsModal({
           </div>
         </div>
 
-        {/*  DIALOG DE CONFIRMAÇÃO DE DELEÇÃO */}
+        {/* DIALOG DE CONFIRMAÇÃO DE DELEÇÃO */}
         <AlertDialog
           open={isDeleteConfirmOpen}
           onOpenChange={setIsDeleteConfirmOpen}

@@ -1,3 +1,4 @@
+// app/(private)/admin/clients/_components/import-clients-modal.tsx
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -29,7 +30,8 @@ import {
 } from "@boxicons/react";
 import * as XLSX from "xlsx";
 import { cn } from "@/lib/utils";
-import { apiClient } from "@/lib/api-client";
+// 1. Removemos o apiClient e importamos a Server Action nativa
+import { importClientsAction } from "@/app/actions/clients";
 
 const DB_FIELDS = [
   { key: "name", label: "Nome Completo", required: true },
@@ -49,11 +51,6 @@ interface ImportClientsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-}
-
-interface ImportClientsResponse {
-  imported: number;
-  skipped: number;
 }
 
 export function ImportClientsModal({
@@ -210,20 +207,26 @@ export function ImportClientsModal({
         return client;
       });
 
-      const result = await apiClient<ImportClientsResponse>("clients/import", {
-        method: "POST",
-        body: JSON.stringify({ clients: clientsToImport }),
-      });
+      // 2. Acionamos a Server Action diretamente
+      const result = await importClientsAction(clientsToImport);
 
-      toast.success(`${result.imported} clientes importados com sucesso!`);
-      if (result.skipped > 0) {
-        toast.info(`${result.skipped} ignorados (CPF já cadastrado).`);
+      // 3. Tratamos os possíveis erros retornados
+      if (result.error) {
+        toast.error(result.error);
+        return;
       }
-      localStorage.setItem("totten_last_import", Date.now().toString());
-      onSuccess();
-      handleClose();
+
+      if (result.success) {
+        toast.success(`${result.imported} clientes importados com sucesso!`);
+        if (result.skipped && result.skipped > 0) {
+          toast.info(`${result.skipped} ignorados (CPF já cadastrado).`);
+        }
+        localStorage.setItem("totten_last_import", Date.now().toString());
+        onSuccess();
+        handleClose();
+      }
     } catch (error: any) {
-      toast.error(error.message || "Erro ao importar clientes");
+      toast.error("Erro de conexão ao importar clientes.");
     } finally {
       setLoading(false);
     }

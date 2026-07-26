@@ -1,3 +1,4 @@
+// app/(private)/admin/notes/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -8,8 +9,9 @@ import { ClientListView } from "./_components/client-list-view";
 import { ChatView } from "./_components/chat-view";
 import { Note } from "./_components/chat-bubble";
 import { apiClient } from "@/lib/api-client";
+// Importamos as nossas Server Actions:
+import { createNote, updateNote, deleteNote } from "@/app/actions/notes";
 
-// Tipo baseado no retorno real da sua API de clientes
 type Client = {
   id: string;
   name: string;
@@ -23,12 +25,9 @@ export default function AdminNotesPage() {
 
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
-  // Gatilho de busca com 2 letras, conforme você pediu
   const shouldSearch = debouncedSearch.trim().length >= 2;
 
-  // 1. Busca a lista de clientes:
-  // Se estiver pesquisando, vai na rota global de clientes.
-  // Se NÃO estiver pesquisando, vai na nossa rota nova que só traz quem tem anotações.
+  // 1. Busca a lista de clientes via API Route (SWR)
   const { data: clientsResponse, mutate: mutateClients } = useSWR<{
     data: Client[];
   }>(
@@ -39,14 +38,14 @@ export default function AdminNotesPage() {
   );
   const displayClients = clientsResponse?.data || [];
 
-  // 2. Busca as notas APENAS do cliente selecionado (SWR faz cache e auto-atualiza)
+  // 2. Busca as notas do cliente selecionado via API Route (SWR)
   const { data: notesResponse, mutate: mutateNotes } = useSWR<{ data: Note[] }>(
     selectedClient ? `admin/notes?clientId=${selectedClient.id}` : null,
     apiClient,
   );
   const clientNotes = notesResponse?.data || [];
 
-  // --- HANDLERS COM INTEGRAÇÃO REAL (API) E OPTIMISTIC UI ---
+  // --- HANDLERS COM INTEGRAÇÃO REAL (SERVER ACTIONS) E OPTIMISTIC UI ---
 
   const handleSendNote = async (text: string) => {
     if (!selectedClient) return;
@@ -61,13 +60,15 @@ export default function AdminNotesPage() {
     mutateNotes({ data: [...previousNotes, tempNote] }, false);
 
     try {
-      await apiClient("admin/notes", {
-        method: "POST",
-        body: JSON.stringify({ clientId: selectedClient.id, text }),
-      });
+      // Chama a Server Action de Criação
+      const result = await createNote(selectedClient.id, text);
+
+      if (result.error) {
+        throw new Error(result.error);
+      }
 
       mutateNotes(); // Revalida com o ID real gerado pelo banco
-      mutateClients(); // Atualiza a lista inicial para o cliente aparecer lá caso seja a 1ª nota
+      mutateClients(); // Atualiza a lista inicial
     } catch (error) {
       toast({
         title: "Erro",
@@ -92,13 +93,12 @@ export default function AdminNotesPage() {
     );
 
     try {
-      await apiClient("admin/notes", {
-        method: "PUT",
-        body: JSON.stringify({
-          noteId: updatedNote.id,
-          text: updatedNote.text,
-        }),
-      });
+      // Chama a Server Action de Atualização
+      const result = await updateNote(updatedNote.id, updatedNote.text);
+
+      if (result.error) {
+        throw new Error(result.error);
+      }
 
       mutateNotes();
     } catch (error) {
@@ -118,16 +118,18 @@ export default function AdminNotesPage() {
     mutateNotes({ data: previousNotes.filter((n) => n.id !== noteId) }, false);
 
     try {
-      await apiClient("admin/notes", {
-        method: "DELETE",
-        params: { noteId },
-      });
+      // Chama a Server Action de Deleção
+      const result = await deleteNote(noteId);
+
+      if (result.error) {
+        throw new Error(result.error);
+      }
 
       toast({
         description: "Anotação excluída com sucesso.",
       });
       mutateNotes();
-      mutateClients(); // Se foi a última nota, ele vai sumir da tela inicial
+      mutateClients();
     } catch (error) {
       toast({
         title: "Erro",

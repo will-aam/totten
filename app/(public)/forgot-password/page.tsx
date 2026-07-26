@@ -20,7 +20,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { toast } from "sonner";
-import { apiClient, ApiError } from "@/lib/api-client";
+// Importamos a nossa Server Action aqui:
+import { forgotPassword } from "@/app/actions/auth";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -32,21 +33,18 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      await apiClient("auth/forgot-password", {
-        method: "POST",
-        body: JSON.stringify({ email }),
-      });
+      // Chamada direta para a Server Action
+      const result = await forgotPassword(email);
+
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
 
       setSuccess(true);
-      toast.success("Nova senha enviada para o seu e-mail!");
+      toast.success(result.message || "Nova senha enviada para o seu e-mail!");
     } catch (error) {
-      // Distingue erro de API (apiClient lança ApiError) de falha de rede,
-      // preservando as duas mensagens que já existiam antes da refatoração
-      if (error instanceof ApiError) {
-        toast.error(error.message || "Erro ao recuperar senha");
-      } else {
-        toast.error("Erro de conexão. Tente novamente.");
-      }
+      toast.error("Erro de conexão. Tente novamente.");
     } finally {
       setLoading(false);
     }

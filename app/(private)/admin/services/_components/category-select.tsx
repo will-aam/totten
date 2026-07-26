@@ -1,10 +1,9 @@
-// components/services/category-select.tsx
+// app/(private)/admin/services/_components/category-select.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { Check, ChevronsUpDown, LoaderDots } from "@boxicons/react";
-import { Plus } from "@boxicons/react";
+import { Check, ChevronsUpDown, LoaderDots, Plus } from "@boxicons/react";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -20,7 +19,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { toast } from "sonner";
-import { apiClient, ApiError } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
+// Importamos a nova Server Action aqui:
+import { createCategoryAction } from "@/app/actions/categories";
 
 type Category = {
   id: string;
@@ -50,6 +51,7 @@ export function CategorySelect({
 
   const fetchCategories = async () => {
     try {
+      // O GET continua via API para alimentar o client-side
       const data = await apiClient<Category[]>("categories", {
         params: { active: "true" },
       });
@@ -62,40 +64,43 @@ export function CategorySelect({
   };
 
   const createCategory = async (name: string) => {
-    if (!name.trim()) return;
+    const trimmedName = name.trim();
+    if (!trimmedName) return;
 
     setCreating(true);
     try {
-      const data = await apiClient<{ success: boolean; category: Category }>(
-        "categories",
-        {
-          method: "POST",
-          body: JSON.stringify({ name: name.trim() }),
-        },
-      );
+      // Chamada direta para a Server Action
+      const result = await createCategoryAction(trimmedName);
 
-      setCategories([...categories, data.category]);
-      onValueChange(data.category.id);
-      setSearchQuery("");
-      setOpen(false);
-      toast.success(`Categoria "${data.category.name}" criada!`);
-    } catch (error) {
-      // 409: categoria já existe — a rota devolve a categoria existente no
-      // corpo do erro, e a gente auto-seleciona ela (error.body preserva isso)
-      if (
-        error instanceof ApiError &&
-        error.status === 409 &&
-        (error.body as { category?: Category })?.category
-      ) {
-        const existingCategory = (error.body as { category: Category })
-          .category;
-        onValueChange(existingCategory.id);
-        setOpen(false);
-        toast.info("Categoria já existe, selecionada automaticamente");
-      } else {
-        console.error("Erro ao criar categoria:", error);
-        toast.error(error instanceof Error ? error.message : "Erro de conexão");
+      if (result.error) {
+        if (result.error === "Categoria já existe") {
+          // Fallback inteligente: se já existe, acha na lista e seleciona
+          const existingCategory = categories.find(
+            (c) => c.name.toLowerCase() === trimmedName.toLowerCase(),
+          );
+          if (existingCategory) {
+            onValueChange(existingCategory.id);
+            setOpen(false);
+            toast.info("Categoria já existe, selecionada automaticamente");
+          } else {
+            toast.error(result.error);
+          }
+        } else {
+          toast.error(result.error);
+        }
+        return;
       }
+
+      if (result.success && result.category) {
+        setCategories([...categories, result.category]);
+        onValueChange(result.category.id);
+        setSearchQuery("");
+        setOpen(false);
+        toast.success(`Categoria "${result.category.name}" criada!`);
+      }
+    } catch (error) {
+      console.error("Erro ao criar categoria:", error);
+      toast.error("Erro de conexão. Tente novamente.");
     } finally {
       setCreating(false);
     }
@@ -105,10 +110,13 @@ export function CategorySelect({
     if (e.key === "Enter" && searchQuery.trim()) {
       e.preventDefault();
       const exists = categories.find(
-        (c) => c.name.toLowerCase() === searchQuery.toLowerCase(),
+        (c) => c.name.toLowerCase() === searchQuery.trim().toLowerCase(),
       );
       if (!exists) {
         createCategory(searchQuery);
+      } else {
+        onValueChange(exists.id);
+        setOpen(false);
       }
     }
   };
@@ -209,7 +217,9 @@ export function CategorySelect({
                   </CommandGroup>
                   {searchQuery.trim() &&
                     !categories.find(
-                      (c) => c.name.toLowerCase() === searchQuery.toLowerCase(),
+                      (c) =>
+                        c.name.toLowerCase() ===
+                        searchQuery.trim().toLowerCase(),
                     ) && (
                       <div className="border-t border-border px-2 py-2">
                         <Button

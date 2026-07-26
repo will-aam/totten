@@ -1,4 +1,3 @@
-// app/admin/settings/sections/general-settings.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -23,6 +22,8 @@ import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { apiClient, ApiError } from "@/lib/api-client";
+// Importando a nossa Server Action nativa
+import { updateSettingsAction } from "@/app/actions/settings";
 
 interface GeneralSettingsResponse {
   companyName: string;
@@ -74,8 +75,6 @@ export function GeneralSettings() {
         }
       } catch (error) {
         console.error("Erro ao buscar configurações:", error);
-        // Distingue erro de API (apiClient lança ApiError) de falha de rede,
-        // preservando as duas mensagens que já existiam antes da refatoração
         if (error instanceof ApiError) {
           toast.error("Erro ao carregar configurações");
         } else {
@@ -122,7 +121,6 @@ export function GeneralSettings() {
     }
   };
 
-  // Aplica a máscara nos inputs
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, contactPhone: formatPhone(e.target.value) });
   };
@@ -144,20 +142,20 @@ export function GeneralSettings() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await apiClient("settings", {
-        method: "PUT",
-        body: JSON.stringify(formData),
-      });
-      toast.success("Configurações salvas com sucesso!");
+      // 🔌 Substituímos o apiClient pela chamada direta da Server Action
+      const result = await updateSettingsAction(formData);
+
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+
+      if (result.success) {
+        toast.success("Configurações salvas com sucesso!");
+      }
     } catch (error: any) {
       console.error("Erro ao salvar:", error);
-      // ApiError: erro de API, usa a mensagem parseada do corpo (equivalente
-      // ao "data.error" original); senão, falha de rede genérica
-      if (error instanceof ApiError) {
-        toast.error(error.message || "Erro ao salvar");
-      } else {
-        toast.error("Erro de conexão");
-      }
+      toast.error("Erro de conexão com o servidor");
     } finally {
       setSaving(false);
     }

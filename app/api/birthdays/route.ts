@@ -1,29 +1,17 @@
 // app/api/birthdays/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { requireAuth, AuthError } from "@/lib/auth";
+import { ClientService } from "@/lib/server/services/clients/client.service";
 
 export async function GET(request: NextRequest) {
   try {
     // 🛡️ O requireAuth garante a sessão ativa e lança o AuthError se falhar
     const admin = await requireAuth();
 
-    // Busca apenas clientes ativos e que possuem data de nascimento preenchida
-    const clients = await prisma.client.findMany({
-      where: {
-        organization_id: admin.organizationId, // Pega direto do admin garantido
-        active: true,
-        birth_date: {
-          not: null,
-        },
-      },
-      select: {
-        id: true,
-        name: true,
-        phone_whatsapp: true,
-        birth_date: true,
-      },
-    });
+    // Delega a busca no banco (com isolamento de tenant) para a camada de serviço
+    const clients = await ClientService.getBirthdayClients(
+      admin.organizationId,
+    );
 
     return NextResponse.json(clients);
   } catch (error) {
