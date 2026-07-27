@@ -36,7 +36,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { getPaymentMethods } from "@/app/actions/payment-methods";
 import { OrganizationPaymentMethod } from "@/types/finance";
-import { archivePackage } from "@/app/actions/packages";
+// 🔥 CORREÇÃO: Importando exatamente o nome exportado na Action
+import { archivePackage, createPackageAction } from "@/app/actions/packages";
 import { apiClient } from "@/lib/api-client";
 
 export type PackageType = {
@@ -65,7 +66,6 @@ interface ClientPackageProps {
 }
 
 export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
-  // Alterado para usar o path relativo e passar o apiClient diretamente como fetcher
   const packageCacheKey = `admin/clients/${clientId}/packages`;
   const { data: packages, isLoading: isLoadingPackages } = useSWR<
     PackageType[]
@@ -105,7 +105,6 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Fetch de templates com apiClient e actions
         const [templatesData, methodsData] = await Promise.all([
           apiClient<PackageTemplate[]>("package-templates", {
             params: { active: "true" },
@@ -141,29 +140,34 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
 
     setLoading(true);
     try {
-      await apiClient("packages", {
-        method: "POST",
-        body: JSON.stringify({
-          client_id: clientId,
-          service_id: selectedTemplate.service_id,
-          total_sessions: Number(selectedTemplate.total_sessions),
-          price: Number(selectedTemplate.price),
-          pay_upfront: payUpfront,
-          payment_method: payUpfront ? selectedMethod : null,
-          generate_installments: !payUpfront ? generateInstallments : false,
-          installments_count: installmentsCount,
-          package_template_id: selectedTemplate.id,
-        }),
+      // 🔥 CORREÇÃO: Usando a função importada corretamente
+      const result = await createPackageAction({
+        client_id: clientId,
+        service_id: selectedTemplate.service_id,
+        total_sessions: Number(selectedTemplate.total_sessions),
+        price: Number(selectedTemplate.price),
+        pay_upfront: payUpfront,
+        payment_method: payUpfront ? selectedMethod : null,
+        generate_installments: !payUpfront ? generateInstallments : false,
+        installments_count: installmentsCount,
+        package_template_id: selectedTemplate.id,
       });
 
+      // Lida com erros amigáveis retornados pela action
+      if (result && result.error) {
+        toast.error(result.error);
+        return;
+      }
+
       toast.success("Pacote vendido com sucesso!");
-      mutate(packageCacheKey); // Utilizando a mesma chave padronizada
+      mutate(packageCacheKey);
       setAddPkgOpen(false);
       setPayUpfront(false);
       setGenerateInstallments(false);
       setInstallmentsCount(2);
     } catch (error: any) {
-      toast.error(error.message);
+      console.error("[handleAddPackage] Erro:", error);
+      toast.error("Ocorreu um erro ao processar a venda.");
     } finally {
       setLoading(false);
     }
@@ -176,7 +180,7 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
       const result = await archivePackage(pkgToArchive.id);
       if (result.success) {
         toast.success("Pacote encerrado com sucesso!");
-        mutate(packageCacheKey); // Utilizando a mesma chave padronizada
+        mutate(packageCacheKey);
         setIsArchiveDialogOpen(false);
         setPkgToArchive(null);
       } else {
