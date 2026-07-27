@@ -83,7 +83,7 @@ const defaultValues: Partial<RulesFormValues> = {
 };
 
 // ---------------------------------------------------------------------------
-// Seletor de horário
+// Seletor de horário (substitui o <input type="time"> nativo do navegador)
 // ---------------------------------------------------------------------------
 const TIME_OPTIONS = (() => {
   const options: string[] = [];
@@ -127,7 +127,7 @@ function TimeSelect({
 }
 
 // ---------------------------------------------------------------------------
-// Date picker
+// Date picker (substitui o <input type="date"> nativo do navegador)
 // ---------------------------------------------------------------------------
 function DatePicker({
   value,
@@ -170,7 +170,7 @@ function DatePicker({
 }
 
 // ---------------------------------------------------------------------------
-// Bloco de horário reutilizável
+// Bloco de horário reutilizável (Expediente + Pausa)
 // ---------------------------------------------------------------------------
 function TimeRangeFields({
   control,
@@ -234,10 +234,24 @@ export function RulesAndHoursForm({ initialData }: RulesAndHoursFormProps) {
   const { toast } = useToast();
   const [isPending, setIsPending] = useState(false);
 
-  // Inicializa o formulário com os dados do banco se existirem, senão usa o default
+  // 🛡️ MERGE INTELIGENTE: Garante que os 7 dias da semana sempre apareçam
+  // caso seja o primeiro acesso e o banco retorne um array vazio.
+  const resolvedData = useMemo(() => {
+    if (!initialData) return defaultValues;
+
+    return {
+      termsOfUse: initialData.termsOfUse ?? defaultValues.termsOfUse,
+      schedule:
+        initialData.schedule && initialData.schedule.length > 0
+          ? initialData.schedule
+          : defaultValues.schedule,
+      exceptions: initialData.exceptions || [],
+    };
+  }, [initialData]);
+
   const form = useForm<RulesFormValues>({
     resolver: zodResolver(rulesFormSchema),
-    defaultValues: initialData || defaultValues,
+    defaultValues: resolvedData,
     mode: "onChange",
   });
 
@@ -276,7 +290,6 @@ export function RulesAndHoursForm({ initialData }: RulesAndHoursFormProps) {
   async function onSubmit(data: RulesFormValues) {
     setIsPending(true);
     try {
-      // Dispara a mutation para o Server Action
       const response = await updateSelfServiceSettingsAction(data);
 
       if (!response.success) {
@@ -322,10 +335,9 @@ export function RulesAndHoursForm({ initialData }: RulesAndHoursFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    {/* Hack para evitar warning de uncontrolled input em strings */}
                     <Textarea
                       placeholder="Digite suas regras aqui..."
-                      className="min-h-28 resize-none"
+                      className="min-h-25 resize-none"
                       {...field}
                       value={field.value || ""}
                     />
@@ -416,16 +428,7 @@ export function RulesAndHoursForm({ initialData }: RulesAndHoursFormProps) {
               type="button"
               variant="outline"
               size="sm"
-              onClick={() =>
-                appendException({
-                  date: "",
-                  isOpen: false,
-                  openTime: "",
-                  closeTime: "",
-                  breakStart: "",
-                  breakEnd: "",
-                })
-              }
+              onClick={() => appendException({ date: "", isOpen: false })}
             >
               <Plus className="mr-2 h-4 w-4" />
               Adicionar data
