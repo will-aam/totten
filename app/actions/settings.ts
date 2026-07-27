@@ -1,3 +1,4 @@
+// app/actions/settings.ts
 "use server";
 
 import { requireAuth } from "@/lib/auth";
@@ -37,6 +38,78 @@ export async function updateSettingsAction(data: {
     return {
       success: false,
       error: "Erro interno ao atualizar configurações.",
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Novas Actions para o Autoatendimento (Regras e Horários)
+// ---------------------------------------------------------------------------
+
+export async function getSelfServiceSettingsAction() {
+  try {
+    const admin = await requireAuth();
+
+    // Delega a busca para o Service
+    const data = await SettingsService.getSelfServiceSettings(
+      admin.organizationId,
+    );
+
+    return { success: true, data };
+  } catch (error: any) {
+    if (error.name === "AuthError" || error.message === "Não autorizado") {
+      return {
+        success: false,
+        error: "Sessão expirada. Faça login novamente.",
+      };
+    }
+
+    console.error("[ACTION getSelfServiceSettings]", error);
+    return { success: false, error: "Erro interno ao buscar configurações." };
+  }
+}
+
+export async function updateSelfServiceSettingsAction(data: {
+  termsOfUse?: string;
+  schedule: Array<{
+    dayOfWeek: number;
+    isOpen: boolean;
+    openTime?: string;
+    closeTime?: string;
+    breakStart?: string;
+    breakEnd?: string;
+  }>;
+  exceptions: Array<{
+    date: string;
+    isOpen: boolean;
+    openTime?: string;
+    closeTime?: string;
+    breakStart?: string;
+    breakEnd?: string;
+  }>;
+}) {
+  try {
+    const admin = await requireAuth();
+
+    // Delega a regra de negócio e as mutações (transação) para o Service
+    await SettingsService.updateSelfServiceSettings(admin.organizationId, data);
+
+    // Revalida o cache da rota de autoatendimento para atualizar a UI
+    revalidatePath("/admin/self-service");
+
+    return { success: true };
+  } catch (error: any) {
+    if (error.name === "AuthError" || error.message === "Não autorizado") {
+      return {
+        success: false,
+        error: "Sessão expirada. Faça login novamente.",
+      };
+    }
+
+    console.error("[ACTION updateSelfServiceSettings]", error);
+    return {
+      success: false,
+      error: "Erro interno ao atualizar configurações de autoatendimento.",
     };
   }
 }

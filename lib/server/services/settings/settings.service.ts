@@ -1,4 +1,3 @@
-// lib/server/services/settings/settings.service.ts
 import { getTenantPrisma } from "@/lib/prisma";
 
 export class SettingsService {
@@ -68,6 +67,109 @@ export class SettingsService {
         opening_time: data.openingTime || "08:00",
         closing_time: data.closingTime || "19:00",
       },
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // AUTOATENDIMENTO (Regras e Horários)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Busca as regras, horários de expediente e exceções do autoatendimento.
+   */
+  static async getSelfServiceSettings(organizationId: string) {
+    const prisma = getTenantPrisma(organizationId);
+
+    const [settings, schedule, exceptions] = await Promise.all([
+      prisma.settings.findUnique({
+        where: { organization_id: organizationId },
+        select: { terms_of_use: true },
+      }),
+      prisma.workingHour.findMany({
+        where: { organization_id: organizationId },
+        orderBy: { day_of_week: "asc" },
+      }),
+      prisma.scheduleException.findMany({
+        where: { organization_id: organizationId },
+        orderBy: { date: "asc" },
+      }),
+    ]);
+
+    return {
+      termsOfUse: settings?.terms_of_use || "",
+      schedule: schedule.map((s) => ({
+        dayOfWeek: s.day_of_week,
+        isOpen: s.is_open,
+        openTime: s.open_time || "",
+        closeTime: s.close_time || "",
+        breakStart: s.break_start || "",
+        breakEnd: s.break_end || "",
+      })),
+      exceptions: exceptions.map((e) => ({
+        date: e.date,
+        isOpen: e.is_open,
+        openTime: e.open_time || "",
+        closeTime: e.close_time || "",
+        breakStart: e.break_start || "",
+        breakEnd: e.break_end || "",
+      })),
+    };
+  }
+
+  /**
+   * Atualiza as regras, recriando as tabelas de horários e exceções em uma transação.
+   */
+  static async updateSelfServiceSettings(organizationId: string, data: any) {
+    const prisma = getTenantPrisma(organizationId);
+
+    return await prisma.$transaction(async (tx) => {
+      // 1. Atualizar Termos de Uso no Settings
+      if (data.termsOfUse !== undefined) {
+        await tx.settings.update({
+          where: { organization_id: organizationId },
+          data: { terms_of_use: data.termsOfUse },
+        });
+      }
+
+      // 2. Substituir grade semanal
+      if (data.schedule && Array.isArray(data.schedule)) {
+        await tx.workingHour.deleteMany({
+          where: { organization_id: organizationId },
+        });
+
+        await tx.workingHour.createMany({
+          data: data.schedule.map((s: any) => ({
+            organization_id: organizationId,
+            day_of_week: s.dayOfWeek,
+            is_open: s.isOpen,
+            open_time: s.openTime || null,
+            close_time: s.closeTime || null,
+            break_start: s.breakStart || null,
+            break_end: s.breakEnd || null,
+          })),
+        });
+      }
+
+      // 3. Substituir exceções
+      if (data.exceptions && Array.isArray(data.exceptions)) {
+        await tx.scheduleException.deleteMany({
+          where: { organization_id: organizationId },
+        });
+
+        if (data.exceptions.length > 0) {
+          await tx.scheduleException.createMany({
+            data: data.exceptions.map((e: any) => ({
+              organization_id: organizationId,
+              date: e.date,
+              is_open: e.isOpen,
+              open_time: e.openTime || null,
+              close_time: e.closeTime || null,
+              break_start: e.breakStart || null,
+              break_end: e.breakEnd || null,
+            })),
+          });
+        }
+      }
     });
   }
 }

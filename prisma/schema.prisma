@@ -32,6 +32,8 @@ model Organization {
   transactions        Transaction[]
   admins              Admin[]                     @relation("AdminToOrganization")
 
+  working_hours       WorkingHour[]
+  schedule_exceptions ScheduleException[]
   @@map("organizations")
 }
 
@@ -70,10 +72,43 @@ model Settings {
   trade_name       String?
   
   require_cpf      Boolean      @default(true)
+  terms_of_use     String?      @db.Text
 
   organization     Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@map("settings")
+}
+
+model WorkingHour {
+  id              String       @id @default(cuid())
+  day_of_week     Int          // 0 = Domingo, 1 = Segunda, etc.
+  is_open         Boolean      @default(true)
+  open_time       String?
+  close_time      String?
+  break_start     String?
+  break_end       String?
+  
+  organization_id String
+  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@unique([organization_id, day_of_week])
+  @@map("working_hours")
+}
+
+model ScheduleException {
+  id              String       @id @default(cuid())
+  date            String       // Formato "YYYY-MM-DD" para evitar bugs de fuso horário
+  is_open         Boolean      @default(false)
+  open_time       String?
+  close_time      String?
+  break_start     String?
+  break_end       String?
+  
+  organization_id String
+  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@unique([organization_id, date])
+  @@map("schedule_exceptions")
 }
 
 model Client {

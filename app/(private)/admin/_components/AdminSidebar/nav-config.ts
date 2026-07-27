@@ -119,7 +119,7 @@ export const autoatendimentoSubItems: SubNavItem[] = [
     active: true,
   },
   { title: "WhatsApp Automático", href: "/admin/whatsapp-auto", active: false },
-  { title: "Regras e Horários", href: "/admin/auto/rules", active: false },
+  { title: "Regras e Horários", href: "/admin/self-service", active: true },
 ];
 
 export const financeSubItems: SubNavItem[] = [
