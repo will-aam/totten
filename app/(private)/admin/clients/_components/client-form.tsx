@@ -36,6 +36,8 @@ import { Switch } from "@/components/ui/switch";
 import { getPaymentMethods } from "@/app/actions/payment-methods";
 import { OrganizationPaymentMethod } from "@/types/finance";
 import { apiClient } from "@/lib/api-client";
+// 🔥 IMPORTANTE: Importando a Action que criamos
+import { createPackageAction } from "@/app/actions/packages";
 
 // Máscaras
 function formatCpfInput(value: string) {
@@ -215,7 +217,7 @@ export function ClientForm() {
 
     setLoading(true);
     try {
-      // 1) cria cliente utilizando apiClient
+      // 1) cria cliente utilizando apiClient (Ainda não refatoramos essa rota para Server Action)
       const clientData = await apiClient<{ client: { id: string } }>(
         "clients",
         {
@@ -243,28 +245,34 @@ export function ClientForm() {
         );
 
         if (template) {
-          await apiClient("packages", {
-            method: "POST",
-            body: JSON.stringify({
-              client_id: clientData.client.id,
-              service_id: template.service_id,
-              total_sessions: Number(template.total_sessions),
-              price: Number(template.price),
-              pay_upfront: payUpfront,
-              payment_method: payUpfront ? selectedMethod : null,
-              generate_installments: !payUpfront ? generateInstallments : false,
-              installments_count: installmentsCount,
-              package_template_id: template.id,
-            }),
+          // 🔌 SUBSTITUÍDO: Usando a Server Action nativa no lugar da API excluída
+          const result = await createPackageAction({
+            client_id: clientData.client.id,
+            service_id: template.service_id,
+            total_sessions: Number(template.total_sessions),
+            price: Number(template.price),
+            pay_upfront: payUpfront,
+            payment_method: payUpfront ? selectedMethod : null,
+            generate_installments: !payUpfront ? generateInstallments : false,
+            installments_count: installmentsCount,
+            package_template_id: template.id,
           });
+
+          if (result && result.error) {
+            toast.error(
+              `Cliente criado, mas houve um erro na venda do pacote: ${result.error}`,
+            );
+            setLoading(false);
+            return;
+          }
         }
       }
 
       toast.success("Cadastro realizado com sucesso!");
       router.push("/admin/clients");
     } catch (error: any) {
-      // O apiClient já formata o erro corretamente lançando a mensagem tratada
-      toast.error(error.message);
+      // O apiClient já formata o erro da criação do cliente
+      toast.error(error.message || "Ocorreu um erro no cadastro.");
       console.error(error);
     } finally {
       setLoading(false);
