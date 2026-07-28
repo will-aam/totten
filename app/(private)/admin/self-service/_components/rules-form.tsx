@@ -1,3 +1,4 @@
+// app/(private)/admin/self-service/_components/rules-form.tsx
 "use client";
 
 import { useMemo, useState } from "react";
@@ -13,9 +14,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
 } from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -37,10 +36,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { CalendarIcon, Copy, Plus, Trash2, Loader2 } from "lucide-react";
 import { updateSelfServiceSettingsAction } from "@/app/actions/settings";
+import { toast } from "sonner";
 
 const DAYS_OF_WEEK = [
   { id: 0, label: "Domingo" },
@@ -61,7 +60,6 @@ const timeSchema = z.object({
 });
 
 const rulesFormSchema = z.object({
-  termsOfUse: z.string().optional(),
   schedule: z.array(timeSchema.extend({ dayOfWeek: z.number() })),
   exceptions: z.array(timeSchema.extend({ date: z.string() })),
 });
@@ -69,8 +67,6 @@ const rulesFormSchema = z.object({
 export type RulesFormValues = z.infer<typeof rulesFormSchema>;
 
 const defaultValues: Partial<RulesFormValues> = {
-  termsOfUse:
-    "Política de cancelamento:\n- Cancelamentos devem ser feitos com 24h de antecedência.",
   schedule: DAYS_OF_WEEK.map((day) => ({
     dayOfWeek: day.id,
     isOpen: day.id >= 1 && day.id <= 6,
@@ -231,16 +227,13 @@ interface RulesAndHoursFormProps {
 }
 
 export function RulesAndHoursForm({ initialData }: RulesAndHoursFormProps) {
-  const { toast } = useToast();
   const [isPending, setIsPending] = useState(false);
 
-  // 🛡️ MERGE INTELIGENTE: Garante que os 7 dias da semana sempre apareçam
-  // caso seja o primeiro acesso e o banco retorne um array vazio.
+  // 🛡️ MERGE INTELIGENTE: Limpo, mantendo apenas regras de horários
   const resolvedData = useMemo(() => {
     if (!initialData) return defaultValues;
 
     return {
-      termsOfUse: initialData.termsOfUse ?? defaultValues.termsOfUse,
       schedule:
         initialData.schedule && initialData.schedule.length > 0
           ? initialData.schedule
@@ -280,11 +273,9 @@ export function RulesAndHoursForm({ initialData }: RulesAndHoursFormProps) {
       form.setValue(`schedule.${dayIndex}.breakEnd`, monday.breakEnd);
     });
 
-    toast({
-      title: "Horários replicados",
-      description:
-        "Os horários de Segunda-feira foram aplicados para toda a semana.",
-    });
+    toast.success(
+      "Os horários de Segunda-feira foram aplicados para toda a semana.",
+    );
   };
 
   async function onSubmit(data: RulesFormValues) {
@@ -293,24 +284,13 @@ export function RulesAndHoursForm({ initialData }: RulesAndHoursFormProps) {
       const response = await updateSelfServiceSettingsAction(data);
 
       if (!response.success) {
-        toast({
-          variant: "destructive",
-          title: "Erro ao salvar",
-          description: response.error,
-        });
+        toast.error(response.error || "Erro ao salvar os horários");
         return;
       }
 
-      toast({
-        title: "Regras atualizadas",
-        description: "As configurações foram salvas com sucesso.",
-      });
+      toast.success("Os horários foram salvos com sucesso.");
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Ops!",
-        description: "Ocorreu um erro inesperado ao conectar com o servidor.",
-      });
+      toast.error("Ocorreu um erro inesperado ao conectar com o servidor.");
     } finally {
       setIsPending(false);
     }
@@ -319,36 +299,6 @@ export function RulesAndHoursForm({ initialData }: RulesAndHoursFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        {/* Termos de uso */}
-        <Card className="border-none shadow-none">
-          <CardHeader className="px-0">
-            <CardTitle>Termos de uso</CardTitle>
-            <CardDescription>
-              Regras que o cliente deve concordar antes de finalizar o
-              agendamento.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="px-0">
-            <FormField
-              control={form.control}
-              name="termsOfUse"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Digite suas regras aqui..."
-                      className="min-h-25 resize-none"
-                      {...field}
-                      value={field.value || ""}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
-
         {/* Padrão semanal */}
         <Card className="border-none shadow-none">
           <CardHeader className="flex flex-col gap-4 px-0 sm:flex-row sm:items-start sm:justify-between">
@@ -504,7 +454,7 @@ export function RulesAndHoursForm({ initialData }: RulesAndHoursFormProps) {
         <div className="flex justify-end">
           <Button type="submit" size="lg" disabled={isPending}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Salvar configurações
+            Salvar horários
           </Button>
         </div>
       </form>
