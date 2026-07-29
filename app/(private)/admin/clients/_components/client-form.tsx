@@ -36,8 +36,9 @@ import { Switch } from "@/components/ui/switch";
 import { getPaymentMethods } from "@/app/actions/payment-methods";
 import { OrganizationPaymentMethod } from "@/types/finance";
 import { apiClient } from "@/lib/api-client";
-// 🔥 IMPORTANTE: Importando a Action que criamos
+// 🔥 IMPORTANTE: Importando as Actions nativas
 import { createPackageAction } from "@/app/actions/packages";
+import { createClientAction } from "@/app/actions/clients";
 
 // Máscaras
 function formatCpfInput(value: string) {
@@ -217,37 +218,38 @@ export function ClientForm() {
 
     setLoading(true);
     try {
-      // 1) cria cliente utilizando apiClient (Ainda não refatoramos essa rota para Server Action)
-      const clientData = await apiClient<{ client: { id: string } }>(
-        "clients",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            name: form.name,
-            cpf: form.cpf.trim() !== "" ? form.cpf : null,
-            phone_whatsapp: form.phone_whatsapp,
-            email: form.email || null,
-            birth_date: form.birth_date
-              ? format(form.birth_date, "yyyy-MM-dd")
-              : null,
-            zip_code: form.zip_code || null,
-            street: form.street || null,
-            number: form.number || null,
-            city: form.city || null,
-          }),
-        },
-      );
+      // 1) Cria cliente utilizando a nova Server Action
+      const clientResponse = await createClientAction({
+        name: form.name,
+        cpf: form.cpf.trim() !== "" ? form.cpf : undefined,
+        phone_whatsapp: form.phone_whatsapp,
+        email: form.email || undefined,
+        birth_date: form.birth_date
+          ? format(form.birth_date, "yyyy-MM-dd")
+          : undefined,
+        zip_code: form.zip_code || undefined,
+        street: form.street || undefined,
+        number: form.number || undefined,
+        city: form.city || undefined,
+      });
 
-      // 2) cria pacote vinculado, se houver
+      if (clientResponse.error || !clientResponse.client) {
+        toast.error(
+          clientResponse.error || "Ocorreu um erro ao criar o cliente.",
+        );
+        setLoading(false);
+        return;
+      }
+
+      // 2) Cria pacote vinculado, se houver, repassando o ID recém-criado
       if (form.package_template_id !== "none") {
         const template = packageTemplates.find(
           (t) => t.id === form.package_template_id,
         );
 
         if (template) {
-          // 🔌 SUBSTITUÍDO: Usando a Server Action nativa no lugar da API excluída
           const result = await createPackageAction({
-            client_id: clientData.client.id,
+            client_id: clientResponse.client.id,
             service_id: template.service_id,
             total_sessions: Number(template.total_sessions),
             price: Number(template.price),
@@ -271,8 +273,7 @@ export function ClientForm() {
       toast.success("Cadastro realizado com sucesso!");
       router.push("/admin/clients");
     } catch (error: any) {
-      // O apiClient já formata o erro da criação do cliente
-      toast.error(error.message || "Ocorreu um erro no cadastro.");
+      toast.error("Ocorreu um erro interno no servidor.");
       console.error(error);
     } finally {
       setLoading(false);
