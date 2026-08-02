@@ -13,17 +13,17 @@ export class ApiError extends Error {
 
 interface FetchOptions extends RequestInit {
   params?: Record<string, string>;
+  safe?: boolean; // 🛡️ Nova propriedade para controle de exceções
 }
 
-/**
- * Client utilitário para centralizar requisições fetch.
- * Tipagem genérica <T> permite inferir o formato da resposta.
- */
+// 🛡️ Assinaturas de sobrecarga para o TypeScript inferir o retorno corretamente
+export async function apiClient<T>(endpoint: string, options: FetchOptions & { safe: true }): Promise<T | ApiError>;
+export async function apiClient<T>(endpoint: string, options?: Omit<FetchOptions, 'safe'> & { safe?: false }): Promise<T>;
 export async function apiClient<T>(
   endpoint: string,
   options: FetchOptions = {},
-): Promise<T> {
-  const { params, ...customConfig } = options;
+): Promise<any> {
+  const { params, safe, ...customConfig } = options;
 
   // Centralizando o base path para apontar sempre para nossa API local
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "/api";
@@ -61,20 +61,28 @@ export async function apiClient<T>(
     } catch (e) {
       // Fallback caso a resposta de erro não seja um JSON válido
     }
-    throw new ApiError(response.status, errorMessage, errorBody);
+    
+    const apiError = new ApiError(response.status, errorMessage, errorBody);
+
+    // 🛡️ Se safe=true, retornamos o erro como valor ao invés de explodir a stack
+    if (safe) {
+      return apiError;
+    }
+
+    throw apiError;
   }
 
   // Guarda contra respostas sem corpo (204, ou 200 sem payload) —
   // response.json() lança SyntaxError num body vazio
   if (response.status === 204) {
-    return undefined as T;
+    return undefined;
   }
 
   const text = await response.text();
   if (!text) {
-    return undefined as T;
+    return undefined;
   }
 
   // Retorno tipado automaticamente
-  return JSON.parse(text) as T;
+  return JSON.parse(text);
 }

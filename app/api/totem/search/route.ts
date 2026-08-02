@@ -32,6 +32,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }
 
+    // 🛡️ Mapeamento de erros de domínio para respostas HTTP (Igual ao check-in)
+    const domainErrors: Record<string, { message: string; status: number }> = {
+      AGENDAMENTO_JA_PROCESSADO: {
+        message: "Este agendamento já foi realizado.",
+        status: 400,
+      },
+      AGENDAMENTO_CANCELADO: {
+        message: "Este agendamento foi cancelado. Por favor, dirija-se à recepção.",
+        status: 400,
+      },
+    };
+
+    if (error.message && domainErrors[error.message]) {
+      const mappedError = domainErrors[error.message];
+      return NextResponse.json(
+        { error: mappedError.message },
+        { status: mappedError.status },
+      );
+    }
+
     console.error("[TOTEM_SEARCH_POST]", error);
     return NextResponse.json(
       { error: "Erro interno do servidor." },

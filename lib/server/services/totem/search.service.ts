@@ -77,7 +77,7 @@ export class TotemSearchService {
       Date.UTC(brYear, brMonth, brDay, 26, 59, 59, 999),
     );
 
-    const agendamentos = await prisma.appointment.findMany({
+const agendamentos = await prisma.appointment.findMany({
       where: {
         client_id: cliente.id,
         organization_id: organizationId,
@@ -85,7 +85,8 @@ export class TotemSearchService {
           gte: inicioDoDia,
           lte: fimDoDia,
         },
-        status: { in: ["PENDENTE", "CONFIRMADO"] },
+        // 🚨 MUDANÇA AQUI: Buscamos também os cancelados e realizados
+        status: { in: ["PENDENTE", "CONFIRMADO", "CANCELADO", "REALIZADO"] },
         OR: [{ package_id: null }, { package: { active: true } }],
       },
       include: {
@@ -119,11 +120,22 @@ export class TotemSearchService {
       };
     }
 
-    // ==========================================================
+
+   // ==========================================================
     // SE CHEGOU AQUI: O Cliente tem apenas 1 agendamento.
     // Fazemos o AUTO CHECK-IN!
     // ==========================================================
     const agendamento = agendamentos[0];
+
+    // 🛡️ TRAVAS DE SEGURANÇA ANTES DO AUTO CHECK-IN
+    if (agendamento.status === "CANCELADO") {
+      throw new Error("AGENDAMENTO_CANCELADO");
+    }
+
+    if (agendamento.status === "REALIZADO") {
+      throw new Error("AGENDAMENTO_JA_PROCESSADO");
+    }
+
     let packageInfo = null;
 
     await prisma.$transaction(async (tx) => {

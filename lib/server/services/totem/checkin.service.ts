@@ -29,7 +29,13 @@ export class TotemCheckInService {
       throw new Error("AGENDAMENTO_INVALIDO");
     }
 
-    if (appt.status === "REALIZADO" || appt.status === "CANCELADO") {
+ // Trava explícita para agendamentos cancelados
+    if (appt.status === "CANCELADO") {
+      throw new Error("AGENDAMENTO_CANCELADO");
+    }
+
+    // Trava para agendamentos que já foram feitos
+    if (appt.status === "REALIZADO") {
       throw new Error("AGENDAMENTO_JA_PROCESSADO");
     }
 

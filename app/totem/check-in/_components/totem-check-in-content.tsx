@@ -14,7 +14,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { apiClient } from "@/lib/api-client";
+import { apiClient, ApiError } from "@/lib/api-client"; // 🛡️ Importamos a classe de Erro
 
 type AppointmentOption = {
   id: string;
@@ -84,17 +84,30 @@ export default function TotemCheckInContent() {
 
     setLoading(true);
     try {
-      // Enviamos o valor limpo e o modo (CPF ou PHONE) para a API saber como buscar
+      // 🛡️ Passamos safe: true para não disparar exceções e travar o Next.js
       const data = await apiClient<SearchResponse>("totem/search", {
         method: "POST",
         body: JSON.stringify({
           value: digits,
           mode: mode,
         }),
+        safe: true,
       });
 
+      // 🛡️ Interceptamos o erro mapeado de forma limpa
+      if (data instanceof ApiError) {
+        const errorMessage = data.message;
+        if (errorMessage) {
+          router.push(
+            `/totem/error?type=CUSTOM&message=${encodeURIComponent(errorMessage)}`
+          );
+        } else {
+          router.push(`/totem/error?type=UNKNOWN`);
+        }
+        return;
+      }
+
       if (data.status === "NOT_FOUND") {
-        // Se não encontrar por Telefone, podemos usar um parâmetro genérico de erro no futuro
         router.push(`/totem/error?type=${mode}_NOT_FOUND`);
         return;
       }
@@ -130,9 +143,6 @@ export default function TotemCheckInContent() {
         setShowSelection(true);
         return;
       }
-    } catch (error) {
-      console.error("Erro ao buscar cliente:", error);
-      router.push(`/totem/error?type=UNKNOWN`);
     } finally {
       setLoading(false);
     }
@@ -155,12 +165,24 @@ export default function TotemCheckInContent() {
   const handleCheckIn = async (appt: AppointmentOption) => {
     setCheckingIn(true);
     try {
+      // 🛡️ Passamos safe: true para não disparar exceções e travar o Next.js
       const data = await apiClient<CheckInResponse>("totem/check-in", {
         method: "POST",
         body: JSON.stringify({
           appointment_id: appt.id,
         }),
+        safe: true,
       });
+
+      // 🛡️ Tratamos o erro retornado de forma funcional
+      if (data instanceof ApiError) {
+        const errorMessage =
+          data.message || "Ocorreu um erro ao processar seu check-in.";
+        router.push(
+          `/totem/error?type=CUSTOM&message=${encodeURIComponent(errorMessage)}`
+        );
+        return;
+      }
 
       if (data.success) {
         const params = new URLSearchParams({
@@ -178,9 +200,6 @@ export default function TotemCheckInContent() {
       } else {
         router.push(`/totem/error?type=UNKNOWN`);
       }
-    } catch (error) {
-      console.error("Erro ao fazer check-in:", error);
-      router.push(`/totem/error?type=UNKNOWN`);
     } finally {
       setCheckingIn(false);
     }

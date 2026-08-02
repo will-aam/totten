@@ -37,7 +37,11 @@ export async function POST(request: NextRequest) {
     const domainErrors: Record<string, { message: string; status: number }> = {
       AGENDAMENTO_INVALIDO: { message: "Agendamento inválido", status: 404 },
       AGENDAMENTO_JA_PROCESSADO: {
-        message: "Este agendamento já foi realizado ou está cancelado.",
+        message: "Este agendamento já foi realizado.",
+        status: 400,
+      },
+      AGENDAMENTO_CANCELADO: {
+        message: "Este agendamento foi cancelado. Por favor, dirija-se à recepção.",
         status: 400,
       },
       PACOTE_INATIVO: {

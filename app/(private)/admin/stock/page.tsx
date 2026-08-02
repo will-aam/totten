@@ -10,6 +10,7 @@ import {
   Filter,
   LoaderDots,
   FolderDownArrow, // <-- Ícone atualizado conforme seu pedido
+  InfoCircle,
 } from "@boxicons/react";
 import { Button } from "@/components/ui/button";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
@@ -28,6 +29,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import {
   AlertDialog,
@@ -232,9 +240,41 @@ export default function StockPage() {
 
         <div className="flex items-center gap-2">
           <Package className="h-5 w-5 text-primary" />
-          <h2 className="text-xl font-semibold text-foreground tracking-tight">
-            Gestão de Insumos
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-semibold text-foreground tracking-tight">
+              Gestão de Insumos
+            </h2>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center">
+                    <InfoCircle className="h-5 w-5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs text-sm" align="start">
+              <p>
+  <strong>Como funciona o desconto de estoque por serviço:</strong> quando você
+  cadastra uma receita para um serviço (por exemplo, "2 ml de produto X"), é essa
+  quantidade que será descontada do estoque toda vez que o serviço for realizado.
+</p>
+<p>
+  <strong>Atenção:</strong> se você alterar essa quantidade depois, a mudança vale
+  só para os atendimentos futuros. Os atendimentos que já aconteceram não são
+  recalculados com o novo valor.
+</p>
+<p>
+  <strong>Ao excluir um check-in antigo:</strong> o sistema devolve ao estoque a
+  quantidade que está configurada <em>hoje</em> na receita — e não a quantidade que
+  estava configurada na época em que o atendimento foi feito.
+</p>
+<p>
+  Por isso, é importante manter as receitas sempre atualizadas, para que o controle
+  de estoque reflita a realidade do seu negócio.
+</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
 
         {isLoading ? (

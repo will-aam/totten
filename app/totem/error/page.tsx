@@ -4,7 +4,7 @@
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
-import { AlertTriangle, ArrowLeft, ChevronLeft } from "@boxicons/react";
+import { AlertTriangle, ChevronLeft } from "@boxicons/react";
 import { Button } from "@/components/ui/button";
 
 const errorMessages: Record<string, { title: string; description: string }> = {
@@ -42,8 +42,18 @@ const errorMessages: Record<string, { title: string; description: string }> = {
 function ErrorContent() {
   const searchParams = useSearchParams();
   const errorType = searchParams.get("type") || "UNKNOWN";
+  const customMessage = searchParams.get("message");
   const slug = searchParams.get("slug") || "";
-  const error = errorMessages[errorType] || errorMessages.UNKNOWN;
+
+  let error = errorMessages[errorType] || errorMessages.UNKNOWN;
+
+  // 🛡️ Intercepta o erro dinâmico vindo da API
+  if (errorType === "CUSTOM" && customMessage) {
+    error = {
+      title: "Atenção",
+      description: customMessage,
+    };
+  }
 
   // Agora definimos apenas o link para voltar ao início
   const idleLink = slug ? `/totem/idle?slug=${slug}` : "/totem/idle";
