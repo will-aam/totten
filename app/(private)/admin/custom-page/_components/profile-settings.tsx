@@ -1,18 +1,10 @@
 "use client";
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Camera, User } from "@boxicons/react";
 
-// Aqui dizemos que o componente aceita as PROPS que o page.tsx enviou
 export function ProfileSettings({ data, onChange }: any) {
   const handleSlugChange = (val: string) => {
     const formatted = val
@@ -20,24 +12,33 @@ export function ProfileSettings({ data, onChange }: any) {
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-zA-Z]/g, "")
       .toLowerCase();
-
-    // Atualiza o dado lá no Cérebro (page.tsx)
     onChange({ ...data, slug: formatted });
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        onChange({ ...data, image: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
-    <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card">
-      <CardHeader className="px-0 pt-0 md:pt-6 md:px-6 pb-4">
-        <CardTitle className="text-lg flex items-center gap-2 text-foreground">
+    <div className="flex flex-col gap-6">
+      <div>
+        <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
           <User className="h-5 w-5 text-primary" />
           Perfil e Link
-        </CardTitle>
-        <CardDescription>
+        </h3>
+        <p className="text-sm text-muted-foreground mt-1">
           Defina como você aparecerá na sua página pública.
-        </CardDescription>
-      </CardHeader>
+        </p>
+      </div>
 
-      <CardContent className="px-0 pb-0 md:pb-6 md:px-6 flex flex-col gap-6">
+      <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-2">
           <Label htmlFor="slug" className="text-foreground font-medium">
             Seu Link Exclusivo
@@ -48,7 +49,7 @@ export function ProfileSettings({ data, onChange }: any) {
             </span>
             <Input
               id="slug"
-              value={data.slug} // Lê do pai
+              value={data.slug}
               onChange={(e) => handleSlugChange(e.target.value)}
               className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
               placeholder="seunome"
@@ -61,7 +62,18 @@ export function ProfileSettings({ data, onChange }: any) {
 
         <div className="flex items-center gap-4">
           <div className="h-20 w-20 rounded-full bg-muted border-2 border-dashed border-border flex items-center justify-center relative overflow-hidden group cursor-pointer hover:bg-muted/80 transition-colors">
-            <Camera className="h-6 w-6 text-muted-foreground/50 group-hover:text-primary transition-colors" />
+            {data.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={data.image} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              <Camera className="h-6 w-6 text-muted-foreground/50 group-hover:text-primary transition-colors" />
+            )}
+            <input 
+              type="file" 
+              accept="image/png, image/jpeg" 
+              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+              onChange={handleImageUpload}
+            />
           </div>
           <div className="flex flex-col">
             <p className="font-medium text-sm text-foreground">
@@ -70,9 +82,23 @@ export function ProfileSettings({ data, onChange }: any) {
             <p className="text-xs text-muted-foreground mb-2">
               Recomendado: 500x500px (PNG ou JPG)
             </p>
-            <button className="text-xs font-semibold text-primary hover:underline w-fit">
+            <label className="text-xs font-semibold text-primary hover:underline w-fit cursor-pointer">
               Fazer upload
-            </button>
+              <input 
+                type="file" 
+                accept="image/png, image/jpeg" 
+                className="hidden"
+                onChange={handleImageUpload}
+              />
+            </label>
+            {data.image && (
+              <button 
+                onClick={() => onChange({ ...data, image: "" })} 
+                className="text-xs font-semibold text-destructive hover:underline w-fit mt-1"
+              >
+                Remover foto
+              </button>
+            )}
           </div>
         </div>
 
@@ -82,8 +108,8 @@ export function ProfileSettings({ data, onChange }: any) {
           </Label>
           <Input
             id="name"
-            value={data.name} // Lê do pai
-            onChange={(e) => onChange({ ...data, name: e.target.value })} // Atualiza o pai
+            value={data.name}
+            onChange={(e) => onChange({ ...data, name: e.target.value })}
             className="bg-muted/50 border-border/50 h-11"
             placeholder="Ex: Clínica Totten"
           />
@@ -102,14 +128,14 @@ export function ProfileSettings({ data, onChange }: any) {
           </div>
           <Textarea
             id="bio"
-            value={data.bio} // Lê do pai
-            onChange={(e) => onChange({ ...data, bio: e.target.value })} // Atualiza o pai
+            value={data.bio}
+            onChange={(e) => onChange({ ...data, bio: e.target.value })}
             maxLength={160}
             className="bg-muted/50 border-border/50 min-h-25 resize-none"
             placeholder="Descreva seu negócio em poucas palavras..."
           />
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

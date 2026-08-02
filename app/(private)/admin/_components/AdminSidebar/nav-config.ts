@@ -113,8 +113,8 @@ export const autoatendimentoSubItems: SubNavItem[] = [
     active: false,
   },
   {
-    title: "Link Bio",
-    href: "/admin/link-bio",
+    title: "Página Personalizada",
+    href: "/admin/custom-page",
     icon: LinkAlt as BoxIcon,
     active: true,
   },

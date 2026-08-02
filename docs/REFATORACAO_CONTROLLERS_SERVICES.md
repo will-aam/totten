@@ -80,7 +80,7 @@ Abaixo está o registro de onde as regras moram agora:
 
 - **Controllers Novos (Mutações):** Migrados para `app/actions/settings.ts` e `app/actions/messages.ts`.
 
-### Domínio: Identidade Pública (Idle Kiosk e Link Bio)
+### Domínio: Identidade Pública (Idle Kiosk e Página Personalizada)
 
 - **Service Criado:** `lib/server/services/public/organization.service.ts` (Resolução de organização via Session ou Slug para ambientes sem login).
 - **Controller Antigo:** `app/api/settings/public/route.ts` (Deletado para evitar vazamento de domínio).

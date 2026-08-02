@@ -1,12 +1,5 @@
 "use client";
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -29,21 +22,22 @@ export function AdditionalLinks({ data, onChange }: any) {
     );
 
   return (
-    <Card className="border-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card">
-      <CardHeader className="px-0 pt-0 md:pt-6 md:px-6 pb-4 flex flex-row items-start justify-between">
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-row items-start justify-between">
         <div>
-          <CardTitle className="text-lg flex items-center gap-2 text-foreground mb-1">
+          <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground mb-1">
             <LinkIcon className="h-5 w-5 text-primary" /> Links Adicionais
-          </CardTitle>
-          <CardDescription>
+          </h3>
+          <p className="text-sm text-muted-foreground">
             Adicione até {maxLinks} botões extras.
-          </CardDescription>
+          </p>
         </div>
         <div className="bg-muted px-2.5 py-1 rounded-full text-xs font-semibold text-muted-foreground border border-border/50">
           {data.length} / {maxLinks}
         </div>
-      </CardHeader>
-      <CardContent className="px-0 pb-0 md:pb-6 md:px-6 flex flex-col gap-4">
+      </div>
+      
+      <div className="flex flex-col gap-4">
         {data.length === 0 ? (
           <div className="text-center py-6 border-2 border-dashed border-border/50 rounded-xl bg-muted/20">
             <p className="text-sm text-muted-foreground">
@@ -113,7 +107,7 @@ export function AdditionalLinks({ data, onChange }: any) {
             <Plus className="mr-2 h-4 w-4" /> Adicionar Novo Link
           </Button>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
