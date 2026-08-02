@@ -28,6 +28,8 @@ import {
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { apiClient } from "@/lib/api-client";
+// 🔥 IMPORTANTE: Importando a Action nativa de atualização de cliente
+import { updateClientAction } from "@/app/actions/clients";
 
 export type ClientContactType = {
   id: string;
@@ -199,32 +201,35 @@ export function ClientContact({ client }: ClientContactProps) {
 
     setSaving(true);
     try {
-      await apiClient(`clients/${client.id}`, {
-        method: "PUT",
-        body: JSON.stringify({
-          name: editName.trim(),
-          // Se estiver vazio, envia null para respeitar o banco de dados
-          cpf: editCpf.trim() !== "" ? editCpf : null,
-          phone_whatsapp: editPhone,
-          email: editEmail || null,
-          birth_date: formattedBirthDate,
-          zip_code: editZipCode || null,
-          city: editCity || null,
-          street: editStreet || null,
-          number: editNumber || null,
-        }),
+      // 🔌 SUBSTITUÍDO: Usando a Server Action nativa no lugar do apiClient PUT
+      const result = await updateClientAction(client.id, {
+        name: editName.trim(),
+        cpf: editCpf.trim() !== "" ? editCpf : null,
+        phone_whatsapp: editPhone,
+        email: editEmail || null,
+        birth_date: formattedBirthDate,
+        zip_code: editZipCode || null,
+        city: editCity || null,
+        street: editStreet || null,
+        number: editNumber || null,
       });
+
+      if (result && result.error) {
+        toast.error(result.error);
+        return;
+      }
 
       toast.success("Ficha atualizada com sucesso!");
       setIsEditing(false);
       // Chave sem prefixo /api, consistente com o restante do projeto
       mutate(`clients/${client.id}`);
     } catch (err: any) {
-      toast.error(err.message || "Erro ao salvar.");
+      toast.error("Erro interno ao tentar salvar a ficha do cliente.");
     } finally {
       setSaving(false);
     }
   };
+
   const handleSendWhatsApp = (templateText: string) => {
     if (!client.phone_whatsapp) return toast.error("Cliente sem WhatsApp.");
     const rawPhone = client.phone_whatsapp.replace(/\D/g, "");
