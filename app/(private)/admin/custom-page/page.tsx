@@ -24,6 +24,7 @@ import { ProfileSettings } from "./_components/profile-settings";
 import { ThemeSettings } from "./_components/theme-settings";
 import { SocialSettings } from "./_components/social-settings";
 import { AdditionalLinks } from "./_components/additional-links";
+import { ProfessionalSiteView } from "./_components/professional-site/professional-site-view";
 
 export default function CustomPage() {
   const [activeTab, setActiveTab] = useState<"link-bio" | "professional-site">("link-bio");
@@ -368,12 +369,7 @@ export default function CustomPage() {
           </TabsContent>
 
           <TabsContent value="professional-site" className="mt-0">
-            <div className="w-full flex flex-col h-full min-h-[400px] items-center justify-center border-2 border-dashed border-border/50 rounded-xl bg-muted/20 p-8 text-center animate-in fade-in duration-300">
-              <h2 className="text-xl font-semibold mb-2">Site Profissional</h2>
-              <p className="text-muted-foreground max-w-sm mx-auto">
-                Em breve, você poderá configurar aqui o seu site profissional completo, apresentando seu negócio de forma incrível.
-              </p>
-            </div>
+            <ProfessionalSiteView />
           </TabsContent>
         </Tabs>
       </div>
