@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Camera, User, Copy, Check } from "@boxicons/react";
+import { compressImage } from "@/lib/image-utils";
 
 export function ProfileSettings({ data, onChange }: any) {
   const [copied, setCopied] = useState(false);
@@ -18,14 +19,15 @@ export function ProfileSettings({ data, onChange }: any) {
     onChange({ ...data, slug: formatted });
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        onChange({ ...data, image: reader.result as string });
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressedBase64 = await compressImage(file, 500); // 500px para o avatar
+        onChange({ ...data, image: compressedBase64 });
+      } catch (error) {
+        console.error("Erro ao processar imagem de perfil:", error);
+      }
     }
   };
 

@@ -2,26 +2,27 @@
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Briefcase, Plus, Trash } from "@boxicons/react";
+import { Briefcase, Plus } from "@boxicons/react";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
+
+// Mock de serviços que "viriam do banco de dados"
+const MOCK_SERVICES = [
+  { id: "s1", title: "Limpeza de Pele Profunda", price: "R$ 150", description: "Procedimento completo para remoção de cravos, miliuns e impurezas da pele." },
+  { id: "s2", title: "Massagem Relaxante", price: "R$ 120", description: "Sessão de 50 minutos para alívio de tensões musculares e relaxamento profundo." },
+  { id: "s3", title: "Drenagem Linfática", price: "R$ 180", description: "Ideal para redução de medidas, retenção de líquidos e celulite." },
+];
 
 export function ProServices({ data, onChange }: any) {
-  const addService = () => {
-    const newService = { id: Date.now().toString(), title: "", description: "", price: "" };
-    onChange({ ...data, servicesList: [...(data.servicesList || []), newService] });
-  };
-
-  const removeService = (id: string) => {
-    const filtered = data.servicesList.filter((s: any) => s.id !== id);
-    onChange({ ...data, servicesList: filtered });
-  };
-
-  const updateService = (id: string, key: string, value: string) => {
-    const updated = data.servicesList.map((s: any) => 
-      s.id === id ? { ...s, [key]: value } : s
-    );
-    onChange({ ...data, servicesList: updated });
+  const toggleService = (srv: any, checked: boolean) => {
+    let currentList = data.servicesList || [];
+    if (checked) {
+      currentList = [...currentList, srv];
+    } else {
+      currentList = currentList.filter((s: any) => s.id !== srv.id);
+    }
+    onChange({ ...data, servicesList: currentList });
   };
 
   return (
@@ -63,52 +64,48 @@ export function ProServices({ data, onChange }: any) {
 
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <Label className="text-foreground font-medium">Seus Serviços</Label>
-            <Button onClick={addService} variant="outline" size="sm" className="h-8">
-              <Plus className="h-4 w-4 mr-1" /> Adicionar Serviço
-            </Button>
+            <Label className="text-foreground font-medium">Seus Serviços Cadastrados</Label>
+            <Link href="/admin/services">
+              <Button variant="outline" size="sm" className="h-8 shadow-sm">
+                <Plus className="h-4 w-4 mr-1" /> Gerenciar no Sistema
+              </Button>
+            </Link>
           </div>
           
           <div className="flex flex-col gap-4">
-            {(!data.servicesList || data.servicesList.length === 0) ? (
-              <div className="text-center py-8 border-2 border-dashed border-border/50 rounded-xl bg-muted/20">
-                <p className="text-sm text-muted-foreground">
-                  Nenhum serviço cadastrado. Clique no botão acima para adicionar.
-                </p>
-              </div>
-            ) : (
-              data.servicesList.map((srv: any, index: number) => (
-                <div key={srv.id} className="flex flex-col gap-3 p-4 border border-border/50 rounded-xl bg-card relative group">
-                  <button 
-                    onClick={() => removeService(srv.id)}
-                    className="absolute top-3 right-3 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+            <p className="text-xs text-muted-foreground">
+              Selecione quais serviços você deseja exibir no seu site profissional. Eles são puxados automaticamente do seu cadastro de serviços.
+            </p>
+            <div className="flex flex-col gap-3">
+              {MOCK_SERVICES.map((srv) => {
+                const isSelected = data.servicesList?.some((s: any) => s.id === srv.id);
+                return (
+                  <label 
+                    key={srv.id} 
+                    className={cn(
+                      "flex items-start gap-3 p-4 border rounded-xl cursor-pointer transition-all",
+                      isSelected ? "border-primary bg-primary/5" : "border-border/50 bg-card hover:border-primary/50"
+                    )}
                   >
-                    <Trash className="h-4 w-4" />
-                  </button>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-3 pr-8">
-                    <Input
-                      value={srv.title}
-                      onChange={(e) => updateService(srv.id, "title", e.target.value)}
-                      className="bg-background border-border/50 h-10"
-                      placeholder="Nome do Serviço (Ex: Limpeza de Pele)"
-                    />
-                    <Input
-                      value={srv.price}
-                      onChange={(e) => updateService(srv.id, "price", e.target.value)}
-                      className="bg-background border-border/50 h-10"
-                      placeholder="Preço (Ex: R$ 150)"
-                    />
-                  </div>
-                  <Textarea
-                    value={srv.description}
-                    onChange={(e) => updateService(srv.id, "description", e.target.value)}
-                    className="bg-background border-border/50 h-20 resize-none"
-                    placeholder="Descrição breve do serviço..."
-                  />
-                </div>
-              ))
-            )}
+                    <div className="pt-0.5">
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 rounded border-border/80 text-primary focus:ring-primary accent-primary"
+                        checked={isSelected || false}
+                        onChange={(e) => toggleService(srv, e.target.checked)}
+                      />
+                    </div>
+                    <div className="flex flex-col flex-1">
+                      <div className="flex justify-between items-start">
+                        <span className="font-semibold text-sm text-foreground">{srv.title}</span>
+                        <span className="font-medium text-sm text-muted-foreground">{srv.price}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{srv.description}</p>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>

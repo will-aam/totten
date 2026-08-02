@@ -52,32 +52,50 @@ export function ProfessionalSiteView() {
     <div className="w-[320px] h-[650px] bg-black rounded-[3rem] border-8 border-black shadow-2xl relative overflow-hidden ring-1 ring-border/20 mx-auto">
       <div className="absolute top-0 inset-x-0 h-6 bg-black z-20 rounded-b-2xl w-40 mx-auto" />
       
-      <div className={cn("w-full h-full flex flex-col pt-10 pb-8 relative z-10 transition-colors duration-500 overflow-y-auto no-scrollbar", theme.css)} style={{ color: theme.textColor }}>
+      <div className={cn("w-full h-full flex flex-col pb-8 relative z-10 transition-colors duration-500 overflow-y-auto no-scrollbar", theme.css)} style={{ color: theme.textColor }}>
         
         {/* HERO / HEADER SECTION */}
-        <div className={cn("px-6 pt-4 pb-6", theme.headerStyle === "center" ? "text-center items-center flex flex-col" : "text-left items-start flex flex-col")}>
+        <div className="relative w-full">
           {presentation.heroImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={presentation.heroImage} alt="Hero" className={cn("w-full h-32 object-cover mb-4 rounded-xl shadow-sm")} />
+            <div className="w-full h-64 relative shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img 
+                src={presentation.heroImage} 
+                alt="Hero" 
+                className="w-full h-full object-cover"
+                style={{
+                  WebkitMaskImage: "linear-gradient(to top, transparent 0%, black 60%)",
+                  maskImage: "linear-gradient(to top, transparent 0%, black 60%)"
+                }}
+              />
+            </div>
           ) : (
-            <div className="w-20 h-20 bg-muted/20 rounded-full mb-4 shrink-0 shadow-sm border border-border/10" />
-          )}
-          
-          <h1 className="font-bold text-2xl leading-tight">
-            {presentation.headline || "Seu Título Principal Aqui"}
-          </h1>
-          <p className="text-sm opacity-80 mt-2 font-medium">
-            {presentation.subheadline || "Subtítulo de apoio ou missão do seu negócio."}
-          </p>
-          
-          {services.ctaText && (
-            <div 
-              className="mt-6 px-6 py-3 rounded-full text-sm font-bold shadow-sm w-fit text-white" 
-              style={{ backgroundColor: theme.primaryColor }}
-            >
-              {services.ctaText}
+            <div className="w-full pt-12 pb-4 flex items-center justify-center">
+              <div className="w-20 h-20 bg-muted/20 rounded-full shrink-0 shadow-sm border border-border/10" />
             </div>
           )}
+          
+          <div className={cn(
+            "px-6 relative z-10 flex flex-col pb-6", 
+            presentation.heroImage ? "-mt-24" : "",
+            theme.headerStyle === "center" ? "text-center items-center" : "text-left items-start"
+          )}>
+            <h1 className="font-bold text-2xl leading-tight drop-shadow-sm">
+              {presentation.headline || "Seu Título Principal Aqui"}
+            </h1>
+            <p className="text-sm opacity-80 mt-2 font-medium drop-shadow-sm">
+              {presentation.subheadline || "Subtítulo de apoio ou missão do seu negócio."}
+            </p>
+            
+            {services.ctaText && (
+              <div 
+                className="mt-6 px-6 py-3 rounded-full text-sm font-bold shadow-sm w-fit text-white backdrop-blur-sm" 
+                style={{ backgroundColor: theme.primaryColor }}
+              >
+                {services.ctaText}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* BIO SECTION */}

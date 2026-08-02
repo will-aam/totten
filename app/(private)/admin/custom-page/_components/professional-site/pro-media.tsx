@@ -23,15 +23,15 @@ export function ProMedia({ data, onChange }: any) {
         <div className="flex flex-col gap-4">
           <Label className="text-foreground font-medium">Fotos (Até 6 imagens)</Label>
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {/* Grid didático */}
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+            {/* Grid didático - Quadrados Menores */}
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div 
                 key={i} 
-                className="aspect-square rounded-xl bg-muted border-2 border-dashed border-border flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer hover:bg-muted/80 transition-colors"
+                className="aspect-square w-full rounded-xl bg-muted border-2 border-dashed border-border flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer hover:bg-muted/80 transition-colors"
               >
-                <Camera className="h-6 w-6 text-muted-foreground/50 group-hover:text-primary transition-colors" />
-                <span className="text-[10px] text-muted-foreground mt-2 font-medium">Upload</span>
+                <Camera className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
+                <span className="text-[9px] text-muted-foreground mt-1.5 font-medium">Upload</span>
                 <input 
                   type="file" 
                   accept="image/png, image/jpeg" 
