@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Camera, User } from "@boxicons/react";
+import { Camera, User, Copy, Check } from "@boxicons/react";
 
 export function ProfileSettings({ data, onChange }: any) {
+  const [copied, setCopied] = useState(false);
+
   const handleSlugChange = (val: string) => {
     const formatted = val
       .normalize("NFD")
@@ -26,6 +29,12 @@ export function ProfileSettings({ data, onChange }: any) {
     }
   };
 
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(`totten.app/${data.slug}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -44,16 +53,27 @@ export function ProfileSettings({ data, onChange }: any) {
             Seu Link Exclusivo
           </Label>
           <div className="flex items-center">
-            <span className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center">
+            <span className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
               totten.app/
             </span>
             <Input
               id="slug"
               value={data.slug}
               onChange={(e) => handleSlugChange(e.target.value)}
-              className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
+              className="rounded-none bg-background border-border/50 h-11 focus-visible:ring-1"
               placeholder="seunome"
             />
+            <button
+              onClick={handleCopyLink}
+              className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-l-0 rounded-r-md text-sm h-11 flex items-center hover:bg-muted/80 hover:text-foreground transition-colors shrink-0 outline-none"
+              title="Copiar link"
+            >
+              {copied ? (
+                <Check className="h-5 w-5 text-emerald-500" />
+              ) : (
+                <Copy className="h-5 w-5" />
+              )}
+            </button>
           </div>
           <p className="text-[11px] text-muted-foreground">
             Apenas letras minúsculas. Sem espaços ou números.
