@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { User, Camera } from "@boxicons/react";
 import { compressImage } from "@/lib/image-utils";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export function ProPresentation({ data, onChange }: any) {
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, key: string) => {
@@ -27,11 +28,44 @@ export function ProPresentation({ data, onChange }: any) {
           Apresentação
         </h3>
         <p className="text-sm text-muted-foreground mt-1">
-          A primeira impressão do seu site profissional. Configure sua apresentação principal.
+          As informações principais que aparecerão no topo da sua página.
         </p>
       </div>
 
       <div className="flex flex-col gap-6">
+        
+        {/* OPÇÃO DE LAYOUT DO HERO */}
+        <div className="flex flex-col gap-3">
+          <Label className="text-foreground font-medium">Estilo do Cabeçalho</Label>
+          <RadioGroup 
+            value={data.heroLayout || "fade-cover"} 
+            onValueChange={(val) => onChange({ ...data, heroLayout: val })}
+            className="grid grid-cols-2 gap-4"
+          >
+            <Label
+              htmlFor="layout-fade"
+              className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-transparent p-4 hover:bg-muted/50 [&:has([data-state=checked])]:border-primary cursor-pointer gap-2"
+            >
+              <RadioGroupItem value="fade-cover" id="layout-fade" className="sr-only" />
+              <div className="w-full h-12 bg-gradient-to-t from-background to-muted/80 rounded-md border border-border/50 flex items-center justify-center mb-1">
+                <span className="text-[10px] text-muted-foreground font-medium">Capa Inteira</span>
+              </div>
+              <span className="font-semibold text-[13px] text-center">Capa Infinita (Degradê)</span>
+            </Label>
+
+            <Label
+              htmlFor="layout-avatar"
+              className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-transparent p-4 hover:bg-muted/50 [&:has([data-state=checked])]:border-primary cursor-pointer gap-2"
+            >
+              <RadioGroupItem value="avatar-cover" id="layout-avatar" className="sr-only" />
+              <div className="w-full h-12 bg-muted/40 rounded-md border border-border/50 relative flex items-end justify-center mb-1">
+                <div className="w-6 h-6 rounded-full bg-primary/20 absolute -bottom-3 border-2 border-background" />
+              </div>
+              <span className="font-semibold text-[13px] text-center">Capa Quadrada + Perfil</span>
+            </Label>
+          </RadioGroup>
+        </div>
+
         <div className="flex flex-col gap-2">
           <Label htmlFor="headline" className="text-foreground font-medium">
             Título / Chamada Principal (Headline)

@@ -369,7 +369,7 @@ export default function CustomPage() {
           </TabsContent>
 
           <TabsContent value="professional-site" className="mt-0">
-            <ProfessionalSiteView />
+            <ProfessionalSiteView profile={profile} />
           </TabsContent>
         </Tabs>
       </div>

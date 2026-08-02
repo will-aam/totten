@@ -21,14 +21,14 @@ const getYouTubeEmbedUrl = (url: string) => {
   return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : null;
 };
 
-export function ProfessionalSiteView() {
+export function ProfessionalSiteView({ profile }: { profile?: any }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
   const [showMobilePreview, setShowMobilePreview] = useState(false);
 
   // Estados dos formulários do Site Profissional
-  const [presentation, setPresentation] = useState({ headline: "", subheadline: "", bio: "", heroImage: "" });
+  const [presentation, setPresentation] = useState({ headline: "", subheadline: "", bio: "", heroImage: "", heroLayout: "fade-cover" });
   const [services, setServices] = useState({ ctaText: "", ctaLink: "", servicesList: [] as any[] });
   const [media, setMedia] = useState({});
   const [socialProof, setSocialProof] = useState({ testimonials: [] as any[] });
@@ -58,36 +58,49 @@ export function ProfessionalSiteView() {
 
   // Mobile Preview específico do Site Profissional
   const ProSiteMockup = ({ isFullScreen = false }: { isFullScreen?: boolean }) => {
+    const isAvatarLayout = presentation.heroLayout === "avatar-cover";
+    
     const content = (
       <div className={cn("w-full h-full flex flex-col pb-8 relative z-10 transition-colors duration-500 overflow-y-auto no-scrollbar", theme.css, isFullScreen ? "pt-12" : "")} style={{ color: theme.textColor }}>
         
         {/* HERO / HEADER SECTION */}
         <div className="relative w-full">
           {presentation.heroImage ? (
-            <div className="w-full h-64 relative shrink-0">
+            <div className={cn("w-full relative shrink-0", isAvatarLayout ? "h-40" : "h-56")}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img 
                 src={presentation.heroImage} 
                 alt="Hero" 
                 className="w-full h-full object-cover"
-                style={{
-                  WebkitMaskImage: "linear-gradient(to top, transparent 0%, black 60%)",
-                  maskImage: "linear-gradient(to top, transparent 0%, black 60%)"
-                }}
+                style={!isAvatarLayout ? {
+                  WebkitMaskImage: "linear-gradient(to top, transparent 0%, black 75%)",
+                  maskImage: "linear-gradient(to top, transparent 0%, black 75%)"
+                } : {}}
               />
             </div>
           ) : (
-            <div className="w-full pt-12 pb-4 flex items-center justify-center">
-              <div className="w-20 h-20 bg-muted/20 rounded-full shrink-0 shadow-sm border border-border/10" />
-            </div>
+            <div className={cn("w-full bg-muted/20 border-b border-border/10 shrink-0", isAvatarLayout ? "h-32" : "h-32")} />
           )}
           
           <div className={cn(
             "px-6 relative z-10 flex flex-col pb-6", 
-            presentation.heroImage ? "-mt-24" : "",
+            isAvatarLayout 
+               ? (presentation.heroImage ? "-mt-12" : "-mt-10") 
+               : (presentation.heroImage ? "-mt-14" : "-mt-12"),
             theme.headerStyle === "center" ? "text-center items-center" : "text-left items-start"
           )}>
-            <h1 className="font-bold text-2xl leading-tight drop-shadow-sm">
+            {/* AVATAR DO LINK NA BIO INTEGRADO */}
+            {isAvatarLayout && (
+              profile?.image ? (
+                 <div className="w-24 h-24 rounded-full border-4 shadow-sm overflow-hidden mb-3 shrink-0" style={{ borderColor: theme.css.includes('slate-900') ? '#0f172a' : '#ffffff', backgroundColor: theme.css.includes('slate-900') ? '#0f172a' : '#ffffff' }}>
+                   <img src={profile.image} alt="Avatar" className="w-full h-full object-cover" />
+                 </div>
+              ) : (
+                 <div className="w-24 h-24 rounded-full border-4 shadow-sm bg-muted/50 mb-3 shrink-0" style={{ borderColor: theme.css.includes('slate-900') ? '#0f172a' : '#ffffff' }} />
+              )
+            )}
+
+            <h1 className="font-bold text-2xl leading-tight drop-shadow-sm mt-1">
               {presentation.headline || "Seu Título Principal Aqui"}
             </h1>
             <p className="text-sm opacity-80 mt-2 font-medium drop-shadow-sm">
@@ -121,12 +134,14 @@ export function ProfessionalSiteView() {
             </h2>
             <div className="flex flex-col gap-3">
               {services.servicesList.map((srv: any, i: number) => (
-                <div key={i} className="p-4 rounded-xl bg-foreground/5 flex flex-col gap-1">
-                  <div className="flex justify-between items-start font-semibold">
-                    <span>{srv.title || "Serviço"}</span>
-                    <span style={{ color: theme.primaryColor }}>{srv.price}</span>
+                <div key={i} className="p-4 rounded-xl flex flex-col gap-2 relative shadow-sm border" style={{ borderColor: 'rgba(150,150,150,0.15)', backgroundColor: 'rgba(150,150,150,0.03)' }}>
+                  <div className="flex justify-between items-start gap-4">
+                    <h3 className="font-bold text-[15px] leading-snug">{srv.title || "Serviço"}</h3>
+                    <span className="font-bold text-sm shrink-0 px-2.5 py-0.5 rounded-md" style={{ color: theme.primaryColor, backgroundColor: 'rgba(150,150,150,0.1)' }}>
+                      {srv.price}
+                    </span>
                   </div>
-                  <p className="text-xs opacity-70 mt-1">{srv.description}</p>
+                  <p className="text-[13px] opacity-75 leading-relaxed">{srv.description}</p>
                 </div>
               ))}
             </div>
