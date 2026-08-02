@@ -1,6 +1,7 @@
 "use client";
 
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Image as ImageIcon, Camera } from "@boxicons/react";
 
 export function ProMedia({ data, onChange }: any) {
@@ -40,6 +41,21 @@ export function ProMedia({ data, onChange }: any) {
               </div>
             ))}
           </div>
+        </div>
+
+        <div className="w-full h-px bg-border/50" />
+        
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="videoUrl" className="text-foreground font-medium">
+            Vídeo em Destaque (Link do YouTube)
+          </Label>
+          <Input
+            id="videoUrl"
+            value={data.videoUrl || ""}
+            onChange={(e: any) => onChange({ ...data, videoUrl: e.target.value })}
+            className="bg-background border-border/50 h-11 focus-visible:ring-1"
+            placeholder="Ex: https://www.youtube.com/watch?v=..."
+          />
         </div>
       </div>
     </div>

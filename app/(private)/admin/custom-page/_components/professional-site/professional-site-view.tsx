@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Save, ChevronRight, ChevronLeft, MapAlt, Star, Briefcase } from "@boxicons/react";
+import { Save, ChevronRight, ChevronLeft, Pin, Star, Briefcase, Youtube, Mobile, X } from "@boxicons/react";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 // Importando as seções recém-criadas
 import { ProPresentation } from "./pro-presentation";
@@ -13,10 +14,18 @@ import { ProSocialProof } from "./pro-social-proof";
 import { ProContact } from "./pro-contact";
 import { ProTheme } from "./pro-theme";
 
+const getYouTubeEmbedUrl = (url: string) => {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : null;
+};
+
 export function ProfessionalSiteView() {
   const [currentStep, setCurrentStep] = useState(0);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
+  const [showMobilePreview, setShowMobilePreview] = useState(false);
 
   // Estados dos formulários do Site Profissional
   const [presentation, setPresentation] = useState({ headline: "", subheadline: "", bio: "", heroImage: "" });
@@ -48,11 +57,9 @@ export function ProfessionalSiteView() {
   };
 
   // Mobile Preview específico do Site Profissional
-  const ProSiteMockup = () => (
-    <div className="w-[320px] h-[650px] bg-black rounded-[3rem] border-8 border-black shadow-2xl relative overflow-hidden ring-1 ring-border/20 mx-auto">
-      <div className="absolute top-0 inset-x-0 h-6 bg-black z-20 rounded-b-2xl w-40 mx-auto" />
-      
-      <div className={cn("w-full h-full flex flex-col pb-8 relative z-10 transition-colors duration-500 overflow-y-auto no-scrollbar", theme.css)} style={{ color: theme.textColor }}>
+  const ProSiteMockup = ({ isFullScreen = false }: { isFullScreen?: boolean }) => {
+    const content = (
+      <div className={cn("w-full h-full flex flex-col pb-8 relative z-10 transition-colors duration-500 overflow-y-auto no-scrollbar", theme.css, isFullScreen ? "pt-12" : "")} style={{ color: theme.textColor }}>
         
         {/* HERO / HEADER SECTION */}
         <div className="relative w-full">
@@ -147,11 +154,31 @@ export function ProfessionalSiteView() {
           </div>
         )}
 
+        {/* VIDEO SECTION */}
+        {(media as any).videoUrl && (
+          <div className="px-6 py-6">
+            <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
+              <Youtube className="h-5 w-5" /> Vídeo
+            </h2>
+            <div className="w-full aspect-video rounded-xl overflow-hidden shadow-sm border border-border/10 bg-black/10">
+              <iframe 
+                width="100%" 
+                height="100%" 
+                src={getYouTubeEmbedUrl((media as any).videoUrl) || ""} 
+                title="YouTube video player" 
+                frameBorder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowFullScreen
+              />
+            </div>
+          </div>
+        )}
+
         {/* CONTACT SECTION */}
         {(contact.address || contact.phone) && (
           <div className="px-6 py-6">
             <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
-              <MapAlt className="h-5 w-5" /> Onde Estamos
+              <Pin className="h-5 w-5" /> Onde Estamos
             </h2>
             {contact.address && <p className="text-sm opacity-80 mb-4">{contact.address}</p>}
             {contact.mapUrl && (
@@ -165,8 +192,19 @@ export function ProfessionalSiteView() {
         )}
         
       </div>
-    </div>
-  );
+    );
+
+    if (isFullScreen) {
+      return <div className="w-full h-full relative bg-background">{content}</div>;
+    }
+
+    return (
+      <div className="w-[320px] h-[650px] bg-black rounded-[3rem] border-8 border-black shadow-2xl relative overflow-hidden ring-1 ring-border/20 mx-auto">
+        <div className="absolute top-0 inset-x-0 h-6 bg-black z-20 rounded-b-2xl w-40 mx-auto" />
+        {content}
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-col lg:flex-row gap-8 w-full max-w-[1600px] mx-auto animate-in fade-in duration-300">
@@ -249,6 +287,38 @@ export function ProfessionalSiteView() {
           <ProSiteMockup />
         </div>
       </div>
+
+      {/* BOTÃO FLUTUANTE DE PREVIEW PARA MOBILE */}
+      <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 lg:hidden">
+        <Button
+          onClick={() => setShowMobilePreview(true)}
+          className="rounded-full shadow-xl bg-primary text-primary-foreground h-12 px-6 border-2 border-background/20 backdrop-blur-md"
+        >
+          <Mobile className="mr-2 h-5 w-5" />
+          Ver Preview
+        </Button>
+      </div>
+
+      {/* MODAL DE PREVIEW MOBILE FULLSCREEN */}
+      <Dialog open={showMobilePreview} onOpenChange={setShowMobilePreview}>
+        <DialogContent className="w-screen h-dvh max-w-none bg-black border-0 p-0 m-0 flex flex-col rounded-none z-[100] overflow-hidden">
+          <DialogTitle className="sr-only">Preview do Celular</DialogTitle>
+          
+          {/* BOTÃO FECHAR FLUTUANTE POR CIMA */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowMobilePreview(false)}
+            className="absolute top-4 right-4 z-[999] rounded-full bg-black/40 text-white hover:bg-black/60 backdrop-blur-md"
+          >
+            <X className="h-6 w-6" />
+          </Button>
+          
+          <div className="w-full h-full overflow-hidden">
+            <ProSiteMockup isFullScreen={true} />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
