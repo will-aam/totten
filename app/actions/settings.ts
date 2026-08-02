@@ -75,6 +75,8 @@ export async function getSelfServiceSettingsAction() {
 
 export async function updateSelfServiceSettingsAction(data: {
   termsOfUse?: string;
+  futureBookingLimitDays?: number;
+  welcomeMessage?: string;
   schedule: Array<{
     dayOfWeek: number;
     isOpen: boolean;

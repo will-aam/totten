@@ -99,7 +99,11 @@ export class SettingsService {
     const [settings, schedule, exceptions] = await Promise.all([
       prisma.settings.findUnique({
         where: { organization_id: organizationId },
-        select: { terms_of_use: true },
+        select: { 
+          terms_of_use: true, 
+          future_booking_limit_days: true,
+          welcome_message: true 
+        },
       }),
       prisma.workingHour.findMany({
         where: { organization_id: organizationId },
@@ -113,6 +117,8 @@ export class SettingsService {
 
     return {
       termsOfUse: settings?.terms_of_use || "",
+      futureBookingLimitDays: settings?.future_booking_limit_days ?? 30,
+      welcomeMessage: settings?.welcome_message || "Bem-vindo, aqui você pode agendar seu horário de forma rápida e fácil.",
       schedule: schedule.map((s) => ({
         dayOfWeek: s.day_of_week,
         isOpen: s.is_open,
@@ -143,11 +149,20 @@ export class SettingsService {
     const prisma = getTenantPrisma(organizationId);
 
     return await prisma.$transaction(async (tx) => {
-      // 1. Atualizar Termos de Uso no Settings
-      if (data.termsOfUse !== undefined) {
+      // 1. Atualizar Configurações no Settings
+      if (
+        data.termsOfUse !== undefined ||
+        data.futureBookingLimitDays !== undefined ||
+        data.welcomeMessage !== undefined
+      ) {
+        const updateData: any = {};
+        if (data.termsOfUse !== undefined) updateData.terms_of_use = data.termsOfUse;
+        if (data.futureBookingLimitDays !== undefined) updateData.future_booking_limit_days = data.futureBookingLimitDays;
+        if (data.welcomeMessage !== undefined) updateData.welcome_message = data.welcomeMessage;
+
         await tx.settings.update({
           where: { organization_id: organizationId },
-          data: { terms_of_use: data.termsOfUse },
+          data: updateData,
         });
       }
 

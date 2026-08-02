@@ -140,10 +140,7 @@ export const ScheduleSettingsModal = memo(
       }
     };
 
-    // Criar agendamentos de exemplo (Mock para UI)
-    const handleCreateMockAppointments = () => {
-      toast.success("Agendamentos de exemplo criados com sucesso! (Demonstração)");
-    };
+
 
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
@@ -229,17 +226,41 @@ export const ScheduleSettingsModal = memo(
                   Como os horários disponíveis são gerados.
                 </p>
               </div>
-              <Select value={scheduleGenerationType} onValueChange={setScheduleGenerationType}>
+              <Select 
+                value={scheduleGenerationType === "automatic" ? "automatic" : "fixed"} 
+                onValueChange={(val) => {
+                  if (val === "automatic") setScheduleGenerationType("automatic");
+                  else if (scheduleGenerationType === "automatic") setScheduleGenerationType("fixed_30");
+                }}
+              >
                 <SelectTrigger className="rounded-xl bg-muted/40 border-none h-11 font-bold">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl">
-                  <SelectItem value="automatic" className="rounded-lg">Automática (Evita intervalos)</SelectItem>
-                  <SelectItem value="fixed_15" className="rounded-lg">Intervalos fixos (15 em 15 min)</SelectItem>
-                  <SelectItem value="fixed_30" className="rounded-lg">Intervalos fixos (30 em 30 min)</SelectItem>
-                  <SelectItem value="fixed_60" className="rounded-lg">Intervalos fixos (1 em 1 hora)</SelectItem>
+                  <SelectItem value="automatic" className="rounded-lg">Automática</SelectItem>
+                  <SelectItem value="fixed" className="rounded-lg">Intervalos fixos</SelectItem>
                 </SelectContent>
               </Select>
+
+              {scheduleGenerationType !== "automatic" && (
+                <div className="pt-2 animate-in fade-in slide-in-from-top-2">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1 mb-1.5 block">
+                    Intervalo entre horários
+                  </Label>
+                  <Select value={scheduleGenerationType} onValueChange={setScheduleGenerationType}>
+                    <SelectTrigger className="rounded-xl bg-muted/40 border-none h-11 font-bold">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl">
+                      <SelectItem value="fixed_10" className="rounded-lg">A cada 10 minutos</SelectItem>
+                      <SelectItem value="fixed_15" className="rounded-lg">A cada 15 minutos</SelectItem>
+                      <SelectItem value="fixed_20" className="rounded-lg">A cada 20 minutos</SelectItem>
+                      <SelectItem value="fixed_30" className="rounded-lg">A cada 30 minutos</SelectItem>
+                      <SelectItem value="fixed_60" className="rounded-lg">A cada 1 hora</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
 
             {/* Permitir Ultrapassar */}
@@ -266,29 +287,14 @@ export const ScheduleSettingsModal = memo(
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl">
-                  <SelectItem value="day" className="rounded-lg">Dia (Abre nos agendamentos de hoje)</SelectItem>
-                  <SelectItem value="week" className="rounded-lg">Semana (Visão da semana inteira)</SelectItem>
-                  <SelectItem value="month" className="rounded-lg">Mês (Calendário do mês)</SelectItem>
+                  <SelectItem value="day" className="rounded-lg">Dia</SelectItem>
+                  <SelectItem value="week" className="rounded-lg">Semana</SelectItem>
+                  <SelectItem value="month" className="rounded-lg">Mês</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {/* Criar Agendamentos de Exemplo */}
-            <div className="space-y-3 pt-4 border-t">
-              <div className="space-y-1 text-sm">
-                <Label className="font-bold text-foreground">Criar agendamentos de exemplo</Label>
-                <p className="text-muted-foreground leading-relaxed text-xs">
-                  O sistema irá criar alguns agendamentos com todos os status ao longo da data de hoje para você conseguir visualizar a agenda completa.
-                </p>
-              </div>
-              <Button 
-                variant="outline" 
-                onClick={handleCreateMockAppointments}
-                className="w-full h-11 rounded-xl font-bold border-dashed border-2"
-              >
-                Gerar agendamentos na data de hoje
-              </Button>
-            </div>
+
 
             {/* ÁREA DE PERIGO (LIMPEZA) */}
             <div className="rounded-2xl border-2 border-destructive/10 bg-destructive/5 p-4 mt-8">

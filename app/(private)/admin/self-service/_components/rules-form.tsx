@@ -41,6 +41,7 @@ import { CalendarIcon, Copy, Plus, Trash2, Loader2, Check } from "lucide-react";
 import { updateSelfServiceSettingsAction } from "@/app/actions/settings";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 const DAYS_OF_WEEK = [
   { id: 0, label: "Domingo", short: "Dom" },
@@ -63,6 +64,8 @@ const timeSchema = z.object({
 });
 
 const rulesFormSchema = z.object({
+  futureBookingLimitDays: z.coerce.number().min(1, "Mínimo 1 dia"),
+  welcomeMessage: z.string().optional(),
   schedule: z.array(timeSchema.extend({ dayOfWeek: z.number() })),
   exceptions: z.array(timeSchema.extend({ date: z.string() })),
 });
@@ -81,6 +84,8 @@ const defaultValues: Partial<RulesFormValues> = {
     breakVisibleToClient: false,
   })),
   exceptions: [],
+  futureBookingLimitDays: 30,
+  welcomeMessage: "Bem-vindo, aqui você pode agendar seu horário de forma rápida e fácil.",
 };
 
 // ---------------------------------------------------------------------------
@@ -504,6 +509,8 @@ export function RulesAndHoursForm({ initialData }: RulesAndHoursFormProps) {
           ? initialData.schedule
           : defaultValues.schedule,
       exceptions: initialData.exceptions || [],
+      futureBookingLimitDays: initialData.futureBookingLimitDays ?? defaultValues.futureBookingLimitDays,
+      welcomeMessage: initialData.welcomeMessage ?? defaultValues.welcomeMessage,
     };
   }, [initialData]);
 
@@ -581,6 +588,60 @@ export function RulesAndHoursForm({ initialData }: RulesAndHoursFormProps) {
           {/* Unified UI (Mobile & Desktop) */}
           <CardContent className="px-0 sm:px-6">
             <MobileWeeklySchedule form={form} />
+          </CardContent>
+        </Card>
+
+        {/* Regras de Agendamento e Recepção */}
+        <Card className="border-none shadow-none bg-transparent sm:bg-card">
+          <CardHeader className="flex flex-col gap-4 px-0 sm:px-6">
+            <div>
+              <CardTitle>Regras de Agendamento e Recepção</CardTitle>
+              <CardDescription>
+                Configure os limites de agendamento e a comunicação inicial.
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="px-0 sm:px-6 space-y-6">
+            <FormField
+              control={form.control}
+              name="futureBookingLimitDays"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-bold">Dias no futuro disponíveis para agendamento</FormLabel>
+                  <CardDescription className="mb-2">
+                    Limite máximo de dias para frente que um cliente pode reservar.
+                  </CardDescription>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      min="1"
+                      className="rounded-xl bg-muted/40 border-none h-11 font-bold max-w-xs" 
+                      {...field} 
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="welcomeMessage"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-bold">Mensagem de Boas-vindas</FormLabel>
+                  <CardDescription className="mb-2">
+                    Mensagem exibida ao cliente na tela de agendamento.
+                  </CardDescription>
+                  <FormControl>
+                    <Textarea 
+                      className="rounded-xl bg-muted/40 border-none resize-none font-medium min-h-[100px]" 
+                      placeholder="Ex: Bem-vindo, aqui você pode agendar seu horário..."
+                      {...field} 
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
           </CardContent>
         </Card>
 
