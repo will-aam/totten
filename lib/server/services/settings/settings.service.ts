@@ -24,6 +24,10 @@ export class SettingsService {
       email: settings.email_admin || "",
       openingTime: settings.opening_time,
       closingTime: settings.closing_time,
+      autoConfirmAppointments: settings.auto_confirm_appointments,
+      scheduleGenerationType: settings.schedule_generation_type,
+      allowOverLimitAppointments: settings.allow_over_limit_appointments,
+      defaultScheduleView: settings.default_schedule_view,
     };
   }
 
@@ -50,6 +54,14 @@ export class SettingsService {
       updateData.opening_time = data.openingTime;
     if (data.closingTime !== undefined)
       updateData.closing_time = data.closingTime;
+    if (data.autoConfirmAppointments !== undefined)
+      updateData.auto_confirm_appointments = data.autoConfirmAppointments;
+    if (data.scheduleGenerationType !== undefined)
+      updateData.schedule_generation_type = data.scheduleGenerationType;
+    if (data.allowOverLimitAppointments !== undefined)
+      updateData.allow_over_limit_appointments = data.allowOverLimitAppointments;
+    if (data.defaultScheduleView !== undefined)
+      updateData.default_schedule_view = data.defaultScheduleView;
 
     return await prisma.settings.upsert({
       where: { organization_id: organizationId },
@@ -66,6 +78,10 @@ export class SettingsService {
         phone_whatsapp: data.whatsapp || "",
         opening_time: data.openingTime || "08:00",
         closing_time: data.closingTime || "19:00",
+        auto_confirm_appointments: data.autoConfirmAppointments ?? true,
+        schedule_generation_type: data.scheduleGenerationType || "automatic",
+        allow_over_limit_appointments: data.allowOverLimitAppointments ?? false,
+        default_schedule_view: data.defaultScheduleView || "day",
       },
     });
   }
@@ -104,6 +120,8 @@ export class SettingsService {
         closeTime: s.close_time || "",
         breakStart: s.break_start || "",
         breakEnd: s.break_end || "",
+        breakReason: s.break_reason || "",
+        breakVisibleToClient: s.break_visible_to_client,
       })),
       exceptions: exceptions.map((e) => ({
         date: e.date,
@@ -112,6 +130,8 @@ export class SettingsService {
         closeTime: e.close_time || "",
         breakStart: e.break_start || "",
         breakEnd: e.break_end || "",
+        breakReason: e.break_reason || "",
+        breakVisibleToClient: e.break_visible_to_client,
       })),
     };
   }
@@ -146,6 +166,8 @@ export class SettingsService {
             close_time: s.closeTime || null,
             break_start: s.breakStart || null,
             break_end: s.breakEnd || null,
+            break_reason: s.breakReason || null,
+            break_visible_to_client: s.breakVisibleToClient ?? false,
           })),
         });
       }
@@ -166,6 +188,8 @@ export class SettingsService {
               close_time: e.closeTime || null,
               break_start: e.breakStart || null,
               break_end: e.breakEnd || null,
+              break_reason: e.breakReason || null,
+              break_visible_to_client: e.breakVisibleToClient ?? false,
             })),
           });
         }

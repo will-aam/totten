@@ -1,15 +1,15 @@
-// components/agenda/schedule-settings-modal.tsx
+// components/agenda/schedule-settings-modal.tsx (Now a Sidebar/Sheet)
 "use client";
 
 import React, { useState, useEffect, memo } from "react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+} from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +19,8 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { Clock, LoaderDots, AlertTriangle } from "@boxicons/react";
+import { Switch } from "@/components/ui/switch";
+import { Clock, LoaderDots, AlertTriangle, ChevronLeft } from "@boxicons/react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
@@ -36,9 +37,13 @@ import {
 import { cn } from "@/lib/utils";
 import { clearTodayAgenda } from "@/app/actions/appointments";
 
-type ScheduleSettings = {
+export type ScheduleSettings = {
   openingTime: string;
   closingTime: string;
+  autoConfirmAppointments?: boolean;
+  scheduleGenerationType?: string;
+  allowOverLimitAppointments?: boolean;
+  defaultScheduleView?: string;
 };
 
 interface ScheduleSettingsModalProps {
@@ -64,8 +69,12 @@ export const ScheduleSettingsModal = memo(
   }: ScheduleSettingsModalProps) => {
     const [openingTime, setOpeningTime] = useState(initialSettings.openingTime);
     const [closingTime, setClosingTime] = useState(initialSettings.closingTime);
-    const [isSaving, setIsSaving] = useState(false);
+    const [autoConfirmAppointments, setAutoConfirmAppointments] = useState(initialSettings.autoConfirmAppointments ?? true);
+    const [scheduleGenerationType, setScheduleGenerationType] = useState(initialSettings.scheduleGenerationType || "automatic");
+    const [allowOverLimitAppointments, setAllowOverLimitAppointments] = useState(initialSettings.allowOverLimitAppointments ?? false);
+    const [defaultScheduleView, setDefaultScheduleView] = useState(initialSettings.defaultScheduleView || "day");
 
+    const [isSaving, setIsSaving] = useState(false);
     const [clearPassword, setClearPassword] = useState("");
     const [isClearing, setIsClearing] = useState(false);
     const [isClearDialogOpen, setIsClearDialogOpen] = useState(false);
@@ -75,6 +84,10 @@ export const ScheduleSettingsModal = memo(
       if (open) {
         setOpeningTime(initialSettings.openingTime);
         setClosingTime(initialSettings.closingTime);
+        setAutoConfirmAppointments(initialSettings.autoConfirmAppointments ?? true);
+        setScheduleGenerationType(initialSettings.scheduleGenerationType || "automatic");
+        setAllowOverLimitAppointments(initialSettings.allowOverLimitAppointments ?? false);
+        setDefaultScheduleView(initialSettings.defaultScheduleView || "day");
       }
     }, [open, initialSettings]);
 
@@ -86,7 +99,14 @@ export const ScheduleSettingsModal = memo(
 
       setIsSaving(true);
       try {
-        await onSave({ openingTime, closingTime });
+        await onSave({ 
+          openingTime, 
+          closingTime,
+          autoConfirmAppointments,
+          scheduleGenerationType,
+          allowOverLimitAppointments,
+          defaultScheduleView
+        });
         onOpenChange(false);
       } catch (error) {
         toast.error("Erro ao salvar configurações.");
@@ -103,9 +123,7 @@ export const ScheduleSettingsModal = memo(
 
       setIsClearing(true);
       try {
-        // Agora chamamos a Server Action diretamente!
         const result = await clearTodayAgenda(clearPassword);
-
         if (result.error) {
           toast.error(result.error);
           return;
@@ -122,103 +140,182 @@ export const ScheduleSettingsModal = memo(
       }
     };
 
+    // Criar agendamentos de exemplo (Mock para UI)
+    const handleCreateMockAppointments = () => {
+      toast.success("Agendamentos de exemplo criados com sucesso! (Demonstração)");
+    };
+
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-md rounded-3xl border-none shadow-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-black flex items-center gap-2">
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent className="w-full sm:w-[450px] sm:max-w-md p-0 flex flex-col border-none shadow-2xl overflow-hidden bg-background">
+          <SheetHeader className="p-6 border-b text-left">
+            <SheetTitle className="text-xl font-black flex items-center gap-2">
               <Clock className="h-5 w-5 text-primary" />
-              Configurar Expediente
-            </DialogTitle>
-            <DialogDescription className="font-medium">
-              Ajuste os limites de horário da sua agenda diária.
-            </DialogDescription>
-          </DialogHeader>
+              Configurações da Agenda
+            </SheetTitle>
+            <SheetDescription className="font-medium text-sm">
+              Personalize o funcionamento do agendamento.
+            </SheetDescription>
+          </SheetHeader>
 
-          <div className="grid gap-6 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">
-                  Início
-                </Label>
-                <Select value={openingTime} onValueChange={setOpeningTime}>
-                  <SelectTrigger className="rounded-2xl bg-muted/40 border-none h-12 font-bold">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl">
-                    {HOUR_SLOTS.map((slot) => (
-                      <SelectItem
-                        key={slot}
-                        value={slot}
-                        className="rounded-lg"
-                      >
-                        {slot}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          <div className="flex-1 overflow-y-auto p-6 space-y-8">
+            
+            {/* Confirmar Automático */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-1 text-sm">
+                <Label className="font-bold text-foreground">Confirmar agendamentos automaticamente</Label>
+                <p className="text-muted-foreground leading-relaxed text-xs">
+                  Ao ativar, todo agendamento feito pelo seu link será confirmado automaticamente. Se desativado, ficará pendente até você confirmar.
+                </p>
               </div>
+              <Switch 
+                checked={autoConfirmAppointments} 
+                onCheckedChange={setAutoConfirmAppointments} 
+              />
+            </div>
 
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">
-                  Término
-                </Label>
-                <Select value={closingTime} onValueChange={setClosingTime}>
-                  <SelectTrigger className="rounded-2xl bg-muted/40 border-none h-12 font-bold">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl">
-                    {HOUR_SLOTS.map((slot) => (
-                      <SelectItem
-                        key={slot}
-                        value={slot}
-                        className="rounded-lg"
-                      >
-                        {slot}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            {/* Faixa de Horários */}
+            <div className="space-y-3">
+              <div className="space-y-1 text-sm">
+                <Label className="font-bold text-foreground">Faixa de horários da agenda</Label>
+                <p className="text-muted-foreground text-xs">
+                  Define quais horários serão exibidos na agenda. Não altera seu horário de atendimento.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">
+                    Início da grade
+                  </Label>
+                  <Select value={openingTime} onValueChange={setOpeningTime}>
+                    <SelectTrigger className="rounded-xl bg-muted/40 border-none h-11 font-bold">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl">
+                      {HOUR_SLOTS.map((slot) => (
+                        <SelectItem key={slot} value={slot} className="rounded-lg">
+                          {slot}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">
+                    Fim da grade
+                  </Label>
+                  <Select value={closingTime} onValueChange={setClosingTime}>
+                    <SelectTrigger className="rounded-xl bg-muted/40 border-none h-11 font-bold">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl">
+                      {HOUR_SLOTS.map((slot) => (
+                        <SelectItem key={slot} value={slot} className="rounded-lg">
+                          {slot}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 
+            {/* Horários da Grade */}
+            <div className="space-y-3">
+              <div className="space-y-1 text-sm">
+                <Label className="font-bold text-foreground">Horários da grade</Label>
+                <p className="text-muted-foreground text-xs">
+                  Como os horários disponíveis são gerados.
+                </p>
+              </div>
+              <Select value={scheduleGenerationType} onValueChange={setScheduleGenerationType}>
+                <SelectTrigger className="rounded-xl bg-muted/40 border-none h-11 font-bold">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl">
+                  <SelectItem value="automatic" className="rounded-lg">Automática (Evita intervalos)</SelectItem>
+                  <SelectItem value="fixed_15" className="rounded-lg">Intervalos fixos (15 em 15 min)</SelectItem>
+                  <SelectItem value="fixed_30" className="rounded-lg">Intervalos fixos (30 em 30 min)</SelectItem>
+                  <SelectItem value="fixed_60" className="rounded-lg">Intervalos fixos (1 em 1 hora)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Permitir Ultrapassar */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-1 text-sm">
+                <Label className="font-bold text-foreground">Permitir ultrapassar o horário limite</Label>
+                <p className="text-muted-foreground leading-relaxed text-xs">
+                  Se um serviço de 35 min começaria às 17:30 e você atende até 18:00, a grade ainda oferece esse horário.
+                </p>
+              </div>
+              <Switch 
+                checked={allowOverLimitAppointments} 
+                onCheckedChange={setAllowOverLimitAppointments} 
+              />
+            </div>
+
+            {/* Visualização Padrão */}
+            <div className="space-y-3">
+              <div className="space-y-1 text-sm">
+                <Label className="font-bold text-foreground">Visualização padrão ao abrir a agenda</Label>
+              </div>
+              <Select value={defaultScheduleView} onValueChange={setDefaultScheduleView}>
+                <SelectTrigger className="rounded-xl bg-muted/40 border-none h-11 font-bold">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl">
+                  <SelectItem value="day" className="rounded-lg">Dia (Abre nos agendamentos de hoje)</SelectItem>
+                  <SelectItem value="week" className="rounded-lg">Semana (Visão da semana inteira)</SelectItem>
+                  <SelectItem value="month" className="rounded-lg">Mês (Calendário do mês)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Criar Agendamentos de Exemplo */}
+            <div className="space-y-3 pt-4 border-t">
+              <div className="space-y-1 text-sm">
+                <Label className="font-bold text-foreground">Criar agendamentos de exemplo</Label>
+                <p className="text-muted-foreground leading-relaxed text-xs">
+                  O sistema irá criar alguns agendamentos com todos os status ao longo da data de hoje para você conseguir visualizar a agenda completa.
+                </p>
+              </div>
+              <Button 
+                variant="outline" 
+                onClick={handleCreateMockAppointments}
+                className="w-full h-11 rounded-xl font-bold border-dashed border-2"
+              >
+                Gerar agendamentos na data de hoje
+              </Button>
+            </div>
+
             {/* ÁREA DE PERIGO (LIMPEZA) */}
-            <div className="rounded-2xl border-2 border-destructive/10 bg-destructive/2 p-4">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex flex-col gap-0.5">
+            <div className="rounded-2xl border-2 border-destructive/10 bg-destructive/5 p-4 mt-8">
+              <div className="flex flex-col gap-3">
+                <div className="space-y-1">
                   <p className="text-sm font-black text-destructive flex items-center gap-1.5">
-                    <AlertTriangle className="h-3.5 w-3.5" />
+                    <AlertTriangle className="h-4 w-4" />
                     Limpar hoje
                   </p>
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase leading-tight">
-                    Remove todos os agendamentos desta data.
+                  <p className="text-xs font-medium text-muted-foreground leading-relaxed">
+                    Remove todos os agendamentos desta data. Esta ação é irreversível.
                   </p>
                 </div>
 
-                <AlertDialog
-                  open={isClearDialogOpen}
-                  onOpenChange={setIsClearDialogOpen}
-                >
+                <AlertDialog open={isClearDialogOpen} onOpenChange={setIsClearDialogOpen}>
                   <AlertDialogTrigger asChild>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="rounded-xl h-9 px-4 font-bold"
-                    >
-                      Limpar
+                    <Button variant="destructive" size="sm" className="w-full rounded-xl h-11 font-bold">
+                      Limpar agendamentos
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent className="rounded-3xl border-none">
                     <AlertDialogHeader>
-                      <AlertDialogTitle className="font-black text-xl">
-                        Confirmar Limpeza
-                      </AlertDialogTitle>
+                      <AlertDialogTitle className="font-black text-xl">Confirmar Limpeza</AlertDialogTitle>
                       <AlertDialogDescription className="font-medium">
-                        Esta ação é irreversível. Digite sua senha de admin para
-                        prosseguir.
+                        Esta ação é irreversível. Digite sua senha de admin para prosseguir.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
-
                     <div className="my-2">
                       <Input
                         type="password"
@@ -228,21 +325,10 @@ export const ScheduleSettingsModal = memo(
                         className="rounded-2xl h-12 bg-muted/40 border-none"
                       />
                     </div>
-
                     <AlertDialogFooter>
-                      <AlertDialogCancel className="rounded-2xl h-12 font-bold">
-                        Cancelar
-                      </AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleClearToday}
-                        disabled={isClearing}
-                        className="rounded-2xl h-12 bg-destructive text-white font-black"
-                      >
-                        {isClearing ? (
-                          <LoaderDots className="animate-spin" />
-                        ) : (
-                          "Sim, apagar tudo"
-                        )}
+                      <AlertDialogCancel className="rounded-2xl h-12 font-bold">Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleClearToday} disabled={isClearing} className="rounded-2xl h-12 bg-destructive text-white font-black">
+                        {isClearing ? <LoaderDots className="animate-spin" /> : "Sim, apagar tudo"}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -251,28 +337,24 @@ export const ScheduleSettingsModal = memo(
             </div>
           </div>
 
-          <DialogFooter className="gap-3">
+          <div className="p-4 border-t bg-background flex items-center gap-3">
             <Button
-              variant="ghost"
+              variant="outline"
               onClick={() => onOpenChange(false)}
-              className="rounded-2xl h-12 font-bold text-muted-foreground"
+              className="flex-1 rounded-xl h-12 font-bold text-muted-foreground border-transparent hover:border-border"
             >
-              Cancelar
+              Voltar
             </Button>
             <Button
               onClick={handleConfirm}
               disabled={isSaving}
-              className="rounded-2xl h-12 px-8 bg-primary font-black"
+              className="flex-1 rounded-xl h-12 bg-primary font-black text-primary-foreground"
             >
-              {isSaving ? (
-                <LoaderDots className="animate-spin" />
-              ) : (
-                "Salvar Configurações"
-              )}
+              {isSaving ? <LoaderDots className="animate-spin h-5 w-5" /> : "Finalizar"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </SheetContent>
+      </Sheet>
     );
   },
 );

@@ -25,3 +25,21 @@ export async function GET() {
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }
+
+export async function PUT(req: Request) {
+  try {
+    const admin = await requireAuth();
+    const data = await req.json();
+
+    await SettingsService.updateSettings(admin.organizationId, data);
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+
+    console.error("[SETTINGS_PUT]", error);
+    return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
+  }
+}

@@ -13,6 +13,10 @@ export async function updateSettingsAction(data: {
   whatsapp?: string;
   openingTime?: string;
   closingTime?: string;
+  autoConfirmAppointments?: boolean;
+  scheduleGenerationType?: string;
+  allowOverLimitAppointments?: boolean;
+  defaultScheduleView?: string;
 }) {
   try {
     // 🛡️ Validação unificada de sessão e extração do tenant
@@ -78,6 +82,8 @@ export async function updateSelfServiceSettingsAction(data: {
     closeTime?: string;
     breakStart?: string;
     breakEnd?: string;
+    breakReason?: string;
+    breakVisibleToClient?: boolean;
   }>;
   exceptions: Array<{
     date: string;
@@ -86,6 +92,8 @@ export async function updateSelfServiceSettingsAction(data: {
     closeTime?: string;
     breakStart?: string;
     breakEnd?: string;
+    breakReason?: string;
+    breakVisibleToClient?: boolean;
   }>;
 }) {
   try {

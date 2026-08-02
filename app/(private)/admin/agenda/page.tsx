@@ -43,6 +43,10 @@ import { apiClient, ApiError } from "@/lib/api-client";
 interface AgendaSettings {
   openingTime: string;
   closingTime: string;
+  autoConfirmAppointments?: boolean;
+  scheduleGenerationType?: string;
+  allowOverLimitAppointments?: boolean;
+  defaultScheduleView?: string;
 }
 
 export default function AgendaPage() {
@@ -183,10 +187,7 @@ export default function AgendaPage() {
     mutateAgenda();
   };
 
-  const handleSaveSettings = async (newSettings: {
-    openingTime: string;
-    closingTime: string;
-  }) => {
+  const handleSaveSettings = async (newSettings: AgendaSettings) => {
     try {
       await apiClient("settings", {
         method: "PUT",
@@ -534,7 +535,14 @@ export default function AgendaPage() {
       <ScheduleSettingsModal
         open={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
-        initialSettings={{ openingTime, closingTime }}
+        initialSettings={{ 
+          openingTime, 
+          closingTime,
+          autoConfirmAppointments: settings?.autoConfirmAppointments,
+          scheduleGenerationType: settings?.scheduleGenerationType,
+          allowOverLimitAppointments: settings?.allowOverLimitAppointments,
+          defaultScheduleView: settings?.defaultScheduleView,
+        }}
         onSave={handleSaveSettings}
         onClearToday={mutateAll}
       />

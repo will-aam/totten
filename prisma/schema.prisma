@@ -71,6 +71,11 @@ model Settings {
   updated_at       DateTime     @updatedAt
   trade_name       String?
   
+  auto_confirm_appointments     Boolean @default(true)
+  schedule_generation_type      String  @default("automatic")
+  allow_over_limit_appointments Boolean @default(false)
+  default_schedule_view         String  @default("day")
+  
   require_cpf      Boolean      @default(true)
   terms_of_use     String?      @db.Text
 
@@ -85,8 +90,10 @@ model WorkingHour {
   is_open         Boolean      @default(true)
   open_time       String?
   close_time      String?
-  break_start     String?
-  break_end       String?
+  break_start              String?
+  break_end                String?
+  break_reason             String?
+  break_visible_to_client  Boolean      @default(false)
   
   organization_id String
   organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
@@ -101,8 +108,10 @@ model ScheduleException {
   is_open         Boolean      @default(false)
   open_time       String?
   close_time      String?
-  break_start     String?
-  break_end       String?
+  break_start              String?
+  break_end                String?
+  break_reason             String?
+  break_visible_to_client  Boolean      @default(false)
   
   organization_id String
   organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
