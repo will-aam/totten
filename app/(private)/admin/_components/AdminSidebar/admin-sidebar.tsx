@@ -6,11 +6,11 @@ import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
 import {
-  GridCircleDiagonalLeft,
+  DashboardAlt,
   Lock,
   Wallet,
   Mobile,
-  Cloud,
+  ListPlus,
   Shield,
 } from "@boxicons/react";
 import {
@@ -149,7 +149,7 @@ export function AdminSidebar() {
                 >
                   <Link href="/admin/dashboard" onClick={closeMobile}>
                     <NavIcon
-                      icon={GridCircleDiagonalLeft}
+                      icon={DashboardAlt}
                       isActive={pathname.startsWith("/admin/dashboard")}
                     />
                     <span>Dashboard</span>
@@ -161,7 +161,7 @@ export function AdminSidebar() {
               {isOwner && (
                 <NavCollapsibleGroup
                   label="Cadastros"
-                  icon={Cloud}
+                  icon={ListPlus}
                   isOpen={openModule === "cadastros"}
                   onOpenChange={(open) =>
                     setOpenModule(open ? "cadastros" : null)
