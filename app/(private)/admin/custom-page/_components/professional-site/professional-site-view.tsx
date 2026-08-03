@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Save, ChevronRight, ChevronLeft, Pin, Star, Briefcase, Youtube, Mobile, X } from "@boxicons/react";
+import { Save, ChevronRight, ChevronLeft, Pin, Star, Briefcase, Youtube, Mobile, X, Copy, Check, Globe } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 // Importando as seções recém-criadas
 import { ProPresentation } from "./pro-presentation";
@@ -39,17 +40,50 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
   const [contact, setContact] = useState({ address: "", mapUrl: "", phone: "", email: "" });
   const [theme, setTheme] = useState({ id: "light", css: "bg-slate-50", textColor: "#0f172a", primaryColor: "#0f172a", headerStyle: "center" });
 
-  // Preencher dados iniciais recebidos do servidor
+  const [copied, setCopied] = useState(false);
+
+  // Preencher dados iniciais recebidos do servidor ou localStorage
   useEffect(() => {
-    if (initialData) {
+    let loaded = false;
+    if (initialData && Object.keys(initialData).length > 0) {
       if (initialData.presentation) setPresentation(initialData.presentation);
       if (initialData.services) setServices(initialData.services);
       if (initialData.media) setMedia(initialData.media);
       if (initialData.socialProof) setSocialProof(initialData.socialProof);
       if (initialData.contact) setContact(initialData.contact);
       if (initialData.theme) setTheme(initialData.theme);
+      loaded = true;
+    }
+    
+    if (!loaded) {
+      const saved = localStorage.getItem('totten_pro_site_draft');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.presentation) setPresentation(parsed.presentation);
+          if (parsed.services) setServices(parsed.services);
+          if (parsed.media) setMedia(parsed.media);
+          if (parsed.socialProof) setSocialProof(parsed.socialProof);
+          if (parsed.contact) setContact(parsed.contact);
+          if (parsed.theme) setTheme(parsed.theme);
+        } catch(e) {}
+      }
     }
   }, [initialData]);
+
+  // Salvar rascunho
+  useEffect(() => {
+    const draft = { presentation, services, media, socialProof, contact, theme };
+    localStorage.setItem('totten_pro_site_draft', JSON.stringify(draft));
+  }, [presentation, services, media, socialProof, contact, theme]);
+
+  const handleCopyLink = () => {
+    const origin = typeof window !== 'undefined' && window.location.origin.includes('localhost') ? window.location.origin : 'https://www.totten.com.br';
+    const link = `${origin}/${profile?.slug || 'seu-link'}/site`;
+    navigator.clipboard.writeText(link);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -241,8 +275,10 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
             </h2>
             {contact.address && <p className="text-sm opacity-80 mb-4">{contact.address}</p>}
             {contact.mapUrl && (
-              <div className="w-full h-32 bg-muted/20 rounded-xl overflow-hidden mb-4 border border-border/10 flex items-center justify-center text-xs opacity-50">
-                Mapa (Prévia)
+              <div className="w-full h-16 bg-muted/20 rounded-xl overflow-hidden mb-4 border border-border/10 flex items-center justify-center">
+                <a href={contact.mapUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm font-bold opacity-80 hover:opacity-100 transition-opacity">
+                  <Globe className="h-5 w-5" /> Abrir Mapa
+                </a>
               </div>
             )}
             {contact.phone && <p className="text-sm font-semibold">📞 {contact.phone}</p>}
@@ -282,6 +318,28 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
             <Button onClick={handleSave} disabled={isSaving} className="flex-1 md:flex-none rounded-full h-10 shadow-sm w-full md:w-32">
               {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Salvar
             </Button>
+          </div>
+        </div>
+
+        {/* Link Fixo do Site Profissional */}
+        <div className="flex flex-col gap-2 p-4 border border-border/50 bg-muted/10 rounded-xl">
+          <span className="text-sm font-medium text-foreground">Link do seu Site Profissional</span>
+          <div className="flex items-center">
+            <span className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
+              totten.com.br/
+            </span>
+            <Input
+              value={`${profile?.slug || 'seu-link'}/site`}
+              readOnly
+              className="rounded-none bg-background border-border/50 h-11 focus-visible:ring-0 text-muted-foreground"
+            />
+            <button
+              onClick={handleCopyLink}
+              className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-l-0 rounded-r-md text-sm h-11 flex items-center hover:bg-muted/80 hover:text-foreground transition-colors shrink-0 outline-none"
+              title="Copiar link"
+            >
+              {copied ? <Check className="h-5 w-5 text-emerald-500" /> : <Copy className="h-5 w-5" />}
+            </button>
           </div>
         </div>
 
