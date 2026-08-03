@@ -9,6 +9,7 @@ export class CustomPageService {
 
     const linkBio = await prisma.linkBio.findUnique({
       where: { organization_id: organizationId },
+      include: { organization: { select: { slug: true, name: true } } }
     });
 
     return linkBio;
@@ -21,14 +22,24 @@ export class CustomPageService {
     const prisma = getTenantPrisma(organizationId);
 
     const updateData: any = {};
-    
     if (data.profileImageUrl !== undefined) updateData.profile_image_url = data.profileImageUrl;
     if (data.bioText !== undefined) updateData.bio_text = data.bioText;
     if (data.themeColorLight !== undefined) updateData.theme_color_light = data.themeColorLight;
     if (data.themeColorDark !== undefined) updateData.theme_color_dark = data.themeColorDark;
     if (data.fontFamily !== undefined) updateData.font_family = data.fontFamily;
+    if (data.themeConfig !== undefined) updateData.theme_config = data.themeConfig;
     if (data.socialLinks !== undefined) updateData.social_links = data.socialLinks;
     if (data.professionalSiteConfig !== undefined) updateData.professional_site_config = data.professionalSiteConfig;
+
+    if (data.slug || data.name) {
+      const orgUpdateData: any = {};
+      if (data.slug) orgUpdateData.slug = data.slug;
+      if (data.name) orgUpdateData.name = data.name;
+      await prisma.organization.update({
+        where: { id: organizationId },
+        data: orgUpdateData,
+      });
+    }
 
     return await prisma.linkBio.upsert({
       where: { organization_id: organizationId },
@@ -40,6 +51,7 @@ export class CustomPageService {
         theme_color_light: data.themeColorLight || "#ffffff",
         theme_color_dark: data.themeColorDark || "#000000",
         font_family: data.fontFamily || "Inter",
+        theme_config: data.themeConfig || {},
         social_links: data.socialLinks || {},
         professional_site_config: data.professionalSiteConfig || {},
       },

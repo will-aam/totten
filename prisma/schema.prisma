@@ -177,6 +177,7 @@ model LinkBio {
   theme_color_light String       @default("#ffffff")
   theme_color_dark  String       @default("#000000")
   font_family       String       @default("Inter")
+  theme_config      Json?
   social_links      Json?
   professional_site_config Json?
 

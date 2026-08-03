@@ -19,11 +19,14 @@ export async function getCustomPageAction() {
 }
 
 export async function updateCustomPageAction(data: {
+  slug?: string;
+  name?: string;
   profileImageUrl?: string;
   bioText?: string;
   themeColorLight?: string;
   themeColorDark?: string;
   fontFamily?: string;
+  themeConfig?: any;
   socialLinks?: any;
   professionalSiteConfig?: any;
 }) {

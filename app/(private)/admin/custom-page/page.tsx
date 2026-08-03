@@ -77,15 +77,36 @@ export default function CustomPage() {
         if (response.success && response.data) {
           const data = response.data;
           
-          if (data.profile_image_url || data.bio_text) {
+          if (data.organization) {
             setProfile(prev => ({
               ...prev,
-              image: data.profile_image_url || "",
+              slug: data.organization.slug || prev.slug,
+              name: data.organization.name || prev.name,
+              image: data.profile_image_url || prev.image,
+              bio: data.bio_text || prev.bio
+            }));
+          } else if (data.profile_image_url || data.bio_text) {
+            setProfile(prev => ({
+              ...prev,
+              image: data.profile_image_url || prev.image,
               bio: data.bio_text || prev.bio
             }));
           }
 
-          if (data.theme_color_light) {
+          if (data.theme_config) {
+            const tc = data.theme_config as any;
+            setTheme(prev => ({
+              ...prev,
+              id: tc.id || prev.id,
+              color: tc.color || data.theme_color_light || prev.color,
+              css: tc.css || prev.css,
+              fontFamily: tc.fontFamily || data.font_family || prev.fontFamily,
+              textColor: tc.textColor || prev.textColor,
+              buttonBg: tc.buttonBg || prev.buttonBg,
+              buttonText: tc.buttonText || prev.buttonText,
+              backgroundImage: tc.backgroundImage || prev.backgroundImage
+            }));
+          } else if (data.theme_color_light) {
             setTheme(prev => ({
               ...prev,
               color: data.theme_color_light,
@@ -126,10 +147,22 @@ export default function CustomPage() {
     setIsSaving(true);
     try {
       const response = await updateCustomPageAction({
+        slug: profile.slug,
+        name: profile.name,
         profileImageUrl: profile.image,
         bioText: profile.bio,
         themeColorLight: theme.color,
         fontFamily: theme.fontFamily,
+        themeConfig: {
+          id: theme.id,
+          color: theme.color,
+          css: theme.css,
+          fontFamily: theme.fontFamily,
+          textColor: theme.textColor,
+          buttonBg: theme.buttonBg,
+          buttonText: theme.buttonText,
+          backgroundImage: theme.backgroundImage
+        },
         socialLinks: {
           activePlatforms: socials.activePlatforms,
           values: socials.values,

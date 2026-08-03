@@ -32,7 +32,8 @@ export function ProfileSettings({ data, onChange }: any) {
   };
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(`totten.app/${data.slug}`);
+    const origin = typeof window !== 'undefined' && window.location.origin.includes('localhost') ? window.location.origin : 'https://www.totten.com.br';
+    navigator.clipboard.writeText(`${origin}/${data.slug}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -56,7 +57,7 @@ export function ProfileSettings({ data, onChange }: any) {
           </Label>
           <div className="flex items-center">
             <span className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
-              totten.app/
+              totten.com.br/
             </span>
             <Input
               id="slug"
