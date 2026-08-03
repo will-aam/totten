@@ -5,6 +5,8 @@ import { PaymentRulesForm } from "./_components/payment-rules-form";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+export const dynamic = "force-dynamic";
+
 export default async function SelfServicePage() {
   // Busca os dados diretamente no servidor antes de renderizar a página
   const response = await getSelfServiceSettingsAction();

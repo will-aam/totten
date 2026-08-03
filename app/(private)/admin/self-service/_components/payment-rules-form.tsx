@@ -205,16 +205,16 @@ export function PaymentRulesForm({ initialData }: PaymentRulesFormProps) {
     resolver: zodResolver(paymentRulesSchema),
     defaultValues: {
       confirmationTitle:
-        initialData?.confirmationTitle ??
+        initialData?.paymentRules?.confirmationTitle ||
         defaultPaymentValues.confirmationTitle,
       pixInstructions:
-        initialData?.pixInstructions ?? defaultPaymentValues.pixInstructions,
-      pixKeyType: initialData?.pixKeyType ?? defaultPaymentValues.pixKeyType,
-      pixKey: initialData?.pixKey ?? defaultPaymentValues.pixKey,
+        initialData?.paymentRules?.pixInstructions || defaultPaymentValues.pixInstructions,
+      pixKeyType: initialData?.paymentRules?.pixKeyType || defaultPaymentValues.pixKeyType,
+      pixKey: initialData?.paymentRules?.pixKey || defaultPaymentValues.pixKey,
       securityWarning:
-        initialData?.securityWarning ?? defaultPaymentValues.securityWarning,
+        initialData?.paymentRules?.securityWarning || defaultPaymentValues.securityWarning,
       frictionMessage:
-        initialData?.frictionMessage ?? defaultPaymentValues.frictionMessage,
+        initialData?.paymentRules?.frictionMessage || defaultPaymentValues.frictionMessage,
     },
     mode: "onChange",
   });
@@ -222,8 +222,16 @@ export function PaymentRulesForm({ initialData }: PaymentRulesFormProps) {
   async function onSubmit(data: PaymentRulesValues) {
     setIsPending(true);
     try {
-      // ⚠️ Bypass temporário de tipagem (as any) para podermos renderizar o front-end sem erros.
-      const response = await updateSelfServiceSettingsAction(data as any);
+      const response = await updateSelfServiceSettingsAction({
+        paymentRules: {
+          confirmationTitle: data.confirmationTitle,
+          pixInstructions: data.pixInstructions,
+          pixKeyType: data.pixKeyType,
+          pixKey: data.pixKey,
+          securityWarning: data.securityWarning,
+          frictionMessage: data.frictionMessage,
+        },
+      } as any);
 
       if (!response?.success) {
         toast.error(response?.error || "Erro ao salvar regras e pagamentos.");

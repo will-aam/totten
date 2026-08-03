@@ -102,7 +102,13 @@ export class SettingsService {
         select: { 
           terms_of_use: true, 
           future_booking_limit_days: true,
-          welcome_message: true 
+          welcome_message: true,
+          payment_confirmation_title: true,
+          payment_pix_instructions: true,
+          payment_pix_key_type: true,
+          payment_pix_key: true,
+          payment_security_warning: true,
+          payment_friction_message: true
         },
       }),
       prisma.workingHour.findMany({
@@ -119,6 +125,14 @@ export class SettingsService {
       termsOfUse: settings?.terms_of_use || "",
       futureBookingLimitDays: settings?.future_booking_limit_days ?? 30,
       welcomeMessage: settings?.welcome_message || "Bem-vindo, aqui você pode agendar seu horário de forma rápida e fácil.",
+      paymentRules: {
+        confirmationTitle: settings?.payment_confirmation_title || "",
+        pixInstructions: settings?.payment_pix_instructions || "",
+        pixKeyType: settings?.payment_pix_key_type || "Celular",
+        pixKey: settings?.payment_pix_key || "",
+        securityWarning: settings?.payment_security_warning || "",
+        frictionMessage: settings?.payment_friction_message || "",
+      },
       schedule: schedule.map((s) => ({
         dayOfWeek: s.day_of_week,
         isOpen: s.is_open,
@@ -153,12 +167,22 @@ export class SettingsService {
       if (
         data.termsOfUse !== undefined ||
         data.futureBookingLimitDays !== undefined ||
-        data.welcomeMessage !== undefined
+        data.welcomeMessage !== undefined ||
+        data.paymentRules !== undefined
       ) {
         const updateData: any = {};
         if (data.termsOfUse !== undefined) updateData.terms_of_use = data.termsOfUse;
         if (data.futureBookingLimitDays !== undefined) updateData.future_booking_limit_days = data.futureBookingLimitDays;
         if (data.welcomeMessage !== undefined) updateData.welcome_message = data.welcomeMessage;
+        
+        if (data.paymentRules !== undefined) {
+          if (data.paymentRules.confirmationTitle !== undefined) updateData.payment_confirmation_title = data.paymentRules.confirmationTitle;
+          if (data.paymentRules.pixInstructions !== undefined) updateData.payment_pix_instructions = data.paymentRules.pixInstructions;
+          if (data.paymentRules.pixKeyType !== undefined) updateData.payment_pix_key_type = data.paymentRules.pixKeyType;
+          if (data.paymentRules.pixKey !== undefined) updateData.payment_pix_key = data.paymentRules.pixKey;
+          if (data.paymentRules.securityWarning !== undefined) updateData.payment_security_warning = data.paymentRules.securityWarning;
+          if (data.paymentRules.frictionMessage !== undefined) updateData.payment_friction_message = data.paymentRules.frictionMessage;
+        }
 
         await tx.settings.update({
           where: { organization_id: organizationId },

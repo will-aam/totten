@@ -13,6 +13,9 @@ import { ProMedia } from "./pro-media";
 import { ProSocialProof } from "./pro-social-proof";
 import { ProContact } from "./pro-contact";
 import { ProTheme } from "./pro-theme";
+import { updateCustomPageAction } from "@/app/actions/custom-page";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 const getYouTubeEmbedUrl = (url: string) => {
   if (!url) return null;
@@ -21,11 +24,12 @@ const getYouTubeEmbedUrl = (url: string) => {
   return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : null;
 };
 
-export function ProfessionalSiteView({ profile }: { profile?: any }) {
+export function ProfessionalSiteView({ profile, initialData }: { profile?: any; initialData?: any }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
   const [showMobilePreview, setShowMobilePreview] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Estados dos formulários do Site Profissional
   const [presentation, setPresentation] = useState({ headline: "", subheadline: "", bio: "", heroImage: "", heroLayout: "fade-cover" });
@@ -34,6 +38,46 @@ export function ProfessionalSiteView({ profile }: { profile?: any }) {
   const [socialProof, setSocialProof] = useState({ testimonials: [] as any[] });
   const [contact, setContact] = useState({ address: "", mapUrl: "", phone: "", email: "" });
   const [theme, setTheme] = useState({ id: "light", css: "bg-slate-50", textColor: "#0f172a", primaryColor: "#0f172a", headerStyle: "center" });
+
+  // Preencher dados iniciais recebidos do servidor
+  useEffect(() => {
+    if (initialData) {
+      if (initialData.presentation) setPresentation(initialData.presentation);
+      if (initialData.services) setServices(initialData.services);
+      if (initialData.media) setMedia(initialData.media);
+      if (initialData.socialProof) setSocialProof(initialData.socialProof);
+      if (initialData.contact) setContact(initialData.contact);
+      if (initialData.theme) setTheme(initialData.theme);
+    }
+  }, [initialData]);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const proSiteData = {
+        presentation,
+        services,
+        media,
+        socialProof,
+        contact,
+        theme
+      };
+
+      const response = await updateCustomPageAction({
+        professionalSiteConfig: proSiteData
+      });
+
+      if (response.success) {
+        toast.success("Site Profissional salvo com sucesso!");
+      } else {
+        toast.error(response.error || "Erro ao salvar Site Profissional.");
+      }
+    } catch (error) {
+      toast.error("Erro inesperado ao salvar.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const STEPS = [
     { id: "presentation", title: "Apresentação", component: <ProPresentation data={presentation} onChange={setPresentation} /> },
@@ -235,8 +279,8 @@ export function ProfessionalSiteView({ profile }: { profile?: any }) {
             </p>
           </div>
           <div className="flex gap-2 w-full md:w-auto">
-            <Button className="flex-1 md:flex-none rounded-full h-10 shadow-sm w-full md:w-32">
-              <Save className="mr-2 h-4 w-4" /> Salvar
+            <Button onClick={handleSave} disabled={isSaving} className="flex-1 md:flex-none rounded-full h-10 shadow-sm w-full md:w-32">
+              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Salvar
             </Button>
           </div>
         </div>

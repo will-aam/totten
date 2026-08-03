@@ -25,6 +25,9 @@ import { ThemeSettings } from "./_components/theme-settings";
 import { SocialSettings } from "./_components/social-settings";
 import { AdditionalLinks } from "./_components/additional-links";
 import { ProfessionalSiteView } from "./_components/professional-site/professional-site-view";
+import { getCustomPageAction, updateCustomPageAction } from "@/app/actions/custom-page";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 export default function CustomPage() {
   const [activeTab, setActiveTab] = useState<"link-bio" | "professional-site">("link-bio");
@@ -62,46 +65,92 @@ export default function CustomPage() {
     { id: "1", title: "Agendar Horário", url: "" },
   ]);
 
-  // Carregar dados salvos do rascunho (localStorage)
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [proSiteConfig, setProSiteConfig] = useState<any>(null);
+
+  // Carregar dados do banco de dados
   useEffect(() => {
-    const savedState = localStorage.getItem("customPageDraft");
-    if (savedState) {
+    async function loadData() {
       try {
-        const parsed = JSON.parse(savedState);
-        if (parsed.currentStep !== undefined) setCurrentStep(parsed.currentStep);
-        if (parsed.profile) {
-          setProfile({
-            ...parsed.profile,
-            image: parsed.profile.image || "",
-          });
-        }
-        if (parsed.theme) {
-          // Backward compatibility for old "font" property
-          if (parsed.theme.font && !parsed.theme.fontFamily) {
-             parsed.theme.fontFamily = "Inter, sans-serif";
+        const response = await getCustomPageAction();
+        if (response.success && response.data) {
+          const data = response.data;
+          
+          if (data.profile_image_url || data.bio_text) {
+            setProfile(prev => ({
+              ...prev,
+              image: data.profile_image_url || "",
+              bio: data.bio_text || prev.bio
+            }));
           }
-          setTheme(parsed.theme);
+
+          if (data.theme_color_light) {
+            setTheme(prev => ({
+              ...prev,
+              color: data.theme_color_light,
+              fontFamily: data.font_family || prev.fontFamily
+            }));
+          }
+
+          if (data.social_links) {
+            const sl = data.social_links as any;
+            setSocials(prev => ({
+              ...prev,
+              activePlatforms: sl.activePlatforms || prev.activePlatforms,
+              values: sl.values || prev.values,
+              position: sl.position || prev.position,
+              style: sl.style || prev.style,
+              size: sl.size || prev.size
+            }));
+            
+            if (sl.links) {
+              setLinks(sl.links);
+            }
+          }
+          
+          if (data.professional_site_config) {
+             setProSiteConfig(data.professional_site_config);
+          }
         }
-        if (parsed.socials) {
-          setSocials({
-            ...parsed.socials,
-            position: parsed.socials.position || "top",
-            style: parsed.socials.style || "circle",
-            size: parsed.socials.size || "medium",
-          });
-        }
-        if (parsed.links) setLinks(parsed.links);
-      } catch (e) {
-        console.error("Error loading draft", e);
+      } catch (error) {
+        console.error("Erro ao carregar dados", error);
+      } finally {
+        setIsLoading(false);
       }
     }
+    loadData();
   }, []);
 
-  // Salvar rascunho sempre que houver mudança
-  useEffect(() => {
-    const draft = { currentStep, profile, theme, socials, links };
-    localStorage.setItem("customPageDraft", JSON.stringify(draft));
-  }, [currentStep, profile, theme, socials, links]);
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const response = await updateCustomPageAction({
+        profileImageUrl: profile.image,
+        bioText: profile.bio,
+        themeColorLight: theme.color,
+        fontFamily: theme.fontFamily,
+        socialLinks: {
+          activePlatforms: socials.activePlatforms,
+          values: socials.values,
+          position: socials.position,
+          style: socials.style,
+          size: socials.size,
+          links: links
+        }
+      });
+
+      if (response.success) {
+        toast.success("Link na Bio salvo com sucesso!");
+      } else {
+        toast.error(response.error || "Erro ao salvar.");
+      }
+    } catch (error) {
+      toast.error("Ocorreu um erro ao salvar as configurações.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const STEPS = [
     {
@@ -298,8 +347,8 @@ export default function CustomPage() {
                     </p>
                   </div>
                   <div className="flex gap-2 w-full md:w-auto">
-                    <Button className="flex-1 md:flex-none rounded-full h-10 shadow-sm w-full md:w-32">
-                      <Save className="mr-2 h-4 w-4" /> Salvar
+                    <Button onClick={handleSave} disabled={isLoading || isSaving} className="flex-1 md:flex-none rounded-full h-10 shadow-sm w-full md:w-32">
+                      {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Salvar
                     </Button>
                   </div>
                 </div>
@@ -369,7 +418,7 @@ export default function CustomPage() {
           </TabsContent>
 
           <TabsContent value="professional-site" className="mt-0">
-            <ProfessionalSiteView profile={profile} />
+            <ProfessionalSiteView profile={profile} initialData={proSiteConfig} />
           </TabsContent>
         </Tabs>
       </div>

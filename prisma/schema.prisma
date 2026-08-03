@@ -82,6 +82,13 @@ model Settings {
   require_cpf      Boolean      @default(true)
   terms_of_use     String?      @db.Text
 
+  payment_confirmation_title    String?
+  payment_pix_instructions      String? @db.Text
+  payment_pix_key_type          String?
+  payment_pix_key               String?
+  payment_security_warning      String? @db.Text
+  payment_friction_message      String? @db.Text
+
   organization     Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@map("settings")
@@ -171,6 +178,8 @@ model LinkBio {
   theme_color_dark  String       @default("#000000")
   font_family       String       @default("Inter")
   social_links      Json?
+  professional_site_config Json?
+
   organization_id   String       @unique
   organization      Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 

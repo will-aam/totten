@@ -97,6 +97,14 @@ export async function updateSelfServiceSettingsAction(data: {
     breakReason?: string;
     breakVisibleToClient?: boolean;
   }>;
+  paymentRules?: {
+    confirmationTitle?: string;
+    pixInstructions?: string;
+    pixKeyType?: string;
+    pixKey?: string;
+    securityWarning?: string;
+    frictionMessage?: string;
+  };
 }) {
   try {
     const admin = await requireAuth();
