@@ -206,7 +206,8 @@ export const AppointmentDetailsModal = memo(
       if (
         isPackageArchived &&
         finalStatus !== "cancelado" &&
-        finalStatus !== "nao_compareceu"
+        finalStatus !== "nao_compareceu" &&
+        finalStatus !== "nao_compareceu_abonado"
       ) {
         toast.error(
           "Este pacote foi arquivado. Você só pode excluir ou cancelar esta sessão.",
@@ -217,10 +218,11 @@ export const AppointmentDetailsModal = memo(
       setIsSaving(true);
       try {
         // 🔥 INTERCEPTAÇÃO: Se escolheu "Faltou", rodamos a nova Action Manual!
-        if (finalStatus === "nao_compareceu") {
-          const result = await registerManualNoShow(appointment.id, obs);
+        if (finalStatus === "nao_compareceu" || finalStatus === "nao_compareceu_abonado") {
+          const deduct = finalStatus === "nao_compareceu";
+          const result = await registerManualNoShow(appointment.id, obs, deduct);
           if (result.success) {
-            toast.success("Falta registrada e sessão descontada do pacote!");
+            toast.success(deduct ? "Falta registrada e sessão descontada!" : "Falta registrada e sessão abonada!");
             onRefresh?.();
             onOpenChange(false);
           } else {
@@ -276,7 +278,7 @@ export const AppointmentDetailsModal = memo(
 
     const handleStatusChange = (newStatus: string) => {
       setStatus(newStatus);
-      if (newStatus === "cancelado" || newStatus === "nao_compareceu") {
+      if (newStatus === "cancelado" || newStatus === "nao_compareceu" || newStatus === "nao_compareceu_abonado") {
         setPayment("nenhum");
         setHasCharge(false);
       }
@@ -479,6 +481,12 @@ export const AppointmentDetailsModal = memo(
                     >
                       Faltou (Desconta Sessão)
                     </SelectItem>
+                    <SelectItem
+                      value="nao_compareceu_abonado"
+                      className="text-emerald-600 font-bold focus:text-emerald-700"
+                    >
+                      Faltou (Abonar/Não Desconta)
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -494,7 +502,8 @@ export const AppointmentDetailsModal = memo(
                     isLocked ||
                     isPackageArchived ||
                     status === "cancelado" ||
-                    status === "nao_compareceu"
+                    status === "nao_compareceu" ||
+                    status === "nao_compareceu_abonado"
                   }
                 >
                   <SelectTrigger className="rounded-2xl h-12 bg-muted/20 border-none font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
@@ -544,7 +553,8 @@ export const AppointmentDetailsModal = memo(
                   status === "realizado" ||
                   isPackageArchived ||
                   status === "cancelado" ||
-                  status === "nao_compareceu"
+                  status === "nao_compareceu" ||
+                  status === "nao_compareceu_abonado"
                 }
               >
                 {hasCharge ? "Cobrança Ativa" : "Tudo Pago"}
@@ -620,7 +630,8 @@ export const AppointmentDetailsModal = memo(
                     isSaving ||
                     (isPackageArchived &&
                       status !== "cancelado" &&
-                      status !== "nao_compareceu")
+                      status !== "nao_compareceu" &&
+                      status !== "nao_compareceu_abonado")
                   }
                   className="rounded-2xl bg-primary text-primary-foreground h-12 px-8 font-bold w-full sm:w-auto"
                 >
@@ -640,7 +651,8 @@ export const AppointmentDetailsModal = memo(
                       isSaving ||
                       (isPackageArchived &&
                         status !== "cancelado" &&
-                        status !== "nao_compareceu")
+                        status !== "nao_compareceu" &&
+                        status !== "nao_compareceu_abonado")
                     }
                     className="rounded-2xl h-12 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs uppercase"
                   >
@@ -652,7 +664,8 @@ export const AppointmentDetailsModal = memo(
                       isSaving ||
                       (isPackageArchived &&
                         status !== "cancelado" &&
-                        status !== "nao_compareceu")
+                        status !== "nao_compareceu" &&
+                        status !== "nao_compareceu_abonado")
                     }
                     className="rounded-2xl h-12 bg-primary text-white font-bold text-xs uppercase"
                   >

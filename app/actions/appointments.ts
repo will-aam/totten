@@ -628,6 +628,7 @@ export async function undoNoShow(appointmentId: string) {
 export async function registerManualNoShow(
   appointmentId: string,
   observation: string,
+  deductSession: boolean = true
 ) {
   try {
     const admin = await requireAuth();
@@ -661,7 +662,7 @@ export async function registerManualNoShow(
         },
       });
 
-      if (appt.package_id && appt.package) {
+      if (deductSession && appt.package_id && appt.package) {
         const newUsedSessions = appt.package.used_sessions + 1;
         const stillActive = newUsedSessions < appt.package.total_sessions;
 
@@ -680,7 +681,9 @@ export async function registerManualNoShow(
         timeStyle: "short",
       }).format(appt.date_time);
       const noteText = appt.package_id
-        ? `Falta Manual: A cliente não compareceu ao agendamento do dia ${formattedDate}. A sessão foi descontada do pacote.`
+        ? deductSession
+          ? `Falta Manual: A cliente não compareceu ao agendamento do dia ${formattedDate}. A sessão foi descontada do pacote.`
+          : `Falta Manual (Abonada): A cliente não compareceu ao agendamento do dia ${formattedDate}, mas a sessão NÃO foi descontada do pacote.`
         : `Falta Manual: A cliente não compareceu ao agendamento do dia ${formattedDate} (Serviço Avulso).`;
 
       await tx.clientNote.create({
