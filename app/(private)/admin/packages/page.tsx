@@ -289,8 +289,12 @@ export default function PackagesPage() {
 
   const confirmManualCheckIn = async () => {
     if (!pkgToCheckIn) return;
-    if (!checkInDate || !checkInTime) {
+    if (!checkInDate || !checkInTime || checkInTime.length !== 5) {
       return toast.error("Por favor, preencha a data e a hora corretamente.");
+    }
+    const [hours, minutes] = checkInTime.split(":");
+    if (parseInt(hours) > 23 || parseInt(minutes) > 59) {
+      return toast.error("Horário inválido.");
     }
 
     setIsCheckingIn(true);
@@ -486,9 +490,33 @@ export default function PackagesPage() {
                 Hora
               </Label>
               <Input
-                type="time"
+                type="text"
+                inputMode="numeric"
+                placeholder="00:00"
+                maxLength={5}
                 value={checkInTime}
-                onChange={(e) => setCheckInTime(e.target.value)}
+                onChange={(e) => {
+                  let val = e.target.value.replace(/\D/g, "");
+                  
+                  if (val.length > 0) {
+                    if (val.length === 1 && parseInt(val[0]) >= 3) {
+                      val = "0" + val;
+                    } else if (val.length >= 2 && parseInt(val.slice(0, 2)) > 23) {
+                      val = "23" + val.slice(2);
+                    }
+
+                    if (val.length >= 3 && parseInt(val[2]) >= 6) {
+                      val = val.slice(0, 2) + "5" + val.slice(3);
+                    }
+                  }
+
+                  if (val.length > 4) val = val.slice(0, 4);
+
+                  if (val.length > 2) {
+                    val = `${val.slice(0, 2)}:${val.slice(2)}`;
+                  }
+                  setCheckInTime(val);
+                }}
                 disabled={isCheckingIn}
                 className="h-11 rounded-xl bg-muted/30"
               />
