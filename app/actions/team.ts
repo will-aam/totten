@@ -22,6 +22,8 @@ export async function getTeam() {
         role: true,
         active: true,
         permissions: true, //  Trazendo as permissões do banco
+        instagram_url: true,
+        show_instagram: true,
         created_at: true,
       },
       orderBy: { created_at: "asc" },
@@ -39,6 +41,8 @@ export async function createCollaborator(data: {
   email: string;
   password?: string;
   permissions?: string[];
+  instagram_url?: string;
+  show_instagram?: boolean;
 }) {
   try {
     const admin = await requireAuth();
@@ -69,6 +73,8 @@ export async function createCollaborator(data: {
         role: "COLLABORATOR",
         active: true,
         permissions: data.permissions || [], //  Salva as permissões garantindo que seja um array
+        instagram_url: data.instagram_url || null,
+        show_instagram: data.show_instagram !== undefined ? data.show_instagram : true,
         email_verified: true,
         organizations: { connect: { id: admin.organizationId } },
       },
@@ -89,6 +95,8 @@ export async function updateCollaborator(
     email: string;
     password?: string;
     permissions?: string[];
+    instagram_url?: string;
+    show_instagram?: boolean;
   },
 ) {
   try {
@@ -112,6 +120,8 @@ export async function updateCollaborator(
       display_name: data.name,
       email: data.email,
       permissions: data.permissions || [], //  Atualiza as permissões com segurança
+      instagram_url: data.instagram_url,
+      show_instagram: data.show_instagram,
     };
 
     if (data.password && data.password.trim().length >= 6) {

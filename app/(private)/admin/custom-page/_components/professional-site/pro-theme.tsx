@@ -4,8 +4,10 @@ import { Label } from "@/components/ui/label";
 import { Palette, Check, Layout } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
+// Cores pré-definidas para garantir estética e acessibilidade.
 const PRO_THEMES = [
-  { id: "dark", name: "Elegante (Escuro)", css: "bg-slate-900", txt: "#f8fafc", primary: "#38bdf8" },
+  { id: "light", name: "Clean (Branco)", css: "bg-white", txt: "#0f172a", primary: "#0f172a" },
+  { id: "dark", name: "Elegante (Escuro)", css: "bg-slate-950", txt: "#f8fafc", primary: "#38bdf8" },
   { id: "rose", name: "Suave (Rose)", css: "bg-rose-50", txt: "#4c0519", primary: "#e11d48" },
   { id: "nature", name: "Natural (Verde)", css: "bg-emerald-50", txt: "#022c22", primary: "#059669" },
   { id: "purple", name: "Vibrante (Lilás)", css: "bg-purple-50", txt: "#2e1065", primary: "#9333ea" },

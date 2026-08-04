@@ -1,3 +1,6 @@
+// /app/(private)/admin/team/page.tsx
+
+
 "use client";
 
 import { useEffect, useState, useCallback, memo } from "react";
@@ -47,6 +50,8 @@ type TeamMember = {
   role: string;
   active: boolean;
   permissions: string[];
+  instagram_url?: string | null;
+  show_instagram?: boolean;
 };
 
 export default function TeamPage() {
@@ -68,6 +73,8 @@ export default function TeamPage() {
     email: "",
     password: "",
     permissions: [] as string[],
+    instagram_url: "",
+    show_instagram: true,
   });
 
   useEffect(() => {
@@ -91,7 +98,7 @@ export default function TeamPage() {
   // HANDLERS DE ABERTURA DOS MODAIS
   // --------------------------------------------------------
   const openCreate = () => {
-    setFormData({ name: "", email: "", password: "", permissions: [] });
+    setFormData({ name: "", email: "", password: "", permissions: [], instagram_url: "", show_instagram: true });
     setSelectedMember(null);
     setModalView("create");
   };
@@ -102,6 +109,8 @@ export default function TeamPage() {
       email: member.email,
       password: "",
       permissions: member.permissions || [],
+      instagram_url: member.instagram_url || "",
+      show_instagram: member.show_instagram !== undefined ? member.show_instagram : true,
     });
     setSelectedMember(member);
     setModalView("edit");
@@ -235,8 +244,8 @@ export default function TeamPage() {
           <DialogHeader>
             <DialogTitle>
               {modalView === "create"
-                ? "Adicionar Colaboradora"
-                : "Editar Colaboradora"}
+                ? "Adicionar Colaborador(a)"
+                : "Editar Colaborador(a)"}
             </DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -280,6 +289,30 @@ export default function TeamPage() {
               <span className="text-[10px] text-muted-foreground">
                 Ela poderá alterar a senha depois se quiser. Min. 6 caracteres.
               </span>
+            </div>
+
+            <div className="grid gap-2 mt-2">
+              <Label>Instagram (Opcional)</Label>
+              <Input
+                type="url"
+                placeholder="Ex: https://instagram.com/patricia"
+                value={formData.instagram_url}
+                onChange={(e) =>
+                  setFormData({ ...formData, instagram_url: e.target.value })
+                }
+              />
+              <div className="flex items-center space-x-2 mt-1">
+                <Switch
+                  id="show_instagram"
+                  checked={formData.show_instagram}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, show_instagram: checked })
+                  }
+                />
+                <Label htmlFor="show_instagram" className="text-xs font-normal text-muted-foreground">
+                  Exibir link do Instagram no perfil desta colaboradora no Site da Clínica
+                </Label>
+              </div>
             </div>
 
             {/* ⚡ GERENCIAMENTO DE PERMISSÕES */}

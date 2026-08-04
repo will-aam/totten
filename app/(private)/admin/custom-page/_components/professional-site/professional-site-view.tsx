@@ -281,8 +281,15 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
                 </a>
               </div>
             )}
-            {contact.phone && <p className="text-sm font-semibold">📞 {contact.phone}</p>}
-            {contact.email && <p className="text-sm opacity-80 mt-1">📧 {contact.email}</p>}
+          </div>
+        )}
+
+        {/* FOOTER SECTION */}
+        {(contact.phone || contact.email) && (
+          <div className="px-6 py-6 mt-auto flex flex-row items-center justify-center gap-4 text-xs opacity-70">
+            {contact.phone && <span className="font-medium">{contact.phone}</span>}
+            {contact.phone && contact.email && <span className="w-1 h-1 rounded-full bg-current opacity-50" />}
+            {contact.email && <span className="font-medium">{contact.email}</span>}
           </div>
         )}
         

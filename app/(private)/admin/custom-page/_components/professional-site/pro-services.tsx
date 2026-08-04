@@ -1,113 +1,119 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Briefcase, Plus } from "@boxicons/react";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { Briefcase, Layout, List } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
-// Mock de serviços que "viriam do banco de dados"
-const MOCK_SERVICES = [
-  { id: "s1", title: "Limpeza de Pele Profunda", price: "R$ 150", description: "Procedimento completo para remoção de cravos, miliuns e impurezas da pele." },
-  { id: "s2", title: "Massagem Relaxante", price: "R$ 120", description: "Sessão de 50 minutos para alívio de tensões musculares e relaxamento profundo." },
-  { id: "s3", title: "Drenagem Linfática", price: "R$ 180", description: "Ideal para redução de medidas, retenção de líquidos e celulite." },
-];
-
 export function ProServices({ data, onChange }: any) {
-  const toggleService = (srv: any, checked: boolean) => {
-    let currentList = data.servicesList || [];
-    if (checked) {
-      currentList = [...currentList, srv];
-    } else {
-      currentList = currentList.filter((s: any) => s.id !== srv.id);
-    }
-    onChange({ ...data, servicesList: currentList });
-  };
+  const servicesDisplay = data.servicesDisplay || "cards";
+  const packagesDisplay = data.packagesDisplay || "cards";
 
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
           <Briefcase className="h-5 w-5 text-primary" />
-          Serviços e Agendamento
+          Serviços, Pacotes e Categorias
         </h3>
         <p className="text-sm text-muted-foreground mt-1">
-          Liste os principais serviços que você oferece e adicione seu botão de ação.
+          Os serviços e pacotes ativos do seu sistema são puxados automaticamente para o site.
         </p>
       </div>
 
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="cta" className="text-foreground font-medium">
-            Botão de Agendamento (Call to Action principal)
-          </Label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              id="cta_text"
-              value={data.ctaText || ""}
-              onChange={(e) => onChange({ ...data, ctaText: e.target.value })}
-              className="bg-background border-border/50 h-11 focus-visible:ring-1"
-              placeholder="Ex: Agendar Avaliação"
-            />
-            <Input
-              id="cta_link"
-              value={data.ctaLink || ""}
-              onChange={(e) => onChange({ ...data, ctaLink: e.target.value })}
-              className="bg-background border-border/50 h-11 focus-visible:ring-1"
-              placeholder="https://..."
-            />
-          </div>
-        </div>
-
-        <div className="w-full h-px bg-border/50" />
-
-        <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 p-5 border border-border/50 rounded-xl bg-muted/10">
+        <Label className="text-foreground font-medium text-base mb-1">Configuração de Exibição</Label>
+        <p className="text-sm text-muted-foreground mb-2">Escolha quais módulos mostrar e o seu formato visual.</p>
+        
+        {/* SERVIÇOS AVULSOS */}
+        <div className="flex flex-col py-4 border-b border-border/50 gap-4">
           <div className="flex items-center justify-between">
-            <Label className="text-foreground font-medium">Seus Serviços Cadastrados</Label>
-            <Link href="/admin/services">
-              <Button variant="outline" size="sm" className="h-8 shadow-sm">
-                <Plus className="h-4 w-4 mr-1" /> Gerenciar no Sistema
-              </Button>
-            </Link>
+            <div className="flex flex-col gap-1">
+              <span className="font-semibold text-foreground">Serviços Avulsos</span>
+              <span className="text-xs text-muted-foreground">Exibe seus procedimentos cadastrados.</span>
+            </div>
+            <button
+              onClick={() => onChange({ ...data, showServices: data.showServices !== false ? false : true })}
+              className={cn(
+                "w-12 h-6 rounded-full transition-colors relative shadow-inner",
+                data.showServices !== false ? "bg-emerald-500" : "bg-muted-foreground/30"
+              )}
+            >
+              <div className={cn(
+                "w-5 h-5 bg-white rounded-full absolute top-0.5 transition-all shadow-md",
+                data.showServices !== false ? "left-6" : "left-0.5"
+              )} />
+            </button>
           </div>
           
-          <div className="flex flex-col gap-4">
-            <p className="text-xs text-muted-foreground">
-              Selecione quais serviços você deseja exibir no seu site profissional. Eles são puxados automaticamente do seu cadastro de serviços.
-            </p>
-            <div className="flex flex-col gap-3">
-              {MOCK_SERVICES.map((srv) => {
-                const isSelected = data.servicesList?.some((s: any) => s.id === srv.id);
-                return (
-                  <label 
-                    key={srv.id} 
-                    className={cn(
-                      "flex items-start gap-3 p-4 border rounded-xl cursor-pointer transition-all",
-                      isSelected ? "border-primary bg-primary/5" : "border-border/50 bg-card hover:border-primary/50"
-                    )}
-                  >
-                    <div className="pt-0.5">
-                      <input 
-                        type="checkbox" 
-                        className="w-4 h-4 rounded border-border/80 text-primary focus:ring-primary accent-primary"
-                        checked={isSelected || false}
-                        onChange={(e) => toggleService(srv, e.target.checked)}
-                      />
-                    </div>
-                    <div className="flex flex-col flex-1">
-                      <div className="flex justify-between items-start">
-                        <span className="font-semibold text-sm text-foreground">{srv.title}</span>
-                        <span className="font-medium text-sm text-muted-foreground">{srv.price}</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{srv.description}</p>
-                    </div>
-                  </label>
-                );
-              })}
+          {data.showServices !== false && (
+            <div className="flex bg-background p-1 rounded-lg border border-border/50 w-full sm:w-2/3 ml-auto mr-0">
+              <button
+                onClick={() => onChange({ ...data, servicesDisplay: "cards" })}
+                className={cn(
+                  "flex-1 text-xs py-2 rounded-md transition-colors flex items-center justify-center gap-1.5 font-medium",
+                  servicesDisplay === "cards" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted"
+                )}
+              >
+                <Layout className="h-4 w-4" /> Em Cards
+              </button>
+              <button
+                onClick={() => onChange({ ...data, servicesDisplay: "pills" })}
+                className={cn(
+                  "flex-1 text-xs py-2 rounded-md transition-colors flex items-center justify-center gap-1.5 font-medium",
+                  servicesDisplay === "pills" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted"
+                )}
+              >
+                <List className="h-4 w-4" /> Em Pílulas
+              </button>
             </div>
-          </div>
+          )}
         </div>
+
+        {/* PACOTES */}
+        <div className="flex flex-col py-4 border-b border-border/50 gap-4">
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-1">
+              <span className="font-semibold text-foreground">Pacotes Promocionais</span>
+              <span className="text-xs text-muted-foreground">Exibe os templates de pacotes fechados.</span>
+            </div>
+            <button
+              onClick={() => onChange({ ...data, showPackages: data.showPackages !== false ? false : true })}
+              className={cn(
+                "w-12 h-6 rounded-full transition-colors relative shadow-inner",
+                data.showPackages !== false ? "bg-emerald-500" : "bg-muted-foreground/30"
+              )}
+            >
+              <div className={cn(
+                "w-5 h-5 bg-white rounded-full absolute top-0.5 transition-all shadow-md",
+                data.showPackages !== false ? "left-6" : "left-0.5"
+              )} />
+            </button>
+          </div>
+
+          {data.showPackages !== false && (
+            <div className="flex bg-background p-1 rounded-lg border border-border/50 w-full sm:w-2/3 ml-auto mr-0">
+              <button
+                onClick={() => onChange({ ...data, packagesDisplay: "cards" })}
+                className={cn(
+                  "flex-1 text-xs py-2 rounded-md transition-colors flex items-center justify-center gap-1.5 font-medium",
+                  packagesDisplay === "cards" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted"
+                )}
+              >
+                <Layout className="h-4 w-4" /> Em Cards
+              </button>
+              <button
+                onClick={() => onChange({ ...data, packagesDisplay: "pills" })}
+                className={cn(
+                  "flex-1 text-xs py-2 rounded-md transition-colors flex items-center justify-center gap-1.5 font-medium",
+                  packagesDisplay === "pills" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted"
+                )}
+              >
+                <List className="h-4 w-4" /> Em Pílulas
+              </button>
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   );

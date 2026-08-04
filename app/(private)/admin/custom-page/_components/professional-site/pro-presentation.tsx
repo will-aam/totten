@@ -93,33 +93,51 @@ export function ProPresentation({ data, onChange }: any) {
         </div>
 
         {/* Imagem de Capa (Hero) */}
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-4">
           <Label className="text-foreground font-medium">Imagem de Capa (Banner)</Label>
-          <div className="w-full h-32 rounded-xl bg-muted border-2 border-dashed border-border flex items-center justify-center relative overflow-hidden group cursor-pointer hover:bg-muted/80 transition-colors">
-            {data.heroImage ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={data.heroImage} alt="Capa" className="w-full h-full object-cover" />
-            ) : (
-              <div className="flex flex-col items-center gap-2 text-muted-foreground/50 group-hover:text-primary transition-colors">
-                <Camera className="h-6 w-6" />
-                <span className="text-xs font-medium">Capa / Hero (16:9)</span>
-              </div>
-            )}
-            <input 
-              type="file" 
-              accept="image/png, image/jpeg" 
-              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
-              onChange={(e) => handleImageUpload(e, 'heroImage')}
+          
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-semibold opacity-70">Opção 1: Inserir URL (Recomendado para economizar espaço)</span>
+            <Input
+              type="url"
+              placeholder="https://exemplo.com/minha-imagem.jpg"
+              value={data.heroImage && data.heroImage.startsWith('http') ? data.heroImage : ""}
+              onChange={(e) => onChange({ ...data, heroImage: e.target.value })}
+              className="bg-background border-border/50 h-10"
             />
           </div>
-          {data.heroImage && (
-            <button 
-              onClick={() => onChange({ ...data, heroImage: "" })} 
-              className="text-xs font-semibold text-destructive hover:underline w-fit mt-1"
-            >
-              Remover capa
-            </button>
-          )}
+
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-semibold opacity-70">Opção 2: Fazer Upload da Imagem</span>
+            <div className="w-full h-32 rounded-xl bg-muted border-2 border-dashed border-border flex items-center justify-center relative overflow-hidden group cursor-pointer hover:bg-muted/80 transition-colors">
+              {data.heroImage && !data.heroImage.startsWith('http') ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={data.heroImage} alt="Capa" className="w-full h-full object-cover" />
+              ) : data.heroImage && data.heroImage.startsWith('http') ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={data.heroImage} alt="Capa" className="w-full h-full object-cover" />
+              ) : (
+                <div className="flex flex-col items-center gap-2 text-muted-foreground/50 group-hover:text-primary transition-colors">
+                  <Camera className="h-6 w-6" />
+                  <span className="text-xs font-medium">Capa / Hero (16:9)</span>
+                </div>
+              )}
+              <input 
+                type="file" 
+                accept="image/png, image/jpeg" 
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                onChange={(e) => handleImageUpload(e, 'heroImage')}
+              />
+            </div>
+            {data.heroImage && (
+              <button 
+                onClick={() => onChange({ ...data, heroImage: "" })} 
+                className="text-xs font-semibold text-destructive hover:underline w-fit mt-1"
+              >
+                Remover capa
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="w-full h-px bg-border/50" />

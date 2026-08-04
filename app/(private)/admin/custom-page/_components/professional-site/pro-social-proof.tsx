@@ -1,90 +1,50 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Star, Plus, Trash } from "@boxicons/react";
-import { Button } from "@/components/ui/button";
+import { Star, CheckCircle } from "@boxicons/react";
+import { cn } from "@/lib/utils";
 
 export function ProSocialProof({ data, onChange }: any) {
-  const addTestimonial = () => {
-    const newTestimonial = { id: Date.now().toString(), name: "", text: "", role: "" };
-    onChange({ ...data, testimonials: [...(data.testimonials || []), newTestimonial] });
-  };
-
-  const removeTestimonial = (id: string) => {
-    const filtered = data.testimonials.filter((s: any) => s.id !== id);
-    onChange({ ...data, testimonials: filtered });
-  };
-
-  const updateTestimonial = (id: string, key: string, value: string) => {
-    const updated = data.testimonials.map((s: any) => 
-      s.id === id ? { ...s, [key]: value } : s
-    );
-    onChange({ ...data, testimonials: updated });
-  };
-
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
           <Star className="h-5 w-5 text-primary" />
-          Depoimentos
+          Depoimentos do Google
         </h3>
         <p className="text-sm text-muted-foreground mt-1">
-          O que seus clientes dizem sobre você. A prova social é fundamental.
+          Importe automaticamente as avaliações da sua clínica no Google Meu Negócio.
         </p>
       </div>
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-6 p-5 border border-border/50 rounded-xl bg-muted/10">
         <div className="flex items-center justify-between">
-          <Label className="text-foreground font-medium">Lista de Depoimentos</Label>
-          <Button onClick={addTestimonial} variant="outline" size="sm" className="h-8">
-            <Plus className="h-4 w-4 mr-1" /> Adicionar Depoimento
-          </Button>
+          <div className="flex flex-col gap-1">
+            <Label className="text-foreground font-medium text-base">Exibir Avaliações do Google</Label>
+            <span className="text-xs text-muted-foreground">Mostra no site as suas melhores avaliações do Google Maps.</span>
+          </div>
+          <button
+            onClick={() => onChange({ ...data, useGoogleReviews: !data.useGoogleReviews })}
+            className={cn(
+              "w-12 h-6 rounded-full transition-colors relative",
+              data.useGoogleReviews ? "bg-primary" : "bg-muted-foreground/30"
+            )}
+          >
+            <div className={cn(
+              "w-5 h-5 bg-white rounded-full absolute top-0.5 transition-all shadow-sm",
+              data.useGoogleReviews ? "left-6" : "left-0.5"
+            )} />
+          </button>
         </div>
-        
-        <div className="flex flex-col gap-4">
-          {(!data.testimonials || data.testimonials.length === 0) ? (
-            <div className="text-center py-8 border-2 border-dashed border-border/50 rounded-xl bg-muted/20">
-              <p className="text-sm text-muted-foreground">
-                Nenhum depoimento cadastrado. Clique no botão acima para adicionar.
-              </p>
-            </div>
-          ) : (
-            data.testimonials.map((testi: any) => (
-              <div key={testi.id} className="flex flex-col gap-3 p-4 border border-border/50 rounded-xl bg-card relative group">
-                <button 
-                  onClick={() => removeTestimonial(testi.id)}
-                  className="absolute top-3 right-3 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Trash className="h-4 w-4" />
-                </button>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pr-8">
-                  <Input
-                    value={testi.name}
-                    onChange={(e) => updateTestimonial(testi.id, "name", e.target.value)}
-                    className="bg-background border-border/50 h-10"
-                    placeholder="Nome do Cliente"
-                  />
-                  <Input
-                    value={testi.role}
-                    onChange={(e) => updateTestimonial(testi.id, "role", e.target.value)}
-                    className="bg-background border-border/50 h-10"
-                    placeholder="Profissão/Serviço feito (Opcional)"
-                  />
-                </div>
-                <Textarea
-                  value={testi.text}
-                  onChange={(e) => updateTestimonial(testi.id, "text", e.target.value)}
-                  className="bg-background border-border/50 h-20 resize-none"
-                  placeholder="Escreva o depoimento aqui..."
-                />
-              </div>
-            ))
-          )}
-        </div>
+
+        {data.useGoogleReviews && (
+          <div className="mt-2 p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex gap-3 text-emerald-600 dark:text-emerald-400 text-sm">
+            <CheckCircle className="h-5 w-5 shrink-0" />
+            <p>
+              Avaliações ativadas. No momento, estamos exibindo depoimentos de demonstração. Em breve, conectaremos diretamente com o CPF/CNPJ da clínica cadastrada.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
