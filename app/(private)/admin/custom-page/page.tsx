@@ -6,6 +6,7 @@ import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import {
   Save,
   ChevronRight,
@@ -17,6 +18,8 @@ import {
   Globe,
   Mobile,
   X,
+  Copy,
+  Check,
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +36,24 @@ export default function CustomPage() {
   const [activeTab, setActiveTab] = useState<"link-bio" | "professional-site">("link-bio");
   const [currentStep, setCurrentStep] = useState(0);
   const [showMobilePreview, setShowMobilePreview] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyLink = () => {
+    const origin = typeof window !== 'undefined' && window.location.origin.includes('localhost') ? window.location.origin : 'https://www.totten.com.br';
+    const suffix = activeTab === "professional-site" ? "/site" : "";
+    navigator.clipboard.writeText(`${origin}/${profile.slug}${suffix}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSlugChange = (val: string) => {
+    const formatted = val
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z]/g, "")
+      .toLowerCase();
+    setProfile(prev => ({ ...prev, slug: formatted }));
+  };
 
   // Lógica para detectar o arrastar do dedo no celular (Swipe)
   const [touchStart, setTouchStart] = useState(0);
@@ -76,7 +97,7 @@ export default function CustomPage() {
         const response = await getCustomPageAction();
         if (response.success && response.data) {
           const data = response.data;
-          
+
           if (data.organization) {
             setProfile(prev => ({
               ...prev,
@@ -124,14 +145,14 @@ export default function CustomPage() {
               style: sl.style || prev.style,
               size: sl.size || prev.size
             }));
-            
+
             if (sl.links) {
               setLinks(sl.links);
             }
           }
-          
+
           if (data.professional_site_config) {
-             setProSiteConfig(data.professional_site_config);
+            setProSiteConfig(data.professional_site_config);
           }
         }
       } catch (error) {
@@ -229,13 +250,7 @@ export default function CustomPage() {
     }
   };
 
-  const getWrapperSize = () => {
-    switch (socials.size) {
-      case "small": return "h-8 w-8";
-      case "large": return "h-14 w-14";
-      default: return "h-11 w-11"; // medium
-    }
-  };
+
 
   const renderSocialIcon = (id: string, className: string) => {
     switch (id) {
@@ -255,21 +270,13 @@ export default function CustomPage() {
   };
 
   const SocialIconsBlock = () => (
-    <div className={cn(
-      "flex flex-wrap justify-center w-full",
-      socials.style === "circle" ? "gap-3" : "gap-1" // Menos gap quando é só ícone
-    )}>
+    <div className="flex flex-wrap justify-center w-full gap-1">
       {socials.activePlatforms.map((platform) => (
         <div
           key={platform}
-          className={cn(
-            "rounded-full flex items-center justify-center hover:scale-110 transition-transform cursor-pointer",
-            socials.style === "circle" ? getWrapperSize() : "p-2.5", // Usa dimensões fixas no círculo, padding dinâmico no transparente
-            socials.style === "circle" ? "shadow-sm border" : "bg-transparent"
-          )}
-          style={{ 
-            borderColor: socials.style === "circle" ? theme.textColor : "transparent", 
-            color: theme.textColor 
+          className="rounded-full flex items-center justify-center hover:scale-110 transition-transform cursor-pointer p-2.5 bg-transparent"
+          style={{
+            color: theme.textColor
           }}
         >
           {renderSocialIcon(platform, getIconSize())}
@@ -366,15 +373,49 @@ export default function CustomPage() {
             <TabsTrigger value="professional-site">Site Profissional</TabsTrigger>
           </TabsList>
 
+          {/* Bloco fixo do link (serve para ambos) */}
+          <div className="flex flex-col gap-2 p-4 border border-border/50 bg-muted/10 rounded-xl mb-6 w-full max-w-[1600px] mx-auto">
+            <span className="text-sm font-medium text-foreground">
+              {activeTab === "link-bio" ? "Seu Link Exclusivo" : "Link do seu Site Profissional"}
+            </span>
+            <div className="flex items-center">
+              <span className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
+                totten.com.br/
+              </span>
+              <Input
+                value={profile.slug}
+                onChange={(e) => handleSlugChange(e.target.value)}
+                className={cn(
+                  "rounded-none bg-background border-border/50 h-11 focus-visible:ring-1",
+                  activeTab === "professional-site" ? "border-r-0" : ""
+                )}
+                placeholder="seunome"
+              />
+              {activeTab === "professional-site" && (
+                <span className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-l-0 text-sm h-11 flex items-center shrink-0">
+                  /site
+                </span>
+              )}
+              <button
+                onClick={handleCopyLink}
+                className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-l-0 rounded-r-md text-sm h-11 flex items-center hover:bg-muted/80 hover:text-foreground transition-colors shrink-0 outline-none"
+                title="Copiar link"
+              >
+                {copied ? <Check className="h-5 w-5 text-emerald-500" /> : <Copy className="h-5 w-5" />}
+              </button>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Apenas letras minúsculas. Sem espaços ou números.
+            </p>
+          </div>
+
           <TabsContent value="link-bio" className="mt-0">
             <div className="flex flex-col lg:flex-row gap-8 w-full max-w-[1600px] mx-auto">
               {/* COLUNA ESQUERDA: Carrossel Limpo e Arrastável */}
               <div className="flex-1 flex flex-col gap-6 w-full max-w-full overflow-hidden">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border/50 pb-6">
                   <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                      Link na Bio
-                    </h1>
+
                     <p className="text-sm text-muted-foreground mt-0.5">
                       Crie seu link para o Instagram e direcione seus clientes.
                     </p>
@@ -420,7 +461,7 @@ export default function CustomPage() {
                   >
                     <ChevronLeft removePadding className="h-5 w-5 mr-1" /> Anterior
                   </Button>
-                  
+
                   <div className="flex flex-col items-center hidden sm:flex">
                     <span className="text-sm font-medium text-foreground">
                       {STEPS[currentStep].title}

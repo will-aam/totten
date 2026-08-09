@@ -8,7 +8,7 @@ import {
   Facebook,
   Youtube,
   Whatsapp,
-  Globe, 
+  Globe,
   Circle,
   ArrowUp,
   ArrowDown,
@@ -57,7 +57,6 @@ const PLATFORMS = [
 export function SocialSettings({ data, onChange }: any) {
   // Configurações padrão caso não existam no estado
   const position = data.position || "top";
-  const style = data.style || "circle";
   const size = data.size || "medium";
 
   const togglePlatform = (id: string) => {
@@ -85,11 +84,11 @@ export function SocialSettings({ data, onChange }: any) {
           Configure a exibição das suas redes sociais e métodos de contato.
         </p>
       </div>
-      
+
       {/* SEÇÃO DE EXIBIÇÃO (Posição, Estilo e Tamanho) */}
       <div className="flex flex-col gap-5 p-5 border border-border/50 rounded-xl bg-muted/10">
         <h4 className="font-medium text-sm">Opções de Exibição</h4>
-        
+
         <div className="flex flex-wrap md:flex-nowrap gap-6">
           {/* POSIÇÃO */}
           <div className="flex flex-col gap-3 flex-1">
@@ -119,42 +118,13 @@ export function SocialSettings({ data, onChange }: any) {
               </button>
             </div>
           </div>
-
-          {/* ESTILO */}
-          <div className="flex flex-col gap-3 flex-1">
-            <Label className="text-xs text-muted-foreground">Estilo dos Ícones</Label>
-            <div className="flex bg-muted p-1 rounded-lg border border-border/50">
-              <button
-                onClick={() => updateSetting("style", "circle")}
-                className={cn(
-                  "flex-1 text-xs py-2 rounded-md transition-colors flex items-center justify-center gap-1.5 font-medium",
-                  style === "circle"
-                    ? "bg-background shadow-sm text-foreground"
-                    : "text-muted-foreground hover:bg-background/50",
-                )}
-              >
-                <Circle className="h-4 w-4" /> Circulado
-              </button>
-              <button
-                onClick={() => updateSetting("style", "transparent")}
-                className={cn(
-                  "flex-1 text-xs py-2 rounded-md transition-colors flex items-center justify-center gap-1.5 font-medium",
-                  style === "transparent"
-                    ? "bg-background shadow-sm text-foreground"
-                    : "text-muted-foreground hover:bg-background/50",
-                )}
-              >
-                <Grid className="h-4 w-4" /> Só o Ícone
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* TAMANHO */}
         <div className="flex flex-col gap-3 mt-1">
           <Label className="text-xs text-muted-foreground">Tamanho</Label>
           <div className="flex bg-muted p-1 rounded-lg border border-border/50 w-full md:w-1/2">
-            {["small", "medium", "large"].map((s) => (
+            {["medium", "large"].map((s) => (
               <button
                 key={s}
                 onClick={() => updateSetting("size", s)}
@@ -165,7 +135,7 @@ export function SocialSettings({ data, onChange }: any) {
                     : "text-muted-foreground hover:bg-background/50",
                 )}
               >
-                {s === "small" ? "Pequeno" : s === "medium" ? "Médio" : "Grande"}
+                {s === "medium" ? "Médio" : "Grande"}
               </button>
             ))}
           </div>
@@ -198,7 +168,7 @@ export function SocialSettings({ data, onChange }: any) {
             })}
           </div>
         </div>
-        
+
         <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300 mt-2">
           {data.activePlatforms.length === 0 ? (
             <div className="text-center py-6 border-2 border-dashed border-border/50 rounded-xl bg-muted/20">

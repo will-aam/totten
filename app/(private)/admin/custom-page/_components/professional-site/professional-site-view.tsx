@@ -39,9 +39,6 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
   const [socialProof, setSocialProof] = useState({ testimonials: [] as any[] });
   const [contact, setContact] = useState({ address: "", mapUrl: "", phone: "", email: "" });
   const [theme, setTheme] = useState({ id: "light", css: "bg-slate-50", textColor: "#0f172a", primaryColor: "#0f172a", headerStyle: "center" });
-
-  const [copied, setCopied] = useState(false);
-
   // Preencher dados iniciais recebidos do servidor ou localStorage
   useEffect(() => {
     let loaded = false;
@@ -54,7 +51,7 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
       if (initialData.theme) setTheme(initialData.theme);
       loaded = true;
     }
-    
+
     if (!loaded) {
       const saved = localStorage.getItem('totten_pro_site_draft');
       if (saved) {
@@ -66,7 +63,7 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
           if (parsed.socialProof) setSocialProof(parsed.socialProof);
           if (parsed.contact) setContact(parsed.contact);
           if (parsed.theme) setTheme(parsed.theme);
-        } catch(e) {}
+        } catch (e) { }
       }
     }
   }, [initialData]);
@@ -76,14 +73,6 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
     const draft = { presentation, services, media, socialProof, contact, theme };
     localStorage.setItem('totten_pro_site_draft', JSON.stringify(draft));
   }, [presentation, services, media, socialProof, contact, theme]);
-
-  const handleCopyLink = () => {
-    const origin = typeof window !== 'undefined' && window.location.origin.includes('localhost') ? window.location.origin : 'https://www.totten.com.br';
-    const link = `${origin}/${profile?.slug || 'seu-link'}/site`;
-    navigator.clipboard.writeText(link);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -137,18 +126,18 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
   // Mobile Preview específico do Site Profissional
   const ProSiteMockup = ({ isFullScreen = false }: { isFullScreen?: boolean }) => {
     const isAvatarLayout = presentation.heroLayout === "avatar-cover";
-    
+
     const content = (
       <div className={cn("w-full h-full flex flex-col pb-8 relative z-10 transition-colors duration-500 overflow-y-auto no-scrollbar", theme.css, isFullScreen ? "pt-12" : "")} style={{ color: theme.textColor }}>
-        
+
         {/* HERO / HEADER SECTION */}
         <div className="relative w-full">
           {presentation.heroImage ? (
             <div className={cn("w-full relative shrink-0", isAvatarLayout ? "h-40" : "h-56")}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img 
-                src={presentation.heroImage} 
-                alt="Hero" 
+              <img
+                src={presentation.heroImage}
+                alt="Hero"
                 className="w-full h-full object-cover"
                 style={!isAvatarLayout ? {
                   WebkitMaskImage: "linear-gradient(to top, transparent 0%, black 75%)",
@@ -159,22 +148,22 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
           ) : (
             <div className={cn("w-full bg-muted/20 border-b border-border/10 shrink-0", isAvatarLayout ? "h-32" : "h-32")} />
           )}
-          
+
           <div className={cn(
-            "px-6 relative z-10 flex flex-col pb-6", 
-            isAvatarLayout 
-               ? (presentation.heroImage ? "-mt-12" : "-mt-10") 
-               : (presentation.heroImage ? "-mt-14" : "-mt-12"),
+            "px-6 relative z-10 flex flex-col pb-6",
+            isAvatarLayout
+              ? (presentation.heroImage ? "-mt-12" : "-mt-10")
+              : (presentation.heroImage ? "-mt-14" : "-mt-12"),
             theme.headerStyle === "center" ? "text-center items-center" : "text-left items-start"
           )}>
             {/* AVATAR DO LINK NA BIO INTEGRADO */}
             {isAvatarLayout && (
               profile?.image ? (
-                 <div className="w-24 h-24 rounded-full border-4 shadow-sm overflow-hidden mb-3 shrink-0" style={{ borderColor: theme.css.includes('slate-900') ? '#0f172a' : '#ffffff', backgroundColor: theme.css.includes('slate-900') ? '#0f172a' : '#ffffff' }}>
-                   <img src={profile.image} alt="Avatar" className="w-full h-full object-cover" />
-                 </div>
+                <div className="w-24 h-24 rounded-full border-4 shadow-sm overflow-hidden mb-3 shrink-0" style={{ borderColor: theme.css.includes('slate-900') ? '#0f172a' : '#ffffff', backgroundColor: theme.css.includes('slate-900') ? '#0f172a' : '#ffffff' }}>
+                  <img src={profile.image} alt="Avatar" className="w-full h-full object-cover" />
+                </div>
               ) : (
-                 <div className="w-24 h-24 rounded-full border-4 shadow-sm bg-muted/50 mb-3 shrink-0" style={{ borderColor: theme.css.includes('slate-900') ? '#0f172a' : '#ffffff' }} />
+                <div className="w-24 h-24 rounded-full border-4 shadow-sm bg-muted/50 mb-3 shrink-0" style={{ borderColor: theme.css.includes('slate-900') ? '#0f172a' : '#ffffff' }} />
               )
             )}
 
@@ -184,10 +173,10 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
             <p className="text-sm opacity-80 mt-2 font-medium drop-shadow-sm">
               {presentation.subheadline || "Subtítulo de apoio ou missão do seu negócio."}
             </p>
-            
+
             {services.ctaText && (
-              <div 
-                className="mt-6 px-6 py-3 rounded-full text-sm font-bold shadow-sm w-fit text-white backdrop-blur-sm" 
+              <div
+                className="mt-6 px-6 py-3 rounded-full text-sm font-bold shadow-sm w-fit text-white backdrop-blur-sm"
                 style={{ backgroundColor: theme.primaryColor }}
               >
                 {services.ctaText}
@@ -254,13 +243,13 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
               <Youtube className="h-5 w-5" /> Vídeo
             </h2>
             <div className="w-full aspect-video rounded-xl overflow-hidden shadow-sm border border-border/10 bg-black/10">
-              <iframe 
-                width="100%" 
-                height="100%" 
-                src={getYouTubeEmbedUrl((media as any).videoUrl) || ""} 
-                title="YouTube video player" 
-                frameBorder="0" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+              <iframe
+                width="100%"
+                height="100%"
+                src={getYouTubeEmbedUrl((media as any).videoUrl) || ""}
+                title="YouTube video player"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
               />
             </div>
@@ -292,7 +281,7 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
             {contact.email && <span className="font-medium">{contact.email}</span>}
           </div>
         )}
-        
+
       </div>
     );
 
@@ -314,9 +303,7 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
       <div className="flex-1 flex flex-col gap-6 w-full max-w-full overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border/50 pb-6">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Site Profissional
-            </h1>
+
             <p className="text-sm text-muted-foreground mt-0.5">
               Configure sua página profissional completa com serviços, biografia e depoimentos.
             </p>
@@ -328,27 +315,6 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
           </div>
         </div>
 
-        {/* Link Fixo do Site Profissional */}
-        <div className="flex flex-col gap-2 p-4 border border-border/50 bg-muted/10 rounded-xl">
-          <span className="text-sm font-medium text-foreground">Link do seu Site Profissional</span>
-          <div className="flex items-center">
-            <span className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
-              totten.com.br/
-            </span>
-            <Input
-              value={`${profile?.slug || 'seu-link'}/site`}
-              readOnly
-              className="rounded-none bg-background border-border/50 h-11 focus-visible:ring-0 text-muted-foreground"
-            />
-            <button
-              onClick={handleCopyLink}
-              className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-l-0 rounded-r-md text-sm h-11 flex items-center hover:bg-muted/80 hover:text-foreground transition-colors shrink-0 outline-none"
-              title="Copiar link"
-            >
-              {copied ? <Check className="h-5 w-5 text-emerald-500" /> : <Copy className="h-5 w-5" />}
-            </button>
-          </div>
-        </div>
 
         {/* Área de Formulário com Swap por Touch */}
         <div
@@ -384,7 +350,7 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
           >
             <ChevronLeft className="h-5 w-5 mr-1" /> Anterior
           </Button>
-          
+
           <div className="flex flex-col items-center hidden sm:flex">
             <span className="text-sm font-medium text-foreground">
               {STEPS[currentStep].title}
@@ -427,7 +393,7 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
       <Dialog open={showMobilePreview} onOpenChange={setShowMobilePreview}>
         <DialogContent className="w-screen h-dvh max-w-none bg-black border-0 p-0 m-0 flex flex-col rounded-none z-[100] overflow-hidden">
           <DialogTitle className="sr-only">Preview do Celular</DialogTitle>
-          
+
           {/* BOTÃO FECHAR FLUTUANTE POR CIMA */}
           <Button
             variant="ghost"
@@ -437,7 +403,7 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
           >
             <X className="h-6 w-6" />
           </Button>
-          
+
           <div className="w-full h-full overflow-hidden">
             <ProSiteMockup isFullScreen={true} />
           </div>
