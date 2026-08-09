@@ -26,9 +26,7 @@ const getYouTubeEmbedUrl = (url: string) => {
 };
 
 export function ProfessionalSiteView({ profile, initialData }: { profile?: any; initialData?: any }) {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [touchStart, setTouchStart] = useState(0);
-  const [touchEnd, setTouchEnd] = useState(0);
+  const [activeStepId, setActiveStepId] = useState<string | null>(null);
   const [showMobilePreview, setShowMobilePreview] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -111,16 +109,16 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
     { id: "theme", title: "Aparência", component: <ProTheme data={theme} onChange={setTheme} /> },
   ];
 
-  const handleNext = () => {
-    if (currentStep < STEPS.length - 1) setCurrentStep(currentStep + 1);
-  };
-  const handlePrev = () => {
-    if (currentStep > 0) setCurrentStep(currentStep - 1);
-  };
-
-  const handleTouchEnd = () => {
-    if (touchStart - touchEnd > 75) handleNext();
-    if (touchStart - touchEnd < -75) handlePrev();
+  const isStepDone = (stepId: string) => {
+    switch (stepId) {
+      case "presentation": return !!(presentation.headline || presentation.bio);
+      case "services": return services.servicesList && services.servicesList.length > 0;
+      case "media": return !!((media as any).videoUrl || ((media as any).images && (media as any).images.length > 0));
+      case "social-proof": return socialProof.testimonials && socialProof.testimonials.length > 0;
+      case "contact": return !!(contact.phone || contact.address);
+      case "theme": return true;
+      default: return false;
+    }
   };
 
   // Mobile Preview específico do Site Profissional
@@ -309,66 +307,67 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
             </p>
           </div>
           <div className="flex gap-2 w-full md:w-auto">
-            <Button onClick={handleSave} disabled={isSaving} className="flex-1 md:flex-none rounded-full h-10 shadow-sm w-full md:w-32">
-              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Salvar
+            <Button 
+              variant="outline" 
+              onClick={() => setShowMobilePreview(true)} 
+              className="flex-1 lg:hidden md:flex-none rounded-full h-10 w-full md:w-32"
+            >
+              Ver Preview
+            </Button>
+            <Button 
+              onClick={handleSave} 
+              disabled={isSaving} 
+              className="flex-1 md:flex-none rounded-full h-10 shadow-sm w-full md:w-32"
+            >
+              {isSaving ? "Salvando..." : "Salvar"}
             </Button>
           </div>
         </div>
 
 
-        {/* Área de Formulário com Swap por Touch */}
-        <div
-          className="w-full animate-in fade-in duration-300 touch-pan-y"
-          onTouchStart={(e) => setTouchStart(e.targetTouches[0].clientX)}
-          onTouchMove={(e) => setTouchEnd(e.targetTouches[0].clientX)}
-          onTouchEnd={handleTouchEnd}
-        >
-          {STEPS[currentStep].component}
-        </div>
-
-        {/* Paginação */}
-        <div className="flex justify-center gap-2 mt-2">
-          {STEPS.map((step, idx) => (
-            <div
-              key={step.id}
-              className={cn(
-                "h-1.5 rounded-full transition-all duration-300",
-                idx === currentStep ? "w-6 bg-primary" : "w-2 bg-border",
-                idx < currentStep ? "bg-primary/50" : ""
-              )}
-            />
-          ))}
-        </div>
-
-        {/* Navegação Anterior / Próximo */}
-        <div className="flex items-center justify-between mt-2">
-          <Button
-            variant="ghost"
-            onClick={handlePrev}
-            disabled={currentStep === 0}
-            className="rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
-          >
-            <ChevronLeft className="h-5 w-5 mr-1" /> Anterior
-          </Button>
-
-          <div className="flex flex-col items-center hidden sm:flex">
-            <span className="text-sm font-medium text-foreground">
-              {STEPS[currentStep].title}
-            </span>
-            <span className="text-xs text-muted-foreground mt-0.5">
-              Seção {currentStep + 1} de {STEPS.length}
-            </span>
+        {/* Menu de Etapas ou Etapa Ativa */}
+        {activeStepId === null ? (
+          <div className="flex flex-col gap-3 animate-in fade-in duration-300">
+            {STEPS.map((step) => {
+              const done = isStepDone(step.id);
+              return (
+                <div
+                  key={step.id}
+                  onClick={() => setActiveStepId(step.id)}
+                  className="flex items-center justify-between p-4 bg-card border border-border/50 rounded-xl cursor-pointer hover:bg-muted/50 hover:border-primary/50 transition-colors shadow-sm"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "h-10 w-10 rounded-full flex items-center justify-center shrink-0",
+                      done ? "bg-emerald-500/10 text-emerald-500" : "bg-muted text-muted-foreground"
+                    )}>
+                      {done ? <Check className="h-5 w-5" /> : <div className="h-3 w-3 rounded-full bg-current opacity-20" />}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-foreground text-sm">{step.title}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {done ? "Configurado" : "Não configurado"}
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                </div>
+              );
+            })}
           </div>
-
-          <Button
-            variant="ghost"
-            onClick={handleNext}
-            disabled={currentStep === STEPS.length - 1}
-            className="rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
-          >
-            Próximo <ChevronRight className="h-5 w-5 ml-1" />
-          </Button>
-        </div>
+        ) : (
+          <div className="w-full animate-in fade-in slide-in-from-right-4 duration-300">
+            <Button 
+              variant="ghost" 
+              onClick={() => setActiveStepId(null)}
+              className="mb-6 -ml-2 text-muted-foreground hover:text-foreground"
+            >
+              <ChevronLeft className="h-5 w-5 mr-1" /> Voltar para o menu
+            </Button>
+            
+            {STEPS.find(s => s.id === activeStepId)?.component}
+          </div>
+        )}
       </div>
 
       {/* COLUNA DIREITA: Preview do Celular */}
@@ -378,16 +377,7 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
         </div>
       </div>
 
-      {/* BOTÃO FLUTUANTE DE PREVIEW PARA MOBILE */}
-      <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 lg:hidden">
-        <Button
-          onClick={() => setShowMobilePreview(true)}
-          className="rounded-full shadow-xl bg-primary text-primary-foreground h-12 px-6 border-2 border-background/20 backdrop-blur-md"
-        >
-          <Mobile className="mr-2 h-5 w-5" />
-          Ver Preview
-        </Button>
-      </div>
+
 
       {/* MODAL DE PREVIEW MOBILE FULLSCREEN */}
       <Dialog open={showMobilePreview} onOpenChange={setShowMobilePreview}>

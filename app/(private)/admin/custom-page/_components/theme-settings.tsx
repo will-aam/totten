@@ -211,45 +211,197 @@ export function ThemeSettings({ data, onChange }: any) {
                 <p className="text-[11px] text-muted-foreground">O preview será atualizado automaticamente ao colar um link de imagem válido.</p>
               </div>
             </div>
+
+            {/* Efeitos de Fundo (Wallpaper) */}
+            <div className="flex flex-col gap-3 mt-4">
+              <Label className="text-xs text-muted-foreground">Efeitos Adicionais</Label>
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => onChange({ ...data, bgNoise: !data.bgNoise })}
+                  className={cn(
+                    "w-full flex items-center justify-center gap-2 text-xs py-2 px-3 border rounded-md transition-colors font-medium",
+                    data.bgNoise 
+                      ? "border-primary bg-primary/10 text-primary" 
+                      : "border-border/50 text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  Textura Granulada
+                </button>
+                
+                <div className="flex flex-col gap-2 border border-border/50 rounded-md p-3">
+                  <Label className="text-[11px] text-muted-foreground font-medium uppercase">Intensidade do Borrão (Blur)</Label>
+                  <div className="flex bg-muted p-1 rounded-lg border border-border/50">
+                    {[
+                      { id: "none", label: "Nenhum" },
+                      { id: "sm", label: "Leve" },
+                      { id: "md", label: "Médio" },
+                      { id: "xl", label: "Intenso" },
+                      { id: "3xl", label: "Extremo" }
+                    ].map((level) => {
+                      const currentBlur = data.bgBlur === true ? "3xl" : (data.bgBlur || "none");
+                      const isSelected = currentBlur === level.id || (level.id === "none" && !data.bgBlur);
+                      
+                      return (
+                        <button
+                          key={level.id}
+                          onClick={() => onChange({ ...data, bgBlur: level.id })}
+                          className={cn(
+                            "flex-1 text-[10px] sm:text-xs py-1.5 px-1 rounded-md transition-colors font-medium truncate",
+                            isSelected
+                              ? "bg-background shadow-sm text-foreground"
+                              : "text-muted-foreground hover:bg-background/50"
+                          )}
+                        >
+                          {level.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
         {/* COR DO FUNDO SÓLIDO (Só aparece se o tema for Sólido) */}
         {data.id === "solid" && (
-          <div className="flex flex-col gap-3 pt-4 border-t border-border/50 animate-in fade-in slide-in-from-top-2">
-            <Label className="text-foreground font-medium">Cor do Fundo</Label>
-            <div className="flex flex-wrap items-center gap-3">
-              {SOLID_COLORS.map((color) => (
+          <div className="flex flex-col gap-5 pt-4 border-t border-border/50 animate-in fade-in slide-in-from-top-2">
+            <Label className="text-foreground font-medium">Estilo de Papel de Parede</Label>
+            
+            {/* Preenchimento: Sólido ou Gradiente */}
+            <div className="flex flex-col gap-3">
+              <Label className="text-xs text-muted-foreground">Preenchimento</Label>
+              <div className="flex bg-muted p-1 rounded-lg border border-border/50">
                 <button
-                  key={color}
-                  onClick={() => onChange({ ...data, color })}
+                  onClick={() => onChange({ ...data, bgStyle: "solid" })}
                   className={cn(
-                    "h-10 w-10 rounded-full border-2 shadow-sm transition-transform hover:scale-110 flex items-center justify-center",
-                    data.color === color
-                      ? "border-primary ring-2 ring-primary/20"
-                      : "border-border/50",
+                    "flex-1 text-xs py-2 rounded-md transition-colors font-medium",
+                    (data.bgStyle || "solid") === "solid"
+                      ? "bg-background shadow-sm text-foreground"
+                      : "text-muted-foreground hover:bg-background/50"
                   )}
-                  style={{ backgroundColor: color }}
                 >
-                  {data.color === color && (
-                    <Check
-                      className={
-                        color === "#FFFFFF"
-                          ? "text-black h-4 w-4"
-                          : "text-white h-4 w-4"
-                      }
-                    />
-                  )}
+                  Sólido
                 </button>
-              ))}
-              <div className="h-8 w-px bg-border mx-1" />
-              <div className="relative h-10 w-10 rounded-full overflow-hidden border-2 border-border/50 shadow-sm cursor-pointer hover:scale-110 transition-transform">
-                <input
-                  type="color"
-                  value={data.color}
-                  onChange={(e) => onChange({ ...data, color: e.target.value })}
-                  className="absolute -top-2 -left-2 h-16 w-16 cursor-pointer"
-                />
+                <button
+                  onClick={() => onChange({ ...data, bgStyle: "gradient" })}
+                  className={cn(
+                    "flex-1 text-xs py-2 rounded-md transition-colors font-medium",
+                    (data.bgStyle || "solid") === "gradient"
+                      ? "bg-background shadow-sm text-foreground"
+                      : "text-muted-foreground hover:bg-background/50"
+                  )}
+                >
+                  Gradiente
+                </button>
+              </div>
+            </div>
+
+            {/* Cores */}
+            <div className="flex flex-col gap-3">
+              <Label className="text-xs text-muted-foreground">Cores</Label>
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="relative h-10 w-10 rounded-full overflow-hidden border-2 border-border/50 shadow-sm cursor-pointer hover:scale-110 transition-transform">
+                    <input
+                      type="color"
+                      value={data.color || "#ffffff"}
+                      onChange={(e) => onChange({ ...data, color: e.target.value })}
+                      className="absolute -top-2 -left-2 h-16 w-16 cursor-pointer"
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground uppercase">{data.color}</span>
+                </div>
+
+                {(data.bgStyle || "solid") === "gradient" && (
+                  <div className="flex items-center gap-2">
+                    <div className="relative h-10 w-10 rounded-full overflow-hidden border-2 border-border/50 shadow-sm cursor-pointer hover:scale-110 transition-transform">
+                      <input
+                        type="color"
+                        value={data.bgGradientColor2 || "#000000"}
+                        onChange={(e) => onChange({ ...data, bgGradientColor2: e.target.value })}
+                        className="absolute -top-2 -left-2 h-16 w-16 cursor-pointer"
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground uppercase">{data.bgGradientColor2}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Direção (Só para gradiente) */}
+            {(data.bgStyle || "solid") === "gradient" && (
+              <div className="flex flex-col gap-3">
+                <Label className="text-xs text-muted-foreground">Direção do Gradiente</Label>
+                <div className="flex bg-muted p-1 rounded-lg border border-border/50 flex-wrap sm:flex-nowrap">
+                  {[
+                    { id: "to-b", label: "Descendente" },
+                    { id: "to-t", label: "Ascendente" },
+                    { id: "radial", label: "Radial" }
+                  ].map((dir) => (
+                    <button
+                      key={dir.id}
+                      onClick={() => onChange({ ...data, bgGradientDirection: dir.id })}
+                      className={cn(
+                        "flex-1 text-xs py-2 px-1 rounded-md transition-colors font-medium truncate",
+                        (data.bgGradientDirection || "to-b") === dir.id
+                          ? "bg-background shadow-sm text-foreground"
+                          : "text-muted-foreground hover:bg-background/50"
+                      )}
+                    >
+                      {dir.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Efeitos de Fundo */}
+            <div className="flex flex-col gap-3">
+              <Label className="text-xs text-muted-foreground">Efeitos Adicionais</Label>
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => onChange({ ...data, bgNoise: !data.bgNoise })}
+                  className={cn(
+                    "w-full flex items-center justify-center gap-2 text-xs py-2 px-3 border rounded-md transition-colors font-medium",
+                    data.bgNoise 
+                      ? "border-primary bg-primary/10 text-primary" 
+                      : "border-border/50 text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  Textura Granulada
+                </button>
+                
+                <div className="flex flex-col gap-2 border border-border/50 rounded-md p-3">
+                  <Label className="text-[11px] text-muted-foreground font-medium uppercase">Intensidade do Borrão (Blur)</Label>
+                  <div className="flex bg-muted p-1 rounded-lg border border-border/50">
+                    {[
+                      { id: "none", label: "Nenhum" },
+                      { id: "sm", label: "Leve" },
+                      { id: "md", label: "Médio" },
+                      { id: "xl", label: "Intenso" },
+                      { id: "3xl", label: "Extremo" }
+                    ].map((level) => {
+                      const currentBlur = data.bgBlur === true ? "3xl" : (data.bgBlur || "none");
+                      const isSelected = currentBlur === level.id || (level.id === "none" && !data.bgBlur);
+                      
+                      return (
+                        <button
+                          key={level.id}
+                          onClick={() => onChange({ ...data, bgBlur: level.id })}
+                          className={cn(
+                            "flex-1 text-[10px] sm:text-xs py-1.5 px-1 rounded-md transition-colors font-medium truncate",
+                            isSelected
+                              ? "bg-background shadow-sm text-foreground"
+                              : "text-muted-foreground hover:bg-background/50"
+                          )}
+                        >
+                          {level.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -281,7 +433,7 @@ export function ThemeSettings({ data, onChange }: any) {
           <div className="flex flex-wrap gap-6">
             <div className="flex flex-col gap-2">
               <Label className="text-xs text-muted-foreground">
-                Cor do Texto
+                Cor do Texto Geral
               </Label>
               <div className="flex items-center gap-2">
                 <div className="relative h-8 w-8 rounded-full overflow-hidden border border-border/50 shadow-sm cursor-pointer">
@@ -299,48 +451,155 @@ export function ThemeSettings({ data, onChange }: any) {
                 </span>
               </div>
             </div>
+          </div>
+        </div>
 
+        {/* ESTILO DOS BOTÕES */}
+        <div className="flex flex-col gap-5 pt-4 border-t border-border/50">
+          <Label className="text-foreground font-medium flex items-center gap-2">
+            Estilo dos Botões
+          </Label>
+          
+          {/* ESTILO (Sólido, Vidro, Contorno) */}
+          <div className="flex flex-col gap-3">
+            <Label className="text-xs text-muted-foreground">Aparência</Label>
+            <div className="flex bg-muted p-1 rounded-lg border border-border/50">
+              {[
+                { id: "solid", label: "Sólido" },
+                { id: "glass", label: "Vidro" },
+                { id: "outline", label: "Contorno" }
+              ].map((style) => (
+                <button
+                  key={style.id}
+                  onClick={() => onChange({ ...data, buttonStyle: style.id })}
+                  className={cn(
+                    "flex-1 text-xs py-2 rounded-md transition-colors font-medium",
+                    (data.buttonStyle || "solid") === style.id
+                      ? "bg-background shadow-sm text-foreground"
+                      : "text-muted-foreground hover:bg-background/50"
+                  )}
+                >
+                  {style.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ARREDONDAMENTO */}
+          <div className="flex flex-col gap-3">
+            <Label className="text-xs text-muted-foreground">Arredondamento de Canto</Label>
+            <div className="flex bg-muted p-1 rounded-lg border border-border/50 flex-wrap sm:flex-nowrap">
+              {[
+                { id: "square", label: "Quadrado" },
+                { id: "round", label: "Redondo" },
+                { id: "more-round", label: "Mais Arredondado" },
+                { id: "pill", label: "Completamente" }
+              ].map((rounding) => (
+                <button
+                  key={rounding.id}
+                  onClick={() => onChange({ ...data, buttonRounding: rounding.id })}
+                  className={cn(
+                    "flex-1 text-xs py-2 px-1 rounded-md transition-colors font-medium truncate",
+                    (data.buttonRounding || "pill") === rounding.id
+                      ? "bg-background shadow-sm text-foreground"
+                      : "text-muted-foreground hover:bg-background/50"
+                  )}
+                >
+                  {rounding.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* SOMBRA (Somente para Sólido) */}
+          {(data.buttonStyle || "solid") === "solid" && (
+            <div className="flex flex-col gap-3">
+              <Label className="text-xs text-muted-foreground">Sombra do Botão</Label>
+              <div className="flex bg-muted p-1 rounded-lg border border-border/50">
+                {[
+                  { id: "none", label: "Nenhum" },
+                  { id: "soft", label: "Macio" },
+                  { id: "strong", label: "Forte" },
+                  { id: "hard", label: "Duro" }
+                ].map((shadow) => (
+                  <button
+                    key={shadow.id}
+                    onClick={() => onChange({ ...data, buttonShadow: shadow.id })}
+                    className={cn(
+                      "flex-1 text-xs py-2 rounded-md transition-colors font-medium",
+                      (data.buttonShadow || "none") === shadow.id
+                        ? "bg-background shadow-sm text-foreground"
+                        : "text-muted-foreground hover:bg-background/50"
+                    )}
+                  >
+                    {shadow.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* CORES DOS BOTÕES (Dinâmicas) */}
+          <div className="flex flex-wrap gap-6 pt-2">
+            {/* COR DO FUNDO / CONTORNO (Não aparece no Vidro) */}
+            {(data.buttonStyle || "solid") !== "glass" && (
+              <div className="flex flex-col gap-2">
+                <Label className="text-xs text-muted-foreground">
+                  {(data.buttonStyle || "solid") === "outline" ? "Cor do Contorno" : "Cor do Botão"}
+                </Label>
+                <div className="flex items-center gap-2">
+                  <div className="relative h-8 w-8 rounded-full overflow-hidden border border-border/50 shadow-sm cursor-pointer">
+                    <input
+                      type="color"
+                      value={data.buttonBg || "#ffffff"}
+                      onChange={(e) => onChange({ ...data, buttonBg: e.target.value })}
+                      className="absolute -top-2 -left-2 h-12 w-12 cursor-pointer"
+                    />
+                  </div>
+                  <span className="text-xs uppercase text-muted-foreground">
+                    {data.buttonBg || "#ffffff"}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* COR DO TEXTO */}
             <div className="flex flex-col gap-2">
-              <Label className="text-xs text-muted-foreground">
-                Fundo do Botão
-              </Label>
+              <Label className="text-xs text-muted-foreground">Cor do Texto</Label>
               <div className="flex items-center gap-2">
                 <div className="relative h-8 w-8 rounded-full overflow-hidden border border-border/50 shadow-sm cursor-pointer">
                   <input
                     type="color"
-                    value={data.buttonBg}
-                    onChange={(e) =>
-                      onChange({ ...data, buttonBg: e.target.value })
-                    }
+                    value={data.buttonText || "#000000"}
+                    onChange={(e) => onChange({ ...data, buttonText: e.target.value })}
                     className="absolute -top-2 -left-2 h-12 w-12 cursor-pointer"
                   />
                 </div>
                 <span className="text-xs uppercase text-muted-foreground">
-                  {data.buttonBg}
+                  {data.buttonText || "#000000"}
                 </span>
               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <Label className="text-xs text-muted-foreground">
-                Texto do Botão
-              </Label>
-              <div className="flex items-center gap-2">
-                <div className="relative h-8 w-8 rounded-full overflow-hidden border border-border/50 shadow-sm cursor-pointer">
-                  <input
-                    type="color"
-                    value={data.buttonText}
-                    onChange={(e) =>
-                      onChange({ ...data, buttonText: e.target.value })
-                    }
-                    className="absolute -top-2 -left-2 h-12 w-12 cursor-pointer"
-                  />
+            {/* COR DA SOMBRA (Apenas se Sólido e Sombra != none) */}
+            {(data.buttonStyle || "solid") === "solid" && (data.buttonShadow || "none") !== "none" && (
+              <div className="flex flex-col gap-2">
+                <Label className="text-xs text-muted-foreground">Cor da Sombra</Label>
+                <div className="flex items-center gap-2">
+                  <div className="relative h-8 w-8 rounded-full overflow-hidden border border-border/50 shadow-sm cursor-pointer">
+                    <input
+                      type="color"
+                      value={data.buttonShadowColor || "#000000"}
+                      onChange={(e) => onChange({ ...data, buttonShadowColor: e.target.value })}
+                      className="absolute -top-2 -left-2 h-12 w-12 cursor-pointer"
+                    />
+                  </div>
+                  <span className="text-xs uppercase text-muted-foreground">
+                    {data.buttonShadowColor || "#000000"}
+                  </span>
                 </div>
-                <span className="text-xs uppercase text-muted-foreground">
-                  {data.buttonText}
-                </span>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

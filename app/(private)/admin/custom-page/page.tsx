@@ -20,8 +20,11 @@ import {
   X,
   Copy,
   Check,
+  Camera,
+  Image as ImageIcon
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
+import { compressImage } from "@/lib/image-utils";
 
 import { ProfileSettings } from "./_components/profile-settings";
 import { ThemeSettings } from "./_components/theme-settings";
@@ -34,7 +37,7 @@ import { Loader2 } from "lucide-react";
 
 export default function CustomPage() {
   const [activeTab, setActiveTab] = useState<"link-bio" | "professional-site">("link-bio");
-  const [currentStep, setCurrentStep] = useState(0);
+  const [activeStepId, setActiveStepId] = useState<string | null>(null);
   const [showMobilePreview, setShowMobilePreview] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -64,16 +67,27 @@ export default function CustomPage() {
     name: "Studio Maria Spa",
     bio: "Especialistas em relaxamento e estética avançada. Agende seu horário!",
     image: "", // Novo estado para a foto de perfil
+    bannerImage: "",
+    layout: "classic", // 'classic', 'banner', 'header'
   });
   const [theme, setTheme] = useState({
     id: "solid",
     color: "#FAF9F6",
     css: "",
     fontFamily: "Inter, sans-serif",
-    textColor: "#0f172a", // Cor do texto e dos ícones
-    buttonBg: "#ffffff", // Cor do fundo do botão
-    buttonText: "#0f172a", // Cor da letra do botão
-    backgroundImage: "", // Link da imagem de fundo personalizada
+    textColor: "#0f172a",
+    buttonBg: "#ffffff",
+    buttonText: "#0f172a",
+    backgroundImage: "",
+    buttonStyle: "solid",
+    buttonRounding: "pill",
+    buttonShadow: "none",
+    buttonShadowColor: "#000000",
+    bgStyle: "solid",
+    bgGradientDirection: "to-b",
+    bgGradientColor2: "#000000",
+    bgNoise: false,
+    bgBlur: "none",
   });
   const [socials, setSocials] = useState({
     activePlatforms: ["whatsapp", "instagram"],
@@ -229,17 +243,14 @@ export default function CustomPage() {
     },
   ];
 
-  const handleNext = () => {
-    if (currentStep < STEPS.length - 1) setCurrentStep(currentStep + 1);
-  };
-  const handlePrev = () => {
-    if (currentStep > 0) setCurrentStep(currentStep - 1);
-  };
-
-  // Detectando o final do arraste
-  const handleTouchEnd = () => {
-    if (touchStart - touchEnd > 75) handleNext(); // Arrastou pra esquerda
-    if (touchStart - touchEnd < -75) handlePrev(); // Arrastou pra direita
+  const isStepDone = (stepId: string) => {
+    switch (stepId) {
+      case "profile": return !!(profile.name || profile.bio);
+      case "theme": return true;
+      case "social": return socials.activePlatforms && socials.activePlatforms.length > 0;
+      case "links": return links && links.length > 0 && links.some(l => l.title || l.url);
+      default: return false;
+    }
   };
 
   const getIconSize = () => {
@@ -248,6 +259,53 @@ export default function CustomPage() {
       case "large": return "h-7 w-7";
       default: return "h-5 w-5"; // medium
     }
+  };
+
+  const getButtonClassNames = () => {
+    const rounding = theme.buttonRounding || "pill";
+    let roundingClass = "rounded-full";
+    if (rounding === "square") roundingClass = "rounded-none";
+    if (rounding === "round") roundingClass = "rounded-md";
+    if (rounding === "more-round") roundingClass = "rounded-2xl";
+
+    const style = theme.buttonStyle || "solid";
+    let styleClass = "";
+    if (style === "glass") {
+      styleClass = "bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 shadow-sm";
+    } else if (style === "outline") {
+      styleClass = "bg-transparent border-2 hover:opacity-80";
+    } else {
+      styleClass = "hover:opacity-90";
+    }
+
+    return cn(
+      "w-full h-12 shrink-0 flex items-center justify-center text-sm font-bold px-4 text-center truncate cursor-pointer transition-all",
+      roundingClass,
+      styleClass
+    );
+  };
+
+  const getButtonStyles = () => {
+    const style = theme.buttonStyle || "solid";
+    let customStyle: any = { color: theme.buttonText || "#000000" };
+
+    if (style === "solid") {
+      customStyle.backgroundColor = theme.buttonBg || "#ffffff";
+      const shadow = theme.buttonShadow || "none";
+      const shadowColor = theme.buttonShadowColor || "#000000";
+
+      if (shadow === "soft") {
+        customStyle.boxShadow = `4px 4px 10px 0px ${shadowColor}40`;
+      } else if (shadow === "strong") {
+        customStyle.boxShadow = `6px 6px 15px 0px ${shadowColor}80`;
+      } else if (shadow === "hard") {
+        customStyle.boxShadow = `5px 5px 0px 0px ${shadowColor}`;
+      }
+    } else if (style === "outline") {
+      customStyle.borderColor = theme.buttonBg || "#ffffff";
+    }
+
+    return customStyle;
   };
 
 
@@ -285,6 +343,30 @@ export default function CustomPage() {
     </div>
   );
 
+  const getBackgroundStyle = () => {
+    let style: any = {};
+    if (theme.id === "solid") {
+      const bgStyle = theme.bgStyle || "solid";
+      if (bgStyle === "solid") {
+        style.backgroundColor = theme.color;
+      } else if (bgStyle === "gradient") {
+        const dir = theme.bgGradientDirection || "to-b";
+        const c1 = theme.color || "#ffffff";
+        const c2 = theme.bgGradientColor2 || "#000000";
+        if (dir === "to-b") style.backgroundImage = `linear-gradient(to bottom, ${c1}, ${c2})`;
+        if (dir === "to-t") style.backgroundImage = `linear-gradient(to top, ${c1}, ${c2})`;
+        if (dir === "radial") style.backgroundImage = `radial-gradient(circle, ${c1}, ${c2})`;
+      }
+    } else if (theme.id === "custom") {
+      if (theme.backgroundImage) {
+        style.backgroundImage = `url(${theme.backgroundImage})`;
+      } else {
+        style.backgroundColor = "#1e293b";
+      }
+    }
+    return style;
+  };
+
   // Extraímos o Celular para uma variável para não repetir código (usaremos no Desktop e no Modal Mobile)
   const PhoneMockup = () => (
     <>
@@ -292,44 +374,106 @@ export default function CustomPage() {
         @import url('https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Oxanium:wght@400;500;600;700&family=Roboto:ital,wght@0,400;0,500;0,700;1,400&family=Sora:wght@400;500;600;700&display=swap');
       `}</style>
       <div className="w-[320px] h-[650px] bg-black rounded-[3rem] border-8 border-black shadow-2xl relative overflow-hidden ring-1 ring-border/20 mx-auto">
-        <div className="absolute top-0 inset-x-0 h-6 bg-black z-20 rounded-b-2xl w-40 mx-auto" />
+        <div className="absolute top-0 inset-x-0 h-6 bg-black z-30 rounded-b-2xl w-40 mx-auto" />
 
+        {/* CAMADA DE FUNDO BASE */}
         <div
           className={cn(
-            "w-full h-full flex flex-col items-center pt-16 px-6 pb-8 relative z-10 transition-colors duration-500 overflow-y-auto no-scrollbar",
+            "absolute inset-0 z-0 transition-colors duration-500",
             theme.id !== "solid" && theme.id !== "custom" ? theme.css : "",
             theme.id === "custom" ? "bg-cover bg-center bg-no-repeat" : ""
           )}
-          style={{
-            ...(theme.id === "solid" ? { backgroundColor: theme.color } : {}),
-            ...(theme.id === "custom" && theme.backgroundImage ? { backgroundImage: `url(${theme.backgroundImage})` } : {}),
-            ...(theme.id === "custom" && !theme.backgroundImage ? { backgroundColor: "#1e293b" } : {}), // Fundo padrão para custom sem link
-            fontFamily: theme.fontFamily || "Inter, sans-serif"
-          }}
-        >
-          <div className="h-20 w-20 shrink-0 rounded-full bg-black/10 border-2 border-white/30 shadow-sm mb-4 relative overflow-hidden">
-            {profile.image && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={profile.image} alt="Profile" className="w-full h-full object-cover" />
-            )}
-          </div>
+          style={getBackgroundStyle()}
+        />
 
-          {/* Textos aplicam a cor escolhida e a fonte */}
-          <h2
-            className="font-bold text-xl text-center"
-            style={{ color: theme.textColor }}
-          >
-            {profile.name || "Seu Nome"}
-          </h2>
-          <p
-            className="text-center text-sm mt-2 leading-relaxed font-medium"
-            style={{ color: theme.textColor }}
-          >
-            {profile.bio || "Sua biografia aparecerá aqui..."}
-          </p>
+        {/* EFEITOS DE FUNDO */}
+        {(theme.id === "solid" || theme.id === "custom") && theme.bgNoise && (
+          <div
+            className="absolute inset-0 z-0 opacity-[0.15] mix-blend-overlay pointer-events-none"
+            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
+          />
+        )}
+        {(theme.id === "solid" || theme.id === "custom") && theme.bgBlur && theme.bgBlur !== "none" && (
+          <div className={cn(
+            "absolute inset-0 z-0 bg-white/10 pointer-events-none",
+            theme.bgBlur === "sm" ? "backdrop-blur-sm" :
+            theme.bgBlur === "md" ? "backdrop-blur-md" :
+            theme.bgBlur === "xl" ? "backdrop-blur-xl" :
+            theme.bgBlur === "3xl" ? "backdrop-blur-3xl" :
+            "backdrop-blur-[50px]"
+          )} />
+        )}
+
+        {/* CAMADA DE CONTEÚDO */}
+        <div
+          className={cn(
+            "w-full h-full flex flex-col items-center pb-8 relative z-20 overflow-y-auto no-scrollbar",
+            (!profile.layout || profile.layout === "classic") ? "pt-16 px-6" : "pt-0 px-0"
+          )}
+          style={{ fontFamily: theme.fontFamily || "Inter, sans-serif" }}
+        >
+          {profile.layout === "banner" && (
+            <div className="w-full h-32 bg-black/5 relative shrink-0">
+              {profile.bannerImage && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={profile.bannerImage} alt="Banner" className="w-full h-full object-cover" />
+              )}
+            </div>
+          )}
+          {profile.layout === "header" && (
+            <div className="w-full h-40 relative shrink-0">
+              {profile.bannerImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img 
+                  src={profile.bannerImage} 
+                  alt="Header" 
+                  className="w-full h-full object-cover" 
+                  style={{ 
+                    maskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)", 
+                    WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)" 
+                  }} 
+                />
+              ) : (
+                <div className="w-full h-full bg-black/5" style={{ 
+                  maskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)", 
+                  WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)" 
+                }} />
+              )}
+            </div>
+          )}
+
+          <div className={cn(
+            "flex flex-col items-center w-full",
+            (profile.layout === "banner" || profile.layout === "header") ? "px-6" : ""
+          )}>
+            <div className={cn(
+              "h-20 w-20 shrink-0 rounded-full bg-black/10 border-2 border-white/30 shadow-sm relative overflow-hidden",
+              (!profile.layout || profile.layout === "classic") ? "mb-4" : 
+              profile.layout === "banner" ? "-mt-10 mb-3" :
+              "-mt-14 mb-3 z-10" // header blur layout margin
+            )}>
+              {profile.image && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={profile.image} alt="Profile" className="w-full h-full object-cover" />
+              )}
+            </div>
+
+            {/* Textos aplicam a cor escolhida e a fonte */}
+            <h2
+              className="font-bold text-xl text-center"
+              style={{ color: theme.textColor }}
+            >
+              {profile.name || "Seu Nome"}
+            </h2>
+            <p
+              className="text-center text-sm mt-2 leading-relaxed font-medium"
+              style={{ color: theme.textColor }}
+            >
+              {profile.bio || "Sua biografia aparecerá aqui..."}
+            </p>
 
           {/* Renderiza as redes sociais no Topo (acima dos botões) */}
-          {socials.position === "top" && (
+          {socials.position === "top" && socials.activePlatforms.length > 0 && (
             <div className="mt-6 w-full">
               <SocialIconsBlock />
             </div>
@@ -340,11 +484,8 @@ export default function CustomPage() {
             {links.map((link) => (
               <div
                 key={link.id}
-                className="w-full h-12 shrink-0 rounded-full flex items-center justify-center text-sm font-bold shadow-sm px-4 text-center truncate cursor-pointer hover:opacity-90 transition-opacity"
-                style={{
-                  backgroundColor: theme.buttonBg,
-                  color: theme.buttonText,
-                }}
+                className={getButtonClassNames()}
+                style={getButtonStyles()}
               >
                 {link.title || "Novo Botão"}
               </div>
@@ -352,21 +493,123 @@ export default function CustomPage() {
           </div>
 
           {/* Renderiza as redes sociais no Rodapé (abaixo dos botões) */}
-          {socials.position === "bottom" && (
+          {socials.position === "bottom" && socials.activePlatforms.length > 0 && (
             <div className="mt-auto pt-6 w-full">
               <SocialIconsBlock />
             </div>
           )}
+
+          {/* Footer do sistema */}
+          <div className="w-full mt-auto pt-8 flex justify-center">
+            <span
+              className="text-[10px] font-medium opacity-50 uppercase tracking-wider"
+              style={{ color: theme.textColor }}
+            >
+              by Totten
+            </span>
+          </div>
+          </div>
         </div>
       </div>
     </>
   );
+
+  const GlobalImagesBlock = () => {
+    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        try {
+          const compressedBase64 = await compressImage(file, 500);
+          setProfile({ ...profile, image: compressedBase64 });
+        } catch (error) {
+          console.error("Erro ao processar imagem de perfil:", error);
+        }
+      }
+    };
+
+    const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        try {
+          const compressedBase64 = await compressImage(file, 1200);
+          setProfile({ ...profile, bannerImage: compressedBase64 });
+        } catch (error) {
+          console.error("Erro ao processar imagem de banner:", error);
+        }
+      }
+    };
+
+    return (
+      <div className="flex flex-col gap-4 p-5 border border-border/50 bg-card rounded-xl w-full max-w-[1600px] mx-auto shadow-sm">
+        <h3 className="font-semibold text-foreground text-sm flex items-center gap-2">
+          <ImageIcon className="w-4 h-4 text-primary" /> Imagens Globais da Marca
+        </h3>
+        <p className="text-xs text-muted-foreground -mt-2">
+          Defina seu Avatar e Banner. Eles podem ser exibidos no seu Link na Bio ou Site Profissional dependendo do layout escolhido.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-6 mt-2">
+          {/* Avatar */}
+          <div className="flex items-center gap-4 flex-1 border border-border/50 p-4 rounded-lg bg-muted/20">
+            <div className="h-16 w-16 rounded-full bg-muted border-2 border-dashed border-border flex items-center justify-center relative overflow-hidden group cursor-pointer hover:bg-muted/80 transition-colors shrink-0">
+              {profile.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={profile.image} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <Camera className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
+              )}
+              <input type="file" accept="image/png, image/jpeg" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={handleAvatarUpload} />
+            </div>
+            <div className="flex flex-col">
+              <p className="font-medium text-xs text-foreground">Avatar (Perfil)</p>
+              <label className="text-[11px] font-semibold text-primary hover:underline w-fit cursor-pointer mt-1">
+                Fazer upload
+                <input type="file" accept="image/png, image/jpeg" className="hidden" onChange={handleAvatarUpload} />
+              </label>
+              {profile.image && (
+                <button onClick={() => setProfile({ ...profile, image: "" })} className="text-[11px] font-semibold text-destructive hover:underline w-fit mt-1">
+                  Remover
+                </button>
+              )}
+            </div>
+          </div>
+          
+          {/* Banner */}
+          <div className="flex items-center gap-4 flex-1 border border-border/50 p-4 rounded-lg bg-muted/20">
+            <div className="h-16 w-24 rounded-md bg-muted border-2 border-dashed border-border flex items-center justify-center relative overflow-hidden group cursor-pointer hover:bg-muted/80 transition-colors shrink-0">
+              {profile.bannerImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={profile.bannerImage} alt="Banner" className="w-full h-full object-cover" />
+              ) : (
+                <ImageIcon className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
+              )}
+              <input type="file" accept="image/png, image/jpeg" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={handleBannerUpload} />
+            </div>
+            <div className="flex flex-col">
+              <p className="font-medium text-xs text-foreground">Imagem de Capa (Banner)</p>
+              <label className="text-[11px] font-semibold text-primary hover:underline w-fit cursor-pointer mt-1">
+                Fazer upload
+                <input type="file" accept="image/png, image/jpeg" className="hidden" onChange={handleBannerUpload} />
+              </label>
+              {profile.bannerImage && (
+                <button onClick={() => setProfile({ ...profile, bannerImage: "" })} className="text-[11px] font-semibold text-destructive hover:underline w-fit mt-1">
+                  Remover
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <>
       <AdminHeader title="Página Personalizada" />
 
       <div className="flex flex-col gap-6 p-6 md:p-8 relative pb-32 md:pb-8">
+        
+        <GlobalImagesBlock />
+
         <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)} className="w-full">
           <TabsList className="mb-4">
             <TabsTrigger value="link-bio">Link na Bio</TabsTrigger>
@@ -421,65 +664,66 @@ export default function CustomPage() {
                     </p>
                   </div>
                   <div className="flex gap-2 w-full md:w-auto">
-                    <Button onClick={handleSave} disabled={isLoading || isSaving} className="flex-1 md:flex-none rounded-full h-10 shadow-sm w-full md:w-32">
-                      {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Salvar
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowMobilePreview(true)}
+                      className="flex-1 lg:hidden md:flex-none rounded-full h-10 w-full md:w-32"
+                    >
+                      Ver Preview
+                    </Button>
+                    <Button
+                      onClick={handleSave}
+                      disabled={isLoading || isSaving}
+                      className="flex-1 md:flex-none rounded-full h-10 shadow-sm w-full md:w-32"
+                    >
+                      {isSaving ? "Salvando..." : "Salvar"}
                     </Button>
                   </div>
                 </div>
 
-                {/* Área de Swipe + Componente Ativo */}
-                <div
-                  className="w-full animate-in fade-in duration-300 touch-pan-y"
-                  onTouchStart={(e) => setTouchStart(e.targetTouches[0].clientX)}
-                  onTouchMove={(e) => setTouchEnd(e.targetTouches[0].clientX)}
-                  onTouchEnd={handleTouchEnd}
-                >
-                  {STEPS[currentStep].component}
-                </div>
-
-                {/* Indicador de Paginação Visual (Dots) */}
-                <div className="flex justify-center gap-2 mt-2">
-                  {STEPS.map((step, idx) => (
-                    <div
-                      key={step.id}
-                      className={cn(
-                        "h-1.5 rounded-full transition-all duration-300",
-                        idx === currentStep ? "w-6 bg-primary" : "w-2 bg-border",
-                        idx < currentStep ? "bg-primary/50" : ""
-                      )}
-                    />
-                  ))}
-                </div>
-
-                {/* Controle Minimalista do Carrossel */}
-                <div className="flex items-center justify-between mt-2">
-                  <Button
-                    variant="ghost"
-                    onClick={handlePrev}
-                    disabled={currentStep === 0}
-                    className="rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
-                  >
-                    <ChevronLeft removePadding className="h-5 w-5 mr-1" /> Anterior
-                  </Button>
-
-                  <div className="flex flex-col items-center hidden sm:flex">
-                    <span className="text-sm font-medium text-foreground">
-                      {STEPS[currentStep].title}
-                    </span>
-                    <span className="text-xs text-muted-foreground mt-0.5">
-                      Passo {currentStep + 1} de {STEPS.length}
-                    </span>
+                {/* Menu de Etapas ou Etapa Ativa */}
+                {activeStepId === null ? (
+                  <div className="flex flex-col gap-3 animate-in fade-in duration-300">
+                    {STEPS.map((step) => {
+                      const done = isStepDone(step.id);
+                      return (
+                        <div
+                          key={step.id}
+                          onClick={() => setActiveStepId(step.id)}
+                          className="flex items-center justify-between p-4 bg-card border border-border/50 rounded-xl cursor-pointer hover:bg-muted/50 hover:border-primary/50 transition-colors shadow-sm"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={cn(
+                              "h-10 w-10 rounded-full flex items-center justify-center shrink-0",
+                              done ? "bg-emerald-500/10 text-emerald-500" : "bg-muted text-muted-foreground"
+                            )}>
+                              {done ? <Check className="h-5 w-5" /> : <div className="h-3 w-3 rounded-full bg-current opacity-20" />}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-foreground text-sm">{step.title}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {done ? "Configurado" : "Não configurado"}
+                              </span>
+                            </div>
+                          </div>
+                          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                      );
+                    })}
                   </div>
+                ) : (
+                  <div className="w-full animate-in fade-in slide-in-from-right-4 duration-300">
+                    <Button
+                      variant="ghost"
+                      onClick={() => setActiveStepId(null)}
+                      className="mb-6 -ml-2 text-muted-foreground hover:text-foreground"
+                    >
+                      <ChevronLeft className="h-5 w-5 mr-1" /> Voltar para o menu
+                    </Button>
 
-                  <Button
-                    variant="ghost"
-                    onClick={handleNext}
-                    disabled={currentStep === STEPS.length - 1}
-                    className="rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
-                  >
-                    Próximo <ChevronRight removePadding className="h-5 w-5 ml-1" />
-                  </Button>
-                </div>
+                    {STEPS.find(s => s.id === activeStepId)?.component}
+                  </div>
+                )}
               </div>
 
               {/* COLUNA DIREITA: Preview do Celular (Desktop) */}
@@ -497,18 +741,7 @@ export default function CustomPage() {
         </Tabs>
       </div>
 
-      {/* BOTÃO FLUTUANTE DE PREVIEW PARA MOBILE - APENAS SE ESTIVER NO LINK NA BIO */}
-      {activeTab === "link-bio" && (
-        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 lg:hidden">
-          <Button
-            onClick={() => setShowMobilePreview(true)}
-            className="rounded-full shadow-xl bg-primary text-primary-foreground h-12 px-6 border-2 border-background/20 backdrop-blur-md"
-          >
-            <Mobile className="mr-2 h-5 w-5" />
-            Ver Preview
-          </Button>
-        </div>
-      )}
+
 
       {/* MODAL DE PREVIEW MOBILE */}
       <Dialog open={showMobilePreview} onOpenChange={setShowMobilePreview}>
