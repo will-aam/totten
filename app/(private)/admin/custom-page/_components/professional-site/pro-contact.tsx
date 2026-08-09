@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Pin, Phone, Search } from "@boxicons/react";
+import { Pin, Phone, Search, Whatsapp, Clock } from "@boxicons/react";
 import { Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,7 @@ export function ProContact({ data, onChange }: any) {
       setIsSearchingCep(false);
     }
   };
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -44,6 +45,7 @@ export function ProContact({ data, onChange }: any) {
       </div>
 
       <div className="flex flex-col gap-6">
+        {/* CEP */}
         <div className="flex flex-col gap-3 p-4 border border-border/50 rounded-xl bg-muted/10">
           <Label className="text-sm font-medium">Buscar Endereço (CEP)</Label>
           <div className="flex gap-2">
@@ -97,12 +99,42 @@ export function ProContact({ data, onChange }: any) {
 
         <div className="w-full h-px bg-border/50" />
 
+        {/* HORÁRIO */}
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="businessHours" className="text-foreground font-medium flex items-center gap-2">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            Horário de Funcionamento
+          </Label>
+          <Input
+            id="businessHours"
+            value={data.businessHours || ""}
+            onChange={(e) => onChange({ ...data, businessHours: e.target.value })}
+            className="bg-background border-border/50 h-11 focus-visible:ring-1"
+            placeholder="Ex: Segunda a Sábado, 9h às 20h"
+          />
+        </div>
+
+        <div className="w-full h-px bg-border/50" />
+
         <h4 className="font-medium text-sm flex items-center gap-2">
           <Phone className="h-4 w-4 text-muted-foreground" />
           Outras Formas de Contato
         </h4>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="whatsapp" className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <Whatsapp className="h-3.5 w-3.5 text-emerald-500" /> WhatsApp (com DDD)
+            </Label>
+            <Input
+              id="whatsapp"
+              value={data.whatsapp || ""}
+              onChange={(e) => onChange({ ...data, whatsapp: e.target.value })}
+              className="bg-background border-border/50 h-11 focus-visible:ring-1"
+              placeholder="(11) 99999-9999"
+            />
+            <p className="text-[10px] text-muted-foreground">Usado para o botão WhatsApp e para receber mensagens do formulário.</p>
+          </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="phone" className="text-xs text-muted-foreground">Telefone Fixo</Label>
             <Input

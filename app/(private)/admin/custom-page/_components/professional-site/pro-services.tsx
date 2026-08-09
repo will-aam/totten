@@ -1,7 +1,8 @@
 "use client";
 
 import { Label } from "@/components/ui/label";
-import { Briefcase, Layout, List } from "@boxicons/react";
+import { Input } from "@/components/ui/input";
+import { Briefcase, Layout, List, Star } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
 export function ProServices({ data, onChange }: any) {
@@ -114,6 +115,36 @@ export function ProServices({ data, onChange }: any) {
           )}
         </div>
 
+        {/* PACOTE DESTAQUE */}
+        {data.showPackages !== false && (
+          <div className="flex flex-col gap-3 py-2">
+            <div className="flex flex-col gap-1">
+              <Label className="text-foreground font-medium flex items-center gap-2">
+                <Star className="h-4 w-4 text-amber-500" />
+                Pacote em Destaque ("Mais Popular")
+              </Label>
+              <span className="text-xs text-muted-foreground">Digite o nome exato do pacote que deseja destacar visualmente.</span>
+            </div>
+            <Input
+              value={data.featuredPackageName || ""}
+              onChange={(e) => onChange({ ...data, featuredPackageName: e.target.value })}
+              className="bg-background border-border/50 h-10 focus-visible:ring-1"
+              placeholder="Ex: Renovação Semanal"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* TEXTO DO CTA */}
+      <div className="flex flex-col gap-4 p-5 border border-border/50 rounded-xl bg-muted/10">
+        <Label className="text-foreground font-medium text-base">Botão de Agendamento nos Cards</Label>
+        <Input
+          value={data.ctaText || ""}
+          onChange={(e) => onChange({ ...data, ctaText: e.target.value })}
+          className="bg-background border-border/50 h-10 focus-visible:ring-1"
+          placeholder="Ex: Agendar, Reservar, Quero esse serviço..."
+        />
+        <p className="text-[11px] text-muted-foreground">Texto exibido no botão de cada card de serviço. Padrão: "Agendar".</p>
       </div>
     </div>
   );

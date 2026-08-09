@@ -31,11 +31,11 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
   const [isSaving, setIsSaving] = useState(false);
 
   // Estados dos formulários do Site Profissional
-  const [presentation, setPresentation] = useState({ headline: "", subheadline: "", bio: "", heroImage: "", heroLayout: "fade-cover" });
-  const [services, setServices] = useState({ ctaText: "", ctaLink: "", servicesList: [] as any[] });
-  const [media, setMedia] = useState({});
+  const [presentation, setPresentation] = useState({ headline: "", subheadline: "", bio: "", heroImage: "", heroLayout: "fade-cover", ctaPrimaryText: "", ctaSecondaryText: "", aboutTitle: "" });
+  const [services, setServices] = useState({ ctaText: "", ctaLink: "", servicesList: [] as any[], featuredPackageName: "" });
+  const [media, setMedia] = useState<any>({});
   const [socialProof, setSocialProof] = useState({ testimonials: [] as any[] });
-  const [contact, setContact] = useState({ address: "", mapUrl: "", phone: "", email: "" });
+  const [contact, setContact] = useState({ address: "", mapUrl: "", phone: "", whatsapp: "", email: "", businessHours: "" });
   const [theme, setTheme] = useState({ id: "light", css: "bg-slate-50", textColor: "#0f172a", primaryColor: "#0f172a", headerStyle: "center" });
   // Preencher dados iniciais recebidos do servidor ou localStorage
   useEffect(() => {
@@ -124,34 +124,54 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
   // Mobile Preview específico do Site Profissional
   const ProSiteMockup = ({ isFullScreen = false }: { isFullScreen?: boolean }) => {
     const isAvatarLayout = presentation.heroLayout === "avatar-cover";
+    const isBlogLayout = presentation.heroLayout === "classic-blog";
+
+    const isDarkMock = theme.css?.includes("900") || theme.css?.includes("black") || theme.css?.includes("slate-950");
+    const displayImage = isBlogLayout ? ((presentation as any).proHeroImage || presentation.heroImage) : presentation.heroImage;
 
     const content = (
       <div className={cn("w-full h-full flex flex-col pb-8 relative z-10 transition-colors duration-500 overflow-y-auto no-scrollbar", theme.css, isFullScreen ? "pt-12" : "")} style={{ color: theme.textColor }}>
 
         {/* HERO / HEADER SECTION */}
         <div className="relative w-full">
-          {presentation.heroImage ? (
-            <div className={cn("w-full relative shrink-0", isAvatarLayout ? "h-40" : "h-56")}>
+          {displayImage ? (
+            <div className={cn(
+              "w-full relative shrink-0", 
+              isAvatarLayout ? "h-40" : 
+              isBlogLayout ? "h-32" : "h-56"
+            )}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={presentation.heroImage}
+                src={displayImage}
                 alt="Hero"
-                className="w-full h-full object-cover"
-                style={!isAvatarLayout ? {
+                className={cn("w-full h-full object-cover", isBlogLayout ? "rounded-xl" : "")}
+                style={!isAvatarLayout && !isBlogLayout ? {
                   WebkitMaskImage: "linear-gradient(to top, transparent 0%, black 75%)",
                   maskImage: "linear-gradient(to top, transparent 0%, black 75%)"
                 } : {}}
               />
+              {/* Floating Box na imagem */}
+              {isBlogLayout && (presentation.floatingBoxTitle || presentation.floatingBoxSubtitle) && (
+                <div className={cn(
+                  "absolute bottom-2 left-2 right-2 bg-white/90 dark:bg-black/80 backdrop-blur-md rounded-lg p-2.5 shadow-sm border border-black/5 dark:border-white/10 transition-transform",
+                  presentation.floatingBoxLink && "cursor-pointer hover:scale-105"
+                )}>
+                  {presentation.floatingBoxTitle && <div className="text-[11px] font-bold text-black dark:text-white leading-tight">{presentation.floatingBoxTitle}</div>}
+                  {presentation.floatingBoxSubtitle && <div className="text-[9px] font-medium text-black/60 dark:text-white/60 leading-tight mt-0.5">{presentation.floatingBoxSubtitle}</div>}
+                </div>
+              )}
             </div>
           ) : (
-            <div className={cn("w-full bg-muted/20 border-b border-border/10 shrink-0", isAvatarLayout ? "h-32" : "h-32")} />
+            <div className={cn("w-full bg-muted/20 border-b border-border/10 shrink-0", (isAvatarLayout || isBlogLayout) ? "h-32" : "h-32")} />
           )}
 
           <div className={cn(
             "px-6 relative z-10 flex flex-col pb-6",
             isAvatarLayout
-              ? (presentation.heroImage ? "-mt-12" : "-mt-10")
-              : (presentation.heroImage ? "-mt-14" : "-mt-12"),
+              ? (displayImage ? "-mt-12" : "-mt-10")
+              : isBlogLayout
+                ? "mt-4" // Push down instead of overlap
+                : (displayImage ? "-mt-14" : "-mt-12"),
             theme.headerStyle === "center" ? "text-center items-center" : "text-left items-start"
           )}>
             {/* AVATAR DO LINK NA BIO INTEGRADO */}
@@ -165,6 +185,16 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
               )
             )}
 
+            {/* Badge Personalizável (Categoria / Destaque) */}
+            {presentation.badgeText && (
+              <div className={cn(
+                "inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider mb-3 border w-fit",
+                isDarkMock ? "bg-white/10 border-white/20 text-white/80" : "bg-black/5 border-black/10 text-black/80"
+              )}>
+                {presentation.badgeText}
+              </div>
+            )}
+
             <h1 className="font-bold text-2xl leading-tight drop-shadow-sm mt-1">
               {presentation.headline || "Seu Título Principal Aqui"}
             </h1>
@@ -172,12 +202,38 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
               {presentation.subheadline || "Subtítulo de apoio ou missão do seu negócio."}
             </p>
 
-            {services.ctaText && (
-              <div
-                className="mt-6 px-6 py-3 rounded-full text-sm font-bold shadow-sm w-fit text-white backdrop-blur-sm"
-                style={{ backgroundColor: theme.primaryColor }}
-              >
-                {services.ctaText}
+            <div className="flex flex-col gap-2 mt-5 w-full">
+              {presentation.ctaPrimaryText && (
+                <div
+                  className="px-4 py-2.5 rounded-full text-xs font-bold text-white text-center w-full"
+                  style={{ backgroundColor: theme.primaryColor }}
+                >
+                  {presentation.ctaPrimaryText}
+                </div>
+              )}
+              {presentation.ctaSecondaryText && (
+                <div className={cn(
+                  "px-4 py-2.5 rounded-full text-xs font-bold border text-center w-full",
+                  isDarkMock ? "border-white/20 text-white" : "border-black/15"
+                )}>
+                  {presentation.ctaSecondaryText}
+                </div>
+              )}
+            </div>
+
+            {/* Highlights */}
+            {(presentation.highlight1 || presentation.highlight2 || presentation.highlight3) && (
+              <div className="flex flex-col gap-1.5 mt-4">
+                {[presentation.highlight1, presentation.highlight2, presentation.highlight3]
+                  .filter(Boolean)
+                  .map((highlight, i) => (
+                    <div key={i} className="flex items-center gap-1.5 text-[10px] opacity-70">
+                      <div className="w-3 h-3 rounded-full flex items-center justify-center border border-current">
+                        <Check className="w-2 h-2" />
+                      </div>
+                      {highlight}
+                    </div>
+                  ))}
               </div>
             )}
           </div>
@@ -186,7 +242,7 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
         {/* BIO SECTION */}
         {presentation.bio && (
           <div className="px-6 py-6 bg-foreground/5">
-            <h2 className="font-bold text-lg mb-2">Sobre mim</h2>
+            <h2 className="font-bold text-lg mb-2">{presentation.aboutTitle || "Sobre nós"}</h2>
             <p className="text-sm opacity-80 whitespace-pre-wrap leading-relaxed">{presentation.bio}</p>
           </div>
         )}
@@ -255,19 +311,14 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
         )}
 
         {/* CONTACT SECTION */}
-        {(contact.address || contact.phone) && (
+        {(contact.address || contact.phone || contact.whatsapp || contact.businessHours) && (
           <div className="px-6 py-6">
             <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
-              <Pin className="h-5 w-5" /> Onde Estamos
+              <Pin className="h-5 w-5" /> Contato
             </h2>
-            {contact.address && <p className="text-sm opacity-80 mb-4">{contact.address}</p>}
-            {contact.mapUrl && (
-              <div className="w-full h-16 bg-muted/20 rounded-xl overflow-hidden mb-4 border border-border/10 flex items-center justify-center">
-                <a href={contact.mapUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm font-bold opacity-80 hover:opacity-100 transition-opacity">
-                  <Globe className="h-5 w-5" /> Abrir Mapa
-                </a>
-              </div>
-            )}
+            {contact.businessHours && <p className="text-xs opacity-60 mb-2">🕐 {contact.businessHours}</p>}
+            {(contact.whatsapp || contact.phone) && <p className="text-sm opacity-80 mb-1">📱 {contact.whatsapp || contact.phone}</p>}
+            {contact.address && <p className="text-sm opacity-80 mb-4">📍 {contact.address}</p>}
           </div>
         )}
 

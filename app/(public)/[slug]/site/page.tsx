@@ -31,8 +31,10 @@ export default async function ProfessionalSitePage({
   const linkBio = org.link_bio;
   const proSiteData = (linkBio.professional_site_config as any) || {};
   const profileConfig = (linkBio.profile_config as any) || {};
+  const socialLinks = (linkBio.social_links as any) || [];
 
   const presentation = proSiteData.presentation || {};
+  // Reutilizar banner do link na bio caso não exista hero próprio
   presentation.heroImage = profileConfig.bannerImage || presentation.heroImage;
 
   const services = proSiteData.services || { servicesList: [] };
@@ -61,6 +63,8 @@ export default async function ProfessionalSitePage({
       media={media}
       socialProof={socialProof}
       servicesConfig={services}
+      socialLinks={socialLinks}
+      profileConfig={profileConfig}
     />
   );
 }
