@@ -66,6 +66,7 @@ export default function CustomPage() {
   const [profile, setProfile] = useState({
     slug: "studiomaria",
     name: "Studio Maria Spa",
+    role: "Especialista",
     bio: "Especialistas em relaxamento e estética avançada. Agende seu horário!",
     image: "", // Novo estado para a foto de perfil
     bannerImage: "",
@@ -129,6 +130,16 @@ export default function CustomPage() {
             }));
           }
 
+          if (data.profile_config) {
+            const pc = data.profile_config as any;
+            setProfile(prev => ({
+              ...prev,
+              role: pc.role || prev.role,
+              layout: pc.layout || prev.layout,
+              bannerImage: pc.bannerImage || prev.bannerImage
+            }));
+          }
+
           if (data.theme_config) {
             const tc = data.theme_config as any;
             setTheme(prev => ({
@@ -140,7 +151,13 @@ export default function CustomPage() {
               textColor: tc.textColor || prev.textColor,
               buttonBg: tc.buttonBg || prev.buttonBg,
               buttonText: tc.buttonText || prev.buttonText,
-              backgroundImage: tc.backgroundImage || prev.backgroundImage
+              backgroundImage: tc.backgroundImage || prev.backgroundImage,
+              buttonStyle: tc.buttonStyle || prev.buttonStyle,
+              buttonRounding: tc.buttonRounding || prev.buttonRounding,
+              buttonShadow: tc.buttonShadow || prev.buttonShadow,
+              bgStyle: tc.bgStyle || prev.bgStyle,
+              bgGradientDirection: tc.bgGradientDirection || prev.bgGradientDirection,
+              bgBlur: tc.bgBlur || prev.bgBlur
             }));
           } else if (data.theme_color_light) {
             setTheme(prev => ({
@@ -197,7 +214,18 @@ export default function CustomPage() {
           textColor: theme.textColor,
           buttonBg: theme.buttonBg,
           buttonText: theme.buttonText,
-          backgroundImage: theme.backgroundImage
+          backgroundImage: theme.backgroundImage,
+          buttonStyle: theme.buttonStyle,
+          buttonRounding: theme.buttonRounding,
+          buttonShadow: theme.buttonShadow,
+          bgStyle: theme.bgStyle,
+          bgGradientDirection: theme.bgGradientDirection,
+          bgBlur: theme.bgBlur
+        },
+        profileConfig: {
+          role: profile.role,
+          layout: profile.layout,
+          bannerImage: profile.bannerImage
         },
         socialLinks: {
           activePlatforms: socials.activePlatforms,

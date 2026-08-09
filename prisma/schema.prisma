@@ -182,6 +182,7 @@ model LinkBio {
   theme_config      Json?
   social_links      Json?
   professional_site_config Json?
+  profile_config    Json?
 
   organization_id   String       @unique
   organization      Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)

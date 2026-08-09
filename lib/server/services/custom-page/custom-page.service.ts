@@ -30,6 +30,7 @@ export class CustomPageService {
     if (data.themeConfig !== undefined) updateData.theme_config = data.themeConfig;
     if (data.socialLinks !== undefined) updateData.social_links = data.socialLinks;
     if (data.professionalSiteConfig !== undefined) updateData.professional_site_config = data.professionalSiteConfig;
+    if (data.profileConfig !== undefined) updateData.profile_config = data.profileConfig;
 
     if (data.slug || data.name) {
       const orgUpdateData: any = {};
@@ -54,6 +55,7 @@ export class CustomPageService {
         theme_config: data.themeConfig || {},
         social_links: data.socialLinks || {},
         professional_site_config: data.professionalSiteConfig || {},
+        profile_config: data.profileConfig || {},
       },
     });
   }

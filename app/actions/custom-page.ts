@@ -29,6 +29,7 @@ export async function updateCustomPageAction(data: {
   themeConfig?: any;
   socialLinks?: any;
   professionalSiteConfig?: any;
+  profileConfig?: any;
 }) {
   try {
     const admin = await requireAuth();
