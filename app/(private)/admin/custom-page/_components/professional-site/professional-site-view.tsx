@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 
 // Importando as seções recém-criadas
 import { ProPresentation } from "./pro-presentation";
+import { ProHistory } from "./pro-history";
 import { ProServices } from "./pro-services";
 import { ProMedia } from "./pro-media";
 import { ProSocialProof } from "./pro-social-proof";
@@ -31,17 +32,19 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
   const [isSaving, setIsSaving] = useState(false);
 
   // Estados dos formulários do Site Profissional
-  const [presentation, setPresentation] = useState({ headline: "", subheadline: "", bio: "", heroImage: "", heroLayout: "fade-cover", ctaPrimaryText: "", ctaSecondaryText: "", aboutTitle: "" });
-  const [services, setServices] = useState({ ctaText: "", ctaLink: "", servicesList: [] as any[], featuredPackageName: "" });
+  const [presentation, setPresentation] = useState<any>({ headline: "", subheadline: "", bio: "", heroImage: "", heroLayout: "fade-cover", ctaPrimaryText: "", ctaSecondaryText: "", aboutTitle: "" });
+  const [history, setHistory] = useState<any>({ showHistory: true, historyTitle: "", historyText: "", historyImage: "", historyStat1Label: "Anos de experiência", historyStat1Value: "", historyStat2Label: "Clientes atendidos", historyStat2Value: "", historyStat3Label: "", historyStat3Value: "" });
+  const [services, setServices] = useState<any>({ ctaText: "", ctaLink: "", servicesList: [] as any[], featuredPackageName: "" });
   const [media, setMedia] = useState<any>({});
-  const [socialProof, setSocialProof] = useState({ testimonials: [] as any[] });
-  const [contact, setContact] = useState({ address: "", mapUrl: "", phone: "", whatsapp: "", email: "", businessHours: "" });
-  const [theme, setTheme] = useState({ id: "light", css: "bg-slate-50", textColor: "#0f172a", primaryColor: "#0f172a", headerStyle: "center" });
+  const [socialProof, setSocialProof] = useState<any>({ testimonials: [] as any[] });
+  const [contact, setContact] = useState<any>({ address: "", mapUrl: "", phone: "", whatsapp: "", email: "", businessHours: "" });
+  const [theme, setTheme] = useState<any>({ id: "light", css: "bg-slate-50", textColor: "#0f172a", primaryColor: "#0f172a", headerStyle: "center" });
   // Preencher dados iniciais recebidos do servidor ou localStorage
   useEffect(() => {
     let loaded = false;
     if (initialData && Object.keys(initialData).length > 0) {
       if (initialData.presentation) setPresentation(initialData.presentation);
+      if (initialData.history) setHistory(initialData.history);
       if (initialData.services) setServices(initialData.services);
       if (initialData.media) setMedia(initialData.media);
       if (initialData.socialProof) setSocialProof(initialData.socialProof);
@@ -56,6 +59,7 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
         try {
           const parsed = JSON.parse(saved);
           if (parsed.presentation) setPresentation(parsed.presentation);
+          if (parsed.history) setHistory(parsed.history);
           if (parsed.services) setServices(parsed.services);
           if (parsed.media) setMedia(parsed.media);
           if (parsed.socialProof) setSocialProof(parsed.socialProof);
@@ -68,15 +72,16 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
 
   // Salvar rascunho
   useEffect(() => {
-    const draft = { presentation, services, media, socialProof, contact, theme };
+    const draft = { presentation, history, services, media, socialProof, contact, theme };
     localStorage.setItem('totten_pro_site_draft', JSON.stringify(draft));
-  }, [presentation, services, media, socialProof, contact, theme]);
+  }, [presentation, history, services, media, socialProof, contact, theme]);
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
       const proSiteData = {
         presentation,
+        history,
         services,
         media,
         socialProof,
@@ -102,6 +107,7 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
 
   const STEPS = [
     { id: "presentation", title: "Apresentação", component: <ProPresentation data={presentation} onChange={setPresentation} /> },
+    { id: "history", title: "Nossa História", component: <ProHistory data={history} onChange={setHistory} /> },
     { id: "services", title: "Serviços", component: <ProServices data={services} onChange={setServices} /> },
     { id: "media", title: "Galeria e Mídia", component: <ProMedia data={media} onChange={setMedia} /> },
     { id: "social-proof", title: "Depoimentos", component: <ProSocialProof data={socialProof} onChange={setSocialProof} /> },
@@ -112,6 +118,7 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
   const isStepDone = (stepId: string) => {
     switch (stepId) {
       case "presentation": return !!(presentation.headline || presentation.bio);
+      case "history": return !!(history.historyTitle || history.historyText);
       case "services": return services.servicesList && services.servicesList.length > 0;
       case "media": return !!((media as any).videoUrl || ((media as any).images && (media as any).images.length > 0));
       case "social-proof": return socialProof.testimonials && socialProof.testimonials.length > 0;
@@ -244,6 +251,46 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
           <div className="px-6 py-6 bg-foreground/5">
             <h2 className="font-bold text-lg mb-2">{presentation.aboutTitle || "Sobre nós"}</h2>
             <p className="text-sm opacity-80 whitespace-pre-wrap leading-relaxed">{presentation.bio}</p>
+          </div>
+        )}
+
+        {/* HISTORY SECTION */}
+        {history.showHistory !== false && (history.historyTitle || history.historyText) && (
+          <div className="px-6 py-10 bg-foreground/5">
+            {history.historyImage && (
+              <div className="w-full h-48 rounded-xl overflow-hidden mb-6 shadow-sm">
+                <img src={history.historyImage} alt="Nossa História" className="w-full h-full object-cover" />
+              </div>
+            )}
+            
+            {history.historyOverline !== "" && (
+              <span className="block text-[10px] uppercase tracking-widest font-bold mb-3" style={{ color: theme.primaryColor }}>
+                {history.historyOverline ?? "NOSSA HISTÓRIA"}
+              </span>
+            )}
+            {history.historyTitle && <h2 className="font-serif font-medium text-2xl mb-4 leading-tight">{history.historyTitle}</h2>}
+            {history.historyText && <p className="text-sm opacity-80 whitespace-pre-wrap leading-relaxed">{history.historyText}</p>}
+            
+            <div className="grid grid-cols-2 gap-4 mt-8">
+              {history.historyStat1Value && (
+                <div className="flex flex-col gap-0.5 text-left">
+                  <span className="font-serif font-medium text-2xl" style={{ color: theme.primaryColor }}>{history.historyStat1Value}</span>
+                  <span className="text-[10px] font-medium opacity-70">{history.historyStat1Label}</span>
+                </div>
+              )}
+              {history.historyStat2Value && (
+                <div className="flex flex-col gap-0.5 text-left">
+                  <span className="font-serif font-medium text-2xl" style={{ color: theme.primaryColor }}>{history.historyStat2Value}</span>
+                  <span className="text-[10px] font-medium opacity-70">{history.historyStat2Label}</span>
+                </div>
+              )}
+              {history.historyStat3Value && (
+                <div className="flex flex-col gap-0.5 text-left col-span-2">
+                  <span className="font-serif font-medium text-2xl" style={{ color: theme.primaryColor }}>{history.historyStat3Value}</span>
+                  <span className="text-[10px] font-medium opacity-70">{history.historyStat3Label}</span>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

@@ -25,6 +25,7 @@ const SOCIAL_ICONS: Record<string, any> = {
 };
 
 export function SiteClientView({ org, proSiteData, theme, presentation, contact, media, socialProof, servicesConfig, socialLinks = [], profileConfig = {} }: any) {
+  const history = proSiteData?.history || {};
   const isAvatarLayout = presentation.heroLayout === "avatar-cover";
   const isBlogLayout = presentation?.heroLayout === "classic-blog";
   const displayImage = isBlogLayout ? ((presentation as any).proHeroImage || presentation.heroImage) : presentation.heroImage;
@@ -381,6 +382,62 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
             </div>
           )}
 
+          {/* ── NOSSA HISTÓRIA ── */}
+          {history.showHistory !== false && (history.historyTitle || history.historyText) && (
+            <div id="historia" className={cn("px-6 sm:px-10 py-14 md:py-20 scroll-mt-20", altBg)}>
+              <div className="max-w-6xl mx-auto w-full">
+                <div className="flex flex-col md:flex-row gap-12 items-center md:items-start">
+                  {history.historyImage && (
+                    <div className="w-full md:w-[400px] shrink-0">
+                      <div className="w-full aspect-[4/5] rounded-[2rem] overflow-hidden shadow-xl border border-black/5 dark:border-white/10">
+                        <img src={history.historyImage} alt="Nossa História" className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex-1 w-full">
+                    {history.historyOverline !== "" && (
+                      <span className="block text-xs uppercase tracking-widest font-bold mb-4" style={{ color: theme.primaryColor }}>
+                        {history.historyOverline ?? "NOSSA HISTÓRIA"}
+                      </span>
+                    )}
+                    {history.historyTitle && (
+                      <h2 className="font-serif font-medium text-3xl md:text-5xl mb-6 leading-tight">
+                        {history.historyTitle}
+                      </h2>
+                    )}
+                    {history.historyText && (
+                      <p className="text-base md:text-lg opacity-80 whitespace-pre-wrap leading-relaxed">
+                        {history.historyText}
+                      </p>
+                    )}
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-8 mt-12">
+                      {history.historyStat1Value && (
+                        <div className="flex flex-col gap-1 text-left">
+                          <span className="font-serif font-medium text-3xl md:text-4xl" style={{ color: theme.primaryColor }}>{history.historyStat1Value}</span>
+                          <span className="text-sm font-medium opacity-70">{history.historyStat1Label}</span>
+                        </div>
+                      )}
+                      {history.historyStat2Value && (
+                        <div className="flex flex-col gap-1 text-left">
+                          <span className="font-serif font-medium text-3xl md:text-4xl" style={{ color: theme.primaryColor }}>{history.historyStat2Value}</span>
+                          <span className="text-sm font-medium opacity-70">{history.historyStat2Label}</span>
+                        </div>
+                      )}
+                      {history.historyStat3Value && (
+                        <div className="flex flex-col gap-1 text-left col-span-2 sm:col-span-1">
+                          <span className="font-serif font-medium text-3xl md:text-4xl" style={{ color: theme.primaryColor }}>{history.historyStat3Value}</span>
+                          <span className="text-sm font-medium opacity-70">{history.historyStat3Label}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ── SERVIÇOS (banco de dados) ── */}
           {(dbServices.length > 0 || dbPackages.length > 0) && (
             <div id="servicos" className="px-6 sm:px-10 py-14 md:py-24 scroll-mt-20">
@@ -482,7 +539,7 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                               ? "border-2 ring-2 scale-[1.03]"
                               : (isDark ? "bg-white/5 border-white/10" : "bg-white border-black/10")
                           )}
-                          style={isFeatured ? { borderColor: theme.primaryColor, ringColor: theme.primaryColor + "40", backgroundColor: theme.primaryColor + "08" } : {}}
+                          style={isFeatured ? { borderColor: theme.primaryColor, boxShadow: `0 0 0 2px ${theme.primaryColor}40`, backgroundColor: theme.primaryColor + "08" } : {}}
                         >
                           {isFeatured && (
                             <div
