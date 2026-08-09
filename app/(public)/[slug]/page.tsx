@@ -256,7 +256,7 @@ export default async function PublicLinkBioPage({
         >
           
           {/* TOPO (BANNERS/HEADERS) */}
-          <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
+          <div className="w-full max-w-2xl mx-auto flex flex-col items-center flex-1">
             {profile.layout === "banner" && (
               <div className="w-full h-48 md:h-64 bg-black/5 relative shrink-0">
                 {profile.bannerImage && (
@@ -288,7 +288,7 @@ export default async function PublicLinkBioPage({
             )}
 
             <div className={cn(
-              "flex flex-col items-center w-full px-6 max-w-lg mx-auto"
+              "flex flex-col items-center w-full px-6 max-w-lg mx-auto flex-1"
             )}>
               {profile.layout !== "header" && (
                 <div className={cn(
@@ -348,21 +348,24 @@ export default async function PublicLinkBioPage({
                 ))}
               </div>
 
-              {/* Redes Sociais - Rodapé */}
-              {socials.position === "bottom" && socials.activePlatforms.length > 0 && (
-                <div className="mt-10 w-full">
-                  <SocialIconsBlock />
-                </div>
-              )}
+              {/* Push to bottom block */}
+              <div className="mt-auto w-full pt-10 pb-4 flex flex-col items-center">
+                {/* Redes Sociais - Rodapé */}
+                {socials.position === "bottom" && socials.activePlatforms.length > 0 && (
+                  <div className="w-full mb-6">
+                    <SocialIconsBlock />
+                  </div>
+                )}
 
-              {/* Rodapé Totten */}
-              <div className="w-full mt-16 flex justify-center">
-                <span
-                  className="text-xs font-medium opacity-50 uppercase tracking-widest"
-                  style={{ color: theme.textColor }}
-                >
-                  by Totten
-                </span>
+                {/* Rodapé Totten */}
+                <div className="w-full flex justify-center">
+                  <span
+                    className="text-xs font-medium opacity-50 uppercase tracking-widest"
+                    style={{ color: theme.textColor }}
+                  >
+                    by Totten
+                  </span>
+                </div>
               </div>
             </div>
           </div>

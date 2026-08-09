@@ -472,7 +472,7 @@ export default function CustomPage() {
           )}
 
           <div className={cn(
-            "flex flex-col items-center w-full",
+            "flex flex-col items-center w-full flex-1",
             (profile.layout === "banner" || profile.layout === "header") ? "px-6" : ""
           )}>
             {profile.layout !== "header" && (
@@ -510,7 +510,7 @@ export default function CustomPage() {
           )}
 
           {/* Botões lendo as cores novas */}
-          <div className="w-full mt-6 flex flex-col gap-3 flex-1">
+          <div className="w-full mt-6 flex flex-col gap-3">
             {links.map((link) => (
               <div
                 key={link.id}
@@ -522,21 +522,23 @@ export default function CustomPage() {
             ))}
           </div>
 
-          {/* Renderiza as redes sociais no Rodapé (abaixo dos botões) */}
-          {socials.position === "bottom" && socials.activePlatforms.length > 0 && (
-            <div className="mt-auto pt-6 w-full">
-              <SocialIconsBlock />
-            </div>
-          )}
+          <div className="mt-auto w-full pt-8 flex flex-col items-center">
+            {/* Renderiza as redes sociais no Rodapé (abaixo dos botões) */}
+            {socials.position === "bottom" && socials.activePlatforms.length > 0 && (
+              <div className="w-full mb-6">
+                <SocialIconsBlock />
+              </div>
+            )}
 
-          {/* Footer do sistema */}
-          <div className="w-full mt-auto pt-8 flex justify-center">
-            <span
-              className="text-[10px] font-medium opacity-50 uppercase tracking-wider"
-              style={{ color: theme.textColor }}
-            >
-              by Totten
-            </span>
+            {/* Footer do sistema */}
+            <div className="w-full flex justify-center pb-2">
+              <span
+                className="text-[10px] font-medium opacity-50 uppercase tracking-wider"
+                style={{ color: theme.textColor }}
+              >
+                by Totten
+              </span>
+            </div>
           </div>
           </div>
         </div>
