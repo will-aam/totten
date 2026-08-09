@@ -97,27 +97,110 @@ export default async function PublicLinkBioPage({
     buttonBg: tc.buttonBg || "#ffffff",
     buttonText: tc.buttonText || tc.textColor || linkBio.theme_color_dark || "#0f172a",
     backgroundImage: tc.backgroundImage || "",
+    buttonStyle: tc.buttonStyle || "solid",
+    buttonRounding: tc.buttonRounding || "pill",
+    buttonShadow: tc.buttonShadow || "none",
+    buttonShadowColor: tc.buttonShadowColor || "#000000",
+    bgStyle: tc.bgStyle || "solid",
+    bgGradientDirection: tc.bgGradientDirection || "to-b",
+    bgGradientColor2: tc.bgGradientColor2 || "#000000",
+    bgNoise: tc.bgNoise || false,
+    bgBlur: tc.bgBlur || "none",
+  };
+
+  const pc = linkBio.profile_config as any || {};
+  const profile = {
+    role: pc.role || "",
+    layout: pc.layout || "classic",
+    bannerImage: pc.bannerImage || "",
+    name: org.name,
+    bio: linkBio.bio_text || "",
+    image: linkBio.profile_image_url || "",
+  };
+
+  const getButtonClassNames = () => {
+    const rounding = theme.buttonRounding || "pill";
+    let roundingClass = "rounded-full";
+    if (rounding === "none") roundingClass = "rounded-none";
+    if (rounding === "sm") roundingClass = "rounded-md";
+    if (rounding === "md") roundingClass = "rounded-xl";
+    if (rounding === "lg") roundingClass = "rounded-2xl";
+
+    const style = theme.buttonStyle || "solid";
+    let styleClass = "";
+    if (style === "glass") {
+      styleClass = "bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 shadow-sm";
+    } else if (style === "outline") {
+      styleClass = "bg-transparent border-2 hover:opacity-80";
+    } else {
+      styleClass = "hover:opacity-90";
+    }
+
+    return cn(
+      "w-full min-h-[56px] shrink-0 flex items-center justify-center text-base font-bold px-6 text-center cursor-pointer transition-all",
+      roundingClass,
+      styleClass
+    );
+  };
+
+  const getButtonStyles = () => {
+    const style = theme.buttonStyle || "solid";
+    let customStyle: any = { color: theme.buttonText || "#000000" };
+
+    if (style === "solid") {
+      customStyle.backgroundColor = theme.buttonBg || "#ffffff";
+      const shadow = theme.buttonShadow || "none";
+      const shadowColor = theme.buttonShadowColor || "#000000";
+
+      if (shadow === "soft") {
+        customStyle.boxShadow = `4px 4px 10px 0px ${shadowColor}40`;
+      } else if (shadow === "strong") {
+        customStyle.boxShadow = `6px 6px 15px 0px ${shadowColor}80`;
+      } else if (shadow === "hard") {
+        customStyle.boxShadow = `5px 5px 0px 0px ${shadowColor}`;
+      }
+    } else if (style === "outline") {
+      customStyle.borderColor = theme.buttonBg || "#ffffff";
+    }
+
+    return customStyle;
+  };
+
+  const getBackgroundStyle = () => {
+    let style: any = {};
+    if (theme.id === "solid") {
+      const bgStyle = theme.bgStyle || "solid";
+      if (bgStyle === "solid") {
+        style.backgroundColor = theme.color;
+      } else if (bgStyle === "gradient") {
+        const dir = theme.bgGradientDirection || "to-b";
+        const c1 = theme.color || "#ffffff";
+        const c2 = theme.bgGradientColor2 || "#000000";
+        if (dir === "to-b") style.backgroundImage = `linear-gradient(to bottom, ${c1}, ${c2})`;
+        if (dir === "to-t") style.backgroundImage = `linear-gradient(to top, ${c1}, ${c2})`;
+        if (dir === "radial") style.backgroundImage = `radial-gradient(circle, ${c1}, ${c2})`;
+      }
+    } else if (theme.id === "custom") {
+      if (theme.backgroundImage) {
+        style.backgroundImage = `url(${theme.backgroundImage})`;
+      } else {
+        style.backgroundColor = "#1e293b";
+      }
+    }
+    return style;
   };
 
   const SocialIconsBlock = () => (
-    <div className={cn(
-      "flex flex-wrap justify-center w-full",
-      socials.style === "circle" ? "gap-3" : "gap-1"
-    )}>
-      {(socials.activePlatforms || []).map((platform: string) => (
+    <div className="flex flex-wrap justify-center w-full gap-3">
+      {socials.activePlatforms.map((platform: string) => (
         <a
           key={platform}
           href={getHref(platform, socials.values[platform])}
           target="_blank"
           rel="noopener noreferrer"
-          className={cn(
-            "rounded-full flex items-center justify-center hover:scale-110 transition-transform cursor-pointer",
-            socials.style === "circle" ? getWrapperSize() : "p-2.5",
-            socials.style === "circle" ? "shadow-sm border" : "bg-transparent"
-          )}
-          style={{ 
-            borderColor: socials.style === "circle" ? theme.textColor : "transparent", 
-            color: theme.textColor 
+          className="rounded-full flex items-center justify-center hover:scale-110 transition-transform cursor-pointer p-3 bg-transparent"
+          style={{
+            color: theme.textColor
           }}
         >
           {renderSocialIcon(platform, getIconSize())}
@@ -131,78 +214,158 @@ export default async function PublicLinkBioPage({
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Oxanium:wght@400;500;600;700&family=Roboto:ital,wght@0,400;0,500;0,700;1,400&family=Sora:wght@400;500;600;700&display=swap');
       `}</style>
-      <div 
-        className={cn(
-          "min-h-screen w-full flex flex-col items-center pt-16 px-6 pb-8",
-          theme.id !== "solid" && theme.id !== "custom" ? theme.css : "",
-          theme.id === "custom" ? "bg-cover bg-center bg-no-repeat bg-fixed" : ""
+
+      {/* VIEWPORT DA PÁGINA */}
+      <div className="min-h-screen w-full relative overflow-hidden flex flex-col">
+        
+        {/* CAMADA DE FUNDO BASE */}
+        <div
+          className={cn(
+            "fixed inset-0 z-0 transition-colors duration-500",
+            theme.id !== "solid" && theme.id !== "custom" ? theme.css : "",
+            theme.id === "custom" ? "bg-cover bg-center bg-no-repeat" : ""
+          )}
+          style={getBackgroundStyle()}
+        />
+
+        {/* EFEITOS DE FUNDO */}
+        {(theme.id === "solid" || theme.id === "custom") && theme.bgNoise && (
+          <div
+            className="fixed inset-0 z-0 opacity-[0.15] mix-blend-overlay pointer-events-none"
+            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
+          />
         )}
-        style={{
-          ...(theme.id === "solid" ? { backgroundColor: theme.color } : {}),
-          ...(theme.id === "custom" && theme.backgroundImage ? { backgroundImage: `url(${theme.backgroundImage})` } : {}),
-          ...(theme.id === "custom" && !theme.backgroundImage ? { backgroundColor: "#1e293b" } : {}),
-          fontFamily: theme.fontFamily
-        }}
-      >
-        <div className="w-full max-w-md mx-auto flex flex-col items-center">
-          <div className="h-24 w-24 shrink-0 rounded-full bg-black/10 border-2 border-white/30 shadow-sm mb-6 relative overflow-hidden">
-            {linkBio.profile_image_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={linkBio.profile_image_url} alt={org.name} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-muted">
-                <span className="text-2xl font-bold" style={{ color: theme.textColor }}>
-                  {org.name.charAt(0).toUpperCase()}
-                </span>
+        {(theme.id === "solid" || theme.id === "custom") && theme.bgBlur && theme.bgBlur !== "none" && (
+          <div className={cn(
+            "fixed inset-0 z-0 bg-white/10 pointer-events-none",
+            theme.bgBlur === "sm" ? "backdrop-blur-sm" :
+            theme.bgBlur === "md" ? "backdrop-blur-md" :
+            theme.bgBlur === "xl" ? "backdrop-blur-xl" :
+            theme.bgBlur === "3xl" ? "backdrop-blur-3xl" :
+            "backdrop-blur-[50px]"
+          )} />
+        )}
+
+        {/* CAMADA DE CONTEÚDO */}
+        <div
+          className={cn(
+            "w-full h-full min-h-screen flex flex-col relative z-20 pb-16",
+            (!profile.layout || profile.layout === "classic") ? "pt-16 px-6" : "pt-0 px-0"
+          )}
+          style={{ fontFamily: theme.fontFamily || "Inter, sans-serif" }}
+        >
+          
+          {/* TOPO (BANNERS/HEADERS) */}
+          <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
+            {profile.layout === "banner" && (
+              <div className="w-full h-48 md:h-64 bg-black/5 relative shrink-0">
+                {profile.bannerImage && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={profile.bannerImage} alt="Banner" className="w-full h-full object-cover" />
+                )}
               </div>
             )}
-          </div>
+            {profile.layout === "header" && (
+              <div className="w-full h-80 md:h-96 relative shrink-0">
+                {profile.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img 
+                    src={profile.image} 
+                    alt="Header" 
+                    className="w-full h-full object-cover object-top" 
+                    style={{ 
+                      maskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)", 
+                      WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)" 
+                    }} 
+                  />
+                ) : (
+                  <div className="w-full h-full bg-black/5" style={{ 
+                    maskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)", 
+                    WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)" 
+                  }} />
+                )}
+              </div>
+            )}
 
-          <h1
-            className="font-bold text-2xl text-center mb-2"
-            style={{ color: theme.textColor }}
-          >
-            {org.name}
-          </h1>
-          
-          {linkBio.bio_text && (
-            <p
-              className="text-center text-base leading-relaxed font-medium mb-6"
-              style={{ color: theme.textColor }}
-            >
-              {linkBio.bio_text}
-            </p>
-          )}
+            <div className={cn(
+              "flex flex-col items-center w-full px-6 max-w-lg mx-auto"
+            )}>
+              {profile.layout !== "header" && (
+                <div className={cn(
+                  "h-28 w-28 shrink-0 rounded-full bg-black/10 border-2 border-white/30 shadow-sm relative overflow-hidden",
+                  (!profile.layout || profile.layout === "classic") ? "mb-6" : 
+                  profile.layout === "banner" ? "-mt-14 mb-4" : ""
+                )}>
+                  {profile.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={profile.image} alt={org.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-muted">
+                      <span className="text-3xl font-bold" style={{ color: theme.textColor }}>
+                        {org.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
 
-          {socials.position === "top" && (
-            <div className="mb-6 w-full">
-              <SocialIconsBlock />
-            </div>
-          )}
-
-          <div className="w-full flex flex-col gap-4 mb-6">
-            {links.map((link: any) => (
-              <a
-                key={link.id}
-                href={link.url.startsWith("http") ? link.url : `https://${link.url}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full min-h-[56px] rounded-full flex items-center justify-center text-base font-bold shadow-sm px-6 text-center hover:opacity-90 transition-opacity"
-                style={{
-                  backgroundColor: theme.buttonBg,
-                  color: theme.buttonText,
-                }}
+              <h1
+                className="font-bold text-2xl md:text-3xl text-center"
+                style={{ color: theme.textColor }}
               >
-                {link.title}
-              </a>
-            ))}
-          </div>
+                {profile.name}
+              </h1>
+              
+              {profile.bio && (
+                <p
+                  className="text-center text-base mt-3 leading-relaxed font-medium"
+                  style={{ color: theme.textColor }}
+                >
+                  {profile.bio}
+                </p>
+              )}
 
-          {socials.position === "bottom" && (
-            <div className="mt-2 w-full">
-              <SocialIconsBlock />
+              {/* Redes Sociais - Topo */}
+              {socials.position === "top" && socials.activePlatforms.length > 0 && (
+                <div className="mt-8 w-full">
+                  <SocialIconsBlock />
+                </div>
+              )}
+
+              {/* Botões/Links */}
+              <div className="w-full mt-8 flex flex-col gap-4">
+                {links.map((link: any) => (
+                  <a
+                    key={link.id}
+                    href={link.url.startsWith("http") ? link.url : `https://${link.url}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={getButtonClassNames()}
+                    style={getButtonStyles()}
+                  >
+                    {link.title}
+                  </a>
+                ))}
+              </div>
+
+              {/* Redes Sociais - Rodapé */}
+              {socials.position === "bottom" && socials.activePlatforms.length > 0 && (
+                <div className="mt-10 w-full">
+                  <SocialIconsBlock />
+                </div>
+              )}
+
+              {/* Rodapé Totten */}
+              <div className="w-full mt-16 flex justify-center">
+                <span
+                  className="text-xs font-medium opacity-50 uppercase tracking-widest"
+                  style={{ color: theme.textColor }}
+                >
+                  by Totten
+                </span>
+              </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </>
