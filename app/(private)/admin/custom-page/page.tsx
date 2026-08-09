@@ -397,7 +397,19 @@ export default function CustomPage() {
   };
 
   // Extraímos o Celular para uma variável para não repetir código (usaremos no Desktop e no Modal Mobile)
-  const PhoneMockup = () => (
+  const PhoneMockup = () => {
+    const isPro = activeTab === "professional-site";
+    const proHeroLayout = proSiteConfig?.presentation?.heroLayout || "fade-cover";
+    
+    // Mapear os layouts do proSiteConfig para a estrutura existente ou usar o novo
+    let layout = profile.layout || "classic";
+    if (isPro) {
+      if (proHeroLayout === "fade-cover") layout = "header";
+      else if (proHeroLayout === "avatar-cover") layout = "banner";
+      else layout = proHeroLayout; // classic-blog
+    }
+
+    return (
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Oxanium:wght@400;500;600;700&family=Roboto:ital,wght@0,400;0,500;0,700;1,400&family=Sora:wght@400;500;600;700&display=swap');
@@ -437,11 +449,29 @@ export default function CustomPage() {
         <div
           className={cn(
             "w-full h-full flex flex-col items-center pb-8 relative z-20 overflow-y-auto no-scrollbar",
-            (!profile.layout || profile.layout === "classic") ? "pt-16 px-6" : "pt-0 px-0"
+            (!layout || layout === "classic") ? "pt-16 px-6" : "pt-0 px-0"
           )}
           style={{ fontFamily: theme.fontFamily || "Inter, sans-serif" }}
         >
-          {profile.layout === "banner" && (
+          {layout === "classic-blog" && (
+            <>
+              {/* Navbar do Blog */}
+              <div className="w-full h-14 bg-background/80 backdrop-blur-md border-b border-border/50 flex items-center justify-between px-4 shrink-0 z-30 sticky top-0">
+                <span className="font-bold text-sm truncate" style={{ color: theme.textColor }}>
+                  {profile.name || "Seu Nome"}
+                </span>
+              </div>
+              {/* Banner Central */}
+              <div className="w-full h-40 bg-black/5 relative shrink-0">
+                {profile.bannerImage && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={profile.bannerImage} alt="Banner" className="w-full h-full object-cover" />
+                )}
+              </div>
+            </>
+          )}
+          
+          {layout === "banner" && (
             <div className="w-full h-32 bg-black/5 relative shrink-0">
               {profile.bannerImage && (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -449,7 +479,7 @@ export default function CustomPage() {
               )}
             </div>
           )}
-          {profile.layout === "header" && (
+          {layout === "header" && (
             <div className="w-full h-64 relative shrink-0">
               {profile.image ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -473,13 +503,13 @@ export default function CustomPage() {
 
           <div className={cn(
             "flex flex-col items-center w-full flex-1",
-            (profile.layout === "banner" || profile.layout === "header") ? "px-6" : ""
+            (layout === "banner" || layout === "header" || layout === "classic-blog") ? "px-6" : ""
           )}>
-            {profile.layout !== "header" && (
+            {layout !== "header" && layout !== "classic-blog" && (
               <div className={cn(
                 "h-20 w-20 shrink-0 rounded-full bg-black/10 border-2 border-white/30 shadow-sm relative overflow-hidden",
-                (!profile.layout || profile.layout === "classic") ? "mb-4" : 
-                profile.layout === "banner" ? "-mt-10 mb-3" : ""
+                (!layout || layout === "classic") ? "mb-4" : 
+                layout === "banner" ? "-mt-10 mb-3" : ""
               )}>
                 {profile.image && (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -544,7 +574,8 @@ export default function CustomPage() {
         </div>
       </div>
     </>
-  );
+    );
+  };
 
   const GlobalImagesBlock = () => {
     const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -40,7 +40,7 @@ export function ProPresentation({ data, onChange }: any) {
           <RadioGroup 
             value={data.heroLayout || "fade-cover"} 
             onValueChange={(val) => onChange({ ...data, heroLayout: val })}
-            className="grid grid-cols-2 gap-4"
+            className="grid grid-cols-1 md:grid-cols-3 gap-4"
           >
             <Label
               htmlFor="layout-fade"
@@ -62,6 +62,20 @@ export function ProPresentation({ data, onChange }: any) {
                 <div className="w-6 h-6 rounded-full bg-primary/20 absolute -bottom-3 border-2 border-background" />
               </div>
               <span className="font-semibold text-[13px] text-center">Capa Quadrada + Perfil</span>
+            </Label>
+
+            <Label
+              htmlFor="layout-blog"
+              className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-transparent p-4 hover:bg-muted/50 [&:has([data-state=checked])]:border-primary cursor-pointer gap-2"
+            >
+              <RadioGroupItem value="classic-blog" id="layout-blog" className="sr-only" />
+              <div className="w-full h-12 bg-muted/20 rounded-md border border-border/50 flex flex-col mb-1 overflow-hidden">
+                <div className="w-full h-3 bg-muted/60 border-b border-border/50" />
+                <div className="w-full flex-1 bg-muted/30 flex items-center justify-center">
+                  <span className="text-[10px] text-muted-foreground font-medium">Banner</span>
+                </div>
+              </div>
+              <span className="font-semibold text-[13px] text-center">Site Profissional (Banner)</span>
             </Label>
           </RadioGroup>
         </div>
@@ -92,55 +106,7 @@ export function ProPresentation({ data, onChange }: any) {
           />
         </div>
 
-        {/* Imagem de Capa (Hero) */}
-        <div className="flex flex-col gap-4">
-          <Label className="text-foreground font-medium">Imagem de Capa (Banner)</Label>
-          
-          <div className="flex flex-col gap-2">
-            <span className="text-xs font-semibold opacity-70">Opção 1: Inserir URL (Recomendado para economizar espaço)</span>
-            <Input
-              type="url"
-              placeholder="https://exemplo.com/minha-imagem.jpg"
-              value={data.heroImage && data.heroImage.startsWith('http') ? data.heroImage : ""}
-              onChange={(e) => onChange({ ...data, heroImage: e.target.value })}
-              className="bg-background border-border/50 h-10"
-            />
-          </div>
 
-          <div className="flex flex-col gap-2">
-            <span className="text-xs font-semibold opacity-70">Opção 2: Fazer Upload da Imagem</span>
-            <div className="w-full h-32 rounded-xl bg-muted border-2 border-dashed border-border flex items-center justify-center relative overflow-hidden group cursor-pointer hover:bg-muted/80 transition-colors">
-              {data.heroImage && !data.heroImage.startsWith('http') ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={data.heroImage} alt="Capa" className="w-full h-full object-cover" />
-              ) : data.heroImage && data.heroImage.startsWith('http') ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={data.heroImage} alt="Capa" className="w-full h-full object-cover" />
-              ) : (
-                <div className="flex flex-col items-center gap-2 text-muted-foreground/50 group-hover:text-primary transition-colors">
-                  <Camera className="h-6 w-6" />
-                  <span className="text-xs font-medium">Capa / Hero (16:9)</span>
-                </div>
-              )}
-              <input 
-                type="file" 
-                accept="image/png, image/jpeg" 
-                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
-                onChange={(e) => handleImageUpload(e, 'heroImage')}
-              />
-            </div>
-            {data.heroImage && (
-              <button 
-                onClick={() => onChange({ ...data, heroImage: "" })} 
-                className="text-xs font-semibold text-destructive hover:underline w-fit mt-1"
-              >
-                Remover capa
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="w-full h-px bg-border/50" />
 
         {/* Biografia Detalhada */}
         <div className="flex flex-col gap-2">

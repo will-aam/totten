@@ -12,7 +12,9 @@ const getYouTubeEmbedUrl = (url: string) => {
   return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : null;
 };
 
-export function SiteClientView({ org, proSiteData, theme, isAvatarLayout, presentation, contact, media, socialProof, servicesConfig }: any) {
+export function SiteClientView({ org, proSiteData, theme, presentation, contact, media, socialProof, servicesConfig }: any) {
+  const isAvatarLayout = presentation.heroLayout === "avatar-cover";
+  const isBlogLayout = presentation.heroLayout === "classic-blog";
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
   const [formSent, setFormSent] = useState(false);
@@ -120,26 +122,32 @@ export function SiteClientView({ org, proSiteData, theme, isAvatarLayout, presen
           {/* HERO */}
           <div className="relative w-full">
             {presentation.heroImage ? (
-              <div className={cn("w-full relative shrink-0", isAvatarLayout ? "h-64 md:h-[450px]" : "h-80 md:h-[550px]")}>
+              <div className={cn(
+                "w-full relative shrink-0", 
+                isAvatarLayout ? "h-64 md:h-[450px]" : 
+                isBlogLayout ? "h-48 md:h-[400px]" : "h-80 md:h-[550px]"
+              )}>
                 <img 
                   src={presentation.heroImage} 
                   alt="Hero" 
                   className="w-full h-full object-cover"
-                  style={!isAvatarLayout ? {
+                  style={(!isAvatarLayout && !isBlogLayout) ? {
                     WebkitMaskImage: "linear-gradient(to top, transparent 0%, black 75%)",
                     maskImage: "linear-gradient(to top, transparent 0%, black 75%)"
                   } : {}}
                 />
               </div>
             ) : (
-              <div className={cn("w-full bg-muted/20 border-b border-border/10 shrink-0", isAvatarLayout ? "h-48 md:h-64" : "h-48 md:h-64")} />
+              <div className={cn("w-full bg-muted/20 border-b border-border/10 shrink-0", (isAvatarLayout || isBlogLayout) ? "h-48 md:h-64" : "h-48 md:h-64")} />
             )}
             
             <div className={cn(
               "px-6 sm:px-10 relative z-10 flex flex-col pb-12 max-w-5xl mx-auto w-full", 
               isAvatarLayout 
                  ? (presentation.heroImage ? "-mt-16 md:-mt-24" : "-mt-12 md:-mt-16") 
-                 : (presentation.heroImage ? "-mt-20 md:-mt-28" : "-mt-12 md:-mt-16"),
+                 : isBlogLayout 
+                   ? "mt-8 md:mt-12" // Push down instead of overlap
+                   : (presentation.heroImage ? "-mt-20 md:-mt-28" : "-mt-12 md:-mt-16"),
               theme.headerStyle === "center" ? "text-center items-center" : "text-left items-start"
             )}>
               {/* AVATAR */}

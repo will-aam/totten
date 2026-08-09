@@ -30,8 +30,11 @@ export default async function ProfessionalSitePage({
 
   const linkBio = org.link_bio;
   const proSiteData = (linkBio.professional_site_config as any) || {};
+  const profileConfig = (linkBio.profile_config as any) || {};
 
   const presentation = proSiteData.presentation || {};
+  presentation.heroImage = profileConfig.bannerImage || presentation.heroImage;
+
   const services = proSiteData.services || { servicesList: [] };
   const media = proSiteData.media || {};
   const socialProof = proSiteData.socialProof || { testimonials: [] };
