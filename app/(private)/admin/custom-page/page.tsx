@@ -11,6 +11,7 @@ import {
   Save,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
   Instagram,
   Facebook,
   Youtube,
@@ -421,13 +422,13 @@ export default function CustomPage() {
             </div>
           )}
           {profile.layout === "header" && (
-            <div className="w-full h-40 relative shrink-0">
-              {profile.bannerImage ? (
+            <div className="w-full h-64 relative shrink-0">
+              {profile.image ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img 
-                  src={profile.bannerImage} 
+                  src={profile.image} 
                   alt="Header" 
-                  className="w-full h-full object-cover" 
+                  className="w-full h-full object-cover object-top" 
                   style={{ 
                     maskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)", 
                     WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)" 
@@ -446,17 +447,18 @@ export default function CustomPage() {
             "flex flex-col items-center w-full",
             (profile.layout === "banner" || profile.layout === "header") ? "px-6" : ""
           )}>
-            <div className={cn(
-              "h-20 w-20 shrink-0 rounded-full bg-black/10 border-2 border-white/30 shadow-sm relative overflow-hidden",
-              (!profile.layout || profile.layout === "classic") ? "mb-4" : 
-              profile.layout === "banner" ? "-mt-10 mb-3" :
-              "-mt-14 mb-3 z-10" // header blur layout margin
-            )}>
-              {profile.image && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={profile.image} alt="Profile" className="w-full h-full object-cover" />
-              )}
-            </div>
+            {profile.layout !== "header" && (
+              <div className={cn(
+                "h-20 w-20 shrink-0 rounded-full bg-black/10 border-2 border-white/30 shadow-sm relative overflow-hidden",
+                (!profile.layout || profile.layout === "classic") ? "mb-4" : 
+                profile.layout === "banner" ? "-mt-10 mb-3" : ""
+              )}>
+                {profile.image && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={profile.image} alt="Profile" className="w-full h-full object-cover" />
+                )}
+              </div>
+            )}
 
             {/* Textos aplicam a cor escolhida e a fonte */}
             <h2
@@ -539,15 +541,31 @@ export default function CustomPage() {
       }
     };
 
+    const [isExpanded, setIsExpanded] = useState(true);
+
     return (
-      <div className="flex flex-col gap-4 p-5 border border-border/50 bg-card rounded-xl w-full max-w-[1600px] mx-auto shadow-sm">
-        <h3 className="font-semibold text-foreground text-sm flex items-center gap-2">
-          <ImageIcon className="w-4 h-4 text-primary" /> Imagens Globais da Marca
-        </h3>
-        <p className="text-xs text-muted-foreground -mt-2">
-          Defina seu Avatar e Banner. Eles podem ser exibidos no seu Link na Bio ou Site Profissional dependendo do layout escolhido.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-6 mt-2">
+      <div className="flex flex-col p-5 border border-border/50 bg-card rounded-xl w-full max-w-[1600px] mx-auto shadow-sm">
+        <div 
+          className="flex items-center justify-between cursor-pointer"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          <div className="flex items-center gap-2">
+            <ImageIcon className="w-4 h-4 text-primary" /> 
+            <h3 className="font-semibold text-foreground text-sm">
+              Imagens Globais da Marca
+            </h3>
+          </div>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </Button>
+        </div>
+        
+        {isExpanded && (
+          <div className="flex flex-col mt-4 animate-in fade-in slide-in-from-top-2 duration-200">
+            <p className="text-xs text-muted-foreground mb-4">
+              Defina seu Avatar e Banner. Eles podem ser exibidos no seu Link na Bio ou Site Profissional dependendo do layout escolhido.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-6">
           {/* Avatar */}
           <div className="flex items-center gap-4 flex-1 border border-border/50 p-4 rounded-lg bg-muted/20">
             <div className="h-16 w-16 rounded-full bg-muted border-2 border-dashed border-border flex items-center justify-center relative overflow-hidden group cursor-pointer hover:bg-muted/80 transition-colors shrink-0">
@@ -596,8 +614,10 @@ export default function CustomPage() {
                 </button>
               )}
             </div>
+            </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     );
   };
