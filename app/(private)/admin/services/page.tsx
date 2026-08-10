@@ -311,7 +311,7 @@ function ServicesTabs() {
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="flex flex-col flex-1 justify-between p-4 min-w-0">
                     <div className="flex flex-col gap-2">
                       <div className="flex items-start justify-between gap-2 min-w-0">
@@ -324,48 +324,48 @@ function ServicesTabs() {
                           </span>
                         )}
                       </div>
-                    <Badge
-                      variant="secondary"
-                      className="w-fit text-[10px] bg-primary/5 text-primary hover:bg-primary/10"
-                    >
-                      {service.category.name}
-                    </Badge>
-                  </div>
-
-                  <div className="flex flex-col gap-2 pt-4 border-t border-border/40 mt-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                        <Clock size="xs" />
-                        {formatDuration(service.duration)}
-                      </span>
-                      <span className="text-sm font-black text-foreground">
-                        {formatCurrency(Number(service.price))}
-                      </span>
+                      <Badge
+                        variant="secondary"
+                        className="w-fit text-[10px] bg-primary/5 text-primary hover:bg-primary/10"
+                      >
+                        {service.category.name}
+                      </Badge>
                     </div>
 
-                    {service.track_stock ? (
-                      <div className="flex items-center justify-between bg-blue-500/10 rounded-lg p-2 -mx-2 -mb-2 mt-1 border border-blue-500/20">
-                        <span className="text-[11px] font-semibold text-blue-600 flex items-center gap-1.5">
-                          <Box size="xs" />
-                          Baixa Inteligente
+                    <div className="flex flex-col gap-2 pt-4 border-t border-border/40 mt-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                          <Clock size="xs" />
+                          {formatDuration(service.duration)}
                         </span>
-                        <span className="text-[11px] font-bold text-blue-700">
-                          {service.stock_items?.length || 0} Insumos
-                        </span>
-                      </div>
-                    ) : service.material_cost &&
-                      Number(service.material_cost) > 0 ? (
-                      <div className="flex items-center justify-between bg-destructive/5 rounded-lg p-2 -mx-2 -mb-2 mt-1 border border-destructive/10">
-                        <span className="text-[11px] font-medium text-destructive/80 flex items-center gap-1.5">
-                          <TrendingDown size="xs" />
-                          Custo Fixo
-                        </span>
-                        <span className="text-[11px] font-bold text-destructive/90">
-                          {formatCurrency(Number(service.material_cost))}
+                        <span className="text-sm font-black text-foreground">
+                          {formatCurrency(Number(service.price))}
                         </span>
                       </div>
-                    ) : null}
-                  </div>
+
+                      {service.track_stock ? (
+                        <div className="flex items-center justify-between bg-blue-500/10 rounded-lg p-2 -mx-2 -mb-2 mt-1 border border-blue-500/20">
+                          <span className="text-[11px] font-semibold text-blue-600 flex items-center gap-1.5">
+                            <Box size="xs" />
+                            Baixa Inteligente
+                          </span>
+                          <span className="text-[11px] font-bold text-blue-700">
+                            {service.stock_items?.length || 0} Insumos
+                          </span>
+                        </div>
+                      ) : service.material_cost &&
+                        Number(service.material_cost) > 0 ? (
+                        <div className="flex items-center justify-between bg-destructive/5 rounded-lg p-2 -mx-2 -mb-2 mt-1 border border-destructive/10">
+                          <span className="text-[11px] font-medium text-destructive/80 flex items-center gap-1.5">
+                            <TrendingDown size="xs" />
+                            Custo Fixo
+                          </span>
+                          <span className="text-[11px] font-bold text-destructive/90">
+                            {formatCurrency(Number(service.material_cost))}
+                          </span>
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -430,15 +430,7 @@ function ServicesTabs() {
                       : "bg-card shadow-sm border-border/50",
                   )}
                 >
-                  <div className="w-24 sm:w-28 shrink-0 relative bg-muted/30 border-r border-border/50">
-                    {pkg.image_url ? (
-                      <img src={pkg.image_url} alt={pkg.name} className="absolute inset-0 w-full h-full object-cover" />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <ImageIcon className="w-8 h-8 text-muted-foreground/20" />
-                      </div>
-                    )}
-                  </div>
+
 
                   <div className="flex flex-col flex-1 justify-between p-4 min-w-0">
                     <div className="flex flex-col gap-2">
@@ -452,37 +444,37 @@ function ServicesTabs() {
                           </span>
                         )}
                       </div>
-                    <div className="flex items-center gap-1.5 mt-1 text-muted-foreground">
-                      <Cog size="xs" className="shrink-0" />
-                      <span className="text-xs font-medium truncate">
-                        {pkg.service?.name || "Sem serviço base"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2 pt-4 border-t border-border/40 mt-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                        <Layers size="xs" />
-                        {pkg.total_sessions} sessões
-                      </span>
-                      <span className="text-sm font-black text-foreground">
-                        {formatCurrency(Number(pkg.price))}
-                      </span>
-                    </div>
-
-                    {pkg.validity_days && Number(pkg.validity_days) > 0 ? (
-                      <div className="flex items-center justify-between bg-primary/5 rounded-lg p-2 -mx-2 -mb-2 mt-1 border border-primary/10">
-                        <span className="text-[11px] font-medium text-primary flex items-center gap-1.5">
-                          <CalendarDetail size="xs" />
-                          Validade
-                        </span>
-                        <span className="text-[11px] font-bold text-primary">
-                          {pkg.validity_days} dias
+                      <div className="flex items-center gap-1.5 mt-1 text-muted-foreground">
+                        <Cog size="xs" className="shrink-0" />
+                        <span className="text-xs font-medium truncate">
+                          {pkg.service?.name || "Sem serviço base"}
                         </span>
                       </div>
-                    ) : null}
-                  </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2 pt-4 border-t border-border/40 mt-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                          <Layers size="xs" />
+                          {pkg.total_sessions} sessões
+                        </span>
+                        <span className="text-sm font-black text-foreground">
+                          {formatCurrency(Number(pkg.price))}
+                        </span>
+                      </div>
+
+                      {pkg.validity_days && Number(pkg.validity_days) > 0 ? (
+                        <div className="flex items-center justify-between bg-primary/5 rounded-lg p-2 -mx-2 -mb-2 mt-1 border border-primary/10">
+                          <span className="text-[11px] font-medium text-primary flex items-center gap-1.5">
+                            <CalendarDetail size="xs" />
+                            Validade
+                          </span>
+                          <span className="text-[11px] font-bold text-primary">
+                            {pkg.validity_days} dias
+                          </span>
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               ))}

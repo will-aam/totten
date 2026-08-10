@@ -97,7 +97,17 @@ export function ProServices({ data, onChange }: any) {
           </div>
 
           {data.showPackages !== false && (
-            <div className="flex bg-background p-1 rounded-lg border border-border/50 w-full sm:w-2/3 ml-auto mr-0">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs text-muted-foreground">Subtítulo dos Pacotes</Label>
+                <Input
+                  className="h-8 text-sm"
+                  placeholder="Planos flexíveis para quem quer incluir o autocuidado na rotina."
+                  value={data.packagesSubtitle || ""}
+                  onChange={(e) => onChange({ ...data, packagesSubtitle: e.target.value })}
+                />
+              </div>
+              <div className="flex bg-background p-1 rounded-lg border border-border/50 w-full sm:w-2/3 ml-auto mr-0">
               <button
                 onClick={() => onChange({ ...data, packagesDisplay: "cards" })}
                 className={cn(
@@ -116,6 +126,7 @@ export function ProServices({ data, onChange }: any) {
               >
                 <List className="h-4 w-4" /> Em Pílulas
               </button>
+            </div>
             </div>
           )}
         </div>

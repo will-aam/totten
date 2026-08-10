@@ -29,3 +29,32 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+
+export async function POST(req: NextRequest) {
+  try {
+    const admin = await requireAuth();
+    const data = await req.json();
+
+    const template = await PackageTemplateService.createTemplate(
+      admin.organizationId,
+      data
+    );
+
+    return NextResponse.json({ success: true, template });
+  } catch (error: any) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    if (error.message === "MISSING_DATA") {
+      return NextResponse.json(
+        { error: "Dados obrigatórios incompletos." },
+        { status: 400 }
+      );
+    }
+    console.error("[PACKAGE_TEMPLATES_POST]", error);
+    return NextResponse.json(
+      { error: "Erro interno ao criar pacote" },
+      { status: 500 }
+    );
+  }
+}

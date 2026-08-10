@@ -462,10 +462,10 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                 </div>
 
                 {/* Categorias */}
-                {dbCategories.length > 0 && (
+                {dbCategories.length > 0 && dbServices.length > 0 && (
                   <div className="flex flex-wrap justify-center gap-2 mb-10 pb-6 border-b border-border/20">
                     <span className="text-sm font-semibold opacity-50 mr-2 flex items-center">Filtre por:</span>
-                    {dbCategories.map((cat: any) => (
+                    {dbCategories.filter((cat: any) => dbServices.some((srv: any) => srv.category_id === cat.id)).map((cat: any) => (
                       <div key={cat.id} className={cn("px-4 py-1.5 rounded-full text-sm font-medium border shadow-sm cursor-pointer hover:-translate-y-0.5 transition-transform", altBg, borderColor)}>
                         {cat.name}
                       </div>
@@ -556,15 +556,15 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                   <Package className="h-8 w-8 shrink-0" style={{ color: theme.primaryColor }} /> Pacotes e Planos
                 </h2>
                 <p className="text-base opacity-60 mb-10">
-                  Planos flexíveis para quem quer incluir o autocuidado na rotina.
+                  {servicesConfig.packagesSubtitle || "Planos flexíveis para quem quer incluir o autocuidado na rotina."}
                 </p>
 
                 {servicesConfig.packagesDisplay === "pills" ? (
                   <div className="flex flex-wrap gap-3">
                     {dbPackages.map((pkg: any) => (
                       <div key={pkg.id} className={cn("px-5 py-3 rounded-full flex items-center gap-3 border shadow-sm transition-transform hover:-translate-y-1", altBg, borderColor)}>
-                        <span className="font-bold text-sm">{pkg.name}</span>
-                        <span className="text-xs opacity-50 px-3 border-l" style={{ borderColor: theme.primaryColor }}>{pkg.total_sessions} sessões</span>
+                        <span className="font-bold text-sm whitespace-nowrap">{pkg.name}</span>
+                        <span className="text-xs opacity-50 px-3 border-l whitespace-nowrap" style={{ borderColor: theme.primaryColor }}>{pkg.total_sessions} sessões</span>
                         <span className="font-bold whitespace-nowrap" style={{ color: theme.primaryColor }}>R$ {Number(pkg.price).toFixed(2)}</span>
                       </div>
                     ))}
@@ -578,33 +578,43 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                           return (
                             <CarouselItem key={pkg.id} className="pl-4 md:pl-6 md:basis-1/2 lg:basis-1/3">
                               <div className={cn(
-                                "h-full rounded-2xl flex flex-col overflow-hidden relative shadow-sm border hover:shadow-md transition-all group/card", 
+                                "h-full rounded-2xl flex flex-col relative shadow-sm border hover:shadow-md transition-all group/card p-6", 
                                 isFeatured ? "border-2 ring-2 scale-[1.03]" : "bg-white border-black/10"
                               )}
                               style={isFeatured ? { borderColor: theme.primaryColor, boxShadow: `0 0 0 2px ${theme.primaryColor}40`, backgroundColor: theme.primaryColor + "08" } : {}}>
                                 
-                                {isFeatured && (
-                                  <div
-                                    className="absolute top-4 right-4 z-10 px-3 py-1 rounded-full text-xs font-bold text-white flex items-center gap-1.5 shadow-md"
-                                    style={{ backgroundColor: theme.primaryColor }}
-                                  >
-                                    <Star className="h-3 w-3" type="solid" /> Mais Popular
-                                  </div>
-                                )}
+                                {/* Header */}
+                                <div className="flex items-start justify-between gap-4 mb-4">
+                                  <h4 className="font-serif font-bold text-xl text-slate-900">{pkg.name}</h4>
+                                  {isFeatured && (
+                                    <div className="shrink-0">
+                                      <span className="px-2.5 py-1 rounded-full text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 flex items-center gap-1">
+                                        <Star className="h-3 w-3" type="solid" /> Mais Popular
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {/* Description */}
+                                <p className="text-sm text-slate-500 mb-6 flex-1">
+                                  {pkg.description || `${pkg.total_sessions} sessões inclusas. Ideal para quem quer manter a rotina de autocuidado com desconto.`}
+                                </p>
 
-                                {/* Conteúdo */}
-                                <div className={cn("p-6 flex flex-col flex-1", isFeatured ? "" : "bg-white")}>
-                                  <div className="flex-1">
-                                    <h4 className="font-bold text-xl mb-1 text-slate-900">{pkg.name}</h4>
-                                    <p className="text-sm text-slate-500 mb-4">{pkg.total_sessions} sessões inclusas</p>
-                                  </div>
-                                  
-                                  {/* Rodapé do Card */}
-                                  <div className="flex flex-col mt-4 pt-4 border-t border-slate-100">
-                                    <span className="font-bold text-2xl" style={{ color: theme.primaryColor }}>
-                                      R$ {Number(pkg.price).toFixed(2)}
-                                    </span>
-                                  </div>
+                                {/* Footer */}
+                                <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-100">
+                                  <span className="font-bold text-lg text-slate-900">
+                                    R$ {Number(pkg.price).toFixed(2)}
+                                  </span>
+                                  <button 
+                                    className="text-sm font-bold flex items-center gap-1.5 transition-all hover:opacity-80"
+                                    style={{ color: theme.primaryColor }}
+                                  >
+                                    Reservar 
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                      <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                      <path d="M12 5L19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                  </button>
                                 </div>
                               </div>
                             </CarouselItem>

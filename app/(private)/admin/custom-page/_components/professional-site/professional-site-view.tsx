@@ -324,10 +324,10 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
             </div>
 
             {/* Categorias */}
-            {dbCategories.length > 0 && (
+            {dbCategories.length > 0 && dbServices.length > 0 && (
               <div className="flex flex-wrap justify-center gap-1.5 mb-6 pb-4 border-b border-border/20">
                 <span className="text-[10px] font-semibold opacity-50 mr-1 flex items-center">Filtre por:</span>
-                {dbCategories.map((cat: any) => (
+                {dbCategories.filter((cat: any) => dbServices.some((srv: any) => srv.category_id === cat.id)).map((cat: any) => (
                   <div key={cat.id} className="px-3 py-1 rounded-full text-[10px] font-medium border shadow-sm bg-background" style={{ borderColor: theme.primaryColor + '30' }}>
                     {cat.name}
                   </div>
@@ -396,7 +396,7 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
                 <Star className="h-5 w-5" style={{ color: theme.primaryColor }} /> Pacotes
               </h2>
               <p className="text-xs opacity-80 max-w-2xl">
-                Planos flexíveis para quem quer incluir o autocuidado na rotina.
+                {services.packagesSubtitle || "Planos flexíveis para quem quer incluir o autocuidado na rotina."}
               </p>
             </div>
             
@@ -405,8 +405,8 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
                 <div className="flex flex-wrap justify-center gap-2">
                   {dbPackages.map((pkg: any) => (
                     <div key={pkg.id} className="px-3 py-2 rounded-full flex items-center gap-2 border shadow-sm bg-background">
-                      <span className="font-bold text-[10px]">{pkg.name}</span>
-                      <span className="text-[9px] opacity-50 px-2 border-l border-border">{pkg.total_sessions} sessões</span>
+                      <span className="font-bold text-[10px] whitespace-nowrap">{pkg.name}</span>
+                      <span className="text-[9px] opacity-50 px-2 border-l border-border whitespace-nowrap">{pkg.total_sessions} sessões</span>
                       <span className="font-bold whitespace-nowrap text-[10px]" style={{ color: theme.primaryColor }}>R$ {Number(pkg.price).toFixed(2)}</span>
                     </div>
                   ))}
@@ -419,25 +419,37 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
                         const isFeatured = services.featuredPackageName && pkg.name.toLowerCase().trim() === services.featuredPackageName.toLowerCase().trim();
                         return (
                           <CarouselItem key={pkg.id} className="pl-3 basis-[85%]">
-                            <div className={cn("h-full rounded-2xl flex flex-col overflow-hidden relative shadow-sm border bg-white group/card", isFeatured ? "border-2 scale-[1.03]" : "")} style={isFeatured ? { borderColor: theme.primaryColor, boxShadow: `0 0 0 2px ${theme.primaryColor}40`, backgroundColor: theme.primaryColor + "08" } : {}}>
-                              {isFeatured && (
-                                <div
-                                  className="absolute top-2 right-2 z-10 px-2 py-0.5 rounded-full text-[10px] font-bold text-white flex items-center gap-1 shadow-md"
-                                  style={{ backgroundColor: theme.primaryColor }}
+                            <div className={cn("h-full rounded-2xl flex flex-col relative shadow-sm border bg-white group/card p-4", isFeatured ? "border-2 scale-[1.03]" : "")} style={isFeatured ? { borderColor: theme.primaryColor, boxShadow: `0 0 0 2px ${theme.primaryColor}40`, backgroundColor: theme.primaryColor + "08" } : {}}>
+                              
+                              <div className="flex items-start justify-between gap-2 mb-2">
+                                <h4 className="font-serif font-bold text-[13px] text-slate-900">{pkg.name}</h4>
+                                {isFeatured && (
+                                  <div className="shrink-0">
+                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 flex items-center gap-1">
+                                      <Star className="h-2 w-2" type="solid" /> Mais Popular
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <p className="text-[11px] text-slate-500 mb-4 flex-1">
+                                {pkg.description || `${pkg.total_sessions} sessões inclusas. Ideal para quem quer manter a rotina de autocuidado com desconto.`}
+                              </p>
+
+                              <div className="flex items-center justify-between mt-auto pt-3 border-t border-slate-100">
+                                <span className="font-bold text-[14px] text-slate-900">
+                                  R$ {Number(pkg.price).toFixed(2)}
+                                </span>
+                                <span 
+                                  className="text-[11px] font-bold flex items-center gap-1"
+                                  style={{ color: theme.primaryColor }}
                                 >
-                                  <Star className="h-2 w-2" type="solid" /> Mais Popular
-                                </div>
-                              )}
-                              <div className="p-4 flex flex-col flex-1 mt-2">
-                                <div className="flex-1">
-                                  <h4 className="font-bold text-[13px] mb-1 text-slate-900">{pkg.name}</h4>
-                                  <p className="text-[11px] text-slate-500 mb-2">{pkg.total_sessions} sessões inclusas</p>
-                                </div>
-                                <div className="flex flex-col mt-2 pt-3 border-t border-slate-100">
-                                  <span className="font-bold text-[14px]" style={{ color: theme.primaryColor }}>
-                                    R$ {Number(pkg.price).toFixed(2)}
-                                  </span>
-                                </div>
+                                  Reservar 
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    <path d="M12 5L19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                  </svg>
+                                </span>
                               </div>
                             </div>
                           </CarouselItem>
