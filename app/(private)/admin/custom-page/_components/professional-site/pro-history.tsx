@@ -3,17 +3,31 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { compressImage } from "@/lib/image-utils";
-import { Link as LinkIcon, Upload, BookOpen } from "lucide-react";
+import { Link as LinkIcon, Upload, BookOpen, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { uploadImageAction } from "@/app/actions/upload-image";
+import { toast } from "sonner";
 
 export function ProHistory({ data, onChange }: { data: any, onChange: (data: any) => void }) {
+  const [isUploading, setIsUploading] = useState(false);
+
   const handleHistoryImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setIsUploading(true);
       try {
         const compressedBase64 = await compressImage(file, 1200);
-        onChange({ ...data, historyImage: compressedBase64 });
+        const res = await uploadImageAction(compressedBase64, "history");
+        if (res.success && res.url) {
+          onChange({ ...data, historyImage: res.url });
+        } else {
+          toast.error(res.error || "Erro ao fazer upload da imagem");
+        }
       } catch (error) {
         console.error("Erro ao processar imagem da história:", error);
+        toast.error("Erro inesperado ao processar imagem");
+      } finally {
+        setIsUploading(false);
       }
     }
   };
@@ -99,6 +113,27 @@ export function ProHistory({ data, onChange }: { data: any, onChange: (data: any
                     className="bg-background border-border/50 h-10 pl-9 focus-visible:ring-1"
                     placeholder="Cole o link da imagem aqui..."
                   />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="historyImageUpload" className="text-xs text-muted-foreground">Fazer Upload (Opção 2)</Label>
+                <div className="relative">
+                  <Input
+                    id="historyImageUpload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleHistoryImageUpload}
+                    disabled={isUploading}
+                    className="sr-only"
+                  />
+                  <Label
+                    htmlFor="historyImageUpload"
+                    className="flex items-center justify-center gap-2 w-full h-10 px-4 rounded-md border border-border/50 bg-background hover:bg-muted/50 cursor-pointer transition-colors text-sm font-medium"
+                  >
+                    {isUploading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : <Upload className="h-4 w-4 text-muted-foreground" />}
+                    {isUploading ? "Enviando..." : "Escolher arquivo do computador"}
+                  </Label>
                 </div>
               </div>
 

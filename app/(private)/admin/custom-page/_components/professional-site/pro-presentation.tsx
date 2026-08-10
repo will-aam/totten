@@ -5,17 +5,31 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { compressImage } from "@/lib/image-utils";
-import { User, Image as ImageIcon, Link as LinkIcon, Upload } from "lucide-react";
+import { User, Image as ImageIcon, Link as LinkIcon, Upload, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { uploadImageAction } from "@/app/actions/upload-image";
+import { toast } from "sonner";
 
 export function ProPresentation({ data, onChange }: { data: any, onChange: (data: any) => void }) {
+  const [isUploading, setIsUploading] = useState(false);
+
   const handleProHeroImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setIsUploading(true);
       try {
         const compressedBase64 = await compressImage(file, 1200);
-        onChange({ ...data, proHeroImage: compressedBase64 });
+        const res = await uploadImageAction(compressedBase64, "professional");
+        if (res.success && res.url) {
+          onChange({ ...data, proHeroImage: res.url });
+        } else {
+          toast.error(res.error || "Erro ao fazer upload da imagem");
+        }
       } catch (error) {
         console.error("Erro ao processar imagem da lateral:", error);
+        toast.error("Erro inesperado ao processar imagem");
+      } finally {
+        setIsUploading(false);
       }
     }
   };

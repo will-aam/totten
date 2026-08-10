@@ -33,8 +33,9 @@ import { SocialSettings } from "./_components/social-settings";
 import { AdditionalLinks } from "./_components/additional-links";
 import { ProfessionalSiteView } from "./_components/professional-site/professional-site-view";
 import { getCustomPageAction, updateCustomPageAction } from "@/app/actions/custom-page";
+import { uploadImageAction } from "@/app/actions/upload-image";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Loader } from "lucide-react";
 
 export default function CustomPage() {
   const [activeTab, setActiveTab] = useState<"link-bio" | "professional-site">("link-bio");
@@ -578,14 +579,26 @@ export default function CustomPage() {
   };
 
   const GlobalImagesBlock = () => {
+    const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+    const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+
     const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) {
+        setIsUploadingAvatar(true);
         try {
           const compressedBase64 = await compressImage(file, 500);
-          setProfile({ ...profile, image: compressedBase64 });
+          const res = await uploadImageAction(compressedBase64, "avatar");
+          if (res.success && res.url) {
+            setProfile({ ...profile, image: res.url });
+          } else {
+            toast.error(res.error || "Erro ao fazer upload da imagem");
+          }
         } catch (error) {
           console.error("Erro ao processar imagem de perfil:", error);
+          toast.error("Erro inesperado ao processar imagem.");
+        } finally {
+          setIsUploadingAvatar(false);
         }
       }
     };
@@ -593,11 +606,20 @@ export default function CustomPage() {
     const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) {
+        setIsUploadingBanner(true);
         try {
           const compressedBase64 = await compressImage(file, 1200);
-          setProfile({ ...profile, bannerImage: compressedBase64 });
+          const res = await uploadImageAction(compressedBase64, "banner");
+          if (res.success && res.url) {
+            setProfile({ ...profile, bannerImage: res.url });
+          } else {
+            toast.error(res.error || "Erro ao fazer upload da imagem");
+          }
         } catch (error) {
           console.error("Erro ao processar imagem de banner:", error);
+          toast.error("Erro inesperado ao processar banner.");
+        } finally {
+          setIsUploadingBanner(false);
         }
       }
     };
@@ -636,7 +658,12 @@ export default function CustomPage() {
               ) : (
                 <Camera className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
               )}
-              <input type="file" accept="image/png, image/jpeg" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={handleAvatarUpload} />
+              {isUploadingAvatar && (
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-full z-20">
+                  <Loader2 className="w-6 h-6 text-white animate-spin" />
+                </div>
+              )}
+              <input type="file" accept="image/png, image/jpeg" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={handleAvatarUpload} disabled={isUploadingAvatar} />
             </div>
             <div className="flex flex-col">
               <p className="font-medium text-xs text-foreground">Avatar (Perfil)</p>
@@ -661,7 +688,12 @@ export default function CustomPage() {
               ) : (
                 <ImageIcon className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
               )}
-              <input type="file" accept="image/png, image/jpeg" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={handleBannerUpload} />
+              {isUploadingBanner && (
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-xl z-20">
+                  <Loader2 className="w-6 h-6 text-white animate-spin" />
+                </div>
+              )}
+              <input type="file" accept="image/png, image/jpeg" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={handleBannerUpload} disabled={isUploadingBanner} />
             </div>
             <div className="flex flex-col">
               <p className="font-medium text-xs text-foreground">Imagem de Capa (Banner)</p>
