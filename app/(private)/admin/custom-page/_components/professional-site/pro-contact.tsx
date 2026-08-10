@@ -1,12 +1,89 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Pin, Phone, Search, Whatsapp, Clock } from "@boxicons/react";
 import { Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { getSelfServiceSettingsAction } from "@/app/actions/settings";
+
+function RulesSummaryPreview({ data, onChange }: any) {
+  const [rulesData, setRulesData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchRules() {
+      const response = await getSelfServiceSettingsAction();
+      if (response.success) {
+        setRulesData(response.data);
+      }
+      setIsLoading(false);
+    }
+    fetchRules();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" /> Carregando horários...
+      </div>
+    );
+  }
+
+  const rules = rulesData;
+  if (!rules || !rules.schedule || rules.schedule.length === 0) {
+    return (
+      <div className="text-sm text-muted-foreground">
+        Nenhum horário configurado em Regras e Horários.
+      </div>
+    );
+  }
+
+  const referenceValues = rules.schedule.find((s: any) => s.isOpen);
+  const openDays = rules.schedule.filter((s: any) => s.isOpen).map((s: any) => s.dayOfWeek);
+
+  if (openDays.length === 0) {
+    return (
+      <div className="text-sm text-muted-foreground">
+        Fechado todos os dias configurado em Regras e Horários.
+      </div>
+    );
+  }
+
+  const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+  const summaryDays = openDays.map((d: number) => dayNames[d]).join(", ");
+  const hasBreak = !!referenceValues?.breakStart;
+
+  const summaryString = referenceValues
+    ? `Das ${referenceValues.openTime || "--:--"} às ${referenceValues.closeTime || "--:--"}${hasBreak && referenceValues.breakStart ? `, intervalo de ${referenceValues.breakStart} às ${referenceValues.breakEnd}` : ""}, funcionando de ${summaryDays}.`
+    : "Fechado todos os dias.";
+
+  // Update data.businessHours in background if different, so the frontend gets the correct text
+  if (data.businessHours !== summaryString && summaryString) {
+    // Timeout to avoid React state update during render warning
+    setTimeout(() => {
+      onChange({ ...data, businessHours: summaryString });
+    }, 0);
+  }
+
+  return (
+    <div className="bg-background border rounded-lg p-3 text-sm flex flex-col gap-2">
+      <p className="font-semibold text-foreground/80">Resumo configurado:</p>
+      <p className="text-muted-foreground leading-snug">
+        {summaryString}
+      </p>
+      <div className="mt-2">
+        <Link href="/admin/self-service" className="text-primary hover:underline text-xs font-medium">
+          Editar em Regras e Horários
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 export function ProContact({ data, onChange }: any) {
   const [cep, setCep] = useState("");
@@ -15,12 +92,12 @@ export function ProContact({ data, onChange }: any) {
   const handleSearchCep = async () => {
     const cleanCep = cep.replace(/\D/g, "");
     if (cleanCep.length !== 8) return;
-    
+
     setIsSearchingCep(true);
     try {
       const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
       const result = await response.json();
-      
+
       if (!result.erro) {
         const fullAddress = `${result.logradouro}, Número, ${result.bairro}, ${result.localidade} - ${result.uf}, ${result.cep}`;
         onChange({ ...data, address: fullAddress });
@@ -56,9 +133,9 @@ export function ProContact({ data, onChange }: any) {
               className="bg-background max-w-[200px]"
               maxLength={9}
             />
-            <Button 
-              variant="secondary" 
-              onClick={handleSearchCep} 
+            <Button
+              variant="secondary"
+              onClick={handleSearchCep}
               disabled={isSearchingCep || cep.replace(/\D/g, "").length !== 8}
             >
               {isSearchingCep ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
@@ -100,24 +177,27 @@ export function ProContact({ data, onChange }: any) {
         <div className="w-full h-px bg-border/50" />
 
         {/* HORÁRIO */}
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="businessHours" className="text-foreground font-medium flex items-center gap-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            Horário de Funcionamento
-          </Label>
-          <Input
-            id="businessHours"
-            value={data.businessHours || ""}
-            onChange={(e) => onChange({ ...data, businessHours: e.target.value })}
-            className="bg-background border-border/50 h-11 focus-visible:ring-1"
-            placeholder="Ex: Segunda a Sábado, 9h às 20h"
-          />
+        <div className="flex flex-col gap-4 p-5 border border-border/50 rounded-xl bg-muted/10">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <Label className="text-foreground font-medium flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              Horário de Funcionamento
+            </Label>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Exibir no site?</span>
+              <Switch
+                checked={data.showBusinessHours !== false}
+                onCheckedChange={(c) => onChange({ ...data, showBusinessHours: c })}
+              />
+            </div>
+          </div>
+
+          <RulesSummaryPreview data={data} onChange={onChange} />
         </div>
 
         <div className="w-full h-px bg-border/50" />
 
         <h4 className="font-medium text-sm flex items-center gap-2">
-          <Phone className="h-4 w-4 text-muted-foreground" />
           Outras Formas de Contato
         </h4>
 

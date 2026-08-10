@@ -180,7 +180,7 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
           {/* ── HERO ── */}
           {isBlogLayout ? (
             <div className="px-6 sm:px-10 relative z-10 flex flex-col lg:flex-row gap-10 lg:gap-16 max-w-7xl mx-auto w-full pb-14 mt-8 md:mt-16 items-center">
-              
+
               {/* Mobile Image (rendered on top for mobile, hidden on lg) */}
               {displayImage && (
                 <div className="w-full relative lg:hidden mb-2 animate-fade-up" style={{ animationDelay: '0.1s' }}>
@@ -205,53 +205,53 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
               )}
 
               <div className={cn(
-                "flex flex-col w-full lg:w-1/2", 
+                "flex flex-col w-full lg:w-1/2",
                 theme.headerStyle === "center" ? "text-center items-center lg:text-left lg:items-start" : "text-left items-start"
               )}>
-                 {/* Badge Personalizável */}
-                 {presentation.badgeText && (
-                   <div className={cn(
-                     "inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-6 border w-fit animate-fade-up",
-                     isDark ? "bg-white/10 border-white/20 text-white/80" : "bg-black/5 border-black/10 text-black/80"
-                   )}>
-                     {presentation.badgeText}
-                   </div>
-                 )}
-                 
-                 <h1 className="font-bold text-4xl sm:text-5xl md:text-6xl lg:text-[4rem] leading-[1.1] drop-shadow-sm mt-1 animate-fade-up" style={{ animationDelay: '0.1s' }}>
-                   {presentation.headline || org.name}
-                 </h1>
-                 <p className="text-base sm:text-lg opacity-80 mt-6 font-medium drop-shadow-sm max-w-xl leading-relaxed animate-fade-up" style={{ animationDelay: '0.2s' }}>
-                   {presentation.subheadline || "Subtítulo de apoio ou missão do seu negócio."}
-                 </p>
+                {/* Badge Personalizável */}
+                {presentation.badgeText && (
+                  <div className={cn(
+                    "inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-6 border w-fit animate-fade-up",
+                    isDark ? "bg-white/10 border-white/20 text-white/80" : "bg-black/5 border-black/10 text-black/80"
+                  )}>
+                    {presentation.badgeText}
+                  </div>
+                )}
 
-                 {/* CTAs */}
-                 <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-4 w-full mt-10 animate-fade-up", theme.headerStyle === "center" ? "mx-auto max-w-lg lg:mx-0 lg:max-w-md" : "max-w-md")} style={{ animationDelay: '0.3s' }}>
-                   {presentation.ctaPrimaryText && (
-                     <a href={bookingUrl} className="w-full px-8 py-4 rounded-full text-base font-bold shadow-lg text-white hover:scale-105 transition-transform flex items-center justify-center text-center gap-2" style={{ backgroundColor: theme.primaryColor }}>
-                       {presentation.ctaPrimaryText}
-                     </a>
-                   )}
-                   {presentation.ctaSecondaryText && (
-                     <a href="#servicos" className={cn("w-full px-8 py-4 rounded-full text-base font-bold border hover:scale-105 transition-transform flex items-center justify-center text-center gap-2", isDark ? "border-white/20 text-white hover:bg-white/10" : "border-black/15 text-current hover:bg-black/5")}>
-                       {presentation.ctaSecondaryText}
-                     </a>
-                   )}
-                 </div>
-                 
-                 {/* Highlights */}
-                 {(presentation.highlight1 || presentation.highlight2 || presentation.highlight3) && (
-                   <div className="flex flex-wrap gap-x-6 gap-y-3 mt-10 animate-fade-up" style={{ animationDelay: '0.4s' }}>
-                     {[presentation.highlight1, presentation.highlight2, presentation.highlight3].filter(Boolean).map((highlight, i) => (
-                       <div key={i} className="flex items-center gap-2 text-sm opacity-80 font-medium">
-                         <div className="w-5 h-5 rounded-full flex items-center justify-center border border-current opacity-70">
-                           <CheckCircle className="w-3.5 h-3.5" />
-                         </div>
-                         {highlight}
-                       </div>
-                     ))}
-                   </div>
-                 )}
+                <h1 className="font-bold text-4xl sm:text-5xl md:text-6xl lg:text-[4rem] leading-[1.1] drop-shadow-sm mt-1 animate-fade-up" style={{ animationDelay: '0.1s' }}>
+                  {presentation.headline || org.name}
+                </h1>
+                <p className="text-base sm:text-lg opacity-80 mt-6 font-medium drop-shadow-sm max-w-xl leading-relaxed animate-fade-up" style={{ animationDelay: '0.2s' }}>
+                  {presentation.subheadline || "Subtítulo de apoio ou missão do seu negócio."}
+                </p>
+
+                {/* CTAs */}
+                <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-4 w-full mt-10 animate-fade-up", theme.headerStyle === "center" ? "mx-auto max-w-lg lg:mx-0 lg:max-w-md" : "max-w-md")} style={{ animationDelay: '0.3s' }}>
+                  {presentation.ctaPrimaryText && (
+                    <a href={bookingUrl} className="w-full px-8 py-4 rounded-full text-base font-bold shadow-lg text-white hover:scale-105 transition-transform flex items-center justify-center text-center gap-2" style={{ backgroundColor: theme.primaryColor }}>
+                      {presentation.ctaPrimaryText}
+                    </a>
+                  )}
+                  {presentation.ctaSecondaryText && (
+                    <a href="#servicos" className={cn("w-full px-8 py-4 rounded-full text-base font-bold border hover:scale-105 transition-transform flex items-center justify-center text-center gap-2", isDark ? "border-white/20 text-white hover:bg-white/10" : "border-black/15 text-current hover:bg-black/5")}>
+                      {presentation.ctaSecondaryText}
+                    </a>
+                  )}
+                </div>
+
+                {/* Highlights */}
+                {(presentation.highlight1 || presentation.highlight2 || presentation.highlight3) && (
+                  <div className="flex flex-wrap gap-x-6 gap-y-3 mt-10 animate-fade-up" style={{ animationDelay: '0.4s' }}>
+                    {[presentation.highlight1, presentation.highlight2, presentation.highlight3].filter(Boolean).map((highlight, i) => (
+                      <div key={i} className="flex items-center gap-2 text-sm opacity-80 font-medium">
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center border border-current opacity-70">
+                          <CheckCircle className="w-3.5 h-3.5" />
+                        </div>
+                        {highlight}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Desktop Image (rendered on right for lg, hidden on mobile) */}
@@ -510,14 +510,14 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                                       </div>
                                     )}
                                   </div>
-                                  
+
                                   {/* Conteúdo */}
                                   <div className="p-6 flex flex-col flex-1 bg-white">
                                     <div className="flex-1">
                                       <h4 className="font-bold text-lg mb-3 text-slate-900">{srv.name}</h4>
                                       {srv.description && <p className="text-sm text-slate-600 mb-4 line-clamp-3 leading-relaxed">{srv.description}</p>}
                                     </div>
-                                    
+
                                     {/* Rodapé do Card */}
                                     <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-100">
                                       <div className="flex items-center gap-1.5 font-bold text-sm text-slate-800">
@@ -531,7 +531,7 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                               </CarouselItem>
                             ))}
                           </CarouselContent>
-                          
+
                           {/* Controles do Carrossel (Visíveis no Desktop via hover) */}
                           {dbServices.length > 2 && (
                             <div className="hidden md:block opacity-0 group-hover/carousel:opacity-100 transition-opacity">
@@ -578,11 +578,11 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                           return (
                             <CarouselItem key={pkg.id} className="pl-4 md:pl-6 md:basis-1/2 lg:basis-1/3">
                               <div className={cn(
-                                "h-full rounded-2xl flex flex-col relative shadow-sm border hover:shadow-md transition-all group/card p-6", 
+                                "h-full rounded-2xl flex flex-col relative shadow-sm border hover:shadow-md transition-all group/card p-6",
                                 isFeatured ? "border-2 ring-2 scale-[1.03]" : "bg-white border-black/10"
                               )}
-                              style={isFeatured ? { borderColor: theme.primaryColor, boxShadow: `0 0 0 2px ${theme.primaryColor}40`, backgroundColor: theme.primaryColor + "08" } : {}}>
-                                
+                                style={isFeatured ? { borderColor: theme.primaryColor, boxShadow: `0 0 0 2px ${theme.primaryColor}40`, backgroundColor: theme.primaryColor + "08" } : {}}>
+
                                 {/* Header */}
                                 <div className="flex items-start justify-between gap-4 mb-4">
                                   <h4 className="font-serif font-bold text-xl text-slate-900">{pkg.name}</h4>
@@ -594,7 +594,7 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                                     </div>
                                   )}
                                 </div>
-                                
+
                                 {/* Description */}
                                 <p className="text-sm text-slate-500 mb-6 flex-1">
                                   {pkg.description || `${pkg.total_sessions} sessões inclusas. Ideal para quem quer manter a rotina de autocuidado com desconto.`}
@@ -605,14 +605,14 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                                   <span className="font-bold text-lg text-slate-900">
                                     R$ {Number(pkg.price).toFixed(2)}
                                   </span>
-                                  <button 
+                                  <button
                                     className="text-sm font-bold flex items-center gap-1.5 transition-all hover:opacity-80"
                                     style={{ color: theme.primaryColor }}
                                   >
-                                    Reservar 
+                                    Reservar
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                      <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                      <path d="M12 5L19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                      <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                      <path d="M12 5L19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                     </svg>
                                   </button>
                                 </div>
@@ -621,7 +621,7 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                           );
                         })}
                       </CarouselContent>
-                      
+
                       {/* Controles do Carrossel (Visíveis no Desktop via hover) */}
                       {dbPackages.length > 2 && (
                         <div className="hidden md:block opacity-0 group-hover/carousel:opacity-100 transition-opacity">
@@ -690,7 +690,7 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                   </p>
 
                   <div className="flex flex-col gap-6">
-                    {contact.businessHours && (
+                    {(contact.businessHours && contact.showBusinessHours !== false) && (
                       <div className="flex items-center gap-4">
                         <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shrink-0", altBg)}>
                           <Clock className="h-6 w-6" style={{ color: theme.primaryColor }} />
@@ -838,46 +838,7 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
             </div>
           </div>
 
-          {/* ── NEWSLETTER ── */}
-          <div className="px-6 sm:px-10 py-14">
-            <div className="max-w-5xl mx-auto w-full">
-              <div
-                className="rounded-3xl p-10 md:p-14 flex flex-col md:flex-row items-center justify-between gap-8 overflow-hidden relative"
-                style={{ backgroundColor: theme.primaryColor }}
-              >
-                <div className="absolute inset-0 opacity-10" style={{ background: "radial-gradient(circle at 70% 50%, white 0%, transparent 70%)" }} />
-                <div className="relative z-10 text-white">
-                  <h2 className="font-bold text-2xl md:text-3xl mb-2">Receba novidades e promoções</h2>
-                  <p className="text-base opacity-80">Assine e fique por dentro de ofertas exclusivas e dicas de bem-estar.</p>
-                </div>
-                <div className="relative z-10 w-full md:w-auto shrink-0">
-                  {newsletterSent ? (
-                    <div className="flex items-center gap-3 text-white font-semibold text-lg">
-                      <CheckCircle className="h-7 w-7" /> Obrigado por assinar!
-                    </div>
-                  ) : (
-                    <form onSubmit={handleNewsletter} className="flex gap-3 w-full md:w-auto">
-                      <input
-                        type="email"
-                        required
-                        value={newsletterEmail}
-                        onChange={(e) => setNewsletterEmail(e.target.value)}
-                        placeholder="seu@email.com"
-                        className="h-12 rounded-xl px-4 text-sm bg-white/20 text-white placeholder:text-white/60 border border-white/30 focus:outline-none focus:bg-white/30 transition w-full md:w-64"
-                      />
-                      <button
-                        type="submit"
-                        className="h-12 px-6 rounded-xl bg-white font-bold text-sm hover:bg-white/90 transition-colors shrink-0"
-                        style={{ color: theme.primaryColor }}
-                      >
-                        Assinar
-                      </button>
-                    </form>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+
 
           {/* ── RODAPÉ ── */}
           <footer className="w-full bg-black text-white pt-16 pb-8 px-6 sm:px-10">
@@ -922,16 +883,9 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                     </button>
                   </div>
                 </div>
-                <div>
-                  <h4 className="font-bold text-lg mb-4">Agendamento Online</h4>
-                  <p className="text-sm opacity-60 mb-4">Agende seu horário de forma rápida e prática, 24h por dia.</p>
-                  <a
-                    href={bookingUrl}
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-black bg-white hover:bg-gray-100 transition-colors"
-                  >
-                    Agendar Horário
-                  </a>
-                </div>
+
+
+
               </div>
 
               <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs opacity-40">

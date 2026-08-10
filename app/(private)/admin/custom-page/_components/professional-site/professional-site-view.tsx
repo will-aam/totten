@@ -456,12 +456,12 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
         )}
 
         {/* CONTACT SECTION */}
-        {(contact.address || contact.phone || contact.whatsapp || contact.businessHours) && (
+        {(contact.address || contact.phone || contact.whatsapp || (contact.businessHours && contact.showBusinessHours !== false)) && (
           <div className="px-6 py-6">
             <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
               <Pin className="h-5 w-5" /> Contato
             </h2>
-            {contact.businessHours && <p className="text-xs opacity-60 mb-2">🕐 {contact.businessHours}</p>}
+            {(contact.businessHours && contact.showBusinessHours !== false) && <p className="text-xs opacity-60 mb-2">🕐 {contact.businessHours}</p>}
             {(contact.whatsapp || contact.phone) && <p className="text-sm opacity-80 mb-1">📱 {contact.whatsapp || contact.phone}</p>}
             {contact.address && <p className="text-sm opacity-80 mb-4">📍 {contact.address}</p>}
           </div>

@@ -275,7 +275,7 @@ function MobileWeeklySchedule({ form }: { form: any }) {
   // Para mostrar nos campos de edição em lote, usamos os valores do primeiro dia selecionado
   const referenceDayIndex = selectedDays.length > 0 ? selectedDays[0] : 1;
   const referenceValues = form.watch(`schedule.${referenceDayIndex}`);
-  
+
   const [hasBreak, setHasBreak] = useState(!!referenceValues?.breakStart);
 
   // Sincroniza sempre que os valores de referência mudarem, mas só para os selecionados
@@ -340,17 +340,17 @@ function MobileWeeklySchedule({ form }: { form: any }) {
   };
 
   // Calcula o resumo
-  const summaryDays = selectedDays.length === 7 
+  const summaryDays = selectedDays.length === 7
     ? "Todos os dias"
-    : selectedDays.length === 0 
-      ? "Nenhum dia selecionado" 
+    : selectedDays.length === 0
+      ? "Nenhum dia selecionado"
       : selectedDays.map(id => DAYS_OF_WEEK.find(d => d.id === id)?.short).join(", ");
-      
+
   return (
     <div className="flex flex-col gap-6 w-full">
       <div className="space-y-3">
         <h3 className="text-sm font-medium text-foreground">Dias de Funcionamento</h3>
-        
+
         {/* Botoes de dia */}
         <div className="flex flex-wrap gap-2">
           {DAYS_OF_WEEK.map((day) => {
@@ -362,7 +362,7 @@ function MobileWeeklySchedule({ form }: { form: any }) {
                 onClick={() => toggleDay(day.id)}
                 className={cn(
                   "flex h-12 flex-1 items-center justify-center rounded-xl border text-sm font-medium transition-all min-w-[3.5rem] px-2",
-                  isSelected 
+                  isSelected
                     ? "bg-primary text-primary-foreground border-primary shadow-sm"
                     : "bg-background text-muted-foreground border-border hover:bg-muted"
                 )}
@@ -399,17 +399,17 @@ function MobileWeeklySchedule({ form }: { form: any }) {
           <div className="flex gap-4">
             <div className="space-y-2 flex-1">
               <span className="text-xs text-muted-foreground">Abertura</span>
-              <TimeSelect 
-                value={referenceValues?.openTime} 
-                onChange={(v) => handleBatchChange("openTime", v)} 
+              <TimeSelect
+                value={referenceValues?.openTime}
+                onChange={(v) => handleBatchChange("openTime", v)}
                 disabled={selectedDays.length === 0}
               />
             </div>
             <div className="space-y-2 flex-1">
               <span className="text-xs text-muted-foreground">Fechamento</span>
-              <TimeSelect 
-                value={referenceValues?.closeTime} 
-                onChange={(v) => handleBatchChange("closeTime", v)} 
+              <TimeSelect
+                value={referenceValues?.closeTime}
+                onChange={(v) => handleBatchChange("closeTime", v)}
                 disabled={selectedDays.length === 0}
               />
             </div>
@@ -419,8 +419,8 @@ function MobileWeeklySchedule({ form }: { form: any }) {
         <div className="space-y-4 pt-2 border-t">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold">Intervalo / Pausa</h3>
-            <Switch 
-              checked={hasBreak} 
+            <Switch
+              checked={hasBreak}
               onCheckedChange={(checked) => {
                 setHasBreak(checked);
                 if (!checked) {
@@ -440,16 +440,16 @@ function MobileWeeklySchedule({ form }: { form: any }) {
               <div className="flex gap-4">
                 <div className="space-y-2 flex-1">
                   <span className="text-xs text-muted-foreground">Início</span>
-                  <TimeSelect 
-                    value={referenceValues?.breakStart} 
-                    onChange={(v) => handleBatchChange("breakStart", v)} 
+                  <TimeSelect
+                    value={referenceValues?.breakStart}
+                    onChange={(v) => handleBatchChange("breakStart", v)}
                   />
                 </div>
                 <div className="space-y-2 flex-1">
                   <span className="text-xs text-muted-foreground">Fim</span>
-                  <TimeSelect 
-                    value={referenceValues?.breakEnd} 
-                    onChange={(v) => handleBatchChange("breakEnd", v)} 
+                  <TimeSelect
+                    value={referenceValues?.breakEnd}
+                    onChange={(v) => handleBatchChange("breakEnd", v)}
                   />
                 </div>
               </div>
@@ -457,14 +457,14 @@ function MobileWeeklySchedule({ form }: { form: any }) {
               <div className="space-y-3 pt-2">
                 <div className="space-y-1">
                   <span className="text-xs text-muted-foreground">Motivo do intervalo (Ex: Almoço, Café)</span>
-                  <Input 
+                  <Input
                     value={referenceValues?.breakReason || ""}
                     onChange={(e) => handleBatchChange("breakReason", e.target.value)}
                   />
                 </div>
 
                 <div className="flex items-center gap-2 pt-1">
-                  <Switch 
+                  <Switch
                     checked={referenceValues?.breakVisibleToClient || false}
                     onCheckedChange={(c) => handleBatchChange("breakVisibleToClient", c)}
                   />
@@ -480,7 +480,7 @@ function MobileWeeklySchedule({ form }: { form: any }) {
         <p className="font-semibold mb-1">Resumo do funcionamento:</p>
         <p className="opacity-90">
           Das {referenceValues?.openTime || "--:--"} às {referenceValues?.closeTime || "--:--"}
-          {hasBreak && referenceValues?.breakStart ? `, intervalo de ${referenceValues.breakStart} às ${referenceValues.breakEnd}` : ""}, 
+          {hasBreak && referenceValues?.breakStart ? `, intervalo de ${referenceValues.breakStart} às ${referenceValues.breakEnd}` : ""},
           funcionando de {summaryDays}.
         </p>
       </div>
@@ -573,7 +573,7 @@ export function RulesAndHoursForm({ initialData }: RulesAndHoursFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        
+
         {/* Padrão semanal */}
         <Card className="border-none shadow-none bg-transparent sm:bg-card">
           <CardHeader className="flex flex-col gap-4 px-0 sm:px-6 sm:flex-row sm:items-start sm:justify-between">
@@ -612,11 +612,11 @@ export function RulesAndHoursForm({ initialData }: RulesAndHoursFormProps) {
                     Limite máximo de dias para frente que um cliente pode reservar.
                   </CardDescription>
                   <FormControl>
-                    <Input 
-                      type="number" 
+                    <Input
+                      type="number"
                       min="1"
-                      className="rounded-xl bg-muted/40 border-none h-11 font-bold max-w-xs" 
-                      {...field} 
+                      className="rounded-xl bg-muted/40 border-none h-11 font-bold max-w-xs"
+                      {...field}
                     />
                   </FormControl>
                 </FormItem>
@@ -633,10 +633,10 @@ export function RulesAndHoursForm({ initialData }: RulesAndHoursFormProps) {
                     Mensagem exibida ao cliente na tela de agendamento.
                   </CardDescription>
                   <FormControl>
-                    <Textarea 
-                      className="rounded-xl bg-muted/40 border-none resize-none font-medium min-h-[100px]" 
+                    <Textarea
+                      className="rounded-xl bg-muted/40 border-none resize-none font-medium min-h-[100px]"
                       placeholder="Ex: Bem-vindo, aqui você pode agendar seu horário..."
-                      {...field} 
+                      {...field}
                     />
                   </FormControl>
                 </FormItem>
