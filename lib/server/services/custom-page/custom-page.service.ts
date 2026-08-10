@@ -9,7 +9,20 @@ export class CustomPageService {
 
     const linkBio = await prisma.linkBio.findUnique({
       where: { organization_id: organizationId },
-      include: { organization: { select: { slug: true, name: true } } }
+      include: { 
+        organization: { 
+          select: { 
+            slug: true, 
+            name: true,
+            settings: {
+              select: {
+                phone_whatsapp: true,
+                phone_landline: true
+              }
+            }
+          } 
+        } 
+      }
     });
 
     return linkBio;

@@ -54,7 +54,7 @@ const PLATFORMS = [
   },
 ];
 
-export function SocialSettings({ data, onChange }: any) {
+export function SocialSettings({ data, onChange, globalContact }: any) {
   // Configurações padrão caso não existam no estado
   const position = data.position || "top";
   const size = data.size || "medium";
@@ -195,14 +195,20 @@ export function SocialSettings({ data, onChange }: any) {
                     </span>
                     <Input
                       id={platform.id}
-                      value={data.values[platform.id] || ""}
+                      value={platform.id === "whatsapp" ? globalContact?.whatsapp || "" : data.values[platform.id] || ""}
                       onChange={(e) =>
                         handleValueChange(platform.id, e.target.value)
                       }
+                      disabled={platform.id === "whatsapp"}
                       className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
                       placeholder={platform.placeholder}
                     />
                   </div>
+                  {platform.id === "whatsapp" && (
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Editado em Configurações &gt; Dados da Empresa
+                    </p>
+                  )}
                 </div>
               ),
             )

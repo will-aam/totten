@@ -35,7 +35,7 @@ const getYouTubeEmbedUrl = (url: string) => {
   return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : null;
 };
 
-export function ProfessionalSiteView({ profile, initialData }: { profile?: any; initialData?: any }) {
+export function ProfessionalSiteView({ profile, initialData, globalContact }: { profile?: any; initialData?: any; globalContact?: any }) {
   const [activeStepId, setActiveStepId] = useState<string | null>(null);
   const [showMobilePreview, setShowMobilePreview] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -115,7 +115,7 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
     { id: "history", title: "Sobre", component: <ProHistory data={history} onChange={setHistory} /> },
     { id: "services", title: "Serviços", component: <ProServices data={services} onChange={setServices} /> },
     { id: "media", title: "Galeria e Mídia", component: <ProMedia data={media} onChange={setMedia} /> },
-    { id: "contact", title: "Contato", component: <ProContact data={contact} onChange={setContact} /> },
+    { id: "contact", title: "Contato", component: <ProContact data={contact} onChange={setContact} globalContact={globalContact} /> },
     { id: "theme", title: "Aparência", component: <ProTheme data={theme} onChange={setTheme} /> },
   ];
 

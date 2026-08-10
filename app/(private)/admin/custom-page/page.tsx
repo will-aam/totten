@@ -102,6 +102,7 @@ export default function CustomPage() {
   const [links, setLinks] = useState([
     { id: "1", title: "Agendar Horário", url: "" },
   ]);
+  const [globalContact, setGlobalContact] = useState({ whatsapp: "", phone: "" });
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -123,6 +124,12 @@ export default function CustomPage() {
               image: data.profile_image_url || prev.image,
               bio: data.bio_text || prev.bio
             }));
+            if (data.organization.settings) {
+              setGlobalContact({
+                whatsapp: data.organization.settings.phone_whatsapp || "",
+                phone: data.organization.settings.phone_landline || ""
+              });
+            }
           } else if (data.profile_image_url || data.bio_text) {
             setProfile(prev => ({
               ...prev,
@@ -264,7 +271,7 @@ export default function CustomPage() {
     {
       id: "social",
       title: "Redes Sociais",
-      component: <SocialSettings data={socials} onChange={setSocials} />,
+      component: <SocialSettings data={socials} onChange={setSocials} globalContact={globalContact} />,
     },
     {
       id: "links",
@@ -849,7 +856,7 @@ export default function CustomPage() {
           </TabsContent>
 
           <TabsContent value="professional-site" className="mt-0">
-            <ProfessionalSiteView profile={profile} initialData={proSiteConfig} />
+            <ProfessionalSiteView profile={profile} initialData={proSiteConfig} globalContact={globalContact} />
           </TabsContent>
         </Tabs>
       </div>

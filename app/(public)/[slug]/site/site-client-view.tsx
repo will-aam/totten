@@ -44,8 +44,8 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterSent, setNewsletterSent] = useState(false);
 
-  // WhatsApp do contato (preferência: campo whatsapp, fallback: phone)
-  const whatsappRaw = contact.whatsapp || contact.phone || "";
+  // WhatsApp do contato (preferência: global settings, fallback: campo whatsapp, fallback: phone)
+  const whatsappRaw = org.settings?.phone_whatsapp || contact.whatsapp || contact.phone || "";
   const whatsappNumber = whatsappRaw.replace(/\D/g, "");
   const whatsappUrl = whatsappNumber ? `https://wa.me/55${whatsappNumber}` : "#";
 
@@ -725,14 +725,14 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                       </div>
                     )}
 
-                    {(contact.whatsapp || contact.phone) && (
+                    {(org.settings?.phone_whatsapp || org.settings?.phone_landline || contact.whatsapp || contact.phone) && (
                       <div className="flex items-center gap-4">
                         <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shrink-0", altBg)}>
                           <Phone className="h-6 w-6" style={{ color: theme.primaryColor }} />
                         </div>
                         <div>
                           <p className="text-xs font-bold uppercase tracking-wider opacity-50 mb-0.5">Telefone / WhatsApp</p>
-                          <p className="text-base font-medium">{contact.whatsapp || contact.phone}</p>
+                          <p className="text-base font-medium">{org.settings?.phone_whatsapp || org.settings?.phone_landline || contact.whatsapp || contact.phone}</p>
                         </div>
                       </div>
                     )}

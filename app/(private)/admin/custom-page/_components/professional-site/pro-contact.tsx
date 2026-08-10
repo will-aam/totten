@@ -85,7 +85,7 @@ function RulesSummaryPreview({ data, onChange }: any) {
   );
 }
 
-export function ProContact({ data, onChange }: any) {
+export function ProContact({ data, onChange, globalContact }: any) {
   const [cep, setCep] = useState("");
   const [isSearchingCep, setIsSearchingCep] = useState(false);
 
@@ -208,22 +208,25 @@ export function ProContact({ data, onChange }: any) {
             </Label>
             <Input
               id="whatsapp"
-              value={data.whatsapp || ""}
+              value={globalContact?.whatsapp || ""}
               onChange={(e) => onChange({ ...data, whatsapp: e.target.value })}
+              disabled
               className="bg-background border-border/50 h-11 focus-visible:ring-1"
               placeholder="(11) 99999-9999"
             />
-            <p className="text-[10px] text-muted-foreground">Usado para o botão WhatsApp e para receber mensagens do formulário.</p>
+            <p className="text-[11px] text-muted-foreground">Editado em Configurações &gt; Dados da Empresa. Usado para o botão WhatsApp e para receber mensagens do formulário.</p>
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="phone" className="text-xs text-muted-foreground">Telefone Fixo</Label>
             <Input
               id="phone"
-              value={data.phone || ""}
+              value={globalContact?.phone || ""}
               onChange={(e) => onChange({ ...data, phone: e.target.value })}
+              disabled
               className="bg-background border-border/50 h-11 focus-visible:ring-1"
               placeholder="(00) 0000-0000"
             />
+            <p className="text-[11px] text-muted-foreground mt-1">Editado em Configurações &gt; Dados da Empresa.</p>
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="email" className="text-xs text-muted-foreground">E-mail Profissional</Label>

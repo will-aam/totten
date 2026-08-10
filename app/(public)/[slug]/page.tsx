@@ -21,7 +21,7 @@ export default async function PublicLinkBioPage({
   // Find organization by slug
   const org = await prisma.organization.findUnique({
     where: { slug },
-    include: { link_bio: true },
+    include: { link_bio: true, settings: true },
   });
 
   if (!org || !org.link_bio) {
@@ -192,10 +192,12 @@ export default async function PublicLinkBioPage({
 
   const SocialIconsBlock = () => (
     <div className="flex flex-wrap justify-center w-full gap-3">
-      {socials.activePlatforms.map((platform: string) => (
+      {socials.activePlatforms.map((platform: string) => {
+        const val = platform === "whatsapp" ? (org.settings?.phone_whatsapp || socials.values[platform]) : socials.values[platform];
+        return (
         <a
           key={platform}
-          href={getHref(platform, socials.values[platform])}
+          href={getHref(platform, val)}
           target="_blank"
           rel="noopener noreferrer"
           className="rounded-full flex items-center justify-center hover:scale-110 transition-transform cursor-pointer p-3 bg-transparent"
@@ -205,7 +207,7 @@ export default async function PublicLinkBioPage({
         >
           {renderSocialIcon(platform, getIconSize())}
         </a>
-      ))}
+      )})}
     </div>
   );
 
