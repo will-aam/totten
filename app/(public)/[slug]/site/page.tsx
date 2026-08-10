@@ -19,8 +19,8 @@ export default async function ProfessionalSitePage({
       settings: true,
       categories: { where: { active: true }, select: { id: true, name: true } },
       admins: { where: { active: true }, select: { id: true, display_name: true, email: true, instagram_url: true, show_instagram: true } },
-      services: { where: { active: true }, select: { id: true, name: true, description: true, duration: true, price: true } },
-      package_templates: { where: { active: true }, select: { id: true, name: true, total_sessions: true, price: true } }
+      services: { where: { active: true, available_online: true }, select: { id: true, name: true, description: true, duration: true, price: true, image_url: true } },
+      package_templates: { where: { active: true, available_online: true }, select: { id: true, name: true, total_sessions: true, price: true, image_url: true } }
     },
   });
 

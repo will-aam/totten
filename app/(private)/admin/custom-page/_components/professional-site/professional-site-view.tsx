@@ -2,10 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Save, ChevronRight, ChevronLeft, Pin, Star, Briefcase, Youtube, Mobile, X, Copy, Check, Globe } from "@boxicons/react";
+import { Save, ChevronRight, ChevronLeft, Pin, Star, Briefcase, Youtube, Mobile, X, Copy, Check, Globe, Layout } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 // Importando as seções recém-criadas
 import { ProPresentation } from "./pro-presentation";
@@ -18,6 +25,9 @@ import { ProTheme } from "./pro-theme";
 import { updateCustomPageAction } from "@/app/actions/custom-page";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import useSWR from "swr";
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 const getYouTubeEmbedUrl = (url: string) => {
   if (!url) return null;
@@ -136,8 +146,12 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
     const isDarkMock = theme.css?.includes("900") || theme.css?.includes("black") || theme.css?.includes("slate-950");
     const displayImage = isBlogLayout ? ((presentation as any).proHeroImage || presentation.heroImage) : presentation.heroImage;
 
+    const { data: dbCategories = [] } = useSWR("/api/categories?active=true", fetcher);
+    const { data: dbServices = [] } = useSWR("/api/services", fetcher);
+    const { data: dbPackages = [] } = useSWR("/api/package-templates", fetcher);
+
     const content = (
-      <div className={cn("w-full h-full flex flex-col pb-8 relative z-10 transition-colors duration-500 overflow-y-auto no-scrollbar", theme.css, isFullScreen ? "pt-12" : "")} style={{ color: theme.textColor }}>
+      <div className={cn("w-full h-full flex flex-col pb-8 relative z-10 transition-colors duration-500 overflow-y-auto no-scrollbar light", theme.css, isFullScreen ? "pt-12" : "")} style={{ color: theme.textColor }}>
 
         {/* HERO / HEADER SECTION */}
         <div className="relative w-full">
@@ -295,23 +309,144 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
         )}
 
         {/* SERVICES SECTION */}
-        {(services.servicesList && services.servicesList.length > 0) && (
-          <div className="px-6 py-6">
-            <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
-              <Briefcase className="h-5 w-5" /> Serviços
-            </h2>
-            <div className="flex flex-col gap-3">
-              {services.servicesList.map((srv: any, i: number) => (
-                <div key={i} className="p-4 rounded-xl flex flex-col gap-2 relative shadow-sm border" style={{ borderColor: 'rgba(150,150,150,0.15)', backgroundColor: 'rgba(150,150,150,0.03)' }}>
-                  <div className="flex justify-between items-start gap-4">
-                    <h3 className="font-bold text-[15px] leading-snug">{srv.title || "Serviço"}</h3>
-                    <span className="font-bold text-sm shrink-0 px-2.5 py-0.5 rounded-md" style={{ color: theme.primaryColor, backgroundColor: 'rgba(150,150,150,0.1)' }}>
-                      {srv.price}
-                    </span>
+        {services.showServices !== false && (
+          <div className="px-6 py-10 bg-foreground/5">
+            <div className="flex flex-col items-center text-center mb-8">
+              <span className="block text-[10px] uppercase tracking-widest font-bold mb-2" style={{ color: theme.primaryColor }}>
+                {services.servicesOverline || "NOSSOS SERVIÇOS"}
+              </span>
+              <h2 className="font-serif font-medium text-2xl mb-3 leading-tight">
+                {services.servicesTitle || "Terapias para cada momento"}
+              </h2>
+              <p className="text-xs opacity-80 max-w-2xl">
+                {services.servicesSubtitle || "Escolha a experiência que melhor se adapta ao que você precisa hoje."}
+              </p>
+            </div>
+
+            {/* Categorias */}
+            {dbCategories.length > 0 && (
+              <div className="flex flex-wrap justify-center gap-1.5 mb-6 pb-4 border-b border-border/20">
+                <span className="text-[10px] font-semibold opacity-50 mr-1 flex items-center">Filtre por:</span>
+                {dbCategories.map((cat: any) => (
+                  <div key={cat.id} className="px-3 py-1 rounded-full text-[10px] font-medium border shadow-sm bg-background" style={{ borderColor: theme.primaryColor + '30' }}>
+                    {cat.name}
                   </div>
-                  <p className="text-[13px] opacity-75 leading-relaxed">{srv.description}</p>
+                ))}
+              </div>
+            )}
+
+            {/* Serviços */}
+            <div>
+              {services.servicesDisplay === "pills" ? (
+                <div className="flex flex-wrap justify-center gap-2">
+                  {dbServices.map((srv: any) => (
+                    <div key={srv.id} className="px-3 py-2 rounded-full flex items-center gap-2 border shadow-sm bg-background">
+                      <span className="font-bold text-[10px]">{srv.name}</span>
+                      <span className="text-[9px] opacity-50 px-2 border-l border-border">{srv.duration}m</span>
+                      <span className="font-bold whitespace-nowrap text-[10px]" style={{ color: theme.primaryColor }}>R$ {Number(srv.price).toFixed(2)}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              ) : (
+                <div className="w-full">
+                  <Carousel opts={{ align: "start", loop: false }} className="w-full">
+                    <CarouselContent className="-ml-3">
+                      {dbServices.map((srv: any) => (
+                        <CarouselItem key={srv.id} className="pl-3 basis-[85%]">
+                          <div className="h-full rounded-2xl flex flex-col overflow-hidden relative shadow-sm border bg-white group/card">
+                            <div className="w-full aspect-[4/3] shrink-0 relative bg-muted border-b overflow-hidden">
+                              {srv.image_url ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={srv.image_url} alt={srv.name} className="absolute inset-0 w-full h-full object-cover" />
+                              ) : (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <Briefcase className="w-8 h-8 text-muted-foreground/20" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="p-4 flex flex-col flex-1">
+                              <div className="flex-1">
+                                <h4 className="font-bold text-[13px] mb-2 text-slate-900">{srv.name}</h4>
+                                <p className="text-[11px] text-slate-600 mb-3 line-clamp-2">{srv.description}</p>
+                              </div>
+                              <div className="flex flex-col gap-2 mt-2 pt-3 border-t border-slate-100">
+                                <div className="flex items-center gap-1.5 font-bold text-[11px] text-slate-800">
+                                  <span style={{ color: theme.primaryColor }}>R$ {Number(srv.price).toFixed(2)}</span>
+                                  <span className="text-slate-400 font-normal">/</span>
+                                  <span className="text-slate-500 font-normal">{srv.duration} min</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </CarouselItem>
+                      ))}
+                    </CarouselContent>
+                  </Carousel>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* PACKAGES SECTION MOCK */}
+        {dbPackages.length > 0 && services.showPackages !== false && (
+          <div className="px-6 py-10 bg-background">
+            <div className="flex flex-col items-center text-center mb-8">
+              <h2 className="font-serif font-medium text-2xl mb-3 flex items-center gap-2">
+                <Star className="h-5 w-5" style={{ color: theme.primaryColor }} /> Pacotes
+              </h2>
+              <p className="text-xs opacity-80 max-w-2xl">
+                Planos flexíveis para quem quer incluir o autocuidado na rotina.
+              </p>
+            </div>
+            
+            <div>
+              {services.packagesDisplay === "pills" ? (
+                <div className="flex flex-wrap justify-center gap-2">
+                  {dbPackages.map((pkg: any) => (
+                    <div key={pkg.id} className="px-3 py-2 rounded-full flex items-center gap-2 border shadow-sm bg-background">
+                      <span className="font-bold text-[10px]">{pkg.name}</span>
+                      <span className="text-[9px] opacity-50 px-2 border-l border-border">{pkg.total_sessions} sessões</span>
+                      <span className="font-bold whitespace-nowrap text-[10px]" style={{ color: theme.primaryColor }}>R$ {Number(pkg.price).toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="w-full">
+                  <Carousel opts={{ align: "start", loop: false }} className="w-full">
+                    <CarouselContent className="-ml-3">
+                      {dbPackages.map((pkg: any) => {
+                        const isFeatured = services.featuredPackageName && pkg.name.toLowerCase().trim() === services.featuredPackageName.toLowerCase().trim();
+                        return (
+                          <CarouselItem key={pkg.id} className="pl-3 basis-[85%]">
+                            <div className={cn("h-full rounded-2xl flex flex-col overflow-hidden relative shadow-sm border bg-white group/card", isFeatured ? "border-2 scale-[1.03]" : "")} style={isFeatured ? { borderColor: theme.primaryColor, boxShadow: `0 0 0 2px ${theme.primaryColor}40`, backgroundColor: theme.primaryColor + "08" } : {}}>
+                              {isFeatured && (
+                                <div
+                                  className="absolute top-2 right-2 z-10 px-2 py-0.5 rounded-full text-[10px] font-bold text-white flex items-center gap-1 shadow-md"
+                                  style={{ backgroundColor: theme.primaryColor }}
+                                >
+                                  <Star className="h-2 w-2" type="solid" /> Mais Popular
+                                </div>
+                              )}
+                              <div className="p-4 flex flex-col flex-1 mt-2">
+                                <div className="flex-1">
+                                  <h4 className="font-bold text-[13px] mb-1 text-slate-900">{pkg.name}</h4>
+                                  <p className="text-[11px] text-slate-500 mb-2">{pkg.total_sessions} sessões inclusas</p>
+                                </div>
+                                <div className="flex flex-col mt-2 pt-3 border-t border-slate-100">
+                                  <span className="font-bold text-[14px]" style={{ color: theme.primaryColor }}>
+                                    R$ {Number(pkg.price).toFixed(2)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </CarouselItem>
+                        );
+                      })}
+                    </CarouselContent>
+                  </Carousel>
+                </div>
+              )}
             </div>
           </div>
         )}

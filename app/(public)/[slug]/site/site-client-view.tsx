@@ -8,6 +8,13 @@ import {
   ArrowRight, Package
 } from "@boxicons/react";
 import { Dialog, DialogContent, DialogTitle, DialogHeader } from "@/components/ui/dialog";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 const getYouTubeEmbedUrl = (url: string) => {
   if (!url) return null;
@@ -97,7 +104,7 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
       `}</style>
 
       <div
-        className={cn("min-h-screen w-full flex flex-col relative z-10 transition-colors duration-500 font-sans", theme.css)}
+        className={cn("min-h-screen w-full flex flex-col relative z-10 transition-colors duration-500 font-sans light", theme.css)}
         style={{ color: theme.textColor }}
       >
         {/* ─────────────── NAVBAR ─────────────── */}
@@ -441,20 +448,25 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
           {/* ── SERVIÇOS (banco de dados) ── */}
           {(dbServices.length > 0 || dbPackages.length > 0) && (
             <div id="servicos" className="px-6 sm:px-10 py-14 md:py-24 scroll-mt-20">
-              <div className="max-w-5xl mx-auto w-full">
-                <h2 className="font-bold text-2xl md:text-4xl mb-3 flex items-center gap-3">
-                  <Briefcase className="h-8 w-8 shrink-0" style={{ color: theme.primaryColor }} /> Nossos Serviços
-                </h2>
-                <p className="text-base opacity-60 mb-10">
-                  Escolha a experiência que melhor se adapta ao que você precisa.
-                </p>
+              <div className="max-w-6xl mx-auto w-full">
+                <div className="flex flex-col items-center text-center mb-12">
+                  <span className="block text-xs uppercase tracking-widest font-bold mb-4" style={{ color: theme.primaryColor }}>
+                    {servicesConfig.servicesOverline || "NOSSOS SERVIÇOS"}
+                  </span>
+                  <h2 className="font-serif font-medium text-3xl md:text-5xl mb-6 leading-tight">
+                    {servicesConfig.servicesTitle || "Terapias para cada momento"}
+                  </h2>
+                  <p className="text-base md:text-lg opacity-80 max-w-2xl">
+                    {servicesConfig.servicesSubtitle || "Escolha a experiência que melhor se adapta ao que você precisa hoje."}
+                  </p>
+                </div>
 
                 {/* Categorias */}
                 {dbCategories.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-10 pb-6 border-b border-border/20">
-                    <span className="text-sm font-semibold opacity-50 mr-2 flex items-center">Especialidades:</span>
+                  <div className="flex flex-wrap justify-center gap-2 mb-10 pb-6 border-b border-border/20">
+                    <span className="text-sm font-semibold opacity-50 mr-2 flex items-center">Filtre por:</span>
                     {dbCategories.map((cat: any) => (
-                      <div key={cat.id} className={cn("px-4 py-1.5 rounded-full text-sm font-medium border shadow-sm", altBg, borderColor)}>
+                      <div key={cat.id} className={cn("px-4 py-1.5 rounded-full text-sm font-medium border shadow-sm cursor-pointer hover:-translate-y-0.5 transition-transform", altBg, borderColor)}>
                         {cat.name}
                       </div>
                     ))}
@@ -465,7 +477,7 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                 {dbServices.length > 0 && servicesConfig.showServices !== false && (
                   <div className="mb-14">
                     {servicesConfig.servicesDisplay === "pills" ? (
-                      <div className="flex flex-wrap gap-3">
+                      <div className="flex flex-wrap justify-center gap-3">
                         {dbServices.map((srv: any) => (
                           <div key={srv.id} className={cn("px-5 py-3 rounded-full flex items-center gap-3 border shadow-sm transition-transform hover:-translate-y-1", cardBg, borderColor)}>
                             <span className="font-bold text-sm">{srv.name}</span>
@@ -475,28 +487,59 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                         ))}
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {dbServices.map((srv: any) => (
-                          <div key={srv.id} className={cn("p-6 rounded-3xl flex flex-col justify-between relative shadow-sm border hover:-translate-y-1 transition-all group", cardBg, borderColor)}>
-                            <div>
-                              <h4 className="font-bold text-lg mb-2">{srv.name}</h4>
-                              {srv.description && <p className="text-sm opacity-70 mb-4 line-clamp-3">{srv.description}</p>}
+                      <div className="relative w-full group/carousel">
+                        <Carousel
+                          opts={{
+                            align: "start",
+                            loop: false,
+                          }}
+                          className="w-full"
+                        >
+                          <CarouselContent className="-ml-4 md:-ml-6">
+                            {dbServices.map((srv: any) => (
+                              <CarouselItem key={srv.id} className="pl-4 md:pl-6 md:basis-1/2 lg:basis-1/3">
+                                <div className={cn("h-full rounded-2xl flex flex-col overflow-hidden relative shadow-sm border hover:shadow-md transition-all group/card", cardBg, borderColor)}>
+                                  {/* Imagem do Serviço */}
+                                  <div className="w-full aspect-[4/3] shrink-0 relative bg-muted border-b overflow-hidden" style={{ borderColor: theme.primaryColor + '20' }}>
+                                    {srv.image_url ? (
+                                      // eslint-disable-next-line @next/next/no-img-element
+                                      <img src={srv.image_url} alt={srv.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105" />
+                                    ) : (
+                                      <div className="absolute inset-0 flex items-center justify-center">
+                                        <Briefcase className="w-12 h-12 text-muted-foreground/20" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  {/* Conteúdo */}
+                                  <div className="p-6 flex flex-col flex-1 bg-white">
+                                    <div className="flex-1">
+                                      <h4 className="font-bold text-lg mb-3 text-slate-900">{srv.name}</h4>
+                                      {srv.description && <p className="text-sm text-slate-600 mb-4 line-clamp-3 leading-relaxed">{srv.description}</p>}
+                                    </div>
+                                    
+                                    {/* Rodapé do Card */}
+                                    <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-100">
+                                      <div className="flex items-center gap-1.5 font-bold text-sm text-slate-800">
+                                        <span style={{ color: theme.primaryColor }}>R$ {Number(srv.price).toFixed(2)}</span>
+                                        <span className="text-slate-400 font-normal">/</span>
+                                        <span className="text-slate-500 font-normal">{srv.duration} min</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </CarouselItem>
+                            ))}
+                          </CarouselContent>
+                          
+                          {/* Controles do Carrossel (Visíveis no Desktop via hover) */}
+                          {dbServices.length > 2 && (
+                            <div className="hidden md:block opacity-0 group-hover/carousel:opacity-100 transition-opacity">
+                              <CarouselPrevious className="absolute -left-5 top-1/2 -translate-y-1/2 h-12 w-12 border shadow-lg bg-white hover:bg-slate-50 text-slate-700" />
+                              <CarouselNext className="absolute -right-5 top-1/2 -translate-y-1/2 h-12 w-12 border shadow-lg bg-white hover:bg-slate-50 text-slate-700" />
                             </div>
-                            <div className={cn("flex items-center justify-between mt-4 pt-4 border-t", borderColor)}>
-                              <span className="text-sm font-medium opacity-60">{srv.duration} min</span>
-                              <span className="font-bold text-lg" style={{ color: theme.primaryColor }}>
-                                R$ {Number(srv.price).toFixed(2)}
-                              </span>
-                            </div>
-                            <a
-                              href={bookingUrl}
-                              className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold text-white transition-opacity hover:opacity-90"
-                              style={{ backgroundColor: theme.primaryColor }}
-                            >
-                              {servicesConfig.ctaText || "Reservar"}
-                            </a>
-                          </div>
-                        ))}
+                          )}
+                        </Carousel>
                       </div>
                     )}
                   </div>
@@ -527,50 +570,56 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                     ))}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {dbPackages.map((pkg: any) => {
-                      const isFeatured = featuredPackageName && pkg.name.toLowerCase().trim() === featuredPackageName;
-                      return (
-                        <div
-                          key={pkg.id}
-                          className={cn(
-                            "p-6 rounded-3xl flex flex-col justify-between relative shadow-sm border hover:-translate-y-1 transition-all",
-                            isFeatured
-                              ? "border-2 ring-2 scale-[1.03]"
-                              : (isDark ? "bg-white/5 border-white/10" : "bg-white border-black/10")
-                          )}
-                          style={isFeatured ? { borderColor: theme.primaryColor, boxShadow: `0 0 0 2px ${theme.primaryColor}40`, backgroundColor: theme.primaryColor + "08" } : {}}
-                        >
-                          {isFeatured && (
-                            <div
-                              className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold text-white flex items-center gap-1.5 shadow-md"
-                              style={{ backgroundColor: theme.primaryColor }}
-                            >
-                              <Star className="h-3.5 w-3.5" type="solid" /> Mais Popular
-                            </div>
-                          )}
-                          <div>
-                            <h4 className="font-bold text-xl mb-1">{pkg.name}</h4>
-                            <p className="text-sm opacity-60 mb-4">{pkg.total_sessions} sessões</p>
-                          </div>
-                          <div>
-                            <p className="font-bold text-3xl mb-4" style={{ color: theme.primaryColor }}>
-                              R$ {Number(pkg.price).toFixed(2)}
-                            </p>
-                            <a
-                              href={bookingUrl}
-                              className={cn(
-                                "w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all hover:opacity-90",
-                                isFeatured ? "text-white shadow-md" : (isDark ? "text-white border border-white/20 hover:bg-white/10" : "text-current border border-black/15 hover:bg-black/5")
+                  <div className="relative w-full group/carousel">
+                    <Carousel opts={{ align: "start", loop: false }} className="w-full">
+                      <CarouselContent className="-ml-4 md:-ml-6">
+                        {dbPackages.map((pkg: any) => {
+                          const isFeatured = featuredPackageName && pkg.name.toLowerCase().trim() === featuredPackageName.toLowerCase().trim();
+                          return (
+                            <CarouselItem key={pkg.id} className="pl-4 md:pl-6 md:basis-1/2 lg:basis-1/3">
+                              <div className={cn(
+                                "h-full rounded-2xl flex flex-col overflow-hidden relative shadow-sm border hover:shadow-md transition-all group/card", 
+                                isFeatured ? "border-2 ring-2 scale-[1.03]" : "bg-white border-black/10"
                               )}
-                              style={isFeatured ? { backgroundColor: theme.primaryColor } : {}}
-                            >
-                              Escolher Plano
-                            </a>
-                          </div>
+                              style={isFeatured ? { borderColor: theme.primaryColor, boxShadow: `0 0 0 2px ${theme.primaryColor}40`, backgroundColor: theme.primaryColor + "08" } : {}}>
+                                
+                                {isFeatured && (
+                                  <div
+                                    className="absolute top-4 right-4 z-10 px-3 py-1 rounded-full text-xs font-bold text-white flex items-center gap-1.5 shadow-md"
+                                    style={{ backgroundColor: theme.primaryColor }}
+                                  >
+                                    <Star className="h-3 w-3" type="solid" /> Mais Popular
+                                  </div>
+                                )}
+
+                                {/* Conteúdo */}
+                                <div className={cn("p-6 flex flex-col flex-1", isFeatured ? "" : "bg-white")}>
+                                  <div className="flex-1">
+                                    <h4 className="font-bold text-xl mb-1 text-slate-900">{pkg.name}</h4>
+                                    <p className="text-sm text-slate-500 mb-4">{pkg.total_sessions} sessões inclusas</p>
+                                  </div>
+                                  
+                                  {/* Rodapé do Card */}
+                                  <div className="flex flex-col mt-4 pt-4 border-t border-slate-100">
+                                    <span className="font-bold text-2xl" style={{ color: theme.primaryColor }}>
+                                      R$ {Number(pkg.price).toFixed(2)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </CarouselItem>
+                          );
+                        })}
+                      </CarouselContent>
+                      
+                      {/* Controles do Carrossel (Visíveis no Desktop via hover) */}
+                      {dbPackages.length > 2 && (
+                        <div className="hidden md:block opacity-0 group-hover/carousel:opacity-100 transition-opacity">
+                          <CarouselPrevious className="absolute -left-5 top-1/2 -translate-y-1/2 h-12 w-12 border shadow-lg bg-white hover:bg-slate-50 text-slate-700" />
+                          <CarouselNext className="absolute -right-5 top-1/2 -translate-y-1/2 h-12 w-12 border shadow-lg bg-white hover:bg-slate-50 text-slate-700" />
                         </div>
-                      );
-                    })}
+                      )}
+                    </Carousel>
                   </div>
                 )}
               </div>

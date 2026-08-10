@@ -298,7 +298,6 @@ export const PackageEditModal = memo(
               <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/50 bg-background hover:bg-muted/30 transition-colors">
                 <div className="flex flex-col">
                   <Label className="flex items-center gap-1.5 text-foreground font-medium text-sm cursor-pointer" onClick={() => setFormData({ ...formData, available_online: !formData.available_online })}>
-                    <Globe size="sm" className="text-muted-foreground" />
                     Agendamento Online
                   </Label>
                   <span className="text-[11px] text-muted-foreground mt-0.5">
@@ -306,58 +305,6 @@ export const PackageEditModal = memo(
                   </span>
                 </div>
                 <Switch checked={formData.available_online} onCheckedChange={(checked) => setFormData({ ...formData, available_online: checked })} />
-              </div>
-            </div>
-            
-            <div className="flex flex-col gap-3 p-4 border border-border/50 rounded-xl bg-muted/10">
-              <Label className="text-foreground font-medium flex items-center gap-2">
-                <ImageIcon className="h-4 w-4 text-muted-foreground" />
-                Imagem do Pacote (Opcional)
-              </Label>
-              <p className="text-xs text-muted-foreground -mt-1">Adicione uma imagem representativa para exibir no site.</p>
-              
-              <div className="flex flex-col gap-4 mt-2">
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="pkgImageUrl" className="text-xs text-muted-foreground">URL da Imagem (Opção 1)</Label>
-                  <div className="relative">
-                    <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="pkgImageUrl"
-                      value={formData.image_url}
-                      onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                      className="bg-background border-border/50 h-10 pl-9 focus-visible:ring-1"
-                      placeholder="Cole o link da imagem aqui..."
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="pkgImageUpload" className="text-xs text-muted-foreground">Fazer Upload (Opção 2)</Label>
-                  <div className="relative">
-                    <Input
-                      id="pkgImageUpload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      disabled={isUploading}
-                      className="sr-only"
-                    />
-                    <Label
-                      htmlFor="pkgImageUpload"
-                      className="flex items-center justify-center gap-2 w-full h-10 px-4 rounded-md border border-border/50 bg-background hover:bg-muted/50 cursor-pointer transition-colors text-sm font-medium"
-                    >
-                      {isUploading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : <Upload className="h-4 w-4 text-muted-foreground" />}
-                      {isUploading ? "Enviando..." : "Escolher arquivo do computador"}
-                    </Label>
-                  </div>
-                </div>
-
-                {formData.image_url && (
-                  <div className="mt-2 w-32 aspect-video rounded-lg overflow-hidden border border-border/50 relative shrink-0">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={formData.image_url} alt="Preview" className="w-full h-full object-cover" />
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -382,8 +329,8 @@ export const PackageEditModal = memo(
                     : "text-emerald-600 bg-emerald-500/10 hover:bg-emerald-500/20",
                   // Desabilita visualmente se for ativar mas o serviço está inativo
                   !isPackageActive &&
-                    !isServiceActive &&
-                    "opacity-50 cursor-not-allowed",
+                  !isServiceActive &&
+                  "opacity-50 cursor-not-allowed",
                 )}
                 onClick={handleToggleStatus}
                 disabled={loading || (!isPackageActive && !isServiceActive)}

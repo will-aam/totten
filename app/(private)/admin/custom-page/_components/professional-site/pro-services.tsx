@@ -2,12 +2,17 @@
 
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Briefcase, Layout, List, Star } from "@boxicons/react";
 import { cn } from "@/lib/utils";
+import useSWR from "swr";
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export function ProServices({ data, onChange }: any) {
   const servicesDisplay = data.servicesDisplay || "cards";
   const packagesDisplay = data.packagesDisplay || "cards";
+  const { data: dbPackages, isLoading } = useSWR("/api/package-templates", fetcher);
 
   return (
     <div className="flex flex-col gap-6">
@@ -123,28 +128,24 @@ export function ProServices({ data, onChange }: any) {
                 <Star className="h-4 w-4 text-amber-500" />
                 Pacote em Destaque ("Mais Popular")
               </Label>
-              <span className="text-xs text-muted-foreground">Digite o nome exato do pacote que deseja destacar visualmente.</span>
+              <span className="text-xs text-muted-foreground">Escolha qual pacote deseja destacar visualmente.</span>
             </div>
-            <Input
-              value={data.featuredPackageName || ""}
-              onChange={(e) => onChange({ ...data, featuredPackageName: e.target.value })}
-              className="bg-background border-border/50 h-10 focus-visible:ring-1"
-              placeholder="Ex: Renovação Semanal"
-            />
+            <Select 
+              value={data.featuredPackageName || ""} 
+              onValueChange={(val) => onChange({ ...data, featuredPackageName: val })}
+            >
+              <SelectTrigger className="bg-background border-border/50 h-10">
+                <SelectValue placeholder={isLoading ? "Carregando..." : "Selecione um pacote..."} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Nenhum destaque</SelectItem>
+                {dbPackages?.map((pkg: any) => (
+                  <SelectItem key={pkg.id} value={pkg.name}>{pkg.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         )}
-      </div>
-
-      {/* TEXTO DO CTA */}
-      <div className="flex flex-col gap-4 p-5 border border-border/50 rounded-xl bg-muted/10">
-        <Label className="text-foreground font-medium text-base">Botão de Agendamento nos Cards</Label>
-        <Input
-          value={data.ctaText || ""}
-          onChange={(e) => onChange({ ...data, ctaText: e.target.value })}
-          className="bg-background border-border/50 h-10 focus-visible:ring-1"
-          placeholder="Ex: Agendar, Reservar, Quero esse serviço..."
-        />
-        <p className="text-[11px] text-muted-foreground">Texto exibido no botão de cada card de serviço. Padrão: "Agendar".</p>
       </div>
     </div>
   );

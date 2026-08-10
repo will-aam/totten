@@ -216,7 +216,7 @@ export default async function PublicLinkBioPage({
       `}</style>
 
       {/* VIEWPORT DA PÁGINA */}
-      <div className="min-h-screen w-full relative overflow-hidden flex flex-col">
+      <div className="min-h-screen w-full relative overflow-hidden flex flex-col light">
         
         {/* CAMADA DE FUNDO BASE */}
         <div
