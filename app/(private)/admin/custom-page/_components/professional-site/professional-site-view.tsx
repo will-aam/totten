@@ -23,6 +23,7 @@ import { ProContact } from "./pro-contact";
 import { ProTheme } from "./pro-theme";
 import { updateCustomPageAction } from "@/app/actions/custom-page";
 import { toast } from "sonner";
+import { Clock, Phone as PhoneIcon, MapPin } from "lucide-react";
 import useSWR from "swr";
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
@@ -455,26 +456,78 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
           </div>
         )}
 
-        {/* CONTACT SECTION */}
+        {/* CONTACT INFO */}
         {(contact.address || contact.phone || contact.whatsapp || (contact.businessHours && contact.showBusinessHours !== false)) && (
           <div className="px-6 py-6">
             <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
-              <Pin className="h-5 w-5" /> Contato
+              <PhoneIcon className="h-4 w-4" /> Contato
             </h2>
-            {(contact.businessHours && contact.showBusinessHours !== false) && <p className="text-xs opacity-60 mb-2">🕐 {contact.businessHours}</p>}
-            {(contact.whatsapp || contact.phone) && <p className="text-sm opacity-80 mb-1">📱 {contact.whatsapp || contact.phone}</p>}
-            {contact.address && <p className="text-sm opacity-80 mb-4">📍 {contact.address}</p>}
+            {(contact.businessHours && contact.showBusinessHours !== false) && (
+              <p className="text-xs opacity-60 mb-2 flex items-start gap-2">
+                <Clock className="w-4 h-4 mt-0.5 shrink-0" style={{ color: theme.primaryColor }} /> 
+                <span>{contact.businessHours}</span>
+              </p>
+            )}
+            {(contact.whatsapp || contact.phone) && (
+              <p className="text-sm opacity-80 mb-2 flex items-start gap-2">
+                <PhoneIcon className="w-4 h-4 mt-0.5 shrink-0" style={{ color: theme.primaryColor }} /> 
+                <span>{contact.whatsapp || contact.phone}</span>
+              </p>
+            )}
+            {contact.address && (
+              <p className="text-sm opacity-80 flex items-start gap-2">
+                <MapPin className="w-4 h-4 mt-0.5 shrink-0" style={{ color: theme.primaryColor }} /> 
+                <span>{contact.address}</span>
+              </p>
+            )}
           </div>
         )}
 
-        {/* FOOTER SECTION */}
-        {(contact.phone || contact.email) && (
-          <div className="px-6 py-6 mt-auto flex flex-row items-center justify-center gap-4 text-xs opacity-70">
-            {contact.phone && <span className="font-medium">{contact.phone}</span>}
-            {contact.phone && contact.email && <span className="w-1 h-1 rounded-full bg-current opacity-50" />}
-            {contact.email && <span className="font-medium">{contact.email}</span>}
+        {/* FALE CONOSCO / RESERVE SUA SESSÃO (MINI FORM) */}
+        <div className="px-6 py-4 mb-6">
+          <div className={cn("rounded-2xl p-5 border shadow-sm", theme.theme === 'dark' ? "bg-white/5 border-white/10" : "bg-white border-black/10")}>
+            <h3 className="font-bold text-base mb-1">Reserve sua sessão</h3>
+            <p className="text-[10px] opacity-60 mb-4 leading-relaxed">
+              Preencha o formulário e entraremos em contato pelo WhatsApp.
+            </p>
+            <div className="flex flex-col gap-2">
+              <input disabled type="text" placeholder="Seu nome completo" className="w-full h-8 rounded-lg border px-3 text-[10px] opacity-50" />
+              <input disabled type="tel" placeholder="(11) 99999-9999" className="w-full h-8 rounded-lg border px-3 text-[10px] opacity-50" />
+              <textarea disabled placeholder="Dúvidas..." className="w-full h-16 rounded-lg border p-3 text-[10px] resize-none opacity-50" />
+              <button disabled className="mt-1 w-full h-9 rounded-lg text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm opacity-80" style={{ backgroundColor: theme.primaryColor }}>
+                Enviar pelo WhatsApp
+              </button>
+            </div>
           </div>
-        )}
+        </div>
+
+        {/* FOOTER SECTION */}
+        <footer className="w-full bg-black text-white pt-8 pb-6 px-6 mt-auto">
+          <div className="flex flex-col gap-6">
+            <div>
+              <h3 className="font-bold text-lg mb-2">{presentation.headline || profile?.name || "Minha Clínica"}</h3>
+              <p className="text-xs opacity-60 leading-relaxed">
+                {presentation.subheadline || "Transformando vidas e oferecendo o melhor atendimento para você se sentir especial todos os dias."}
+              </p>
+            </div>
+            
+            <div>
+              <h4 className="font-bold text-sm mb-3">Links Rápidos</h4>
+              <div className="flex flex-col gap-2 text-xs opacity-70">
+                <span>Sobre</span>
+                <span>Serviços</span>
+                {dbPackages.length > 0 && <span>Pacotes</span>}
+                <span>Nossa Equipe</span>
+                <span>Termos de Uso</span>
+              </div>
+            </div>
+
+            <div className="border-t border-white/10 pt-4 flex flex-col gap-2 text-[10px] opacity-40">
+              <p>© {new Date().getFullYear()} {presentation.headline || profile?.name || "Minha Clínica"}. Todos os direitos reservados.</p>
+              <p>Desenvolvido com Totten</p>
+            </div>
+          </div>
+        </footer>
 
       </div>
     );
