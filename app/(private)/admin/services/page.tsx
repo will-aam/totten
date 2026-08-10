@@ -19,7 +19,7 @@ import {
   Box,
   Save,
 } from "@boxicons/react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Image as ImageIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -65,6 +65,8 @@ type Service = {
   material_cost: number | null;
   track_stock: boolean;
   active: boolean;
+  available_online: boolean;
+  image_url: string | null;
   category_id: string;
   category: { id: string; name: string };
   stock_items?: ServiceStockItem[];
@@ -78,6 +80,8 @@ type PackageTemplate = {
   price: number;
   validity_days: number | null;
   active: boolean;
+  available_online: boolean;
+  image_url: string | null;
   service?: {
     name: string;
   };
@@ -292,23 +296,34 @@ function ServicesTabs() {
                   key={service.id}
                   onClick={() => setSelectedService(service)}
                   className={cn(
-                    "group cursor-pointer flex flex-col justify-between gap-3 p-5 rounded-2xl border transition-all hover:border-primary/50 hover:shadow-md",
+                    "group cursor-pointer flex flex-row overflow-hidden rounded-2xl border transition-all hover:border-primary/50 hover:shadow-md",
                     !service.active
                       ? "bg-muted/30 grayscale-[0.5] opacity-60 border-dashed"
                       : "bg-card shadow-sm border-border/50",
                   )}
                 >
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-semibold text-foreground leading-tight">
-                        {service.name}
-                      </h3>
-                      {!service.active && (
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted px-2 py-0.5 rounded-sm shrink-0">
-                          Inativo
-                        </span>
-                      )}
-                    </div>
+                  <div className="w-24 sm:w-28 shrink-0 relative bg-muted/30 border-r border-border/50">
+                    {service.image_url ? (
+                      <img src={service.image_url} alt={service.name} className="absolute inset-0 w-full h-full object-cover" />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <ImageIcon className="w-8 h-8 text-muted-foreground/20" />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex flex-col flex-1 justify-between p-4 min-w-0">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-start justify-between gap-2 min-w-0">
+                        <h3 className="font-semibold text-foreground leading-tight truncate">
+                          {service.name}
+                        </h3>
+                        {!service.active && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted px-2 py-0.5 rounded-sm shrink-0">
+                            Inativo
+                          </span>
+                        )}
+                      </div>
                     <Badge
                       variant="secondary"
                       className="w-fit text-[10px] bg-primary/5 text-primary hover:bg-primary/10"
@@ -350,6 +365,7 @@ function ServicesTabs() {
                         </span>
                       </div>
                     ) : null}
+                  </div>
                   </div>
                 </div>
               ))}
@@ -408,23 +424,34 @@ function ServicesTabs() {
                   key={pkg.id}
                   onClick={() => setSelectedPackage(pkg)}
                   className={cn(
-                    "group cursor-pointer flex flex-col justify-between gap-3 p-5 rounded-2xl border transition-all hover:border-primary/50 hover:shadow-md",
+                    "group cursor-pointer flex flex-row overflow-hidden rounded-2xl border transition-all hover:border-primary/50 hover:shadow-md",
                     !pkg.active
                       ? "bg-muted/30 grayscale-[0.5] opacity-60 border-dashed"
                       : "bg-card shadow-sm border-border/50",
                   )}
                 >
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-semibold text-foreground leading-tight">
-                        {pkg.name}
-                      </h3>
-                      {!pkg.active && (
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted px-2 py-0.5 rounded-sm shrink-0">
-                          Inativo
-                        </span>
-                      )}
-                    </div>
+                  <div className="w-24 sm:w-28 shrink-0 relative bg-muted/30 border-r border-border/50">
+                    {pkg.image_url ? (
+                      <img src={pkg.image_url} alt={pkg.name} className="absolute inset-0 w-full h-full object-cover" />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <ImageIcon className="w-8 h-8 text-muted-foreground/20" />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col flex-1 justify-between p-4 min-w-0">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-start justify-between gap-2 min-w-0">
+                        <h3 className="font-semibold text-foreground leading-tight truncate">
+                          {pkg.name}
+                        </h3>
+                        {!pkg.active && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted px-2 py-0.5 rounded-sm shrink-0">
+                            Inativo
+                          </span>
+                        )}
+                      </div>
                     <div className="flex items-center gap-1.5 mt-1 text-muted-foreground">
                       <Cog size="xs" className="shrink-0" />
                       <span className="text-xs font-medium truncate">
@@ -455,6 +482,7 @@ function ServicesTabs() {
                         </span>
                       </div>
                     ) : null}
+                  </div>
                   </div>
                 </div>
               ))}

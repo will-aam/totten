@@ -28,6 +28,8 @@ export async function createService(data: {
   material_cost?: number | null;
   track_stock?: boolean;
   stock_items?: { stock_item_id: string; quantity_used: number }[];
+  available_online?: boolean;
+  image_url?: string | null;
 }) {
   try {
     const admin = await requireAuth();
@@ -44,6 +46,8 @@ export async function createService(data: {
         track_stock: data.track_stock || false,
         organization_id: admin.organizationId,
         active: true,
+        available_online: data.available_online !== undefined ? data.available_online : true,
+        image_url: data.image_url,
         ...(data.track_stock && data.stock_items && data.stock_items.length > 0
           ? {
               stock_items: {
@@ -76,6 +80,8 @@ export async function updateService(
     material_cost?: number | null;
     track_stock?: boolean;
     stock_items?: { stock_item_id: string; quantity_used: number }[];
+    available_online?: boolean;
+    image_url?: string | null;
   },
 ) {
   try {
@@ -105,6 +111,8 @@ export async function updateService(
           category_id: data.category_id,
           material_cost: data.material_cost,
           track_stock: data.track_stock,
+          available_online: data.available_online,
+          image_url: data.image_url,
           ...(data.track_stock &&
           data.stock_items &&
           data.stock_items.length > 0

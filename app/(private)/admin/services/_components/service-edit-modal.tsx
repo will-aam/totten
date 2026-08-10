@@ -35,6 +35,9 @@ import {
 import { updateService, toggleServiceStatus } from "@/app/actions/services";
 import { getStockItems } from "@/app/actions/stock";
 import { cn } from "@/lib/utils";
+import { compressImage } from "@/lib/image-utils";
+import { uploadImageAction } from "@/app/actions/upload-image";
+import { Image as ImageIcon, Upload, Loader2, Link as LinkIcon, Globe } from "lucide-react";
 import { CategorySelect } from "./category-select";
 import { apiClient } from "@/lib/api-client";
 
@@ -88,7 +91,7 @@ export function ServiceEditModal({
     show: boolean;
     message: string;
     pendingAction: () => Promise<void>;
-  }>({ show: false, message: "", pendingAction: async () => {} });
+  }>({ show: false, message: "", pendingAction: async () => { } });
 
   const [formData, setFormData] = useState({
     name: "",
@@ -98,7 +101,11 @@ export function ServiceEditModal({
     category_id: "",
     cost: "",
     trackStock: false,
+    available_online: true,
+    image_url: "",
   });
+
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -124,6 +131,8 @@ export function ServiceEditModal({
         category_id: service.category_id || "",
         cost: service.material_cost?.toString() || "",
         trackStock: service.track_stock || false,
+        available_online: service.available_online ?? true,
+        image_url: service.image_url || "",
       });
 
       if (service.stock_items && service.stock_items.length > 0) {
@@ -182,6 +191,27 @@ export function ServiceEditModal({
     0,
   );
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setIsUploading(true);
+      try {
+        const compressedBase64 = await compressImage(file, 800);
+        const res = await uploadImageAction(compressedBase64, "services");
+        if (res.success && res.url) {
+          setFormData({ ...formData, image_url: res.url });
+        } else {
+          toast.error(res.error || "Erro ao fazer upload da imagem");
+        }
+      } catch (error) {
+        console.error("Erro ao processar imagem:", error);
+        toast.error("Erro inesperado ao processar imagem.");
+      } finally {
+        setIsUploading(false);
+      }
+    }
+  };
+
   const handleSave = async () => {
     if (
       !formData.name ||
@@ -202,6 +232,8 @@ export function ServiceEditModal({
         duration: parseInt(formData.duration),
         category_id: formData.category_id,
         track_stock: formData.trackStock,
+        available_online: formData.available_online,
+        image_url: formData.image_url || null,
         material_cost: formData.trackStock
           ? null
           : formData.cost
@@ -209,9 +241,9 @@ export function ServiceEditModal({
             : null,
         stock_items: formData.trackStock
           ? selectedStockItems.map((i) => ({
-              stock_item_id: i.stock_item_id,
-              quantity_used: Number(i.quantity_used) || 1,
-            }))
+            stock_item_id: i.stock_item_id,
+            quantity_used: Number(i.quantity_used) || 1,
+          }))
           : [],
       });
 
@@ -260,7 +292,7 @@ export function ServiceEditModal({
         setConfirmCascade({
           show: false,
           message: "",
-          pendingAction: async () => {},
+          pendingAction: async () => { },
         });
       } else {
         toast.error(res.error || "Erro ao alterar status.");
@@ -317,6 +349,72 @@ export function ServiceEditModal({
                 className="h-20 resize-none bg-muted/50"
                 placeholder="Descreva os detalhes do serviço..."
               />
+            </div>
+
+            <div className="flex flex-col gap-2 justify-end pb-1">
+              <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/50 bg-background hover:bg-muted/30 transition-colors">
+                <div className="flex flex-col">
+                  <Label className="flex items-center gap-1.5 text-foreground font-medium text-sm cursor-pointer" onClick={() => setFormData({ ...formData, available_online: !formData.available_online })}>
+                    Agendamento Online
+                  </Label>
+                  <span className="text-[11px] text-muted-foreground mt-0.5">
+                    Mostrar este serviço no site
+                  </span>
+                </div>
+                <Switch checked={formData.available_online} onCheckedChange={(checked) => setFormData({ ...formData, available_online: checked })} />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 p-4 border border-border/50 rounded-xl bg-muted/10">
+              <Label className="text-foreground font-medium flex items-center gap-2">
+                <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                Imagem do Serviço (Opcional)
+              </Label>
+              <p className="text-xs text-muted-foreground -mt-1">Adicione uma imagem representativa para exibir no site.</p>
+
+              <div className="flex flex-col gap-4 mt-2">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="svcImageUrl" className="text-xs text-muted-foreground">URL da Imagem (Opção 1)</Label>
+                  <div className="relative">
+                    <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="svcImageUrl"
+                      value={formData.image_url}
+                      onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                      className="bg-background border-border/50 h-10 pl-9 focus-visible:ring-1"
+                      placeholder="Cole o link da imagem aqui..."
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="svcImageUpload" className="text-xs text-muted-foreground">Fazer Upload (Opção 2)</Label>
+                  <div className="relative">
+                    <Input
+                      id="svcImageUpload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={isUploading}
+                      className="sr-only"
+                    />
+                    <Label
+                      htmlFor="svcImageUpload"
+                      className="flex items-center justify-center gap-2 w-full h-10 px-4 rounded-md border border-border/50 bg-background hover:bg-muted/50 cursor-pointer transition-colors text-sm font-medium"
+                    >
+                      {isUploading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : <Upload className="h-4 w-4 text-muted-foreground" />}
+                      {isUploading ? "Enviando..." : "Escolher arquivo do computador"}
+                    </Label>
+                  </div>
+                </div>
+
+                {formData.image_url && (
+                  <div className="mt-2 w-32 aspect-video rounded-lg overflow-hidden border border-border/50 relative shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={formData.image_url} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Agenda e Preço */}
@@ -570,7 +668,7 @@ export function ServiceEditModal({
             setConfirmCascade({
               show: false,
               message: "",
-              pendingAction: async () => {},
+              pendingAction: async () => { },
             });
             setLoading(false); // Para destravar o botão principal caso cancelemos
           }
@@ -593,7 +691,7 @@ export function ServiceEditModal({
                 setConfirmCascade({
                   show: false,
                   message: "",
-                  pendingAction: async () => {},
+                  pendingAction: async () => { },
                 });
                 setLoading(false);
               }}

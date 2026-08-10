@@ -14,7 +14,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { compressImage } from "@/lib/image-utils";
+import { uploadImageAction } from "@/app/actions/upload-image";
+import { Image as ImageIcon, Upload, Loader2, Link as LinkIcon, Globe } from "lucide-react";
 import {
   LoaderDots,
   Save,
@@ -51,12 +55,15 @@ export const PackageEditModal = memo(
     onSuccess,
   }: PackageEditModalProps) => {
     const [loading, setLoading] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
     const [formData, setFormData] = useState({
       name: "",
       description: "",
       total_sessions: "",
       price: "",
       validity_days: "",
+      available_online: true,
+      image_url: "",
     });
 
     useEffect(() => {
@@ -67,6 +74,8 @@ export const PackageEditModal = memo(
           total_sessions: packageTemplate.total_sessions?.toString() || "",
           price: packageTemplate.price?.toString() || "",
           validity_days: packageTemplate.validity_days?.toString() || "",
+          available_online: packageTemplate.available_online ?? true,
+          image_url: packageTemplate.image_url || "",
         });
       }
     }, [packageTemplate, open]);
@@ -96,6 +105,8 @@ export const PackageEditModal = memo(
           validity_days: formData.validity_days
             ? parseInt(formData.validity_days)
             : null,
+          available_online: formData.available_online,
+          image_url: formData.image_url || null,
         });
 
         if (res.success) {
@@ -109,6 +120,27 @@ export const PackageEditModal = memo(
         toast.error("Erro ao guardar as alterações.");
       } finally {
         setLoading(false);
+      }
+    };
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        setIsUploading(true);
+        try {
+          const compressedBase64 = await compressImage(file, 800);
+          const res = await uploadImageAction(compressedBase64, "services");
+          if (res.success && res.url) {
+            setFormData({ ...formData, image_url: res.url });
+          } else {
+            toast.error(res.error || "Erro ao fazer upload da imagem");
+          }
+        } catch (error) {
+          console.error("Erro ao processar imagem:", error);
+          toast.error("Erro inesperado ao processar imagem.");
+        } finally {
+          setIsUploading(false);
+        }
       }
     };
 
@@ -260,6 +292,73 @@ export const PackageEditModal = memo(
                 className="h-20 resize-none rounded-2xl bg-muted/40 border-none font-medium p-4 focus-visible:ring-primary/20"
                 placeholder="Anotações sobre este pacote..."
               />
+            </div>
+
+            <div className="flex flex-col gap-2 justify-end pb-1">
+              <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/50 bg-background hover:bg-muted/30 transition-colors">
+                <div className="flex flex-col">
+                  <Label className="flex items-center gap-1.5 text-foreground font-medium text-sm cursor-pointer" onClick={() => setFormData({ ...formData, available_online: !formData.available_online })}>
+                    <Globe size="sm" className="text-muted-foreground" />
+                    Agendamento Online
+                  </Label>
+                  <span className="text-[11px] text-muted-foreground mt-0.5">
+                    Mostrar este pacote no site
+                  </span>
+                </div>
+                <Switch checked={formData.available_online} onCheckedChange={(checked) => setFormData({ ...formData, available_online: checked })} />
+              </div>
+            </div>
+            
+            <div className="flex flex-col gap-3 p-4 border border-border/50 rounded-xl bg-muted/10">
+              <Label className="text-foreground font-medium flex items-center gap-2">
+                <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                Imagem do Pacote (Opcional)
+              </Label>
+              <p className="text-xs text-muted-foreground -mt-1">Adicione uma imagem representativa para exibir no site.</p>
+              
+              <div className="flex flex-col gap-4 mt-2">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="pkgImageUrl" className="text-xs text-muted-foreground">URL da Imagem (Opção 1)</Label>
+                  <div className="relative">
+                    <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="pkgImageUrl"
+                      value={formData.image_url}
+                      onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                      className="bg-background border-border/50 h-10 pl-9 focus-visible:ring-1"
+                      placeholder="Cole o link da imagem aqui..."
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="pkgImageUpload" className="text-xs text-muted-foreground">Fazer Upload (Opção 2)</Label>
+                  <div className="relative">
+                    <Input
+                      id="pkgImageUpload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={isUploading}
+                      className="sr-only"
+                    />
+                    <Label
+                      htmlFor="pkgImageUpload"
+                      className="flex items-center justify-center gap-2 w-full h-10 px-4 rounded-md border border-border/50 bg-background hover:bg-muted/50 cursor-pointer transition-colors text-sm font-medium"
+                    >
+                      {isUploading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : <Upload className="h-4 w-4 text-muted-foreground" />}
+                      {isUploading ? "Enviando..." : "Escolher arquivo do computador"}
+                    </Label>
+                  </div>
+                </div>
+
+                {formData.image_url && (
+                  <div className="mt-2 w-32 aspect-video rounded-lg overflow-hidden border border-border/50 relative shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={formData.image_url} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

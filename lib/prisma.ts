@@ -21,7 +21,7 @@ export const getTenantPrisma = (organizationId: string) => {
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
           // 1. Ignoramos modelos globais que NÃO possuem a coluna organization_id
-          const globalModels = ["Organization", "User"];
+          const globalModels = ["Organization", "User", "Account", "Session", "VerificationToken", "ServiceStockItem"];
           if (globalModels.includes(model)) {
             return query(args);
           }

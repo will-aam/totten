@@ -29,6 +29,8 @@ export async function createPackageTemplateAction(data: {
   service_id: string;
   validity_days?: string | number | null;
   active?: boolean;
+  available_online?: boolean;
+  image_url?: string | null;
 }) {
   try {
     const admin = await requireAuth();
@@ -71,6 +73,8 @@ export async function updatePackageTemplate(
     price?: number;
     validity_days?: number | null;
     active?: boolean;
+    available_online?: boolean;
+    image_url?: string | null;
   },
 ) {
   try {
@@ -91,6 +95,8 @@ export async function updatePackageTemplate(
         price: data.price,
         validity_days: data.validity_days,
         active: data.active,
+        available_online: data.available_online,
+        image_url: data.image_url,
       },
     });
 

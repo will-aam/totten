@@ -21,6 +21,8 @@ export class PackageTemplateService {
         service_id: true,
         active: true,
         validity_days: true,
+        available_online: true,
+        image_url: true,
         // AQUI ESTÁ A MÁGICA: Trazendo a relação do serviço para o front-end
         service: {
           select: {
@@ -46,6 +48,8 @@ export class PackageTemplateService {
       service_id: string;
       validity_days?: string | number | null;
       active?: boolean;
+      available_online?: boolean;
+      image_url?: string | null;
     },
   ) {
     const prisma = getTenantPrisma(organizationId);
@@ -67,6 +71,8 @@ export class PackageTemplateService {
             ? Number(data.validity_days)
             : null,
         active: data.active ?? true,
+        available_online: data.available_online ?? true,
+        image_url: data.image_url,
         organization_id: organizationId,
       },
     });

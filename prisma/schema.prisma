@@ -211,6 +211,8 @@ model Service {
   category_id       String
   organization_id   String
   active            Boolean            @default(true)
+  available_online  Boolean            @default(true)
+  image_url         String?
   material_cost     Decimal?           @db.Decimal(10, 2)
   track_stock       Boolean            @default(false)
   appointments      Appointment[]
@@ -232,6 +234,8 @@ model PackageTemplate {
   total_sessions  Int
   price           Decimal
   active          Boolean      @default(true)
+  available_online Boolean     @default(true)
+  image_url       String?
   organization_id String
   created_at      DateTime     @default(now())
   updated_at      DateTime     @updatedAt

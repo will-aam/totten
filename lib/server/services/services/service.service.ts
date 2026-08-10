@@ -66,6 +66,8 @@ export class ServiceCatalogService {
       material_cost,
       track_stock,
       stock_items,
+      available_online,
+      image_url,
     } = data;
 
     if (!name || !duration || !price) {
@@ -105,6 +107,8 @@ export class ServiceCatalogService {
         category_id: finalCategoryId,
         organization_id: organizationId,
         active: true,
+        available_online: available_online !== undefined ? available_online : true,
+        image_url: image_url || null,
         // Vínculo inteligente de insumos na tabela pivô
         ...(track_stock && stock_items && stock_items.length > 0
           ? {
