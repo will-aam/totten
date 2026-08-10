@@ -19,12 +19,10 @@ import { ProPresentation } from "./pro-presentation";
 import { ProHistory } from "./pro-history";
 import { ProServices } from "./pro-services";
 import { ProMedia } from "./pro-media";
-import { ProSocialProof } from "./pro-social-proof";
 import { ProContact } from "./pro-contact";
 import { ProTheme } from "./pro-theme";
 import { updateCustomPageAction } from "@/app/actions/custom-page";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
 import useSWR from "swr";
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
@@ -46,7 +44,6 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
   const [history, setHistory] = useState<any>({ showHistory: true, historyTitle: "", historyText: "", historyImage: "", historyStat1Label: "Anos de experiência", historyStat1Value: "", historyStat2Label: "Clientes atendidos", historyStat2Value: "", historyStat3Label: "", historyStat3Value: "" });
   const [services, setServices] = useState<any>({ ctaText: "", ctaLink: "", servicesList: [] as any[], featuredPackageName: "" });
   const [media, setMedia] = useState<any>({});
-  const [socialProof, setSocialProof] = useState<any>({ testimonials: [] as any[] });
   const [contact, setContact] = useState<any>({ address: "", mapUrl: "", phone: "", whatsapp: "", email: "", businessHours: "" });
   const [theme, setTheme] = useState<any>({ id: "light", css: "bg-slate-50", textColor: "#0f172a", primaryColor: "#0f172a", headerStyle: "center" });
   // Preencher dados iniciais recebidos do servidor ou localStorage
@@ -57,7 +54,6 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
       if (initialData.history) setHistory(initialData.history);
       if (initialData.services) setServices(initialData.services);
       if (initialData.media) setMedia(initialData.media);
-      if (initialData.socialProof) setSocialProof(initialData.socialProof);
       if (initialData.contact) setContact(initialData.contact);
       if (initialData.theme) setTheme(initialData.theme);
       loaded = true;
@@ -72,7 +68,6 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
           if (parsed.history) setHistory(parsed.history);
           if (parsed.services) setServices(parsed.services);
           if (parsed.media) setMedia(parsed.media);
-          if (parsed.socialProof) setSocialProof(parsed.socialProof);
           if (parsed.contact) setContact(parsed.contact);
           if (parsed.theme) setTheme(parsed.theme);
         } catch (e) { }
@@ -82,9 +77,9 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
 
   // Salvar rascunho
   useEffect(() => {
-    const draft = { presentation, history, services, media, socialProof, contact, theme };
+    const draft = { presentation, history, services, media, contact, theme };
     localStorage.setItem('totten_pro_site_draft', JSON.stringify(draft));
-  }, [presentation, history, services, media, socialProof, contact, theme]);
+  }, [presentation, history, services, media, contact, theme]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -94,7 +89,6 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
         history,
         services,
         media,
-        socialProof,
         contact,
         theme
       };
@@ -117,10 +111,9 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
 
   const STEPS = [
     { id: "presentation", title: "Apresentação", component: <ProPresentation data={presentation} onChange={setPresentation} /> },
-    { id: "history", title: "Nossa História", component: <ProHistory data={history} onChange={setHistory} /> },
+    { id: "history", title: "Sobre", component: <ProHistory data={history} onChange={setHistory} /> },
     { id: "services", title: "Serviços", component: <ProServices data={services} onChange={setServices} /> },
     { id: "media", title: "Galeria e Mídia", component: <ProMedia data={media} onChange={setMedia} /> },
-    { id: "social-proof", title: "Depoimentos", component: <ProSocialProof data={socialProof} onChange={setSocialProof} /> },
     { id: "contact", title: "Contato", component: <ProContact data={contact} onChange={setContact} /> },
     { id: "theme", title: "Aparência", component: <ProTheme data={theme} onChange={setTheme} /> },
   ];
@@ -131,7 +124,6 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
       case "history": return !!(history.historyTitle || history.historyText);
       case "services": return services.servicesList && services.servicesList.length > 0;
       case "media": return !!((media as any).videoUrl || ((media as any).images && (media as any).images.length > 0));
-      case "social-proof": return socialProof.testimonials && socialProof.testimonials.length > 0;
       case "contact": return !!(contact.phone || contact.address);
       case "theme": return true;
       default: return false;
@@ -157,9 +149,9 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
         <div className="relative w-full">
           {displayImage ? (
             <div className={cn(
-              "w-full relative shrink-0", 
-              isAvatarLayout ? "h-40" : 
-              isBlogLayout ? "h-32" : "h-56"
+              "w-full relative shrink-0",
+              isAvatarLayout ? "h-40" :
+                isBlogLayout ? "h-32" : "h-56"
             )}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -276,7 +268,7 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
                 <img src={history.historyImage} alt="Nossa História" className="w-full h-full object-cover" />
               </div>
             )}
-            
+
             {history.historyOverline !== "" && (
               <span className="block text-[10px] uppercase tracking-widest font-bold mb-3" style={{ color: theme.primaryColor }}>
                 {history.historyOverline ?? "NOSSA HISTÓRIA"}
@@ -284,7 +276,7 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
             )}
             {history.historyTitle && <h2 className="font-serif font-medium text-2xl mb-4 leading-tight">{history.historyTitle}</h2>}
             {history.historyText && <p className="text-sm opacity-80 whitespace-pre-wrap leading-relaxed">{history.historyText}</p>}
-            
+
             <div className="grid grid-cols-2 gap-4 mt-8">
               {history.historyStat1Value && (
                 <div className="flex flex-col gap-0.5 text-left">
@@ -399,7 +391,7 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
                 {services.packagesSubtitle || "Planos flexíveis para quem quer incluir o autocuidado na rotina."}
               </p>
             </div>
-            
+
             <div>
               {services.packagesDisplay === "pills" ? (
                 <div className="flex flex-wrap justify-center gap-2">
@@ -420,7 +412,7 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
                         return (
                           <CarouselItem key={pkg.id} className="pl-3 basis-[85%]">
                             <div className={cn("h-full rounded-2xl flex flex-col relative shadow-sm border bg-white group/card p-4", isFeatured ? "border-2 scale-[1.03]" : "")} style={isFeatured ? { borderColor: theme.primaryColor, boxShadow: `0 0 0 2px ${theme.primaryColor}40`, backgroundColor: theme.primaryColor + "08" } : {}}>
-                              
+
                               <div className="flex items-start justify-between gap-2 mb-2">
                                 <h4 className="font-serif font-bold text-[13px] text-slate-900">{pkg.name}</h4>
                                 {isFeatured && (
@@ -431,7 +423,7 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
                                   </div>
                                 )}
                               </div>
-                              
+
                               <p className="text-[11px] text-slate-500 mb-4 flex-1">
                                 {pkg.description || `${pkg.total_sessions} sessões inclusas. Ideal para quem quer manter a rotina de autocuidado com desconto.`}
                               </p>
@@ -440,14 +432,14 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
                                 <span className="font-bold text-[14px] text-slate-900">
                                   R$ {Number(pkg.price).toFixed(2)}
                                 </span>
-                                <span 
+                                <span
                                   className="text-[11px] font-bold flex items-center gap-1"
                                   style={{ color: theme.primaryColor }}
                                 >
-                                  Reservar 
+                                  Reservar
                                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                    <path d="M12 5L19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                    <path d="M12 5L19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                   </svg>
                                 </span>
                               </div>
@@ -459,47 +451,6 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
                   </Carousel>
                 </div>
               )}
-            </div>
-          </div>
-        )}
-
-        {/* TESTIMONIALS SECTION */}
-        {(socialProof.testimonials && socialProof.testimonials.length > 0) && (
-          <div className="px-6 py-6 bg-foreground/5">
-            <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
-              <Star className="h-5 w-5" /> Depoimentos
-            </h2>
-            <div className="flex gap-4 overflow-x-auto no-scrollbar snap-x pb-4 -mx-6 px-6">
-              {socialProof.testimonials.map((testi: any, i: number) => (
-                <div key={i} className="w-64 shrink-0 p-4 rounded-xl bg-background shadow-sm snap-center">
-                  <div className="flex text-amber-400 mb-2">
-                    <Star className="h-3 w-3" type="solid" /><Star className="h-3 w-3" type="solid" /><Star className="h-3 w-3" type="solid" /><Star className="h-3 w-3" type="solid" /><Star className="h-3 w-3" type="solid" />
-                  </div>
-                  <p className="text-xs opacity-80 italic mb-3">"{testi.text}"</p>
-                  <p className="text-xs font-bold">{testi.name || "Cliente"}</p>
-                  <p className="text-[10px] opacity-60">{testi.role}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* VIDEO SECTION */}
-        {(media as any).videoUrl && (
-          <div className="px-6 py-6">
-            <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
-              <Youtube className="h-5 w-5" /> Vídeo
-            </h2>
-            <div className="w-full aspect-video rounded-xl overflow-hidden shadow-sm border border-border/10 bg-black/10">
-              <iframe
-                width="100%"
-                height="100%"
-                src={getYouTubeEmbedUrl((media as any).videoUrl) || ""}
-                title="YouTube video player"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
             </div>
           </div>
         )}
@@ -552,16 +503,16 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
             </p>
           </div>
           <div className="flex gap-2 w-full md:w-auto">
-            <Button 
-              variant="outline" 
-              onClick={() => setShowMobilePreview(true)} 
+            <Button
+              variant="outline"
+              onClick={() => setShowMobilePreview(true)}
               className="flex-1 lg:hidden md:flex-none rounded-full h-10 w-full md:w-32"
             >
               Ver Preview
             </Button>
-            <Button 
-              onClick={handleSave} 
-              disabled={isSaving} 
+            <Button
+              onClick={handleSave}
+              disabled={isSaving}
               className="flex-1 md:flex-none rounded-full h-10 shadow-sm w-full md:w-32"
             >
               {isSaving ? "Salvando..." : "Salvar"}
@@ -602,14 +553,14 @@ export function ProfessionalSiteView({ profile, initialData }: { profile?: any; 
           </div>
         ) : (
           <div className="w-full animate-in fade-in slide-in-from-right-4 duration-300">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               onClick={() => setActiveStepId(null)}
               className="mb-6 -ml-2 text-muted-foreground hover:text-foreground"
             >
               <ChevronLeft className="h-5 w-5 mr-1" /> Voltar para o menu
             </Button>
-            
+
             {STEPS.find(s => s.id === activeStepId)?.component}
           </div>
         )}

@@ -674,84 +674,8 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
             </div>
           )}
 
-          {/* ── AVALIAÇÕES DO GOOGLE ── */}
-          {socialProof.useGoogleReviews && (
-            <div className={cn("px-6 sm:px-10 py-14 md:py-24 overflow-hidden", altBg)}>
-              <div className="max-w-5xl mx-auto w-full">
-                <h2 className="font-bold text-2xl md:text-4xl mb-4 flex items-center gap-3">
-                  <Star className="h-8 w-8 text-amber-500" type="solid" /> Avaliações do Google
-                </h2>
-                <p className="text-base opacity-70 mb-12">Veja o que nossos clientes dizem sobre nós.</p>
-                <div className="flex gap-6 overflow-x-auto no-scrollbar snap-x pb-8 -mx-6 px-6 sm:mx-0 sm:px-0">
-                  {[
-                    { name: "Mariana Silva", text: "Excelente atendimento! O espaço é lindo e os profissionais são maravilhosos." },
-                    { name: "Roberto Alves", text: "Muito satisfeito com o serviço prestado. Recomendo a todos!" },
-                    { name: "Carla Mendes", text: "Lugar muito acolhedor, saí de lá me sentindo renovada." },
-                  ].map((testi, i) => (
-                    <div key={i} className={cn("w-80 md:w-96 shrink-0 p-8 rounded-3xl shadow-sm snap-center border flex flex-col justify-between", cardBg, borderColor)}>
-                      <div>
-                        <div className="flex text-amber-400 mb-4 gap-1">
-                          {[...Array(5)].map((_, s) => <Star key={s} className="h-5 w-5" type="solid" />)}
-                        </div>
-                        <p className="text-base opacity-80 mb-6 leading-relaxed">"{testi.text}"</p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className={cn("w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm", altBg)}>
-                          {testi.name.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold">{testi.name}</p>
-                          <p className="text-xs opacity-50">Local Guide</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
 
-          {/* ── VÍDEO ── */}
-          {(media as any).videoUrl && (
-            <div className="px-6 sm:px-10 py-14 md:py-24">
-              <div className="max-w-5xl mx-auto w-full">
-                <h2 className="font-bold text-2xl md:text-4xl mb-4 flex items-center gap-3">
-                  <Youtube className="h-8 w-8" style={{ color: theme.primaryColor }} />
-                  {(media as any).videoTitle || "Conheça nosso espaço"}
-                </h2>
-                {(media as any).videoDescription && (
-                  <p className="text-base opacity-70 mb-8 max-w-2xl">{(media as any).videoDescription}</p>
-                )}
-
-                <div className={cn(
-                  "grid gap-10",
-                  (media as any).videoFeatures?.length > 0 ? "md:grid-cols-[1fr_auto]" : "grid-cols-1"
-                )}>
-                  <div className="w-full aspect-video rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-black">
-                    <iframe
-                      width="100%"
-                      height="100%"
-                      src={getYouTubeEmbedUrl((media as any).videoUrl) || ""}
-                      title="YouTube video player"
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  </div>
-                  {(media as any).videoFeatures?.length > 0 && (
-                    <div className="flex flex-col justify-center gap-4 md:w-56">
-                      {((media as any).videoFeatures as string[]).map((feat, i) => (
-                        <div key={i} className="flex items-start gap-3">
-                          <span className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: theme.primaryColor }} />
-                          <span className="text-base opacity-80 leading-snug">{feat}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
+          {/* VÍDEO - Temporarily disabled */}
 
           {/* ── CONTATO & FORMULÁRIO ── */}
           <div id="contato" className={cn("px-6 sm:px-10 py-14 md:py-24 scroll-mt-20", altBg)}>
