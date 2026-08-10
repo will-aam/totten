@@ -17,7 +17,7 @@ export class SettingsService {
 
     return {
       companyName: settings.company_name,
-      tradeName: settings.trade_name || "",
+      responsibleName: settings.responsible_name || "",
       document: settings.document || "",
       contactPhone: settings.phone_landline || "",
       whatsapp: settings.phone_whatsapp || "",
@@ -43,9 +43,15 @@ export class SettingsService {
     });
 
     const updateData: any = {};
-    if (data.companyName !== undefined)
+    if (data.companyName !== undefined) {
       updateData.company_name = data.companyName;
-    if (data.tradeName !== undefined) updateData.trade_name = data.tradeName;
+      // Also update Organization name if company name is changed
+      await prisma.organization.update({
+        where: { id: organizationId },
+        data: { name: data.companyName }
+      });
+    }
+    if (data.responsibleName !== undefined) updateData.responsible_name = data.responsibleName;
     if (data.document !== undefined) updateData.document = data.document;
     if (data.contactPhone !== undefined)
       updateData.phone_landline = data.contactPhone;
@@ -72,7 +78,7 @@ export class SettingsService {
           data.companyName ||
           existingSettings?.organization.name ||
           "Minha Empresa",
-        trade_name: data.tradeName || "",
+        responsible_name: data.responsibleName || "",
         document: data.document || "",
         phone_landline: data.contactPhone || "",
         phone_whatsapp: data.whatsapp || "",

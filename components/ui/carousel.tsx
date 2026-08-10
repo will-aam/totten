@@ -233,6 +233,39 @@ function CarouselNext({
   );
 }
 
+function CarouselDots({ className, ...props }: React.ComponentProps<"div">) {
+  const { api } = useCarousel();
+  const [selectedIndex, setSelectedIndex] = React.useState(0);
+  const [scrollSnaps, setScrollSnaps] = React.useState<number[]>([]);
+
+  React.useEffect(() => {
+    if (!api) return;
+
+    setScrollSnaps(api.scrollSnapList());
+    setSelectedIndex(api.selectedScrollSnap());
+
+    api.on("reInit", () => setScrollSnaps(api.scrollSnapList()));
+    api.on("select", () => setSelectedIndex(api.selectedScrollSnap()));
+  }, [api]);
+
+  if (scrollSnaps.length <= 1) return null;
+
+  return (
+    <div className={cn("flex justify-center gap-2 mt-6", className)} {...props}>
+      {scrollSnaps.map((_, index) => (
+        <button
+          key={index}
+          className={cn(
+            "h-2 rounded-full transition-all duration-300",
+            index === selectedIndex ? "w-6 bg-slate-900" : "w-2 bg-slate-300"
+          )}
+          onClick={() => api?.scrollTo(index)}
+        />
+      ))}
+    </div>
+  );
+}
+
 export {
   type CarouselApi,
   Carousel,
@@ -240,4 +273,5 @@ export {
   CarouselItem,
   CarouselPrevious,
   CarouselNext,
+  CarouselDots,
 };

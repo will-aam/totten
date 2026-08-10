@@ -26,6 +26,7 @@ export async function getTeam() {
         profile_image_url: true,
         instagram_url: true,
         show_instagram: true,
+        show_on_site: true,
         created_at: true,
       },
       orderBy: { created_at: "asc" },
@@ -47,6 +48,7 @@ export async function createCollaborator(data: {
   profile_image_url?: string;
   instagram_url?: string;
   show_instagram?: boolean;
+  show_on_site?: boolean;
 }) {
   try {
     const admin = await requireAuth();
@@ -81,6 +83,7 @@ export async function createCollaborator(data: {
         profile_image_url: data.profile_image_url || null,
         instagram_url: data.instagram_url || null,
         show_instagram: data.show_instagram !== undefined ? data.show_instagram : true,
+        show_on_site: data.show_on_site !== undefined ? data.show_on_site : true,
         email_verified: true,
         organizations: { connect: { id: admin.organizationId } },
       },
@@ -105,6 +108,7 @@ export async function updateCollaborator(
     profile_image_url?: string;
     instagram_url?: string;
     show_instagram?: boolean;
+    show_on_site?: boolean;
   },
 ) {
   try {
@@ -114,30 +118,28 @@ export async function updateCollaborator(
       return { success: false, error: "Sem permissão." };
     }
 
-    // Impede que o dono tire o próprio acesso de Owner ou altere seu e-mail por aqui
     const targetUser = await prisma.admin.findUnique({ where: { id } });
-    if (targetUser?.role === "OWNER" && targetUser.id === admin.id) {
-      return {
-        success: false,
-        error: "Edite seus dados em Configurações > Segurança.",
-      };
-    }
+    const isOwner = targetUser?.role === "OWNER" && targetUser?.id === admin.id;
 
     //  Usando tipagem estrita do Prisma ao invés de 'any' para evitar quebras
     const updateData: Prisma.AdminUpdateInput = {
       display_name: data.name,
-      email: data.email,
     };
 
-    if (data.permissions !== undefined) updateData.permissions = data.permissions;
+    // O dono não pode alterar o próprio email, senha e permissões por aqui
+    if (!isOwner) {
+      updateData.email = data.email;
+      if (data.permissions !== undefined) updateData.permissions = data.permissions;
+      if (data.password && data.password.trim().length >= 6) {
+        updateData.password = await bcrypt.hash(data.password, 10);
+      }
+    }
+
     if (data.profession !== undefined) updateData.profession = data.profession;
     if (data.profile_image_url !== undefined) updateData.profile_image_url = data.profile_image_url;
     if (data.instagram_url !== undefined) updateData.instagram_url = data.instagram_url;
     if (data.show_instagram !== undefined) updateData.show_instagram = data.show_instagram;
-
-    if (data.password && data.password.trim().length >= 6) {
-      updateData.password = await bcrypt.hash(data.password, 10);
-    }
+    if (data.show_on_site !== undefined) updateData.show_on_site = data.show_on_site;
 
     await prisma.admin.update({
       where: { id },

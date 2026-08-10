@@ -58,6 +58,7 @@ type TeamMember = {
   show_instagram?: boolean;
   profile_image_url?: string | null;
   profession?: string | null;
+  show_on_site?: boolean;
 };
 
 export default function TeamPage() {
@@ -83,6 +84,7 @@ export default function TeamPage() {
     show_instagram: true,
     profile_image_url: "",
     profession: "",
+    show_on_site: true,
   });
 
   useEffect(() => {
@@ -106,7 +108,7 @@ export default function TeamPage() {
   // HANDLERS DE ABERTURA DOS MODAIS
   // --------------------------------------------------------
   const openCreate = () => {
-    setFormData({ name: "", email: "", password: "", permissions: [], instagram_url: "", show_instagram: true, profile_image_url: "", profession: "" });
+    setFormData({ name: "", email: "", password: "", permissions: [], instagram_url: "", show_instagram: true, profile_image_url: "", profession: "", show_on_site: true });
     setSelectedMember(null);
     setModalView("create");
   };
@@ -121,6 +123,7 @@ export default function TeamPage() {
       show_instagram: member.show_instagram !== false,
       profile_image_url: member.profile_image_url || "",
       profession: member.profession || "",
+      show_on_site: member.show_on_site !== false,
     });
     setSelectedMember(member);
     setModalView("edit");
@@ -271,7 +274,7 @@ export default function TeamPage() {
         open={modalView === "create" || modalView === "edit"}
         onOpenChange={closeModal}
       >
-        <DialogContent className="sm:max-w-md rounded-3xl">
+        <DialogContent className="sm:max-w-md rounded-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {modalView === "create"
@@ -336,37 +339,41 @@ export default function TeamPage() {
                 }
               />
             </div>
-            <div className="grid gap-2">
-              <Label>E-mail (Login)</Label>
-              <Input
-                type="email"
-                placeholder="patricia@email.com"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label>
-                {modalView === "create" ? "Senha Temporária" : "Nova Senha"}
-              </Label>
-              <Input
-                type="text"
-                placeholder={
-                  modalView === "create"
-                    ? "Ex: patricia123"
-                    : "Deixe em branco para não alterar"
-                }
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
-              />
-              <span className="text-[10px] text-muted-foreground">
-                Ela poderá alterar a senha depois se quiser. Min. 6 caracteres.
-              </span>
-            </div>
+            {selectedMember?.role !== "OWNER" && (
+              <>
+                <div className="grid gap-2">
+                  <Label>E-mail (Login)</Label>
+                  <Input
+                    type="email"
+                    placeholder="patricia@email.com"
+                    value={formData.email}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>
+                    {modalView === "create" ? "Senha Temporária" : "Nova Senha"}
+                  </Label>
+                  <Input
+                    type="text"
+                    placeholder={
+                      modalView === "create"
+                        ? "Ex: patricia123"
+                        : "Deixe em branco para não alterar"
+                    }
+                    value={formData.password}
+                    onChange={(e) =>
+                      setFormData({ ...formData, password: e.target.value })
+                    }
+                  />
+                  <span className="text-[10px] text-muted-foreground">
+                    Ela poderá alterar a senha depois se quiser. Min. 6 caracteres.
+                  </span>
+                </div>
+              </>
+            )}
 
             <div className="grid gap-2 mt-2">
               <Label>Instagram (Opcional)</Label>
@@ -392,8 +399,25 @@ export default function TeamPage() {
               </div>
             </div>
 
+            <div className="grid gap-2 mt-2">
+              <Label>Visibilidade no Site</Label>
+              <div className="flex items-center space-x-2 mt-1">
+                <Switch
+                  id="show_on_site"
+                  checked={formData.show_on_site}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, show_on_site: checked })
+                  }
+                />
+                <Label htmlFor="show_on_site" className="text-xs font-normal text-muted-foreground">
+                  Exibir este profissional na seção da equipe do Site
+                </Label>
+              </div>
+            </div>
+
             {/* ⚡ GERENCIAMENTO DE PERMISSÕES */}
-            <div className="mt-2 flex flex-col gap-3 rounded-xl border border-border/50 bg-muted/20 p-4">
+            {selectedMember?.role !== "OWNER" && (
+              <div className="mt-2 flex flex-col gap-3 rounded-xl border border-border/50 bg-muted/20 p-4">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Permissões de Acesso
               </p>
@@ -462,6 +486,7 @@ export default function TeamPage() {
                 />
               </div>
             </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={closeModal} disabled={saving}>
@@ -615,14 +640,25 @@ const TeamMemberCard = memo(
         {/* AÇÕES E TAGS */}
         <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto mt-2 sm:mt-0 pt-2 sm:pt-0 border-t border-border/40 sm:border-0 shrink-0">
           {isOwner ? (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
-              <Shield
-                size="xs"
-                className="text-amber-600 dark:text-amber-500"
-              />
-              <span className="text-xs font-bold text-amber-700 dark:text-amber-500">
-                Admin
-              </span>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
+                <Shield
+                  size="xs"
+                  className="text-amber-600 dark:text-amber-500"
+                />
+                <span className="text-xs font-bold text-amber-700 dark:text-amber-500">
+                  Admin
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 bg-muted/50 rounded-xl border border-border/50"
+                onClick={() => onEdit(member)}
+                title="Editar Perfil"
+              >
+                <Pencil size="xs" />
+              </Button>
             </div>
           ) : (
             <div className="flex items-center gap-1 bg-muted/50 rounded-xl p-1 border border-border/50">

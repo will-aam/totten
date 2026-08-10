@@ -54,6 +54,7 @@ model Admin {
   profile_image_url  String?
   instagram_url      String?
   show_instagram     Boolean        @default(true)
+  show_on_site       Boolean        @default(true)
   appointments       Appointment[]  @relation("ProfessionalToAppointment")
   check_ins          CheckIn[]      @relation("AdminToCheckIn")
   transactions       Transaction[]  @relation("AdminToTransaction")

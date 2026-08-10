@@ -14,6 +14,7 @@ import {
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
+  CarouselDots,
 } from "@/components/ui/carousel";
 
 const getYouTubeEmbedUrl = (url: string) => {
@@ -90,8 +91,24 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
     setNewsletterSent(true);
   };
 
-  // Pacote em destaque
   const featuredPackageName = servicesConfig?.featuredPackageName?.toLowerCase().trim();
+
+  // Ordem com preferencial em destaque no início
+  const sortedPackages = [...dbPackages].sort((a, b) => {
+    const aFeatured = featuredPackageName && a.name.toLowerCase().trim() === featuredPackageName;
+    const bFeatured = featuredPackageName && b.name.toLowerCase().trim() === featuredPackageName;
+    if (aFeatured && !bFeatured) return -1;
+    if (!aFeatured && bFeatured) return 1;
+    return 0;
+  });
+
+  const sortedServices = [...dbServices].sort((a, b) => {
+    const aFeatured = featuredPackageName && a.name.toLowerCase().trim() === featuredPackageName;
+    const bFeatured = featuredPackageName && b.name.toLowerCase().trim() === featuredPackageName;
+    if (aFeatured && !bFeatured) return -1;
+    if (!aFeatured && bFeatured) return 1;
+    return 0;
+  });
 
   return (
     <>
@@ -478,7 +495,7 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                   <div className="mb-14">
                     {servicesConfig.servicesDisplay === "pills" ? (
                       <div className="flex flex-wrap justify-center gap-3">
-                        {dbServices.map((srv: any) => (
+                        {sortedServices.map((srv: any) => (
                           <div key={srv.id} className={cn("px-5 py-3 rounded-full flex items-center gap-3 border shadow-sm transition-transform hover:-translate-y-1", cardBg, borderColor)}>
                             <span className="font-bold text-sm">{srv.name}</span>
                             <span className="text-xs opacity-50 px-3 border-l" style={{ borderColor: theme.primaryColor }}>{srv.duration}m</span>
@@ -495,49 +512,52 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                           }}
                           className="w-full"
                         >
-                          <CarouselContent className="-ml-4 md:-ml-6">
-                            {dbServices.map((srv: any) => (
-                              <CarouselItem key={srv.id} className="pl-4 md:pl-6 md:basis-1/2 lg:basis-1/3">
-                                <div className={cn("h-full rounded-2xl flex flex-col overflow-hidden relative shadow-sm border hover:shadow-md transition-all group/card", cardBg, borderColor)}>
-                                  {/* Imagem do Serviço */}
-                                  <div className="w-full aspect-[4/3] shrink-0 relative bg-muted border-b overflow-hidden" style={{ borderColor: theme.primaryColor + '20' }}>
-                                    {srv.image_url ? (
-                                      // eslint-disable-next-line @next/next/no-img-element
-                                      <img src={srv.image_url} alt={srv.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105" />
-                                    ) : (
-                                      <div className="absolute inset-0 flex items-center justify-center">
-                                        <Briefcase className="w-12 h-12 text-muted-foreground/20" />
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  {/* Conteúdo */}
-                                  <div className="p-6 flex flex-col flex-1 bg-white">
-                                    <div className="flex-1">
-                                      <h4 className="font-bold text-lg mb-3 text-slate-900">{srv.name}</h4>
-                                      {srv.description && <p className="text-sm text-slate-600 mb-4 line-clamp-3 leading-relaxed">{srv.description}</p>}
+                          <CarouselContent className="-ml-4 md:-ml-6 py-4 -my-4">
+                            {sortedServices.map((srv: any) => {
+                              const isFeatured = featuredPackageName && srv.name.toLowerCase().trim() === featuredPackageName;
+                              return (
+                                <CarouselItem key={srv.id} className="pl-4 md:pl-6 md:basis-1/2 lg:basis-1/3">
+                                  <div className={cn(
+                                    "h-full rounded-2xl flex flex-col overflow-hidden relative shadow-sm border hover:shadow-md transition-all group/card",
+                                    cardBg, borderColor
+                                  )}>
+                                    {/* Imagem do Serviço */}
+                                    <div className="w-full aspect-[4/3] shrink-0 relative bg-muted border-b overflow-hidden" style={{ borderColor: theme.primaryColor + '20' }}>
+                                      {srv.image_url ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img src={srv.image_url} alt={srv.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105" />
+                                      ) : (
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                          <Briefcase className="w-12 h-12 text-muted-foreground/20" />
+                                        </div>
+                                      )}
                                     </div>
 
-                                    {/* Rodapé do Card */}
-                                    <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-100">
-                                      <div className="flex items-center gap-1.5 font-bold text-sm text-slate-800">
-                                        <span style={{ color: theme.primaryColor }}>R$ {Number(srv.price).toFixed(2)}</span>
-                                        <span className="text-slate-400 font-normal">/</span>
-                                        <span className="text-slate-500 font-normal">{srv.duration} min</span>
+                                    {/* Conteúdo */}
+                                    <div className="p-6 flex flex-col flex-1 bg-white">
+                                      <div className="flex-1">
+                                        <h4 className="font-bold text-lg mb-3 text-slate-900">{srv.name}</h4>
+                                        {srv.description && <p className="text-sm text-slate-600 mb-4 line-clamp-3 leading-relaxed">{srv.description}</p>}
+                                      </div>
+
+                                      {/* Rodapé do Card */}
+                                      <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-100">
+                                        <div className="flex items-center gap-1.5 font-bold text-sm text-slate-800">
+                                          <span style={{ color: theme.primaryColor }}>R$ {Number(srv.price).toFixed(2)}</span>
+                                          <span className="text-slate-400 font-normal">/</span>
+                                          <span className="text-slate-500 font-normal">{srv.duration} min</span>
+                                        </div>
                                       </div>
                                     </div>
                                   </div>
-                                </div>
-                              </CarouselItem>
-                            ))}
+                                </CarouselItem>
+                              );
+                            })}
                           </CarouselContent>
 
-                          {/* Controles do Carrossel (Visíveis no Desktop via hover) */}
-                          {dbServices.length > 2 && (
-                            <div className="hidden md:block opacity-0 group-hover/carousel:opacity-100 transition-opacity">
-                              <CarouselPrevious className="absolute -left-5 top-1/2 -translate-y-1/2 h-12 w-12 border shadow-lg bg-white hover:bg-slate-50 text-slate-700" />
-                              <CarouselNext className="absolute -right-5 top-1/2 -translate-y-1/2 h-12 w-12 border shadow-lg bg-white hover:bg-slate-50 text-slate-700" />
-                            </div>
+                          {/* Controles do Carrossel */}
+                          {sortedServices.length > 2 && (
+                            <CarouselDots />
                           )}
                         </Carousel>
                       </div>
@@ -561,7 +581,7 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
 
                 {servicesConfig.packagesDisplay === "pills" ? (
                   <div className="flex flex-wrap gap-3">
-                    {dbPackages.map((pkg: any) => (
+                    {sortedPackages.map((pkg: any) => (
                       <div key={pkg.id} className={cn("px-5 py-3 rounded-full flex items-center gap-3 border shadow-sm transition-transform hover:-translate-y-1", altBg, borderColor)}>
                         <span className="font-bold text-sm whitespace-nowrap">{pkg.name}</span>
                         <span className="text-xs opacity-50 px-3 border-l whitespace-nowrap" style={{ borderColor: theme.primaryColor }}>{pkg.total_sessions} sessões</span>
@@ -572,16 +592,15 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                 ) : (
                   <div className="relative w-full group/carousel">
                     <Carousel opts={{ align: "start", loop: false }} className="w-full">
-                      <CarouselContent className="-ml-4 md:-ml-6">
-                        {dbPackages.map((pkg: any) => {
+                      <CarouselContent className="-ml-4 md:-ml-6 py-4 -my-4">
+                        {sortedPackages.map((pkg: any) => {
                           const isFeatured = featuredPackageName && pkg.name.toLowerCase().trim() === featuredPackageName.toLowerCase().trim();
                           return (
                             <CarouselItem key={pkg.id} className="pl-4 md:pl-6 md:basis-1/2 lg:basis-1/3">
                               <div className={cn(
-                                "h-full rounded-2xl flex flex-col relative shadow-sm border hover:shadow-md transition-all group/card p-6",
-                                isFeatured ? "border-2 ring-2 scale-[1.03]" : "bg-white border-black/10"
+                                "h-full rounded-2xl flex flex-col relative shadow-sm border hover:shadow-md transition-all group/card p-6 bg-white border-black/10"
                               )}
-                                style={isFeatured ? { borderColor: theme.primaryColor, boxShadow: `0 0 0 2px ${theme.primaryColor}40`, backgroundColor: theme.primaryColor + "08" } : {}}>
+                                style={isFeatured ? { backgroundColor: theme.primaryColor + "08" } : {}}>
 
                                 {/* Header */}
                                 <div className="flex items-start justify-between gap-4 mb-4">
@@ -622,12 +641,9 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                         })}
                       </CarouselContent>
 
-                      {/* Controles do Carrossel (Visíveis no Desktop via hover) */}
-                      {dbPackages.length > 2 && (
-                        <div className="hidden md:block opacity-0 group-hover/carousel:opacity-100 transition-opacity">
-                          <CarouselPrevious className="absolute -left-5 top-1/2 -translate-y-1/2 h-12 w-12 border shadow-lg bg-white hover:bg-slate-50 text-slate-700" />
-                          <CarouselNext className="absolute -right-5 top-1/2 -translate-y-1/2 h-12 w-12 border shadow-lg bg-white hover:bg-slate-50 text-slate-700" />
-                        </div>
+                      {/* Controles do Carrossel */}
+                      {sortedPackages.length > 2 && (
+                        <CarouselDots />
                       )}
                     </Carousel>
                   </div>
@@ -643,25 +659,25 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                 <h2 className="font-bold text-2xl md:text-4xl mb-12 flex items-center gap-3">
                   <User className="h-8 w-8" style={{ color: theme.primaryColor }} /> Nossa Equipe
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-8 justify-items-center">
                   {professionals.map((prof: any) => (
-                    <div key={prof.id} className="flex flex-col group">
+                    <div key={prof.id} className="flex flex-col group w-full max-w-[240px]">
                       <div className={cn("w-full aspect-[4/5] rounded-3xl shadow-sm flex items-center justify-center mb-4 overflow-hidden border relative group/card", cardBg, borderColor)}>
                         {prof.show_instagram && prof.instagram_url && (
                           <a
                             href={prof.instagram_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="absolute top-4 left-4 z-10 p-2 rounded-full bg-white/90 shadow-md text-pink-600 hover:scale-110 hover:bg-white transition-all"
+                            className="absolute bottom-3 right-3 z-10 p-2 rounded-full bg-white/90 shadow-md text-pink-600 hover:scale-110 hover:bg-white transition-all"
                           >
                             <Instagram className="h-5 w-5" />
                           </a>
                         )}
                         {prof.profile_image_url ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img 
-                            src={prof.profile_image_url} 
-                            alt={prof.display_name || "Profissional"} 
+                          <img
+                            src={prof.profile_image_url}
+                            alt={prof.display_name || "Profissional"}
                             className="w-full h-full object-cover"
                           />
                         ) : (

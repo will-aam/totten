@@ -27,7 +27,7 @@ import { updateSettingsAction } from "@/app/actions/settings";
 
 interface GeneralSettingsResponse {
   companyName: string;
-  tradeName: string;
+  responsibleName: string;
   document: string;
   contactPhone: string;
   whatsapp: string;
@@ -42,7 +42,7 @@ export function GeneralSettings() {
 
   const [formData, setFormData] = useState({
     companyName: "",
-    tradeName: "",
+    responsibleName: "",
     document: "",
     contactPhone: "",
     whatsapp: "",
@@ -58,7 +58,7 @@ export function GeneralSettings() {
 
         setFormData({
           companyName: data.companyName || "",
-          tradeName: data.tradeName || "",
+          responsibleName: data.responsibleName || "",
           document: data.document || "",
           contactPhone: data.contactPhone || "",
           whatsapp: data.whatsapp || "",
@@ -210,38 +210,34 @@ export function GeneralSettings() {
 
       <CardContent className="grid gap-6 px-0 pb-0 md:pb-6 md:px-6">
         <div className="grid gap-2">
-          <Label htmlFor="tradeName" className="font-medium">
-            Nome de Exibição (Visível para os clientes)
+          <Label htmlFor="companyName" className="font-medium">
+            Nome da Empresa / Razão Social
           </Label>
           <Input
-            id="tradeName"
-            value={formData.tradeName}
+            id="companyName"
+            value={formData.companyName}
             onChange={(e) =>
-              setFormData({ ...formData, tradeName: e.target.value })
+              setFormData({ ...formData, companyName: e.target.value })
             }
-            placeholder="Ex: Clínica Bem-Estar"
+            placeholder="Ex: Clínica Bem-Estar LTDA"
           />
           <p className="text-xs text-muted-foreground">
-            Este nome aparece na sidebar, totem e mensagens para os clientes.
+            O nome principal da sua empresa (este nome será usado na maioria dos locais).
           </p>
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="companyName">
-              {docType === "CNPJ" ? "Razão Social" : "Nome Completo"}
+            <Label htmlFor="responsibleName">
+              Nome Completo do Responsável
             </Label>
             <Input
-              id="companyName"
-              value={formData.companyName}
+              id="responsibleName"
+              value={formData.responsibleName}
               onChange={(e) =>
-                setFormData({ ...formData, companyName: e.target.value })
+                setFormData({ ...formData, responsibleName: e.target.value })
               }
-              placeholder={
-                docType === "CNPJ"
-                  ? "Ex: Clínica Bem-Estar LTDA"
-                  : "Ex: Maria da Silva"
-              }
+              placeholder="Ex: Maria da Silva"
             />
           </div>
           <div className="grid gap-2">

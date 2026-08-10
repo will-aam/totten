@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 
 export async function updateSettingsAction(data: {
   companyName?: string;
-  tradeName?: string;
+  responsibleName?: string;
   document?: string;
   contactPhone?: string;
   whatsapp?: string;
