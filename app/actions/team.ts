@@ -22,6 +22,8 @@ export async function getTeam() {
         role: true,
         active: true,
         permissions: true, //  Trazendo as permissões do banco
+        profession: true,
+        profile_image_url: true,
         instagram_url: true,
         show_instagram: true,
         created_at: true,
@@ -41,6 +43,8 @@ export async function createCollaborator(data: {
   email: string;
   password?: string;
   permissions?: string[];
+  profession?: string;
+  profile_image_url?: string;
   instagram_url?: string;
   show_instagram?: boolean;
 }) {
@@ -73,6 +77,8 @@ export async function createCollaborator(data: {
         role: "COLLABORATOR",
         active: true,
         permissions: data.permissions || [], //  Salva as permissões garantindo que seja um array
+        profession: data.profession || null,
+        profile_image_url: data.profile_image_url || null,
         instagram_url: data.instagram_url || null,
         show_instagram: data.show_instagram !== undefined ? data.show_instagram : true,
         email_verified: true,
@@ -95,6 +101,8 @@ export async function updateCollaborator(
     email: string;
     password?: string;
     permissions?: string[];
+    profession?: string;
+    profile_image_url?: string;
     instagram_url?: string;
     show_instagram?: boolean;
   },
@@ -119,10 +127,13 @@ export async function updateCollaborator(
     const updateData: Prisma.AdminUpdateInput = {
       display_name: data.name,
       email: data.email,
-      permissions: data.permissions || [], //  Atualiza as permissões com segurança
-      instagram_url: data.instagram_url,
-      show_instagram: data.show_instagram,
     };
+
+    if (data.permissions !== undefined) updateData.permissions = data.permissions;
+    if (data.profession !== undefined) updateData.profession = data.profession;
+    if (data.profile_image_url !== undefined) updateData.profile_image_url = data.profile_image_url;
+    if (data.instagram_url !== undefined) updateData.instagram_url = data.instagram_url;
+    if (data.show_instagram !== undefined) updateData.show_instagram = data.show_instagram;
 
     if (data.password && data.password.trim().length >= 6) {
       updateData.password = await bcrypt.hash(data.password, 10);

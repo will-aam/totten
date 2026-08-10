@@ -50,6 +50,8 @@ model Admin {
   role               String         @default("OWNER")
   active             Boolean        @default(true)
   permissions        String[]       @default([])
+  profession         String?
+  profile_image_url  String?
   instagram_url      String?
   show_instagram     Boolean        @default(true)
   appointments       Appointment[]  @relation("ProfessionalToAppointment")

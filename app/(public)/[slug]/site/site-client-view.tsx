@@ -646,26 +646,33 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
                   {professionals.map((prof: any) => (
                     <div key={prof.id} className="flex flex-col group">
-                      <div className={cn("w-full aspect-[4/5] rounded-3xl shadow-sm flex items-center justify-center mb-4 overflow-hidden border", cardBg, borderColor)}>
-                        <span className="text-4xl font-bold opacity-20">
-                          {prof.display_name ? prof.display_name.charAt(0).toUpperCase() : prof.email.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                      <div className="flex items-start justify-between px-2">
-                        <div>
-                          <h4 className="font-bold text-lg leading-tight">{prof.display_name || "Profissional"}</h4>
-                          <p className="text-sm opacity-60 mt-1">Especialista</p>
-                        </div>
+                      <div className={cn("w-full aspect-[4/5] rounded-3xl shadow-sm flex items-center justify-center mb-4 overflow-hidden border relative group/card", cardBg, borderColor)}>
                         {prof.show_instagram && prof.instagram_url && (
                           <a
                             href={prof.instagram_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-1.5 rounded-full bg-pink-500/10 text-pink-600 hover:bg-pink-500/20 transition-colors"
+                            className="absolute top-4 left-4 z-10 p-2 rounded-full bg-white/90 shadow-md text-pink-600 hover:scale-110 hover:bg-white transition-all"
                           >
                             <Instagram className="h-5 w-5" />
                           </a>
                         )}
+                        {prof.profile_image_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img 
+                            src={prof.profile_image_url} 
+                            alt={prof.display_name || "Profissional"} 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-4xl font-bold opacity-20">
+                            {prof.display_name ? prof.display_name.charAt(0).toUpperCase() : (prof.email ? prof.email.charAt(0).toUpperCase() : "U")}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-center justify-center px-2 text-center">
+                        <h4 className="font-bold text-lg leading-tight">{prof.display_name || "Profissional"}</h4>
+                        <p className="text-sm opacity-60 mt-1">{prof.profession || "Especialista"}</p>
                       </div>
                     </div>
                   ))}

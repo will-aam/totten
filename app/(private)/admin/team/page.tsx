@@ -28,10 +28,14 @@ import {
   Block,
   Wallet,
   ClipboardDetail, //  Importado para o Histórico
+  Camera,
+  Image as ImageIcon
 } from "@boxicons/react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { uploadImageAction } from "@/app/actions/upload-image";
+import { compressImage } from "@/lib/image-utils";
 
 //  Importando todas as suas actions
 import {
@@ -52,6 +56,8 @@ type TeamMember = {
   permissions: string[];
   instagram_url?: string | null;
   show_instagram?: boolean;
+  profile_image_url?: string | null;
+  profession?: string | null;
 };
 
 export default function TeamPage() {
@@ -75,6 +81,8 @@ export default function TeamPage() {
     permissions: [] as string[],
     instagram_url: "",
     show_instagram: true,
+    profile_image_url: "",
+    profession: "",
   });
 
   useEffect(() => {
@@ -98,7 +106,7 @@ export default function TeamPage() {
   // HANDLERS DE ABERTURA DOS MODAIS
   // --------------------------------------------------------
   const openCreate = () => {
-    setFormData({ name: "", email: "", password: "", permissions: [], instagram_url: "", show_instagram: true });
+    setFormData({ name: "", email: "", password: "", permissions: [], instagram_url: "", show_instagram: true, profile_image_url: "", profession: "" });
     setSelectedMember(null);
     setModalView("create");
   };
@@ -110,7 +118,9 @@ export default function TeamPage() {
       password: "",
       permissions: member.permissions || [],
       instagram_url: member.instagram_url || "",
-      show_instagram: member.show_instagram !== undefined ? member.show_instagram : true,
+      show_instagram: member.show_instagram !== false,
+      profile_image_url: member.profile_image_url || "",
+      profession: member.profession || "",
     });
     setSelectedMember(member);
     setModalView("edit");
@@ -156,6 +166,27 @@ export default function TeamPage() {
       toast.error(result?.error || "Ocorreu um erro.");
     }
     setSaving(false);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setSaving(true);
+    try {
+      const compressedBase64 = await compressImage(file, 400);
+      const res = await uploadImageAction(compressedBase64, "team");
+      if (res.success && res.url) {
+        setFormData({ ...formData, profile_image_url: res.url });
+        toast.success("Foto carregada com sucesso!");
+      } else {
+        toast.error(res.error || "Erro ao fazer upload da imagem.");
+      }
+    } catch (err) {
+      toast.error("Falha ao processar a imagem.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleToggleStatus = async () => {
@@ -249,6 +280,41 @@ export default function TeamPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            
+            {/* FOTO DO PROFISSIONAL */}
+            <div className="flex flex-col items-center justify-center gap-3">
+              <div className="relative group w-24 h-24">
+                {formData.profile_image_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={formData.profile_image_url}
+                    alt="Foto do profissional"
+                    className="w-24 h-24 rounded-full object-cover border-2 border-border"
+                  />
+                ) : (
+                  <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center border-2 border-dashed border-border group-hover:border-primary transition-colors">
+                    <User className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </div>
+                )}
+                
+                <label className="absolute -bottom-2 -right-2 bg-primary text-primary-foreground p-2 rounded-full cursor-pointer shadow-md hover:bg-primary/90 transition-transform hover:scale-105 active:scale-95 flex items-center justify-center z-10">
+                  {saving ? (
+                    <LoaderDots className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Camera className="h-4 w-4" />
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                    disabled={saving}
+                  />
+                </label>
+              </div>
+              <span className="text-xs text-muted-foreground font-medium">Foto do Perfil (Opcional)</span>
+            </div>
+
             <div className="grid gap-2">
               <Label>Nome</Label>
               <Input
@@ -256,6 +322,17 @@ export default function TeamPage() {
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
+                }
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <Label>Profissão / Especialidade (Opcional)</Label>
+              <Input
+                placeholder="Ex: Médica Dermatologista"
+                value={formData.profession}
+                onChange={(e) =>
+                  setFormData({ ...formData, profession: e.target.value })
                 }
               />
             </div>
@@ -488,9 +565,14 @@ const TeamMemberCard = memo(
         {/* INFO DO USUÁRIO */}
         <div className="flex items-center gap-4">
           <div
-            className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${member.active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
+            className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden border ${member.active ? "bg-primary/10 text-primary border-primary/20" : "bg-muted text-muted-foreground border-transparent"}`}
           >
-            <User size="sm" />
+            {member.profile_image_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={member.profile_image_url} alt={member.display_name || "Foto"} className="w-full h-full object-cover" />
+            ) : (
+              <User size="sm" />
+            )}
           </div>
           <div className="flex flex-col items-start gap-1.5">
             <h3
