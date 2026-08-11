@@ -85,8 +85,8 @@ const agendamentos = await prisma.appointment.findMany({
           gte: inicioDoDia,
           lte: fimDoDia,
         },
-        // 🚨 MUDANÇA AQUI: Buscamos também os cancelados e realizados
-        status: { in: ["PENDENTE", "CONFIRMADO", "CANCELADO", "REALIZADO"] },
+        // Busca apenas agendamentos pendentes/confirmados
+        status: { in: ["PENDENTE", "CONFIRMADO"] },
         OR: [{ package_id: null }, { package: { active: true } }],
       },
       include: {
@@ -127,18 +127,12 @@ const agendamentos = await prisma.appointment.findMany({
     // ==========================================================
     const agendamento = agendamentos[0];
 
-    // 🛡️ TRAVAS DE SEGURANÇA ANTES DO AUTO CHECK-IN
-    if (agendamento.status === "CANCELADO") {
-      throw new Error("AGENDAMENTO_CANCELADO");
-    }
-
-    if (agendamento.status === "REALIZADO") {
-      throw new Error("AGENDAMENTO_JA_PROCESSADO");
-    }
-
+    // 🛡️ REMOVIDO: Travas de segurança manuais (agora filtrado direto na query)
+    
     let packageInfo = null;
 
-    await prisma.$transaction(async (tx) => {
+    try {
+      await prisma.$transaction(async (tx) => {
       // 1. Cria o registro de CheckIn
       await tx.checkIn.create({
         data: {
@@ -241,6 +235,15 @@ const agendamentos = await prisma.appointment.findMany({
         });
       }
     });
+    } catch (error: any) {
+      // Se for um erro de Violação de Chave Única no check-in (P2002) 
+      // ou qualquer falha por concorrência de atualização, tratamos como NOT_FOUND
+      if (error.code === 'P2002') {
+        console.warn(`[TOTEM_SEARCH_SERVICE] P2002 Unique Constraint Failed for appointment ${agendamento.id}. Treating as NOT_FOUND.`);
+        return { status: "NOT_FOUND" };
+      }
+      throw error;
+    }
 
     return {
       status: "FOUND",

@@ -13,6 +13,11 @@ const errorMessages: Record<string, { title: string; description: string }> = {
     description:
       "Não encontramos seu cadastro. Por favor, fale com a recepção para se cadastrar.",
   },
+  PHONE_NOT_FOUND: {
+    title: "Telefone não encontrado",
+    description:
+      "Não encontramos seu cadastro. Por favor, fale com a recepção para se cadastrar.",
+  },
   PACKAGE_EXHAUSTED: {
     title: "Pacote de sessões esgotado",
     description:
