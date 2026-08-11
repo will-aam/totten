@@ -99,8 +99,8 @@ export const ScheduleSettingsModal = memo(
 
       setIsSaving(true);
       try {
-        await onSave({ 
-          openingTime, 
+        await onSave({
+          openingTime,
           closingTime,
           autoConfirmAppointments,
           scheduleGenerationType,
@@ -156,7 +156,7 @@ export const ScheduleSettingsModal = memo(
           </SheetHeader>
 
           <div className="flex-1 overflow-y-auto p-6 space-y-8">
-            
+
             {/* Confirmar Automático */}
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1 text-sm">
@@ -165,9 +165,10 @@ export const ScheduleSettingsModal = memo(
                   Ao ativar, todo agendamento feito pelo seu link será confirmado automaticamente. Se desativado, ficará pendente até você confirmar.
                 </p>
               </div>
-              <Switch 
-                checked={autoConfirmAppointments} 
-                onCheckedChange={setAutoConfirmAppointments} 
+              <Switch
+                disabled
+                checked={autoConfirmAppointments}
+                onCheckedChange={setAutoConfirmAppointments}
               />
             </div>
 
@@ -226,8 +227,9 @@ export const ScheduleSettingsModal = memo(
                   Como os horários disponíveis são gerados.
                 </p>
               </div>
-              <Select 
-                value={scheduleGenerationType === "automatic" ? "automatic" : "fixed"} 
+              <Select
+                disabled
+                value={scheduleGenerationType === "automatic" ? "automatic" : "fixed"}
                 onValueChange={(val) => {
                   if (val === "automatic") setScheduleGenerationType("automatic");
                   else if (scheduleGenerationType === "automatic") setScheduleGenerationType("fixed_30");
@@ -247,7 +249,7 @@ export const ScheduleSettingsModal = memo(
                   <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1 mb-1.5 block">
                     Intervalo entre horários
                   </Label>
-                  <Select value={scheduleGenerationType} onValueChange={setScheduleGenerationType}>
+                  <Select disabled value={scheduleGenerationType} onValueChange={setScheduleGenerationType}>
                     <SelectTrigger className="rounded-xl bg-muted/40 border-none h-11 font-bold">
                       <SelectValue />
                     </SelectTrigger>
@@ -271,9 +273,10 @@ export const ScheduleSettingsModal = memo(
                   Se um serviço de 35 min começaria às 17:30 e você atende até 18:00, a grade ainda oferece esse horário.
                 </p>
               </div>
-              <Switch 
-                checked={allowOverLimitAppointments} 
-                onCheckedChange={setAllowOverLimitAppointments} 
+              <Switch
+                disabled
+                checked={allowOverLimitAppointments}
+                onCheckedChange={setAllowOverLimitAppointments}
               />
             </div>
 

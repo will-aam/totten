@@ -56,6 +56,7 @@ export default function AgendaPage() {
     startOfWeek(new Date(), { weekStartsOn: 0 }),
   );
   const [viewMode, setViewMode] = useState<"day" | "week" | "month">("day");
+  const [hasSetInitialView, setHasSetInitialView] = useState(false);
 
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -85,6 +86,21 @@ export default function AgendaPage() {
   const closingTime = String(settings?.closingTime || "19:00");
   const openingHourNumber = Number(openingTime.split(":")[0]);
   const closingHourNumber = Number(closingTime.split(":")[0]);
+
+  const previousDefaultView = useRef(settings?.defaultScheduleView);
+
+  useEffect(() => {
+    if (settings?.defaultScheduleView) {
+      // Se for a primeira vez carregando OU se a configuração mudou (ex: usuário salvou no modal)
+      if (!hasSetInitialView || previousDefaultView.current !== settings.defaultScheduleView) {
+        if (["day", "week", "month"].includes(settings.defaultScheduleView)) {
+          setViewMode(settings.defaultScheduleView as "day" | "week" | "month");
+        }
+        setHasSetInitialView(true);
+        previousDefaultView.current = settings.defaultScheduleView;
+      }
+    }
+  }, [settings?.defaultScheduleView, hasSetInitialView]);
 
   //  LÓGICA DE UNIFICAÇÃO DA ROTA: Calculando os limites com base na view atual
   const { fromISO, toISO } = useMemo(() => {
