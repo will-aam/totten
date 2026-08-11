@@ -50,7 +50,7 @@ import {
   updateAppointment,
   deleteAppointment,
   undoNoShow,
-  registerManualNoShow, // 🔥 A nova action manual importada
+  registerManualNoShow, //  A nova action manual importada
 } from "@/app/actions/appointments";
 import { ThermalReceipt } from "./thermal-receipt";
 import { getPaymentMethods } from "@/app/actions/payment-methods";
@@ -165,7 +165,7 @@ export const AppointmentDetailsModal = memo(
     const isAlreadyCanceled = appointment.status?.toLowerCase() === "cancelado";
     const isLocked = isAlreadyCanceled;
 
-    // 🔥 O FARO DE FALTAS: Descobre se foi Automática ou Manual
+    //  O FARO DE FALTAS: Descobre se foi Automática ou Manual
     const isAutoNoShow =
       isAlreadyCanceled &&
       (appointment.observations?.includes("Falta automática") ||
@@ -217,7 +217,7 @@ export const AppointmentDetailsModal = memo(
 
       setIsSaving(true);
       try {
-        // 🔥 INTERCEPTAÇÃO: Se escolheu "Faltou", rodamos a nova Action Manual!
+        //  INTERCEPTAÇÃO: Se escolheu "Faltou", rodamos a nova Action Manual!
         if (finalStatus === "nao_compareceu" || finalStatus === "nao_compareceu_abonado") {
           const deduct = finalStatus === "nao_compareceu";
           const result = await registerManualNoShow(appointment.id, obs, deduct);
@@ -296,8 +296,8 @@ export const AppointmentDetailsModal = memo(
               ? "ring-2 ring-destructive border-destructive/50"
               : "",
             isPackageArchived &&
-              !isLocked &&
-              "ring-2 ring-destructive/80 border-destructive/50",
+            !isLocked &&
+            "ring-2 ring-destructive/80 border-destructive/50",
             isLocked && "opacity-95",
           )}
         >
@@ -348,7 +348,7 @@ export const AppointmentDetailsModal = memo(
           </DialogHeader>
 
           <div className="flex flex-col gap-5 overflow-y-auto py-2 pr-1 custom-scrollbar">
-            {/* 🔥 BANNER INTELIGENTE DE FALTAS */}
+            {/*  BANNER INTELIGENTE DE FALTAS */}
             {isAnyNoShow && (
               <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl flex flex-col gap-3 animate-in fade-in zoom-in-95">
                 <div className="flex items-start gap-3">
@@ -435,8 +435,8 @@ export const AppointmentDetailsModal = memo(
                   className={cn(
                     "rounded-lg border-none px-2.5 py-0.5",
                     status !== "cancelado" &&
-                      !isPackageArchived &&
-                      "bg-background",
+                    !isPackageArchived &&
+                    "bg-background",
                   )}
                 >
                   {status === "cancelado"
@@ -474,7 +474,7 @@ export const AppointmentDetailsModal = memo(
                     <SelectItem value="cancelado">
                       Cancelado (Sem Cobrar)
                     </SelectItem>
-                    {/* 🔥 NOVA OPÇÃO DE FALTA MANUAL AQUI */}
+                    {/*  NOVA OPÇÃO DE FALTA MANUAL AQUI */}
                     <SelectItem
                       value="nao_compareceu"
                       className="text-amber-600 font-bold focus:text-amber-700"

@@ -36,7 +36,7 @@ import { Switch } from "@/components/ui/switch";
 import { getPaymentMethods } from "@/app/actions/payment-methods";
 import { OrganizationPaymentMethod } from "@/types/finance";
 import { apiClient } from "@/lib/api-client";
-// 🔥 IMPORTANTE: Importando as Actions nativas
+//  IMPORTANTE: Importando as Actions nativas
 import { createPackageAction } from "@/app/actions/packages";
 import { createClientAction } from "@/app/actions/clients";
 
@@ -675,7 +675,7 @@ export function ClientForm() {
                               Serão geradas {installmentsCount} parcelas de{" "}
                               {formatCurrency(
                                 Number(selectedTemplate.price) /
-                                  installmentsCount,
+                                installmentsCount,
                               )}
                             </p>
                           )}

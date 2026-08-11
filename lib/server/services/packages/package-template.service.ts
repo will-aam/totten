@@ -77,4 +77,36 @@ export class PackageTemplateService {
       },
     });
   }
+
+  /**
+   * Remove um template de pacote, se não houver vínculos impeditivos (pacotes vendidos).
+   */
+  static async deleteTemplate(organizationId: string, id: string) {
+    const prisma = getTenantPrisma(organizationId);
+
+    const template = await prisma.packageTemplate.findUnique({
+      where: { id, organization_id: organizationId },
+    });
+
+    if (!template) {
+      throw new Error("Pacote não encontrado.");
+    }
+
+    // Verifica vínculos
+    const soldPackagesCount = await prisma.package.count({
+      where: { package_template_id: id, organization_id: organizationId },
+    });
+
+    if (soldPackagesCount > 0) {
+      throw new Error(
+        `Não é possível excluir. Este pacote foi vendido para ${soldPackagesCount} cliente(s).`
+      );
+    }
+
+    await prisma.packageTemplate.delete({
+      where: { id, organization_id: organizationId },
+    });
+
+    return true;
+  }
 }

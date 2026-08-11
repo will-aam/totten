@@ -91,10 +91,15 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({
       success: true,
     });
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof AuthError) {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }
+    
+    if (error.message && error.message.includes("Não é possível excluir")) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    
     console.error("[SERVICE_DURATIONS_DELETE]", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }

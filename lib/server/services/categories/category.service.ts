@@ -59,4 +59,42 @@ export class CategoryService {
       },
     });
   }
+
+  /**
+   * Remove uma categoria, se não houver serviços vinculados a ela.
+   */
+  static async deleteCategory(organizationId: string, id: string) {
+    const prisma = getTenantPrisma(organizationId);
+
+    const category = await prisma.category.findUnique({
+      where: { id, organization_id: organizationId },
+    });
+
+    if (!category) {
+      throw new Error("Categoria não encontrada.");
+    }
+
+    // Verifica se existem serviços vinculados a esta categoria
+    const servicesUsingCategory = await prisma.service.count({
+      where: {
+        category_id: id,
+        organization_id: organizationId,
+      },
+    });
+
+    if (servicesUsingCategory > 0) {
+      throw new Error(
+        `Não é possível excluir. Existem ${servicesUsingCategory} serviço(s) utilizando esta categoria.`,
+      );
+    }
+
+    await prisma.category.delete({
+      where: {
+        id,
+        organization_id: organizationId,
+      },
+    });
+
+    return true;
+  }
 }

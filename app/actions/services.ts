@@ -50,13 +50,13 @@ export async function createService(data: {
         image_url: data.image_url,
         ...(data.track_stock && data.stock_items && data.stock_items.length > 0
           ? {
-              stock_items: {
-                create: data.stock_items.map((item) => ({
-                  stock_item_id: item.stock_item_id,
-                  quantity_used: item.quantity_used,
-                })),
-              },
-            }
+            stock_items: {
+              create: data.stock_items.map((item) => ({
+                stock_item_id: item.stock_item_id,
+                quantity_used: item.quantity_used,
+              })),
+            },
+          }
           : {}),
       },
     });
@@ -114,16 +114,16 @@ export async function updateService(
           available_online: data.available_online,
           image_url: data.image_url,
           ...(data.track_stock &&
-          data.stock_items &&
-          data.stock_items.length > 0
+            data.stock_items &&
+            data.stock_items.length > 0
             ? {
-                stock_items: {
-                  create: data.stock_items.map((item) => ({
-                    stock_item_id: item.stock_item_id,
-                    quantity_used: item.quantity_used,
-                  })),
-                },
-              }
+              stock_items: {
+                create: data.stock_items.map((item) => ({
+                  stock_item_id: item.stock_item_id,
+                  quantity_used: item.quantity_used,
+                })),
+              },
+            }
             : {}),
         },
       });
@@ -146,7 +146,7 @@ export async function toggleServiceStatus(
     const admin = await requireAuth();
     const prisma = getTenantPrisma(admin.organizationId);
 
-    // 🔥 CORREÇÃO: A validação SEMPRE deve rodar ao inativar
+    //  CORREÇÃO: A validação SEMPRE deve rodar ao inativar
     if (currentStatus === true) {
       const validation = await validateServiceDeactivation(
         id,

@@ -133,4 +133,45 @@ export class ServiceCatalogService {
 
     return service;
   }
+
+  /**
+   * Remove um serviço, se não houver vínculos impeditivos (pacotes, histórico ou agendamentos).
+   */
+  static async deleteService(organizationId: string, id: string) {
+    const prisma = getTenantPrisma(organizationId);
+
+    const service = await prisma.service.findUnique({
+      where: { id, organization_id: organizationId },
+    });
+
+    if (!service) {
+      throw new Error("Serviço não encontrado.");
+    }
+
+    // Verifica vínculos
+    const [packagesCount, appointmentsCount] = await Promise.all([
+      prisma.packageTemplate.count({
+        where: { service_id: id, organization_id: organizationId },
+      }),
+      prisma.appointment.count({
+        where: { service_id: id, organization_id: organizationId },
+      }),
+    ]);
+
+    if (packagesCount > 0 || appointmentsCount > 0) {
+      const messages = [];
+      if (appointmentsCount > 0) messages.push(`${appointmentsCount} agendamento(s)`);
+      if (packagesCount > 0) messages.push(`${packagesCount} pacote(s)`);
+      
+      throw new Error(
+        `Não é possível excluir. O serviço está vinculado a: ${messages.join(", ")}.`
+      );
+    }
+
+    await prisma.service.delete({
+      where: { id, organization_id: organizationId },
+    });
+
+    return true;
+  }
 }

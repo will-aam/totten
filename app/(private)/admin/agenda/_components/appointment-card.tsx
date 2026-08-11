@@ -66,7 +66,7 @@ export function AppointmentCardContent({
   isOverlay = false,
   isCancelled = false,
   isLocked = false,
-  isEmployee = false, // 🔥 NOVO: Recebendo a prop para identificar a funcionária
+  isEmployee = false, //  NOVO: Recebendo a prop para identificar a funcionária
 }: {
   appt: Appointment;
   height: number;
@@ -81,7 +81,7 @@ export function AppointmentCardContent({
   // Lendo o snapshot aqui dentro da nossa pecinha universal!
   const serviceName = appt.snapshot_service_name ?? appt.service;
 
-  // 🔥 NOVO: Definindo a cor do card dinamicamente
+  //  NOVO: Definindo a cor do card dinamicamente
   const cardColor = isEmployee
     ? "bg-purple-100 border-purple-300 text-purple-900" // Cor de destaque para a funcionária
     : appt.color; // Cor padrão do sistema para a Cris
@@ -119,7 +119,7 @@ export function AppointmentCardContent({
         appt.hasCharge && !isPackageArchived && "border-2 border-destructive",
         isPackageArchived && "border-2 border-destructive/80 opacity-80",
         isOverlay &&
-          "shadow-2xl scale-105 rotate-1 border-primary/50 cursor-grabbing",
+        "shadow-2xl scale-105 rotate-1 border-primary/50 cursor-grabbing",
       )}
     >
       <div
@@ -216,7 +216,7 @@ export function DraggableAppointmentCard({
   onClick,
   onWhatsApp,
   onQuickConfirm,
-  isEmployee = false, // 🔥 NOVO: Recebendo na casca do Draggable
+  isEmployee = false, //  NOVO: Recebendo na casca do Draggable
 }: {
   appt: Appointment;
   top: number;
@@ -325,7 +325,7 @@ export function DraggableAppointmentCard({
         height={height}
         isCancelled={isCancelled}
         isLocked={isLocked}
-        isEmployee={isEmployee} // 🔥 NOVO: Repassando pro conteúdo interno
+        isEmployee={isEmployee} //  NOVO: Repassando pro conteúdo interno
       />
     </div>
   );

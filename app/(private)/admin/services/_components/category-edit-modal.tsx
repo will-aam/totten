@@ -14,8 +14,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { LoaderDots, Save, Power, AlertTriangle } from "@boxicons/react";
+import { LoaderDots, Save, Power, AlertTriangle, Trash } from "@boxicons/react";
 import { updateCategory, toggleCategoryStatus } from "@/app/actions/services";
+import { apiClient } from "@/lib/api-client";
 
 interface CategoryEditModalProps {
   open: boolean;
@@ -32,6 +33,7 @@ export function CategoryEditModal({
 }: CategoryEditModalProps) {
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const [confirmCascade, setConfirmCascade] = useState<{
     show: boolean;
@@ -114,6 +116,25 @@ export function CategoryEditModal({
     }
   };
 
+  const handleDelete = async () => {
+    setLoading(true);
+    try {
+      const res = (await apiClient(`categories/${category.id}`, {
+        method: "DELETE",
+      })) as { success: boolean; error?: string };
+      if (res.success) {
+        toast.success("Categoria excluída com sucesso!");
+        onSuccess();
+        onOpenChange(false);
+        setConfirmDelete(false);
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao excluir categoria.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -140,31 +161,43 @@ export function CategoryEditModal({
           </div>
 
           <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-4 border-t mt-4">
-            {showDeactivateButton && (
+            <div className="flex gap-2">
               <Button
                 type="button"
                 variant="outline"
-                className={
-                  category.active
-                    ? "text-destructive hover:bg-destructive/10 border-destructive/20 rounded-xl"
-                    : "text-emerald-600 hover:bg-emerald-50 border-emerald-200 rounded-xl"
-                }
-                onClick={() => handleToggleStatus(false)}
+                className="text-destructive hover:bg-destructive/10 border-destructive/20 rounded-xl px-3"
+                onClick={() => setConfirmDelete(true)}
                 disabled={loading}
               >
-                {loading ? (
-                  <LoaderDots size="sm" className="animate-spin" />
-                ) : category.active ? (
-                  <>
-                    <Power size="sm" className="mr-2" /> Desativar
-                  </>
-                ) : (
-                  <>
-                    <Power size="sm" className="mr-2" /> Ativar
-                  </>
-                )}
+                <Trash size="sm" />
               </Button>
-            )}
+
+              {showDeactivateButton && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={
+                    category.active
+                      ? "text-destructive hover:bg-destructive/10 border-destructive/20 rounded-xl"
+                      : "text-emerald-600 hover:bg-emerald-50 border-emerald-200 rounded-xl"
+                  }
+                  onClick={() => handleToggleStatus(false)}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <LoaderDots size="sm" className="animate-spin" />
+                  ) : category.active ? (
+                    <>
+                      <Power size="sm" className="mr-2" /> Desativar
+                    </>
+                  ) : (
+                    <>
+                      <Power size="sm" className="mr-2" /> Ativar
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
 
             <div className="flex-1" />
 
@@ -230,6 +263,37 @@ export function CategoryEditModal({
               className="w-full sm:w-auto"
             >
               Inativar Tudo
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <DialogContent className="sm:max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash className="h-5 w-5" />
+              Excluir Categoria
+            </DialogTitle>
+            <DialogDescription className="text-base font-medium text-foreground py-4 leading-relaxed">
+              Tem certeza que deseja excluir esta categoria? Esta ação não poderá ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setConfirmDelete(false)}
+              className="w-full sm:w-auto"
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              className="w-full sm:w-auto"
+              disabled={loading}
+            >
+              {loading ? <LoaderDots size="sm" className="animate-spin" /> : "Excluir"}
             </Button>
           </DialogFooter>
         </DialogContent>

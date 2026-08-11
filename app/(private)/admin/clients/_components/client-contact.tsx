@@ -28,7 +28,7 @@ import {
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { apiClient } from "@/lib/api-client";
-// 🔥 IMPORTANTE: Importando a Action nativa de atualização de cliente
+//  IMPORTANTE: Importando a Action nativa de atualização de cliente
 import { updateClientAction } from "@/app/actions/clients";
 
 export type ClientContactType = {

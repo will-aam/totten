@@ -6,10 +6,10 @@ export type ValidationResult = {
   success: boolean;
   message: string;
   code?:
-    | "HAS_APPOINTMENTS"
-    | "HAS_ACTIVE_PACKAGES"
-    | "SERVICE_INACTIVE"
-    | "SOLD_PACKAGES_ACTIVE";
+  | "HAS_APPOINTMENTS"
+  | "HAS_ACTIVE_PACKAGES"
+  | "SERVICE_INACTIVE"
+  | "SOLD_PACKAGES_ACTIVE";
   details?: any;
 };
 
@@ -36,7 +36,7 @@ export async function validateServiceDeactivation(
     };
   }
 
-  // 🔥 NOVA REGRA VITAL: Algum cliente ainda tem um pacote ATIVO usando esse serviço?
+  //  NOVA REGRA VITAL: Algum cliente ainda tem um pacote ATIVO usando esse serviço?
   const activeSoldPackages = await prisma.package.count({
     where: {
       service_id: serviceId,
@@ -84,7 +84,7 @@ export async function validatePackageDeactivation(
   }
 
   // Regra C: Foi vendido para algum cliente e ainda tem sessões? (O cliente está "usando")
-  // 🔥 Ajuste: usamos OR para pegar os pacotes novos (com ID) e os antigos (pelo nome, serviço e total de sessões)
+  //  Ajuste: usamos OR para pegar os pacotes novos (com ID) e os antigos (pelo nome, serviço e total de sessões)
   // Regra C: Foi vendido para algum cliente e ainda tem sessões?
   const activeSoldPackages = await prisma.package.count({
     where: {
@@ -93,7 +93,7 @@ export async function validatePackageDeactivation(
       OR: [
         { package_template_id: packageTemplateId },
         {
-          // 🔥 FALLBACK MELHORADO: Ignoramos o "name" para não cair em falsos positivos se o nome for alterado
+          //  FALLBACK MELHORADO: Ignoramos o "name" para não cair em falsos positivos se o nome for alterado
           service_id: template.service_id,
           total_sessions: template.total_sessions,
         },

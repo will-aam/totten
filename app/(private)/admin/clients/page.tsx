@@ -155,7 +155,7 @@ function ClientMobileItem({
           </div>
         )}
 
-        {/* 🔥 NOVO: Botão de Compartilhar Portal (Mobile) */}
+        {/*  NOVO: Botão de Compartilhar Portal (Mobile) */}
         {client.active && (
           <button
             onClick={(e) => onShareClick(client, e)}
@@ -246,7 +246,7 @@ export default function AdminClientsPage() {
     setClientToProcess(client);
   };
 
-  // 🔥 NOVA FUNÇÃO: Gera o link seguro e envia pro WhatsApp
+  //  NOVA FUNÇÃO: Gera o link seguro e envia pro WhatsApp
   const handleSharePortal = (client: Client, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -553,7 +553,7 @@ export default function AdminClientsPage() {
                                   : client.activePackageName}
                               </span>
                               {client.activePackagesCount &&
-                              client.activePackagesCount > 1 ? (
+                                client.activePackagesCount > 1 ? (
                                 <span className="inline-flex items-center px-1.5 py-1 rounded-md bg-muted border border-border text-muted-foreground text-[10px] font-bold">
                                   +{client.activePackagesCount - 1}
                                 </span>
@@ -565,7 +565,7 @@ export default function AdminClientsPage() {
                         </TableCell>
                         <TableCell className="text-center">
                           <div className="flex justify-center items-center gap-1">
-                            {/* 🔥 NOVO: Botão de Compartilhar Portal (Desktop) */}
+                            {/*  NOVO: Botão de Compartilhar Portal (Desktop) */}
                             {client.active && (
                               <button
                                 onClick={(e) => handleSharePortal(client, e)}

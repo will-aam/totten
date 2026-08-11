@@ -151,7 +151,7 @@ export async function getPackageHistory(packageId: string) {
         organization_id: admin.organizationId,
       },
       include: {
-        check_in: true, // 🔥 NOVO: Traz o registro de check-in (se existir)
+        check_in: true, //  NOVO: Traz o registro de check-in (se existir)
       },
       orderBy: {
         date_time: "asc",
@@ -161,7 +161,7 @@ export async function getPackageHistory(packageId: string) {
     return {
       success: true,
       history: appointments.map((appt) => {
-        // 🔥 NOVO: Lógica para decidir qual data mostrar
+        //  NOVO: Lógica para decidir qual data mostrar
         // Se foi realizado e tem check-in, pega a hora real que bateu no totem
         const displayDate =
           appt.status === "REALIZADO" && appt.check_in
@@ -236,7 +236,7 @@ export async function createManualPackageCheckIn(
         },
       });
 
-      // 🔥 NOVO: mesmo motor de estoque/financeiro do totem, aplicado no fluxo manual
+      //  NOVO: mesmo motor de estoque/financeiro do totem, aplicado no fluxo manual
       let stockProcessed = false;
       const service = pkg.service;
 
@@ -305,7 +305,7 @@ export async function createManualPackageCheckIn(
           package_id: pkg.id,
           organization_id: admin.organizationId,
           admin_id: admin.id,
-          auto_processed: stockProcessed, // 🔥 reflete se de fato mexeu em estoque/financeiro
+          auto_processed: stockProcessed, //  reflete se de fato mexeu em estoque/financeiro
         },
       });
 

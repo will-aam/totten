@@ -36,7 +36,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { getPaymentMethods } from "@/app/actions/payment-methods";
 import { OrganizationPaymentMethod } from "@/types/finance";
-// 🔥 CORREÇÃO: Importando exatamente o nome exportado na Action
+//  CORREÇÃO: Importando exatamente o nome exportado na Action
 import { archivePackage, createPackageAction } from "@/app/actions/packages";
 import { apiClient } from "@/lib/api-client";
 
@@ -140,7 +140,7 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
 
     setLoading(true);
     try {
-      // 🔥 CORREÇÃO: Usando a função importada corretamente
+      //  CORREÇÃO: Usando a função importada corretamente
       const result = await createPackageAction({
         client_id: clientId,
         service_id: selectedTemplate.service_id,

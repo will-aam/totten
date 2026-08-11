@@ -22,10 +22,10 @@ export default async function ClienteDashboardPage({
 
   if (!slug) return notFound();
 
-  // 🔥 INTELIGÊNCIA DE ROTA: Descobre se o slug é um CPF (11 números) ou um ID do banco
+  //  INTELIGÊNCIA DE ROTA: Descobre se o slug é um CPF (11 números) ou um ID do banco
   const isCpf = /^\d{11}$/.test(slug.replace(/\D/g, ""));
 
-  // 🔥 SOLUÇÃO: Declaramos explicitamente como any[]
+  //  SOLUÇÃO: Declaramos explicitamente como any[]
   let clientRecords: any[] = [];
 
   if (isCpf) {
@@ -59,7 +59,7 @@ export default async function ClienteDashboardPage({
     if (record) clientRecords = [record];
   }
 
-  // 🔥 SOLUÇÃO: Adicionado tipo 'any' na função de map
+  //  SOLUÇÃO: Adicionado tipo 'any' na função de map
   const allPackages = clientRecords.flatMap((record: any) => {
     const orgSettings = Array.isArray(record.organization?.settings)
       ? record.organization?.settings[0]
@@ -237,8 +237,8 @@ export default async function ClienteDashboardPage({
                                   className={cn(
                                     "font-black text-sm uppercase tracking-tight text-foreground",
                                     !pkg.active &&
-                                      !isRealizado &&
-                                      "line-through text-muted-foreground",
+                                    !isRealizado &&
+                                    "line-through text-muted-foreground",
                                   )}
                                 >
                                   Sessão {index + 1}
@@ -247,12 +247,12 @@ export default async function ClienteDashboardPage({
                               <p className="text-xs text-muted-foreground font-medium flex items-center gap-2">
                                 {item.date_time
                                   ? new Intl.DateTimeFormat("pt-BR", {
-                                      day: "2-digit",
-                                      month: "2-digit",
-                                      year: "numeric",
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    }).format(item.date_time)
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  }).format(item.date_time)
                                   : "Aguardando Agendamento"}
 
                                 {isRealizado && (

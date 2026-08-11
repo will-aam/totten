@@ -93,6 +93,8 @@ export function ServiceEditModal({
     pendingAction: () => Promise<void>;
   }>({ show: false, message: "", pendingAction: async () => { } });
 
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -261,7 +263,7 @@ export function ServiceEditModal({
     }
   };
 
-  // 🔥 Nova lógica de Status com verificação de cascata
+  //  Nova lógica de Status com verificação de cascata
   const handleToggleStatus = async (forceCascade: boolean = false) => {
     setLoading(true);
     try {
@@ -304,6 +306,24 @@ export function ServiceEditModal({
     }
   };
 
+  const handleDelete = async () => {
+    setLoading(true);
+    try {
+      const res = (await apiClient(`services/${service.id}`, {
+        method: "DELETE",
+      })) as { success: boolean; error?: string };
+      if (res.success) {
+        toast.success("Serviço excluído com sucesso!");
+        onSuccess();
+        onOpenChange(false);
+        setConfirmDelete(false);
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao excluir serviço.");
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -617,30 +637,43 @@ export function ServiceEditModal({
           </div>
 
           <DialogFooter className="px-6 py-4 border-t border-border/50 shrink-0 flex flex-col sm:flex-row gap-2 bg-card">
-            <Button
-              type="button"
-              variant="outline"
-              className={
-                service.active
-                  ? "text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20"
-                  : "text-emerald-600 hover:bg-emerald-600/10 hover:text-emerald-700 border-emerald-600/20"
-              }
-              // Chamamos a função passando falso primeiro (sem forçar a cascata)
-              onClick={() => handleToggleStatus(false)}
-              disabled={loading}
-            >
-              {loading ? (
-                <LoaderDots size="sm" className="animate-spin" />
-              ) : service.active ? (
-                <>
-                  <Power size="sm" className="mr-2" /> Desativar
-                </>
-              ) : (
-                <>
-                  <Power size="sm" className="mr-2" /> Ativar
-                </>
-              )}
-            </Button>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button
+                type="button"
+                variant="outline"
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 shrink-0 px-3"
+                onClick={() => setConfirmDelete(true)}
+                disabled={loading}
+              >
+                <Trash size="sm" />
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                className={cn(
+                  "flex-1 sm:flex-none",
+                  service.active
+                    ? "text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20"
+                    : "text-emerald-600 hover:bg-emerald-600/10 hover:text-emerald-700 border-emerald-600/20"
+                )}
+                // Chamamos a função passando falso primeiro (sem forçar a cascata)
+                onClick={() => handleToggleStatus(false)}
+                disabled={loading}
+              >
+                {loading ? (
+                  <LoaderDots size="sm" className="animate-spin" />
+                ) : service.active ? (
+                  <>
+                    <Power size="sm" className="mr-2" /> Desativar
+                  </>
+                ) : (
+                  <>
+                    <Power size="sm" className="mr-2" /> Ativar
+                  </>
+                )}
+              </Button>
+            </div>
 
             <div className="flex-1 hidden sm:block" />
 
@@ -654,13 +687,13 @@ export function ServiceEditModal({
               ) : (
                 <Save size="sm" className="mr-2" />
               )}
-              {loading ? "Salvando..." : "Salvar Alterações"}
+              {loading ? "Salvando..." : "Salvar"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* 🔥 Modal de Confirmação de Cascata */}
+      {/*  Modal de Confirmação de Cascata */}
       <Dialog
         open={confirmCascade.show}
         onOpenChange={(open) => {
@@ -713,6 +746,39 @@ export function ServiceEditModal({
               ) : (
                 "Inativar Tudo"
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/*  Modal de Confirmação de Exclusão */}
+      <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <DialogContent className="sm:max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash className="h-5 w-5" />
+              Excluir Serviço
+            </DialogTitle>
+            <DialogDescription className="text-base font-medium text-foreground py-4 leading-relaxed">
+              Tem certeza que deseja excluir este serviço? Esta ação não poderá ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setConfirmDelete(false)}
+              disabled={loading}
+              className="w-full sm:w-auto"
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={loading}
+              className="w-full sm:w-auto"
+            >
+              {loading ? <LoaderDots className="h-4 w-4 animate-spin" /> : "Excluir"}
             </Button>
           </DialogFooter>
         </DialogContent>

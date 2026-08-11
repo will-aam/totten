@@ -542,7 +542,7 @@ export async function updateAppointmentDateTime(
 
 // --- 5. PROCESSAMENTO AUTOMÁTICO DE FALTAS (NEUTRALIZADO) ---
 export async function processDailyNoShows(secretKey?: string) {
-  // 🔥 Automação desativada a pedido da clínica.
+  //  Automação desativada a pedido da clínica.
   // A falta agora deve ser tratada manualmente pela UI (Admin).
   return {
     success: true,
@@ -572,13 +572,13 @@ export async function undoNoShow(appointmentId: string) {
     await prisma.$transaction(async (tx) => {
       const cleanObs = appt.observations
         ? appt.observations
-            .replace("\n(Falta automática)", "")
-            .replace("\n(Falta Registrada)", "")
-            .replace("(Falta Registrada)", "")
-            .replace(
-              "Falta não justificada. Baixa automática pelo sistema.",
-              "",
-            )
+          .replace("\n(Falta automática)", "")
+          .replace("\n(Falta Registrada)", "")
+          .replace("(Falta Registrada)", "")
+          .replace(
+            "Falta não justificada. Baixa automática pelo sistema.",
+            "",
+          )
         : null;
 
       await tx.appointment.update({

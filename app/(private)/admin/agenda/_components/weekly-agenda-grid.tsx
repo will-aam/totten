@@ -278,7 +278,7 @@ export function WeeklyAgendaGrid({
                   return timeA - timeB;
                 });
 
-                // 🔥 NOVO ALGORITMO: AGRUPAMENTO INTELIGENTE DE OVERBOOKING NA SEMANA
+                //  NOVO ALGORITMO: AGRUPAMENTO INTELIGENTE DE OVERBOOKING NA SEMANA
                 const groups: Appointment[][] = [];
                 let currentGroup: Appointment[] = [];
                 let currentGroupEnd = -1;
@@ -396,12 +396,12 @@ export function WeeklyAgendaGrid({
                       ))}
 
                       {positionedAppts.map(({ appt, layout }) => {
-                        // 🔥 Lógica simples para identificar se não é a Cris
+                        //  Lógica simples para identificar se não é a Cris
                         // Ajuste "cris" para o nome exato que está cadastrado no sistema dela.
                         const isEmployee = appt.professionalName
                           ? !appt.professionalName
-                              .toLowerCase()
-                              .includes("cris")
+                            .toLowerCase()
+                            .includes("cris")
                           : false;
 
                         return (
@@ -418,7 +418,7 @@ export function WeeklyAgendaGrid({
                               )}
                               width="100%"
                               left="0px"
-                              isEmployee={isEmployee} // 🔥 ADICIONE ESTA LINHA AQUI
+                              isEmployee={isEmployee} //  ADICIONE ESTA LINHA AQUI
                               onClick={() => onAppointmentClick(appt)}
                               onQuickConfirm={onQuickConfirm}
                               onWhatsApp={(e) => {

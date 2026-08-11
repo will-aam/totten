@@ -175,7 +175,7 @@ export function DailyAgendaGrid({
       return diff;
     });
 
-    // 🔥 NOVO ALGORITMO: AGRUPAMENTO INTELIGENTE DE OVERBOOKING
+    //  NOVO ALGORITMO: AGRUPAMENTO INTELIGENTE DE OVERBOOKING
     const groups: Appointment[][] = [];
     let currentGroup: Appointment[] = [];
     let currentGroupEnd = -1;

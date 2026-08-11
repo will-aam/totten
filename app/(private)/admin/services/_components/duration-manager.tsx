@@ -121,7 +121,7 @@ export function DurationManager() {
             mutate(updatedDurations, false);
             return "Duração removida!";
           },
-          error: "Erro ao remover.",
+          error: (e: any) => e.message || "Erro ao remover.",
         },
       );
     } catch (error) {

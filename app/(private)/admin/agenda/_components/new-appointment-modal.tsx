@@ -226,7 +226,7 @@ export const NewAppointmentModal = memo(
         return;
       }
 
-      // 🔥 VACINA CONTRA O "BUG DA MADRUGADA" E FUSO HORÁRIO
+      //  VACINA CONTRA O "BUG DA MADRUGADA" E FUSO HORÁRIO
       // Construímos a string ISO com o "-03:00" cravado nela
       const [hourStr, minuteStr] = time.split(":");
       const year = date.getFullYear();
@@ -411,7 +411,7 @@ export const NewAppointmentModal = memo(
                   className={cn(
                     "rounded-2xl bg-muted/40 border-none h-12 transition-all",
                     usePackage &&
-                      "bg-primary/5 text-primary font-black opacity-100",
+                    "bg-primary/5 text-primary font-black opacity-100",
                   )}
                 >
                   <SelectValue placeholder="O que será feito?" />

@@ -56,11 +56,30 @@ export class ServiceDurationService {
     return duration;
   }
 
-  /**
-   * Remove uma duração de serviço pelo ID.
-   */
   static async deleteDuration(organizationId: string, id: string) {
     const prisma = getTenantPrisma(organizationId);
+
+    const durationItem = await prisma.serviceDuration.findUnique({
+      where: { id, organization_id: organizationId },
+    });
+
+    if (!durationItem) {
+      throw new Error("Duração não encontrada.");
+    }
+
+    // Verifica se existem serviços usando esta duração
+    const servicesUsingDuration = await prisma.service.count({
+      where: {
+        organization_id: organizationId,
+        duration: durationItem.minutes,
+      },
+    });
+
+    if (servicesUsingDuration > 0) {
+      throw new Error(
+        `Não é possível excluir. Existem ${servicesUsingDuration} serviço(s) utilizando este tempo.`,
+      );
+    }
 
     await prisma.serviceDuration.delete({
       where: {
