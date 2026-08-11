@@ -418,7 +418,7 @@ export async function deleteAppointment(
     const prisma = getTenantPrisma(admin.organizationId);
 
     // 1. Busca os registros ANTES de deletar para termos os dados para o log
-    const appointmentsToDelete = await prisma.appointment.findMany({
+    const allAppointments = await prisma.appointment.findMany({
       where: {
         ...(deleteAll && recurrenceId
           ? { recurrence_id: recurrenceId }
@@ -428,20 +428,22 @@ export async function deleteAppointment(
       include: { package: true, client: true, check_in: true },
     });
 
-    if (appointmentsToDelete.length === 0)
+    if (allAppointments.length === 0)
       return { success: false, error: "Agendamento não encontrado." };
 
-    // 2. Trava de segurança para agendamentos realizados (opcional, mas recomendado)
-    const hasFinishedAppointments = appointmentsToDelete.some(
-      (appt) => appt.status === AppointmentStatus.REALIZADO,
+    // 2. Filtramos os que já foram realizados (não podemos excluir esses)
+    const appointmentsToDelete = allAppointments.filter(
+      (appt) => appt.status !== AppointmentStatus.REALIZADO
     );
 
-    if (hasFinishedAppointments) {
+    if (appointmentsToDelete.length === 0) {
       return {
         success: false,
         error: "Não é permitido excluir agendamentos já realizados.",
       };
     }
+
+    const idsToDelete = appointmentsToDelete.map(a => a.id);
 
     await prisma.$transaction(async (tx) => {
       for (const appt of appointmentsToDelete) {
@@ -482,18 +484,12 @@ export async function deleteAppointment(
       }
 
       // 3. Executa a exclusão propriamente dita
-      if (deleteAll && recurrenceId) {
-        await tx.appointment.deleteMany({
-          where: {
-            recurrence_id: recurrenceId,
-            organization_id: admin.organizationId,
-          },
-        });
-      } else {
-        await tx.appointment.delete({
-          where: { id, organization_id: admin.organizationId },
-        });
-      }
+      await tx.appointment.deleteMany({
+        where: {
+          id: { in: idsToDelete },
+          organization_id: admin.organizationId,
+        },
+      });
     });
 
     revalidatePath("/admin/agenda");

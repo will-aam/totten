@@ -263,16 +263,21 @@ export const AppointmentDetailsModal = memo(
     const handleDelete = async (deleteAll = false) => {
       if (isLocked) return;
       try {
-        await deleteAppointment(
+        const result = await deleteAppointment(
           appointment.id,
           deleteAll,
           appointment.recurrence_id,
         );
-        toast.success(deleteAll ? "Série excluída!" : "Agendamento excluído!");
-        onRefresh?.();
-        onOpenChange(false);
+        
+        if (result.success) {
+          toast.success(deleteAll ? "Série excluída!" : "Agendamento excluído!");
+          onRefresh?.();
+          onOpenChange(false);
+        } else {
+          toast.error(result.error || "Erro ao excluir.");
+        }
       } catch (error) {
-        toast.error("Erro ao excluir.");
+        toast.error("Erro na conexão.");
       }
     };
 
