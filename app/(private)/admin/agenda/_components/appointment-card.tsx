@@ -49,6 +49,8 @@ export interface Appointment {
     active?: boolean;
   } | null;
   professionalName?: string | null;
+  professionalId?: string | null;
+  serviceId?: string | null;
   snapshot_service_name?: string | null;
   snapshot_service_duration?: number | null;
   snapshot_service_price?: number | null;

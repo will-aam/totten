@@ -38,6 +38,7 @@ import { NewAppointmentModal } from "./_components/new-appointment-modal";
 import { AppointmentDetailsModal } from "./_components/appointment-details-modal";
 import { ScheduleSettingsModal } from "./_components/schedule-settings-modal";
 import { AgendaHeader } from "./_components/agenda-header";
+import { AgendaFilters, AgendaFiltersState } from "./_components/agenda-filters";
 import { apiClient, ApiError } from "@/lib/api-client";
 
 interface AgendaSettings {
@@ -71,6 +72,8 @@ export default function AgendaPage() {
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isProgrammaticScroll = useRef(false);
   const [rosterBaseDate, setRosterBaseDate] = useState(new Date());
+
+  const [filters, setFilters] = useState<AgendaFiltersState>({ type: "ALL" });
 
   // Chave sem prefixo /api: o apiClient já resolve o base path sozinho
   const { data: settings, mutate: mutateSettings } = useSWR<AgendaSettings>(
@@ -124,10 +127,27 @@ export default function AgendaPage() {
     })) as Appointment[];
   };
 
-  const currentViewAppointments = useMemo(
-    () => mapAppointments(agendaData),
-    [agendaData],
-  );
+  const currentViewAppointments = useMemo(() => {
+    let list = mapAppointments(agendaData);
+    
+    if (filters.professionalId) {
+      list = list.filter((a) => a.professionalId === filters.professionalId);
+    }
+    if (filters.serviceId) {
+      list = list.filter((a) => a.serviceId === filters.serviceId);
+    }
+    if (filters.status) {
+      list = list.filter((a) => a.status === filters.status);
+    }
+    if (filters.type === "SINGLE") {
+      list = list.filter((a) => !a.isRecurring);
+    }
+    if (filters.type === "PACKAGE") {
+      list = list.filter((a) => a.isRecurring);
+    }
+
+    return list;
+  }, [agendaData, filters]);
 
   // Filtros em memória (caso a view exija apenas os de hoje na roleta, por ex)
   const appointments = useMemo(
@@ -330,6 +350,9 @@ export default function AgendaPage() {
           )
         }
         onOpenSettings={() => setIsSettingsOpen(true)}
+        filtersNode={
+          <AgendaFilters filters={filters} onFiltersChange={setFilters} />
+        }
       />
 
       <div className="flex flex-col gap-4 p-4 md:p-6 max-w-400 mx-auto w-full pb-32 md:pb-6 relative min-h-[calc(100vh-100px)]">

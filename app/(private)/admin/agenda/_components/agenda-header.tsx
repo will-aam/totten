@@ -21,6 +21,7 @@ interface AgendaHeaderProps {
   title: string;
   subtitle: ReactNode;
   onOpenSettings: () => void;
+  filtersNode?: ReactNode;
 }
 
 export function AgendaHeader({
@@ -29,6 +30,7 @@ export function AgendaHeader({
   title,
   subtitle,
   onOpenSettings,
+  filtersNode,
 }: AgendaHeaderProps) {
   const { toggleSidebar } = useSidebar();
   const { data: session } = useSession();
@@ -77,6 +79,8 @@ export function AgendaHeader({
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
+        {filtersNode}
+        
         <Button
           variant="ghost"
           size="icon"

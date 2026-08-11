@@ -126,6 +126,8 @@ export class AgendaService {
         session_number: appt.session_number,
         recurrence_id: appt.recurrence_id,
         professionalName: appt.professional?.display_name ?? null,
+        professionalId: appt.professional_id ?? null,
+        serviceId: appt.service_id ?? null,
         snapshot_service_name: appt.snapshot_service_name,
         snapshot_service_duration: appt.snapshot_service_duration,
         snapshot_service_price: snapshotPrice,
