@@ -1,7 +1,8 @@
 // app/(private)/admin/stock/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
   Plus,
   Search,
@@ -21,6 +22,15 @@ import { NewStockItemModal } from "./_components/new-item-modal";
 import { StockTable, StockItem } from "./_components/stock-table";
 import { StockMobileItem } from "./_components/stock-mobile-item";
 import { toast } from "sonner";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,6 +66,22 @@ import {
 } from "@/app/actions/stock";
 
 export default function StockPage() {
+  return (
+    <Suspense fallback={<div className="p-8 flex justify-center"><LoaderDots className="animate-spin h-8 w-8 text-primary" /></div>}>
+      <StockPageContent />
+    </Suspense>
+  );
+}
+
+function StockPageContent() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  
+  const pageParam = searchParams.get("page");
+  const page = pageParam ? parseInt(pageParam, 10) : 1;
+  const itemsPerPage = 15;
+
   const [items, setItems] = useState<StockItem[]>([]);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<keyof StockItem | "total">("name");
@@ -79,6 +105,12 @@ export default function StockPage() {
   useEffect(() => {
     fetchItems();
   }, []);
+
+  const createPageUrl = (pageNumber: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", pageNumber.toString());
+    return `${pathname}?${params.toString()}`;
+  };
 
   useEffect(() => {
     const handleScroll = () => setShowScrollTop(window.scrollY > 200);
@@ -139,6 +171,20 @@ export default function StockPage() {
       }
       return (b[sortBy] as number) - (a[sortBy] as number);
     });
+
+  const totalPages = Math.ceil(filteredAndSortedItems.length / itemsPerPage);
+  
+  // Reseta para página 1 se filtrar
+  useEffect(() => {
+    if (page > 1 && filteredAndSortedItems.length <= itemsPerPage) {
+      router.push(createPageUrl(1), { scroll: false });
+    }
+  }, [search, items.length]);
+
+  const paginatedItems = filteredAndSortedItems.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage
+  );
 
   const handleExportExcel = () => {
     if (filteredAndSortedItems.length === 0) {
@@ -286,14 +332,14 @@ export default function StockPage() {
           <>
             <div className="hidden md:block overflow-x-auto rounded-md border border-border">
               <StockTable
-                data={filteredAndSortedItems}
+                data={paginatedItems}
                 onUpdateItem={handleUpdateItem}
                 onDeleteItem={(id) => setItemToDelete(id)}
               />
             </div>
 
             <div className="flex flex-col md:hidden">
-              {filteredAndSortedItems.map((item) => (
+              {paginatedItems.map((item) => (
                 <StockMobileItem
                   key={item.id}
                   item={item}
@@ -301,12 +347,63 @@ export default function StockPage() {
                   onDelete={(id) => setItemToDelete(id)}
                 />
               ))}
-              {filteredAndSortedItems.length === 0 && (
+              {paginatedItems.length === 0 && (
                 <div className="py-12 text-center text-muted-foreground">
                   Nenhum item encontrado.
                 </div>
               )}
             </div>
+            
+            {/* Paginação do Estoque */}
+            {totalPages > 1 && (
+              <div className="mt-8">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        href={page > 1 ? createPageUrl(page - 1) : "#"}
+                        className={page === 1 ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                    
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
+                      if (
+                        p === 1 ||
+                        p === totalPages ||
+                        (p >= page - 1 && p <= page + 1)
+                      ) {
+                        return (
+                          <PaginationItem key={p}>
+                            <PaginationLink
+                              href={createPageUrl(p)}
+                              isActive={page === p}
+                            >
+                              {p}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      }
+                      
+                      if (p === page - 2 || p === page + 2) {
+                        return (
+                          <PaginationItem key={p}>
+                            <PaginationEllipsis />
+                          </PaginationItem>
+                        );
+                      }
+                      return null;
+                    })}
+
+                    <PaginationItem>
+                      <PaginationNext
+                        href={page < totalPages ? createPageUrl(page + 1) : "#"}
+                        className={page === totalPages ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
           </>
         )}
       </div>

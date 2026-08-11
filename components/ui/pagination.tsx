@@ -42,25 +42,31 @@ type PaginationLinkProps = {
 } & Pick<React.ComponentProps<typeof Button>, 'size'> &
   React.ComponentProps<'a'>
 
+import Link from 'next/link'
+
 function PaginationLink({
   className,
   isActive,
   size = 'icon',
   ...props
 }: PaginationLinkProps) {
+  const isLink = !!props.href;
+  const Component = isLink ? Link : 'button';
+
   return (
-    <a
+    <Component
       aria-current={isActive ? 'page' : undefined}
       data-slot="pagination-link"
       data-active={isActive}
       className={cn(
-        buttonVariants({
-          variant: isActive ? 'outline' : 'ghost',
-          size,
-        }),
-        className,
+        "flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:text-primary focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
+        size === "icon" ? "h-9 w-9" : "h-9 px-4 py-2",
+        isActive
+          ? "text-foreground font-black underline underline-offset-4 decoration-2"
+          : "text-muted-foreground hover:bg-transparent",
+        className
       )}
-      {...props}
+      {...(isLink ? (props as any) : { type: 'button', ...props })}
     />
   )
 }
@@ -71,13 +77,13 @@ function PaginationPrevious({
 }: React.ComponentProps<typeof PaginationLink>) {
   return (
     <PaginationLink
-      aria-label="Go to previous page"
+      aria-label="Ir para a página anterior"
       size="default"
       className={cn('gap-1 px-2.5 sm:pl-2.5', className)}
       {...props}
     >
-      <ChevronLeftIcon />
-      <span className="hidden sm:block">Previous</span>
+      <ChevronLeftIcon className="h-4 w-4" />
+      <span className="hidden sm:block">Anterior</span>
     </PaginationLink>
   )
 }
@@ -88,13 +94,13 @@ function PaginationNext({
 }: React.ComponentProps<typeof PaginationLink>) {
   return (
     <PaginationLink
-      aria-label="Go to next page"
+      aria-label="Ir para a próxima página"
       size="default"
       className={cn('gap-1 px-2.5 sm:pr-2.5', className)}
       {...props}
     >
-      <span className="hidden sm:block">Next</span>
-      <ChevronRightIcon />
+      <span className="hidden sm:block">Próxima</span>
+      <ChevronRightIcon className="h-4 w-4" />
     </PaginationLink>
   )
 }

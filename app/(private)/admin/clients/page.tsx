@@ -1,10 +1,10 @@
 // app/(private)/admin/clients/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import useSWR from "swr";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { ImportClientsModal } from "./_components/import-clients-modal";
@@ -37,6 +37,7 @@ import {
   Layers,
   Paperclip,
   Share,
+  LoaderDots,
 } from "@boxicons/react";
 import {
   AlertDialog,
@@ -58,6 +59,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { apiClient } from "@/lib/api-client";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 type Client = {
   id: string;
@@ -200,9 +210,22 @@ function ClientMobileItem({
 }
 
 export default function AdminClientsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 flex justify-center"><LoaderDots className="animate-spin h-8 w-8 text-primary" /></div>}>
+      <AdminClientsPageContent />
+    </Suspense>
+  );
+}
+
+function AdminClientsPageContent() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const pageParam = searchParams.get("page");
+  const page = pageParam ? parseInt(pageParam, 10) : 1;
+
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const debouncedSearch = useDebounce(search, 500);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -228,8 +251,18 @@ export default function AdminClientsPage() {
 
   const [clientToProcess, setClientToProcess] = useState<Client | null>(null);
 
+  const createPageUrl = (pageNumber: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", pageNumber.toString());
+    return `${pathname}?${params.toString()}`;
+  };
+
+  const setPage = (newPage: number) => {
+    router.push(createPageUrl(newPage), { scroll: false });
+  };
+
   useEffect(() => {
-    setPage(1);
+    if (page !== 1) setPage(1);
   }, [debouncedSearch]);
 
   useEffect(() => {
@@ -608,32 +641,53 @@ export default function AdminClientsPage() {
                 </Table>
               </div>
 
-              {/* Paginação */}
               {totalPages > 1 && (
-                <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-border pt-4">
-                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                    {`Mostrando ${(page - 1) * ITEMS_PER_PAGE + 1}-${Math.min(page * ITEMS_PER_PAGE, totalClients)} de ${totalClients}`}
-                  </p>
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={page === 1}
-                      onClick={() => setPage((p) => p - 1)}
-                      className="text-foreground w-full sm:w-auto rounded-full md:rounded-md"
-                    >
-                      Anterior
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={page === totalPages}
-                      onClick={() => setPage((p) => p + 1)}
-                      className="text-foreground w-full sm:w-auto rounded-full md:rounded-md"
-                    >
-                      Próximo
-                    </Button>
-                  </div>
+                <div className="mt-8">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          href={page > 1 ? createPageUrl(page - 1) : "#"}
+                          className={page === 1 ? "pointer-events-none opacity-50" : ""}
+                        />
+                      </PaginationItem>
+                      
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
+                        if (
+                          p === 1 ||
+                          p === totalPages ||
+                          (p >= page - 1 && p <= page + 1)
+                        ) {
+                          return (
+                            <PaginationItem key={p}>
+                              <PaginationLink
+                                href={createPageUrl(p)}
+                                isActive={page === p}
+                              >
+                                {p}
+                              </PaginationLink>
+                            </PaginationItem>
+                          );
+                        }
+                        
+                        if (p === page - 2 || p === page + 2) {
+                          return (
+                            <PaginationItem key={p}>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          );
+                        }
+                        return null;
+                      })}
+
+                      <PaginationItem>
+                        <PaginationNext
+                          href={page < totalPages ? createPageUrl(page + 1) : "#"}
+                          className={page === totalPages ? "pointer-events-none opacity-50" : ""}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
                 </div>
               )}
             </>

@@ -1,8 +1,8 @@
 // app/(private)/admin/packages/page.tsx
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import {
   Card,
@@ -42,6 +42,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 function KpiCard({
   title,
@@ -206,7 +215,21 @@ function PackageListItem({ pkg, onOpenDetails, onManualCheckIn }: any) {
 }
 
 export default function PackagesPage() {
+  return (
+    <Suspense fallback={<div className="p-8 flex justify-center"><LoaderDots className="animate-spin h-8 w-8 text-primary" /></div>}>
+      <PackagesPageContent />
+    </Suspense>
+  );
+}
+
+function PackagesPageContent() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const pageParam = searchParams.get("page");
+  const page = pageParam ? parseInt(pageParam, 10) : 1;
+
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<any>(null);
@@ -229,11 +252,20 @@ export default function PackagesPage() {
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 500);
-  const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
+  const createPageUrl = (pageNumber: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", pageNumber.toString());
+    return `${pathname}?${params.toString()}`;
+  };
+
+  const setPage = (newPage: number) => {
+    router.push(createPageUrl(newPage), { scroll: false });
+  };
+
   useEffect(() => {
-    setPage(1);
+    if (page !== 1) setPage(1);
   }, [debouncedSearch]);
 
   const loadData = useCallback(async () => {
@@ -424,30 +456,52 @@ export default function PackagesPage() {
         </Card>
 
         {totalPages > 1 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-2 bg-card p-4 rounded-3xl border border-border/50 shadow-sm">
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-center sm:text-left w-full sm:w-auto">
-              Página {page} de {totalPages}
-            </p>
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-              <Button
-                variant="outline"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1 || loading}
-                className="rounded-xl h-10 font-bold bg-background shadow-sm hover:bg-muted"
-              >
-                <ChevronLeft removePadding size="sm" className="mr-1" />{" "}
-                Anterior
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages || loading}
-                className="rounded-xl h-10 font-bold bg-background shadow-sm hover:bg-muted"
-              >
-                Próxima{" "}
-                <ChevronRight removePadding size="sm" className="ml-1" />
-              </Button>
-            </div>
+          <div className="mt-8">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href={page > 1 ? createPageUrl(page - 1) : "#"}
+                    className={page === 1 ? "pointer-events-none opacity-50" : ""}
+                  />
+                </PaginationItem>
+                
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
+                  if (
+                    p === 1 ||
+                    p === totalPages ||
+                    (p >= page - 1 && p <= page + 1)
+                  ) {
+                    return (
+                      <PaginationItem key={p}>
+                        <PaginationLink
+                          href={createPageUrl(p)}
+                          isActive={page === p}
+                        >
+                          {p}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  }
+                  
+                  if (p === page - 2 || p === page + 2) {
+                    return (
+                      <PaginationItem key={p}>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    );
+                  }
+                  return null;
+                })}
+
+                <PaginationItem>
+                  <PaginationNext
+                    href={page < totalPages ? createPageUrl(page + 1) : "#"}
+                    className={page === totalPages ? "pointer-events-none opacity-50" : ""}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
           </div>
         )}
       </div>
@@ -497,7 +551,7 @@ export default function PackagesPage() {
                 value={checkInTime}
                 onChange={(e) => {
                   let val = e.target.value.replace(/\D/g, "");
-                  
+
                   if (val.length > 0) {
                     if (val.length === 1 && parseInt(val[0]) >= 3) {
                       val = "0" + val;

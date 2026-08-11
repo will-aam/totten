@@ -8,7 +8,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
-  SheetFooter,
+
 } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,6 @@ import {
   AlertDialogAction,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { cn } from "@/lib/utils";
 import { clearTodayAgenda } from "@/app/actions/appointments";
 
 export type ScheduleSettings = {
@@ -147,7 +146,6 @@ export const ScheduleSettingsModal = memo(
         <SheetContent className="w-full sm:w-[450px] sm:max-w-md p-0 flex flex-col border-none shadow-2xl overflow-hidden bg-background">
           <SheetHeader className="p-6 border-b text-left">
             <SheetTitle className="text-xl font-black flex items-center gap-2">
-              <Clock className="h-5 w-5 text-primary" />
               Configurações da Agenda
             </SheetTitle>
             <SheetDescription className="font-medium text-sm">

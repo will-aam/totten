@@ -17,7 +17,6 @@ import {
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
-  getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 import { deleteCheckIn } from "@/app/actions/packages";
@@ -255,8 +254,6 @@ export function HistoryTable({
     getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize: 15 } },
     state: { sorting },
   });
 
@@ -330,35 +327,7 @@ export function HistoryTable({
         </div>
       </div>
 
-      {/* Paginação */}
-      {table.getPageCount() > 1 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-border pt-4 mt-4">
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-            Página {table.getState().pagination.pageIndex + 1} de{" "}
-            {table.getPageCount()}
-          </p>
-          <div className="flex gap-2 w-full sm:w-auto">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-              className="w-full sm:w-auto rounded-full"
-            >
-              Anterior
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-              className="w-full sm:w-auto rounded-full"
-            >
-              Próximo
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* Paginação removida, agora é controlada pela página (URL) */}
 
       {/*  MODAL DE CONFIRMAÇÃO */}
       <AlertDialog

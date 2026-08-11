@@ -1,7 +1,8 @@
 // app/(private)/admin/history/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { apiClient } from "@/lib/api-client";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
@@ -23,6 +24,15 @@ import {
 } from "./_components/history-table";
 import { HistoryFilters } from "./_components/history-filters";
 import { useDebounce } from "@/hooks/use-debounce";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 type HistoryResponse = {
   data: EnrichedCheckIn[];
@@ -32,7 +42,21 @@ type HistoryResponse = {
 };
 
 export default function AdminHistoryPage() {
-  const [page, setPage] = useState(1);
+  return (
+    <Suspense fallback={<div className="p-8 flex justify-center"><LoaderDots className="animate-spin h-8 w-8 text-primary" /></div>}>
+      <AdminHistoryPageContent />
+    </Suspense>
+  );
+}
+
+function AdminHistoryPageContent() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  
+  const pageParam = searchParams.get("page");
+  const page = pageParam ? parseInt(pageParam, 10) : 1;
+
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 500);
 
@@ -41,8 +65,18 @@ export default function AdminHistoryPage() {
 
   const [showScrollTop, setShowScrollTop] = useState(false);
 
+  const createPageUrl = (pageNumber: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", pageNumber.toString());
+    return `${pathname}?${params.toString()}`;
+  };
+
+  const setPage = (newPage: number) => {
+    router.push(createPageUrl(newPage), { scroll: false });
+  };
+
   useEffect(() => {
-    setPage(1);
+    if (page !== 1) setPage(1);
   }, [debouncedSearch, dateFrom, dateTo]);
 
   useEffect(() => {
@@ -133,34 +167,53 @@ export default function AdminHistoryPage() {
               <HistoryTable data={checkIns} onUpdate={mutate} />
 
               {totalPages > 1 && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 bg-card p-4 rounded-2xl border border-border/50 shadow-sm">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-center sm:text-left w-full sm:w-auto">
-                    Página {page} de {totalPages}
-                  </p>
+                <div className="mt-8">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          href={page > 1 ? createPageUrl(page - 1) : "#"}
+                          className={page === 1 ? "pointer-events-none opacity-50" : ""}
+                        />
+                      </PaginationItem>
+                      
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
+                        // Lógica simples para mostrar poucas páginas (ex: 1, 2, 3, ..., ultima)
+                        if (
+                          p === 1 ||
+                          p === totalPages ||
+                          (p >= page - 1 && p <= page + 1)
+                        ) {
+                          return (
+                            <PaginationItem key={p}>
+                              <PaginationLink
+                                href={createPageUrl(p)}
+                                isActive={page === p}
+                              >
+                                {p}
+                              </PaginationLink>
+                            </PaginationItem>
+                          );
+                        }
+                        
+                        if (p === page - 2 || p === page + 2) {
+                          return (
+                            <PaginationItem key={p}>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          );
+                        }
+                        return null;
+                      })}
 
-                  <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-                    <Button
-                      variant="outline"
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      disabled={page === 1}
-                      className="rounded-xl h-10 font-bold bg-background shadow-sm hover:bg-muted"
-                    >
-                      <ChevronLeft removePadding size="sm" className="mr-1" />{" "}
-                      Anterior
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      onClick={() =>
-                        setPage((p) => Math.min(totalPages, p + 1))
-                      }
-                      disabled={page === totalPages}
-                      className="rounded-xl h-10 font-bold bg-background shadow-sm hover:bg-muted"
-                    >
-                      Próxima{" "}
-                      <ChevronRight removePadding size="sm" className="ml-1" />
-                    </Button>
-                  </div>
+                      <PaginationItem>
+                        <PaginationNext
+                          href={page < totalPages ? createPageUrl(page + 1) : "#"}
+                          className={page === totalPages ? "pointer-events-none opacity-50" : ""}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
                 </div>
               )}
             </div>
