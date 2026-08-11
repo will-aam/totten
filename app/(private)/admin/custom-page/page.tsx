@@ -316,7 +316,7 @@ export default function CustomPage() {
     }
 
     return cn(
-      "w-full h-12 shrink-0 flex items-center justify-center text-sm font-bold px-4 text-center truncate cursor-pointer transition-all",
+      "w-full h-12 shrink-0 flex items-center justify-center text-sm font-medium px-4 text-center truncate cursor-pointer transition-all",
       roundingClass,
       styleClass
     );

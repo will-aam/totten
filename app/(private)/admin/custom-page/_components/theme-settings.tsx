@@ -1,3 +1,4 @@
+// app/(private)/admin/custom-page/_components/theme-settings.tsx
 "use client";
 
 import { Label } from "@/components/ui/label";
@@ -188,7 +189,7 @@ export function ThemeSettings({ data, onChange }: any) {
         {data.id === "custom" && (
           <div className="flex flex-col gap-4 pt-4 border-t border-border/50 animate-in fade-in slide-in-from-top-2">
             <Label className="text-foreground font-medium">Seu Wallpaper Personalizado</Label>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {/* Upload Didático */}
               <div className="flex flex-col items-center justify-center border-2 border-dashed border-border/50 rounded-xl p-6 bg-muted/20 hover:bg-muted/50 transition-colors cursor-pointer group">
@@ -202,8 +203,8 @@ export function ThemeSettings({ data, onChange }: any) {
               {/* Inserção por Link */}
               <div className="flex flex-col gap-3 justify-center">
                 <Label className="text-sm font-medium text-foreground">Ou use um Link (URL)</Label>
-                <Input 
-                  placeholder="https://exemplo.com/imagem.jpg" 
+                <Input
+                  placeholder="https://exemplo.com/imagem.jpg"
                   value={data.backgroundImage || ""}
                   onChange={(e) => onChange({ ...data, backgroundImage: e.target.value })}
                   className="bg-background h-11"
@@ -220,14 +221,14 @@ export function ThemeSettings({ data, onChange }: any) {
                   onClick={() => onChange({ ...data, bgNoise: !data.bgNoise })}
                   className={cn(
                     "w-full flex items-center justify-center gap-2 text-xs py-2 px-3 border rounded-md transition-colors font-medium",
-                    data.bgNoise 
-                      ? "border-primary bg-primary/10 text-primary" 
+                    data.bgNoise
+                      ? "border-primary bg-primary/10 text-primary"
                       : "border-border/50 text-muted-foreground hover:bg-muted"
                   )}
                 >
                   Textura Granulada
                 </button>
-                
+
                 <div className="flex flex-col gap-2 border border-border/50 rounded-md p-3">
                   <Label className="text-[11px] text-muted-foreground font-medium uppercase">Intensidade do Borrão (Blur)</Label>
                   <div className="flex bg-muted p-1 rounded-lg border border-border/50">
@@ -240,7 +241,7 @@ export function ThemeSettings({ data, onChange }: any) {
                     ].map((level) => {
                       const currentBlur = data.bgBlur === true ? "3xl" : (data.bgBlur || "none");
                       const isSelected = currentBlur === level.id || (level.id === "none" && !data.bgBlur);
-                      
+
                       return (
                         <button
                           key={level.id}
@@ -267,7 +268,7 @@ export function ThemeSettings({ data, onChange }: any) {
         {data.id === "solid" && (
           <div className="flex flex-col gap-5 pt-4 border-t border-border/50 animate-in fade-in slide-in-from-top-2">
             <Label className="text-foreground font-medium">Estilo de Papel de Parede</Label>
-            
+
             {/* Preenchimento: Sólido ou Gradiente */}
             <div className="flex flex-col gap-3">
               <Label className="text-xs text-muted-foreground">Preenchimento</Label>
@@ -364,14 +365,14 @@ export function ThemeSettings({ data, onChange }: any) {
                   onClick={() => onChange({ ...data, bgNoise: !data.bgNoise })}
                   className={cn(
                     "w-full flex items-center justify-center gap-2 text-xs py-2 px-3 border rounded-md transition-colors font-medium",
-                    data.bgNoise 
-                      ? "border-primary bg-primary/10 text-primary" 
+                    data.bgNoise
+                      ? "border-primary bg-primary/10 text-primary"
                       : "border-border/50 text-muted-foreground hover:bg-muted"
                   )}
                 >
                   Textura Granulada
                 </button>
-                
+
                 <div className="flex flex-col gap-2 border border-border/50 rounded-md p-3">
                   <Label className="text-[11px] text-muted-foreground font-medium uppercase">Intensidade do Borrão (Blur)</Label>
                   <div className="flex bg-muted p-1 rounded-lg border border-border/50">
@@ -384,7 +385,7 @@ export function ThemeSettings({ data, onChange }: any) {
                     ].map((level) => {
                       const currentBlur = data.bgBlur === true ? "3xl" : (data.bgBlur || "none");
                       const isSelected = currentBlur === level.id || (level.id === "none" && !data.bgBlur);
-                      
+
                       return (
                         <button
                           key={level.id}
@@ -459,7 +460,7 @@ export function ThemeSettings({ data, onChange }: any) {
           <Label className="text-foreground font-medium flex items-center gap-2">
             Estilo dos Botões
           </Label>
-          
+
           {/* ESTILO (Sólido, Vidro, Contorno) */}
           <div className="flex flex-col gap-3">
             <Label className="text-xs text-muted-foreground">Aparência</Label>

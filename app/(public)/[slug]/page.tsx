@@ -137,7 +137,7 @@ export default async function PublicLinkBioPage({
     }
 
     return cn(
-      "w-full min-h-[56px] shrink-0 flex items-center justify-center text-base font-bold px-6 text-center cursor-pointer transition-all",
+      "w-full min-h-[56px] shrink-0 flex items-center justify-center text-base font-medium px-6 text-center cursor-pointer transition-all",
       roundingClass,
       styleClass
     );
@@ -217,36 +217,39 @@ export default async function PublicLinkBioPage({
         @import url('https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Oxanium:wght@400;500;600;700&family=Roboto:ital,wght@0,400;0,500;0,700;1,400&family=Sora:wght@400;500;600;700&display=swap');
       `}</style>
 
-      {/* VIEWPORT DA PÁGINA */}
-      <div className="min-h-screen w-full relative overflow-hidden flex flex-col light">
+      {/* DESKTOP BACKGROUND */}
+      <div className="min-h-screen w-full bg-[#121212] flex flex-col items-center light">
         
-        {/* CAMADA DE FUNDO BASE */}
-        <div
-          className={cn(
-            "fixed inset-0 z-0 transition-colors duration-500",
-            theme.id !== "solid" && theme.id !== "custom" ? theme.css : "",
-            theme.id === "custom" ? "bg-cover bg-center bg-no-repeat" : ""
-          )}
-          style={getBackgroundStyle()}
-        />
-
-        {/* EFEITOS DE FUNDO */}
-        {(theme.id === "solid" || theme.id === "custom") && theme.bgNoise && (
+        {/* CONTAINER DO LINK NA BIO */}
+        <div className="w-full max-w-[600px] min-h-screen sm:min-h-[800px] sm:h-fit relative flex flex-col sm:rounded-3xl shadow-[0_40px_80px_-20px_rgba(0,0,0,1)] overflow-hidden bg-black mx-auto sm:my-12">
+          
+          {/* CAMADA DE FUNDO BASE */}
           <div
-            className="fixed inset-0 z-0 opacity-[0.15] mix-blend-overlay pointer-events-none"
-            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
+            className={cn(
+              "absolute inset-0 z-0 transition-colors duration-500",
+              theme.id !== "solid" && theme.id !== "custom" ? theme.css : "",
+              theme.id === "custom" ? "bg-cover bg-center bg-no-repeat" : ""
+            )}
+            style={getBackgroundStyle()}
           />
-        )}
-        {(theme.id === "solid" || theme.id === "custom") && theme.bgBlur && theme.bgBlur !== "none" && (
-          <div className={cn(
-            "fixed inset-0 z-0 bg-white/10 pointer-events-none",
-            theme.bgBlur === "sm" ? "backdrop-blur-sm" :
-            theme.bgBlur === "md" ? "backdrop-blur-md" :
-            theme.bgBlur === "xl" ? "backdrop-blur-xl" :
-            theme.bgBlur === "3xl" ? "backdrop-blur-3xl" :
-            "backdrop-blur-[50px]"
-          )} />
-        )}
+
+          {/* EFEITOS DE FUNDO */}
+          {(theme.id === "solid" || theme.id === "custom") && theme.bgNoise && (
+            <div
+              className="absolute inset-0 z-0 opacity-[0.15] mix-blend-overlay pointer-events-none"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
+            />
+          )}
+          {(theme.id === "solid" || theme.id === "custom") && theme.bgBlur && theme.bgBlur !== "none" && (
+            <div className={cn(
+              "absolute inset-0 z-0 bg-white/10 pointer-events-none",
+              theme.bgBlur === "sm" ? "backdrop-blur-sm" :
+              theme.bgBlur === "md" ? "backdrop-blur-md" :
+              theme.bgBlur === "xl" ? "backdrop-blur-xl" :
+              theme.bgBlur === "3xl" ? "backdrop-blur-3xl" :
+              "backdrop-blur-[50px]"
+            )} />
+          )}
 
         {/* CAMADA DE CONTEÚDO */}
         <div
@@ -372,6 +375,7 @@ export default async function PublicLinkBioPage({
             </div>
           </div>
         </div>
+      </div>
       </div>
     </>
   );

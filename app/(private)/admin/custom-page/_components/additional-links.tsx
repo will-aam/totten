@@ -36,7 +36,7 @@ export function AdditionalLinks({ data, onChange }: any) {
           {data.length} / {maxLinks}
         </div>
       </div>
-      
+
       <div className="flex flex-col gap-4">
         {data.length === 0 ? (
           <div className="text-center py-6 border-2 border-dashed border-border/50 rounded-xl bg-muted/20">
