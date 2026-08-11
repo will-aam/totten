@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // app/api/dashboard/checkins/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth, AuthError } from "@/lib/auth";
@@ -30,3 +31,4 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }
+

@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // app/api/service-durations/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth, AuthError } from "@/lib/auth";
@@ -104,3 +105,4 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }
+

@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // app/api/totem/history/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { TotemService } from "@/lib/server/services/totem/totem.service";
@@ -32,3 +33,4 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }
+

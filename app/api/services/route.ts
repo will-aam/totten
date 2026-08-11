@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // app/api/services/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth, AuthError } from "@/lib/auth";
@@ -61,3 +62,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }
+

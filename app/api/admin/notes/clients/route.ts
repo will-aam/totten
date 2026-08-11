@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // app/api/admin/notes/clients/route.ts
 import { NextResponse } from "next/server";
 import { requireAuth, AuthError } from "@/lib/auth";
@@ -27,3 +28,4 @@ export async function GET() {
     );
   }
 }
+

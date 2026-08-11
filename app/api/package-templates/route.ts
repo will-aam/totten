@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // app/api/package-templates/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth, AuthError } from "@/lib/auth";
@@ -58,3 +59,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
