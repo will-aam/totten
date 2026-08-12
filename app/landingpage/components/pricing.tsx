@@ -5,68 +5,38 @@ import { ArrowRight, CheckCircle2 } from "lucide-react";
 export default function PricingSection() {
   const plans = [
     {
-      name: "Starter",
-      price: "R$ 89",
+      name: "Early Access",
+      price: "R$ 39,90",
       period: "/mês",
-      desc: "Para profissionais autônomos começando a organizar a agenda.",
-      cta: "Começar teste grátis",
-      href: "#demo",
-      highlight: false,
-      features: [
-        "1 profissional",
-        "Agenda e agendamentos ilimitados",
-        "Cadastro de clientes",
-        "Notificações por e-mail",
-        "Suporte por e-mail",
-      ],
-    },
-    {
-      name: "Business",
-      price: "R$ 249",
-      period: "/mês",
-      desc: "Para clínicas e salões com equipe e operação em ritmo constante.",
-      cta: "Assinar Business",
+      desc: "Preço especial e fixo enquanto o sistema está sendo desenvolvido. Garanta seu acesso antes do lançamento oficial.",
+      cta: "Começar teste de 30 dias",
       href: "#demo",
       highlight: true,
-      badge: "Mais escolhido",
+      badge: "Preço de Desenvolvimento",
       features: [
-        "Até 10 profissionais",
+        "Acesso antecipado a todas as ferramentas atuais",
+        "Agenda e agendamentos ilimitados",
+        "Cadastro de clientes",
         "Totem de autoatendimento",
-        "Financeiro completo",
-        "Estoque e pacotes",
         "Prontuários e anamnese",
-        "Suporte prioritário",
-      ],
-    },
-    {
-      name: "Scale",
-      price: "R$ 549",
-      period: "/mês",
-      desc: "Para redes e operações de alto volume, com múltiplas unidades.",
-      cta: "Falar com vendas",
-      href: "#demo",
-      highlight: false,
-      features: [
-        "Profissionais ilimitados",
-        "Multiunidades",
-        "Relatórios avançados",
-        "Integrações e API",
-        "Gerente de sucesso dedicado",
+        "Futuras atualizações inclusas (Automação de WhatsApp, etc)",
       ],
     },
   ];
   return (
     <section
       id="preços"
-      className="mx-auto w-full px-4 py-24 sm:px-6 lg:px-48 bg-zinc-900/10"
+      className="mx-auto w-full px-4 py-24 sm:px-6 lg:px-48 bg-zinc-900/10 flex flex-col items-center"
     >
       <a id="precos" />
-      <SectionHeader
-        eyebrow="Preços"
-        title="Planos que crescem com sua operação."
-        subtitle="Comece grátis por 14 dias. Sem cartão. Cancele quando quiser."
-      />
-      <div className="mt-14 grid gap-4 lg:grid-cols-3">
+      <div className="text-center">
+        <SectionHeader
+          eyebrow="Preços"
+          title="Preço único durante o desenvolvimento."
+          subtitle="Aproveite o valor reduzido de R$ 39,90 enquanto adicionamos novas funcionalidades, como a automação via WhatsApp. Teste grátis por 30 dias!"
+        />
+      </div>
+      <div className="mt-14 w-full max-w-md mx-auto">
         {plans.map((p) => (
           <div
             key={p.name}
@@ -80,7 +50,7 @@ export default function PricingSection() {
               <div className="pointer-events-none absolute -top-px left-1/2 h-px w-1/2 -translate-x-1/2 bg-linear-to-r from-transparent via-white to-transparent" />
             )}
             {p.badge && (
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-full text-center">
                 <span className="rounded-full bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-black">
                   {p.badge}
                 </span>
@@ -107,7 +77,7 @@ export default function PricingSection() {
                 {p.cta} <ArrowRight className="ml-1 h-4 w-4" />
               </a>
             </Button>
-            <div className="my-6 h-px bg-linear-to-r from-transparent var-(--border-c)] to-transparent" />
+            <div className="my-6 h-px bg-linear-to-r from-transparent via-white/20 to-transparent" />
             <ul className="space-y-3 text-sm">
               {p.features.map((f) => (
                 <li key={f} className="flex items-start gap-2 text-zinc-soft">
@@ -120,8 +90,7 @@ export default function PricingSection() {
         ))}
       </div>
       <p className="mt-8 text-center text-xs text-zinc-soft">
-        Todos os planos incluem 14 dias de teste grátis, sem necessidade de
-        cartão de crédito.
+        Acesso completo liberado por 30 dias sem necessidade de cartão de crédito inicial.
       </p>
     </section>
   );

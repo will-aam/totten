@@ -464,19 +464,19 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
             </h2>
             {(contact.businessHours && contact.showBusinessHours !== false) && (
               <p className="text-xs opacity-60 mb-2 flex items-start gap-2">
-                <Clock className="w-4 h-4 mt-0.5 shrink-0" style={{ color: theme.primaryColor }} /> 
+                <Clock className="w-4 h-4 mt-0.5 shrink-0" style={{ color: theme.primaryColor }} />
                 <span>{contact.businessHours}</span>
               </p>
             )}
             {(contact.whatsapp || contact.phone) && (
               <p className="text-sm opacity-80 mb-2 flex items-start gap-2">
-                <PhoneIcon className="w-4 h-4 mt-0.5 shrink-0" style={{ color: theme.primaryColor }} /> 
+                <PhoneIcon className="w-4 h-4 mt-0.5 shrink-0" style={{ color: theme.primaryColor }} />
                 <span>{contact.whatsapp || contact.phone}</span>
               </p>
             )}
             {contact.address && (
               <p className="text-sm opacity-80 flex items-start gap-2">
-                <MapPin className="w-4 h-4 mt-0.5 shrink-0" style={{ color: theme.primaryColor }} /> 
+                <MapPin className="w-4 h-4 mt-0.5 shrink-0" style={{ color: theme.primaryColor }} />
                 <span>{contact.address}</span>
               </p>
             )}
@@ -510,7 +510,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
                 {presentation.subheadline || "Transformando vidas e oferecendo o melhor atendimento para você se sentir especial todos os dias."}
               </p>
             </div>
-            
+
             <div>
               <h4 className="font-bold text-sm mb-3">Links Rápidos</h4>
               <div className="flex flex-col gap-2 text-xs opacity-70">

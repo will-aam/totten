@@ -40,8 +40,8 @@ export default function Navbar() {
         </nav>
         <div className="flex items-center gap-2">
           {/* <ThemeToggle /> */}
-          <Button variant="default" size="sm" className="hidden sm:inline-flex">
-            Entrar
+          <Button variant="default" size="sm" className="hidden sm:inline-flex" asChild>
+            <a href="https://www.totten.com.br/login">Entrar</a>
           </Button>
           <Button size="icon" variant="ghost" className="md:hidden">
             <Menu className="h-5 w-5" />

@@ -15,7 +15,7 @@ export function ProfileSettings({ data, onChange }: any) {
       <div>
         <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
           <User className="h-5 w-5 text-primary" />
-          Perfil e Link
+          Perfil
         </h3>
         <p className="text-sm text-muted-foreground mt-1">
           Defina como você aparecerá na sua página pública.
