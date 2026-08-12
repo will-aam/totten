@@ -38,7 +38,6 @@ import {
   cadastrosSubItems,
   autoatendimentoSubItems,
   financeSubItems,
-  termosSubItems,
   type OpenModule,
 } from "./nav-config";
 
@@ -71,8 +70,6 @@ export function AdminSidebar() {
       setOpenModule("autoatendimento");
     } else if (financeSubItems.some((i) => pathname.startsWith(i.href))) {
       setOpenModule("finance");
-    } else if (termosSubItems.some((i) => pathname.startsWith(i.href))) {
-      setOpenModule("termos");
     }
   }, [pathname]);
 
@@ -90,9 +87,6 @@ export function AdminSidebar() {
     pathname.startsWith(i.href),
   );
   const isFinanceActive = financeSubItems.some((i) =>
-    pathname.startsWith(i.href),
-  );
-  const isTermosActive = termosSubItems.some((i) =>
     pathname.startsWith(i.href),
   );
 
@@ -263,20 +257,6 @@ export function AdminSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {/* Módulo: Termos de Uso - Apenas Owner */}
-              {isOwner && (
-                <NavCollapsibleGroup
-                  label="Termos de Uso"
-                  icon={Shield}
-                  isOpen={openModule === "termos"}
-                  onOpenChange={(open) => setOpenModule(open ? "termos" : null)}
-                  isActive={isTermosActive}
-                  items={termosSubItems}
-                  pathname={pathname}
-                  onNavigate={closeMobile}
-                />
-              )}
-
               {/* Módulo: Autoatendimento - Apenas Owner */}
               {isOwner && (
                 <NavCollapsibleGroup
