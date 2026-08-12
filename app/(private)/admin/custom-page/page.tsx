@@ -15,6 +15,13 @@ import {
   Check,
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
+import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import { Globe, Link as LinkIcon, LayoutTemplate, Calendar } from "lucide-react";
+
+const MobileGlobe = ({ pack, ...props }: any) => <Globe {...props} />;
+const MobileLink = ({ pack, ...props }: any) => <LinkIcon {...props} />;
+const MobileSite = ({ pack, ...props }: any) => <LayoutTemplate {...props} />;
+const MobileCalendar = ({ pack, ...props }: any) => <Calendar {...props} />;
 
 import { ProfileSettings } from "./_components/profile-settings";
 import { ThemeSettings } from "./_components/theme-settings";
@@ -23,25 +30,62 @@ import { AdditionalLinks } from "./_components/additional-links";
 import { ProfessionalSiteView } from "./_components/professional-site/professional-site-view";
 import { BookingSiteView } from "./_components/booking-site/booking-site-view";
 import { PhoneMockup } from "./_components/phone-mockup";
-import { GlobalImagesBlock } from "./_components/global-images-block";
+import { GlobalSettings } from "./_components/global-settings";
 import { getCustomPageAction, updateCustomPageAction } from "@/app/actions/custom-page";
 import { toast } from "sonner";
 import { Loader2, Loader } from "lucide-react";
 
 export default function CustomPage() {
-  const [activeTab, setActiveTab] = useState<"link-bio" | "professional-site" | "booking-site">("link-bio");
+  const [activeTab, setActiveTab] = useState<"global" | "link-bio" | "professional-site" | "booking-site">("global");
   const [activeStepId, setActiveStepId] = useState<string | null>(null);
   const [showMobilePreview, setShowMobilePreview] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const handleCopyLink = () => {
-    const origin = typeof window !== 'undefined' && window.location.origin.includes('localhost') ? window.location.origin : 'https://www.totten.com.br';
+  const renderCopyLinkBox = (tab: "link-bio" | "professional-site" | "booking-site") => {
     let suffix = "";
-    if (activeTab === "professional-site") suffix = "/site";
-    if (activeTab === "booking-site") suffix = "/agendar";
-    navigator.clipboard.writeText(`${origin}/${profile.slug}${suffix}`);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    let title = "Seu Link Exclusivo";
+    if (tab === "professional-site") { suffix = "/site"; title = "Link do seu Site Profissional"; }
+    if (tab === "booking-site") { suffix = "/agendar"; title = "Link da sua Página de Agendamento"; }
+    
+    return (
+      <div className="flex flex-col gap-2 p-4 border border-border/50 bg-muted/10 rounded-xl mb-6 w-full max-w-[1600px] mx-auto">
+        <span className="text-sm font-medium text-foreground">{title}</span>
+        <div className="flex items-center">
+          <span className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
+            totten.com.br/
+          </span>
+          <Input
+            value={profile.slug}
+            onChange={(e) => handleSlugChange(e.target.value)}
+            className={cn(
+              "rounded-none bg-background border-border/50 h-11 focus-visible:ring-1",
+              tab !== "link-bio" ? "border-r-0" : ""
+            )}
+            placeholder="seunome"
+          />
+          {tab !== "link-bio" && (
+            <span className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-l-0 text-sm h-11 flex items-center shrink-0">
+              {suffix}
+            </span>
+          )}
+          <button
+            onClick={() => {
+              const origin = typeof window !== 'undefined' && window.location.origin.includes('localhost') ? window.location.origin : 'https://www.totten.com.br';
+              navigator.clipboard.writeText(`${origin}/${profile.slug}${suffix}`);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            }}
+            className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-l-0 rounded-r-md text-sm h-11 flex items-center hover:bg-muted/80 hover:text-foreground transition-colors shrink-0 outline-none"
+            title="Copiar link"
+          >
+            {copied ? <Check className="h-5 w-5 text-emerald-500" /> : <Copy className="h-5 w-5" />}
+          </button>
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          Apenas letras minúsculas. Sem espaços ou números.
+        </p>
+      </div>
+    );
   };
 
   const handleSlugChange = (val: string) => {
@@ -275,7 +319,7 @@ export default function CustomPage() {
 
   const isStepDone = (stepId: string) => {
     switch (stepId) {
-      case "profile": return !!(profile.name || profile.bio);
+      case "profile": return !!(profile.layout);
       case "theme": return true;
       case "social": return socials.activePlatforms && socials.activePlatforms.length > 0;
       case "links": return links && links.length > 0 && links.some(l => l.title || l.url);
@@ -299,57 +343,31 @@ export default function CustomPage() {
 
       <div className="flex flex-col gap-6 p-6 md:p-8 relative pb-32 md:pb-8">
 
-        <GlobalImagesBlock profile={profile} setProfile={setProfile} />
-
         <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)} className="w-full">
-          <TabsList className="mb-4">
+          <TabsList className="hidden md:flex bg-transparent flex-row w-full justify-start border-b border-border/50 space-x-2 rounded-none h-auto p-0 mb-8">
+            <TabsTrigger value="global">Global</TabsTrigger>
             <TabsTrigger value="link-bio">Link na Bio</TabsTrigger>
             <TabsTrigger value="professional-site">Site</TabsTrigger>
-            <TabsTrigger value="booking-site">Autoagendamento</TabsTrigger>
+            <TabsTrigger value="booking-site">Agenda</TabsTrigger>
           </TabsList>
 
-          {/* Bloco fixo do link (serve para ambos) */}
-          <div className="flex flex-col gap-2 p-4 border border-border/50 bg-muted/10 rounded-xl mb-6 w-full max-w-[1600px] mx-auto">
-            <span className="text-sm font-medium text-foreground">
-              {activeTab === "link-bio" ? "Seu Link Exclusivo" : (activeTab === "professional-site" ? "Link do seu Site Profissional" : "Link da sua Página de Agendamento")}
-            </span>
-            <div className="flex items-center">
-              <span className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
-                totten.com.br/
-              </span>
-              <Input
-                value={profile.slug}
-                onChange={(e) => handleSlugChange(e.target.value)}
-                className={cn(
-                  "rounded-none bg-background border-border/50 h-11 focus-visible:ring-1",
-                  activeTab !== "link-bio" ? "border-r-0" : ""
-                )}
-                placeholder="seunome"
-              />
-              {activeTab === "professional-site" && (
-                <span className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-l-0 text-sm h-11 flex items-center shrink-0">
-                  /site
-                </span>
-              )}
-              {activeTab === "booking-site" && (
-                <span className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-l-0 text-sm h-11 flex items-center shrink-0">
-                  /agendar
-                </span>
-              )}
-              <button
-                onClick={handleCopyLink}
-                className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-l-0 rounded-r-md text-sm h-11 flex items-center hover:bg-muted/80 hover:text-foreground transition-colors shrink-0 outline-none"
-                title="Copiar link"
-              >
-                {copied ? <Check className="h-5 w-5 text-emerald-500" /> : <Copy className="h-5 w-5" />}
-              </button>
-            </div>
-            <p className="text-[11px] text-muted-foreground">
-              Apenas letras minúsculas. Sem espaços ou números.
-            </p>
-          </div>
+          <MobileBottomNav
+            items={[
+              { id: "global", label: "Global", icon: MobileGlobe },
+              { id: "link-bio", label: "Link na Bio", icon: MobileLink },
+              { id: "professional-site", label: "Site", icon: MobileSite },
+              { id: "booking-site", label: "Agenda", icon: MobileCalendar },
+            ]}
+            activeId={activeTab}
+            onChange={(id) => setActiveTab(id as any)}
+          />
+
+          <TabsContent value="global" className="mt-0">
+            <GlobalSettings profile={profile} setProfile={setProfile} />
+          </TabsContent>
 
           <TabsContent value="link-bio" className="mt-0">
+            {renderCopyLinkBox("link-bio")}
             <div className="flex flex-col lg:flex-row gap-8 w-full max-w-[1600px] mx-auto">
               {/* COLUNA ESQUERDA: Carrossel Limpo e Arrastável */}
               <div className="flex-1 flex flex-col gap-6 w-full max-w-full overflow-hidden">
@@ -440,10 +458,12 @@ export default function CustomPage() {
           </TabsContent>
 
           <TabsContent value="professional-site" className="mt-0">
+            {renderCopyLinkBox("professional-site")}
             <ProfessionalSiteView profile={profile} initialData={proSiteConfig} globalContact={globalContact} />
           </TabsContent>
 
           <TabsContent value="booking-site" className="mt-0">
+            {renderCopyLinkBox("booking-site")}
             <BookingSiteView profile={profile} />
           </TabsContent>
         </Tabs>

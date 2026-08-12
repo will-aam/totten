@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Camera, User } from "@boxicons/react";
+import { User } from "@boxicons/react";
 import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
 
 export function ProfileSettings({ data, onChange }: any) {
 
@@ -51,39 +49,6 @@ export function ProfileSettings({ data, onChange }: any) {
           </p>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="name" className="text-foreground font-medium">
-            Nome de Exibição
-          </Label>
-          <Input
-            id="name"
-            value={data.name}
-            onChange={(e) => onChange({ ...data, name: e.target.value })}
-            className="bg-muted/50 border-border/50 h-11"
-            placeholder="Ex: Clínica Totten"
-          />
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <div className="flex justify-between items-end">
-            <Label htmlFor="bio" className="text-foreground font-medium">
-              Biografia
-            </Label>
-            <span
-              className={`text-[11px] font-medium ${data.bio.length > 160 ? "text-destructive" : "text-muted-foreground"}`}
-            >
-              {data.bio.length} / 160
-            </span>
-          </div>
-          <Textarea
-            id="bio"
-            value={data.bio}
-            onChange={(e) => onChange({ ...data, bio: e.target.value })}
-            maxLength={160}
-            className="bg-muted/50 border-border/50 min-h-25 resize-none"
-            placeholder="Descreva seu negócio em poucas palavras..."
-          />
-        </div>
       </div>
     </div>
   );

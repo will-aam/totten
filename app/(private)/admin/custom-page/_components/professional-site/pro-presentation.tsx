@@ -188,19 +188,6 @@ export function ProPresentation({ data, onChange }: { data: any, onChange: (data
           <p className="text-[11px] text-muted-foreground">O botão principal leva ao agendamento. O secundário rola até a seção de serviços.</p>
         </div>
 
-        {/* Biografia Detalhada */}
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="bio" className="text-foreground font-medium">
-            Biografia / Sobre nós
-          </Label>
-          <Textarea
-            id="bio"
-            value={data.bio || ""}
-            onChange={(e) => onChange({ ...data, bio: e.target.value })}
-            className="bg-background border-border/50 focus-visible:ring-1 min-h-[120px]"
-            placeholder="Conte sua história, especializações e o que torna o seu trabalho único..."
-          />
-        </div>
 
         {/* Título da seção Sobre */}
         <div className="flex flex-col gap-2">

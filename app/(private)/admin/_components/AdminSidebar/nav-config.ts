@@ -104,7 +104,6 @@ export const autoatendimentoSubItems: SubNavItem[] = [
   },
   { title: "WhatsApp Automático", href: "/admin/whatsapp-auto", active: false },
   { title: "Regras e Horários", href: "/admin/self-service", active: true },
-  { title: "Termos e Condições", href: "/admin/auto/terms", active: true },
 ];
 
 export const financeSubItems: SubNavItem[] = [
