@@ -8,7 +8,7 @@ interface PhoneMockupProps {
   theme: any;
   socials: any;
   links: any;
-  activeTab: "link-bio" | "professional-site";
+  activeTab: "global" | "link-bio" | "professional-site" | "booking-site";
   proSiteConfig: any;
 }
 
