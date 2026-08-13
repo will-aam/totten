@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowRight, CheckCircle2, Mail, MessageCircle } from "lucide-react";
+import { ArrowRight, CheckCircle, EnvelopeAlt, MessageCircle } from "@boxicons/react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -71,7 +71,7 @@ export default function DemoRequestSection() {
               "Sem compromisso, sem cartão",
             ].map((i) => (
               <li key={i} className="flex items-center gap-2 text-zinc-soft">
-                <CheckCircle2 className="h-4 w-4 text-white" /> {i}
+                <CheckCircle className="h-4 w-4 text-white" /> {i}
               </li>
             ))}
           </ul>
@@ -85,22 +85,20 @@ export default function DemoRequestSection() {
             <button
               type="button"
               onClick={() => setChannel("email")}
-              className={`flex items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors ${
-                channel === "email"
-                  ? "bg-white text-black"
-                  : "text-zinc-soft hover:text-white"
-              }`}
+              className={`flex items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors ${channel === "email"
+                ? "bg-white text-black"
+                : "text-zinc-soft hover:text-white"
+                }`}
             >
-              <Mail className="h-3.5 w-3.5" /> E-mail
+              <EnvelopeAlt className="h-3.5 w-3.5" /> E-mail
             </button>
             <button
               type="button"
               onClick={() => setChannel("whatsapp")}
-              className={`flex items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors ${
-                channel === "whatsapp"
-                  ? "bg-white text-black"
-                  : "text-zinc-soft hover:text-white"
-              }`}
+              className={`flex items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors ${channel === "whatsapp"
+                ? "bg-white text-black"
+                : "text-zinc-soft hover:text-white"
+                }`}
             >
               <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
             </button>

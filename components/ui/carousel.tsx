@@ -5,7 +5,7 @@ import useEmblaCarousel, {
   type UseEmblaCarouselType,
 } from "embla-carousel-react";
 //  CORREÇÃO: Importamos o ChevronRight para fazer par com o ChevronLeft
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "@boxicons/react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";

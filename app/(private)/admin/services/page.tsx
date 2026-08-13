@@ -18,8 +18,9 @@ import {
   TrendingDown,
   Box,
   Save,
+  Image,
+  Eye, EyeSlash
 } from "@boxicons/react";
-import { Eye, EyeOff, Image as ImageIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -234,7 +235,7 @@ function ServicesTabs() {
             >
               {showInactive ? (
                 <>
-                  <EyeOff className="mr-2 h-4 w-4" /> Ocultar Inativos
+                  <EyeSlash className="mr-2 h-4 w-4" /> Ocultar Inativos
                 </>
               ) : (
                 <>
@@ -307,7 +308,7 @@ function ServicesTabs() {
                       <img src={service.image_url} alt={service.name} className="absolute inset-0 w-full h-full object-cover" />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <ImageIcon className="w-8 h-8 text-muted-foreground/20" />
+                        <Image className="w-8 h-8 text-muted-foreground/20" />
                       </div>
                     )}
                   </div>

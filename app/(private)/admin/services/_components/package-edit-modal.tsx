@@ -18,7 +18,6 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/image-utils";
 import { uploadImageAction } from "@/app/actions/upload-image";
-import { Image as ImageIcon, Upload, Loader2, Link as LinkIcon, Globe } from "lucide-react";
 import {
   LoaderDots,
   Save,
@@ -29,7 +28,6 @@ import {
   Dollar,
   Rename,
   Cog,
-  AlertTriangle,
   Trash,
 } from "@boxicons/react";
 import {

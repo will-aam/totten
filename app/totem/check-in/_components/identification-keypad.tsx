@@ -2,7 +2,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Delete } from "lucide-react";
+import { TagX } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
 export type InputMode = "CPF" | "PHONE";
@@ -155,7 +155,7 @@ export function IdentificationKeypad({
           onClick={handleDelete}
           disabled={disabled || digits.length === 0}
         >
-          <Delete className="size-6 md:size-8 lg:size-10" />
+          <TagX className="size-6 md:size-8 lg:size-10" />
           <span className="sr-only">Apagar</span>
         </Button>
       </div>

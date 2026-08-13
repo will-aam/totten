@@ -1,5 +1,5 @@
-import { Calendar, Users, CheckCircle2, Boxes } from "lucide-react";
-import { Package, CreditCard } from "@boxicons/react";
+import { Calendar, CheckCircle } from "@boxicons/react";
+
 
 export const landingContent = {
   hero: {
@@ -37,7 +37,7 @@ export const landingContent = {
       },
 
       {
-        icon: CheckCircle2,
+        icon: CheckCircle,
         title: "Check-in automático",
         description: "Cliente realiza check-in por CPF ou telefone no Totem.",
       },

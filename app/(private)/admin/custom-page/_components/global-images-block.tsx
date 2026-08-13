@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, ChevronDown, Camera, Image as ImageIcon } from "@boxicons/react";
-import { Loader2 } from "lucide-react";
+import { ChevronRight, ChevronDown, Camera, Image as ImageIcon, LoaderLines } from "@boxicons/react";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/image-utils";
 import { uploadImageAction } from "@/app/actions/upload-image";
@@ -94,7 +93,7 @@ export function GlobalImagesBlock({ profile, setProfile }: GlobalImagesBlockProp
                 )}
                 {isUploadingAvatar && (
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-full z-20">
-                    <Loader2 className="w-6 h-6 text-white animate-spin" />
+                    <LoaderLines className="w-6 h-6 text-white animate-spin" />
                   </div>
                 )}
                 <input type="file" accept="image/png, image/jpeg" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={handleAvatarUpload} disabled={isUploadingAvatar} />
@@ -124,7 +123,7 @@ export function GlobalImagesBlock({ profile, setProfile }: GlobalImagesBlockProp
                 )}
                 {isUploadingBanner && (
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-xl z-20">
-                    <Loader2 className="w-6 h-6 text-white animate-spin" />
+                    <LoaderLines className="w-6 h-6 text-white animate-spin" />
                   </div>
                 )}
                 <input type="file" accept="image/png, image/jpeg" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={handleBannerUpload} disabled={isUploadingBanner} />

@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Menu } from "lucide-react";
+import { Menu } from "@boxicons/react";
 import Image from "next/image";
 
 export default function Navbar() {

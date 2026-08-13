@@ -5,13 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Save, ChevronRight, ChevronLeft, Pin, Star, Briefcase, Youtube, Mobile, X, Copy, Check, Globe, Layout } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
 } from "@/components/ui/carousel";
 
 // Importando as seções recém-criadas
@@ -23,7 +20,7 @@ import { ProContact } from "./pro-contact";
 import { ProTheme } from "./pro-theme";
 import { updateCustomPageAction } from "@/app/actions/custom-page";
 import { toast } from "sonner";
-import { Clock, Phone as PhoneIcon, MapPin } from "lucide-react";
+import { MapIcon, Clock, Phone } from "@boxicons/react"
 import useSWR from "swr";
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
@@ -460,7 +457,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
         {(contact.address || contact.phone || contact.whatsapp || (contact.businessHours && contact.showBusinessHours !== false)) && (
           <div className="px-6 py-6">
             <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
-              <PhoneIcon className="h-4 w-4" /> Contato
+              <Phone className="h-4 w-4" /> Contato
             </h2>
             {(contact.businessHours && contact.showBusinessHours !== false) && (
               <p className="text-xs opacity-60 mb-2 flex items-start gap-2">
@@ -470,13 +467,13 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
             )}
             {(contact.whatsapp || contact.phone) && (
               <p className="text-sm opacity-80 mb-2 flex items-start gap-2">
-                <PhoneIcon className="w-4 h-4 mt-0.5 shrink-0" style={{ color: theme.primaryColor }} />
+                <Phone className="w-4 h-4 mt-0.5 shrink-0" style={{ color: theme.primaryColor }} />
                 <span>{contact.whatsapp || contact.phone}</span>
               </p>
             )}
             {contact.address && (
               <p className="text-sm opacity-80 flex items-start gap-2">
-                <MapPin className="w-4 h-4 mt-0.5 shrink-0" style={{ color: theme.primaryColor }} />
+                <MapIcon className="w-4 h-4 mt-0.5 shrink-0" style={{ color: theme.primaryColor }} />
                 <span>{contact.address}</span>
               </p>
             )}

@@ -30,14 +30,17 @@ import {
   TrendingDown,
   Box,
   Trash,
+  Image,
+  LoaderLines,
   AlertTriangle,
+  Link,
+  ArrowInUpSquareHalf
 } from "@boxicons/react";
 import { updateService, toggleServiceStatus } from "@/app/actions/services";
 import { getStockItems } from "@/app/actions/stock";
 import { cn } from "@/lib/utils";
 import { compressImage } from "@/lib/image-utils";
 import { uploadImageAction } from "@/app/actions/upload-image";
-import { Image as ImageIcon, Upload, Loader2, Link as LinkIcon, Globe } from "lucide-react";
 import { CategorySelect } from "./category-select";
 import { apiClient } from "@/lib/api-client";
 
@@ -387,7 +390,7 @@ export function ServiceEditModal({
 
             <div className="flex flex-col gap-3 p-4 border border-border/50 rounded-xl bg-muted/10">
               <Label className="text-foreground font-medium flex items-center gap-2">
-                <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                <Image className="h-4 w-4 text-muted-foreground" />
                 Imagem do Serviço (Opcional)
               </Label>
               <p className="text-xs text-muted-foreground -mt-1">Adicione uma imagem representativa para exibir no site.</p>
@@ -396,7 +399,7 @@ export function ServiceEditModal({
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="svcImageUrl" className="text-xs text-muted-foreground">URL da Imagem (Opção 1)</Label>
                   <div className="relative">
-                    <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="svcImageUrl"
                       value={formData.image_url}
@@ -422,7 +425,7 @@ export function ServiceEditModal({
                       htmlFor="svcImageUpload"
                       className="flex items-center justify-center gap-2 w-full h-10 px-4 rounded-md border border-border/50 bg-background hover:bg-muted/50 cursor-pointer transition-colors text-sm font-medium"
                     >
-                      {isUploading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : <Upload className="h-4 w-4 text-muted-foreground" />}
+                      {isUploading ? <LoaderLines className="h-4 w-4 animate-spin text-muted-foreground" /> : <ArrowInUpSquareHalf className="h-4 w-4 text-muted-foreground" />}
                       {isUploading ? "Enviando..." : "Escolher arquivo do computador"}
                     </Label>
                   </div>

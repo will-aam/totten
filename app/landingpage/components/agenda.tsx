@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Circle } from "lucide-react";
+import { CheckCircle, Circle } from "@boxicons/react";
 import { Fragment } from "react/jsx-runtime";
 import BrowserFrame from "./browser-frame";
 
@@ -45,7 +45,7 @@ export default function AgendaSection() {
               "Agendamentos recorrentes",
             ].map((i) => (
               <li key={i} className="flex items-center gap-2 text-zinc-soft">
-                <CheckCircle2 className="h-4 w-4 text-white" /> {i}
+                <CheckCircle className="h-4 w-4 text-white" /> {i}
               </li>
             ))}
           </ul>

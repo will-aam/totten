@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import SectionHeader from "./section-header";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, CheckCircle } from "@boxicons/react";
 
 export default function PricingSection() {
   const plans = [
@@ -40,11 +40,10 @@ export default function PricingSection() {
         {plans.map((p) => (
           <div
             key={p.name}
-            className={`relative flex flex-col rounded-2xl border p-6 transition-all bg-zinc-950 ${
-              p.highlight
+            className={`relative flex flex-col rounded-2xl border p-6 transition-all bg-zinc-950 ${p.highlight
                 ? "border-white/30 bg-card-totten shadow-2xl shadow-black/40 lg:-translate-y-2"
                 : "border-totten bg-card-totten hover:border-white/20"
-            }`}
+              }`}
           >
             {p.highlight && (
               <div className="pointer-events-none absolute -top-px left-1/2 h-px w-1/2 -translate-x-1/2 bg-linear-to-r from-transparent via-white to-transparent" />
@@ -67,11 +66,10 @@ export default function PricingSection() {
             <Button
               asChild
               size="lg"
-              className={`mt-6 ${
-                p.highlight
+              className={`mt-6 ${p.highlight
                   ? "bg-white text-black hover:bg-zinc-200"
                   : "border border-totten bg-[#0c0c0e] text-white hover:bg-white/5"
-              }`}
+                }`}
             >
               <a href={p.href}>
                 {p.cta} <ArrowRight className="ml-1 h-4 w-4" />
@@ -81,7 +79,7 @@ export default function PricingSection() {
             <ul className="space-y-3 text-sm">
               {p.features.map((f) => (
                 <li key={f} className="flex items-start gap-2 text-zinc-soft">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-white" />
+                  <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-white" />
                   <span>{f}</span>
                 </li>
               ))}

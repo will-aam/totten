@@ -10,8 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Bell, BellRing, Devices, Envelope } from "@boxicons/react";
-import { Volume } from "lucide-react";
+import { Bell, Volume, Devices, Envelope } from "@boxicons/react";
 
 export function NotificationsSettings() {
   const [soundAlert, setSoundAlert] = useState(true);

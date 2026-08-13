@@ -5,7 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import {
-  ArrowLeft,
+  ChevronLeft,
   X,
   Save,
   FileDetail,
@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { createAnamnesisTemplate } from "@/app/actions/anamnesis";
-import { ChevronLeft } from "lucide-react";
+
 
 type FieldType =
   | "text"
@@ -294,11 +294,10 @@ export default function NewAnamnesisTemplatePage() {
                             ? "Ex: Histórico Clínico"
                             : "Ex: Você está gestante?"
                         }
-                        className={`h-11 bg-background border-border/60 focus:border-primary rounded-lg ${
-                          field.type === "section_title"
-                            ? "font-bold text-lg"
-                            : ""
-                        }`}
+                        className={`h-11 bg-background border-border/60 focus:border-primary rounded-lg ${field.type === "section_title"
+                          ? "font-bold text-lg"
+                          : ""
+                          }`}
                       />
                     </div>
 
@@ -343,48 +342,47 @@ export default function NewAnamnesisTemplatePage() {
 
                   {(field.type === "single_choice" ||
                     field.type === "multiple_choice") && (
-                    <div className="md:ml-4 mt-1 p-3 bg-background rounded-lg border border-border/40 space-y-2">
-                      <Label className="text-xs text-muted-foreground font-semibold">
-                        Alternativas:
-                      </Label>
-                      {field.options?.map((option, optIndex) => (
-                        <div key={optIndex} className="flex items-center gap-2">
-                          <div
-                            className={`w-4 h-4 border border-muted-foreground/50 shrink-0 ${
-                              field.type === "single_choice"
+                      <div className="md:ml-4 mt-1 p-3 bg-background rounded-lg border border-border/40 space-y-2">
+                        <Label className="text-xs text-muted-foreground font-semibold">
+                          Alternativas:
+                        </Label>
+                        {field.options?.map((option, optIndex) => (
+                          <div key={optIndex} className="flex items-center gap-2">
+                            <div
+                              className={`w-4 h-4 border border-muted-foreground/50 shrink-0 ${field.type === "single_choice"
                                 ? "rounded-full"
                                 : "rounded-sm"
-                            }`}
-                          />
-                          <Input
-                            value={option}
-                            onChange={(e) =>
-                              updateOption(field.id, optIndex, e.target.value)
-                            }
-                            placeholder={`Opção ${optIndex + 1}`}
-                            className="h-9 text-sm"
-                          />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive active:scale-90 transition-transform"
-                            onClick={() => removeOption(field.id, optIndex)}
-                            disabled={(field.options?.length || 0) <= 2}
-                          >
-                            <X size="sm" />
-                          </Button>
-                        </div>
-                      ))}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => addOption(field.id)}
-                        className="text-xs text-primary mt-1"
-                      >
-                        <Plus className="w-3 h-3 mr-1" /> Adicionar alternativa
-                      </Button>
-                    </div>
-                  )}
+                                }`}
+                            />
+                            <Input
+                              value={option}
+                              onChange={(e) =>
+                                updateOption(field.id, optIndex, e.target.value)
+                              }
+                              placeholder={`Opção ${optIndex + 1}`}
+                              className="h-9 text-sm"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive active:scale-90 transition-transform"
+                              onClick={() => removeOption(field.id, optIndex)}
+                              disabled={(field.options?.length || 0) <= 2}
+                            >
+                              <X size="sm" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => addOption(field.id)}
+                          className="text-xs text-primary mt-1"
+                        >
+                          <Plus className="w-3 h-3 mr-1" /> Adicionar alternativa
+                        </Button>
+                      </div>
+                    )}
                 </div>
               ))}
             </div>

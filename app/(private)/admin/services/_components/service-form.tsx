@@ -26,16 +26,19 @@ import {
   LoaderDots,
   Box,
   Trash,
+  Image,
+  Link as LinkIcon,
+  ArrowInUpSquareHalf,
+  LoaderLines
 } from "@boxicons/react";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/image-utils";
 import { uploadImageAction } from "@/app/actions/upload-image";
-import { Image as ImageIcon, Upload, Loader2, Link as LinkIcon } from "lucide-react";
 import { CategorySelect } from "./category-select";
 import { getStockItems } from "@/app/actions/stock";
 import { cn } from "@/lib/utils";
 import { apiClient } from "@/lib/api-client";
-
+1
 type Duration = {
   id: string;
   label: string;
@@ -359,14 +362,14 @@ export function ServiceForm() {
               className="bg-muted/30 border-border/50 min-h-25 resize-none"
             />
           </div>
-          
+
           <div className="flex flex-col gap-3 p-4 border border-border/50 rounded-xl bg-muted/10">
             <Label className="text-foreground font-medium flex items-center gap-2">
-              <ImageIcon className="h-4 w-4 text-muted-foreground" />
+              <Image className="h-4 w-4 text-muted-foreground" />
               Imagem do Serviço (Opcional)
             </Label>
             <p className="text-xs text-muted-foreground -mt-1">Adicione uma imagem representativa para exibir no site.</p>
-            
+
             <div className="flex flex-col gap-4 mt-2">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="imageUrl" className="text-xs text-muted-foreground">URL da Imagem (Opção 1)</Label>
@@ -397,7 +400,7 @@ export function ServiceForm() {
                     htmlFor="imageUpload"
                     className="flex items-center justify-center gap-2 w-full h-10 px-4 rounded-md border border-border/50 bg-background hover:bg-muted/50 cursor-pointer transition-colors text-sm font-medium"
                   >
-                    {isUploading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : <Upload className="h-4 w-4 text-muted-foreground" />}
+                    {isUploading ? <LoaderLines className="h-4 w-4 animate-spin text-muted-foreground" /> : <ArrowInUpSquareHalf className="h-4 w-4 text-muted-foreground" />}
                     {isUploading ? "Enviando..." : "Escolher arquivo do computador"}
                   </Label>
                 </div>

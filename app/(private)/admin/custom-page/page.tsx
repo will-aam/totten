@@ -13,14 +13,18 @@ import {
   X,
   Copy,
   Check,
+  Globe,
+  Link,
+  Layout,
+  Calendar,
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
-import { Globe, Link as LinkIcon, LayoutTemplate, Calendar } from "lucide-react";
+
 
 const MobileGlobe = ({ pack, ...props }: any) => <Globe {...props} />;
-const MobileLink = ({ pack, ...props }: any) => <LinkIcon {...props} />;
-const MobileSite = ({ pack, ...props }: any) => <LayoutTemplate {...props} />;
+const MobileLink = ({ pack, ...props }: any) => <Link {...props} />;
+const MobileSite = ({ pack, ...props }: any) => <Layout {...props} />;
 const MobileCalendar = ({ pack, ...props }: any) => <Calendar {...props} />;
 
 import { ProfileSettings } from "./_components/profile-settings";
@@ -33,7 +37,6 @@ import { PhoneMockup } from "./_components/phone-mockup";
 import { GlobalSettings } from "./_components/global-settings";
 import { getCustomPageAction, updateCustomPageAction } from "@/app/actions/custom-page";
 import { toast } from "sonner";
-import { Loader2, Loader } from "lucide-react";
 
 export default function CustomPage() {
   const [activeTab, setActiveTab] = useState<"global" | "link-bio" | "professional-site" | "booking-site">("global");
@@ -46,7 +49,7 @@ export default function CustomPage() {
     let title = "Seu Link Exclusivo";
     if (tab === "professional-site") { suffix = "/site"; title = "Link do seu Site Profissional"; }
     if (tab === "booking-site") { suffix = "/agendar"; title = "Link da sua Página de Agendamento"; }
-    
+
     return (
       <div className="flex flex-col gap-2 p-4 border border-border/50 bg-muted/10 rounded-xl mb-6 w-full max-w-[1600px] mx-auto">
         <span className="text-sm font-medium text-foreground">{title}</span>

@@ -1,15 +1,15 @@
 import {
-  BarChart3,
+  BarChart,
   Bird,
   Calendar,
-  CheckCircle2,
+  CheckCircle,
   Package,
-  Users,
-  Boxes,
-  ClipboardList,
+  Group,
+  BoxAlt,
+  ClipboardDetail,
   CreditCard,
   Search,
-} from "lucide-react";
+} from "@boxicons/react";
 
 export default function DashboardMockup() {
   return (
@@ -18,7 +18,7 @@ export default function DashboardMockup() {
       <FloatingChip
         className="-left-2 top-8 sm:-left-6"
         delay="0s"
-        icon={<CheckCircle2 className="h-4 w-4" />}
+        icon={<CheckCircle className="h-4 w-4" />}
         title="Check-in realizado"
         subtitle="Maria Silva · agora"
       />
@@ -32,7 +32,7 @@ export default function DashboardMockup() {
       <FloatingChip
         className="-left-2 bottom-24 sm:-left-8"
         delay="2s"
-        icon={<Users className="h-4 w-4" />}
+        icon={<Group className="h-4 w-4" />}
         title="Cliente confirmado"
         subtitle="João P. confirmou"
       />
@@ -56,19 +56,18 @@ export default function DashboardMockup() {
               Menu
             </div>
             {[
-              { i: BarChart3, l: "Dashboard", active: true },
+              { i: BarChart, l: "Dashboard", active: true },
               { i: Calendar, l: "Agenda" },
-              { i: Users, l: "Clientes" },
+              { i: Group, l: "Clientes" },
               { i: Package, l: "Pacotes" },
               { i: CreditCard, l: "Financeiro" },
-              { i: Boxes, l: "Estoque" },
-              { i: ClipboardList, l: "Anamnese" },
+              { i: BoxAlt, l: "Estoque" },
+              { i: ClipboardDetail, l: "Anamnese" },
             ].map(({ i: Icon, l, active }) => (
               <div
                 key={l}
-                className={`mt-0.5 flex items-center gap-2 rounded-md px-2 py-1.5 ${
-                  active ? "bg-white/10 text-white" : "text-zinc-soft"
-                }`}
+                className={`mt-0.5 flex items-center gap-2 rounded-md px-2 py-1.5 ${active ? "bg-white/10 text-white" : "text-zinc-soft"
+                  }`}
               >
                 <Icon className="h-3.5 w-3.5" /> {l}
               </div>

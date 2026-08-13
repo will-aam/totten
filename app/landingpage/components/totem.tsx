@@ -1,5 +1,5 @@
-import { CheckCircle2 } from "lucide-react";
-import PhoneMockup from "./phone-mockup";
+// app/landingpage/components/totem.tsx
+import { CheckCircle } from "@boxicons/react";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 
@@ -41,7 +41,7 @@ export default function TotemSection() {
                 key={b}
                 className="flex items-center gap-2 rounded-xl border border-totten bg-card-totten px-4 py-3 text-sm"
               >
-                <CheckCircle2 className="h-4 w-4 text-white" /> {b}
+                <CheckCircle className="h-4 w-4 text-white" /> {b}
               </div>
             ))}
           </div>

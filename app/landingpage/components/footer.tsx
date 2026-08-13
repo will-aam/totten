@@ -1,4 +1,4 @@
-import { Github, Instagram, Linkedin, Youtube } from "lucide-react";
+import { Youtube, Instagram, Linkedin, Github } from "@boxicons/react";
 import Image from "next/image";
 import { LightRays } from "@/components/ui/light-rays";
 

@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Pin, Phone, Search, Whatsapp, Clock } from "@boxicons/react";
-import { Loader2 } from "lucide-react";
+import { Pin, LoaderLines, Search, Whatsapp, Clock } from "@boxicons/react";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -29,7 +28,7 @@ function RulesSummaryPreview({ data, onChange }: any) {
   if (isLoading) {
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Carregando horários...
+        <LoaderLines className="h-4 w-4 animate-spin" /> Carregando horários...
       </div>
     );
   }
@@ -138,7 +137,7 @@ export function ProContact({ data, onChange, globalContact }: any) {
               onClick={handleSearchCep}
               disabled={isSearchingCep || cep.replace(/\D/g, "").length !== 8}
             >
-              {isSearchingCep ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              {isSearchingCep ? <LoaderLines className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
               <span className="ml-2 hidden sm:inline">Buscar</span>
             </Button>
           </div>

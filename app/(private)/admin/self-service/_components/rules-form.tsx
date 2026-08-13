@@ -1,7 +1,7 @@
 // app/(private)/admin/self-service/_components/rules-form.tsx
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm } from "react-hook-form";
 import * as z from "zod";
@@ -37,7 +37,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { CalendarIcon, Copy, Plus, Trash2, Loader2, Check } from "lucide-react";
+import { LoaderLines, Plus, Trash, CalendarAlt } from "@boxicons/react";
 import { updateSelfServiceSettingsAction } from "@/app/actions/settings";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -156,7 +156,7 @@ function DatePicker({
             !value && "text-muted-foreground",
           )}
         >
-          <CalendarIcon className="h-4 w-4" />
+          <CalendarAlt className="h-4 w-4" />
           {selectedDate
             ? format(selectedDate, "dd 'de' MMMM", { locale: ptBR })
             : "Selecionar data"}
@@ -715,7 +715,7 @@ export function RulesAndHoursForm({ initialData }: RulesAndHoursFormProps) {
                       className="text-muted-foreground hover:text-destructive"
                       onClick={() => removeException(index)}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash className="h-4 w-4" />
                     </Button>
                   </div>
 
@@ -733,7 +733,7 @@ export function RulesAndHoursForm({ initialData }: RulesAndHoursFormProps) {
 
         <div className="flex justify-end pb-12 sm:pb-0">
           <Button type="submit" size="lg" disabled={isPending} className="w-full sm:w-auto h-12 rounded-xl">
-            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isPending && <LoaderLines className="mr-2 h-4 w-4 animate-spin" />}
             Salvar horários
           </Button>
         </div>

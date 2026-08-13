@@ -1,9 +1,8 @@
+// app/(private)/admin/custom-page/_components/global-settings.tsx
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Camera, Image as ImageIcon } from "@boxicons/react";
-import { Loader2, Globe } from "lucide-react";
+import { Camera, Image as ImageIcon, LoaderLines, Globe } from "@boxicons/react";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/image-utils";
 import { uploadImageAction } from "@/app/actions/upload-image";
@@ -75,7 +74,7 @@ export function GlobalSettings({ profile, setProfile }: GlobalSettingsProps) {
       </div>
 
       <div className="flex flex-col gap-8 mt-4">
-        
+
         {/* IMAGENS */}
         <div className="flex flex-col gap-4 border border-border/50 p-6 rounded-xl bg-card shadow-sm">
           <h4 className="text-sm font-semibold text-foreground">Imagens Principais</h4>
@@ -91,7 +90,7 @@ export function GlobalSettings({ profile, setProfile }: GlobalSettingsProps) {
                 )}
                 {isUploadingAvatar && (
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-full z-20">
-                    <Loader2 className="w-6 h-6 text-white animate-spin" />
+                    <LoaderLines className="w-6 h-6 text-white animate-spin" />
                   </div>
                 )}
                 <input type="file" accept="image/png, image/jpeg" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={handleAvatarUpload} disabled={isUploadingAvatar} />
@@ -121,7 +120,7 @@ export function GlobalSettings({ profile, setProfile }: GlobalSettingsProps) {
                 )}
                 {isUploadingBanner && (
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-xl z-20">
-                    <Loader2 className="w-6 h-6 text-white animate-spin" />
+                    <LoaderLines className="w-6 h-6 text-white animate-spin" />
                   </div>
                 )}
                 <input type="file" accept="image/png, image/jpeg" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={handleBannerUpload} disabled={isUploadingBanner} />
@@ -145,7 +144,7 @@ export function GlobalSettings({ profile, setProfile }: GlobalSettingsProps) {
         {/* TEXTOS */}
         <div className="flex flex-col gap-6 border border-border/50 p-6 rounded-xl bg-card shadow-sm">
           <h4 className="text-sm font-semibold text-foreground">Informações de Texto</h4>
-          
+
           <div className="flex flex-col gap-2">
             <Label htmlFor="name" className="text-foreground font-medium">
               Nome de Exibição

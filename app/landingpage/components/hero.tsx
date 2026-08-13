@@ -1,4 +1,4 @@
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle } from "@boxicons/react";
 import DashboardMockup from "./dashboard-mockup";
 
 export default function Hero() {
@@ -34,13 +34,13 @@ export default function Hero() {
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-6 text-xs text-zinc-soft">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-white" /> Sem cartão
+              <CheckCircle className="h-4 w-4 text-white" /> Sem cartão
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-white" /> 14 dias grátis
+              <CheckCircle className="h-4 w-4 text-white" /> 14 dias grátis
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-white" /> Cancelamento livre
+              <CheckCircle className="h-4 w-4 text-white" /> Cancelamento livre
             </div>
           </div>
         </div>

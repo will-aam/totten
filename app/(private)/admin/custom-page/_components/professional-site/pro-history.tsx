@@ -3,7 +3,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { compressImage } from "@/lib/image-utils";
-import { Link as LinkIcon, Upload, BookOpen, Loader2 } from "lucide-react";
+
+import { LoaderLines, Link, BookOpen, ArrowInUpSquareHalf } from "@boxicons/react"
 import { useState } from "react";
 import { uploadImageAction } from "@/app/actions/upload-image";
 import { toast } from "sonner";
@@ -45,9 +46,9 @@ export function ProHistory({ data, onChange }: { data: any, onChange: (data: any
       </div>
 
       <div className="flex items-center gap-3 bg-muted/20 p-4 rounded-xl border border-border/50">
-        <Switch 
-          checked={data.showHistory !== false} 
-          onCheckedChange={(checked) => onChange({ ...data, showHistory: checked })} 
+        <Switch
+          checked={data.showHistory !== false}
+          onCheckedChange={(checked) => onChange({ ...data, showHistory: checked })}
         />
         <div className="flex flex-col">
           <span className="text-sm font-medium">Exibir seção "Nossa História"</span>
@@ -100,12 +101,12 @@ export function ProHistory({ data, onChange }: { data: any, onChange: (data: any
           <div className="flex flex-col gap-3 p-4 border border-border/50 rounded-xl bg-muted/10">
             <Label className="text-foreground font-medium">Imagem (Opcional)</Label>
             <p className="text-xs text-muted-foreground -mt-1">Uma foto sua, da sua equipe ou do seu espaço para acompanhar o texto.</p>
-            
+
             <div className="flex flex-col gap-4 mt-2">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="historyImageUrl" className="text-xs text-muted-foreground">URL da Imagem (Opção 1)</Label>
                 <div className="relative">
-                  <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="historyImageUrl"
                     value={data.historyImage || ""}
@@ -131,7 +132,7 @@ export function ProHistory({ data, onChange }: { data: any, onChange: (data: any
                     htmlFor="historyImageUpload"
                     className="flex items-center justify-center gap-2 w-full h-10 px-4 rounded-md border border-border/50 bg-background hover:bg-muted/50 cursor-pointer transition-colors text-sm font-medium"
                   >
-                    {isUploading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : <Upload className="h-4 w-4 text-muted-foreground" />}
+                    {isUploading ? <LoaderLines className="h-4 w-4 animate-spin text-muted-foreground" /> : <ArrowInUpSquareHalf className="h-4 w-4 text-muted-foreground" />}
                     {isUploading ? "Enviando..." : "Escolher arquivo do computador"}
                   </Label>
                 </div>
@@ -149,18 +150,18 @@ export function ProHistory({ data, onChange }: { data: any, onChange: (data: any
               <div className="flex flex-col gap-2">
                 <Label className="text-xs text-muted-foreground">Fazer Upload de Foto (Opção 2)</Label>
                 <div className="relative h-24 w-full rounded-lg border-2 border-dashed border-border flex items-center justify-center overflow-hidden hover:bg-muted/30 transition-colors">
-                  <input 
-                    type="file" 
-                    accept="image/png, image/jpeg, image/webp" 
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
-                    onChange={handleHistoryImageUpload} 
+                  <input
+                    type="file"
+                    accept="image/png, image/jpeg, image/webp"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    onChange={handleHistoryImageUpload}
                   />
                   {data.historyImage && data.historyImage.startsWith('data:image') ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={data.historyImage} alt="Preview" className="absolute inset-0 w-full h-full object-cover opacity-50" />
                   ) : null}
                   <div className="flex flex-col items-center gap-1 text-muted-foreground relative z-0">
-                    <Upload className="h-5 w-5" />
+                    <ArrowInUpSquareHalf className="h-5 w-5" />
                     <span className="text-xs font-medium">Clique para enviar imagem</span>
                   </div>
                 </div>
@@ -172,7 +173,7 @@ export function ProHistory({ data, onChange }: { data: any, onChange: (data: any
           <div className="flex flex-col gap-4 p-4 border border-border/50 rounded-xl bg-muted/10">
             <Label className="text-foreground font-medium">Métricas / Estatísticas (Opcional)</Label>
             <p className="text-xs text-muted-foreground -mt-2">Números que trazem autoridade para sua história.</p>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Métrica 1 */}
               <div className="flex flex-col gap-2">
@@ -192,7 +193,7 @@ export function ProHistory({ data, onChange }: { data: any, onChange: (data: any
                   />
                 </div>
               </div>
-              
+
               {/* Métrica 2 */}
               <div className="flex flex-col gap-2">
                 <Label className="text-xs text-muted-foreground">Clientes atendidos</Label>

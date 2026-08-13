@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { compressImage } from "@/lib/image-utils";
-import { User, Image as ImageIcon, Link as LinkIcon, Upload, Loader2 } from "lucide-react";
+import { User, Link, ArrowInUpSquareHalf } from "@boxicons/react"
 import { useState } from "react";
 import { uploadImageAction } from "@/app/actions/upload-image";
 import { toast } from "sonner";
@@ -86,12 +86,12 @@ export function ProPresentation({ data, onChange }: { data: any, onChange: (data
           <div className="flex flex-col gap-3 p-4 border border-border/50 rounded-xl bg-muted/10">
             <Label className="text-foreground font-medium">Imagem Lateral (Banner do Site Profissional)</Label>
             <p className="text-xs text-muted-foreground -mt-1">Essa imagem aparecerá ao lado do texto (no computador) ou acima dele (no celular).</p>
-            
+
             <div className="flex flex-col gap-4 mt-2">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="proHeroImageUrl" className="text-xs text-muted-foreground">URL da Imagem (Opção 1)</Label>
                 <div className="relative">
-                  <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="proHeroImageUrl"
                     value={data.proHeroImage || ""}
@@ -114,18 +114,18 @@ export function ProPresentation({ data, onChange }: { data: any, onChange: (data
               <div className="flex flex-col gap-2">
                 <Label className="text-xs text-muted-foreground">Fazer Upload de Foto (Opção 2)</Label>
                 <div className="relative h-24 w-full rounded-lg border-2 border-dashed border-border flex items-center justify-center overflow-hidden hover:bg-muted/30 transition-colors">
-                  <input 
-                    type="file" 
-                    accept="image/png, image/jpeg, image/webp" 
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
-                    onChange={handleProHeroImageUpload} 
+                  <input
+                    type="file"
+                    accept="image/png, image/jpeg, image/webp"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    onChange={handleProHeroImageUpload}
                   />
                   {data.proHeroImage && data.proHeroImage.startsWith('data:image') ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={data.proHeroImage} alt="Preview" className="absolute inset-0 w-full h-full object-cover opacity-50" />
                   ) : null}
                   <div className="flex flex-col items-center gap-1 text-muted-foreground relative z-0">
-                    <Upload className="h-5 w-5" />
+                    <ArrowInUpSquareHalf className="h-5 w-5" />
                     <span className="text-xs font-medium">Clique para enviar imagem</span>
                   </div>
                 </div>

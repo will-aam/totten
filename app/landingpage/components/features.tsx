@@ -1,13 +1,9 @@
 import { Bell, Calendar, CreditCard, Package, Ticket } from "@boxicons/react";
 import {
-  Boxes,
-  CheckCircle2,
-  ClipboardList,
-  Palette,
-  StickyNote,
-  UserCog,
-  Users,
-} from "lucide-react";
+  BoxAlt,
+  CheckCircle,
+  Group,
+} from "@boxicons/react";
 import SectionHeader from "./section-header";
 
 export default function Features() {
@@ -18,12 +14,12 @@ export default function Features() {
       desc: "Recorrentes e visualização semelhante ao Google Agenda.",
     },
     {
-      icon: CheckCircle2,
+      icon: CheckCircle,
       title: "Check-in automático",
       desc: "Cliente realiza check-in por CPF ou telefone no Totem.",
     },
     {
-      icon: Users,
+      icon: Group,
       title: "Gestão de clientes",
       desc: "Cadastro completo com histórico integrado.",
     },
@@ -38,7 +34,7 @@ export default function Features() {
       desc: "Caixa, contas, pagamentos e recebimentos.",
     },
     {
-      icon: Boxes,
+      icon: BoxAlt,
       title: "Estoque inteligente",
       desc: "Baixa automática dos produtos utilizados.",
     },

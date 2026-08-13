@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { toast } from "sonner";
-import { Loader2, Save } from "lucide-react";
+import { LoaderLines, Save } from "@boxicons/react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -34,7 +34,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 import { updateSelfServiceSettingsAction } from "@/app/actions/settings";
 
 // ---------------------------------------------------------------------------
@@ -51,24 +50,24 @@ const PIX_KEY_TYPES = [
 type PixKeyType = (typeof PIX_KEY_TYPES)[number];
 
 const PIX_KEY_META: Record<PixKeyType, { placeholder: string; help: string }> =
-  {
-    "CPF/CNPJ": {
-      placeholder: "000.000.000-00",
-      help: "Digite apenas os números do CPF (11 dígitos) ou CNPJ (14 dígitos).",
-    },
-    Celular: {
-      placeholder: "(11) 91234-5678",
-      help: "Informe o número com DDD, do jeito que seu banco cadastrou.",
-    },
-    "E-mail": {
-      placeholder: "financeiro@suaempresa.com",
-      help: "Use o e-mail cadastrado como chave Pix no seu banco.",
-    },
-    "Chave Aleatória": {
-      placeholder: "a1b2c3d4-e5f6-... (32 caracteres)",
-      help: "Cole a chave aleatória gerada pelo seu banco.",
-    },
-  };
+{
+  "CPF/CNPJ": {
+    placeholder: "000.000.000-00",
+    help: "Digite apenas os números do CPF (11 dígitos) ou CNPJ (14 dígitos).",
+  },
+  Celular: {
+    placeholder: "(11) 91234-5678",
+    help: "Informe o número com DDD, do jeito que seu banco cadastrou.",
+  },
+  "E-mail": {
+    placeholder: "financeiro@suaempresa.com",
+    help: "Use o e-mail cadastrado como chave Pix no seu banco.",
+  },
+  "Chave Aleatória": {
+    placeholder: "a1b2c3d4-e5f6-... (32 caracteres)",
+    help: "Cole a chave aleatória gerada pelo seu banco.",
+  },
+};
 
 const paymentRulesSchema = z
   .object({
@@ -367,7 +366,7 @@ export function PaymentRulesForm({ initialData }: PaymentRulesFormProps) {
         <div className="flex justify-end">
           <Button type="submit" size="lg" disabled={isPending}>
             {isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <LoaderLines className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <Save className="mr-2 h-4 w-4" />
             )}

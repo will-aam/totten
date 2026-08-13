@@ -1,4 +1,4 @@
-import { Search } from "lucide-react";
+import { Search } from "@boxicons/react";
 
 export default function BrowserFrame({
   children,
