@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { compressImage } from "@/lib/image-utils";
 import { User, Link, ArrowInUpSquareHalf, X } from "@boxicons/react"
 import { useState, useEffect } from "react";
@@ -220,7 +221,7 @@ export function ProPresentation({ data, onChange, hasServices }: { data: any, on
           
           <div className="flex items-center justify-between border rounded-lg p-3">
             <div className="flex flex-col gap-1">
-              <Label htmlFor="ctaPrimary" className="text-sm font-medium">Botão "Agendar Sessão"</Label>
+              <Label htmlFor="ctaPrimary" className="text-sm font-medium">Botão Primário ("Agendar Sessão")</Label>
               <p className="text-xs text-muted-foreground">Leva o cliente para a página de agendamento.</p>
             </div>
             <Switch 
@@ -230,20 +231,37 @@ export function ProPresentation({ data, onChange, hasServices }: { data: any, on
             />
           </div>
 
-          <div className="flex items-center justify-between border rounded-lg p-3">
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="ctaSecondary" className="text-sm font-medium">Botão "Conhecer Serviços"</Label>
-              <p className="text-xs text-muted-foreground">Rola a página até a seção "Nossos Serviços".</p>
-              {!hasServices && (
-                <p className="text-xs text-destructive font-medium mt-1">A seção de serviços não está ativa.</p>
-              )}
+          <div className="flex flex-col border rounded-lg p-3 gap-3">
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="ctaSecondary" className="text-sm font-medium">Botão Secundário</Label>
+                <p className="text-xs text-muted-foreground">Adiciona um botão extra ao lado de "Agendar Sessão".</p>
+              </div>
+              <Switch 
+                id="ctaSecondary"
+                checked={data.ctaSecondaryText !== false} 
+                onCheckedChange={(checked) => onChange({ ...data, ctaSecondaryText: checked })}
+              />
             </div>
-            <Switch 
-              id="ctaSecondary"
-              disabled={!hasServices}
-              checked={hasServices && data.ctaSecondaryText !== false} 
-              onCheckedChange={(checked) => onChange({ ...data, ctaSecondaryText: checked })}
-            />
+            {data.ctaSecondaryText !== false && (
+              <div className="flex flex-col gap-2 pt-2 border-t">
+                <Label className="text-xs font-medium text-muted-foreground">Ação do Botão</Label>
+                <Select
+                  value={data.ctaSecondaryType || "services"}
+                  onValueChange={(val) => onChange({ ...data, ctaSecondaryType: val })}
+                >
+                  <SelectTrigger className="bg-background border-border/50 h-9 px-3 rounded-md text-sm focus-visible:ring-1 w-full">
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="services">Conhecer Serviços</SelectItem>
+                    <SelectItem value="packages">Planos e Pacotes</SelectItem>
+                    <SelectItem value="team">Nossa Equipe</SelectItem>
+                    <SelectItem value="contact">Fale Conosco</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
         </div>
 

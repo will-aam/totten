@@ -16,6 +16,7 @@ import {
   CarouselPrevious,
   CarouselDots,
 } from "@/components/ui/carousel";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const getYouTubeEmbedUrl = (url: string) => {
   if (!url) return null;
@@ -42,6 +43,21 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
     : (presentation.heroImage ? [presentation.heroImage] : []);
   const displayImage = sliderImages.length > 0 ? sliderImages[0] : undefined;
   const isSlider = isBlogLayout && sliderImages.length > 1;
+
+  const hasSecondaryCta = presentation.ctaSecondaryText !== false;
+  const ctaSecondaryType = hasSecondaryCta ? (presentation.ctaSecondaryType || "services") : null;
+  
+  const secondaryCtaInfo = {
+    services: { label: "Conhecer Serviços", href: "#servicos" },
+    packages: { label: "Planos e Pacotes", href: "#pacotes" },
+    team: { label: "Nossa Equipe", href: "#profissionais" },
+    contact: { label: "Fale Conosco", href: "#contato" },
+  }[(ctaSecondaryType as "services" | "packages" | "team" | "contact") || "services"] || { label: "Conhecer Serviços", href: "#servicos" };
+
+  const finalGlobalBio = globalBio || org.link_bio?.bio || "";
+  const hasBio = !!presentation.bio;
+  const hasHistory = history.showHistory !== false && !!(history.historyTitle || (history.useGlobalBio !== false ? finalGlobalBio : history.historyText));
+  const sobreHref = hasBio ? "#sobre" : (hasHistory ? "#historia" : "#");
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileCarouselApi, setMobileCarouselApi] = useState<any>(null);
@@ -166,11 +182,11 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-7 font-medium text-sm">
-            <a href="#sobre" className="hover:opacity-70 transition-opacity">Sobre</a>
-            <a href="#servicos" className="hover:opacity-70 transition-opacity">Serviços</a>
-            {dbPackages.length > 0 && <a href="#pacotes" className="hover:opacity-70 transition-opacity">Pacotes</a>}
-            {professionals.length > 0 && <a href="#profissionais" className="hover:opacity-70 transition-opacity">Equipe</a>}
-            <a href="#contato" className="hover:opacity-70 transition-opacity">Contato</a>
+            <a href={sobreHref} className="hover:opacity-70 transition-opacity">Sobre</a>
+            {ctaSecondaryType !== "services" && <a href="#servicos" className="hover:opacity-70 transition-opacity">Serviços</a>}
+            {dbPackages.length > 0 && ctaSecondaryType !== "packages" && <a href="#pacotes" className="hover:opacity-70 transition-opacity">Pacotes</a>}
+            {professionals.length > 0 && ctaSecondaryType !== "team" && <a href="#profissionais" className="hover:opacity-70 transition-opacity">Equipe</a>}
+            {ctaSecondaryType !== "contact" && <a href="#contato" className="hover:opacity-70 transition-opacity">Contato</a>}
           </nav>
 
           <div className="hidden md:flex items-center gap-3">
@@ -209,11 +225,11 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
             <button className="absolute top-5 right-5 p-2" onClick={() => setMobileMenuOpen(false)}>
               <X className="h-8 w-8" />
             </button>
-            <a href="#sobre" onClick={() => setMobileMenuOpen(false)}>Sobre</a>
-            <a href="#servicos" onClick={() => setMobileMenuOpen(false)}>Serviços</a>
-            {dbPackages.length > 0 && <a href="#pacotes" onClick={() => setMobileMenuOpen(false)}>Pacotes</a>}
-            {professionals.length > 0 && <a href="#profissionais" onClick={() => setMobileMenuOpen(false)}>Equipe</a>}
-            <a href="#contato" onClick={() => setMobileMenuOpen(false)}>Contato</a>
+            <a href={sobreHref} onClick={() => setMobileMenuOpen(false)}>Sobre</a>
+            {ctaSecondaryType !== "services" && <a href="#servicos" onClick={() => setMobileMenuOpen(false)}>Serviços</a>}
+            {dbPackages.length > 0 && ctaSecondaryType !== "packages" && <a href="#pacotes" onClick={() => setMobileMenuOpen(false)}>Pacotes</a>}
+            {professionals.length > 0 && ctaSecondaryType !== "team" && <a href="#profissionais" onClick={() => setMobileMenuOpen(false)}>Equipe</a>}
+            {ctaSecondaryType !== "contact" && <a href="#contato" onClick={() => setMobileMenuOpen(false)}>Contato</a>}
             <a
               href={bookingUrl}
               className="px-8 py-4 rounded-full text-lg font-bold text-white mt-2"
@@ -420,15 +436,15 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                       {presentation.ctaPrimaryText}
                     </a>
                   )}
-                  {presentation.ctaSecondaryText && (
+                  {hasSecondaryCta && (
                     <a
-                      href="#servicos"
+                      href={secondaryCtaInfo.href}
                       className={cn(
                         "w-full px-8 py-4 rounded-full text-base font-bold border hover:scale-105 transition-transform flex items-center justify-center text-center gap-2",
                         isDark ? "border-white/20 text-white hover:bg-white/10" : "border-black/15 text-current hover:bg-black/5"
                       )}
                     >
-                      {presentation.ctaSecondaryText}
+                      {secondaryCtaInfo.label}
                       <ArrowRight className="h-4 w-4" />
                     </a>
                   )}
@@ -880,19 +896,22 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                       {dbServices.length > 0 && (
                         <div className="flex flex-col gap-1.5">
                           <label className="text-xs font-semibold opacity-70">Serviço de Interesse</label>
-                          <select
+                          <Select
                             value={formData.service}
-                            onChange={(e) => setFormData({ ...formData, service: e.target.value })}
-                            className={cn("w-full h-11 rounded-xl border px-4 text-sm focus:outline-none focus:ring-1 transition appearance-none", inputBg)}
+                            onValueChange={(val) => setFormData({ ...formData, service: val })}
                           >
-                            <option value="">Selecione um serviço...</option>
-                            {dbServices.map((srv: any) => (
-                              <option key={srv.id} value={srv.name}>{srv.name} — R$ {Number(srv.price).toFixed(2)}</option>
-                            ))}
-                            {dbPackages.map((pkg: any) => (
-                              <option key={pkg.id} value={pkg.name}>{pkg.name} (Pacote) — R$ {Number(pkg.price).toFixed(2)}</option>
-                            ))}
-                          </select>
+                            <SelectTrigger className={cn("w-full h-11 rounded-xl border px-4 text-sm focus:outline-none focus:ring-1 transition", inputBg)}>
+                              <SelectValue placeholder="Selecione um serviço..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {dbServices.map((srv: any) => (
+                                <SelectItem key={srv.id} value={srv.name}>{srv.name} — R$ {Number(srv.price).toFixed(2)}</SelectItem>
+                              ))}
+                              {dbPackages.map((pkg: any) => (
+                                <SelectItem key={pkg.id} value={pkg.name}>{pkg.name} (Pacote) — R$ {Number(pkg.price).toFixed(2)}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                       )}
                       <div className="flex flex-col gap-1.5">

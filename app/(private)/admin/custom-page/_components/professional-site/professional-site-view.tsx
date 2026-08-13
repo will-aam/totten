@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Save, ChevronRight, ChevronLeft, Pin, Star, Briefcase, Youtube, Mobile, X, Copy, Check, Globe, Layout } from "@boxicons/react";
+import { ChevronRight, ChevronLeft, Pin, Star, Briefcase, X, Check, Package, Envelope, Clock, Phone } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -11,7 +11,7 @@ import {
   CarouselItem,
 } from "@/components/ui/carousel";
 
-// Importando as seções recém-criadas
+
 import { ProPresentation } from "./pro-presentation";
 import { ProHistory } from "./pro-history";
 import { ProServices } from "./pro-services";
@@ -19,7 +19,6 @@ import { ProContact } from "./pro-contact";
 import { ProTheme } from "./pro-theme";
 import { updateCustomPageAction } from "@/app/actions/custom-page";
 import { toast } from "sonner";
-import { MapIcon, Clock, Phone } from "@boxicons/react"
 import useSWR from "swr";
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
@@ -37,7 +36,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
   const [isSaving, setIsSaving] = useState(false);
 
   // Estados dos formulários do Site Profissional
-  const [presentation, setPresentation] = useState<any>({ headline: "", subheadline: "", bio: "", heroImage: "", heroLayout: "fade-cover", ctaPrimaryText: "", ctaSecondaryText: "", aboutTitle: "" });
+  const [presentation, setPresentation] = useState<any>({ headline: "", subheadline: "", bio: "", heroImage: "", heroLayout: "fade-cover", ctaPrimaryText: "", ctaSecondaryText: "", ctaSecondaryType: "services", aboutTitle: "" });
   const [history, setHistory] = useState<any>({ showHistory: true, historyTitle: "", historyText: "", historyImage: "", historyStat1Label: "Anos de experiência", historyStat1Value: "", historyStat2Label: "Clientes atendidos", historyStat2Value: "", historyStat3Label: "", historyStat3Value: "" });
   const [services, setServices] = useState<any>({ ctaText: "", ctaLink: "", servicesList: [] as any[], featuredPackageName: "" });
   const [contact, setContact] = useState<any>({ address: "", mapUrl: "", phone: "", whatsapp: "", email: "", businessHours: "" });
@@ -132,8 +131,8 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
     const { data: dbPackages = [] } = useSWR("/api/package-templates", fetcher);
 
     // SLIDER LOGIC
-    const sliderImages: string[] = isBlogLayout 
-      ? (presentation.proHeroImages?.length > 0 ? presentation.proHeroImages : (presentation.proHeroImage ? [presentation.proHeroImage] : (presentation.heroImage ? [presentation.heroImage] : []))) 
+    const sliderImages: string[] = isBlogLayout
+      ? (presentation.proHeroImages?.length > 0 ? presentation.proHeroImages : (presentation.proHeroImage ? [presentation.proHeroImage] : (presentation.heroImage ? [presentation.heroImage] : [])))
       : (presentation.heroImage ? [presentation.heroImage] : []);
 
     const displayImage = sliderImages.length > 0 ? sliderImages[0] : null;
@@ -144,10 +143,10 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
 
     useEffect(() => {
       if (!carouselApi) return;
-      
+
       const onSelect = () => setCurrentSlide(carouselApi.selectedScrollSnap());
       carouselApi.on("select", onSelect);
-      
+
       const interval = setInterval(() => {
         if (carouselApi.canScrollNext()) {
           carouselApi.scrollNext();
@@ -155,7 +154,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
           carouselApi.scrollTo(0);
         }
       }, 5000);
-      
+
       return () => {
         clearInterval(interval);
         carouselApi.off("select", onSelect);
@@ -178,15 +177,15 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
                   ))}
                 </CarouselContent>
               </Carousel>
-              
+
               <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 z-20">
                 {sliderImages.map((_, idx) => (
-                  <div 
-                    key={idx} 
+                  <div
+                    key={idx}
                     className={cn(
-                      "h-1.5 rounded-full transition-all duration-300", 
+                      "h-1.5 rounded-full transition-all duration-300",
                       currentSlide === idx ? "w-4 bg-white" : "w-1.5 bg-white/50"
-                    )} 
+                    )}
                   />
                 ))}
               </div>
@@ -258,12 +257,17 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
                   Agendar Sessão
                 </div>
               )}
-              {services?.showServices !== false && presentation.ctaSecondaryText !== false && (
+              {presentation.ctaSecondaryText !== false && (
                 <div className={cn(
                   "px-4 py-2.5 rounded-full text-xs font-bold border text-center w-full",
                   isDarkMock ? "border-white/20 text-white" : "border-black/15"
                 )}>
-                  Conhecer Serviços
+                  {{
+                    services: "Conhecer Serviços",
+                    packages: "Planos e Pacotes",
+                    team: "Nossa Equipe",
+                    contact: "Fale Conosco"
+                  }[presentation.ctaSecondaryType as string] || "Conhecer Serviços"}
                 </div>
               )}
             </div>
@@ -414,52 +418,54 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
           </div>
         )}
 
-        {/* PACKAGES SECTION MOCK */}
+        {/* PACKAGES SECTION */}
         {dbPackages.length > 0 && services.showPackages !== false && (
           <div className="px-6 py-10 bg-background">
-            <div className="flex flex-col items-center text-center mb-8">
-              <h2 className="font-serif font-medium text-2xl mb-3 flex items-center gap-2">
-                <Star className="h-5 w-5" style={{ color: theme.primaryColor }} /> Pacotes
+            <div className="flex flex-col mb-8">
+              <h2 className="font-bold text-2xl mb-2 flex items-center gap-2">
+                <Package className="h-6 w-6 shrink-0" style={{ color: theme.primaryColor }} /> Pacotes e Planos
               </h2>
-              <p className="text-xs opacity-80 max-w-2xl">
+              <p className="text-[11px] opacity-60">
                 {services.packagesSubtitle || "Planos flexíveis para quem quer incluir o autocuidado na rotina."}
               </p>
             </div>
 
             <div>
               {services.packagesDisplay === "pills" ? (
-                <div className="flex flex-wrap justify-center gap-2">
+                <div className="flex flex-col gap-3">
                   {dbPackages.map((pkg: any) => (
-                    <div key={pkg.id} className="px-3 py-2 rounded-full flex items-center gap-2 border shadow-sm bg-background">
-                      <span className="font-bold text-[10px] whitespace-nowrap">{pkg.name}</span>
-                      <span className="text-[9px] opacity-50 px-2 border-l border-border whitespace-nowrap">{pkg.total_sessions} sessões</span>
-                      <span className="font-bold whitespace-nowrap text-[10px]" style={{ color: theme.primaryColor }}>R$ {Number(pkg.price).toFixed(2)}</span>
+                    <div key={pkg.id} className={cn("px-4 py-3 rounded-2xl flex flex-col gap-1 border shadow-sm bg-background")} style={{ borderColor: theme.primaryColor + '30' }}>
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-[13px]">{pkg.name}</span>
+                        <span className="font-bold text-[13px]" style={{ color: theme.primaryColor }}>R$ {Number(pkg.price).toFixed(2)}</span>
+                      </div>
+                      <span className="text-[11px] opacity-50">{pkg.total_sessions} sessões</span>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="w-full">
                   <Carousel opts={{ align: "start", loop: false }} className="w-full">
-                    <CarouselContent className="-ml-3">
+                    <CarouselContent className="-ml-3 py-2 -my-2">
                       {dbPackages.map((pkg: any) => {
                         const isFeatured = services.featuredPackageName && pkg.name.toLowerCase().trim() === services.featuredPackageName.toLowerCase().trim();
                         return (
-                          <CarouselItem key={pkg.id} className="pl-3 basis-[85%]">
-                            <div className={cn("h-full rounded-2xl flex flex-col relative shadow-sm border bg-white group/card p-4", isFeatured ? "border-2 scale-[1.03]" : "")} style={isFeatured ? { borderColor: theme.primaryColor, boxShadow: `0 0 0 2px ${theme.primaryColor}40`, backgroundColor: theme.primaryColor + "08" } : {}}>
+                          <CarouselItem key={pkg.id} className="pl-3 basis-[90%]">
+                            <div className={cn("h-full rounded-2xl flex flex-col relative shadow-sm border bg-white p-5")} style={isFeatured ? { borderColor: theme.primaryColor, backgroundColor: theme.primaryColor + "08" } : {}}>
 
-                              <div className="flex items-start justify-between gap-2 mb-2">
-                                <h4 className="font-serif font-bold text-[13px] text-slate-900">{pkg.name}</h4>
+                              <div className="flex items-start justify-between gap-2 mb-3">
+                                <h4 className="font-serif font-bold text-[15px] text-slate-900">{pkg.name}</h4>
                                 {isFeatured && (
                                   <div className="shrink-0">
                                     <span className="px-2 py-0.5 rounded-full text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 flex items-center gap-1">
-                                      <Star className="h-2 w-2" type="solid" /> Mais Popular
+                                      <Star className="h-2 w-2" type="solid" /> Popular
                                     </span>
                                   </div>
                                 )}
                               </div>
 
                               <p className="text-[11px] text-slate-500 mb-4 flex-1">
-                                {pkg.description || `${pkg.total_sessions} sessões inclusas. Ideal para quem quer manter a rotina de autocuidado com desconto.`}
+                                {pkg.description || `${pkg.total_sessions} sessões inclusas. Ideal para manter a rotina de autocuidado.`}
                               </p>
 
                               <div className="flex items-center justify-between mt-auto pt-3 border-t border-slate-100">
@@ -471,10 +477,6 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
                                   style={{ color: theme.primaryColor }}
                                 >
                                   Reservar
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                    <path d="M12 5L19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                  </svg>
                                 </span>
                               </div>
                             </div>
@@ -490,44 +492,97 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
         )}
 
         {/* CONTACT INFO */}
-        {(contact.address || contact.phone || contact.whatsapp || (contact.businessHours && contact.showBusinessHours !== false)) && (
-          <div className="px-6 py-6">
-            <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
-              <Phone className="h-4 w-4" /> Contato
-            </h2>
+        <div className="px-6 py-10 bg-foreground/5">
+          <div className="flex flex-col mb-6">
+            <h2 className="font-bold text-2xl mb-2">Fale Conosco</h2>
+            <p className="text-[11px] opacity-70">
+              Estamos à disposição para tirar suas dúvidas. Entre em contato pelos canais abaixo ou envie uma mensagem.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-5">
             {(contact.businessHours && contact.showBusinessHours !== false) && (
-              <p className="text-xs opacity-60 mb-2 flex items-start gap-2">
-                <Clock className="w-4 h-4 mt-0.5 shrink-0" style={{ color: theme.primaryColor }} />
-                <span>{contact.businessHours}</span>
-              </p>
+              <div className="flex items-center gap-3">
+                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-background")}>
+                  <Clock className="h-5 w-5" style={{ color: theme.primaryColor }} />
+                </div>
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-wider opacity-50 mb-0.5">Horário de Funcionamento</p>
+                  <p className="text-xs font-medium">{contact.businessHours}</p>
+                </div>
+              </div>
             )}
+
             {(contact.whatsapp || contact.phone) && (
-              <p className="text-sm opacity-80 mb-2 flex items-start gap-2">
-                <Phone className="w-4 h-4 mt-0.5 shrink-0" style={{ color: theme.primaryColor }} />
-                <span>{contact.whatsapp || contact.phone}</span>
-              </p>
+              <div className="flex items-center gap-3">
+                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-background")}>
+                  <Phone className="h-5 w-5" style={{ color: theme.primaryColor }} />
+                </div>
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-wider opacity-50 mb-0.5">Telefone / WhatsApp</p>
+                  <p className="text-xs font-medium">{contact.whatsapp || contact.phone}</p>
+                </div>
+              </div>
             )}
+
+            {contact.email && (
+              <div className="flex items-center gap-3">
+                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-background")}>
+                  <Envelope className="h-5 w-5" style={{ color: theme.primaryColor }} />
+                </div>
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-wider opacity-50 mb-0.5">E-mail</p>
+                  <p className="text-xs font-medium">{contact.email}</p>
+                </div>
+              </div>
+            )}
+
             {contact.address && (
-              <p className="text-sm opacity-80 flex items-start gap-2">
-                <MapIcon className="w-4 h-4 mt-0.5 shrink-0" style={{ color: theme.primaryColor }} />
-                <span>{contact.address}</span>
-              </p>
+              <div className="flex items-center gap-3">
+                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-background")}>
+                  <Pin className="h-5 w-5" style={{ color: theme.primaryColor }} />
+                </div>
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-wider opacity-50 mb-0.5">Endereço</p>
+                  <p className="text-xs font-medium">{contact.address}</p>
+                </div>
+              </div>
             )}
           </div>
-        )}
+        </div>
 
         {/* FALE CONOSCO / RESERVE SUA SESSÃO (MINI FORM) */}
-        <div className="px-6 py-4 mb-6">
-          <div className={cn("rounded-2xl p-5 border shadow-sm", theme.theme === 'dark' ? "bg-white/5 border-white/10" : "bg-white border-black/10")}>
-            <h3 className="font-bold text-base mb-1">Reserve sua sessão</h3>
-            <p className="text-[10px] opacity-60 mb-4 leading-relaxed">
-              Preencha o formulário e entraremos em contato pelo WhatsApp.
+        <div className="px-6 pb-10 bg-foreground/5">
+          <div className={cn("rounded-2xl p-6 border shadow-sm", isDarkMock ? "bg-white/5 border-white/10" : "bg-white border-black/10")}>
+            <h3 className="font-bold text-lg mb-2">Reserve sua sessão</h3>
+            <p className="text-[11px] opacity-60 mb-5 leading-relaxed">
+              Preencha o formulário e entraremos em contato pelo WhatsApp para confirmar o horário.
             </p>
-            <div className="flex flex-col gap-2">
-              <input disabled type="text" placeholder="Seu nome completo" className="w-full h-8 rounded-lg border px-3 text-[10px] opacity-50" />
-              <input disabled type="tel" placeholder="(11) 99999-9999" className="w-full h-8 rounded-lg border px-3 text-[10px] opacity-50" />
-              <textarea disabled placeholder="Dúvidas..." className="w-full h-16 rounded-lg border p-3 text-[10px] resize-none opacity-50" />
-              <button disabled className="mt-1 w-full h-9 rounded-lg text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm opacity-80" style={{ backgroundColor: theme.primaryColor }}>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-semibold opacity-70">Nome Completo</label>
+                <input disabled type="text" placeholder="Seu nome" className="w-full h-9 rounded-lg border px-3 text-[11px] opacity-50 bg-background" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-semibold opacity-70">WhatsApp</label>
+                <input disabled type="tel" placeholder="(11) 99999-9999" className="w-full h-9 rounded-lg border px-3 text-[11px] opacity-50 bg-background" />
+              </div>
+
+              {dbServices.length > 0 && (
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-semibold opacity-70">Serviço de Interesse</label>
+                  <select disabled className="w-full h-9 rounded-lg border px-3 text-[11px] opacity-50 bg-background appearance-none">
+                    <option>Selecione um serviço...</option>
+                  </select>
+                </div>
+              )}
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-semibold opacity-70">Mensagem (Opcional)</label>
+                <textarea disabled placeholder="Dúvidas..." className="w-full h-20 rounded-lg border p-3 text-[11px] resize-none opacity-50 bg-background" />
+              </div>
+
+              <button disabled className="mt-2 w-full h-10 rounded-lg text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm opacity-90 transition-opacity" style={{ backgroundColor: theme.primaryColor }}>
                 Enviar pelo WhatsApp
               </button>
             </div>

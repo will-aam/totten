@@ -218,10 +218,10 @@ export default async function PublicLinkBioPage({
       `}</style>
 
       {/* DESKTOP BACKGROUND */}
-      <div className="min-h-screen w-full bg-[#121212] flex flex-col items-center light">
+      <div className="h-screen w-full bg-[#121212] flex flex-col items-center light overflow-hidden">
         
         {/* CONTAINER DO LINK NA BIO */}
-        <div className="w-full max-w-[600px] min-h-screen sm:min-h-[800px] sm:h-fit relative flex flex-col sm:rounded-3xl shadow-[0_40px_80px_-20px_rgba(0,0,0,1)] overflow-hidden bg-black mx-auto sm:my-12">
+        <div className="w-full max-w-[600px] h-full sm:h-[calc(100vh-3rem)] sm:mt-12 relative flex flex-col sm:rounded-t-3xl shadow-[0_40px_80px_-20px_rgba(0,0,0,1)] overflow-hidden bg-black mx-auto">
           
           {/* CAMADA DE FUNDO BASE */}
           <div
@@ -254,7 +254,7 @@ export default async function PublicLinkBioPage({
         {/* CAMADA DE CONTEÚDO */}
         <div
           className={cn(
-            "w-full h-full min-h-screen flex flex-col relative z-20 pb-16",
+            "w-full h-full flex flex-col relative z-20 pb-16 overflow-y-auto overflow-x-hidden",
             (!profile.layout || profile.layout === "classic") ? "pt-16 px-6" : "pt-0 px-0"
           )}
           style={{ fontFamily: theme.fontFamily || "Inter, sans-serif" }}

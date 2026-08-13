@@ -13,18 +13,18 @@ import {
   X,
   Copy,
   Check,
-  Globe,
+  Cog,
   Link,
-  Layout,
+  GlobeAmericas,
   Calendar,
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 
 
-const MobileGlobe = ({ pack, ...props }: any) => <Globe {...props} />;
+const MobileGlobe = ({ pack, ...props }: any) => <Cog {...props} />;
 const MobileLink = ({ pack, ...props }: any) => <Link {...props} />;
-const MobileSite = ({ pack, ...props }: any) => <Layout {...props} />;
+const MobileSite = ({ pack, ...props }: any) => <GlobeAmericas {...props} />;
 const MobileCalendar = ({ pack, ...props }: any) => <Calendar {...props} />;
 
 import { ProfileSettings } from "./_components/profile-settings";
@@ -351,7 +351,7 @@ export default function CustomPage() {
               value="global"
               className="flex items-center gap-2 py-2 rounded-lg"
             >
-              <Globe size="sm" /> Global
+              <Cog size="sm" /> Global
             </TabsTrigger>
             <TabsTrigger
               value="link-bio"
@@ -363,7 +363,7 @@ export default function CustomPage() {
               value="professional-site"
               className="flex items-center gap-2 py-2 rounded-lg"
             >
-              <Layout size="sm" /> Site
+              <GlobeAmericas size="sm" /> Site
             </TabsTrigger>
             <TabsTrigger
               value="booking-site"
