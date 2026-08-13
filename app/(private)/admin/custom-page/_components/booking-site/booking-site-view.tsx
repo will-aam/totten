@@ -14,17 +14,12 @@ export function BookingSiteView({ profile }: { profile?: any }) {
   const [activeStepId, setActiveStepId] = useState<string | null>(null);
   const [showMobilePreview, setShowMobilePreview] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(Date.now());
 
   // Estados MOCK (já que não vamos tocar no banco de dados agora)
   const [general, setGeneral] = useState({
     enabled: true,
     termsText: "Ao confirmar, declaro que li e aceito a Política de Cancelamento.",
-  });
-  
-  const [hero, setHero] = useState({
-    bannerUrl: "",
-    title: "Agende seu horário",
-    subtitle: "Selecione o serviço desejado e venha cuidar de você.",
   });
 
   const [features, setFeatures] = useState({
@@ -32,13 +27,15 @@ export function BookingSiteView({ profile }: { profile?: any }) {
     showMostBooked: true,
     showTeam: true,
     showTeamLikes: true,
-    showReviews: true,
   });
 
   const handleSave = async () => {
     setIsSaving(true);
     // Simula salvamento sem tocar no backend/Prisma
-    setTimeout(() => setIsSaving(false), 800);
+    setTimeout(() => {
+      setIsSaving(false);
+      setRefreshKey(Date.now());
+    }, 800);
   };
 
   const STEPS = [
@@ -76,53 +73,6 @@ export function BookingSiteView({ profile }: { profile?: any }) {
               onChange={(e) => setGeneral({ ...general, termsText: e.target.value })}
               className="resize-none h-20"
               placeholder="Ex: Ao confirmar, declaro que li e aceito..."
-            />
-          </div>
-        </div>
-      )
-    },
-    {
-      id: "hero",
-      title: "Capa e Destaques",
-      component: (
-        <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-right-4">
-          <div>
-            <h3 className="text-lg font-semibold text-foreground">Apresentação Inicial</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              O que o cliente vê assim que abre a página.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            <Label className="font-medium">Título Principal</Label>
-            <Input
-              value={hero.title}
-              onChange={(e) => setHero({ ...hero, title: e.target.value })}
-              placeholder="Ex: Agende seu horário"
-            />
-          </div>
-          
-          <div className="flex flex-col gap-3">
-            <Label className="font-medium">Subtítulo (Opcional)</Label>
-            <Input
-              value={hero.subtitle}
-              onChange={(e) => setHero({ ...hero, subtitle: e.target.value })}
-              placeholder="Ex: Selecione o serviço desejado..."
-            />
-          </div>
-
-          <div className="flex flex-col gap-3 pt-2">
-            <Label className="font-medium">Banner de Capa (URL)</Label>
-            <div className="flex flex-col items-center justify-center border-2 border-dashed border-border/50 rounded-xl p-6 bg-muted/20 hover:bg-muted/50 transition-colors cursor-pointer group mb-2">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                  <ImageIcon className="h-5 w-5 text-primary" />
-                </div>
-                <p className="text-sm font-medium text-foreground text-center">Fazer Upload de Capa</p>
-            </div>
-            <Input
-              value={hero.bannerUrl}
-              onChange={(e) => setHero({ ...hero, bannerUrl: e.target.value })}
-              placeholder="Ou cole o link da imagem..."
             />
           </div>
         </div>
@@ -175,13 +125,6 @@ export function BookingSiteView({ profile }: { profile?: any }) {
               </div>
             )}
 
-            <div className="flex items-center justify-between p-3 border rounded-lg bg-card">
-              <div className="flex flex-col">
-                <Label>Mostrar "Avaliações"</Label>
-                <span className="text-[10px] text-muted-foreground">Exibe comentários de clientes.</span>
-              </div>
-              <Switch checked={features.showReviews} onCheckedChange={(val) => setFeatures({...features, showReviews: val})} />
-            </div>
           </div>
         </div>
       )
@@ -191,131 +134,13 @@ export function BookingSiteView({ profile }: { profile?: any }) {
   // Preview Mockup do Celular (Visualização do Cliente Final)
   const BookingMockup = ({ isFullScreen = false }: { isFullScreen?: boolean }) => {
     return (
-      <div className={cn(
-        "w-full h-full flex flex-col bg-slate-50 relative overflow-hidden",
-        isFullScreen ? "" : "rounded-[2.5rem]"
-      )}>
-        {/* Mock Header */}
-        <div className="h-14 w-full bg-white border-b flex items-center justify-between px-4 shrink-0 z-10">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-slate-200 rounded-full overflow-hidden">
-               {profile?.image && <img src={profile.image} className="w-full h-full object-cover" alt="" />}
-            </div>
-            <span className="font-semibold text-sm">{profile?.name || "Meu Salão"}</span>
-          </div>
-          {/* Botão de Histórico (Área do Cliente) - Sempre visível */}
-          <button className="text-[10px] font-bold bg-slate-100 px-3 py-1.5 rounded-full flex items-center gap-1">
-            <div className="w-3 h-3 rounded-full bg-slate-300" /> Histórico
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto pb-20 no-scrollbar">
-          
-          {/* Hero Section */}
-          <div className="w-full relative h-40 bg-slate-200 shrink-0">
-             {hero.bannerUrl && <img src={hero.bannerUrl} className="w-full h-full object-cover" alt="" />}
-             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-             <div className="absolute bottom-4 left-4 right-4 text-white">
-                <h2 className="font-bold text-lg leading-tight">{hero.title}</h2>
-                <p className="text-[10px] opacity-90 mt-1 line-clamp-2">{hero.subtitle}</p>
-             </div>
-          </div>
-
-          {general.enabled ? (
-            <div className="p-4 flex flex-col gap-6">
-              
-              {/* Fake Pacotes */}
-              {features.showPackages && (
-                <div>
-                  <h3 className="text-xs font-bold uppercase text-slate-500 mb-3">Combos & Pacotes</h3>
-                  <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-                     <div className="w-40 shrink-0 bg-white border rounded-xl p-3 shadow-sm">
-                        <h4 className="font-bold text-xs">Pacote Mensal</h4>
-                        <p className="text-[9px] text-slate-500 mt-1">4 cortes + barba</p>
-                        <p className="font-bold text-sm text-emerald-600 mt-2">R$ 150</p>
-                     </div>
-                     <div className="w-40 shrink-0 bg-white border rounded-xl p-3 shadow-sm">
-                        <h4 className="font-bold text-xs">Spa Day</h4>
-                        <p className="text-[9px] text-slate-500 mt-1">Massagem + Limpeza</p>
-                        <p className="font-bold text-sm text-emerald-600 mt-2">R$ 220</p>
-                     </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Fake Mais Agendados */}
-              {features.showMostBooked && (
-                <div>
-                  <h3 className="text-xs font-bold uppercase text-slate-500 mb-3">Mais Agendados</h3>
-                  <div className="flex flex-col gap-2">
-                     <div className="bg-white border rounded-lg p-3 flex justify-between items-center shadow-sm">
-                        <div>
-                          <p className="font-bold text-xs">Corte Completo</p>
-                          <p className="text-[10px] text-slate-500">45 min</p>
-                        </div>
-                        <button className="bg-slate-900 text-white text-[10px] px-3 py-1.5 rounded-full font-bold">R$ 45</button>
-                     </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Fake Categorias de Serviços */}
-              <div>
-                <h3 className="text-xs font-bold uppercase text-slate-500 mb-3">Todos os Serviços</h3>
-                <div className="flex flex-col gap-3">
-                   <div className="bg-white border rounded-lg p-3">
-                      <p className="font-bold text-xs mb-2">Cabelo</p>
-                      <div className="flex justify-between items-center py-2 border-t border-slate-50">
-                        <p className="text-[11px]">Hidratação</p>
-                        <button className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">R$ 80</button>
-                      </div>
-                   </div>
-                </div>
-              </div>
-
-              {/* Fake Equipe */}
-              {features.showTeam && (
-                <div>
-                  <h3 className="text-xs font-bold uppercase text-slate-500 mb-3">Nossa Equipe</h3>
-                  <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-                     <div className="flex flex-col items-center gap-1 shrink-0 w-16">
-                        <div className="w-12 h-12 rounded-full bg-slate-300" />
-                        <span className="text-[10px] font-bold">Ana</span>
-                        {features.showTeamLikes && <span className="text-[8px] text-slate-500">❤️ 120</span>}
-                     </div>
-                     <div className="flex flex-col items-center gap-1 shrink-0 w-16">
-                        <div className="w-12 h-12 rounded-full bg-slate-300" />
-                        <span className="text-[10px] font-bold">Carlos</span>
-                        {features.showTeamLikes && <span className="text-[8px] text-slate-500">❤️ 98</span>}
-                     </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Fake Reviews */}
-              {features.showReviews && (
-                <div>
-                  <h3 className="text-xs font-bold uppercase text-slate-500 mb-3">Avaliações</h3>
-                  <div className="bg-white border rounded-lg p-3 shadow-sm">
-                     <div className="flex text-yellow-400 text-[10px] mb-1">★★★★★</div>
-                     <p className="text-[10px] italic">"Atendimento maravilhoso, lugar incrível!"</p>
-                     <p className="text-[9px] text-slate-400 mt-1">- Cliente Satisfeita</p>
-                  </div>
-                </div>
-              )}
-
-            </div>
-          ) : (
-            <div className="p-8 flex flex-col items-center justify-center text-center h-64">
-              <div className="w-12 h-12 rounded-full bg-slate-200 mb-4 flex items-center justify-center">
-                 <span className="text-xl">📅</span>
-              </div>
-              <h3 className="font-bold text-sm">O autoagendamento está pausado.</h3>
-              <p className="text-xs text-slate-500 mt-2">Mas você ainda pode acessar seu histórico pela Área do Cliente no topo.</p>
-            </div>
-          )}
-        </div>
-      </div>
+      <iframe
+        src={`/${profile?.slug || 'serenita'}/agendar?preview=true&r=${refreshKey}`}
+        className={cn(
+          "w-full h-full bg-white border-none",
+          isFullScreen ? "" : "rounded-[2.5rem]"
+        )}
+      />
     );
   }
 

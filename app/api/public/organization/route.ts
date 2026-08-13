@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 // app/api/public/organization/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth-options";
 import { PublicOrganizationService } from "@/lib/server/services/public/organization.service";
 
 export async function GET(req: NextRequest) {
@@ -10,29 +10,29 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const slug = searchParams.get("slug");
 
-    // 1) Tenta pegar o ID da organização pela sessão do NextAuth (caso seja o Totem logado)
+    // 1) Tenta pegar o ID da organizaÃ§Ã£o pela sessÃ£o do NextAuth (caso seja o Totem logado)
     const session = await getServerSession(authOptions);
     const organizationId = session?.user?.organizationId;
 
-    // 2) FLEXIBILIDADE: Se não tem sessão nem slug, retornamos 200 vazio
-    // para não quebrar o carregamento do frontend (estado Idle).
+    // 2) FLEXIBILIDADE: Se nÃ£o tem sessÃ£o nem slug, retornamos 200 vazio
+    // para nÃ£o quebrar o carregamento do frontend (estado Idle).
     if (!organizationId && !slug) {
       return NextResponse.json(
-        { message: "Identificação da clínica pendente..." },
+        { message: "IdentificaÃ§Ã£o da clÃ­nica pendente..." },
         { status: 200 },
       );
     }
 
-    // 3) Delega toda a busca e resolução de ID/Slug para a camada de Serviço
+    // 3) Delega toda a busca e resoluÃ§Ã£o de ID/Slug para a camada de ServiÃ§o
     const publicInfo = await PublicOrganizationService.getPublicInfo(
       organizationId,
       slug,
     );
 
-    // Se o serviço não encontrou a organização (ID inválido ou Slug inexistente)
+    // Se o serviÃ§o nÃ£o encontrou a organizaÃ§Ã£o (ID invÃ¡lido ou Slug inexistente)
     if (!publicInfo) {
       return NextResponse.json(
-        { message: "Identificação da clínica pendente..." },
+        { message: "IdentificaÃ§Ã£o da clÃ­nica pendente..." },
         { status: 200 },
       );
     }
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
   } catch (error: any) {
     if (error.message === "SETTINGS_NOT_FOUND") {
       return NextResponse.json(
-        { error: "Configurações não encontradas." },
+        { error: "ConfiguraÃ§Ãµes nÃ£o encontradas." },
         { status: 404 },
       );
     }
@@ -54,4 +54,5 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+
 

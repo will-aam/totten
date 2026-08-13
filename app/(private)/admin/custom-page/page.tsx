@@ -143,6 +143,7 @@ export default function CustomPage() {
     { id: "1", title: "Agendar Horário", url: "" },
   ]);
   const [globalContact, setGlobalContact] = useState({ whatsapp: "", phone: "" });
+  const [globalLocation, setGlobalLocation] = useState<any>({ address: "", mapUrl: "", businessHours: "", showBusinessHours: true });
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -186,6 +187,23 @@ export default function CustomPage() {
               layout: pc.layout || prev.layout,
               bannerImage: pc.bannerImage || prev.bannerImage
             }));
+          }
+
+          let loadedContact = null;
+          if (data.profile_config && (data.profile_config as any).contact) {
+            loadedContact = (data.profile_config as any).contact;
+          } else if (data.professional_site_config && (data.professional_site_config as any).contact) {
+            loadedContact = (data.professional_site_config as any).contact;
+          }
+          
+          if (loadedContact) {
+            setGlobalLocation({
+              address: loadedContact.address || "",
+              mapUrl: loadedContact.mapUrl || "",
+              businessHours: loadedContact.businessHours || "",
+              showBusinessHoursSite: loadedContact.showBusinessHoursSite ?? loadedContact.showBusinessHours ?? true,
+              showBusinessHoursBooking: loadedContact.showBusinessHoursBooking ?? true
+            });
           }
 
           if (data.theme_config) {
@@ -273,7 +291,8 @@ export default function CustomPage() {
         profileConfig: {
           role: profile.role,
           layout: profile.layout,
-          bannerImage: profile.bannerImage
+          bannerImage: profile.bannerImage,
+          contact: globalLocation
         },
         socialLinks: {
           activePlatforms: socials.activePlatforms,
@@ -385,7 +404,18 @@ export default function CustomPage() {
           />
 
           <TabsContent value="global" className="mt-0">
-            <GlobalSettings profile={profile} setProfile={setProfile} socials={socials} setSocials={setSocials} globalContact={globalContact} theme={theme} setTheme={setTheme} />
+            <GlobalSettings 
+              profile={profile} setProfile={setProfile} 
+              socials={socials} setSocials={setSocials} 
+              globalContact={globalContact} 
+              theme={theme} setTheme={setTheme}
+              globalLocation={globalLocation} setGlobalLocation={setGlobalLocation} 
+            />
+            <div className="flex justify-end mt-6">
+              <Button onClick={handleSave} disabled={isSaving} className="min-w-32">
+                {isSaving ? "Salvando..." : "Salvar Configurações"}
+              </Button>
+            </div>
           </TabsContent>
 
           <TabsContent value="link-bio" className="mt-0">

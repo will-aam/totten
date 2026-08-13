@@ -1,8 +1,8 @@
 // app/(private)/admin/custom-page/_components/global-settings.tsx
 "use client";
 
-import { useState } from "react";
-import { Camera, Image as ImageIcon, LoaderLines, Instagram, Facebook, Youtube, Whatsapp, Globe, Capitalize } from "@boxicons/react";
+import { useState, useEffect } from "react";
+import { Camera, Image as ImageIcon, LoaderLines, Instagram, Facebook, Youtube, Whatsapp, Globe, Capitalize, Pin, Search, Clock } from "@boxicons/react";
 import { toast } from "sonner";
 import {
   Select,
@@ -11,6 +11,83 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { getSelfServiceSettingsAction } from "@/app/actions/settings";
+
+function RulesSummaryPreview({ data, onChange }: any) {
+  const [rulesData, setRulesData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchRules() {
+      const response = await getSelfServiceSettingsAction();
+      if (response.success) {
+        setRulesData(response.data);
+      }
+      setIsLoading(false);
+    }
+    fetchRules();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <LoaderLines className="h-4 w-4 animate-spin" /> Carregando horários...
+      </div>
+    );
+  }
+
+  const rules = rulesData;
+  if (!rules || !rules.schedule || rules.schedule.length === 0) {
+    return (
+      <div className="text-sm text-muted-foreground">
+        Nenhum horário configurado em Regras e Horários.
+      </div>
+    );
+  }
+
+  const referenceValues = rules.schedule.find((s: any) => s.isOpen);
+  const openDays = rules.schedule.filter((s: any) => s.isOpen).map((s: any) => s.dayOfWeek);
+
+  if (openDays.length === 0) {
+    return (
+      <div className="text-sm text-muted-foreground">
+        Fechado todos os dias configurado em Regras e Horários.
+      </div>
+    );
+  }
+
+  const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+  const summaryDays = openDays.map((d: number) => dayNames[d]).join(", ");
+  const hasBreak = !!referenceValues?.breakStart;
+
+  const summaryString = referenceValues
+    ? `Das ${referenceValues.openTime || "--:--"} às ${referenceValues.closeTime || "--:--"}${hasBreak && referenceValues.breakStart ? `, intervalo de ${referenceValues.breakStart} às ${referenceValues.breakEnd}` : ""}, funcionando de ${summaryDays}.`
+    : "Fechado todos os dias.";
+
+  if (data?.businessHours !== summaryString && summaryString) {
+    setTimeout(() => {
+      onChange({ ...data, businessHours: summaryString });
+    }, 0);
+  }
+
+  return (
+    <div className="bg-background border rounded-lg p-3 text-sm flex flex-col gap-2">
+      <p className="font-semibold text-foreground/80">Resumo configurado:</p>
+      <p className="text-muted-foreground leading-snug">
+        {summaryString}
+      </p>
+      <div className="mt-2">
+        <Link href="/admin/self-service" className="text-primary hover:underline text-xs font-medium">
+          Editar em Regras e Horários
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 
 const FONTS = [
   { id: "font-sans", name: "Inter (Padrão)", value: "Inter, sans-serif" },
@@ -35,9 +112,11 @@ interface GlobalSettingsProps {
   globalContact?: any;
   theme?: any;
   setTheme?: (theme: any) => void;
+  globalLocation?: any;
+  setGlobalLocation?: (loc: any) => void;
 }
 
-export function GlobalSettings({ profile, setProfile, socials, setSocials, globalContact, theme, setTheme }: GlobalSettingsProps) {
+export function GlobalSettings({ profile, setProfile, socials, setSocials, globalContact, theme, setTheme, globalLocation, setGlobalLocation }: GlobalSettingsProps) {
   const handleValueChange = (id: string, text: string) => {
     if (setSocials && socials) {
       setSocials({ ...socials, values: { ...socials.values, [id]: text } });
@@ -45,6 +124,29 @@ export function GlobalSettings({ profile, setProfile, socials, setSocials, globa
   };
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+
+  const [cep, setCep] = useState("");
+  const [isSearchingCep, setIsSearchingCep] = useState(false);
+
+  const handleSearchCep = async () => {
+    const cleanCep = cep.replace(/\D/g, "");
+    if (cleanCep.length !== 8) return;
+
+    setIsSearchingCep(true);
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      const result = await response.json();
+
+      if (!result.erro && setGlobalLocation && globalLocation) {
+        const fullAddress = `${result.logradouro}, Número, ${result.bairro}, ${result.localidade} - ${result.uf}, ${result.cep}`;
+        setGlobalLocation({ ...globalLocation, address: fullAddress });
+      }
+    } catch (error) {
+      console.error("Erro ao buscar CEP", error);
+    } finally {
+      setIsSearchingCep(false);
+    }
+  };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -151,17 +253,27 @@ export function GlobalSettings({ profile, setProfile, socials, setSocials, globa
                 )}
                 <input type="file" accept="image/png, image/jpeg" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={handleBannerUpload} disabled={isUploadingBanner} />
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col gap-2 w-full max-w-sm">
                 <p className="font-medium text-xs text-foreground">Imagem de Capa (Banner)</p>
-                <label className="text-[11px] font-semibold text-primary hover:underline w-fit cursor-pointer mt-1">
-                  Fazer upload
-                  <input type="file" accept="image/png, image/jpeg" className="hidden" onChange={handleBannerUpload} />
-                </label>
-                {profile.bannerImage && (
-                  <button onClick={() => setProfile({ ...profile, bannerImage: "" })} className="text-[11px] font-semibold text-destructive hover:underline w-fit mt-1">
-                    Remover
-                  </button>
-                )}
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2 items-center">
+                    <label className="text-[11px] font-semibold text-primary hover:underline w-fit cursor-pointer">
+                      Fazer upload
+                      <input type="file" accept="image/png, image/jpeg" className="hidden" onChange={handleBannerUpload} />
+                    </label>
+                    {profile.bannerImage && (
+                      <button onClick={() => setProfile({ ...profile, bannerImage: "" })} className="text-[11px] font-semibold text-destructive hover:underline w-fit">
+                        Remover
+                      </button>
+                    )}
+                  </div>
+                  <Input
+                    value={profile.bannerImage || ""}
+                    onChange={(e) => setProfile({ ...profile, bannerImage: e.target.value })}
+                    className="bg-background h-8 text-xs focus-visible:ring-1"
+                    placeholder="Ou cole a URL da imagem aqui..."
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -325,6 +437,98 @@ export function GlobalSettings({ profile, setProfile, socials, setSocials, globa
                   />
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* LOCALIZAÇÃO E ENDEREÇO */}
+        {globalLocation && setGlobalLocation && (
+          <div className="flex flex-col gap-6 mt-4">
+            <div>
+              <h4 className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                <Pin className="h-5 w-5 text-primary" />
+                Localização e Contato
+              </h4>
+              <p className="text-sm text-muted-foreground mt-1">
+                Informe onde você atende e como os clientes podem te achar.
+              </p>
+            </div>
+
+            {/* CEP */}
+            <div className="flex flex-col gap-3 p-4 border border-border/50 rounded-xl bg-muted/10">
+              <Label className="text-sm font-medium">Buscar Endereço (CEP)</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={cep}
+                  onChange={(e) => setCep(e.target.value)}
+                  placeholder="00000-000"
+                  className="bg-background max-w-[200px]"
+                  maxLength={9}
+                />
+                <Button
+                  variant="secondary"
+                  onClick={handleSearchCep}
+                  disabled={isSearchingCep || cep.replace(/\D/g, "").length !== 8}
+                >
+                  {isSearchingCep ? <LoaderLines className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  <span className="ml-2 hidden sm:inline">Buscar</span>
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground">O endereço será preenchido abaixo. Você pode editá-lo se necessário.</p>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="address" className="text-foreground font-medium">
+                Endereço Completo
+              </Label>
+              <Textarea
+                id="address"
+                value={globalLocation.address || ""}
+                onChange={(e) => setGlobalLocation({ ...globalLocation, address: e.target.value })}
+                className="bg-background border-border/50 focus-visible:ring-1 min-h-[80px]"
+                placeholder="Rua, Número, Bairro, Cidade - Estado, CEP"
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="mapUrl" className="text-foreground font-medium">
+                Link do Google Maps
+              </Label>
+              <Input
+                id="mapUrl"
+                value={globalLocation.mapUrl || ""}
+                onChange={(e) => setGlobalLocation({ ...globalLocation, mapUrl: e.target.value })}
+                className="bg-background border-border/50 h-11 focus-visible:ring-1"
+                placeholder="Ex: https://goo.gl/maps/..."
+              />
+            </div>
+
+            {/* HORÁRIO */}
+            <div className="flex flex-col gap-4 p-5 border border-border/50 rounded-xl bg-muted/10 mt-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <Label className="text-foreground font-medium flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  Horário de Funcionamento
+                </Label>
+                <div className="flex flex-col items-end gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Exibir no Site Profissional?</span>
+                    <Switch
+                      checked={globalLocation.showBusinessHoursSite !== false}
+                      onCheckedChange={(c) => setGlobalLocation({ ...globalLocation, showBusinessHoursSite: c })}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Exibir na Agenda?</span>
+                    <Switch
+                      checked={globalLocation.showBusinessHoursBooking !== false}
+                      onCheckedChange={(c) => setGlobalLocation({ ...globalLocation, showBusinessHoursBooking: c })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <RulesSummaryPreview data={globalLocation} onChange={setGlobalLocation} />
             </div>
           </div>
         )}

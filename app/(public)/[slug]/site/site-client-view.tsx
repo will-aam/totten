@@ -57,7 +57,7 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
   const finalGlobalBio = globalBio || org.link_bio?.bio || "";
   const hasBio = !!presentation.bio;
   const hasHistory = history.showHistory !== false && !!(history.historyTitle || (history.useGlobalBio !== false ? finalGlobalBio : history.historyText));
-  const sobreHref = hasBio ? "#sobre" : (hasHistory ? "#historia" : "#");
+  const sobreHref = hasHistory ? "#historia" : "#";
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileCarouselApi, setMobileCarouselApi] = useState<any>(null);
@@ -92,6 +92,7 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
   const [formData, setFormData] = useState({ name: "", whatsapp: "", email: "", service: "", message: "" });
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterSent, setNewsletterSent] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   // WhatsApp do contato (preferência: global settings, fallback: campo whatsapp, fallback: phone)
   const whatsappRaw = org.settings?.phone_whatsapp || contact.whatsapp || contact.phone || "";
@@ -180,13 +181,13 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
         )}>
           <div className="font-bold text-lg md:text-xl tracking-tight">{org.name}</div>
 
-          {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-7 font-medium text-sm">
             <a href={sobreHref} className="hover:opacity-70 transition-opacity">Sobre</a>
             {ctaSecondaryType !== "services" && <a href="#servicos" className="hover:opacity-70 transition-opacity">Serviços</a>}
             {dbPackages.length > 0 && ctaSecondaryType !== "packages" && <a href="#pacotes" className="hover:opacity-70 transition-opacity">Pacotes</a>}
             {professionals.length > 0 && ctaSecondaryType !== "team" && <a href="#profissionais" className="hover:opacity-70 transition-opacity">Equipe</a>}
             {ctaSecondaryType !== "contact" && <a href="#contato" className="hover:opacity-70 transition-opacity">Contato</a>}
+            <a href={`/${org.slug}/login`} className="hover:opacity-70 transition-opacity text-primary font-bold">Área do Cliente</a>
           </nav>
 
           <div className="hidden md:flex items-center gap-3">
@@ -230,6 +231,7 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
             {dbPackages.length > 0 && ctaSecondaryType !== "packages" && <a href="#pacotes" onClick={() => setMobileMenuOpen(false)}>Pacotes</a>}
             {professionals.length > 0 && ctaSecondaryType !== "team" && <a href="#profissionais" onClick={() => setMobileMenuOpen(false)}>Equipe</a>}
             {ctaSecondaryType !== "contact" && <a href="#contato" onClick={() => setMobileMenuOpen(false)}>Contato</a>}
+            <a href={`/${org.slug}/login`} className="text-primary font-bold">Área do Cliente</a>
             <a
               href={bookingUrl}
               className="px-8 py-4 rounded-full text-lg font-bold text-white mt-2"
@@ -600,7 +602,12 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                                     <div className="w-full aspect-[4/3] shrink-0 relative bg-muted border-b overflow-hidden" style={{ borderColor: theme.primaryColor + '20' }}>
                                       {srv.image_url ? (
                                         // eslint-disable-next-line @next/next/no-img-element
-                                        <img src={srv.image_url} alt={srv.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105" />
+                                        <img 
+                                          src={srv.image_url} 
+                                          alt={srv.name} 
+                                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105 cursor-pointer" 
+                                          onClick={() => setLightboxImage(srv.image_url)}
+                                        />
                                       ) : (
                                         <div className="absolute inset-0 flex items-center justify-center">
                                           <Briefcase className="w-12 h-12 text-muted-foreground/20" />
@@ -788,7 +795,7 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                   </p>
 
                   <div className="flex flex-col gap-6">
-                    {(contact.businessHours && contact.showBusinessHours !== false) && (
+                    {(contact.businessHours && (contact.showBusinessHoursSite !== false && contact.showBusinessHours !== false)) && (
                       <div className="flex items-center gap-4">
                         <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shrink-0", altBg)}>
                           <Clock className="h-6 w-6" style={{ color: theme.primaryColor }} />
@@ -896,22 +903,19 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                       {dbServices.length > 0 && (
                         <div className="flex flex-col gap-1.5">
                           <label className="text-xs font-semibold opacity-70">Serviço de Interesse</label>
-                          <Select
+                          <select
                             value={formData.service}
-                            onValueChange={(val) => setFormData({ ...formData, service: val })}
+                            onChange={(e) => setFormData({ ...formData, service: e.target.value })}
+                            className={cn("w-full h-11 rounded-xl border px-4 text-sm focus:outline-none focus:ring-1 transition appearance-none bg-transparent", inputBg)}
                           >
-                            <SelectTrigger className={cn("w-full h-11 rounded-xl border px-4 text-sm focus:outline-none focus:ring-1 transition", inputBg)}>
-                              <SelectValue placeholder="Selecione um serviço..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {dbServices.map((srv: any) => (
-                                <SelectItem key={srv.id} value={srv.name}>{srv.name} — R$ {Number(srv.price).toFixed(2)}</SelectItem>
-                              ))}
-                              {dbPackages.map((pkg: any) => (
-                                <SelectItem key={pkg.id} value={pkg.name}>{pkg.name} (Pacote) — R$ {Number(pkg.price).toFixed(2)}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                            <option value="">Selecione um serviço...</option>
+                            {dbServices.map((srv: any) => (
+                              <option key={srv.id} value={srv.name}>{srv.name} — R$ {Number(srv.price).toFixed(2)}</option>
+                            ))}
+                            {dbPackages.map((pkg: any) => (
+                              <option key={pkg.id} value={pkg.name}>{pkg.name} (Pacote) — R$ {Number(pkg.price).toFixed(2)}</option>
+                            ))}
+                          </select>
                         </div>
                       )}
                       <div className="flex flex-col gap-1.5">
@@ -1007,6 +1011,16 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
           <div className="py-4 text-sm opacity-80 leading-relaxed whitespace-pre-wrap">
             {org.settings?.terms_of_use || "Nenhum termo de uso foi cadastrado para esta clínica ainda."}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* LIGHTBOX DE IMAGENS */}
+      <Dialog open={!!lightboxImage} onOpenChange={(open) => !open && setLightboxImage(null)}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-transparent border-none shadow-none flex items-center justify-center">
+          <DialogTitle className="sr-only">Visualizar Imagem</DialogTitle>
+          {lightboxImage && (
+            <img src={lightboxImage} alt="Imagem ampliada" className="w-full h-auto max-h-[85vh] object-contain rounded-md" />
+          )}
         </DialogContent>
       </Dialog>
     </>

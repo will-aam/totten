@@ -246,20 +246,16 @@ export function ProPresentation({ data, onChange, hasServices }: { data: any, on
             {data.ctaSecondaryText !== false && (
               <div className="flex flex-col gap-2 pt-2 border-t">
                 <Label className="text-xs font-medium text-muted-foreground">Ação do Botão</Label>
-                <Select
+                <select
                   value={data.ctaSecondaryType || "services"}
-                  onValueChange={(val) => onChange({ ...data, ctaSecondaryType: val })}
+                  onChange={(e) => onChange({ ...data, ctaSecondaryType: e.target.value })}
+                  className="bg-background border border-border/50 h-9 px-3 rounded-md text-sm focus:outline-none focus-visible:ring-1 w-full appearance-none"
                 >
-                  <SelectTrigger className="bg-background border-border/50 h-9 px-3 rounded-md text-sm focus-visible:ring-1 w-full">
-                    <SelectValue placeholder="Selecione..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="services">Conhecer Serviços</SelectItem>
-                    <SelectItem value="packages">Planos e Pacotes</SelectItem>
-                    <SelectItem value="team">Nossa Equipe</SelectItem>
-                    <SelectItem value="contact">Fale Conosco</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <option value="services">Conhecer Serviços</option>
+                  <option value="packages">Planos e Pacotes</option>
+                  <option value="team">Nossa Equipe</option>
+                  <option value="contact">Fale Conosco</option>
+                </select>
               </div>
             )}
           </div>

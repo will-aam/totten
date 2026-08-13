@@ -218,10 +218,10 @@ export default async function PublicLinkBioPage({
       `}</style>
 
       {/* DESKTOP BACKGROUND */}
-      <div className="h-screen w-full bg-[#121212] flex flex-col items-center light overflow-hidden">
+      <div className="h-[100dvh] w-full bg-[#121212] flex flex-col items-center light overflow-hidden">
         
         {/* CONTAINER DO LINK NA BIO */}
-        <div className="w-full max-w-[600px] h-full sm:h-[calc(100vh-3rem)] sm:mt-12 relative flex flex-col sm:rounded-t-3xl shadow-[0_40px_80px_-20px_rgba(0,0,0,1)] overflow-hidden bg-black mx-auto">
+        <div className="w-full max-w-[600px] h-[100dvh] sm:h-[calc(100dvh-3rem)] sm:mt-12 relative flex flex-col sm:rounded-t-3xl shadow-[0_40px_80px_-20px_rgba(0,0,0,1)] overflow-hidden bg-black mx-auto">
           
           {/* CAMADA DE FUNDO BASE */}
           <div

@@ -3,16 +3,16 @@
 
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth-options";
 import { revalidatePath } from "next/cache";
 import { PaymentMethod } from "@prisma/client";
 
 async function getAdminOrg() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.email) throw new Error("Não autorizado");
+  if (!session?.user?.email) throw new Error("NÃ£o autorizado");
 
-  //  OTIMIZAÇÃO EXTREMA: O Select puxa APENAS o ID da organização,
-  // ignorando senhas, nomes, configurações e dados inúteis para esta validação.
+  //  OTIMIZAÃ‡ÃƒO EXTREMA: O Select puxa APENAS o ID da organizaÃ§Ã£o,
+  // ignorando senhas, nomes, configuraÃ§Ãµes e dados inÃºteis para esta validaÃ§Ã£o.
   const admin = await prisma.admin.findUnique({
     where: { email: session.user.email },
     select: {
@@ -24,7 +24,7 @@ async function getAdminOrg() {
   });
 
   if (!admin || admin.organizations.length === 0) {
-    throw new Error("Organização não encontrada");
+    throw new Error("OrganizaÃ§Ã£o nÃ£o encontrada");
   }
 
   return admin.organizations[0].id;
@@ -39,7 +39,7 @@ export async function getPaymentMethods() {
       orderBy: { created_at: "asc" },
     });
 
-    // CORREÇÃO: Convertemos os objetos Decimal para Number aqui no servidor
+    // CORREÃ‡ÃƒO: Convertemos os objetos Decimal para Number aqui no servidor
     // Assim o Next.js consegue serializar os dados para o Client Component sem erro.
     return methods.map((item) => ({
       ...item,
@@ -105,6 +105,7 @@ export async function deletePaymentMethod(id: string) {
     return { success: true };
   } catch (error) {
     console.error("Erro ao deletar:", error);
-    return { success: false, error: "Não foi possível excluir." };
+    return { success: false, error: "NÃ£o foi possÃ­vel excluir." };
   }
 }
+

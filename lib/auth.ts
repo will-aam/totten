@@ -1,17 +1,17 @@
 // lib/auth.ts
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth-options";
 
 /**
- * 🔐 Obtém a sessão do usuário logado (usar em Server Components e API Routes)
+ * Ã°Å¸â€Â ObtÃƒÂ©m a sessÃƒÂ£o do usuÃƒÂ¡rio logado (usar em Server Components e API Routes)
  */
 export async function getSession() {
   return await getServerSession(authOptions);
 }
 
 /**
- * 🧑‍💼 Retorna os dados do Admin logado (incluindo organization_id, role e permissions)
- * Retorna null se não houver sessão ativa
+ * Ã°Å¸Â§â€˜Ã¢â‚¬ÂÃ°Å¸â€™Â¼ Retorna os dados do Admin logado (incluindo organization_id, role e permissions)
+ * Retorna null se nÃƒÂ£o houver sessÃƒÂ£o ativa
  */
 export async function getCurrentAdmin() {
   const session = await getSession();
@@ -33,15 +33,15 @@ export async function getCurrentAdmin() {
 
 // Adicione esta classe no arquivo para ajudar as rotas API a identificarem o 401
 export class AuthError extends Error {
-  constructor(message = "Não autorizado") {
+  constructor(message = "NÃƒÂ£o autorizado") {
     super(message);
     this.name = "AuthError";
   }
 }
 
 /**
- * 🛡️ Garante que há um admin logado ou lança erro AuthError (401)
- * Use em Server Actions e API Routes que exigem autenticação
+ * Ã°Å¸â€ºÂ¡Ã¯Â¸Â Garante que hÃƒÂ¡ um admin logado ou lanÃƒÂ§a erro AuthError (401)
+ * Use em Server Actions e API Routes que exigem autenticaÃƒÂ§ÃƒÂ£o
  */
 export async function requireAuth() {
   const admin = await getCurrentAdmin();
@@ -52,3 +52,4 @@ export async function requireAuth() {
 
   return admin;
 }
+

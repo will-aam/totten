@@ -15,7 +15,6 @@ import {
 import { ProPresentation } from "./pro-presentation";
 import { ProHistory } from "./pro-history";
 import { ProServices } from "./pro-services";
-import { ProContact } from "./pro-contact";
 import { ProTheme } from "./pro-theme";
 import { updateCustomPageAction } from "@/app/actions/custom-page";
 import { toast } from "sonner";
@@ -105,7 +104,6 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
     { id: "presentation", title: "Apresentação", component: <ProPresentation data={presentation} onChange={setPresentation} hasServices={services?.showServices !== false} /> },
     { id: "history", title: "Sobre", component: <ProHistory data={history} onChange={setHistory} profile={profile} /> },
     { id: "services", title: "Serviços", component: <ProServices data={services} onChange={setServices} /> },
-    { id: "contact", title: "Contato", component: <ProContact data={contact} onChange={setContact} globalContact={globalContact} /> },
     { id: "theme", title: "Aparência", component: <ProTheme data={theme} onChange={setTheme} /> },
   ];
 
@@ -114,7 +112,6 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
       case "presentation": return !!(presentation.headline || presentation.bio);
       case "history": return !!(history.historyTitle || (history.useGlobalBio !== false ? profile?.bio : history.historyText));
       case "services": return services.servicesList && services.servicesList.length > 0;
-      case "contact": return !!(contact.phone || contact.address);
       case "theme": return true;
       default: return false;
     }
@@ -501,7 +498,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
           </div>
 
           <div className="flex flex-col gap-5">
-            {(contact.businessHours && contact.showBusinessHours !== false) && (
+            {(contact.businessHours && (contact.showBusinessHoursSite !== false && contact.showBusinessHours !== false)) && (
               <div className="flex items-center gap-3">
                 <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-background")}>
                   <Clock className="h-5 w-5" style={{ color: theme.primaryColor }} />
