@@ -300,18 +300,18 @@ export default function CustomPage() {
   const STEPS = [
     {
       id: "profile",
-      title: "Perfil",
-      component: <ProfileSettings data={profile} onChange={setProfile} />,
+      title: "Perfil e Redes Sociais",
+      component: (
+        <div className="flex flex-col gap-8">
+          <ProfileSettings data={profile} onChange={setProfile} />
+          <SocialSettings data={socials} onChange={setSocials} globalContact={globalContact} />
+        </div>
+      ),
     },
     {
       id: "theme",
       title: "Aparência",
       component: <ThemeSettings data={theme} onChange={setTheme} />,
-    },
-    {
-      id: "social",
-      title: "Redes Sociais",
-      component: <SocialSettings data={socials} onChange={setSocials} globalContact={globalContact} />,
     },
     {
       id: "links",
@@ -322,9 +322,8 @@ export default function CustomPage() {
 
   const isStepDone = (stepId: string) => {
     switch (stepId) {
-      case "profile": return !!(profile.layout);
+      case "profile": return !!(profile.layout) && (socials.activePlatforms && socials.activePlatforms.length > 0);
       case "theme": return true;
-      case "social": return socials.activePlatforms && socials.activePlatforms.length > 0;
       case "links": return links && links.length > 0 && links.some(l => l.title || l.url);
       default: return false;
     }
@@ -347,11 +346,31 @@ export default function CustomPage() {
       <div className="flex flex-col gap-6 p-6 md:p-8 relative pb-32 md:pb-8">
 
         <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)} className="w-full">
-          <TabsList className="hidden md:flex bg-transparent flex-row w-full justify-start border-b border-border/50 space-x-2 rounded-none h-auto p-0 mb-8">
-            <TabsTrigger value="global">Global</TabsTrigger>
-            <TabsTrigger value="link-bio">Link na Bio</TabsTrigger>
-            <TabsTrigger value="professional-site">Site</TabsTrigger>
-            <TabsTrigger value="booking-site">Agenda</TabsTrigger>
+          <TabsList className="hidden md:grid w-full lg:w-[600px] grid-cols-4 h-auto gap-1 bg-muted p-1 rounded-xl mb-8">
+            <TabsTrigger
+              value="global"
+              className="flex items-center gap-2 py-2 rounded-lg"
+            >
+              <Globe size="sm" /> Global
+            </TabsTrigger>
+            <TabsTrigger
+              value="link-bio"
+              className="flex items-center gap-2 py-2 rounded-lg"
+            >
+              <Link size="sm" /> Link na Bio
+            </TabsTrigger>
+            <TabsTrigger
+              value="professional-site"
+              className="flex items-center gap-2 py-2 rounded-lg"
+            >
+              <Layout size="sm" /> Site
+            </TabsTrigger>
+            <TabsTrigger
+              value="booking-site"
+              className="flex items-center gap-2 py-2 rounded-lg"
+            >
+              <Calendar size="sm" /> Agenda
+            </TabsTrigger>
           </TabsList>
 
           <MobileBottomNav
@@ -366,7 +385,7 @@ export default function CustomPage() {
           />
 
           <TabsContent value="global" className="mt-0">
-            <GlobalSettings profile={profile} setProfile={setProfile} />
+            <GlobalSettings profile={profile} setProfile={setProfile} socials={socials} setSocials={setSocials} globalContact={globalContact} theme={theme} setTheme={setTheme} />
           </TabsContent>
 
           <TabsContent value="link-bio" className="mt-0">

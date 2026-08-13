@@ -2,8 +2,25 @@
 "use client";
 
 import { useState } from "react";
-import { Camera, Image as ImageIcon, LoaderLines, Globe } from "@boxicons/react";
+import { Camera, Image as ImageIcon, LoaderLines, Instagram, Facebook, Youtube, Whatsapp, Globe, Capitalize } from "@boxicons/react";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const FONTS = [
+  { id: "font-sans", name: "Inter (Padrão)", value: "Inter, sans-serif" },
+  { id: "sora", name: "Sora", value: "Sora, sans-serif" },
+  { id: "notosans", name: "Noto Sans", value: "'Noto Sans', sans-serif" },
+  { id: "epilogue", name: "Epilogue", value: "Epilogue, sans-serif" },
+  { id: "oxanium", name: "Oxanium", value: "Oxanium, cursive" },
+  { id: "roboto", name: "Roboto", value: "Roboto, sans-serif" },
+  { id: "lora", name: "Lora", value: "Lora, serif" },
+];
 import { compressImage } from "@/lib/image-utils";
 import { uploadImageAction } from "@/app/actions/upload-image";
 import { Input } from "@/components/ui/input";
@@ -13,9 +30,19 @@ import { Textarea } from "@/components/ui/textarea";
 interface GlobalSettingsProps {
   profile: any;
   setProfile: (profile: any) => void;
+  socials?: any;
+  setSocials?: (socials: any) => void;
+  globalContact?: any;
+  theme?: any;
+  setTheme?: (theme: any) => void;
 }
 
-export function GlobalSettings({ profile, setProfile }: GlobalSettingsProps) {
+export function GlobalSettings({ profile, setProfile, socials, setSocials, globalContact, theme, setTheme }: GlobalSettingsProps) {
+  const handleValueChange = (id: string, text: string) => {
+    if (setSocials && socials) {
+      setSocials({ ...socials, values: { ...socials.values, [id]: text } });
+    }
+  };
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
 
@@ -65,7 +92,6 @@ export function GlobalSettings({ profile, setProfile }: GlobalSettingsProps) {
     <div className="flex flex-col gap-6 animate-in fade-in duration-300">
       <div className="flex flex-col gap-2">
         <h3 className="text-xl font-bold flex items-center gap-2 text-foreground">
-          <Globe className="h-6 w-6 text-primary" />
           Configurações Globais
         </h3>
         <p className="text-sm text-muted-foreground">
@@ -76,7 +102,7 @@ export function GlobalSettings({ profile, setProfile }: GlobalSettingsProps) {
       <div className="flex flex-col gap-8 mt-4">
 
         {/* IMAGENS */}
-        <div className="flex flex-col gap-4 border border-border/50 p-6 rounded-xl bg-card shadow-sm">
+        <div className="flex flex-col gap-4">
           <h4 className="text-sm font-semibold text-foreground">Imagens Principais</h4>
           <div className="flex flex-col sm:flex-row gap-6">
             {/* Avatar */}
@@ -142,7 +168,7 @@ export function GlobalSettings({ profile, setProfile }: GlobalSettingsProps) {
         </div>
 
         {/* TEXTOS */}
-        <div className="flex flex-col gap-6 border border-border/50 p-6 rounded-xl bg-card shadow-sm">
+        <div className="flex flex-col gap-6">
           <h4 className="text-sm font-semibold text-foreground">Informações de Texto</h4>
 
           <div className="flex flex-col gap-2">
@@ -161,7 +187,7 @@ export function GlobalSettings({ profile, setProfile }: GlobalSettingsProps) {
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-end">
               <Label htmlFor="bio" className="text-foreground font-medium">
-                Biografia / Sobre / Nossa História
+                Descreva brevemente seu negócio
               </Label>
               <span
                 className={`text-[11px] font-medium ${(profile.bio?.length || 0) > 300 ? "text-destructive" : "text-muted-foreground"}`}
@@ -178,6 +204,130 @@ export function GlobalSettings({ profile, setProfile }: GlobalSettingsProps) {
             />
           </div>
         </div>
+
+        {/* TIPOGRAFIA */}
+        {theme && setTheme && (
+          <div className="flex flex-col gap-6">
+            <h4 className="text-sm font-semibold text-foreground">Tipografia</h4>
+            <div className="flex flex-col gap-3">
+              <Label className="text-foreground font-medium flex items-center gap-2">
+                <Capitalize className="h-4 w-4" /> Fonte do Texto Principal
+              </Label>
+              <Select
+                value={theme.fontFamily || "Inter, sans-serif"}
+                onValueChange={(val) => setTheme({ ...theme, fontFamily: val })}
+              >
+                <SelectTrigger className="h-11">
+                  <SelectValue placeholder="Selecione uma fonte" />
+                </SelectTrigger>
+                <SelectContent>
+                  {FONTS.map((font) => (
+                    <SelectItem key={font.id} value={font.value} style={{ fontFamily: font.value }}>
+                      {font.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
+
+        {/* REDES SOCIAIS E CONTATOS */}
+        {socials && setSocials && (
+          <div className="flex flex-col gap-6">
+            <h4 className="text-sm font-semibold text-foreground">Redes Sociais e Contatos</h4>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-foreground font-medium flex items-center gap-2 text-sm">
+                  <Whatsapp className="h-4 w-4 text-muted-foreground" /> WhatsApp
+                </Label>
+                <div className="flex items-center">
+                  <span className="bg-muted text-muted-foreground px-3 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
+                    +55
+                  </span>
+                  <Input
+                    value={globalContact?.whatsapp || ""}
+                    disabled
+                    className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
+                    placeholder="DDD + Número"
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Editado em Configurações &gt; Dados da Empresa
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-foreground font-medium flex items-center gap-2 text-sm">
+                  <Instagram className="h-4 w-4 text-muted-foreground" /> Instagram
+                </Label>
+                <div className="flex items-center">
+                  <span className="bg-muted text-muted-foreground px-3 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
+                    @
+                  </span>
+                  <Input
+                    value={socials.values.instagram || ""}
+                    onChange={(e) => handleValueChange("instagram", e.target.value)}
+                    className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
+                    placeholder="seuusuario"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-foreground font-medium flex items-center gap-2 text-sm">
+                  <Facebook className="h-4 w-4 text-muted-foreground" /> Facebook
+                </Label>
+                <div className="flex items-center">
+                  <span className="bg-muted text-muted-foreground px-3 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
+                    facebook.com/
+                  </span>
+                  <Input
+                    value={socials.values.facebook || ""}
+                    onChange={(e) => handleValueChange("facebook", e.target.value)}
+                    className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
+                    placeholder="suapagina"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-foreground font-medium flex items-center gap-2 text-sm">
+                  <Youtube className="h-4 w-4 text-muted-foreground" /> YouTube
+                </Label>
+                <div className="flex items-center">
+                  <span className="bg-muted text-muted-foreground px-3 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
+                    youtube.com/@
+                  </span>
+                  <Input
+                    value={socials.values.youtube || ""}
+                    onChange={(e) => handleValueChange("youtube", e.target.value)}
+                    className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
+                    placeholder="seucanal"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5 md:col-span-2">
+                <Label className="text-foreground font-medium flex items-center gap-2 text-sm">
+                  <Globe className="h-4 w-4 text-muted-foreground" /> Meu Site
+                </Label>
+                <div className="flex items-center">
+                  <span className="bg-muted text-muted-foreground px-3 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
+                    https://
+                  </span>
+                  <Input
+                    value={socials.values.website || ""}
+                    onChange={(e) => handleValueChange("website", e.target.value)}
+                    className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
+                    placeholder="www.seusite.com.br"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

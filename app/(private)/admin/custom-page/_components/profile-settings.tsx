@@ -4,6 +4,7 @@ import { useState } from "react";
 import { User } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function ProfileSettings({ data, onChange }: any) {
 
@@ -24,26 +25,16 @@ export function ProfileSettings({ data, onChange }: any) {
 
         <div className="flex flex-col gap-3">
           <Label className="text-foreground font-medium">Layout do Perfil</Label>
-          <div className="flex bg-muted p-1 rounded-lg border border-border/50">
-            {[
-              { id: "classic", label: "Clássico" },
-              { id: "banner", label: "Banner" },
-              { id: "header", label: "Header Blur" }
-            ].map((layout) => (
-              <button
-                key={layout.id}
-                onClick={() => onChange({ ...data, layout: layout.id })}
-                className={cn(
-                  "flex-1 text-[11px] sm:text-xs py-2 rounded-md transition-colors font-medium",
-                  (data.layout || "classic") === layout.id
-                    ? "bg-background shadow-sm text-foreground"
-                    : "text-muted-foreground hover:bg-background/50"
-                )}
-              >
-                {layout.label}
-              </button>
-            ))}
-          </div>
+          <Select value={data.layout || "classic"} onValueChange={(val) => onChange({ ...data, layout: val })}>
+            <SelectTrigger className="bg-background h-11 w-full">
+              <SelectValue placeholder="Selecione o layout" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="classic">Clássico</SelectItem>
+              <SelectItem value="banner">Banner</SelectItem>
+              <SelectItem value="header">Header Blur</SelectItem>
+            </SelectContent>
+          </Select>
           <p className="text-[11px] text-muted-foreground">
             Escolha como o seu Avatar e Banner (definidos acima) serão exibidos nesta página.
           </p>

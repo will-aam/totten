@@ -15,7 +15,6 @@ import {
 import { ProPresentation } from "./pro-presentation";
 import { ProHistory } from "./pro-history";
 import { ProServices } from "./pro-services";
-import { ProMedia } from "./pro-media";
 import { ProContact } from "./pro-contact";
 import { ProTheme } from "./pro-theme";
 import { updateCustomPageAction } from "@/app/actions/custom-page";
@@ -41,7 +40,6 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
   const [presentation, setPresentation] = useState<any>({ headline: "", subheadline: "", bio: "", heroImage: "", heroLayout: "fade-cover", ctaPrimaryText: "", ctaSecondaryText: "", aboutTitle: "" });
   const [history, setHistory] = useState<any>({ showHistory: true, historyTitle: "", historyText: "", historyImage: "", historyStat1Label: "Anos de experiência", historyStat1Value: "", historyStat2Label: "Clientes atendidos", historyStat2Value: "", historyStat3Label: "", historyStat3Value: "" });
   const [services, setServices] = useState<any>({ ctaText: "", ctaLink: "", servicesList: [] as any[], featuredPackageName: "" });
-  const [media, setMedia] = useState<any>({});
   const [contact, setContact] = useState<any>({ address: "", mapUrl: "", phone: "", whatsapp: "", email: "", businessHours: "" });
   const [theme, setTheme] = useState<any>({ id: "light", css: "bg-slate-50", textColor: "#0f172a", primaryColor: "#0f172a", headerStyle: "center" });
   // Preencher dados iniciais recebidos do servidor ou localStorage
@@ -51,7 +49,6 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
       if (initialData.presentation) setPresentation(initialData.presentation);
       if (initialData.history) setHistory(initialData.history);
       if (initialData.services) setServices(initialData.services);
-      if (initialData.media) setMedia(initialData.media);
       if (initialData.contact) setContact(initialData.contact);
       if (initialData.theme) setTheme(initialData.theme);
       loaded = true;
@@ -65,7 +62,6 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
           if (parsed.presentation) setPresentation(parsed.presentation);
           if (parsed.history) setHistory(parsed.history);
           if (parsed.services) setServices(parsed.services);
-          if (parsed.media) setMedia(parsed.media);
           if (parsed.contact) setContact(parsed.contact);
           if (parsed.theme) setTheme(parsed.theme);
         } catch (e) { }
@@ -75,9 +71,9 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
 
   // Salvar rascunho
   useEffect(() => {
-    const draft = { presentation, history, services, media, contact, theme };
+    const draft = { presentation, history, services, contact, theme };
     localStorage.setItem('totten_pro_site_draft', JSON.stringify(draft));
-  }, [presentation, history, services, media, contact, theme]);
+  }, [presentation, history, services, contact, theme]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -86,7 +82,6 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
         presentation,
         history,
         services,
-        media,
         contact,
         theme
       };
@@ -108,10 +103,9 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
   };
 
   const STEPS = [
-    { id: "presentation", title: "Apresentação", component: <ProPresentation data={presentation} onChange={setPresentation} /> },
-    { id: "history", title: "Sobre", component: <ProHistory data={history} onChange={setHistory} /> },
+    { id: "presentation", title: "Apresentação", component: <ProPresentation data={presentation} onChange={setPresentation} hasServices={services?.showServices !== false} /> },
+    { id: "history", title: "Sobre", component: <ProHistory data={history} onChange={setHistory} profile={profile} /> },
     { id: "services", title: "Serviços", component: <ProServices data={services} onChange={setServices} /> },
-    { id: "media", title: "Galeria e Mídia", component: <ProMedia data={media} onChange={setMedia} /> },
     { id: "contact", title: "Contato", component: <ProContact data={contact} onChange={setContact} globalContact={globalContact} /> },
     { id: "theme", title: "Aparência", component: <ProTheme data={theme} onChange={setTheme} /> },
   ];
@@ -119,9 +113,8 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
   const isStepDone = (stepId: string) => {
     switch (stepId) {
       case "presentation": return !!(presentation.headline || presentation.bio);
-      case "history": return !!(history.historyTitle || history.historyText);
+      case "history": return !!(history.historyTitle || (history.useGlobalBio !== false ? profile?.bio : history.historyText));
       case "services": return services.servicesList && services.servicesList.length > 0;
-      case "media": return !!((media as any).videoUrl || ((media as any).images && (media as any).images.length > 0));
       case "contact": return !!(contact.phone || contact.address);
       case "theme": return true;
       default: return false;
@@ -134,18 +127,71 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
     const isBlogLayout = presentation.heroLayout === "classic-blog";
 
     const isDarkMock = theme.css?.includes("900") || theme.css?.includes("black") || theme.css?.includes("slate-950");
-    const displayImage = isBlogLayout ? ((presentation as any).proHeroImage || presentation.heroImage) : presentation.heroImage;
-
     const { data: dbCategories = [] } = useSWR("/api/categories?active=true", fetcher);
     const { data: dbServices = [] } = useSWR("/api/services", fetcher);
     const { data: dbPackages = [] } = useSWR("/api/package-templates", fetcher);
+
+    // SLIDER LOGIC
+    const sliderImages: string[] = isBlogLayout 
+      ? (presentation.proHeroImages?.length > 0 ? presentation.proHeroImages : (presentation.proHeroImage ? [presentation.proHeroImage] : (presentation.heroImage ? [presentation.heroImage] : []))) 
+      : (presentation.heroImage ? [presentation.heroImage] : []);
+
+    const displayImage = sliderImages.length > 0 ? sliderImages[0] : null;
+    const isSlider = isBlogLayout && sliderImages.length > 1;
+
+    const [carouselApi, setCarouselApi] = useState<any>(null);
+    const [currentSlide, setCurrentSlide] = useState(0);
+
+    useEffect(() => {
+      if (!carouselApi) return;
+      
+      const onSelect = () => setCurrentSlide(carouselApi.selectedScrollSnap());
+      carouselApi.on("select", onSelect);
+      
+      const interval = setInterval(() => {
+        if (carouselApi.canScrollNext()) {
+          carouselApi.scrollNext();
+        } else {
+          carouselApi.scrollTo(0);
+        }
+      }, 5000);
+      
+      return () => {
+        clearInterval(interval);
+        carouselApi.off("select", onSelect);
+      };
+    }, [carouselApi]);
 
     const content = (
       <div className={cn("w-full h-full flex flex-col pb-8 relative z-10 transition-colors duration-500 overflow-y-auto no-scrollbar light", theme.css, isFullScreen ? "pt-12" : "")} style={{ color: theme.textColor }}>
 
         {/* HERO / HEADER SECTION */}
         <div className="relative w-full">
-          {displayImage ? (
+          {isSlider ? (
+            <div className={cn("w-full relative shrink-0", isAvatarLayout ? "h-40" : isBlogLayout ? "h-48" : "h-56")}>
+              <Carousel setApi={setCarouselApi} className="w-full h-full" opts={{ loop: true }}>
+                <CarouselContent className="h-full -ml-0">
+                  {sliderImages.map((img, idx) => (
+                    <CarouselItem key={idx} className="h-full pl-0">
+                      <img src={img} alt={`Slide ${idx + 1}`} className={cn("w-full h-full object-cover", isBlogLayout ? "rounded-none rounded-b-[1.5rem]" : "")} />
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+              </Carousel>
+              
+              <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 z-20">
+                {sliderImages.map((_, idx) => (
+                  <div 
+                    key={idx} 
+                    className={cn(
+                      "h-1.5 rounded-full transition-all duration-300", 
+                      currentSlide === idx ? "w-4 bg-white" : "w-1.5 bg-white/50"
+                    )} 
+                  />
+                ))}
+              </div>
+            </div>
+          ) : displayImage ? (
             <div className={cn(
               "w-full relative shrink-0",
               isAvatarLayout ? "h-40" :
@@ -155,22 +201,12 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
               <img
                 src={displayImage}
                 alt="Hero"
-                className={cn("w-full h-full object-cover", isBlogLayout ? "rounded-xl" : "")}
+                className={cn("w-full h-full object-cover", isBlogLayout ? "rounded-none rounded-b-[1.5rem]" : "")}
                 style={!isAvatarLayout && !isBlogLayout ? {
                   WebkitMaskImage: "linear-gradient(to top, transparent 0%, black 75%)",
                   maskImage: "linear-gradient(to top, transparent 0%, black 75%)"
                 } : {}}
               />
-              {/* Floating Box na imagem */}
-              {isBlogLayout && (presentation.floatingBoxTitle || presentation.floatingBoxSubtitle) && (
-                <div className={cn(
-                  "absolute bottom-2 left-2 right-2 bg-white/90 dark:bg-black/80 backdrop-blur-md rounded-lg p-2.5 shadow-sm border border-black/5 dark:border-white/10 transition-transform",
-                  presentation.floatingBoxLink && "cursor-pointer hover:scale-105"
-                )}>
-                  {presentation.floatingBoxTitle && <div className="text-[11px] font-bold text-black dark:text-white leading-tight">{presentation.floatingBoxTitle}</div>}
-                  {presentation.floatingBoxSubtitle && <div className="text-[9px] font-medium text-black/60 dark:text-white/60 leading-tight mt-0.5">{presentation.floatingBoxSubtitle}</div>}
-                </div>
-              )}
             </div>
           ) : (
             <div className={cn("w-full bg-muted/20 border-b border-border/10 shrink-0", (isAvatarLayout || isBlogLayout) ? "h-32" : "h-32")} />
@@ -179,10 +215,10 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
           <div className={cn(
             "px-6 relative z-10 flex flex-col pb-6",
             isAvatarLayout
-              ? (displayImage ? "-mt-12" : "-mt-10")
+              ? (displayImage || isSlider ? "-mt-12" : "-mt-10")
               : isBlogLayout
                 ? "mt-4" // Push down instead of overlap
-                : (displayImage ? "-mt-14" : "-mt-12"),
+                : (displayImage || isSlider ? "-mt-14" : "-mt-12"),
             theme.headerStyle === "center" ? "text-center items-center" : "text-left items-start"
           )}>
             {/* AVATAR DO LINK NA BIO INTEGRADO */}
@@ -214,20 +250,20 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
             </p>
 
             <div className="flex flex-col gap-2 mt-5 w-full">
-              {presentation.ctaPrimaryText && (
+              {presentation.ctaPrimaryText !== false && (
                 <div
                   className="px-4 py-2.5 rounded-full text-xs font-bold text-white text-center w-full"
                   style={{ backgroundColor: theme.primaryColor }}
                 >
-                  {presentation.ctaPrimaryText}
+                  Agendar Sessão
                 </div>
               )}
-              {presentation.ctaSecondaryText && (
+              {services?.showServices !== false && presentation.ctaSecondaryText !== false && (
                 <div className={cn(
                   "px-4 py-2.5 rounded-full text-xs font-bold border text-center w-full",
                   isDarkMock ? "border-white/20 text-white" : "border-black/15"
                 )}>
-                  {presentation.ctaSecondaryText}
+                  Conhecer Serviços
                 </div>
               )}
             </div>
@@ -259,7 +295,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
         )}
 
         {/* HISTORY SECTION */}
-        {history.showHistory !== false && (history.historyTitle || history.historyText) && (
+        {history.showHistory !== false && (history.historyTitle || (history.useGlobalBio !== false ? profile?.bio : history.historyText)) && (
           <div className="px-6 py-10 bg-foreground/5">
             {history.historyImage && (
               <div className="w-full h-48 rounded-xl overflow-hidden mb-6 shadow-sm">
@@ -273,7 +309,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
               </span>
             )}
             {history.historyTitle && <h2 className="font-serif font-medium text-2xl mb-4 leading-tight">{history.historyTitle}</h2>}
-            {history.historyText && <p className="text-sm opacity-80 whitespace-pre-wrap leading-relaxed">{history.historyText}</p>}
+            {(history.useGlobalBio !== false ? profile?.bio : history.historyText) && <p className="text-sm opacity-80 whitespace-pre-wrap leading-relaxed">{history.useGlobalBio !== false ? profile?.bio : history.historyText}</p>}
 
             <div className="grid grid-cols-2 gap-4 mt-8">
               {history.historyStat1Value && (

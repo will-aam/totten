@@ -3,7 +3,7 @@
 
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Palette, Check, Capitalize, Plus, Image as ImageIcon } from "@boxicons/react";
+import { Palette, Check, Plus, Image as ImageIcon } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import {
   Select,
@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 
 const SYSTEM_THEMES = [
   {
@@ -58,15 +59,7 @@ const SYSTEM_THEMES = [
 
 const SOLID_COLORS = ["#000000", "#FFFFFF", "#2563EB", "#DB2777", "#16A34A"];
 
-const FONTS = [
-  { id: "font-sans", name: "Inter (Padrão)", value: "Inter, sans-serif" },
-  { id: "sora", name: "Sora", value: "Sora, sans-serif" },
-  { id: "notosans", name: "Noto Sans", value: "'Noto Sans', sans-serif" },
-  { id: "epilogue", name: "Epilogue", value: "Epilogue, sans-serif" },
-  { id: "oxanium", name: "Oxanium", value: "Oxanium, cursive" },
-  { id: "roboto", name: "Roboto", value: "Roboto, sans-serif" },
-  { id: "lora", name: "Lora", value: "Lora, serif" },
-];
+
 
 export function ThemeSettings({ data, onChange }: any) {
   const handleThemeChange = (theme: (typeof SYSTEM_THEMES)[0]) => {
@@ -187,7 +180,7 @@ export function ThemeSettings({ data, onChange }: any) {
 
         {/* OPÇÕES DE CUSTOMIZAÇÃO DO WALLPAPER */}
         {data.id === "custom" && (
-          <div className="flex flex-col gap-4 pt-4 border-t border-border/50 animate-in fade-in slide-in-from-top-2">
+          <div className="flex flex-col gap-6 pt-2 animate-in fade-in slide-in-from-top-2">
             <Label className="text-foreground font-medium">Seu Wallpaper Personalizado</Label>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -214,50 +207,32 @@ export function ThemeSettings({ data, onChange }: any) {
             </div>
 
             {/* Efeitos de Fundo (Wallpaper) */}
-            <div className="flex flex-col gap-3 mt-4">
-              <Label className="text-xs text-muted-foreground">Efeitos Adicionais</Label>
-              <div className="flex flex-col gap-3">
-                <button
-                  onClick={() => onChange({ ...data, bgNoise: !data.bgNoise })}
-                  className={cn(
-                    "w-full flex items-center justify-center gap-2 text-xs py-2 px-3 border rounded-md transition-colors font-medium",
-                    data.bgNoise
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border/50 text-muted-foreground hover:bg-muted"
-                  )}
-                >
-                  Textura Granulada
-                </button>
+            <div className="flex flex-col gap-5 mt-2">
+              <Label className="text-sm font-medium text-foreground">Efeitos Adicionais</Label>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="flex items-center justify-between bg-muted/20 p-3 rounded-lg border border-border/50">
+                  <Label className="text-xs font-medium cursor-pointer" htmlFor="bg-noise-custom">Textura Granulada</Label>
+                  <Switch id="bg-noise-custom" checked={!!data.bgNoise} onCheckedChange={(checked) => onChange({ ...data, bgNoise: checked })} />
+                </div>
 
-                <div className="flex flex-col gap-2 border border-border/50 rounded-md p-3">
-                  <Label className="text-[11px] text-muted-foreground font-medium uppercase">Intensidade do Borrão (Blur)</Label>
-                  <div className="flex bg-muted p-1 rounded-lg border border-border/50">
-                    {[
-                      { id: "none", label: "Nenhum" },
-                      { id: "sm", label: "Leve" },
-                      { id: "md", label: "Médio" },
-                      { id: "xl", label: "Intenso" },
-                      { id: "3xl", label: "Extremo" }
-                    ].map((level) => {
-                      const currentBlur = data.bgBlur === true ? "3xl" : (data.bgBlur || "none");
-                      const isSelected = currentBlur === level.id || (level.id === "none" && !data.bgBlur);
-
-                      return (
-                        <button
-                          key={level.id}
-                          onClick={() => onChange({ ...data, bgBlur: level.id })}
-                          className={cn(
-                            "flex-1 text-[10px] sm:text-xs py-1.5 px-1 rounded-md transition-colors font-medium truncate",
-                            isSelected
-                              ? "bg-background shadow-sm text-foreground"
-                              : "text-muted-foreground hover:bg-background/50"
-                          )}
-                        >
-                          {level.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+                <div className="flex flex-col gap-2">
+                  <Label className="text-xs text-muted-foreground font-medium">Intensidade do Borrão (Blur)</Label>
+                  <Select
+                    value={data.bgBlur === true ? "3xl" : (data.bgBlur || "none")}
+                    onValueChange={(val) => onChange({ ...data, bgBlur: val })}
+                  >
+                    <SelectTrigger className="bg-background h-10 w-full text-xs">
+                      <SelectValue placeholder="Selecione o desfoque" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Nenhum</SelectItem>
+                      <SelectItem value="sm">Leve</SelectItem>
+                      <SelectItem value="md">Médio</SelectItem>
+                      <SelectItem value="xl">Intenso</SelectItem>
+                      <SelectItem value="3xl">Extremo</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
@@ -266,36 +241,45 @@ export function ThemeSettings({ data, onChange }: any) {
 
         {/* COR DO FUNDO SÓLIDO (Só aparece se o tema for Sólido) */}
         {data.id === "solid" && (
-          <div className="flex flex-col gap-5 pt-4 border-t border-border/50 animate-in fade-in slide-in-from-top-2">
+          <div className="flex flex-col gap-6 pt-2 animate-in fade-in slide-in-from-top-2">
             <Label className="text-foreground font-medium">Estilo de Papel de Parede</Label>
 
-            {/* Preenchimento: Sólido ou Gradiente */}
-            <div className="flex flex-col gap-3">
-              <Label className="text-xs text-muted-foreground">Preenchimento</Label>
-              <div className="flex bg-muted p-1 rounded-lg border border-border/50">
-                <button
-                  onClick={() => onChange({ ...data, bgStyle: "solid" })}
-                  className={cn(
-                    "flex-1 text-xs py-2 rounded-md transition-colors font-medium",
-                    (data.bgStyle || "solid") === "solid"
-                      ? "bg-background shadow-sm text-foreground"
-                      : "text-muted-foreground hover:bg-background/50"
-                  )}
+            {/* Preenchimento: Sólido ou Gradiente e Direção */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="flex flex-col gap-2">
+                <Label className="text-xs text-muted-foreground font-medium">Preenchimento</Label>
+                <Select
+                  value={data.bgStyle || "solid"}
+                  onValueChange={(val) => onChange({ ...data, bgStyle: val })}
                 >
-                  Sólido
-                </button>
-                <button
-                  onClick={() => onChange({ ...data, bgStyle: "gradient" })}
-                  className={cn(
-                    "flex-1 text-xs py-2 rounded-md transition-colors font-medium",
-                    (data.bgStyle || "solid") === "gradient"
-                      ? "bg-background shadow-sm text-foreground"
-                      : "text-muted-foreground hover:bg-background/50"
-                  )}
-                >
-                  Gradiente
-                </button>
+                  <SelectTrigger className="bg-background h-10 w-full text-xs">
+                    <SelectValue placeholder="Selecione o preenchimento" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="solid">Sólido</SelectItem>
+                    <SelectItem value="gradient">Gradiente</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
+
+              {(data.bgStyle || "solid") === "gradient" && (
+                <div className="flex flex-col gap-2">
+                  <Label className="text-xs text-muted-foreground font-medium">Direção do Gradiente</Label>
+                  <Select
+                    value={data.bgGradientDirection || "to-b"}
+                    onValueChange={(val) => onChange({ ...data, bgGradientDirection: val })}
+                  >
+                    <SelectTrigger className="bg-background h-10 w-full text-xs">
+                      <SelectValue placeholder="Selecione a direção" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="to-b">Descendente</SelectItem>
+                      <SelectItem value="to-t">Ascendente</SelectItem>
+                      <SelectItem value="radial">Radial</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
 
             {/* Cores */}
@@ -330,106 +314,41 @@ export function ThemeSettings({ data, onChange }: any) {
               </div>
             </div>
 
-            {/* Direção (Só para gradiente) */}
-            {(data.bgStyle || "solid") === "gradient" && (
-              <div className="flex flex-col gap-3">
-                <Label className="text-xs text-muted-foreground">Direção do Gradiente</Label>
-                <div className="flex bg-muted p-1 rounded-lg border border-border/50 flex-wrap sm:flex-nowrap">
-                  {[
-                    { id: "to-b", label: "Descendente" },
-                    { id: "to-t", label: "Ascendente" },
-                    { id: "radial", label: "Radial" }
-                  ].map((dir) => (
-                    <button
-                      key={dir.id}
-                      onClick={() => onChange({ ...data, bgGradientDirection: dir.id })}
-                      className={cn(
-                        "flex-1 text-xs py-2 px-1 rounded-md transition-colors font-medium truncate",
-                        (data.bgGradientDirection || "to-b") === dir.id
-                          ? "bg-background shadow-sm text-foreground"
-                          : "text-muted-foreground hover:bg-background/50"
-                      )}
-                    >
-                      {dir.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Efeitos de Fundo */}
-            <div className="flex flex-col gap-3">
-              <Label className="text-xs text-muted-foreground">Efeitos Adicionais</Label>
-              <div className="flex flex-col gap-3">
-                <button
-                  onClick={() => onChange({ ...data, bgNoise: !data.bgNoise })}
-                  className={cn(
-                    "w-full flex items-center justify-center gap-2 text-xs py-2 px-3 border rounded-md transition-colors font-medium",
-                    data.bgNoise
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border/50 text-muted-foreground hover:bg-muted"
-                  )}
-                >
-                  Textura Granulada
-                </button>
+            <div className="flex flex-col gap-5 mt-2">
+              <Label className="text-sm font-medium text-foreground">Efeitos Adicionais</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="flex items-center justify-between bg-muted/20 p-3 rounded-lg border border-border/50">
+                  <Label className="text-xs font-medium cursor-pointer" htmlFor="bg-noise-solid">Textura Granulada</Label>
+                  <Switch id="bg-noise-solid" checked={!!data.bgNoise} onCheckedChange={(checked) => onChange({ ...data, bgNoise: checked })} />
+                </div>
 
-                <div className="flex flex-col gap-2 border border-border/50 rounded-md p-3">
-                  <Label className="text-[11px] text-muted-foreground font-medium uppercase">Intensidade do Borrão (Blur)</Label>
-                  <div className="flex bg-muted p-1 rounded-lg border border-border/50">
-                    {[
-                      { id: "none", label: "Nenhum" },
-                      { id: "sm", label: "Leve" },
-                      { id: "md", label: "Médio" },
-                      { id: "xl", label: "Intenso" },
-                      { id: "3xl", label: "Extremo" }
-                    ].map((level) => {
-                      const currentBlur = data.bgBlur === true ? "3xl" : (data.bgBlur || "none");
-                      const isSelected = currentBlur === level.id || (level.id === "none" && !data.bgBlur);
-
-                      return (
-                        <button
-                          key={level.id}
-                          onClick={() => onChange({ ...data, bgBlur: level.id })}
-                          className={cn(
-                            "flex-1 text-[10px] sm:text-xs py-1.5 px-1 rounded-md transition-colors font-medium truncate",
-                            isSelected
-                              ? "bg-background shadow-sm text-foreground"
-                              : "text-muted-foreground hover:bg-background/50"
-                          )}
-                        >
-                          {level.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+                <div className="flex flex-col gap-2">
+                  <Label className="text-xs text-muted-foreground font-medium">Intensidade do Borrão (Blur)</Label>
+                  <Select
+                    value={data.bgBlur === true ? "3xl" : (data.bgBlur || "none")}
+                    onValueChange={(val) => onChange({ ...data, bgBlur: val })}
+                  >
+                    <SelectTrigger className="bg-background h-10 w-full text-xs">
+                      <SelectValue placeholder="Selecione o desfoque" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Nenhum</SelectItem>
+                      <SelectItem value="sm">Leve</SelectItem>
+                      <SelectItem value="md">Médio</SelectItem>
+                      <SelectItem value="xl">Intenso</SelectItem>
+                      <SelectItem value="3xl">Extremo</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* TIPOGRAFIA E CORES AVANÇADAS */}
-        <div className="flex flex-col gap-5 pt-4 border-t border-border/50">
-          <div className="flex flex-col gap-3">
-            <Label className="text-foreground font-medium flex items-center gap-2">
-              <Capitalize className="h-4 w-4" /> Fonte do Texto
-            </Label>
-            <Select
-              value={data.fontFamily || "Inter, sans-serif"}
-              onValueChange={(val) => onChange({ ...data, fontFamily: val })}
-            >
-              <SelectTrigger className="h-11">
-                <SelectValue placeholder="Selecione uma fonte" />
-              </SelectTrigger>
-              <SelectContent>
-                {FONTS.map((font) => (
-                  <SelectItem key={font.id} value={font.value} style={{ fontFamily: font.value }}>
-                    {font.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        {/* CORES AVANÇADAS */}
+        <div className="flex flex-col gap-5 pt-2">
+
 
           <div className="flex flex-wrap gap-6">
             <div className="flex flex-col gap-2">
@@ -456,89 +375,70 @@ export function ThemeSettings({ data, onChange }: any) {
         </div>
 
         {/* ESTILO DOS BOTÕES */}
-        <div className="flex flex-col gap-5 pt-4 border-t border-border/50">
+        <div className="flex flex-col gap-5 pt-2">
           <Label className="text-foreground font-medium flex items-center gap-2">
             Estilo dos Botões
           </Label>
 
-          {/* ESTILO (Sólido, Vidro, Contorno) */}
-          <div className="flex flex-col gap-3">
-            <Label className="text-xs text-muted-foreground">Aparência</Label>
-            <div className="flex bg-muted p-1 rounded-lg border border-border/50">
-              {[
-                { id: "solid", label: "Sólido" },
-                { id: "glass", label: "Vidro" },
-                { id: "outline", label: "Contorno" }
-              ].map((style) => (
-                <button
-                  key={style.id}
-                  onClick={() => onChange({ ...data, buttonStyle: style.id })}
-                  className={cn(
-                    "flex-1 text-xs py-2 rounded-md transition-colors font-medium",
-                    (data.buttonStyle || "solid") === style.id
-                      ? "bg-background shadow-sm text-foreground"
-                      : "text-muted-foreground hover:bg-background/50"
-                  )}
-                >
-                  {style.label}
-                </button>
-              ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* ESTILO (Sólido, Vidro, Contorno) */}
+            <div className="flex flex-col gap-2">
+              <Label className="text-xs text-muted-foreground font-medium">Aparência</Label>
+              <Select
+                value={data.buttonStyle || "solid"}
+                onValueChange={(val) => onChange({ ...data, buttonStyle: val })}
+              >
+                <SelectTrigger className="bg-background h-10 w-full text-xs">
+                  <SelectValue placeholder="Selecione a aparência" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="solid">Sólido</SelectItem>
+                  <SelectItem value="glass">Vidro</SelectItem>
+                  <SelectItem value="outline">Contorno</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </div>
 
-          {/* ARREDONDAMENTO */}
-          <div className="flex flex-col gap-3">
-            <Label className="text-xs text-muted-foreground">Arredondamento de Canto</Label>
-            <div className="flex bg-muted p-1 rounded-lg border border-border/50 flex-wrap sm:flex-nowrap">
-              {[
-                { id: "square", label: "Quadrado" },
-                { id: "round", label: "Redondo" },
-                { id: "more-round", label: "Mais Arredondado" },
-                { id: "pill", label: "Completamente" }
-              ].map((rounding) => (
-                <button
-                  key={rounding.id}
-                  onClick={() => onChange({ ...data, buttonRounding: rounding.id })}
-                  className={cn(
-                    "flex-1 text-xs py-2 px-1 rounded-md transition-colors font-medium truncate",
-                    (data.buttonRounding || "pill") === rounding.id
-                      ? "bg-background shadow-sm text-foreground"
-                      : "text-muted-foreground hover:bg-background/50"
-                  )}
-                >
-                  {rounding.label}
-                </button>
-              ))}
+            {/* ARREDONDAMENTO */}
+            <div className="flex flex-col gap-2">
+              <Label className="text-xs text-muted-foreground font-medium">Arredondamento de Canto</Label>
+              <Select
+                value={data.buttonRounding || "pill"}
+                onValueChange={(val) => onChange({ ...data, buttonRounding: val })}
+              >
+                <SelectTrigger className="bg-background h-10 w-full text-xs">
+                  <SelectValue placeholder="Selecione o arredondamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="square">Quadrado</SelectItem>
+                  <SelectItem value="round">Redondo</SelectItem>
+                  <SelectItem value="more-round">Mais Arredondado</SelectItem>
+                  <SelectItem value="pill">Completamente</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </div>
 
-          {/* SOMBRA (Somente para Sólido) */}
-          {(data.buttonStyle || "solid") === "solid" && (
-            <div className="flex flex-col gap-3">
-              <Label className="text-xs text-muted-foreground">Sombra do Botão</Label>
-              <div className="flex bg-muted p-1 rounded-lg border border-border/50">
-                {[
-                  { id: "none", label: "Nenhum" },
-                  { id: "soft", label: "Macio" },
-                  { id: "strong", label: "Forte" },
-                  { id: "hard", label: "Duro" }
-                ].map((shadow) => (
-                  <button
-                    key={shadow.id}
-                    onClick={() => onChange({ ...data, buttonShadow: shadow.id })}
-                    className={cn(
-                      "flex-1 text-xs py-2 rounded-md transition-colors font-medium",
-                      (data.buttonShadow || "none") === shadow.id
-                        ? "bg-background shadow-sm text-foreground"
-                        : "text-muted-foreground hover:bg-background/50"
-                    )}
-                  >
-                    {shadow.label}
-                  </button>
-                ))}
+            {/* SOMBRA (Somente para Sólido) */}
+            {(data.buttonStyle || "solid") === "solid" && (
+              <div className="flex flex-col gap-2">
+                <Label className="text-xs text-muted-foreground font-medium">Sombra do Botão</Label>
+                <Select
+                  value={data.buttonShadow || "none"}
+                  onValueChange={(val) => onChange({ ...data, buttonShadow: val })}
+                >
+                  <SelectTrigger className="bg-background h-10 w-full text-xs">
+                    <SelectValue placeholder="Selecione a sombra" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhum</SelectItem>
+                    <SelectItem value="soft">Macio</SelectItem>
+                    <SelectItem value="strong">Forte</SelectItem>
+                    <SelectItem value="hard">Duro</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* CORES DOS BOTÕES (Dinâmicas) */}
           <div className="flex flex-wrap gap-6 pt-2">

@@ -2,6 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { compressImage } from "@/lib/image-utils";
 
 import { LoaderLines, Link, BookOpen, ArrowInUpSquareHalf } from "@boxicons/react"
@@ -9,7 +10,7 @@ import { useState } from "react";
 import { uploadImageAction } from "@/app/actions/upload-image";
 import { toast } from "sonner";
 
-export function ProHistory({ data, onChange }: { data: any, onChange: (data: any) => void }) {
+export function ProHistory({ data, onChange, profile }: { data: any, onChange: (data: any) => void, profile?: any }) {
   const [isUploading, setIsUploading] = useState(false);
 
   const handleHistoryImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,17 +85,39 @@ export function ProHistory({ data, onChange }: { data: any, onChange: (data: any
             />
           </div>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="historyText" className="text-foreground font-medium">
+          <div className="flex flex-col gap-3">
+            <Label className="text-foreground font-medium">
               Descrição / Texto
             </Label>
-            <Textarea
-              id="historyText"
-              value={data.historyText || ""}
-              onChange={(e) => onChange({ ...data, historyText: e.target.value })}
-              className="bg-background border-border/50 min-h-[120px] resize-none focus-visible:ring-1"
-              placeholder="Conte um pouco sobre sua trajetória, missão e valores..."
-            />
+            
+            <RadioGroup 
+              value={data.useGlobalBio !== false ? "global" : "custom"} 
+              onValueChange={(val) => onChange({ ...data, useGlobalBio: val === "global" })}
+              className="flex gap-6 mb-1"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="global" id="bio-global" />
+                <Label htmlFor="bio-global" className="cursor-pointer text-sm font-normal">Usar o da configuração global</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="custom" id="bio-custom" />
+                <Label htmlFor="bio-custom" className="cursor-pointer text-sm font-normal">Customizar um diferente</Label>
+              </div>
+            </RadioGroup>
+
+            {data.useGlobalBio !== false ? (
+              <div className="bg-muted/30 border border-border/50 rounded-md p-4 text-sm text-muted-foreground italic whitespace-pre-wrap">
+                {profile?.bio || "Nenhuma descrição configurada no painel global."}
+              </div>
+            ) : (
+              <Textarea
+                id="historyText"
+                value={data.historyText || ""}
+                onChange={(e) => onChange({ ...data, historyText: e.target.value })}
+                className="bg-background border-border/50 min-h-[120px] resize-none focus-visible:ring-1"
+                placeholder="Conte um pouco sobre sua trajetória, missão e valores..."
+              />
+            )}
           </div>
 
           {/* Imagem da História */}

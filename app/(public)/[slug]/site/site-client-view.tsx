@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import {
   Star, Briefcase, Youtube, Pin, Globe, Menu, X, Envelope, User, Phone,
@@ -32,12 +32,45 @@ const SOCIAL_ICONS: Record<string, any> = {
   whatsapp: Whatsapp,
 };
 
-export function SiteClientView({ org, proSiteData, theme, presentation, contact, media, socialProof, servicesConfig, socialLinks = [], profileConfig = {} }: any) {
+export function SiteClientView({ org, proSiteData, theme, presentation, contact, socialProof, servicesConfig, socialLinks = [], profileConfig = {}, globalBio }: any) {
   const history = proSiteData?.history || {};
   const isAvatarLayout = presentation.heroLayout === "avatar-cover";
   const isBlogLayout = presentation?.heroLayout === "classic-blog";
-  const displayImage = isBlogLayout ? ((presentation as any).proHeroImage || presentation.heroImage) : presentation.heroImage;
+
+  const sliderImages: string[] = isBlogLayout
+    ? (presentation.proHeroImages?.length > 0 ? presentation.proHeroImages : (presentation.proHeroImage ? [presentation.proHeroImage] : (presentation.heroImage ? [presentation.heroImage] : [])))
+    : (presentation.heroImage ? [presentation.heroImage] : []);
+  const displayImage = sliderImages.length > 0 ? sliderImages[0] : undefined;
+  const isSlider = isBlogLayout && sliderImages.length > 1;
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileCarouselApi, setMobileCarouselApi] = useState<any>(null);
+  const [mobileCurrentSlide, setMobileCurrentSlide] = useState(0);
+  const [desktopCarouselApi, setDesktopCarouselApi] = useState<any>(null);
+  const [desktopCurrentSlide, setDesktopCurrentSlide] = useState(0);
+
+  useEffect(() => {
+    if (!mobileCarouselApi) return;
+    const onSelect = () => setMobileCurrentSlide(mobileCarouselApi.selectedScrollSnap());
+    mobileCarouselApi.on("select", onSelect);
+    const interval = setInterval(() => {
+      if (mobileCarouselApi.canScrollNext()) mobileCarouselApi.scrollNext();
+      else mobileCarouselApi.scrollTo(0);
+    }, 5000);
+    return () => { clearInterval(interval); mobileCarouselApi.off("select", onSelect); };
+  }, [mobileCarouselApi]);
+
+  useEffect(() => {
+    if (!desktopCarouselApi) return;
+    const onSelect = () => setDesktopCurrentSlide(desktopCarouselApi.selectedScrollSnap());
+    desktopCarouselApi.on("select", onSelect);
+    const interval = setInterval(() => {
+      if (desktopCarouselApi.canScrollNext()) desktopCarouselApi.scrollNext();
+      else desktopCarouselApi.scrollTo(0);
+    }, 5000);
+    return () => { clearInterval(interval); desktopCarouselApi.off("select", onSelect); };
+  }, [desktopCarouselApi]);
+
   const [termsOpen, setTermsOpen] = useState(false);
   const [formSent, setFormSent] = useState(false);
   const [formData, setFormData] = useState({ name: "", whatsapp: "", email: "", service: "", message: "" });
@@ -199,23 +232,36 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
             <div className="px-6 sm:px-10 relative z-10 flex flex-col lg:flex-row gap-10 lg:gap-16 max-w-7xl mx-auto w-full pb-14 mt-8 md:mt-16 items-center">
 
               {/* Mobile Image (rendered on top for mobile, hidden on lg) */}
-              {displayImage && (
-                <div className="w-full relative lg:hidden mb-2 animate-fade-up" style={{ animationDelay: '0.1s' }}>
-                  <div className="w-full h-[300px] sm:h-[400px] relative rounded-[2rem] overflow-hidden shadow-xl border border-black/5 dark:border-white/10">
-                    <img src={displayImage} alt="Hero" className="w-full h-full object-cover" />
-                    {/* Floating Box */}
-                    {(presentation.floatingBoxTitle || presentation.floatingBoxSubtitle) && (
-                      presentation.floatingBoxLink ? (
-                        <a href={presentation.floatingBoxLink} target="_blank" rel="noopener noreferrer" className="absolute bottom-4 left-4 bg-white/95 dark:bg-black/90 backdrop-blur-md rounded-2xl p-4 shadow-lg border border-black/5 dark:border-white/10 max-w-[200px] hover:scale-105 transition-transform block">
-                          {presentation.floatingBoxTitle && <div className="text-sm font-bold text-black dark:text-white leading-tight">{presentation.floatingBoxTitle}</div>}
-                          {presentation.floatingBoxSubtitle && <div className="text-xs font-medium text-black/60 dark:text-white/60 mt-1">{presentation.floatingBoxSubtitle}</div>}
-                        </a>
-                      ) : (
-                        <div className="absolute bottom-4 left-4 bg-white/95 dark:bg-black/90 backdrop-blur-md rounded-2xl p-4 shadow-lg border border-black/5 dark:border-white/10 max-w-[200px]">
-                          {presentation.floatingBoxTitle && <div className="text-sm font-bold text-black dark:text-white leading-tight">{presentation.floatingBoxTitle}</div>}
-                          {presentation.floatingBoxSubtitle && <div className="text-xs font-medium text-black/60 dark:text-white/60 mt-1">{presentation.floatingBoxSubtitle}</div>}
-                        </div>
-                      )
+              {(displayImage || isSlider) && (
+                <div className="w-[calc(100%+3rem)] sm:w-[calc(100%+5rem)] -mx-6 sm:-mx-10 -mt-8 relative lg:hidden mb-6 animate-fade-up" style={{ animationDelay: '0.1s' }}>
+                  <div className="w-full h-[350px] sm:h-[400px] relative rounded-none rounded-b-[2.5rem] overflow-hidden shadow-xl">
+                    {isSlider ? (
+                      <Carousel setApi={setMobileCarouselApi} className="w-full h-full" opts={{ loop: true }}>
+                        <CarouselContent className="h-full ml-0">
+                          {sliderImages.map((img, idx) => (
+                            <CarouselItem key={idx} className="h-full pl-0">
+                              <img src={img} alt={`Slide ${idx + 1}`} className="w-full h-full object-cover" />
+                            </CarouselItem>
+                          ))}
+                        </CarouselContent>
+                      </Carousel>
+                    ) : (
+                      <img src={displayImage} alt="Hero" className="w-full h-full object-cover" />
+                    )}
+
+                    {/* Dots Navigation for Slider */}
+                    {isSlider && (
+                      <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5 z-20">
+                        {sliderImages.map((_, idx) => (
+                          <div
+                            key={idx}
+                            className={cn(
+                              "h-1.5 rounded-full transition-all duration-300",
+                              mobileCurrentSlide === idx ? "w-4 bg-white" : "w-1.5 bg-white/50"
+                            )}
+                          />
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -244,14 +290,14 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
 
                 {/* CTAs */}
                 <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-4 w-full mt-10 animate-fade-up", theme.headerStyle === "center" ? "mx-auto max-w-lg lg:mx-0 lg:max-w-md" : "max-w-md")} style={{ animationDelay: '0.3s' }}>
-                  {presentation.ctaPrimaryText && (
+                  {presentation.ctaPrimaryText !== false && (
                     <a href={bookingUrl} className="w-full px-8 py-4 rounded-full text-base font-bold shadow-lg text-white hover:scale-105 transition-transform flex items-center justify-center text-center gap-2" style={{ backgroundColor: theme.primaryColor }}>
-                      {presentation.ctaPrimaryText}
+                      Agendar Sessão
                     </a>
                   )}
-                  {presentation.ctaSecondaryText && (
+                  {dbServices.length > 0 && servicesConfig.showServices !== false && presentation.ctaSecondaryText !== false && (
                     <a href="#servicos" className={cn("w-full px-8 py-4 rounded-full text-base font-bold border hover:scale-105 transition-transform flex items-center justify-center text-center gap-2", isDark ? "border-white/20 text-white hover:bg-white/10" : "border-black/15 text-current hover:bg-black/5")}>
-                      {presentation.ctaSecondaryText}
+                      Conhecer Serviços
                     </a>
                   )}
                 </div>
@@ -261,8 +307,8 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                   <div className="flex flex-wrap gap-x-6 gap-y-3 mt-10 animate-fade-up" style={{ animationDelay: '0.4s' }}>
                     {[presentation.highlight1, presentation.highlight2, presentation.highlight3].filter(Boolean).map((highlight, i) => (
                       <div key={i} className="flex items-center gap-2 text-sm opacity-80 font-medium">
-                        <div className="w-5 h-5 rounded-full flex items-center justify-center border border-current opacity-70">
-                          <CheckCircle className="w-3.5 h-3.5" />
+                        <div className="w-5 h-5 flex items-center justify-center">
+                          <CheckCircle className="w-4 h-4" />
                         </div>
                         {highlight}
                       </div>
@@ -272,23 +318,36 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
               </div>
 
               {/* Desktop Image (rendered on right for lg, hidden on mobile) */}
-              {displayImage && (
+              {(displayImage || isSlider) && (
                 <div className="hidden lg:block w-full lg:w-1/2 relative animate-fade-up" style={{ animationDelay: '0.3s' }}>
                   <div className="w-full aspect-[4/3] relative rounded-[2.5rem] overflow-hidden shadow-2xl border border-black/5 dark:border-white/10 group">
-                    <img src={displayImage} alt="Hero" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                    {/* Floating Box */}
-                    {(presentation.floatingBoxTitle || presentation.floatingBoxSubtitle) && (
-                      presentation.floatingBoxLink ? (
-                        <a href={presentation.floatingBoxLink} target="_blank" rel="noopener noreferrer" className="absolute bottom-6 left-6 bg-white/95 dark:bg-black/90 backdrop-blur-md rounded-2xl p-5 shadow-xl border border-black/5 dark:border-white/10 max-w-[240px] animate-fade-up hover:scale-105 transition-transform block">
-                          {presentation.floatingBoxTitle && <div className="text-base font-bold text-black dark:text-white leading-tight mb-1">{presentation.floatingBoxTitle}</div>}
-                          {presentation.floatingBoxSubtitle && <div className="text-sm font-medium text-black/60 dark:text-white/60">{presentation.floatingBoxSubtitle}</div>}
-                        </a>
-                      ) : (
-                        <div className="absolute bottom-6 left-6 bg-white/95 dark:bg-black/90 backdrop-blur-md rounded-2xl p-5 shadow-xl border border-black/5 dark:border-white/10 max-w-[240px] animate-fade-up">
-                          {presentation.floatingBoxTitle && <div className="text-base font-bold text-black dark:text-white leading-tight mb-1">{presentation.floatingBoxTitle}</div>}
-                          {presentation.floatingBoxSubtitle && <div className="text-sm font-medium text-black/60 dark:text-white/60">{presentation.floatingBoxSubtitle}</div>}
-                        </div>
-                      )
+                    {isSlider ? (
+                      <Carousel setApi={setDesktopCarouselApi} className="w-full h-full" opts={{ loop: true }}>
+                        <CarouselContent className="h-full ml-0">
+                          {sliderImages.map((img, idx) => (
+                            <CarouselItem key={idx} className="h-full pl-0">
+                              <img src={img} alt={`Slide ${idx + 1}`} className="w-full h-full object-cover transition-transform duration-700" />
+                            </CarouselItem>
+                          ))}
+                        </CarouselContent>
+                      </Carousel>
+                    ) : (
+                      <img src={displayImage} alt="Hero" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                    )}
+
+                    {/* Dots Navigation for Slider */}
+                    {isSlider && (
+                      <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-1.5 z-20">
+                        {sliderImages.map((_, idx) => (
+                          <div
+                            key={idx}
+                            className={cn(
+                              "h-1.5 rounded-full transition-all duration-300",
+                              desktopCurrentSlide === idx ? "w-4 bg-white" : "w-1.5 bg-white/50"
+                            )}
+                          />
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -407,7 +466,7 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
           )}
 
           {/* ── NOSSA HISTÓRIA ── */}
-          {history.showHistory !== false && (history.historyTitle || history.historyText) && (
+        {history.showHistory !== false && (history.historyTitle || (history.useGlobalBio !== false ? globalBio : history.historyText)) && (
             <div id="historia" className={cn("px-6 sm:px-10 py-14 md:py-20 scroll-mt-20", altBg)}>
               <div className="max-w-6xl mx-auto w-full">
                 <div className="flex flex-col md:flex-row gap-12 items-center md:items-start">
@@ -430,9 +489,9 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                         {history.historyTitle}
                       </h2>
                     )}
-                    {history.historyText && (
+                    {(history.useGlobalBio !== false ? globalBio : history.historyText) && (
                       <p className="text-base md:text-lg opacity-80 whitespace-pre-wrap leading-relaxed">
-                        {history.historyText}
+                        {history.useGlobalBio !== false ? globalBio : history.historyText}
                       </p>
                     )}
 

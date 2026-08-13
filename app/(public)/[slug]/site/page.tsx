@@ -38,7 +38,7 @@ export default async function ProfessionalSitePage({
   presentation.heroImage = profileConfig.bannerImage || presentation.heroImage;
 
   const services = proSiteData.services || { servicesList: [] };
-  const media = proSiteData.media || {};
+
   const socialProof = proSiteData.socialProof || { testimonials: [] };
   const contact = proSiteData.contact || {};
   const theme = proSiteData.theme || { id: "light", css: "bg-slate-50", textColor: "#0f172a", primaryColor: "#0f172a", headerStyle: "center" };
@@ -60,11 +60,12 @@ export default async function ProfessionalSitePage({
       isAvatarLayout={isAvatarLayout}
       presentation={presentation}
       contact={contact}
-      media={media}
+
       socialProof={socialProof}
       servicesConfig={services}
       socialLinks={socialLinks}
       profileConfig={profileConfig}
+      globalBio={linkBio?.bio_text}
     />
   );
 }

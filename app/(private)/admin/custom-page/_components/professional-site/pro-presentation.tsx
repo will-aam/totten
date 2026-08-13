@@ -4,34 +4,76 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Switch } from "@/components/ui/switch";
 import { compressImage } from "@/lib/image-utils";
-import { User, Link, ArrowInUpSquareHalf } from "@boxicons/react"
-import { useState } from "react";
+import { User, Link, ArrowInUpSquareHalf, X } from "@boxicons/react"
+import { useState, useEffect } from "react";
 import { uploadImageAction } from "@/app/actions/upload-image";
 import { toast } from "sonner";
 
-export function ProPresentation({ data, onChange }: { data: any, onChange: (data: any) => void }) {
+export function ProPresentation({ data, onChange, hasServices }: { data: any, onChange: (val: any) => void, hasServices?: boolean }) {
   const [isUploading, setIsUploading] = useState(false);
+  const [newUrl, setNewUrl] = useState("");
+
+  useEffect(() => {
+    if (data.proHeroImage && (!data.proHeroImages || data.proHeroImages.length === 0)) {
+      onChange({ ...data, proHeroImages: [data.proHeroImage] });
+    }
+  }, [data.proHeroImage]);
+
+  const heroImages: string[] = data.proHeroImages || (data.proHeroImage ? [data.proHeroImage] : []);
 
   const handleProHeroImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (heroImages.length >= 5) {
+        toast.error("Você pode adicionar no máximo 5 imagens.");
+        return;
+      }
       setIsUploading(true);
       try {
         const compressedBase64 = await compressImage(file, 1200);
         const res = await uploadImageAction(compressedBase64, "professional");
         if (res.success && res.url) {
-          onChange({ ...data, proHeroImage: res.url });
+          onChange({
+            ...data,
+            proHeroImages: [...heroImages, res.url],
+            proHeroImage: heroImages.length === 0 ? res.url : data.proHeroImage
+          });
         } else {
           toast.error(res.error || "Erro ao fazer upload da imagem");
         }
       } catch (error) {
-        console.error("Erro ao processar imagem da lateral:", error);
+        console.error("Erro ao processar imagem:", error);
         toast.error("Erro inesperado ao processar imagem");
       } finally {
         setIsUploading(false);
       }
     }
+  };
+
+  const handleAddUrl = () => {
+    if (!newUrl.trim()) return;
+    if (heroImages.length >= 5) {
+      toast.error("Você pode adicionar no máximo 5 imagens.");
+      return;
+    }
+    onChange({
+      ...data,
+      proHeroImages: [...heroImages, newUrl.trim()],
+      proHeroImage: heroImages.length === 0 ? newUrl.trim() : data.proHeroImage
+    });
+    setNewUrl("");
+  };
+
+  const handleRemoveImage = (index: number) => {
+    const newImages = [...heroImages];
+    newImages.splice(index, 1);
+    onChange({
+      ...data,
+      proHeroImages: newImages,
+      proHeroImage: newImages.length > 0 ? newImages[0] : ""
+    });
   };
 
   return (
@@ -81,56 +123,68 @@ export function ProPresentation({ data, onChange }: { data: any, onChange: (data
           </RadioGroup>
         </div>
 
-        {/* Upload de Imagem Específica para Layout de Blog/Lateral */}
+        {/* Upload de Imagens para Layout de Blog/Lateral (Slider) */}
         {data.heroLayout === "classic-blog" && (
-          <div className="flex flex-col gap-3 p-4 border border-border/50 rounded-xl bg-muted/10">
-            <Label className="text-foreground font-medium">Imagem Lateral (Banner do Site Profissional)</Label>
-            <p className="text-xs text-muted-foreground -mt-1">Essa imagem aparecerá ao lado do texto (no computador) ou acima dele (no celular).</p>
+          <div className="flex flex-col gap-4 pt-2">
+            <div>
+              <Label className="text-foreground font-medium">Imagens do Slider / Banner Lateral</Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Adicione até 5 fotos para criar um slide automático. Se adicionar apenas 1, será uma imagem estática.
+              </p>
+            </div>
 
-            <div className="flex flex-col gap-4 mt-2">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="proHeroImageUrl" className="text-xs text-muted-foreground">URL da Imagem (Opção 1)</Label>
-                <div className="relative">
-                  <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="proHeroImageUrl"
-                    value={data.proHeroImage || ""}
-                    onChange={(e) => onChange({ ...data, proHeroImage: e.target.value })}
-                    className="bg-background border-border/50 h-10 pl-9 focus-visible:ring-1"
-                    placeholder="Cole o link da imagem aqui..."
-                  />
+            <div className="flex flex-wrap gap-3">
+              {heroImages.map((img, idx) => (
+                <div key={idx} className="relative h-24 w-24 rounded-lg border border-border/50 overflow-hidden group">
+                  <img src={img} alt={`Slide ${idx + 1}`} className="w-full h-full object-cover" />
+                  <button
+                    onClick={() => handleRemoveImage(idx)}
+                    className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Remover imagem"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
                 </div>
-              </div>
+              ))}
 
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                  <div className="w-full border-t border-border/50" />
-                </div>
-                <div className="relative flex justify-center text-xs">
-                  <span className="bg-muted/10 px-2 text-muted-foreground">OU</span>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <Label className="text-xs text-muted-foreground">Fazer Upload de Foto (Opção 2)</Label>
-                <div className="relative h-24 w-full rounded-lg border-2 border-dashed border-border flex items-center justify-center overflow-hidden hover:bg-muted/30 transition-colors">
+              {heroImages.length < 5 && (
+                <div className="relative h-24 w-24 rounded-lg border-2 border-dashed border-border flex items-center justify-center overflow-hidden hover:bg-muted/30 transition-colors cursor-pointer">
                   <input
                     type="file"
                     accept="image/png, image/jpeg, image/webp"
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                     onChange={handleProHeroImageUpload}
+                    disabled={isUploading}
                   />
-                  {data.proHeroImage && data.proHeroImage.startsWith('data:image') ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={data.proHeroImage} alt="Preview" className="absolute inset-0 w-full h-full object-cover opacity-50" />
-                  ) : null}
-                  <div className="flex flex-col items-center gap-1 text-muted-foreground relative z-0">
+                  <div className="flex flex-col items-center gap-1 text-muted-foreground">
                     <ArrowInUpSquareHalf className="h-5 w-5" />
-                    <span className="text-xs font-medium">Clique para enviar imagem</span>
+                    <span className="text-[10px] font-medium text-center px-1">Upload</span>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
+
+            {heroImages.length < 5 && (
+              <div className="flex gap-2 items-center">
+                <div className="relative flex-1">
+                  <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={newUrl}
+                    onChange={(e) => setNewUrl(e.target.value)}
+                    className="bg-background border-border/50 h-9 pl-9 text-xs focus-visible:ring-1"
+                    placeholder="Ou cole a URL da imagem aqui..."
+                    onKeyDown={(e) => e.key === "Enter" && handleAddUrl()}
+                  />
+                </div>
+                <button
+                  onClick={handleAddUrl}
+                  disabled={!newUrl.trim()}
+                  className="bg-muted hover:bg-muted/80 text-foreground text-xs font-medium px-3 h-9 rounded-md border border-border/50 disabled:opacity-50"
+                >
+                  Adicionar
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -161,46 +215,36 @@ export function ProPresentation({ data, onChange }: { data: any, onChange: (data
         </div>
 
         {/* CTAs do Hero */}
-        <div className="flex flex-col gap-4 p-4 border border-border/50 rounded-xl bg-muted/10">
+        <div className="flex flex-col gap-4 pt-2">
           <Label className="text-foreground font-medium">Botões de Ação (CTAs)</Label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="ctaPrimary" className="text-xs text-muted-foreground">Botão Principal (texto)</Label>
-              <Input
-                id="ctaPrimary"
-                value={data.ctaPrimaryText || ""}
-                onChange={(e) => onChange({ ...data, ctaPrimaryText: e.target.value })}
-                className="bg-background border-border/50 h-10 focus-visible:ring-1"
-                placeholder="Ex: Agendar Agora"
-              />
+          
+          <div className="flex items-center justify-between border rounded-lg p-3">
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="ctaPrimary" className="text-sm font-medium">Botão "Agendar Sessão"</Label>
+              <p className="text-xs text-muted-foreground">Leva o cliente para a página de agendamento.</p>
             </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="ctaSecondary" className="text-xs text-muted-foreground">Botão Secundário (texto)</Label>
-              <Input
-                id="ctaSecondary"
-                value={data.ctaSecondaryText || ""}
-                onChange={(e) => onChange({ ...data, ctaSecondaryText: e.target.value })}
-                className="bg-background border-border/50 h-10 focus-visible:ring-1"
-                placeholder="Ex: Conhecer Serviços"
-              />
-            </div>
+            <Switch 
+              id="ctaPrimary"
+              checked={data.ctaPrimaryText !== false}
+              onCheckedChange={(checked) => onChange({ ...data, ctaPrimaryText: checked })}
+            />
           </div>
-          <p className="text-[11px] text-muted-foreground">O botão principal leva ao agendamento. O secundário rola até a seção de serviços.</p>
-        </div>
 
-
-        {/* Título da seção Sobre */}
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="aboutTitle" className="text-foreground font-medium">
-            Título da seção "Sobre" (Opcional)
-          </Label>
-          <Input
-            id="aboutTitle"
-            value={data.aboutTitle || ""}
-            onChange={(e) => onChange({ ...data, aboutTitle: e.target.value })}
-            className="bg-background border-border/50 h-11 focus-visible:ring-1"
-            placeholder="Ex: Nossa História, Quem Somos, Sobre a Clínica..."
-          />
+          <div className="flex items-center justify-between border rounded-lg p-3">
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="ctaSecondary" className="text-sm font-medium">Botão "Conhecer Serviços"</Label>
+              <p className="text-xs text-muted-foreground">Rola a página até a seção "Nossos Serviços".</p>
+              {!hasServices && (
+                <p className="text-xs text-destructive font-medium mt-1">A seção de serviços não está ativa.</p>
+              )}
+            </div>
+            <Switch 
+              id="ctaSecondary"
+              disabled={!hasServices}
+              checked={hasServices && data.ctaSecondaryText !== false} 
+              onCheckedChange={(checked) => onChange({ ...data, ctaSecondaryText: checked })}
+            />
+          </div>
         </div>
 
         {/* Categoria / Badge de Destaque */}
@@ -219,7 +263,7 @@ export function ProPresentation({ data, onChange }: { data: any, onChange: (data
         </div>
 
         {/* Destaques (Highlights) */}
-        <div className="flex flex-col gap-4 p-4 border border-border/50 rounded-xl bg-muted/10">
+        <div className="flex flex-col gap-4 pt-2">
           <Label className="text-foreground font-medium">Destaques (Checkmarks)</Label>
           <p className="text-xs text-muted-foreground -mt-2">Pequenos textos com ícone de "check" que ficam abaixo dos botões.</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -244,45 +288,7 @@ export function ProPresentation({ data, onChange }: { data: any, onChange: (data
           </div>
         </div>
 
-        {/* Floating Box (Caixa flutuante na imagem) */}
-        {data.heroLayout === "classic-blog" && (
-          <div className="flex flex-col gap-4 p-4 border border-border/50 rounded-xl bg-muted/10">
-            <Label className="text-foreground font-medium">Caixa flutuante na imagem (Apenas layout Site Profissional)</Label>
-            <p className="text-xs text-muted-foreground -mt-2">Uma pequena caixa que fica sobreposta à imagem.</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="floatingBoxTitle" className="text-xs text-muted-foreground">Título Principal</Label>
-                <Input
-                  id="floatingBoxTitle"
-                  value={data.floatingBoxTitle || ""}
-                  onChange={(e) => onChange({ ...data, floatingBoxTitle: e.target.value })}
-                  className="bg-background border-border/50 h-10 focus-visible:ring-1"
-                  placeholder="Ex: Agende hoje"
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="floatingBoxSubtitle" className="text-xs text-muted-foreground">Subtítulo</Label>
-                <Input
-                  id="floatingBoxSubtitle"
-                  value={data.floatingBoxSubtitle || ""}
-                  onChange={(e) => onChange({ ...data, floatingBoxSubtitle: e.target.value })}
-                  className="bg-background border-border/50 h-10 focus-visible:ring-1"
-                  placeholder="Ex: Vagas para esta semana"
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="floatingBoxLink" className="text-xs text-muted-foreground">Link ao clicar</Label>
-                <Input
-                  id="floatingBoxLink"
-                  value={data.floatingBoxLink || ""}
-                  onChange={(e) => onChange({ ...data, floatingBoxLink: e.target.value })}
-                  className="bg-background border-border/50 h-10 focus-visible:ring-1"
-                  placeholder="Ex: https://wa.me/..."
-                />
-              </div>
-            </div>
-          </div>
-        )}
+
       </div>
     </div>
   );

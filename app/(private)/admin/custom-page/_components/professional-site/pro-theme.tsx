@@ -11,6 +11,9 @@ const PRO_THEMES = [
   { id: "rose", name: "Suave (Rose)", css: "bg-rose-50", txt: "#4c0519", primary: "#e11d48" },
   { id: "nature", name: "Natural (Verde)", css: "bg-emerald-50", txt: "#022c22", primary: "#059669" },
   { id: "purple", name: "Vibrante (Lilás)", css: "bg-purple-50", txt: "#2e1065", primary: "#9333ea" },
+  { id: "blue", name: "Clássico (Azul)", css: "bg-blue-50", txt: "#1e3a8a", primary: "#2563eb" },
+  { id: "warm", name: "Acolhedor (Bege)", css: "bg-orange-50", txt: "#431407", primary: "#ea580c" },
+  { id: "stone", name: "Sóbrio (Cinza)", css: "bg-stone-50", txt: "#1c1917", primary: "#57534e" },
 ];
 
 export function ProTheme({ data, onChange }: any) {
