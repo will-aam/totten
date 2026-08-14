@@ -91,7 +91,18 @@ export function ProPresentation({ data, onChange, hasServices }: { data: any, on
 
       <div className="flex flex-col gap-6">
 
-
+        {/* WhatsApp Header Toggle */}
+        <div className="flex items-center justify-between border rounded-lg p-3 bg-muted/20">
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="showWhatsappHeaderButton" className="text-sm font-medium">Exibir Botão do WhatsApp no Cabeçalho</Label>
+            <p className="text-xs text-muted-foreground">Adiciona um atalho para agendamento via WhatsApp no topo do site.</p>
+          </div>
+          <Switch 
+            id="showWhatsappHeaderButton"
+            checked={data.showWhatsappHeaderButton !== false}
+            onCheckedChange={(checked) => onChange({ ...data, showWhatsappHeaderButton: checked })}
+          />
+        </div>
         {/* Upload de Imagens para Layout de Blog/Lateral (Slider) */}
         <div className="flex flex-col gap-4 pt-2">
           <div>

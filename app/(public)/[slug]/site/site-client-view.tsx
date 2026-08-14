@@ -184,28 +184,21 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
             {dbPackages.length > 0 && ctaSecondaryType !== "packages" && <a href="#pacotes" className="hover:opacity-70 transition-opacity">Pacotes</a>}
             {professionals.length > 0 && ctaSecondaryType !== "team" && <a href="#profissionais" className="hover:opacity-70 transition-opacity">Equipe</a>}
             {ctaSecondaryType !== "contact" && <a href="#contato" className="hover:opacity-70 transition-opacity">Contato</a>}
-            <a href={`/${org.slug}/login`} className="hover:opacity-70 transition-opacity text-primary font-bold">Área do Cliente</a>
           </nav>
 
           <div className="hidden md:flex items-center gap-3">
-            {whatsappNumber && (
+            {whatsappNumber && presentation?.showWhatsappHeaderButton !== false && (
               <a
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center hover:opacity-70 transition-opacity bg-emerald-500/10 text-emerald-600 p-2.5 rounded-full"
+                className="flex items-center justify-center gap-2 px-5 py-2 rounded-full text-sm font-bold bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-colors"
                 title="WhatsApp"
               >
-                <Whatsapp className="h-5 w-5" />
+                <Whatsapp className="h-5 w-5" /> Agendar via WhatsApp
               </a>
             )}
-            <a
-              href={bookingUrl}
-              className="px-5 py-2.5 rounded-full text-sm font-bold text-white shadow-sm hover:scale-105 transition-transform"
-              style={{ backgroundColor: theme.primaryColor }}
-            >
-              Agendar
-            </a>
+
           </div>
 
           {/* Mobile Toggle */}
@@ -228,14 +221,18 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
             {dbPackages.length > 0 && ctaSecondaryType !== "packages" && <a href="#pacotes" onClick={() => setMobileMenuOpen(false)}>Pacotes</a>}
             {professionals.length > 0 && ctaSecondaryType !== "team" && <a href="#profissionais" onClick={() => setMobileMenuOpen(false)}>Equipe</a>}
             {ctaSecondaryType !== "contact" && <a href="#contato" onClick={() => setMobileMenuOpen(false)}>Contato</a>}
-            <a href={`/${org.slug}/login`} className="text-primary font-bold">Área do Cliente</a>
-            <a
-              href={bookingUrl}
-              className="px-8 py-4 rounded-full text-lg font-bold text-white mt-2"
-              style={{ backgroundColor: theme.primaryColor }}
-            >
-              Agendar Agora
-            </a>
+            {whatsappNumber && presentation?.showWhatsappHeaderButton !== false && (
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 px-6 py-3 rounded-full text-base font-bold bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-colors mt-4"
+                title="WhatsApp"
+              >
+                <Whatsapp className="h-6 w-6" /> Agendar via WhatsApp
+              </a>
+            )}
+
           </div>
         )}
 
@@ -694,17 +691,6 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                   </p>
 
                   <div className="flex flex-col gap-6">
-                    {(contact.businessHours && (contact.showBusinessHoursSite !== false && contact.showBusinessHours !== false)) && (
-                      <div className="flex items-center gap-4">
-                        <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shrink-0", altBg)}>
-                          <Clock className="h-6 w-6" style={{ color: theme.primaryColor }} />
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold uppercase tracking-wider opacity-50 mb-0.5">Horário de Funcionamento</p>
-                          <p className="text-base font-medium">{contact.businessHours}</p>
-                        </div>
-                      </div>
-                    )}
 
                     {(org.settings?.phone_whatsapp || org.settings?.phone_landline || contact.whatsapp || contact.phone) && (
                       <div className="flex items-center gap-4">
@@ -892,7 +878,17 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                   </div>
                 </div>
 
-
+                {(contact?.showBusinessHoursSite && contact?.businessHours) && (
+                  <div>
+                    <h4 className="font-bold text-lg mb-4">Horário de Funcionamento</h4>
+                    <div className="flex flex-col gap-2 text-sm opacity-70">
+                      <div className="flex items-start gap-3">
+                        <Clock className="h-5 w-5 shrink-0 mt-0.5" />
+                        <p className="leading-relaxed">{contact.businessHours}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
               </div>
 

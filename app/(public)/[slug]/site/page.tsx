@@ -40,7 +40,7 @@ export default async function ProfessionalSitePage({
   const services = proSiteData.services || { servicesList: [] };
 
   const socialProof = proSiteData.socialProof || { testimonials: [] };
-  const contact = proSiteData.contact || {};
+  const contact = profileConfig.contact || proSiteData.contact || {};
   const theme = { 
     ...(proSiteData.theme || { id: "light", css: "bg-slate-50", textColor: "#0f172a", primaryColor: "#0f172a", headerStyle: "center" }),
     fontFamily: (linkBio as any).font_family || "Inter, sans-serif",

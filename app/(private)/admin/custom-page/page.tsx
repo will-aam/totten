@@ -39,6 +39,8 @@ import { GlobalSettings } from "./_components/global-settings";
 import { getCustomPageAction, updateCustomPageAction } from "@/app/actions/custom-page";
 import { toast } from "sonner";
 
+let cachedCustomPageData: any = null;
+
 export default function CustomPage() {
   const [activeTab, setActiveTab] = useState<"global" | "link-bio" | "professional-site" | "booking-site">("global");
   const [activeStepId, setActiveStepId] = useState<string | null>(null);
@@ -156,7 +158,7 @@ export default function CustomPage() {
     { id: "1", title: "Agendar Horário", url: "" },
   ]);
   const [globalContact, setGlobalContact] = useState({ whatsapp: "", phone: "" });
-  const [globalLocation, setGlobalLocation] = useState<any>({ address: "", mapUrl: "", businessHours: "", showBusinessHours: true });
+  const [globalLocation, setGlobalLocation] = useState<any>({ address: "", mapUrl: "", businessHours: "", showBusinessHoursSite: false, showBusinessHoursBooking: false });
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -167,7 +169,16 @@ export default function CustomPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const response = await getCustomPageAction();
+        let response;
+        if (cachedCustomPageData) {
+          response = { success: true, data: cachedCustomPageData };
+        } else {
+          response = await getCustomPageAction();
+          if (response.success && response.data) {
+            cachedCustomPageData = response.data;
+          }
+        }
+
         if (response.success && response.data) {
           const data = response.data;
 
@@ -215,8 +226,8 @@ export default function CustomPage() {
               address: loadedContact.address || "",
               mapUrl: loadedContact.mapUrl || "",
               businessHours: loadedContact.businessHours || "",
-              showBusinessHoursSite: loadedContact.showBusinessHoursSite ?? loadedContact.showBusinessHours ?? true,
-              showBusinessHoursBooking: loadedContact.showBusinessHoursBooking ?? true
+              showBusinessHoursSite: loadedContact.showBusinessHoursSite ?? loadedContact.showBusinessHours ?? false,
+              showBusinessHoursBooking: loadedContact.showBusinessHoursBooking ?? false
             });
           }
 
@@ -319,7 +330,12 @@ export default function CustomPage() {
       });
 
       if (response.success) {
-        toast.success("Link na Bio salvo com sucesso!");
+        cachedCustomPageData = null; // Invalidate cache after saving
+        toast.success(
+          activeTab === "global" 
+            ? "Configurações Globais salvas com sucesso!" 
+            : "Link na Bio salvo com sucesso!"
+        );
         setPreviewKey(k => k + 1);
       } else {
         toast.error(response.error || "Erro ao salvar.");

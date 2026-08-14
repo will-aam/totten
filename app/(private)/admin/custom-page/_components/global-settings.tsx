@@ -506,30 +506,29 @@ export function GlobalSettings({ profile, setProfile, socials, setSocials, globa
 
             {/* HORÁRIO */}
             <div className="flex flex-col gap-4 p-5 border border-border/50 rounded-xl bg-muted/10 mt-2">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <Label className="text-foreground font-medium flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  Horário de Funcionamento
-                </Label>
-                <div className="flex flex-col items-end gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">Exibir no Site Profissional?</span>
-                    <Switch
-                      checked={globalLocation.showBusinessHoursSite !== false}
-                      onCheckedChange={(c) => setGlobalLocation({ ...globalLocation, showBusinessHoursSite: c })}
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">Exibir na Agenda?</span>
-                    <Switch
-                      checked={globalLocation.showBusinessHoursBooking !== false}
-                      onCheckedChange={(c) => setGlobalLocation({ ...globalLocation, showBusinessHoursBooking: c })}
-                    />
-                  </div>
-                </div>
-              </div>
+              <Label className="text-foreground font-medium flex items-center gap-2 mb-1">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                Horário de Funcionamento
+              </Label>
 
               <RulesSummaryPreview data={globalLocation} onChange={setGlobalLocation} />
+
+              <div className="flex flex-col sm:flex-row sm:items-center gap-6 pt-4 mt-2 border-t border-border/50">
+                <div className="flex items-center gap-3">
+                  <Switch
+                    checked={globalLocation.showBusinessHoursSite !== false}
+                    onCheckedChange={(c) => setGlobalLocation({ ...globalLocation, showBusinessHoursSite: c })}
+                  />
+                  <span className="text-xs text-foreground font-medium">Exibir no Site Profissional?</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Switch
+                    checked={globalLocation.showBusinessHoursBooking !== false}
+                    onCheckedChange={(c) => setGlobalLocation({ ...globalLocation, showBusinessHoursBooking: c })}
+                  />
+                  <span className="text-xs text-foreground font-medium">Exibir na Agenda?</span>
+                </div>
+              </div>
             </div>
           </div>
         )}

@@ -195,19 +195,20 @@ export default async function PublicLinkBioPage({
       {socials.activePlatforms.map((platform: string) => {
         const val = platform === "whatsapp" ? (org.settings?.phone_whatsapp || socials.values[platform]) : socials.values[platform];
         return (
-        <a
-          key={platform}
-          href={getHref(platform, val)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="rounded-full flex items-center justify-center hover:scale-110 transition-transform cursor-pointer p-3 bg-transparent"
-          style={{
-            color: theme.textColor
-          }}
-        >
-          {renderSocialIcon(platform, getIconSize())}
-        </a>
-      )})}
+          <a
+            key={platform}
+            href={getHref(platform, val)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-full flex items-center justify-center hover:scale-110 transition-transform cursor-pointer p-3 bg-transparent"
+            style={{
+              color: theme.textColor
+            }}
+          >
+            {renderSocialIcon(platform, getIconSize())}
+          </a>
+        )
+      })}
     </div>
   );
 
@@ -219,10 +220,10 @@ export default async function PublicLinkBioPage({
 
       {/* DESKTOP BACKGROUND */}
       <div className="h-[100dvh] w-full bg-[#121212] flex flex-col items-center light overflow-hidden">
-        
+
         {/* CONTAINER DO LINK NA BIO */}
-        <div className="w-full max-w-[600px] h-[100dvh] sm:h-[calc(100dvh-3rem)] sm:mt-12 relative flex flex-col sm:rounded-t-3xl shadow-[0_40px_80px_-20px_rgba(0,0,0,1)] overflow-hidden bg-black mx-auto">
-          
+        <div className="w-full max-w-[600px] h-[100dvh] sm:h-[calc(100dvh-3rem)] sm:mt-12 relative flex flex-col sm:rounded-t-3xl overflow-hidden bg-transparent mx-auto">
+
           {/* CAMADA DE FUNDO BASE */}
           <div
             className={cn(
@@ -242,140 +243,154 @@ export default async function PublicLinkBioPage({
           )}
           {(theme.id === "solid" || theme.id === "custom") && theme.bgBlur && theme.bgBlur !== "none" && (
             <div className={cn(
-              "absolute inset-0 z-0 bg-white/10 pointer-events-none",
+              "absolute -inset-10 z-0 bg-white/10 pointer-events-none",
               theme.bgBlur === "sm" ? "backdrop-blur-sm" :
-              theme.bgBlur === "md" ? "backdrop-blur-md" :
-              theme.bgBlur === "xl" ? "backdrop-blur-xl" :
-              theme.bgBlur === "3xl" ? "backdrop-blur-3xl" :
-              "backdrop-blur-[50px]"
+                theme.bgBlur === "md" ? "backdrop-blur-md" :
+                  theme.bgBlur === "xl" ? "backdrop-blur-xl" :
+                    theme.bgBlur === "3xl" ? "backdrop-blur-3xl" :
+                      "backdrop-blur-[50px]"
             )} />
           )}
 
-        {/* CAMADA DE CONTEÚDO */}
-        <div
-          className={cn(
-            "w-full h-full flex flex-col relative z-20 pb-16 overflow-y-auto overflow-x-hidden",
-            (!profile.layout || profile.layout === "classic") ? "pt-16 px-6" : "pt-0 px-0"
-          )}
-          style={{ fontFamily: theme.fontFamily || "Inter, sans-serif" }}
-        >
-          
-          {/* TOPO (BANNERS/HEADERS) */}
-          <div className="w-full max-w-2xl mx-auto flex flex-col items-center flex-1">
-            {profile.layout === "banner" && (
-              <div className="w-full h-48 md:h-64 bg-black/5 relative shrink-0">
-                {profile.bannerImage && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={profile.bannerImage} alt="Banner" className="w-full h-full object-cover" />
-                )}
-              </div>
+          {/* CAMADA DE CONTEÚDO */}
+          <div
+            className={cn(
+              "w-full h-full flex flex-col relative z-20 pb-16 overflow-y-auto overflow-x-hidden",
+              (!profile.layout || profile.layout === "classic") ? "pt-16 px-6" : "pt-0 px-0"
             )}
-            {profile.layout === "header" && (
-              <div className="w-full h-80 md:h-96 relative shrink-0">
-                {profile.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img 
-                    src={profile.image} 
-                    alt="Header" 
-                    className="w-full h-full object-cover object-top" 
-                    style={{ 
-                      maskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)", 
-                      WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)" 
-                    }} 
-                  />
-                ) : (
-                  <div className="w-full h-full bg-black/5" style={{ 
-                    maskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)", 
-                    WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)" 
-                  }} />
-                )}
-              </div>
-            )}
+            style={{ fontFamily: theme.fontFamily || "Inter, sans-serif" }}
+          >
 
-            <div className={cn(
-              "flex flex-col items-center w-full px-6 max-w-lg mx-auto flex-1"
-            )}>
-              {profile.layout !== "header" && (
-                <div className={cn(
-                  "h-28 w-28 shrink-0 rounded-full bg-black/10 border-2 border-white/30 shadow-sm relative overflow-hidden",
-                  (!profile.layout || profile.layout === "classic") ? "mb-6" : 
-                  profile.layout === "banner" ? "-mt-14 mb-4" : ""
-                )}>
+            {/* TOPO (BANNERS/HEADERS) */}
+            <div className="w-full max-w-2xl mx-auto flex flex-col items-center flex-1">
+              {profile.layout === "banner" && (
+                <div className="w-full h-48 md:h-64 bg-black/5 relative shrink-0">
+                  {profile.bannerImage && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={profile.bannerImage} alt="Banner" className="w-full h-full object-cover" />
+                  )}
+                </div>
+              )}
+              {profile.layout === "header" && (
+                <div className="w-full h-80 md:h-96 relative shrink-0">
                   {profile.image ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={profile.image} alt={org.name} className="w-full h-full object-cover" />
+                    <img
+                      src={profile.image}
+                      alt="Header"
+                      className="w-full h-full object-cover object-top"
+                      style={{
+                        maskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)",
+                        WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)"
+                      }}
+                    />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-muted">
-                      <span className="text-3xl font-bold" style={{ color: theme.textColor }}>
-                        {org.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
+                    <div className="w-full h-full bg-black/5" style={{
+                      maskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)",
+                      WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)"
+                    }} />
                   )}
                 </div>
               )}
 
-              <h1
-                className="font-bold text-2xl md:text-3xl text-center"
-                style={{ color: theme.textColor }}
-              >
-                {profile.name}
-              </h1>
-              
-              {profile.bio && (
-                <p
-                  className="text-center text-base mt-3 leading-relaxed font-medium"
+              <div className={cn(
+                "flex flex-col items-center w-full px-6 max-w-lg mx-auto flex-1"
+              )}>
+                {profile.layout !== "header" && (
+                  <div className={cn(
+                    "h-28 w-28 shrink-0 rounded-full bg-black/10 border-2 border-white/30 shadow-sm relative overflow-hidden",
+                    (!profile.layout || profile.layout === "classic") ? "mb-6" :
+                      profile.layout === "banner" ? "-mt-14 mb-4" : ""
+                  )}>
+                    {profile.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={profile.image} alt={org.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-muted">
+                        <span className="text-3xl font-bold" style={{ color: theme.textColor }}>
+                          {org.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <h1
+                  className="font-bold text-2xl md:text-3xl text-center"
                   style={{ color: theme.textColor }}
                 >
-                  {profile.bio}
-                </p>
-              )}
+                  {profile.name}
+                </h1>
 
-              {/* Redes Sociais - Topo */}
-              {socials.position === "top" && socials.activePlatforms.length > 0 && (
-                <div className="mt-8 w-full">
-                  <SocialIconsBlock />
-                </div>
-              )}
-
-              {/* Botões/Links */}
-              <div className="w-full mt-8 flex flex-col gap-4">
-                {links.map((link: any) => (
-                  <a
-                    key={link.id}
-                    href={link.url.startsWith("http") ? link.url : `https://${link.url}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={getButtonClassNames()}
-                    style={getButtonStyles()}
+                {profile.bio && (
+                  <p
+                    className="text-center text-base mt-3 leading-relaxed font-medium"
+                    style={{ color: theme.textColor }}
                   >
-                    {link.title}
-                  </a>
-                ))}
-              </div>
+                    {profile.bio}
+                  </p>
+                )}
 
-              {/* Push to bottom block */}
-              <div className="mt-auto w-full pt-10 pb-4 flex flex-col items-center">
-                {/* Redes Sociais - Rodapé */}
-                {socials.position === "bottom" && socials.activePlatforms.length > 0 && (
-                  <div className="w-full mb-6">
+                {/* Redes Sociais - Topo */}
+                {socials.position === "top" && socials.activePlatforms.length > 0 && (
+                  <div className="mt-8 w-full">
                     <SocialIconsBlock />
                   </div>
                 )}
 
-                {/* Rodapé Totten */}
-                <div className="w-full flex justify-center">
-                  <span
-                    className="text-xs font-medium opacity-50 uppercase tracking-widest"
-                    style={{ color: theme.textColor }}
-                  >
-                    by Totten
-                  </span>
+                {/* Botões/Links */}
+                <div className="w-full mt-8 flex flex-col gap-4">
+                  {links.map((link: any) => {
+                    const isSystemSite = link.id === "system-site" || link.type === "system-site";
+                    const isSystemBooking = link.id === "system-booking" || link.type === "system-booking";
+                    
+                    let finalUrl = link.url;
+                    if (isSystemSite) {
+                      finalUrl = `/${org.slug}/site`;
+                    } else if (isSystemBooking) {
+                      finalUrl = `/${org.slug}/agendar`;
+                    } else if (finalUrl && !finalUrl.startsWith("http")) {
+                      finalUrl = `https://${finalUrl}`;
+                    }
+
+                    return (
+                      <a
+                        key={link.id}
+                        href={finalUrl}
+                        target={isSystemSite || isSystemBooking ? "_self" : "_blank"}
+                        rel="noopener noreferrer"
+                        className={getButtonClassNames()}
+                        style={getButtonStyles()}
+                      >
+                        {link.title}
+                      </a>
+                    );
+                  })}
+                </div>
+
+                {/* Push to bottom block */}
+                <div className="mt-auto w-full pt-10 pb-4 flex flex-col items-center">
+                  {/* Redes Sociais - Rodapé */}
+                  {socials.position === "bottom" && socials.activePlatforms.length > 0 && (
+                    <div className="w-full mb-6">
+                      <SocialIconsBlock />
+                    </div>
+                  )}
+
+                  {/* Rodapé Totten */}
+                  <div className="w-full flex justify-center">
+                    <span
+                      className="text-xs font-medium opacity-50 uppercase tracking-widest"
+                      style={{ color: theme.textColor }}
+                    >
+                      by Totten
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
       </div>
     </>
   );

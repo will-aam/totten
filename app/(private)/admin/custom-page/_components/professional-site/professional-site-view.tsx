@@ -498,17 +498,6 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
           </div>
 
           <div className="flex flex-col gap-5">
-            {(contact.businessHours && (contact.showBusinessHoursSite !== false && contact.showBusinessHours !== false)) && (
-              <div className="flex items-center gap-3">
-                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-background")}>
-                  <Clock className="h-5 w-5" style={{ color: theme.primaryColor }} />
-                </div>
-                <div>
-                  <p className="text-[9px] font-bold uppercase tracking-wider opacity-50 mb-0.5">Horário de Funcionamento</p>
-                  <p className="text-xs font-medium">{contact.businessHours}</p>
-                </div>
-              </div>
-            )}
 
             {(contact.whatsapp || contact.phone) && (
               <div className="flex items-center gap-3">
@@ -516,7 +505,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
                   <Phone className="h-5 w-5" style={{ color: theme.primaryColor }} />
                 </div>
                 <div>
-                  <p className="text-[9px] font-bold uppercase tracking-wider opacity-50 mb-0.5">Telefone / WhatsApp</p>
+                  <p className="text-[9px] font-bold uppercase tracking-wider opacity-50 mb-0.5">WhatsApp</p>
                   <p className="text-xs font-medium">{contact.whatsapp || contact.phone}</p>
                 </div>
               </div>
@@ -606,6 +595,18 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
                 <span>Termos de Uso</span>
               </div>
             </div>
+
+            {(contact?.showBusinessHoursSite && contact?.businessHours) && (
+              <div>
+                <h4 className="font-bold text-sm mb-3">Horário de Funcionamento</h4>
+                <div className="flex flex-col gap-2 text-xs opacity-70">
+                  <div className="flex items-start gap-2">
+                    <Clock className="h-4 w-4 shrink-0" />
+                    <p className="leading-relaxed">{contact.businessHours}</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="border-t border-white/10 pt-4 flex flex-col gap-2 text-[10px] opacity-40">
               <p>© {new Date().getFullYear()} {presentation.headline || profile?.name || "Minha Clínica"}. Todos os direitos reservados.</p>
