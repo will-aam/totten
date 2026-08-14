@@ -802,19 +802,23 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                       {dbServices.length > 0 && (
                         <div className="flex flex-col gap-1.5">
                           <label className="text-xs font-semibold opacity-70">Serviço de Interesse</label>
-                          <select
+                          <Select
                             value={formData.service}
-                            onChange={(e) => setFormData({ ...formData, service: e.target.value })}
-                            className={cn("w-full h-11 rounded-xl border px-4 text-sm focus:outline-none focus:ring-1 transition appearance-none bg-transparent", inputBg)}
+                            onValueChange={(val) => setFormData({ ...formData, service: val === "none" ? "" : val })}
                           >
-                            <option value="">Selecione um serviço...</option>
-                            {dbServices.map((srv: any) => (
-                              <option key={srv.id} value={srv.name}>{srv.name} — R$ {Number(srv.price).toFixed(2)}</option>
-                            ))}
-                            {dbPackages.map((pkg: any) => (
-                              <option key={pkg.id} value={pkg.name}>{pkg.name} (Pacote) — R$ {Number(pkg.price).toFixed(2)}</option>
-                            ))}
-                          </select>
+                            <SelectTrigger className={cn("w-full h-11 rounded-xl border px-4 text-sm focus:outline-none focus:ring-1 transition bg-transparent", inputBg)}>
+                              <SelectValue placeholder="Selecione um serviço..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none" className="text-muted-foreground">Selecione um serviço...</SelectItem>
+                              {dbServices.map((srv: any) => (
+                                <SelectItem key={`srv-${srv.id}`} value={srv.name}>{srv.name} — R$ {Number(srv.price).toFixed(2)}</SelectItem>
+                              ))}
+                              {dbPackages.map((pkg: any) => (
+                                <SelectItem key={`pkg-${pkg.id}`} value={pkg.name}>{pkg.name} (Pacote) — R$ {Number(pkg.price).toFixed(2)}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                       )}
                       <div className="flex flex-col gap-1.5">

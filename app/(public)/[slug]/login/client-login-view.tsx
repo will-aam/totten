@@ -15,14 +15,14 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const cleanPhone = phone.replace(/\D/g, "");
-    
+
     if (cleanPhone.length >= 10) {
       // Mock login: save state to localStorage to simulate being logged in
       if (typeof window !== "undefined") {
         localStorage.setItem(`totten_client_logged_in_${org.slug}`, "true");
         localStorage.setItem(`totten_client_phone_${org.slug}`, cleanPhone);
       }
-      
+
       // Redirect to the cliente page
       router.push(`/${org.slug}/cliente`);
     } else {
@@ -44,29 +44,25 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
     setPhone(value);
   };
 
-  const isDark = theme.css?.includes("900") || theme.css?.includes("black") || theme.css?.includes("slate-950");
+
 
   return (
-    <div 
-      className={cn("min-h-screen flex flex-col items-center justify-center p-4 relative font-sans", theme.css)}
-      style={{ color: theme.textColor }}
+    <div
+      className="min-h-screen flex flex-col items-center justify-center p-4 relative font-sans bg-slate-50 text-slate-900"
     >
-      <button 
+      <button
         onClick={() => router.back()}
-        className="absolute top-6 left-6 p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+        className="absolute top-6 left-6 p-2 rounded-full hover:bg-black/5 transition-colors"
       >
         <ArrowLeft className="h-6 w-6" />
       </button>
 
-      <div className={cn(
-        "w-full max-w-md p-8 rounded-3xl shadow-xl flex flex-col items-center text-center",
-        isDark ? "bg-white/5 border border-white/10" : "bg-white border border-black/5"
-      )}>
+      <div className="w-full max-w-md p-8 rounded-3xl shadow-xl flex flex-col items-center text-center bg-white border border-black/5">
         {/* Logo / Header */}
-        <div className="h-16 w-16 rounded-2xl bg-black/5 dark:bg-white/10 flex items-center justify-center mb-6">
+        <div className="h-16 w-16 rounded-2xl bg-black/5 flex items-center justify-center mb-6">
           <Phone className="h-8 w-8 opacity-70" />
         </div>
-        
+
         <h1 className="text-2xl font-bold mb-2">Área do Cliente</h1>
         <p className="text-sm opacity-70 mb-8 max-w-[280px]">
           Para acessar seus agendamentos, pacotes e fazer avaliações em {org.name}, digite seu WhatsApp.
@@ -85,10 +81,7 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
                 placeholder="(00) 00000-0000"
                 value={phone}
                 onChange={handlePhoneChange}
-                className={cn(
-                  "pl-11 pr-12 h-12 text-lg rounded-xl focus-visible:ring-1",
-                  isDark ? "bg-black/20 border-white/10" : "bg-black/5 border-black/10"
-                )}
+                className="pl-11 pr-12 h-12 text-lg rounded-xl focus-visible:ring-1 bg-black/5 border-black/10"
                 required
               />
               <button
@@ -96,11 +89,11 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
                 disabled={phone.replace(/\D/g, "").length < 10}
                 className={cn(
                   "absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-lg flex items-center justify-center transition-all",
-                  phone.replace(/\D/g, "").length >= 10 
-                    ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:scale-105" 
+                  phone.replace(/\D/g, "").length >= 10
+                    ? "bg-slate-900 text-white hover:scale-105"
                     : "opacity-30 cursor-not-allowed"
                 )}
-                style={phone.replace(/\D/g, "").length >= 10 ? { backgroundColor: theme.primaryColor, color: isDark ? "#000" : "#fff" } : {}}
+                style={phone.replace(/\D/g, "").length >= 10 ? { backgroundColor: theme.primaryColor, color: "#000000ff" } : {}}
               >
                 <ArrowRight className="h-4 w-4" />
               </button>
@@ -112,9 +105,9 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
             type="submit"
             disabled={phone.replace(/\D/g, "").length < 10}
             className="w-full h-12 rounded-xl font-bold flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:pointer-events-none disabled:hover:scale-100 mt-2"
-            style={{ 
-              backgroundColor: theme.primaryColor, 
-              color: isDark ? "#000" : "#fff" 
+            style={{
+              backgroundColor: theme.primaryColor,
+              color: "#fff"
             }}
           >
             Entrar <ArrowRight className="h-5 w-5" />

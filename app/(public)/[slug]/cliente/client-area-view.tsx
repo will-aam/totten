@@ -13,12 +13,6 @@ export function ClientAreaView({ org, theme }: { org: any; theme: any }) {
   const [history, setHistory] = useState<any[]>([]);
   const [clientName, setClientName] = useState<string>("");
   const [error, setError] = useState<string>("");
-
-  const isDark =
-    theme.css?.includes("900") ||
-    theme.css?.includes("black") ||
-    theme.css?.includes("slate-950");
-
   useEffect(() => {
     const checkLogin = async () => {
       if (typeof window !== "undefined") {
@@ -54,8 +48,7 @@ export function ClientAreaView({ org, theme }: { org: any; theme: any }) {
   if (loading) {
     return (
       <div
-        className={cn("min-h-screen flex items-center justify-center p-4", theme.css)}
-        style={{ color: theme.textColor }}
+        className="min-h-screen flex items-center justify-center p-4 bg-slate-50 text-slate-900"
       >
         <p className="font-medium opacity-70 animate-pulse">Carregando...</p>
       </div>
@@ -64,33 +57,22 @@ export function ClientAreaView({ org, theme }: { org: any; theme: any }) {
 
   return (
     <div
-      className={cn("min-h-screen flex flex-col font-sans", theme.css)}
-      style={{ color: theme.textColor }}
+      className="min-h-screen flex flex-col font-sans bg-slate-50 text-slate-900"
     >
       {/* Navbar */}
       <div
-        className="shrink-0 z-50 px-4 py-3 flex items-center justify-between border-b backdrop-blur-md"
-        style={{
-          backgroundColor: isDark ? "rgba(15,23,42,0.8)" : "rgba(255,255,255,0.8)",
-          borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
-        }}
+        className="shrink-0 z-50 px-4 py-3 flex items-center justify-between border-b backdrop-blur-md bg-white/80 border-black/10"
       >
         <button
           onClick={() => router.push(`/${org.slug}/agendar`)}
-          className={cn(
-            "w-8 h-8 rounded-full flex items-center justify-center transition-colors",
-            isDark ? "bg-white/10 hover:bg-white/20" : "bg-black/5 hover:bg-black/10"
-          )}
+          className="w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-black/5 hover:bg-black/10"
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
         <h1 className="font-bold text-sm">Área do Cliente</h1>
         <button
           onClick={handleLogout}
-          className={cn(
-            "w-8 h-8 rounded-full flex items-center justify-center transition-colors",
-            isDark ? "bg-white/10 hover:bg-white/20" : "bg-black/5 hover:bg-black/10"
-          )}
+          className="w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-black/5 hover:bg-black/10"
           title="Sair"
         >
           <LogOut className="h-4 w-4" />
@@ -100,7 +82,7 @@ export function ClientAreaView({ org, theme }: { org: any; theme: any }) {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-5 pb-24 space-y-8">
         <div className="text-center space-y-2 mt-4 mb-8">
-          <div className="w-16 h-16 rounded-full mx-auto flex items-center justify-center bg-black/5 dark:bg-white/10">
+          <div className="w-16 h-16 rounded-full mx-auto flex items-center justify-center bg-black/5">
             <span className="text-2xl">👋</span>
           </div>
           <h2 className="text-xl font-bold">Olá, {clientName || "Cliente"}</h2>
@@ -124,10 +106,7 @@ export function ClientAreaView({ org, theme }: { org: any; theme: any }) {
 
             {history.length === 0 ? (
               <div
-                className={cn(
-                  "p-6 rounded-2xl border flex flex-col items-center justify-center text-center space-y-2",
-                  isDark ? "bg-white/5 border-white/10" : "bg-white border-black/5"
-                )}
+                className="p-6 rounded-2xl border flex flex-col items-center justify-center text-center space-y-2 bg-white border-black/5"
               >
                 <p className="text-sm opacity-60">Nenhum histórico encontrado.</p>
               </div>
@@ -136,10 +115,7 @@ export function ClientAreaView({ org, theme }: { org: any; theme: any }) {
                 {history.map((item, idx) => (
                   <div
                     key={item.id || idx}
-                    className={cn(
-                      "p-4 rounded-2xl border text-left",
-                      isDark ? "bg-white/5 border-white/10" : "bg-white border-black/5"
-                    )}
+                    className="p-4 rounded-2xl border text-left bg-white border-black/5"
                   >
                     <div className="flex flex-col gap-1">
                       <span className="font-bold">{item.serviceName}</span>
