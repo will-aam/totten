@@ -2,6 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Community,
   Instagram,
@@ -56,12 +57,23 @@ export function SocialSettings({ data, onChange, globalContact }: any) {
   // Configurações padrão caso não existam no estado
   const position = data.position || "top";
   const size = data.size || "medium";
+  const activePlatforms = data.activePlatforms || [];
 
   const togglePlatform = (id: string) => {
-    const newActive = data.activePlatforms.includes(id)
-      ? data.activePlatforms.filter((p: string) => p !== id)
-      : [...data.activePlatforms, id];
-    onChange({ ...data, activePlatforms: newActive });
+    // Only allow toggling ON if there is a configured value
+    const isConfigured = id === "whatsapp" ? !!globalContact?.whatsapp : !!data.values?.[id];
+    
+    let newPlatforms = [...activePlatforms];
+    if (newPlatforms.includes(id)) {
+      newPlatforms = newPlatforms.filter((p) => p !== id);
+    } else {
+      if (!isConfigured) {
+        // Optional: you could show a toast here
+        return;
+      }
+      newPlatforms.push(id);
+    }
+    onChange({ ...data, activePlatforms: newPlatforms });
   };
 
   const handleValueChange = (id: string, text: string) => {
@@ -146,22 +158,34 @@ export function SocialSettings({ data, onChange, globalContact }: any) {
       <div className="flex flex-col gap-6">
         <div>
           <h4 className="font-medium text-sm mb-3">Plataformas Ativas</h4>
-          <div className="flex flex-wrap gap-3 p-2 -ml-2 -mt-2">
+          <div className="flex flex-col gap-3">
             {PLATFORMS.map((platform) => {
-              const isActive = data.activePlatforms.includes(platform.id);
+              const isActive = activePlatforms.includes(platform.id);
+              const isConfigured = platform.id === "whatsapp" ? !!globalContact?.whatsapp : !!data.values?.[platform.id];
+              const Icon = platform.icon;
+              
               return (
-                <button
+                <div
                   key={platform.id}
-                  onClick={() => togglePlatform(platform.id)}
-                  className={cn(
-                    "h-12 w-12 rounded-full flex items-center justify-center border-2 transition-all hover:scale-110 shrink-0",
-                    isActive
-                      ? "border-primary bg-primary/10 text-primary shadow-md"
-                      : "border-border/50 bg-card text-muted-foreground hover:border-primary/50",
-                  )}
+                  className="flex items-center justify-between p-4 border border-border/50 rounded-xl bg-card"
                 >
-                  <platform.icon className="h-5 w-5" />
-                </button>
+                  <div className="flex items-center gap-3">
+                    <div className="bg-muted p-2 rounded-md text-foreground">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-foreground text-sm">{platform.label}</span>
+                      <span className="text-[11px] text-muted-foreground">
+                        {isConfigured ? "Configurado no Global" : "Não configurado no Global"}
+                      </span>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={isActive}
+                    onCheckedChange={() => togglePlatform(platform.id)}
+                    disabled={!isConfigured}
+                  />
+                </div>
               );
             })}
           </div>

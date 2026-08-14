@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Link as LinkIcon, Plus, Trash, Globe, Calendar } from "@boxicons/react";
 
 export function AdditionalLinks({ data, onChange }: any) {
-  const maxLinks = 5; // Increased slightly to accommodate the default ones
+  const maxLinks = 4; // Including system default links
 
   const handleAddCustomLink = () => {
     if (data.length < maxLinks)

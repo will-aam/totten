@@ -1,5 +1,7 @@
 "use client";
 
+import { toast } from "sonner";
+
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -26,9 +28,17 @@ export function BookingSiteView({ profile }: { profile?: any }) {
   });
 
   const handleSave = useCallback(async () => {
+    if (general.requirePrepayment && !general.pixKey.trim()) {
+      toast.error("A Chave Pix é obrigatória quando o Pagamento Antecipado (Sinal) está ativado.");
+      return;
+    }
+    
     setIsSaving(true);
-    setTimeout(() => setIsSaving(false), 800);
-  }, []);
+    setTimeout(() => {
+      setIsSaving(false);
+      toast.success("Configurações da agenda salvas com sucesso!");
+    }, 800);
+  }, [general]);
 
   return (
     <div className="w-full flex flex-col gap-6 animate-in fade-in duration-300">

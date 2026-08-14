@@ -74,6 +74,15 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
   }, [presentation, history, services, contact, theme]);
 
   const handleSave = async () => {
+    if (!presentation.headline?.trim()) {
+      toast.error("O Título Principal na Apresentação é obrigatório para ativar o site.");
+      return;
+    }
+    if (!presentation.heroImage?.trim()) {
+      toast.error("É necessário enviar pelo menos uma Imagem de Capa na Apresentação para ativar o site.");
+      return;
+    }
+
     setIsSaving(true);
     try {
       const proSiteData = {

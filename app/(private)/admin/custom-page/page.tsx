@@ -53,6 +53,26 @@ export default function CustomPage() {
     if (tab === "professional-site") { suffix = "/site"; title = "Link do seu Site Profissional"; }
     if (tab === "booking-site") { suffix = "/agendar"; title = "Link da sua Página de Agendamento"; }
 
+    let isLocked = false;
+    let lockMessage = "";
+
+    if (tab === "link-bio") {
+      const hasValidLink = links && links.some((l: any) => 
+        (l.type === 'system-site' || l.type === 'system-booking') ? !!l.title?.trim() : (l.title?.trim() && l.url?.trim())
+      );
+      if (!hasValidLink) {
+        isLocked = true;
+        lockMessage = "Configure pelo menos um link adicional válido para ativar a página.";
+      }
+    } else if (tab === "professional-site") {
+      const hasHeadline = proSiteConfig?.presentation?.headline?.trim();
+      const hasImage = proSiteConfig?.presentation?.heroImage?.trim();
+      if (!hasHeadline || !hasImage) {
+        isLocked = true;
+        lockMessage = "Configure um título e adicione uma imagem de capa na etapa 'Apresentação' para ativar o site.";
+      }
+    }
+
     return (
       <div className="flex flex-col gap-2 mb-6 w-full max-w-[1600px] mx-auto">
         <span className="text-sm font-medium text-foreground">{title}</span>
@@ -64,44 +84,66 @@ export default function CustomPage() {
             value={profile.slug}
             onChange={(e) => handleSlugChange(e.target.value)}
             maxLength={30}
+            disabled={isLocked}
             className={cn(
               "rounded-none bg-background border-border/50 h-11 focus-visible:ring-1 max-w-[140px]",
-              tab !== "link-bio" ? "border-r-0" : ""
+              tab !== "link-bio" ? "border-r-0" : "",
+              isLocked && "opacity-50 pointer-events-none"
             )}
             placeholder="seunome"
           />
           {tab !== "link-bio" && (
-            <span className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-l-0 text-sm h-11 flex items-center shrink-0">
+            <span className={cn("bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-l-0 text-sm h-11 flex items-center shrink-0", isLocked && "opacity-50")}>
               {suffix}
             </span>
           )}
-          {/* Copiar */}
-          <button
-            onClick={() => {
-              const origin = typeof window !== 'undefined' && window.location.origin.includes('localhost') ? window.location.origin : 'https://www.totten.com.br';
-              navigator.clipboard.writeText(`${origin}/${profile.slug}${suffix}`);
-              setCopied(true);
-              setTimeout(() => setCopied(false), 2000);
-            }}
-            className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-l-0 text-sm h-11 flex items-center hover:bg-muted/80 hover:text-foreground transition-colors shrink-0 outline-none"
-            title="Copiar link"
-          >
-            {copied ? <Check className="h-5 w-5 text-emerald-500" /> : <Copy className="h-5 w-5" />}
-          </button>
-          {/* Abrir em nova aba */}
-          <a
-            href={`/${profile.slug}${suffix}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-l-0 rounded-r-md text-sm h-11 flex items-center hover:bg-muted/80 hover:text-foreground transition-colors shrink-0"
-            title="Abrir página"
-          >
-            <ArrowOutUpLeftStrokeSquare flip="horizontal" className="h-5 w-5" />
-          </a>
+          
+          {isLocked ? (
+            <div
+              className="bg-muted/50 text-muted-foreground/50 px-4 py-2 border border-border/50 border-l-0 rounded-r-md text-sm h-11 flex items-center shrink-0 cursor-not-allowed"
+              title={lockMessage}
+            >
+              <div className="w-5 h-5 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Copiar */}
+              <button
+                onClick={() => {
+                  const origin = typeof window !== 'undefined' && window.location.origin.includes('localhost') ? window.location.origin : 'https://www.totten.com.br';
+                  navigator.clipboard.writeText(`${origin}/${profile.slug}${suffix}`);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-l-0 text-sm h-11 flex items-center hover:bg-muted/80 hover:text-foreground transition-colors shrink-0 outline-none"
+                title="Copiar link"
+              >
+                {copied ? <Check className="h-5 w-5 text-emerald-500" /> : <Copy className="h-5 w-5" />}
+              </button>
+              {/* Abrir em nova aba */}
+              <a
+                href={`/${profile.slug}${suffix}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-l-0 rounded-r-md text-sm h-11 flex items-center hover:bg-muted/80 hover:text-foreground transition-colors shrink-0"
+                title="Abrir página"
+              >
+                <ArrowOutUpLeftStrokeSquare flip="horizontal" className="h-5 w-5" />
+              </a>
+            </>
+          )}
         </div>
-        <p className="text-[11px] text-muted-foreground">
-          Apenas letras minúsculas. Sem espaços ou números.
-        </p>
+        {isLocked ? (
+          <p className="text-[12px] text-amber-600 dark:text-amber-400 font-medium">
+            ⚠️ {lockMessage}
+          </p>
+        ) : (
+          <p className="text-[11px] text-muted-foreground">
+            Apenas letras minúsculas. Sem espaços ou números.
+          </p>
+        )}
       </div>
     );
   };
@@ -288,6 +330,21 @@ export default function CustomPage() {
   }, []);
 
   const handleSave = async () => {
+    if (activeTab === "global") {
+      if (!profile.name || profile.name.trim().length < 3) {
+        toast.error("O Nome de exibição deve ter pelo menos 3 caracteres.");
+        return;
+      }
+      if (!profile.bio || profile.bio.trim().length < 32) {
+        toast.error("A descrição do seu negócio deve ter no mínimo 32 caracteres.");
+        return;
+      }
+      if (!globalLocation.address || globalLocation.address.trim() === "") {
+        toast.error("O Endereço completo é obrigatório.");
+        return;
+      }
+    }
+
     setIsSaving(true);
     try {
       const response = await updateCustomPageAction({
