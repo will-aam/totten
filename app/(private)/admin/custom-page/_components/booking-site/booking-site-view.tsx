@@ -11,11 +11,11 @@ export function BookingSiteView({ profile }: { profile?: any }) {
   const [isSaving, setIsSaving] = useState(false);
 
   const [general, setGeneral] = useState({
-    enabled: true,
-    termsText: "Ao confirmar, declaro que li e aceito a Política de Cancelamento.",
+    requirePrepayment: true,
+    termsText: "Política de Cancelamento\n\n• Cancelamentos ou remarcações devem ser feitos com no mínimo 24 horas de antecedência.\n• Em caso de atraso, o atendimento poderá ser reduzido ou cancelado, respeitando o tempo da agenda.\n• Em situações excepcionais, cada caso será avaliado com carinho.",
     pixKey: "",
     paymentInstructions:
-      "INSTRUÇÕES:\n\n⚠️ Recado importante ⚠️\n\nPara finalizar seu agendamento:\n\n1️⃣ Clique em confirmar pagamento\n\n2️⃣ Envie o comprovante no WhatsApp\n\nAssim seu horário ficará reservado.",
+      "Agendamento confirmado com sucesso!\n\nRecebi seu pagamento e seu horário está oficialmente reservado.\n\nPeço, por gentileza, que chegue no horário agendado. Para manter a organização da agenda e não prejudicar os atendimentos seguintes, não tolero atrasos.\n\nEm caso de atraso, o atendimento poderá ser reduzido, remarcado ou cancelado, conforme a disponibilidade do dia.\n\nAgradeço pela compreensão e estou ansiosa para atender você!",
   });
 
   const [features, setFeatures] = useState({
@@ -55,30 +55,16 @@ export function BookingSiteView({ profile }: { profile?: any }) {
           <div>
             <h3 className="text-lg font-semibold text-foreground">Configurações Gerais</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              Ative ou desative a função de autoagendamento e configure os detalhes de pagamento.
+              Configure a política de cancelamento e os detalhes de pagamento antecipado do seu agendamento.
             </p>
           </div>
 
-          {/* Toggle principal */}
-          <div className="flex items-center justify-between p-4 border rounded-xl bg-card shadow-sm">
-            <div className="flex flex-col">
-              <Label className="text-base font-semibold">Habilitar Autoagendamento</Label>
-              <span className="text-xs text-muted-foreground mt-1 max-w-[260px]">
-                Se desativado, a página servirá apenas como um Portfólio e Histórico para o cliente.
-              </span>
-            </div>
-            <Switch
-              checked={general.enabled}
-              onCheckedChange={(val) => setGeneral({ ...general, enabled: val })}
-            />
-          </div>
-
-          {/* Termos de aceite */}
-          <div className="flex flex-col gap-3 pt-4 border-t">
+          {/* Política de Cancelamento */}
+          <div className="flex flex-col gap-3 pt-0">
             <div className="flex flex-col gap-3 p-4 rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800/40 border-l-4 border-l-red-500">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <Label className="text-foreground font-semibold">Termos de Aceite</Label>
+                  <Label className="text-foreground font-semibold">Política de Cancelamento</Label>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/40 px-2 py-0.5 rounded-full">Obrigatório</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -88,37 +74,48 @@ export function BookingSiteView({ profile }: { profile?: any }) {
               <Textarea
                 value={general.termsText}
                 onChange={(e) => setGeneral({ ...general, termsText: e.target.value })}
-                className="resize-none h-20 bg-white dark:bg-black/20"
-                placeholder="Ex: Ao confirmar, declaro que li e aceito..."
+                className="resize-none h-48 bg-white dark:bg-black/20"
+                placeholder={`Política de Cancelamento\n\n• Cancelamentos ou remarcações devem ser feitos com no mínimo 24 horas de antecedência.\n• A taxa de sinal não é reembolsável em casos de cancelamento fora do prazo ou não comparecimento.\n• Em caso de atraso, o atendimento poderá ser reduzido ou cancelado, respeitando o tempo da agenda.\n• O não comparecimento sem aviso implica na perda do sinal.\n• Em situações excepcionais, cada caso será avaliado com carinho.`}
               />
             </div>
           </div>
 
           {/* Pagamento Antecipado */}
           <div className="flex flex-col gap-4 pt-4 border-t">
-            <div>
-              <h4 className="text-base font-semibold text-foreground">Pagamento Antecipado (50%)</h4>
-              <p className="text-sm text-muted-foreground mt-1">
-                Configure os dados para receber a metade do valor via PIX.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-foreground font-medium">Chave PIX</Label>
-              <Input
-                value={general.pixKey}
-                onChange={(e) => setGeneral({ ...general, pixKey: e.target.value })}
-                placeholder="Ex: (00) 00000-0000, email@exemplo.com ou CPF"
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-base font-semibold text-foreground">Exigir Pagamento Antecipado (Sinal)</h4>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Requer 50% do valor via PIX para confirmar o agendamento.
+                </p>
+              </div>
+              <Switch
+                checked={general.requirePrepayment}
+                onCheckedChange={(val) => setGeneral({ ...general, requirePrepayment: val })}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-foreground font-medium">Instruções / Recado Importante</Label>
-              <Textarea
-                value={general.paymentInstructions}
-                onChange={(e) => setGeneral({ ...general, paymentInstructions: e.target.value })}
-                className="resize-none h-48"
-              />
+            <div className={`space-y-4 transition-opacity duration-300 ${!general.requirePrepayment ? "opacity-40 pointer-events-none" : ""}`}>
+              <div className="space-y-2">
+                <Label className="text-foreground font-medium">Chave PIX</Label>
+                <Input
+                  value={general.pixKey}
+                  onChange={(e) => setGeneral({ ...general, pixKey: e.target.value })}
+                  placeholder="Ex: (00) 00000-0000, email@exemplo.com ou CPF"
+                  disabled={!general.requirePrepayment}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-foreground font-medium">Mensagem de Confirmação (Informação Importante)</Label>
+                <Textarea
+                  value={general.paymentInstructions}
+                  onChange={(e) => setGeneral({ ...general, paymentInstructions: e.target.value })}
+                  className="resize-none h-48"
+                  placeholder={`Agendamento confirmado com sucesso!...`}
+                  disabled={!general.requirePrepayment}
+                />
+              </div>
             </div>
           </div>
         </section>
