@@ -1,25 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, ChevronLeft, Check, X, Image as ImageIcon } from "@boxicons/react";
-import { cn } from "@/lib/utils";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 export function BookingSiteView({ profile }: { profile?: any }) {
-  const [activeStepId, setActiveStepId] = useState<string | null>(null);
-  const [showMobilePreview, setShowMobilePreview] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(Date.now());
 
-  // Estados MOCK (já que não vamos tocar no banco de dados agora)
   const [general, setGeneral] = useState({
     enabled: true,
     termsText: "Ao confirmar, declaro que li e aceito a Política de Cancelamento.",
+    pixKey: "",
+    paymentInstructions:
+      "INSTRUÇÕES:\n\n⚠️ Recado importante ⚠️\n\nPara finalizar seu agendamento:\n\n1️⃣ Clique em confirmar pagamento\n\n2️⃣ Envie o comprovante no WhatsApp\n\nAssim seu horário ficará reservado.",
   });
 
   const [features, setFeatures] = useState({
@@ -29,31 +25,45 @@ export function BookingSiteView({ profile }: { profile?: any }) {
     showTeamLikes: true,
   });
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     setIsSaving(true);
-    // Simula salvamento sem tocar no backend/Prisma
-    setTimeout(() => {
-      setIsSaving(false);
-      setRefreshKey(Date.now());
-    }, 800);
-  };
+    setTimeout(() => setIsSaving(false), 800);
+  }, []);
 
-  const STEPS = [
-    {
-      id: "general",
-      title: "Configurações Gerais",
-      component: (
-        <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-right-4">
+  return (
+    <div className="w-full flex flex-col gap-6 animate-in fade-in duration-300">
+
+      {/* Header com único botão salvar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/50 pb-6">
+        <p className="text-sm text-muted-foreground">
+          Personalize a página onde seus clientes agendam horários sozinhos.
+        </p>
+        <Button
+          onClick={handleSave}
+          disabled={isSaving}
+          className="rounded-full h-10 shadow-sm w-full md:w-36 shrink-0"
+        >
+          {isSaving ? "Salvando..." : "Salvar"}
+        </Button>
+      </div>
+
+      {/* Grid: 1 coluna no mobile, 2 colunas no desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-start">
+
+        {/* ─── COLUNA ESQUERDA: Configurações Gerais ─── */}
+        <section className="flex flex-col gap-6">
           <div>
-            <h3 className="text-lg font-semibold text-foreground">Geral</h3>
+            <h3 className="text-lg font-semibold text-foreground">Configurações Gerais</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              Ative ou desative a função de autoagendamento.
+              Ative ou desative a função de autoagendamento e configure os detalhes de pagamento.
             </p>
           </div>
+
+          {/* Toggle principal */}
           <div className="flex items-center justify-between p-4 border rounded-xl bg-card shadow-sm">
             <div className="flex flex-col">
               <Label className="text-base font-semibold">Habilitar Autoagendamento</Label>
-              <span className="text-xs text-muted-foreground mt-1 max-w-[250px]">
+              <span className="text-xs text-muted-foreground mt-1 max-w-[260px]">
                 Se desativado, a página servirá apenas como um Portfólio e Histórico para o cliente.
               </span>
             </div>
@@ -62,178 +72,116 @@ export function BookingSiteView({ profile }: { profile?: any }) {
               onCheckedChange={(val) => setGeneral({ ...general, enabled: val })}
             />
           </div>
-          
+
+          {/* Termos de aceite */}
           <div className="flex flex-col gap-3 pt-4 border-t">
-            <Label className="text-foreground font-medium">Termos de Aceite (Obrigatório)</Label>
-            <p className="text-xs text-muted-foreground">
-              Texto que aparece acima do botão final de confirmar agendamento.
-            </p>
-            <Textarea
-              value={general.termsText}
-              onChange={(e) => setGeneral({ ...general, termsText: e.target.value })}
-              className="resize-none h-20"
-              placeholder="Ex: Ao confirmar, declaro que li e aceito..."
-            />
+            <div className="flex flex-col gap-3 p-4 rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800/40 border-l-4 border-l-red-500">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Label className="text-foreground font-semibold">Termos de Aceite</Label>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/40 px-2 py-0.5 rounded-full">Obrigatório</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Texto que aparece acima do botão final de confirmar agendamento.
+                </p>
+              </div>
+              <Textarea
+                value={general.termsText}
+                onChange={(e) => setGeneral({ ...general, termsText: e.target.value })}
+                className="resize-none h-20 bg-white dark:bg-black/20"
+                placeholder="Ex: Ao confirmar, declaro que li e aceito..."
+              />
+            </div>
           </div>
-        </div>
-      )
-    },
-    {
-      id: "features",
-      title: "Elementos da Página",
-      component: (
-        <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-right-4">
+
+          {/* Pagamento Antecipado */}
+          <div className="flex flex-col gap-4 pt-4 border-t">
+            <div>
+              <h4 className="text-base font-semibold text-foreground">Pagamento Antecipado (50%)</h4>
+              <p className="text-sm text-muted-foreground mt-1">
+                Configure os dados para receber a metade do valor via PIX.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-foreground font-medium">Chave PIX</Label>
+              <Input
+                value={general.pixKey}
+                onChange={(e) => setGeneral({ ...general, pixKey: e.target.value })}
+                placeholder="Ex: (00) 00000-0000, email@exemplo.com ou CPF"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-foreground font-medium">Instruções / Recado Importante</Label>
+              <Textarea
+                value={general.paymentInstructions}
+                onChange={(e) => setGeneral({ ...general, paymentInstructions: e.target.value })}
+                className="resize-none h-48"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* ─── COLUNA DIREITA: Elementos da Página ─── */}
+        <section className="flex flex-col gap-6 lg:border-l lg:pl-10 border-border/50">
           <div>
-            <h3 className="text-lg font-semibold text-foreground">Exibição de Módulos</h3>
+            <h3 className="text-lg font-semibold text-foreground">Elementos da Página</h3>
             <p className="text-sm text-muted-foreground mt-1">
               Ligue ou desligue as seções na sua página de agendamento.
             </p>
           </div>
 
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between p-3 border rounded-lg bg-card">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between p-4 border rounded-xl bg-card shadow-sm">
               <div className="flex flex-col">
-                <Label>Mostrar "Pacotes"</Label>
-                <span className="text-[10px] text-muted-foreground">Exibe combos promocionais.</span>
+                <Label className="font-semibold">Mostrar &quot;Pacotes&quot;</Label>
+                <span className="text-xs text-muted-foreground mt-0.5">Exibe combos promocionais.</span>
               </div>
-              <Switch checked={features.showPackages} onCheckedChange={(val) => setFeatures({...features, showPackages: val})} />
+              <Switch
+                checked={features.showPackages}
+                onCheckedChange={(val) => setFeatures((f) => ({ ...f, showPackages: val }))}
+              />
             </div>
 
-            <div className="flex items-center justify-between p-3 border rounded-lg bg-card">
+            <div className="flex items-center justify-between p-4 border rounded-xl bg-card shadow-sm">
               <div className="flex flex-col">
-                <Label>Mostrar "Mais Agendados"</Label>
-                <span className="text-[10px] text-muted-foreground">Destaca os serviços populares.</span>
+                <Label className="font-semibold">Mostrar &quot;Mais Agendados&quot;</Label>
+                <span className="text-xs text-muted-foreground mt-0.5">Destaca os serviços populares.</span>
               </div>
-              <Switch checked={features.showMostBooked} onCheckedChange={(val) => setFeatures({...features, showMostBooked: val})} />
+              <Switch
+                checked={features.showMostBooked}
+                onCheckedChange={(val) => setFeatures((f) => ({ ...f, showMostBooked: val }))}
+              />
             </div>
 
-            <div className="flex items-center justify-between p-3 border rounded-lg bg-card">
+            <div className="flex items-center justify-between p-4 border rounded-xl bg-card shadow-sm">
               <div className="flex flex-col">
-                <Label>Mostrar "Nossa Equipe"</Label>
-                <span className="text-[10px] text-muted-foreground">Exibe fotos dos profissionais.</span>
+                <Label className="font-semibold">Mostrar &quot;Nossa Equipe&quot;</Label>
+                <span className="text-xs text-muted-foreground mt-0.5">Exibe fotos dos profissionais.</span>
               </div>
-              <Switch checked={features.showTeam} onCheckedChange={(val) => setFeatures({...features, showTeam: val})} />
+              <Switch
+                checked={features.showTeam}
+                onCheckedChange={(val) => setFeatures((f) => ({ ...f, showTeam: val }))}
+              />
             </div>
 
             {features.showTeam && (
-              <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30 ml-4">
+              <div className="flex items-center justify-between p-4 border rounded-xl bg-muted/40 ml-5">
                 <div className="flex flex-col">
-                  <Label>Mostrar Curtidas na Equipe</Label>
-                  <span className="text-[10px] text-muted-foreground">Gera prova social para os profissionais.</span>
+                  <Label className="font-semibold">Mostrar Curtidas na Equipe</Label>
+                  <span className="text-xs text-muted-foreground mt-0.5">Gera prova social para os profissionais.</span>
                 </div>
-                <Switch checked={features.showTeamLikes} onCheckedChange={(val) => setFeatures({...features, showTeamLikes: val})} />
+                <Switch
+                  checked={features.showTeamLikes}
+                  onCheckedChange={(val) => setFeatures((f) => ({ ...f, showTeamLikes: val }))}
+                />
               </div>
             )}
+          </div>
+        </section>
 
-          </div>
-        </div>
-      )
-    }
-  ];
-
-  // Preview Mockup do Celular (Visualização do Cliente Final)
-  const BookingMockup = ({ isFullScreen = false }: { isFullScreen?: boolean }) => {
-    return (
-      <iframe
-        src={`/${profile?.slug || 'serenita'}/agendar?preview=true&r=${refreshKey}`}
-        className={cn(
-          "w-full h-full bg-white border-none",
-          isFullScreen ? "" : "rounded-[2.5rem]"
-        )}
-      />
-    );
-  }
-
-  return (
-    <div className="flex flex-col lg:flex-row gap-8 w-full max-w-[1600px] mx-auto animate-in fade-in duration-300">
-      {/* LADO ESQUERDO: Formulários */}
-      <div className="flex-1 flex flex-col gap-6 w-full max-w-full overflow-hidden">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border/50 pb-6">
-          <div>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Personalize a página onde seus clientes agendam horários sozinhos.
-            </p>
-          </div>
-          <div className="flex gap-2 w-full md:w-auto">
-            <Button
-              variant="outline"
-              onClick={() => setShowMobilePreview(true)}
-              className="flex-1 lg:hidden md:flex-none rounded-full h-10 w-full md:w-32"
-            >
-              Ver Preview
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="flex-1 md:flex-none rounded-full h-10 shadow-sm w-full md:w-32"
-            >
-              {isSaving ? "Salvando..." : "Salvar Tela"}
-            </Button>
-          </div>
-        </div>
-
-        {/* Menu de Etapas */}
-        {activeStepId === null ? (
-          <div className="flex flex-col gap-3">
-            {STEPS.map((step) => (
-              <div
-                key={step.id}
-                onClick={() => setActiveStepId(step.id)}
-                className="flex items-center justify-between p-4 bg-card border border-border/50 rounded-xl cursor-pointer hover:bg-muted/50 hover:border-primary/50 transition-colors shadow-sm"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full flex items-center justify-center shrink-0 bg-emerald-500/10 text-emerald-500">
-                    <Check className="h-5 w-5" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="font-semibold text-foreground text-sm">{step.title}</span>
-                  </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="w-full">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveStepId(null)}
-              className="mb-6 -ml-2 text-muted-foreground hover:text-foreground"
-            >
-              <ChevronLeft className="h-5 w-5 mr-1" /> Voltar para o menu
-            </Button>
-            {STEPS.find(s => s.id === activeStepId)?.component}
-          </div>
-        )}
       </div>
-
-      {/* LADO DIREITO: Celular Preview */}
-      <div className="hidden lg:flex w-85 shrink-0 flex-col items-center">
-        <div className="sticky top-24">
-          <div className="w-[320px] h-[650px] bg-black rounded-[3rem] border-8 border-black shadow-2xl relative overflow-hidden ring-1 ring-border/20 mx-auto">
-            <div className="absolute top-0 inset-x-0 h-6 bg-black z-20 rounded-b-2xl w-40 mx-auto" />
-            <BookingMockup />
-          </div>
-        </div>
-      </div>
-
-      {/* MODAL PREVIEW MOBILE */}
-      <Dialog open={showMobilePreview} onOpenChange={setShowMobilePreview}>
-        <DialogContent className="w-screen h-dvh max-w-none bg-black border-0 p-0 m-0 flex flex-col rounded-none z-[100] overflow-hidden">
-          <DialogTitle className="sr-only">Preview</DialogTitle>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowMobilePreview(false)}
-            className="absolute top-4 right-4 z-[999] rounded-full bg-black/40 text-white hover:bg-black/60"
-          >
-            <X className="h-6 w-6" />
-          </Button>
-          <div className="w-full h-full overflow-hidden">
-            <BookingMockup isFullScreen={true} />
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

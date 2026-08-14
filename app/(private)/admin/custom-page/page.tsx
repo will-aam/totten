@@ -17,6 +17,7 @@ import {
   Link,
   GlobeAmericas,
   Calendar,
+  ArrowOutUpLeftStrokeSquare,
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
@@ -51,7 +52,7 @@ export default function CustomPage() {
     if (tab === "booking-site") { suffix = "/agendar"; title = "Link da sua Página de Agendamento"; }
 
     return (
-      <div className="flex flex-col gap-2 p-4 border border-border/50 bg-muted/10 rounded-xl mb-6 w-full max-w-[1600px] mx-auto">
+      <div className="flex flex-col gap-2 mb-6 w-full max-w-[1600px] mx-auto">
         <span className="text-sm font-medium text-foreground">{title}</span>
         <div className="flex items-center">
           <span className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
@@ -60,8 +61,9 @@ export default function CustomPage() {
           <Input
             value={profile.slug}
             onChange={(e) => handleSlugChange(e.target.value)}
+            maxLength={30}
             className={cn(
-              "rounded-none bg-background border-border/50 h-11 focus-visible:ring-1",
+              "rounded-none bg-background border-border/50 h-11 focus-visible:ring-1 max-w-[140px]",
               tab !== "link-bio" ? "border-r-0" : ""
             )}
             placeholder="seunome"
@@ -71,6 +73,7 @@ export default function CustomPage() {
               {suffix}
             </span>
           )}
+          {/* Copiar */}
           <button
             onClick={() => {
               const origin = typeof window !== 'undefined' && window.location.origin.includes('localhost') ? window.location.origin : 'https://www.totten.com.br';
@@ -78,11 +81,21 @@ export default function CustomPage() {
               setCopied(true);
               setTimeout(() => setCopied(false), 2000);
             }}
-            className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-l-0 rounded-r-md text-sm h-11 flex items-center hover:bg-muted/80 hover:text-foreground transition-colors shrink-0 outline-none"
+            className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-l-0 text-sm h-11 flex items-center hover:bg-muted/80 hover:text-foreground transition-colors shrink-0 outline-none"
             title="Copiar link"
           >
             {copied ? <Check className="h-5 w-5 text-emerald-500" /> : <Copy className="h-5 w-5" />}
           </button>
+          {/* Abrir em nova aba */}
+          <a
+            href={`/${profile.slug}${suffix}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-l-0 rounded-r-md text-sm h-11 flex items-center hover:bg-muted/80 hover:text-foreground transition-colors shrink-0"
+            title="Abrir página"
+          >
+            <ArrowOutUpLeftStrokeSquare flip="horizontal" className="h-5 w-5" />
+          </a>
         </div>
         <p className="text-[11px] text-muted-foreground">
           Apenas letras minúsculas. Sem espaços ou números.
@@ -195,7 +208,7 @@ export default function CustomPage() {
           } else if (data.professional_site_config && (data.professional_site_config as any).contact) {
             loadedContact = (data.professional_site_config as any).contact;
           }
-          
+
           if (loadedContact) {
             setGlobalLocation({
               address: loadedContact.address || "",
@@ -404,12 +417,12 @@ export default function CustomPage() {
           />
 
           <TabsContent value="global" className="mt-0">
-            <GlobalSettings 
-              profile={profile} setProfile={setProfile} 
-              socials={socials} setSocials={setSocials} 
-              globalContact={globalContact} 
+            <GlobalSettings
+              profile={profile} setProfile={setProfile}
+              socials={socials} setSocials={setSocials}
+              globalContact={globalContact}
               theme={theme} setTheme={setTheme}
-              globalLocation={globalLocation} setGlobalLocation={setGlobalLocation} 
+              globalLocation={globalLocation} setGlobalLocation={setGlobalLocation}
             />
             <div className="flex justify-end mt-6">
               <Button onClick={handleSave} disabled={isSaving} className="min-w-32">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -10,9 +10,19 @@ import {
   Briefcase,
   ChevronDown,
   ChevronUp,
+  Calendar,
+  User,
+  CheckCircle2,
+  Copy,
 } from "lucide-react";
-import { Heart } from "@boxicons/react";
+import { Heart, ArrowLeft, ArrowRight, Check } from "@boxicons/react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { ptBR } from "date-fns/locale";
+import { format } from "date-fns";
 
 
 export function ClientAgendarView({ org }: { org: any }) {
@@ -23,6 +33,39 @@ export function ClientAgendarView({ org }: { org: any }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [likes, setLikes] = useState<Record<string, boolean>>({});
   const [isMounted, setIsMounted] = useState(false);
+  const [previewFeatures, setPreviewFeatures] = useState<{
+    showPackages: boolean;
+    showTeam: boolean;
+    showTeamLikes: boolean;
+    showMostBooked: boolean;
+  } | null>(null);
+  const [previewGeneral, setPreviewGeneral] = useState<any>(null);
+  const [copiedPix, setCopiedPix] = useState(false);
+
+  const timeSelectionRef = useRef<HTMLDivElement>(null);
+
+  // Booking Wizard State
+  const [bookingWizardOpen, setBookingWizardOpen] = useState(false);
+  const [bookingStep, setBookingStep] = useState(1);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [bookingData, setBookingData] = useState({
+    date: undefined as Date | undefined,
+    time: null as string | null,
+    firstName: "",
+    phone: "",
+    professionalId: null as string | null,
+    notes: "",
+  });
+
+  const handleOpenBooking = (item: any) => {
+    setSelectedItem(item);
+    setBookingData(prev => ({
+      ...prev,
+      phone: typeof window !== "undefined" ? localStorage.getItem(`totten_client_phone_${org.slug}`) || "" : ""
+    }));
+    setBookingStep(1);
+    setBookingWizardOpen(true);
+  };
 
   useEffect(() => {
     setIsMounted(true);
@@ -30,6 +73,18 @@ export function ClientAgendarView({ org }: { org: any }) {
       const loggedIn = localStorage.getItem(`totten_client_logged_in_${org.slug}`);
       if (loggedIn) setIsLoggedIn(true);
     }
+
+    // Listen for live preview feature updates from admin panel
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === "TOTTEN_PREVIEW_FEATURES") {
+        setPreviewFeatures(event.data.features);
+        if (event.data.general) {
+          setPreviewGeneral(event.data.general);
+        }
+      }
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
   }, [org.slug]);
 
   const tc = (org.link_bio?.theme_config as any) || {};
@@ -52,6 +107,11 @@ export function ClientAgendarView({ org }: { org: any }) {
   const services = org.services || [];
   const packageTemplates = org.packageTemplates || [];
 
+  // Live preview feature flags (from postMessage) override defaults
+  const showTeam = previewFeatures ? previewFeatures.showTeam : true;
+  const showTeamLikes = previewFeatures ? previewFeatures.showTeamLikes : true;
+  const showPackages = previewFeatures ? previewFeatures.showPackages : true;
+
   // Header Banner
   const profileConfig = (org.link_bio?.profile_config as any) || {};
   const professionalSiteConfig = (org.link_bio?.professional_site_config as any) || {};
@@ -59,125 +119,116 @@ export function ClientAgendarView({ org }: { org: any }) {
     ? profileConfig.contact
     : professionalSiteConfig.contact || {};
   const bannerUrl = profileConfig.bannerImage || org.settings?.cover_image_url || presentation.heroImage;
-
   return (
-    <div className={cn("flex justify-center h-screen overflow-hidden w-full", bgClass, theme.css)} style={{ color: theme.textColor }}>
+    <div className={cn("min-h-screen w-full relative", bgClass, theme.css)} style={{ color: theme.textColor }}>
 
-      {/* Mobile-like Container for Desktop */}
-      <div className={cn(
-        "w-full max-w-md h-full flex flex-col relative overflow-hidden",
-        "md:my-auto md:h-[90vh] md:rounded-[2rem] md:shadow-2xl md:border",
-        cardBgClass
-      )}>
+      {/* Top Navigation Bar / Floating Area do Cliente */}
+      <div className="absolute top-4 right-4 z-50">
+        <Button
+          asChild
+          size="sm"
+          className="rounded-full shadow-xl text-xs font-bold h-10 px-5 backdrop-blur-md border border-white/20"
+          style={{
+            backgroundColor: theme.primaryColor,
+            color: tc.buttonText || "#ffffff"
+          }}
+        >
+          <a href={`/${org.slug}/login`}>
+            <User className="w-4 h-4 mr-2" /> Área do Cliente
+          </a>
+        </Button>
+      </div>
 
-        {/* Top Navigation Bar */}
-        <div className="shrink-0 z-50 px-4 py-3 flex items-center justify-end border-b backdrop-blur-md" style={{ backgroundColor: isDark ? 'rgba(15,23,42,0.8)' : 'rgba(255,255,255,0.8)', borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
-          <Button
-            asChild
-            size="sm"
-            className="rounded-full text-xs font-bold h-8 px-4"
-            style={{
-              backgroundColor: theme.primaryColor,
-              color: tc.buttonText || "#ffffff"
-            }}
-          >
-            <a href={`/${org.slug}/login`}>
-              Área do Cliente
-            </a>
-          </Button>
-        </div>
+      {/* Header Banner - Full Width */}
+      <header className="w-full h-64 md:h-[520px] relative bg-muted">
+        {bannerUrl ? (
+          <img src={bannerUrl} alt="Capa" className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full bg-slate-200" />
+        )}
+        <div className="absolute inset-0 bg-black/20" />
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/50 to-transparent" />
+      </header>
 
-        {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide pb-24">
+      {/* Main Content Card - Overlaps Banner */}
+      <section className="max-w-4xl mx-auto relative z-10 px-4 md:px-6 -mt-24 md:-mt-32">
+        <div className={cn(
+          "w-full rounded-t-[2rem] md:rounded-t-[2.5rem] rounded-b-none shadow-2xl border-x border-t border-b-0 flex flex-col relative min-h-[60vh]",
+          cardBgClass
+        )}>
 
-          {/* Cover Image or Header */}
-          {bannerUrl ? (
-            <div className="w-full h-56 relative bg-muted shrink-0">
-              <img src={bannerUrl} alt="Capa" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              <div className="absolute bottom-4 left-4 right-4 flex items-end gap-3 text-white">
-                <div className="w-16 h-16 rounded-full border-2 border-white overflow-hidden bg-white shrink-0">
-                  {org.link_bio?.profile_image_url ? (
-                    <img src={org.link_bio.profile_image_url} alt="Logo" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full bg-slate-200" />
-                  )}
-                </div>
-                <div className="pb-1 flex-1 min-w-0">
-                  <h1 className="font-bold text-xl leading-tight truncate">{org.name}</h1>
-                </div>
-              </div>
+          {/* Logo and Name */}
+          <div className="flex flex-col items-center relative px-6">
+            <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-background overflow-hidden bg-muted shadow-2xl -mt-16 md:-mt-20">
+              {org.link_bio?.profile_image_url ? (
+                <img src={org.link_bio.profile_image_url} alt="Logo" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-slate-200 flex items-center justify-center font-bold text-slate-400 text-2xl">{org.name.charAt(0)}</div>
+              )}
             </div>
-          ) : (
-            <div className="w-full px-5 pt-6 pb-2 flex items-center gap-4 shrink-0">
-              <div className="w-16 h-16 rounded-full border-2 overflow-hidden shrink-0" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
-                {org.link_bio?.profile_image_url ? (
-                  <img src={org.link_bio.profile_image_url} alt="Logo" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-muted" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h1 className="font-bold text-xl leading-tight truncate">{org.name}</h1>
-              </div>
+            <div className="mt-6 md:mt-8 flex flex-col items-center">
+              <h1 className="font-black text-2xl md:text-3xl text-center tracking-tight leading-tight">{org.name}</h1>
             </div>
-          )}
+          </div>
 
-          <div className="p-5 space-y-8">
+          <div className="p-5 md:p-10 space-y-10 md:space-y-12 mt-2">
 
             {/* Profissionais */}
-            {professionals.length > 0 && (
+            {showTeam && professionals.length > 0 && (
               <section>
-                <h2 className="font-bold text-lg mb-4">Nossa Equipe</h2>
+                <h2 className="font-bold text-lg md:text-xl mb-4">Nossa Equipe</h2>
 
-                <div className="flex overflow-x-auto gap-3 pb-4 scrollbar-hide -mx-5 px-5">
+                <div className="flex overflow-x-auto gap-4 md:gap-6 pb-6 scrollbar-hide -mx-5 px-5 md:-mx-10 md:px-10 snap-x">
                   {professionals.map((prof: any) => (
                     <div
                       key={prof.id}
-                      className="flex flex-col items-center gap-2.5 min-w-[96px] shrink-0"
+                      className="flex flex-col items-center gap-3 min-w-[120px] md:min-w-[150px] shrink-0 snap-start"
                     >
                       {/* Foto */}
-                      <div className="w-24 h-24 rounded-2xl overflow-hidden shadow-md bg-muted relative">
+                      <div className="w-28 h-36 md:w-36 md:h-48 rounded-[1.5rem] overflow-hidden shadow-lg border bg-muted relative">
                         {prof.image_url ? (
                           <img
                             src={prof.image_url}
                             alt={prof.name}
-                            className="w-full h-full object-cover transition-transform duration-300"
+                            className="w-full h-full object-cover object-center"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-slate-400 bg-slate-100">
+                          <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-slate-400 bg-slate-100">
                             {prof.name.charAt(0)}
                           </div>
                         )}
+                        <div className="absolute inset-0 ring-1 ring-inset ring-black/10 rounded-[2rem]"></div>
                       </div>
 
                       {/* Nome + Curtidas */}
-                      <div className="flex flex-col items-center gap-0.5">
-                        <span className="text-xs font-semibold text-center leading-tight">
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-base md:text-lg font-bold text-center leading-tight tracking-tight">
                           {prof.name.split(" ")[0]}
                         </span>
                         {prof.profession && (
-                          <span className={cn("text-[10px] text-center leading-tight", mutedTextClass)}>
+                          <span className={cn("text-xs font-medium text-center leading-tight uppercase tracking-wider", mutedTextClass)}>
                             {prof.profession}
                           </span>
                         )}
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <button 
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (isLoggedIn) {
-                                setLikes(prev => ({ ...prev, [prof.id]: !prev[prof.id] }));
-                              }
-                            }}
-                            className={cn("flex items-center gap-1 transition-colors", 
-                              isMounted && likes[prof.id] ? "text-rose-500" : (isDark ? "text-white/40" : "text-slate-300"),
-                              isMounted && isLoggedIn ? "hover:text-rose-500 cursor-pointer" : "cursor-default"
-                            )}
-                          >
-                            <Heart pack={isMounted && likes[prof.id] ? "filled" : "basic"} className="w-4 h-4" />
-                            <span className="text-[10px]">{isMounted && likes[prof.id] ? "1" : "0"}</span>
-                          </button>
+                        <div className="flex items-center gap-1 mt-2 bg-black/5 dark:bg-white/5 py-1 px-3 rounded-full">
+                          {showTeamLikes && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (isLoggedIn) {
+                                  setLikes(prev => ({ ...prev, [prof.id]: !prev[prof.id] }));
+                                }
+                              }}
+                              className={cn("flex items-center gap-1.5 transition-all hover:scale-110 active:scale-95",
+                                isMounted && likes[prof.id] ? "text-rose-500" : (isDark ? "text-white/40 hover:text-rose-400" : "text-slate-400 hover:text-rose-500"),
+                                isMounted && isLoggedIn ? "cursor-pointer" : "cursor-default"
+                              )}
+                            >
+                              <Heart pack={isMounted && likes[prof.id] ? "filled" : "basic"} className="w-4 h-4 md:w-5 md:h-5" />
+                              <span className="text-xs font-bold">{isMounted && likes[prof.id] ? "1" : "0"}</span>
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -187,9 +238,9 @@ export function ClientAgendarView({ org }: { org: any }) {
             )}
 
             {/* Pacotes e Planos */}
-            {packageTemplates.length > 0 && (
+            {showPackages && packageTemplates.length > 0 && (
               <section>
-                <div 
+                <div
                   className="flex items-center justify-between mb-4 cursor-pointer select-none"
                   onClick={() => setPackagesOpen(!packagesOpen)}
                 >
@@ -198,39 +249,43 @@ export function ClientAgendarView({ org }: { org: any }) {
                     {packagesOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                   </button>
                 </div>
-                
+
                 {packagesOpen && (
-                  <div className="space-y-3">
+                  <div className="flex flex-col">
                     {packageTemplates.map((pkg: any) => (
-                    <div
-                      key={pkg.id}
-                      className={cn(
-                        "rounded-2xl p-4 flex items-center justify-between border shadow-sm transition-all cursor-pointer gap-3",
-                        isDark ? "bg-white/5 border-white/10" : "bg-white border-slate-100"
-                      )}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-sm">{pkg.name}</h3>
-                        {pkg.service?.name && (
-                          <p className={cn("text-[11px] mt-0.5", mutedTextClass)}>{pkg.service.name} &bull; {pkg.total_sessions} sessões</p>
+                      <div
+                        key={pkg.id}
+                        className={cn(
+                          "py-6 flex flex-col md:flex-row md:items-center justify-between border-b last:border-0 transition-all cursor-pointer gap-4 md:gap-6",
+                          isDark ? "border-white/10" : "border-slate-100"
                         )}
-                        {pkg.description && (
-                          <p className={cn("text-xs mt-1 line-clamp-1", mutedTextClass)}>{pkg.description}</p>
-                        )}
-                      </div>
-                      <div className="flex flex-col items-end shrink-0">
-                        <span className="text-sm font-bold" style={{ color: theme.primaryColor }}>
-                          R$ {Number(pkg.price).toFixed(2)}
-                        </span>
-                        {pkg.validity_days && (
-                          <span className={cn("text-[10px] flex items-center gap-1 mt-0.5", mutedTextClass)}>
-                            <Clock className="w-3 h-3" /> {pkg.validity_days} dias
+                        onClick={() => handleOpenBooking(pkg)}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-lg md:text-xl leading-tight tracking-tight">{pkg.name}</h3>
+                          {pkg.service?.name && (
+                            <p className={cn("text-xs font-semibold uppercase tracking-wider mt-2", mutedTextClass)}>{pkg.service.name} &bull; {pkg.total_sessions} sessões</p>
+                          )}
+                          {pkg.description && (
+                            <p className={cn("text-sm mt-2 line-clamp-2 leading-relaxed", mutedTextClass)}>{pkg.description}</p>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between md:justify-end gap-4 shrink-0 mt-2 md:mt-0">
+                          <span className="text-xl font-black tracking-tight whitespace-nowrap">
+                            R$ {Number(pkg.price).toFixed(2)}
                           </span>
-                        )}
+                          <Button
+                            className="rounded-xl px-6 h-10 shadow-sm font-bold transition-transform active:scale-95 whitespace-nowrap"
+                            style={{ backgroundColor: theme.primaryColor, color: tc.buttonText || "#fff" }}
+                            onClick={(e) => { e.stopPropagation(); handleOpenBooking(pkg); }}
+                          >
+                            Agendar
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
                 )}
               </section>
             )}
@@ -238,7 +293,7 @@ export function ClientAgendarView({ org }: { org: any }) {
             {/* Serviços */}
             {services.length > 0 && (
               <section>
-                <div 
+                <div
                   className="flex items-center justify-between mb-4 cursor-pointer select-none"
                   onClick={() => setServicesOpen(!servicesOpen)}
                 >
@@ -249,50 +304,64 @@ export function ClientAgendarView({ org }: { org: any }) {
                 </div>
 
                 {servicesOpen && (
-                  <div className="space-y-3">
+                  <div className="flex flex-col">
                     {services.map((srv: any) => (
-                    <div
-                      key={srv.id}
-                      className={cn(
-                        "rounded-2xl p-3 flex gap-3 border shadow-sm transition-all cursor-pointer",
-                        isDark ? "bg-white/5 border-white/10" : "bg-white border-slate-100"
-                      )}
-                    >
-                      {/* Service Image */}
                       <div
-                        className="w-20 h-20 shrink-0 rounded-xl bg-muted overflow-hidden relative cursor-zoom-in"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (srv.image_url) setLightboxImage(srv.image_url);
-                        }}
-                      >
-                        {srv.image_url ? (
-                          <img src={srv.image_url} alt={srv.name} className="w-full h-full object-cover transition-transform" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Briefcase className="w-6 h-6 opacity-20" />
-                          </div>
+                        key={srv.id}
+                        className={cn(
+                          "py-6 flex gap-4 md:gap-6 border-b last:border-0 transition-all cursor-pointer",
+                          isDark ? "border-white/10" : "border-slate-100"
                         )}
-                      </div>
+                        onClick={() => handleOpenBooking(srv)}
+                      >
+                        {/* Service Image */}
+                        <div
+                          className="w-24 h-24 md:w-28 md:h-28 shrink-0 rounded-[1.25rem] bg-muted overflow-hidden relative cursor-zoom-in"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (srv.image_url) setLightboxImage(srv.image_url);
+                          }}
+                        >
+                          {srv.image_url ? (
+                            <img src={srv.image_url} alt={srv.name} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Briefcase className="w-8 h-8 opacity-20" />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 ring-1 ring-inset ring-black/10 rounded-[1.25rem]"></div>
+                        </div>
 
-                      <div className="flex-1 min-w-0 py-1 flex flex-col">
-                        <h3 className="font-bold text-sm truncate">{srv.name}</h3>
-                        <p className={cn("text-xs line-clamp-2 mt-0.5", mutedTextClass)}>
-                          {srv.description || "Agende este serviço agora mesmo."}
-                        </p>
+                        <div className="flex-1 min-w-0 flex flex-col justify-center">
+                          <div className="mb-2">
+                            <h3 className="font-bold text-base md:text-lg leading-tight line-clamp-2">{srv.name}</h3>
+                            <p className={cn("text-sm line-clamp-2 mt-1 leading-relaxed", mutedTextClass)}>
+                              {srv.description || "Agende este serviço agora mesmo."}
+                            </p>
+                          </div>
 
-                        <div className="mt-auto flex items-center justify-between pt-2">
-                          <span className="text-sm font-bold" style={{ color: theme.primaryColor }}>
-                            R$ {Number(srv.price).toFixed(2)}
-                          </span>
-                          <span className={cn("text-xs flex items-center gap-1", mutedTextClass)}>
-                            <Clock className="w-3 h-3" /> {srv.duration} min
-                          </span>
+                          <div className="mt-auto flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
+                            <div className="flex items-center gap-3">
+                              <span className="text-lg md:text-xl font-black tracking-tight whitespace-nowrap">
+                                R$ {Number(srv.price).toFixed(2)}
+                              </span>
+                              <span className={cn("text-xs flex items-center gap-1 font-medium whitespace-nowrap", mutedTextClass)}>
+                                &bull; <Clock className="w-3.5 h-3.5 shrink-0" /> {srv.duration} min
+                              </span>
+                            </div>
+
+                            <Button
+                              className="rounded-xl px-6 h-10 w-full md:w-auto shadow-sm font-bold transition-transform active:scale-95 whitespace-nowrap shrink-0"
+                              style={{ backgroundColor: theme.primaryColor, color: tc.buttonText || "#fff" }}
+                              onClick={(e) => { e.stopPropagation(); handleOpenBooking(srv); }}
+                            >
+                              Agendar
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
                 )}
               </section>
             )}
@@ -343,11 +412,13 @@ export function ClientAgendarView({ org }: { org: any }) {
           </div>
 
           {/* Simple Footer */}
-          <footer className="mt-8 py-6 text-center text-xs opacity-50 border-t border-current/10">
-            <p>© {new Date().getFullYear()} {org.name}</p>
+          <footer className="p-6 pb-10 border-t mt-auto" style={{ borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }}>
+            <p className="text-center text-xs opacity-50 font-medium">
+              &copy; {new Date().getFullYear()} {org.name}. Todos os direitos reservados.
+            </p>
           </footer>
         </div>
-      </div>
+      </section>
 
       {/* Lightbox Modal */}
       <Dialog open={!!lightboxImage} onOpenChange={(open) => !open && setLightboxImage(null)}>
@@ -356,6 +427,283 @@ export function ClientAgendarView({ org }: { org: any }) {
           {lightboxImage && (
             <img src={lightboxImage || undefined} alt="Imagem ampliada" className="w-full h-auto max-h-[85vh] object-contain rounded-md" />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Booking Wizard Modal */}
+      <Dialog open={bookingWizardOpen} onOpenChange={(open) => !open && setBookingWizardOpen(false)}>
+        <DialogContent className={cn("sm:max-w-[425px] p-0 overflow-hidden flex flex-col h-[90vh] sm:h-[650px]", isDark ? "bg-[#0f172a] text-white border-white/10" : "bg-white text-slate-900 border-black/10")} style={{ color: theme.textColor }}>
+
+          {/* Header */}
+          <div className="shrink-0 p-4 border-b flex items-center justify-between" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
+            <div className="flex items-center gap-3">
+              {bookingStep > 1 && (
+                <button
+                  onClick={() => setBookingStep(bookingStep - 1)}
+                  className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
+              )}
+              <DialogTitle className="text-lg font-bold">
+                {bookingStep === 1 && "Selecione o Horário"}
+                {bookingStep === 2 && "Seus Dados"}
+                {bookingStep === 3 && "Revisão do Agendamento"}
+                {bookingStep === 4 && "Pagamento Antecipado"}
+              </DialogTitle>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="flex-1 overflow-y-auto p-5 scrollbar-hide">
+
+            {/* STEP 1: Date & Time */}
+            {bookingStep === 1 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                <div className="bg-muted/50 p-4 rounded-xl flex items-center gap-3 border" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
+                  <Calendar className="w-6 h-6 opacity-50" />
+                  <div>
+                    <p className="font-bold text-sm">Serviço/Pacote Selecionado</p>
+                    <p className="text-xs opacity-70">{selectedItem?.name}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h3 className="font-bold">Data Disponível (MOCK)</h3>
+                  <div className="border rounded-xl p-2 bg-card overflow-hidden">
+                    <CalendarComponent
+                      mode="single"
+                      selected={bookingData.date}
+                      onSelect={(date) => {
+                        setBookingData({ ...bookingData, date, time: null });
+                        setTimeout(() => {
+                          timeSelectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 100);
+                      }}
+                      locale={ptBR}
+                      disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                      className="w-full flex justify-center"
+                    />
+                  </div>
+                </div>
+
+                {bookingData.date && (
+                  <div className="space-y-3 animate-in fade-in pt-4" ref={timeSelectionRef}>
+                    <h3 className="font-bold">Horários Disponíveis</h3>
+                    <div className="grid grid-cols-3 gap-2">
+                      {["09:00", "10:30", "14:00", "15:30", "17:00", "18:30"].map(time => {
+                        const isSelected = bookingData.time === time;
+                        return (
+                          <button
+                            key={time}
+                            onClick={() => setBookingData({ ...bookingData, time })}
+                            className={cn(
+                              "relative py-3 rounded-xl text-sm font-bold border text-center transition-all",
+                              isSelected ? "shadow-md scale-[1.02]" : "bg-transparent hover:bg-black/5 dark:hover:bg-white/5"
+                            )}
+                            style={isSelected ? { backgroundColor: theme.primaryColor, color: tc.buttonText || "#fff", borderColor: theme.primaryColor } : { borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' }}
+                          >
+                            {isSelected && (
+                              <div className="absolute top-1 right-1">
+                                <Check className="w-3 h-3" />
+                              </div>
+                            )}
+                            {time}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* STEP 2: Client Data */}
+            {bookingStep === 2 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                <p className="text-sm opacity-70">Preencha seus dados para prosseguir com o agendamento.</p>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Nome Completo</Label>
+                    <Input
+                      value={bookingData.firstName}
+                      onChange={e => setBookingData({ ...bookingData, firstName: e.target.value })}
+                      placeholder="Seu nome"
+                      className={cn(isDark ? "bg-black/20 border-white/10" : "")}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>WhatsApp</Label>
+                    <Input
+                      value={bookingData.phone}
+                      onChange={e => setBookingData({ ...bookingData, phone: e.target.value })}
+                      placeholder="(00) 00000-0000"
+                      className={cn(isDark ? "bg-black/20 border-white/10" : "")}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 3: Review */}
+            {bookingStep === 3 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                <div className="p-5 rounded-2xl border space-y-5 bg-card shadow-sm" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
+
+                  <div className="flex justify-between items-start border-b pb-5" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold uppercase tracking-wider opacity-60">Resumo do Serviço</p>
+                      <p className="font-bold text-lg leading-tight">{selectedItem?.name}</p>
+                      <div className="flex items-center gap-2 mt-2 opacity-80">
+                        <Calendar className="w-4 h-4" />
+                        <span className="text-sm">{bookingData.date ? format(bookingData.date, "dd 'de' MMMM", { locale: ptBR }) : ""} às {bookingData.time}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-semibold uppercase tracking-wider opacity-60 mb-1">Valor</p>
+                      <span className="font-black text-xl" style={{ color: theme.primaryColor }}>
+                        R$ {Number(selectedItem?.price || 0).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider opacity-60 mb-1">Cliente</p>
+                      <p className="text-sm font-medium flex items-center gap-2"><User className="w-3 h-3" /> {bookingData.firstName}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider opacity-60 mb-1">WhatsApp</p>
+                      <p className="text-sm font-medium">{bookingData.phone}</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-amber-100 text-amber-900 p-4 rounded-xl text-sm flex items-start gap-3 dark:bg-amber-900/30 dark:text-amber-200">
+                    <span className="text-xl">⚠️</span>
+                    <p>
+                      Será necessário realizar o <strong>pagamento antecipado de 50%</strong> do valor via PIX na próxima tela para confirmar a reserva do seu horário.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2 pt-2">
+                    <Label className="text-xs font-semibold uppercase tracking-wider opacity-60">Observações (Opcional)</Label>
+                    <Textarea
+                      value={bookingData.notes}
+                      onChange={e => setBookingData({ ...bookingData, notes: e.target.value })}
+                      placeholder="Algum detalhe importante? Ex: Chegarei 5 min atrasado..."
+                      className={cn("h-20 resize-none", isDark ? "bg-black/20 border-white/10" : "")}
+                    />
+                  </div>
+
+                </div>
+              </div>
+            )}
+
+            {/* STEP 4: Payment */}
+            {bookingStep === 4 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4 text-center">
+
+                <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-2 dark:bg-emerald-900/30 dark:text-emerald-400">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+
+                <h3 className="font-bold text-xl">Quase lá!</h3>
+                <p className="text-sm opacity-70 px-4">
+                  Transfira a metade do serviço via PIX para a chave abaixo para confirmar seu agendamento.
+                </p>
+
+                <div className="bg-muted/50 p-5 rounded-2xl border mx-4 my-6" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
+                  <p className="text-sm font-medium opacity-70 mb-1">Valor a pagar agora</p>
+                  <p className={cn("text-4xl font-black mb-6 tracking-tight text-foreground")}>
+                    R$ {(Number(selectedItem?.price || 0) / 2).toFixed(2)}
+                  </p>
+
+                  <p className="text-xs font-semibold uppercase tracking-wider opacity-60 mb-2">Chave PIX (Telefone/Email/CPF)</p>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      readOnly
+                      value={previewGeneral?.pixKey || "(00) 00000-0000"}
+                      className={cn("font-mono text-center", isDark ? "bg-black/40 border-white/10" : "bg-white")}
+                    />
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className={cn("shrink-0 transition-colors", copiedPix ? "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500" : "")}
+                      onClick={() => {
+                        setCopiedPix(true);
+                        setTimeout(() => setCopiedPix(false), 2000);
+                      }}
+                    >
+                      {copiedPix ? <Check className="w-5 h-5" /> : <Copy className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="text-left bg-blue-50 text-blue-900 p-5 rounded-2xl text-sm mx-4 mb-6 dark:bg-blue-950/40 dark:text-blue-200 whitespace-pre-wrap border border-blue-100 dark:border-blue-900/50 leading-relaxed shadow-sm">
+                  {previewGeneral?.paymentInstructions || `INSTRUÇÕES:\n\n⚠️ Recado importante ⚠️\n\nPara finalizar seu agendamento:\n\n1️⃣ Clique em confirmar pagamento\n\n2️⃣ Envie o comprovante no WhatsApp\n\nAssim seu horário ficará reservado.`}
+                </div>
+
+                <div className="px-4">
+                  <a
+                    href={`https://wa.me/${globalContact?.phone?.replace(/\D/g, '') || ""}?text=Ol%C3%A1%2C%20fiz%20um%20agendamento%20para%20o%20dia%20${bookingData.date ? format(bookingData.date, "dd/MM/yyyy") : ""}%20%C3%A0s%20${bookingData.time}%20e%20aqui%20est%C3%A1%20meu%20comprovante%3A`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex w-full items-center justify-center rounded-xl h-14 font-bold mb-3 bg-[#25D366] hover:bg-[#25D366]/90 text-white transition-colors shadow-lg shadow-[#25D366]/20"
+                  >
+                    Enviar comprovante via WhatsApp
+                  </a>
+                </div>
+
+              </div>
+            )}
+
+          </div>
+
+          {/* Footer Actions */}
+          <div className="shrink-0 p-4 border-t flex flex-col gap-3" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
+            {bookingStep === 1 && (
+              <Button
+                onClick={() => setBookingStep(2)}
+                disabled={!bookingData.date || !bookingData.time}
+                className="w-full h-12 rounded-xl font-bold"
+                style={(!bookingData.date || !bookingData.time) ? {} : { backgroundColor: theme.primaryColor, color: tc.buttonText || "#fff" }}
+              >
+                Próximo <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
+            )}
+
+            {bookingStep === 2 && (
+              <Button
+                onClick={() => setBookingStep(3)}
+                disabled={!bookingData.firstName || !bookingData.phone}
+                className="w-full h-12 rounded-xl font-bold"
+                style={(!bookingData.firstName || !bookingData.phone) ? {} : { backgroundColor: theme.primaryColor, color: tc.buttonText || "#fff" }}
+              >
+                Próximo <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
+            )}
+
+            {bookingStep === 3 && (
+              <Button
+                onClick={() => setBookingStep(4)}
+                className="w-full h-12 rounded-xl font-bold text-base"
+                style={{ backgroundColor: theme.primaryColor, color: tc.buttonText || "#fff" }}
+              >
+                Confirmar
+              </Button>
+            )}
+
+            {bookingStep === 4 && (
+              <Button
+                onClick={() => { setBookingWizardOpen(false); }}
+                variant="outline"
+                className="w-full h-12 rounded-xl font-bold"
+              >
+                Fechar
+              </Button>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

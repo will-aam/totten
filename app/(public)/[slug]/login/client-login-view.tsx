@@ -86,21 +86,35 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
                 value={phone}
                 onChange={handlePhoneChange}
                 className={cn(
-                  "pl-11 h-12 text-lg rounded-xl focus-visible:ring-1",
+                  "pl-11 pr-12 h-12 text-lg rounded-xl focus-visible:ring-1",
                   isDark ? "bg-black/20 border-white/10" : "bg-black/5 border-black/10"
                 )}
                 required
               />
+              <button
+                type="submit"
+                disabled={phone.replace(/\D/g, "").length < 10}
+                className={cn(
+                  "absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-lg flex items-center justify-center transition-all",
+                  phone.replace(/\D/g, "").length >= 10 
+                    ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:scale-105" 
+                    : "opacity-30 cursor-not-allowed"
+                )}
+                style={phone.replace(/\D/g, "").length >= 10 ? { backgroundColor: theme.primaryColor, color: isDark ? "#000" : "#fff" } : {}}
+              >
+                <ArrowRight className="h-4 w-4" />
+              </button>
             </div>
           </div>
 
+          {/* The big submit button is kept as a secondary visual cue, but now there's an in-input button too */}
           <button
             type="submit"
             disabled={phone.replace(/\D/g, "").length < 10}
-            className="w-full h-12 rounded-xl font-bold flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:pointer-events-none disabled:hover:scale-100"
+            className="w-full h-12 rounded-xl font-bold flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:pointer-events-none disabled:hover:scale-100 mt-2"
             style={{ 
               backgroundColor: theme.primaryColor, 
-              color: isDark ? "#000" : "#fff" // Simplification for now, we can use a better contrast checker if needed
+              color: isDark ? "#000" : "#fff" 
             }}
           >
             Entrar <ArrowRight className="h-5 w-5" />
