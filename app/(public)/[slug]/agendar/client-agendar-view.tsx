@@ -565,7 +565,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                     </div>
                     <div className="text-right">
                       <p className="text-xs font-semibold uppercase tracking-wider opacity-60 mb-1">Valor</p>
-                      <span className="font-black text-xl" style={{ color: theme.primaryColor }}>
+                      <span className="font-black text-xl">
                         R$ {Number(selectedItem?.price || 0).toFixed(2)}
                       </span>
                     </div>
