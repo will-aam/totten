@@ -41,7 +41,10 @@ export default async function ProfessionalSitePage({
 
   const socialProof = proSiteData.socialProof || { testimonials: [] };
   const contact = proSiteData.contact || {};
-  const theme = proSiteData.theme || { id: "light", css: "bg-slate-50", textColor: "#0f172a", primaryColor: "#0f172a", headerStyle: "center" };
+  const theme = { 
+    ...(proSiteData.theme || { id: "light", css: "bg-slate-50", textColor: "#0f172a", primaryColor: "#0f172a", headerStyle: "center" }),
+    fontFamily: (linkBio as any).font_family || "Inter, sans-serif",
+  };
 
   const isAvatarLayout = presentation.heroLayout === "avatar-cover";
 

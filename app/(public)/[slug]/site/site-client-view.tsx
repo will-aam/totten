@@ -35,18 +35,15 @@ const SOCIAL_ICONS: Record<string, any> = {
 
 export function SiteClientView({ org, proSiteData, theme, presentation, contact, socialProof, servicesConfig, socialLinks = [], profileConfig = {}, globalBio }: any) {
   const history = proSiteData?.history || {};
-  const isAvatarLayout = presentation.heroLayout === "avatar-cover";
-  const isBlogLayout = presentation?.heroLayout === "classic-blog";
-
-  const sliderImages: string[] = isBlogLayout
-    ? (presentation.proHeroImages?.length > 0 ? presentation.proHeroImages : (presentation.proHeroImage ? [presentation.proHeroImage] : (presentation.heroImage ? [presentation.heroImage] : [])))
-    : (presentation.heroImage ? [presentation.heroImage] : []);
+  const sliderImages: string[] = presentation.proHeroImages?.length > 0
+    ? presentation.proHeroImages
+    : (presentation.proHeroImage ? [presentation.proHeroImage] : (presentation.heroImage ? [presentation.heroImage] : []));
   const displayImage = sliderImages.length > 0 ? sliderImages[0] : undefined;
-  const isSlider = isBlogLayout && sliderImages.length > 1;
+  const isSlider = sliderImages.length > 1;
 
   const hasSecondaryCta = presentation.ctaSecondaryText !== false;
   const ctaSecondaryType = hasSecondaryCta ? (presentation.ctaSecondaryType || "services") : null;
-  
+
   const secondaryCtaInfo = {
     services: { label: "Conhecer Serviços", href: "#servicos" },
     packages: { label: "Planos e Pacotes", href: "#pacotes" },
@@ -163,7 +160,7 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Oxanium:wght@400;500;600;700&family=Roboto:ital,wght@0,400;0,500;0,700;1,400&family=Sora:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Oxanium:wght@400;500;600;700&family=Philosopher:ital,wght@0,400;0,700;1,400&family=Roboto:ital,wght@0,400;0,500;0,700;1,400&family=Sora:wght@400;500;600;700&display=swap');
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         @keyframes fadeInUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
@@ -172,7 +169,7 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
 
       <div
         className={cn("min-h-screen w-full flex flex-col relative z-10 transition-colors duration-500 font-sans light", theme.css)}
-        style={{ color: theme.textColor }}
+        style={{ color: theme.textColor, fontFamily: theme.fontFamily || "Inter, sans-serif" }}
       >
         {/* ─────────────── NAVBAR ─────────────── */}
         <header className={cn(
@@ -246,228 +243,130 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
         <main className="w-full min-h-screen relative pt-16 md:pt-20">
 
           {/* ── HERO ── */}
-          {isBlogLayout ? (
-            <div className="px-6 sm:px-10 relative z-10 flex flex-col lg:flex-row gap-10 lg:gap-16 max-w-7xl mx-auto w-full pb-14 mt-8 md:mt-16 items-center">
+          <div className="px-6 sm:px-10 relative z-10 flex flex-col lg:flex-row gap-10 lg:gap-16 max-w-7xl mx-auto w-full pb-14 mt-8 md:mt-16 items-center">
 
-              {/* Mobile Image (rendered on top for mobile, hidden on lg) */}
-              {(displayImage || isSlider) && (
-                <div className="w-[calc(100%+3rem)] sm:w-[calc(100%+5rem)] -mx-6 sm:-mx-10 -mt-8 relative lg:hidden mb-6 animate-fade-up" style={{ animationDelay: '0.1s' }}>
-                  <div className="w-full h-[350px] sm:h-[400px] relative rounded-none rounded-b-[2.5rem] overflow-hidden shadow-xl">
-                    {isSlider ? (
-                      <Carousel setApi={setMobileCarouselApi} className="w-full h-full" opts={{ loop: true }}>
-                        <CarouselContent className="h-full ml-0">
-                          {sliderImages.map((img, idx) => (
-                            <CarouselItem key={idx} className="h-full pl-0">
-                              <img src={img} alt={`Slide ${idx + 1}`} className="w-full h-full object-cover" />
-                            </CarouselItem>
-                          ))}
-                        </CarouselContent>
-                      </Carousel>
-                    ) : (
-                      <img src={displayImage} alt="Hero" className="w-full h-full object-cover" />
-                    )}
-
-                    {/* Dots Navigation for Slider */}
-                    {isSlider && (
-                      <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5 z-20">
-                        {sliderImages.map((_, idx) => (
-                          <div
-                            key={idx}
-                            className={cn(
-                              "h-1.5 rounded-full transition-all duration-300",
-                              mobileCurrentSlide === idx ? "w-4 bg-white" : "w-1.5 bg-white/50"
-                            )}
-                          />
+            {/* Mobile Image (rendered on top for mobile, hidden on lg) */}
+            {(displayImage || isSlider) && (
+              <div className="w-[calc(100%+3rem)] sm:w-[calc(100%+5rem)] -mx-6 sm:-mx-10 -mt-8 relative lg:hidden mb-6 animate-fade-up" style={{ animationDelay: '0.1s' }}>
+                <div className="w-full h-[350px] sm:h-[400px] relative rounded-none rounded-b-[2.5rem] overflow-hidden shadow-xl">
+                  {isSlider ? (
+                    <Carousel setApi={setMobileCarouselApi} className="w-full h-full" opts={{ loop: true }}>
+                      <CarouselContent className="h-full ml-0">
+                        {sliderImages.map((img, idx) => (
+                          <CarouselItem key={idx} className="h-full pl-0">
+                            <img src={img} alt={`Slide ${idx + 1}`} className="w-full h-full object-cover" />
+                          </CarouselItem>
                         ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className={cn(
-                "flex flex-col w-full lg:w-1/2",
-                theme.headerStyle === "center" ? "text-center items-center lg:text-left lg:items-start" : "text-left items-start"
-              )}>
-                {/* Badge Personalizável */}
-                {presentation.badgeText && (
-                  <div className={cn(
-                    "inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-6 border w-fit animate-fade-up",
-                    isDark ? "bg-white/10 border-white/20 text-white/80" : "bg-black/5 border-black/10 text-black/80"
-                  )}>
-                    {presentation.badgeText}
-                  </div>
-                )}
-
-                <h1 className="font-bold text-4xl sm:text-5xl md:text-6xl lg:text-[4rem] leading-[1.1] drop-shadow-sm mt-1 animate-fade-up" style={{ animationDelay: '0.1s' }}>
-                  {presentation.headline || org.name}
-                </h1>
-                <p className="text-base sm:text-lg opacity-80 mt-6 font-medium drop-shadow-sm max-w-xl leading-relaxed animate-fade-up" style={{ animationDelay: '0.2s' }}>
-                  {presentation.subheadline || "Subtítulo de apoio ou missão do seu negócio."}
-                </p>
-
-                {/* CTAs */}
-                <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-4 w-full mt-10 animate-fade-up", theme.headerStyle === "center" ? "mx-auto max-w-lg lg:mx-0 lg:max-w-md" : "max-w-md")} style={{ animationDelay: '0.3s' }}>
-                  {presentation.ctaPrimaryText !== false && (
-                    <a href={bookingUrl} className="w-full px-8 py-4 rounded-full text-base font-bold shadow-lg text-white hover:scale-105 transition-transform flex items-center justify-center text-center gap-2" style={{ backgroundColor: theme.primaryColor }}>
-                      Agendar Sessão
-                    </a>
-                  )}
-                  {dbServices.length > 0 && servicesConfig.showServices !== false && presentation.ctaSecondaryText !== false && (
-                    <a href="#servicos" className={cn("w-full px-8 py-4 rounded-full text-base font-bold border hover:scale-105 transition-transform flex items-center justify-center text-center gap-2", isDark ? "border-white/20 text-white hover:bg-white/10" : "border-black/15 text-current hover:bg-black/5")}>
-                      Conhecer Serviços
-                    </a>
-                  )}
-                </div>
-
-                {/* Highlights */}
-                {(presentation.highlight1 || presentation.highlight2 || presentation.highlight3) && (
-                  <div className="flex flex-wrap gap-x-6 gap-y-3 mt-10 animate-fade-up" style={{ animationDelay: '0.4s' }}>
-                    {[presentation.highlight1, presentation.highlight2, presentation.highlight3].filter(Boolean).map((highlight, i) => (
-                      <div key={i} className="flex items-center gap-2 text-sm opacity-80 font-medium">
-                        <div className="w-5 h-5 flex items-center justify-center">
-                          <CheckCircle className="w-4 h-4" />
-                        </div>
-                        {highlight}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Desktop Image (rendered on right for lg, hidden on mobile) */}
-              {(displayImage || isSlider) && (
-                <div className="hidden lg:block w-full lg:w-1/2 relative animate-fade-up" style={{ animationDelay: '0.3s' }}>
-                  <div className="w-full aspect-[4/3] relative rounded-[2.5rem] overflow-hidden shadow-2xl border border-black/5 dark:border-white/10 group">
-                    {isSlider ? (
-                      <Carousel setApi={setDesktopCarouselApi} className="w-full h-full" opts={{ loop: true }}>
-                        <CarouselContent className="h-full ml-0">
-                          {sliderImages.map((img, idx) => (
-                            <CarouselItem key={idx} className="h-full pl-0">
-                              <img src={img} alt={`Slide ${idx + 1}`} className="w-full h-full object-cover transition-transform duration-700" />
-                            </CarouselItem>
-                          ))}
-                        </CarouselContent>
-                      </Carousel>
-                    ) : (
-                      <img src={displayImage} alt="Hero" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                    )}
-
-                    {/* Dots Navigation for Slider */}
-                    {isSlider && (
-                      <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-1.5 z-20">
-                        {sliderImages.map((_, idx) => (
-                          <div
-                            key={idx}
-                            className={cn(
-                              "h-1.5 rounded-full transition-all duration-300",
-                              desktopCurrentSlide === idx ? "w-4 bg-white" : "w-1.5 bg-white/50"
-                            )}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="relative w-full">
-              {presentation.heroImage ? (
-                <div className={cn(
-                  "w-full relative shrink-0",
-                  isAvatarLayout ? "h-64 md:h-[450px]" : "h-80 md:h-[560px]"
-                )}>
-                  <img
-                    src={presentation.heroImage}
-                    alt="Hero"
-                    className="w-full h-full object-cover"
-                    style={!isAvatarLayout ? {
-                      WebkitMaskImage: "linear-gradient(to top, transparent 0%, black 75%)",
-                      maskImage: "linear-gradient(to top, transparent 0%, black 75%)"
-                    } : {}}
-                  />
-                </div>
-              ) : (
-                <div className={cn("w-full bg-muted/20 border-b border-border/10 shrink-0 h-48 md:h-64")} />
-              )}
-
-              <div className={cn(
-                "px-6 sm:px-10 relative z-10 flex flex-col pb-14 max-w-5xl mx-auto w-full",
-                isAvatarLayout
-                  ? (presentation.heroImage ? "-mt-16 md:-mt-24" : "-mt-12 md:-mt-16")
-                  : (presentation.heroImage ? "-mt-20 md:-mt-32" : "-mt-12 md:-mt-16"),
-                theme.headerStyle === "center" ? "text-center items-center" : "text-left items-start"
-              )}>
-                {/* Avatar (layout avatar-cover) */}
-                {isAvatarLayout && (
-                  org.link_bio?.profile_image_url ? (
-                    <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 shadow-md overflow-hidden mb-4 shrink-0" style={{ borderColor: isDark ? '#0f172a' : '#ffffff', backgroundColor: isDark ? '#0f172a' : '#ffffff' }}>
-                      <img src={org.link_bio.profile_image_url} alt="Avatar" className="w-full h-full object-cover" />
-                    </div>
+                      </CarouselContent>
+                    </Carousel>
                   ) : (
-                    <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 shadow-md bg-muted/50 mb-4 shrink-0" style={{ borderColor: isDark ? '#0f172a' : '#ffffff' }} />
-                  )
-                )}
-
-                {/* Badge Personalizável */}
-                {presentation.badgeText && (
-                  <div className={cn(
-                    "inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-4 border w-fit",
-                    isDark ? "bg-white/10 border-white/20 text-white/80" : "bg-black/5 border-black/10 text-black/80"
-                  )}>
-                    {presentation.badgeText}
-                  </div>
-                )}
-
-                <h1 className="font-bold text-3xl sm:text-4xl md:text-5xl lg:text-6xl leading-tight drop-shadow-sm mt-1">
-                  {presentation.headline || org.name}
-                </h1>
-                <p className="text-base sm:text-lg opacity-80 mt-4 font-medium drop-shadow-sm max-w-xl">
-                  {presentation.subheadline || "Subtítulo de apoio ou missão do seu negócio."}
-                </p>
-
-                {/* Dual CTA */}
-                <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-4 w-full mt-8", theme.headerStyle === "center" ? "mx-auto max-w-lg" : "max-w-md")}>
-                  {presentation.ctaPrimaryText && (
-                    <a
-                      href={bookingUrl}
-                      className="w-full px-8 py-4 rounded-full text-base font-bold shadow-lg text-white backdrop-blur-sm hover:scale-105 transition-transform flex items-center justify-center text-center gap-2"
-                      style={{ backgroundColor: theme.primaryColor }}
-                    >
-                      {presentation.ctaPrimaryText}
-                    </a>
+                    <img src={displayImage} alt="Hero" className="w-full h-full object-cover" />
                   )}
-                  {hasSecondaryCta && (
-                    <a
-                      href={secondaryCtaInfo.href}
-                      className={cn(
-                        "w-full px-8 py-4 rounded-full text-base font-bold border hover:scale-105 transition-transform flex items-center justify-center text-center gap-2",
-                        isDark ? "border-white/20 text-white hover:bg-white/10" : "border-black/15 text-current hover:bg-black/5"
-                      )}
-                    >
-                      {secondaryCtaInfo.label}
-                      <ArrowRight className="h-4 w-4" />
-                    </a>
+
+                  {/* Dots Navigation for Slider */}
+                  {isSlider && (
+                    <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5 z-20">
+                      {sliderImages.map((_, idx) => (
+                        <div
+                          key={idx}
+                          className={cn(
+                            "h-1.5 rounded-full transition-all duration-300",
+                            mobileCurrentSlide === idx ? "w-4 bg-white" : "w-1.5 bg-white/50"
+                          )}
+                        />
+                      ))}
+                    </div>
                   )}
                 </div>
+              </div>
+            )}
 
-                {/* Highlights */}
-                {(presentation.highlight1 || presentation.highlight2 || presentation.highlight3) && (
-                  <div className={cn("flex flex-wrap gap-x-6 gap-y-3 mt-8", theme.headerStyle === "center" ? "justify-center" : "justify-start")}>
-                    {[presentation.highlight1, presentation.highlight2, presentation.highlight3].filter(Boolean).map((highlight, i) => (
-                      <div key={i} className="flex items-center gap-2 text-sm opacity-80 font-medium">
-                        <div className="w-5 h-5 rounded-full flex items-center justify-center border border-current opacity-70">
-                          <CheckCircle className="w-3.5 h-3.5" />
-                        </div>
-                        {highlight}
-                      </div>
-                    ))}
-                  </div>
+            <div className={cn(
+              "flex flex-col w-full lg:w-1/2",
+              theme.headerStyle === "center" ? "text-center items-center lg:text-left lg:items-start" : "text-left items-start"
+            )}>
+              {/* Badge Personalizável */}
+              {presentation.badgeText && (
+                <div className={cn(
+                  "inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-6 border w-fit animate-fade-up",
+                  isDark ? "bg-white/10 border-white/20 text-white/80" : "bg-black/5 border-black/10 text-black/80"
+                )}>
+                  {presentation.badgeText}
+                </div>
+              )}
+
+              <h1 className="font-bold text-4xl sm:text-5xl md:text-6xl lg:text-[4rem] leading-[1.1] drop-shadow-sm mt-1 animate-fade-up" style={{ animationDelay: '0.1s' }}>
+                {presentation.headline || org.name}
+              </h1>
+              <p className="text-base sm:text-lg opacity-80 mt-6 font-medium drop-shadow-sm max-w-xl leading-relaxed animate-fade-up" style={{ animationDelay: '0.2s' }}>
+                {presentation.subheadline || "Subtítulo de apoio ou missão do seu negócio."}
+              </p>
+
+              {/* CTAs */}
+              <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-4 w-full mt-10 animate-fade-up", theme.headerStyle === "center" ? "mx-auto max-w-lg lg:mx-0 lg:max-w-md" : "max-w-md")} style={{ animationDelay: '0.3s' }}>
+                {presentation.ctaPrimaryText !== false && (
+                  <a href={bookingUrl} className="w-full px-8 py-4 rounded-full text-base font-bold shadow-lg text-white hover:scale-105 transition-transform flex items-center justify-center text-center gap-2" style={{ backgroundColor: theme.primaryColor }}>
+                    Agendar Sessão
+                  </a>
+                )}
+                {dbServices.length > 0 && servicesConfig.showServices !== false && presentation.ctaSecondaryText !== false && (
+                  <a href="#servicos" className={cn("w-full px-8 py-4 rounded-full text-base font-bold border hover:scale-105 transition-transform flex items-center justify-center text-center gap-2", isDark ? "border-white/20 text-white hover:bg-white/10" : "border-black/15 text-current hover:bg-black/5")}>
+                    Conhecer Serviços
+                  </a>
                 )}
               </div>
+
+              {/* Highlights */}
+              {(presentation.highlight1 || presentation.highlight2 || presentation.highlight3) && (
+                <div className="flex flex-wrap gap-x-6 gap-y-3 mt-10 animate-fade-up" style={{ animationDelay: '0.4s' }}>
+                  {[presentation.highlight1, presentation.highlight2, presentation.highlight3].filter(Boolean).map((highlight, i) => (
+                    <div key={i} className="flex items-center gap-2 text-sm opacity-80 font-medium">
+                      <div className="w-5 h-5 flex items-center justify-center">
+                        <CheckCircle className="w-4 h-4" />
+                      </div>
+                      {highlight}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+
+            {/* Desktop Image (rendered on right for lg, hidden on mobile) */}
+            {(displayImage || isSlider) && (
+              <div className="hidden lg:block w-full lg:w-1/2 relative animate-fade-up" style={{ animationDelay: '0.3s' }}>
+                <div className="w-full aspect-[4/3] relative rounded-[2.5rem] overflow-hidden shadow-2xl border border-black/5 dark:border-white/10 group">
+                  {isSlider ? (
+                    <Carousel setApi={setDesktopCarouselApi} className="w-full h-full" opts={{ loop: true }}>
+                      <CarouselContent className="h-full ml-0">
+                        {sliderImages.map((img, idx) => (
+                          <CarouselItem key={idx} className="h-full pl-0">
+                            <img src={img} alt={`Slide ${idx + 1}`} className="w-full h-full object-cover transition-transform duration-700" />
+                          </CarouselItem>
+                        ))}
+                      </CarouselContent>
+                    </Carousel>
+                  ) : (
+                    <img src={displayImage} alt="Hero" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                  )}
+
+                  {/* Dots Navigation for Slider */}
+                  {isSlider && (
+                    <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-1.5 z-20">
+                      {sliderImages.map((_, idx) => (
+                        <div
+                          key={idx}
+                          className={cn(
+                            "h-1.5 rounded-full transition-all duration-300",
+                            desktopCurrentSlide === idx ? "w-4 bg-white" : "w-1.5 bg-white/50"
+                          )}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* ── SOBRE ── */}
           {presentation.bio && (
@@ -484,7 +383,7 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
           )}
 
           {/* ── NOSSA HISTÓRIA ── */}
-        {history.showHistory !== false && (history.historyTitle || (history.useGlobalBio !== false ? globalBio : history.historyText)) && (
+          {history.showHistory !== false && (history.historyTitle || (history.useGlobalBio !== false ? globalBio : history.historyText)) && (
             <div id="historia" className={cn("px-6 sm:px-10 py-14 md:py-20 scroll-mt-20", altBg)}>
               <div className="max-w-6xl mx-auto w-full">
                 <div className="flex flex-col md:flex-row gap-12 items-center md:items-start">
@@ -602,10 +501,10 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                                     <div className="w-full aspect-[4/3] shrink-0 relative bg-muted border-b overflow-hidden" style={{ borderColor: theme.primaryColor + '20' }}>
                                       {srv.image_url ? (
                                         // eslint-disable-next-line @next/next/no-img-element
-                                        <img 
-                                          src={srv.image_url} 
-                                          alt={srv.name} 
-                                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105 cursor-pointer" 
+                                        <img
+                                          src={srv.image_url}
+                                          alt={srv.name}
+                                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105 cursor-pointer"
                                           onClick={() => setLightboxImage(srv.image_url)}
                                         />
                                       ) : (
@@ -1009,7 +908,21 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
             <DialogTitle>Termos de Uso</DialogTitle>
           </DialogHeader>
           <div className="py-4 text-sm opacity-80 leading-relaxed whitespace-pre-wrap">
-            {org.settings?.terms_of_use || "Nenhum termo de uso foi cadastrado para esta clínica ainda."}
+            {org.settings?.terms_of_use || `Termos de Uso e Privacidade
+
+1. Coleta de Dados
+Coletamos apenas as informações essenciais (como nome e telefone) necessárias para a prestação do serviço e identificação do cliente.
+
+2. Uso das Informações
+Seus dados são utilizados exclusivamente para gerenciar seus agendamentos, enviar confirmações e contatar você sobre o serviço contratado.
+
+3. Compartilhamento
+Garantimos que suas informações pessoais não serão vendidas, alugadas ou compartilhadas com terceiros.
+
+4. Segurança
+Adotamos medidas de segurança para proteger seus dados contra acessos não autorizados e manter a privacidade de suas informações.
+
+Ao utilizar nosso sistema, você concorda com a coleta e o uso de suas informações conforme descrito nestes termos.`}
           </div>
         </DialogContent>
       </Dialog>

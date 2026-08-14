@@ -91,43 +91,10 @@ export function ProPresentation({ data, onChange, hasServices }: { data: any, on
 
       <div className="flex flex-col gap-6">
 
-        {/* OPÇÃO DE LAYOUT DO HERO */}
-        <div className="flex flex-col gap-3">
-          <Label className="text-foreground font-medium">Estilo do Cabeçalho</Label>
-          <RadioGroup
-            value={data.heroLayout || "avatar-cover"}
-            onValueChange={(val) => onChange({ ...data, heroLayout: val })}
-            className="grid grid-cols-1 md:grid-cols-2 gap-4"
-          >
-            <Label
-              htmlFor="layout-avatar"
-              className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-transparent p-4 hover:bg-muted/50 [&:has([data-state=checked])]:border-primary cursor-pointer gap-2"
-            >
-              <RadioGroupItem value="avatar-cover" id="layout-avatar" className="sr-only" />
-              <div className="w-full h-12 bg-muted/40 rounded-md border border-border/50 relative flex items-end justify-center mb-1">
-                <div className="w-6 h-6 rounded-full bg-primary/20 absolute -bottom-3 border-2 border-background" />
-              </div>
-              <span className="font-semibold text-[13px] text-center">Capa Quadrada + Perfil</span>
-            </Label>
-
-            <Label
-              htmlFor="layout-blog"
-              className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-transparent p-4 hover:bg-muted/50 [&:has([data-state=checked])]:border-primary cursor-pointer gap-2"
-            >
-              <RadioGroupItem value="classic-blog" id="layout-blog" className="sr-only" />
-              <div className="w-full h-12 bg-muted/20 rounded-md border border-border/50 flex mb-1 overflow-hidden p-1 gap-1">
-                <div className="w-1/2 h-full bg-muted/60 rounded-sm" />
-                <div className="w-1/2 h-full bg-muted/30 rounded-sm" />
-              </div>
-              <span className="font-semibold text-[13px] text-center">Site Profissional (Imagem Lateral)</span>
-            </Label>
-          </RadioGroup>
-        </div>
 
         {/* Upload de Imagens para Layout de Blog/Lateral (Slider) */}
-        {data.heroLayout === "classic-blog" && (
-          <div className="flex flex-col gap-4 pt-2">
-            <div>
+        <div className="flex flex-col gap-4 pt-2">
+          <div>
               <Label className="text-foreground font-medium">Imagens do Slider / Banner Lateral</Label>
               <p className="text-xs text-muted-foreground mt-1">
                 Adicione até 5 fotos para criar um slide automático. Se adicionar apenas 1, será uma imagem estática.
@@ -187,7 +154,6 @@ export function ProPresentation({ data, onChange, hasServices }: { data: any, on
               </div>
             )}
           </div>
-        )}
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="headline" className="text-foreground font-medium">
@@ -246,16 +212,20 @@ export function ProPresentation({ data, onChange, hasServices }: { data: any, on
             {data.ctaSecondaryText !== false && (
               <div className="flex flex-col gap-2 pt-2 border-t">
                 <Label className="text-xs font-medium text-muted-foreground">Ação do Botão</Label>
-                <select
+                <Select
                   value={data.ctaSecondaryType || "services"}
-                  onChange={(e) => onChange({ ...data, ctaSecondaryType: e.target.value })}
-                  className="bg-background border border-border/50 h-9 px-3 rounded-md text-sm focus:outline-none focus-visible:ring-1 w-full appearance-none"
+                  onValueChange={(val) => onChange({ ...data, ctaSecondaryType: val })}
                 >
-                  <option value="services">Conhecer Serviços</option>
-                  <option value="packages">Planos e Pacotes</option>
-                  <option value="team">Nossa Equipe</option>
-                  <option value="contact">Fale Conosco</option>
-                </select>
+                  <SelectTrigger className="bg-background border-border/50 h-9 w-full">
+                    <SelectValue placeholder="Selecione a ação" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="services">Conhecer Serviços</SelectItem>
+                    <SelectItem value="packages">Planos e Pacotes</SelectItem>
+                    <SelectItem value="team">Nossa Equipe</SelectItem>
+                    <SelectItem value="contact">Fale Conosco</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             )}
           </div>

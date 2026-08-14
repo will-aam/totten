@@ -91,6 +91,7 @@ function RulesSummaryPreview({ data, onChange }: any) {
 
 const FONTS = [
   { id: "font-sans", name: "Inter (Padrão)", value: "Inter, sans-serif" },
+  { id: "philosopher", name: "Philosopher", value: "Philosopher, serif" },
   { id: "sora", name: "Sora", value: "Sora, sans-serif" },
   { id: "notosans", name: "Noto Sans", value: "'Noto Sans', sans-serif" },
   { id: "epilogue", name: "Epilogue", value: "Epilogue, sans-serif" },

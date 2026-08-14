@@ -160,6 +160,7 @@ export default function CustomPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [previewKey, setPreviewKey] = useState(0);
   const [proSiteConfig, setProSiteConfig] = useState<any>(null);
 
   // Carregar dados do banco de dados
@@ -319,6 +320,7 @@ export default function CustomPage() {
 
       if (response.success) {
         toast.success("Link na Bio salvo com sucesso!");
+        setPreviewKey(k => k + 1);
       } else {
         toast.error(response.error || "Erro ao salvar.");
       }
@@ -516,6 +518,7 @@ export default function CustomPage() {
                     links={links}
                     activeTab={activeTab}
                     proSiteConfig={proSiteConfig}
+                    previewKey={previewKey}
                   />
                 </div>
               </div>

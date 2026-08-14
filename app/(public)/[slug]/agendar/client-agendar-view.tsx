@@ -94,6 +94,7 @@ export function ClientAgendarView({ org }: { org: any }) {
     primaryColor: tc.buttonBg || "#0f172a",
     textColor: tc.textColor || "#0f172a",
     css: tc.css || "",
+    fontFamily: tc.fontFamily || "Inter, sans-serif",
   };
 
   const isDark = theme.css?.includes("900") || theme.css?.includes("black") || theme.css?.includes("slate-950");
@@ -120,7 +121,7 @@ export function ClientAgendarView({ org }: { org: any }) {
     : professionalSiteConfig.contact || {};
   const bannerUrl = profileConfig.bannerImage || org.settings?.cover_image_url || presentation.heroImage;
   return (
-    <div className={cn("min-h-screen w-full relative", bgClass, theme.css)} style={{ color: theme.textColor }}>
+    <div className={cn("min-h-screen w-full relative", bgClass, theme.css)} style={{ color: theme.textColor, fontFamily: theme.fontFamily }}>
 
       {/* Top Navigation Bar / Floating Area do Cliente */}
       <div className="absolute top-4 right-4 z-50">
