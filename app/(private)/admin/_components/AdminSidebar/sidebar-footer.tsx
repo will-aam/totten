@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   User,
-  Bell,
   HeadphoneMic,
   Cog,
   Power,
@@ -43,10 +42,6 @@ export function SidebarUserFooter({
             </span>
           </div>
         </div>
-        <button className="relative p-2 text-muted-foreground hover:bg-muted rounded-full transition-all">
-          <Bell size="sm" />
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
-        </button>
       </div>
 
       <div className="h-px bg-border/50 w-full" />
