@@ -141,42 +141,7 @@ export function AppearanceSettings() {
         </CardContent>
       </Card>
 
-      {/* Banner de Upsell - Minimalista e Clean */}
-      <Card className="border border-dashed border-border bg-muted/30 rounded-2xl">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-foreground text-lg font-semibold">
-            <BrushSparkles className="h-5 w-5 text-primary" />
-            Personalize com a sua marca
-          </CardTitle>
-          <CardDescription className="text-muted-foreground text-sm">
-            Quer sair do padrão? Criamos um tema exclusivo utilizando as cores
-            da sua logomarca.
-          </CardDescription>
-        </CardHeader>
 
-        <CardContent className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex flex-col gap-0.5">
-            <p className="text-sm text-muted-foreground">
-              Taxa única de customização:{" "}
-              <span className="font-bold text-foreground">R$ 15,00</span>
-            </p>
-            <p className="text-xs text-muted-foreground/70 max-w-md">
-              Aplicamos a paleta da sua marca nos botões, menus e
-              autoatendimento.
-            </p>
-          </div>
-
-          <Button
-            onClick={handleRequestTheme}
-            // Botão outline padrão, sem sombra, com efeito de clique suave
-            variant="default"
-            className="w-full sm:w-auto gap-2 rounded-xl h-10 px-5 font-semibold transition-transform active:scale-95"
-          >
-            <MessageCircle className="h-4 w-4" />
-            Solicitar Tema
-          </Button>
-        </CardContent>
-      </Card>
     </div>
   );
 }

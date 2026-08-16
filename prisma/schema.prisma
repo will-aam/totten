@@ -51,6 +51,7 @@ model Admin {
   active             Boolean        @default(true)
   permissions        String[]       @default([])
   profession         String?
+  bio                String?        @db.Text
   profile_image_url  String?
   instagram_url      String?
   show_instagram     Boolean        @default(true)
@@ -59,6 +60,8 @@ model Admin {
   check_ins          CheckIn[]      @relation("AdminToCheckIn")
   transactions       Transaction[]  @relation("AdminToTransaction")
   organizations      Organization[] @relation("AdminToOrganization")
+  services           Service[]      @relation("AdminToService")
+  package_templates  PackageTemplate[] @relation("AdminToPackageTemplate")
 
   @@map("admins")
 }
@@ -224,6 +227,7 @@ model Service {
   stock_items       ServiceStockItem[]
   category          Category           @relation(fields: [category_id], references: [id])
   organization      Organization       @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  admins            Admin[]            @relation("AdminToService")
 
   @@index([organization_id])
   @@index([category_id])
@@ -247,6 +251,7 @@ model PackageTemplate {
   organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   service         Service      @relation(fields: [service_id], references: [id])
   packages        Package[]    // Pacotes vendidos baseados neste template
+  admins          Admin[]      @relation("AdminToPackageTemplate")
 
   @@index([organization_id])
   @@map("package_templates")

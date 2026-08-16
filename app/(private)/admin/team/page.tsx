@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +19,14 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import {
   User,
   UserPlus,
@@ -29,7 +39,8 @@ import {
   Wallet,
   ClipboardDetail, //  Importado para o Histórico
   Camera,
-  Image as ImageIcon
+  Image as ImageIcon,
+  ChevronDown
 } from "@boxicons/react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
@@ -44,6 +55,7 @@ import {
   updateCollaborator,
   toggleCollaboratorStatus,
   deleteCollaborator,
+  getCatalogOptions,
 } from "@/app/actions/team";
 
 //  Atualizamos o tipo com os novos campos
@@ -58,7 +70,10 @@ type TeamMember = {
   show_instagram?: boolean;
   profile_image_url?: string | null;
   profession?: string | null;
+  bio?: string | null;
   show_on_site?: boolean;
+  services?: { id: string; name: string }[];
+  package_templates?: { id: string; name: string }[];
 };
 
 export default function TeamPage() {
@@ -74,6 +89,8 @@ export default function TeamPage() {
     "create" | "edit" | "toggle" | "delete" | null
   >(null);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  
+  const [catalogOptions, setCatalogOptions] = useState<{ services: { id: string; name: string }[]; packages: { id: string; name: string }[] }>({ services: [], packages: [] });
 
   const [formData, setFormData] = useState({
     name: "",
@@ -84,7 +101,10 @@ export default function TeamPage() {
     show_instagram: true,
     profile_image_url: "",
     profession: "",
+    bio: "",
     show_on_site: true,
+    service_ids: [] as string[],
+    package_template_ids: [] as string[],
   });
 
   useEffect(() => {
@@ -93,7 +113,15 @@ export default function TeamPage() {
       return;
     }
     loadTeam();
+    loadOptions();
   }, [session, router]);
+
+  const loadOptions = async () => {
+    const res = await getCatalogOptions();
+    if (res.success) {
+      setCatalogOptions({ services: res.services || [], packages: res.packages || [] });
+    }
+  };
 
   const loadTeam = async () => {
     setLoading(true);
@@ -108,7 +136,7 @@ export default function TeamPage() {
   // HANDLERS DE ABERTURA DOS MODAIS
   // --------------------------------------------------------
   const openCreate = () => {
-    setFormData({ name: "", email: "", password: "", permissions: [], instagram_url: "", show_instagram: true, profile_image_url: "", profession: "", show_on_site: true });
+    setFormData({ name: "", email: "", password: "", permissions: [], instagram_url: "", show_instagram: true, profile_image_url: "", profession: "", bio: "", show_on_site: true, service_ids: [], package_template_ids: [] });
     setSelectedMember(null);
     setModalView("create");
   };
@@ -123,7 +151,10 @@ export default function TeamPage() {
       show_instagram: member.show_instagram !== false,
       profile_image_url: member.profile_image_url || "",
       profession: member.profession || "",
+      bio: member.bio || "",
       show_on_site: member.show_on_site !== false,
+      service_ids: member.services?.map((s) => s.id) || [],
+      package_template_ids: member.package_templates?.map((p) => p.id) || [],
     });
     setSelectedMember(member);
     setModalView("edit");
@@ -274,7 +305,7 @@ export default function TeamPage() {
         open={modalView === "create" || modalView === "edit"}
         onOpenChange={closeModal}
       >
-        <DialogContent className="sm:max-w-md rounded-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-screen h-[100dvh] max-w-none max-h-none rounded-none p-6 sm:w-full sm:h-auto sm:max-w-md sm:max-h-[90vh] sm:rounded-3xl overflow-y-auto border-0 sm:border">
           <DialogHeader>
             <DialogTitle>
               {modalView === "create"
@@ -283,7 +314,7 @@ export default function TeamPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            
+
             {/* FOTO DO PROFISSIONAL */}
             <div className="flex flex-col items-center justify-center gap-3">
               <div className="relative group w-24 h-24">
@@ -299,7 +330,7 @@ export default function TeamPage() {
                     <User className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
                 )}
-                
+
                 <label className="absolute -bottom-2 -right-2 bg-primary text-primary-foreground p-2 rounded-full cursor-pointer shadow-md hover:bg-primary/90 transition-transform hover:scale-105 active:scale-95 flex items-center justify-center z-10">
                   {saving ? (
                     <LoaderDots className="h-4 w-4 animate-spin" />
@@ -328,7 +359,7 @@ export default function TeamPage() {
                 }
               />
             </div>
-            
+
             <div className="grid gap-2">
               <Label>Profissão / Especialidade (Opcional)</Label>
               <Input
@@ -337,6 +368,24 @@ export default function TeamPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, profession: e.target.value })
                 }
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between">
+                <Label>Sobre o Profissional (Opcional)</Label>
+                <span className="text-[10px] text-muted-foreground">
+                  {formData.bio.length}/300
+                </span>
+              </div>
+              <Textarea
+                placeholder="Breve biografia, especialidades ou frase de destaque..."
+                value={formData.bio}
+                onChange={(e) =>
+                  setFormData({ ...formData, bio: e.target.value })
+                }
+                className="resize-none h-20 text-sm"
+                maxLength={300}
               />
             </div>
             {selectedMember?.role !== "OWNER" && (
@@ -417,76 +466,160 @@ export default function TeamPage() {
 
             {/* ⚡ GERENCIAMENTO DE PERMISSÕES */}
             {selectedMember?.role !== "OWNER" && (
-              <div className="mt-2 flex flex-col gap-3 rounded-xl border border-border/50 bg-muted/20 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Permissões de Acesso
-              </p>
+              <div className="grid gap-2 mt-2 pt-2 border-t border-border/50">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Permissões de Acesso
+                </p>
 
-              {/* Padrão (Sempre Ativo) */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-sm font-medium">
-                    Agenda & Dashboard
-                  </Label>
-                  <p className="text-[10px] text-muted-foreground">
-                    Acesso padrão para visualizar a rotina da empresa.
-                  </p>
+                {/* Padrão (Sempre Ativo) */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-medium">
+                      Agenda & Dashboard
+                    </Label>
+                    <p className="text-[10px] text-muted-foreground">
+                      Acesso padrão para visualizar a rotina da empresa.
+                    </p>
+                  </div>
+                  <Switch checked={true} disabled />
                 </div>
-                <Switch checked={true} disabled />
-              </div>
 
-              {/* Permissão: Histórico */}
-              <div className="flex items-center justify-between pt-2 border-t border-border/50">
-                <div className="space-y-0.5">
-                  <Label className="text-sm font-medium flex items-center gap-1.5">
-                    <ClipboardDetail
-                      size="xs"
-                      className="text-muted-foreground"
-                    />{" "}
-                    Histórico de Check-in
-                  </Label>
-                  <p className="text-[10px] text-muted-foreground">
-                    Pode visualizar todos os atendimentos passados.
-                  </p>
+                {/* Permissão: Histórico */}
+                <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-medium flex items-center gap-1.5">
+                      <ClipboardDetail
+                        size="xs"
+                        className="text-muted-foreground"
+                      />{" "}
+                      Histórico de Check-in
+                    </Label>
+                    <p className="text-[10px] text-muted-foreground">
+                      Pode visualizar todos os atendimentos passados.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={formData.permissions.includes("HISTORY")}
+                    onCheckedChange={(checked) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        permissions: checked
+                          ? [...prev.permissions, "HISTORY"]
+                          : prev.permissions.filter((p) => p !== "HISTORY"),
+                      }));
+                    }}
+                  />
                 </div>
-                <Switch
-                  checked={formData.permissions.includes("HISTORY")}
-                  onCheckedChange={(checked) => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      permissions: checked
-                        ? [...prev.permissions, "HISTORY"]
-                        : prev.permissions.filter((p) => p !== "HISTORY"),
-                    }));
-                  }}
-                />
-              </div>
 
-              {/* Permissão: Financeiro */}
-              <div className="flex items-center justify-between pt-2 border-t border-border/50">
-                <div className="space-y-0.5">
-                  <Label className="text-sm font-medium flex items-center gap-1.5">
-                    <Wallet size="xs" className="text-muted-foreground" />{" "}
-                    Financeiro
-                  </Label>
-                  <p className="text-[10px] text-muted-foreground">
-                    Pode visualizar caixa, extrato e métricas de lucro.
-                  </p>
+                {/* Permissão: Financeiro */}
+                <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-medium flex items-center gap-1.5">
+                      <Wallet size="xs" className="text-muted-foreground" />{" "}
+                      Financeiro
+                    </Label>
+                    <p className="text-[10px] text-muted-foreground">
+                      Pode visualizar caixa, extrato e métricas de lucro.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={formData.permissions.includes("FINANCE")}
+                    onCheckedChange={(checked) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        permissions: checked
+                          ? [...prev.permissions, "FINANCE"]
+                          : prev.permissions.filter((p) => p !== "FINANCE"),
+                      }));
+                    }}
+                  />
                 </div>
-                <Switch
-                  checked={formData.permissions.includes("FINANCE")}
-                  onCheckedChange={(checked) => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      permissions: checked
-                        ? [...prev.permissions, "FINANCE"]
-                        : prev.permissions.filter((p) => p !== "FINANCE"),
-                    }));
-                  }}
-                />
               </div>
-            </div>
             )}
+
+            {/* ⚡ SERVIÇOS E PACOTES */}
+            <div className="grid gap-2 mt-2 pt-2 border-t border-border/50">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Serviços que Realiza
+              </p>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between font-normal bg-background">
+                    {formData.service_ids.length > 0
+                      ? `${formData.service_ids.length} selecionado(s)`
+                      : "Selecionar serviços..."}
+                    <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] min-w-56 max-h-60 overflow-y-auto">
+                  <DropdownMenuLabel>Serviços Disponíveis</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {catalogOptions.services.length === 0 ? (
+                    <div className="p-2 text-sm text-muted-foreground text-center">Nenhum serviço.</div>
+                  ) : (
+                    catalogOptions.services.map((service) => (
+                      <DropdownMenuCheckboxItem
+                        key={service.id}
+                        checked={formData.service_ids.includes(service.id)}
+                        onSelect={(e) => e.preventDefault()}
+                        onCheckedChange={(checked) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            service_ids: checked 
+                              ? [...prev.service_ids, service.id] 
+                              : prev.service_ids.filter(id => id !== service.id)
+                          }));
+                        }}
+                      >
+                        {service.name}
+                      </DropdownMenuCheckboxItem>
+                    ))
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            <div className="grid gap-2 mt-2 pt-2 border-t border-border/50">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Pacotes que Realiza
+              </p>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between font-normal bg-background">
+                    {formData.package_template_ids.length > 0
+                      ? `${formData.package_template_ids.length} selecionado(s)`
+                      : "Selecionar pacotes..."}
+                    <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] min-w-56 max-h-60 overflow-y-auto">
+                  <DropdownMenuLabel>Pacotes Disponíveis</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {catalogOptions.packages.length === 0 ? (
+                    <div className="p-2 text-sm text-muted-foreground text-center">Nenhum pacote.</div>
+                  ) : (
+                    catalogOptions.packages.map((pkg) => (
+                      <DropdownMenuCheckboxItem
+                        key={pkg.id}
+                        checked={formData.package_template_ids.includes(pkg.id)}
+                        onSelect={(e) => e.preventDefault()}
+                        onCheckedChange={(checked) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            package_template_ids: checked 
+                              ? [...prev.package_template_ids, pkg.id] 
+                              : prev.package_template_ids.filter(id => id !== pkg.id)
+                          }));
+                        }}
+                      >
+                        {pkg.name}
+                      </DropdownMenuCheckboxItem>
+                    ))
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={closeModal} disabled={saving}>
@@ -633,6 +766,19 @@ const TeamMemberCard = memo(
                   )}
                 </div>
               )}
+              
+              <div className="flex flex-wrap items-center gap-1.5 ml-1 sm:ml-2 sm:border-l sm:border-border/50 sm:pl-2">
+                {member.services && member.services.length > 0 && (
+                  <span className="text-[10px] text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded-full">
+                    {member.services.length} serviço{member.services.length > 1 ? "s" : ""}
+                  </span>
+                )}
+                {member.package_templates && member.package_templates.length > 0 && (
+                  <span className="text-[10px] text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded-full">
+                    {member.package_templates.length} pacote{member.package_templates.length > 1 ? "s" : ""}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
