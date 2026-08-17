@@ -24,7 +24,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { ptBR } from "date-fns/locale";
 import { format } from "date-fns";
-
+import { getAvailableTimesAndProfessionals } from "@/app/actions/availability";
+import { SYSTEM_THEMES } from "@/app/(private)/admin/custom-page/_components/theme-settings";
 
 export function ClientAgendarView({ org }: { org: any }) {
   const router = useRouter();
@@ -46,6 +47,10 @@ export function ClientAgendarView({ org }: { org: any }) {
 
   const timeSelectionRef = useRef<HTMLDivElement>(null);
 
+  // Availability State
+  const [availableSlots, setAvailableSlots] = useState<Record<string, any[]>>({});
+  const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
+
   // Booking Wizard State
   const [bookingWizardOpen, setBookingWizardOpen] = useState(false);
   const [bookingStep, setBookingStep] = useState(1);
@@ -56,6 +61,8 @@ export function ClientAgendarView({ org }: { org: any }) {
     firstName: "",
     phone: "",
     professionalId: null as string | null,
+    professionalName: null as string | null,
+    professionalImage: null as string | null,
     notes: "",
   });
 
@@ -93,19 +100,24 @@ export function ClientAgendarView({ org }: { org: any }) {
   const tc = (org.link_bio?.theme_config as any) || {};
   const presentation = (org.link_bio?.presentation as any) || {};
 
+  const bookingThemeId = org.settings?.booking_theme || "solid";
+  const systemTheme = SYSTEM_THEMES.find(t => t.id === bookingThemeId) || SYSTEM_THEMES[0];
+  
+  const isDark = systemTheme.txt === "#ffffff";
+
   const theme = {
-    primaryColor: tc.buttonBg || "#0f172a",
-    textColor: tc.textColor || "#0f172a",
-    css: tc.css || "",
+    primaryColor: systemTheme.btnBg === "#ffffff" ? "#0f172a" : systemTheme.btnBg,
+    textColor: systemTheme.txt,
+    css: systemTheme.css,
     fontFamily: tc.fontFamily || "Inter, sans-serif",
+    buttonBg: systemTheme.btnBg,
+    buttonText: systemTheme.btnTxt,
   };
 
-  const isDark = theme.css?.includes("900") || theme.css?.includes("black") || theme.css?.includes("slate-950");
-
-  const bgClass = isDark ? "bg-[#0f172a]" : "bg-slate-50";
-  const cardBgClass = isDark ? "bg-white/5 border-white/10" : "bg-white border-black/5";
+  const bgClass = bookingThemeId === "solid" ? "bg-slate-50 text-slate-900" : systemTheme.css;
+  const cardBgClass = isDark ? "bg-white/10 border-white/20 backdrop-blur-md" : "bg-white/80 border-black/10 backdrop-blur-md";
   const textClass = isDark ? "text-white" : "text-slate-900";
-  const mutedTextClass = isDark ? "text-white/60" : "text-slate-500";
+  const mutedTextClass = isDark ? "text-white/70" : "text-slate-600";
 
   const professionals = org.professionals || [];
   const services = org.services || [];
@@ -471,13 +483,31 @@ export function ClientAgendarView({ org }: { org: any }) {
                 </div>
 
                 <div className="space-y-3">
-                  <h3 className="font-bold">Data Disponível (MOCK)</h3>
+                  <h3 className="font-bold">Selecione uma Data</h3>
                   <div className="bg-card overflow-hidden -mx-2">
                     <CalendarComponent
                       mode="single"
                       selected={bookingData.date}
-                      onSelect={(date) => {
-                        setBookingData({ ...bookingData, date, time: null });
+                      onSelect={async (date) => {
+                        setBookingData({ ...bookingData, date, time: null, professionalId: null, professionalName: null, professionalImage: null });
+                        if (!date) {
+                          setAvailableSlots({});
+                          return;
+                        }
+                        
+                        setIsLoadingAvailability(true);
+                        const formattedDate = format(date, "yyyy-MM-dd");
+                        // Asumindo que selectedItem tem um id de serviço
+                        const res = await getAvailableTimesAndProfessionals(org.slug, selectedItem?.id || selectedItem?.service?.id, formattedDate);
+                        
+                        if (res.success && res.availableSlots) {
+                          setAvailableSlots(res.availableSlots);
+                        } else {
+                          setAvailableSlots({});
+                        }
+                        
+                        setIsLoadingAvailability(false);
+
                         setTimeout(() => {
                           timeSelectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                         }, 100);
@@ -492,26 +522,67 @@ export function ClientAgendarView({ org }: { org: any }) {
                 {bookingData.date && (
                   <div className="space-y-3 animate-in fade-in pt-4" ref={timeSelectionRef}>
                     <h3 className="font-bold">Horários Disponíveis</h3>
-                    <div className="grid grid-cols-3 gap-2">
-                      {["09:00", "10:30", "14:00", "15:30", "17:00", "18:30"].map(time => {
-                        const isSelected = bookingData.time === time;
+                    {isLoadingAvailability ? (
+                      <div className="flex justify-center p-6"><div className="w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin opacity-50"></div></div>
+                    ) : Object.keys(availableSlots).length === 0 ? (
+                      <div className="p-4 bg-muted/50 rounded-xl text-center text-sm opacity-70 border" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>Nenhum horário disponível para esta data.</div>
+                    ) : (
+                      <div className="grid grid-cols-3 gap-2">
+                        {Object.keys(availableSlots).sort().map(time => {
+                          const isSelected = bookingData.time === time;
+                          return (
+                            <button
+                              key={time}
+                              onClick={() => setBookingData({ ...bookingData, time, professionalId: null, professionalName: null, professionalImage: null })}
+                              className={cn(
+                                "relative py-3 rounded-xl text-sm font-bold border text-center transition-all overflow-hidden",
+                                isSelected ? "shadow-md scale-[1.02]" : "bg-transparent hover:bg-black/5 dark:hover:bg-white/5"
+                              )}
+                              style={isSelected ? { backgroundColor: theme.primaryColor, color: tc.buttonText || "#fff", borderColor: theme.primaryColor } : { borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' }}
+                            >
+                              {isSelected && (
+                                <div className="absolute inset-0 flex items-center justify-between px-3" style={{ backgroundColor: theme.primaryColor }}>
+                                  <span className="flex-1 text-center font-black text-base">{time}</span>
+                                  <CheckCircle2 className="w-5 h-5 shrink-0" />
+                                </div>
+                              )}
+                              <span className={cn(isSelected && "invisible")}>{time}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Seleção de Profissional (Aparece após selecionar o horário) */}
+                {bookingData.time && availableSlots[bookingData.time] && (
+                  <div className="space-y-3 animate-in fade-in pt-4 border-t" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
+                    <h3 className="font-bold">Com quem você deseja agendar?</h3>
+                    <div className="grid grid-cols-1 gap-2">
+                      {availableSlots[bookingData.time].map((pro: any) => {
+                        const isSelected = bookingData.professionalId === pro.id;
                         return (
                           <button
-                            key={time}
-                            onClick={() => setBookingData({ ...bookingData, time })}
+                            key={pro.id}
+                            onClick={() => setBookingData({ ...bookingData, professionalId: pro.id, professionalName: pro.name, professionalImage: pro.image_url })}
                             className={cn(
-                              "relative py-3 rounded-xl text-sm font-bold border text-center transition-all overflow-hidden",
-                              isSelected ? "shadow-md scale-[1.02]" : "bg-transparent hover:bg-black/5 dark:hover:bg-white/5"
+                              "relative p-3 rounded-xl flex items-center gap-3 border text-left transition-all overflow-hidden",
+                              isSelected ? "shadow-md scale-[1.02] ring-2 ring-offset-2" : "bg-transparent hover:bg-black/5 dark:hover:bg-white/5"
                             )}
-                            style={isSelected ? { backgroundColor: theme.primaryColor, color: tc.buttonText || "#fff", borderColor: theme.primaryColor } : { borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' }}
+                            style={isSelected ? { borderColor: theme.primaryColor, ringColor: theme.primaryColor, ringOffsetColor: isDark ? '#0f172a' : '#ffffff' } : { borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' }}
                           >
-                            {isSelected && (
-                              <div className="absolute inset-0 flex items-center justify-between px-3" style={{ backgroundColor: theme.primaryColor }}>
-                                <span className="flex-1 text-center font-black text-base">{time}</span>
-                                <CheckCircle2 className="w-5 h-5 shrink-0" />
-                              </div>
-                            )}
-                            <span className={cn(isSelected && "invisible")}>{time}</span>
+                            <div className="w-10 h-10 rounded-full bg-muted overflow-hidden shrink-0 border" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
+                              {pro.image_url ? (
+                                <img src={pro.image_url} alt={pro.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center opacity-50"><User className="w-5 h-5" /></div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-sm truncate">{pro.name}</p>
+                            </div>
+                            {isSelected && <CheckCircle2 className="w-5 h-5 shrink-0" style={{ color: theme.primaryColor }} />}
                           </button>
                         );
                       })}
@@ -554,22 +625,28 @@ export function ClientAgendarView({ org }: { org: any }) {
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
                 <div className="space-y-5">
 
-                  <div className="flex justify-between items-start border-b pb-5" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
-                    <div className="space-y-1">
-                      <p className="text-xs font-semibold uppercase tracking-wider opacity-60">Resumo do Serviço</p>
-                      <p className="font-bold text-lg leading-tight">{selectedItem?.name}</p>
-                      <div className="flex items-center gap-2 mt-2 opacity-80">
-                        <Calendar className="w-4 h-4" />
-                        <span className="text-sm">{bookingData.date ? format(bookingData.date, "dd 'de' MMMM", { locale: ptBR }) : ""} às {bookingData.time}</span>
+                    <div className="flex justify-between items-start border-b pb-5" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold uppercase tracking-wider opacity-60">Resumo do Serviço</p>
+                        <p className="font-bold text-lg leading-tight">{selectedItem?.name}</p>
+                        <div className="flex items-center gap-2 mt-2 opacity-80">
+                          <Calendar className="w-4 h-4" />
+                          <span className="text-sm">{bookingData.date ? format(bookingData.date, "dd 'de' MMMM", { locale: ptBR }) : ""} às {bookingData.time}</span>
+                        </div>
+                        {bookingData.professionalName && (
+                          <div className="flex items-center gap-2 mt-1 opacity-80">
+                            <User className="w-4 h-4" />
+                            <span className="text-sm">Com {bookingData.professionalName}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-semibold uppercase tracking-wider opacity-60 mb-1">Valor</p>
+                        <span className="font-black text-xl">
+                          R$ {Number(selectedItem?.price || 0).toFixed(2)}
+                        </span>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xs font-semibold uppercase tracking-wider opacity-60 mb-1">Valor</p>
-                      <span className="font-black text-xl">
-                        R$ {Number(selectedItem?.price || 0).toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -703,9 +780,9 @@ export function ClientAgendarView({ org }: { org: any }) {
             {bookingStep === 1 && (
               <Button
                 onClick={() => setBookingStep(2)}
-                disabled={!bookingData.date || !bookingData.time}
+                disabled={!bookingData.date || !bookingData.time || !bookingData.professionalId}
                 className="w-full h-12 rounded-xl font-bold"
-                style={(!bookingData.date || !bookingData.time) ? {} : { backgroundColor: theme.primaryColor, color: tc.buttonText || "#fff" }}
+                style={(!bookingData.date || !bookingData.time || !bookingData.professionalId) ? {} : { backgroundColor: theme.primaryColor, color: tc.buttonText || "#fff" }}
               >
                 Próximo <ArrowRight className="ml-2 w-4 h-4" />
               </Button>

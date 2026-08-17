@@ -89,6 +89,9 @@ model Settings {
   allow_over_limit_appointments Boolean @default(false)
   default_schedule_view         String  @default("day")
   
+  booking_theme             String  @default("light")
+  booking_primary_color     String  @default("#0f172a")
+
   future_booking_limit_days     Int     @default(30)
   welcome_message               String? @db.Text @default("Bem-vindo, aqui você pode agendar seu horário de forma rápida e fácil.")
   

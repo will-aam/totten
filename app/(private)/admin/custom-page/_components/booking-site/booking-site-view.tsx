@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { BookingAppearanceSettings } from "@/app/(private)/admin/self-service/_components/booking-appearance-settings";
 
 export function BookingSiteView({ profile }: { profile?: any }) {
   const [isSaving, setIsSaving] = useState(false);
@@ -186,9 +187,14 @@ export function BookingSiteView({ profile }: { profile?: any }) {
               </div>
             )}
           </div>
+
+          <div className="mt-8 border-t border-border/50 pt-8">
+            <BookingAppearanceSettings />
+          </div>
         </section>
 
       </div>
     </div>
   );
 }
+

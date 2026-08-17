@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 
-const SYSTEM_THEMES = [
+export const SYSTEM_THEMES = [
   {
     id: "solid",
     name: "Cor Sólida",

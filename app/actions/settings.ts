@@ -77,6 +77,8 @@ export async function updateSelfServiceSettingsAction(data: {
   termsOfUse?: string;
   futureBookingLimitDays?: number;
   welcomeMessage?: string;
+  bookingTheme?: string;
+  bookingPrimaryColor?: string;
   paymentRules?: {
     confirmationTitle?: string;
     pixInstructions?: string;

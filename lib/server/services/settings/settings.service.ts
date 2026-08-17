@@ -114,7 +114,9 @@ export class SettingsService {
           payment_pix_key_type: true,
           payment_pix_key: true,
           payment_security_warning: true,
-          payment_friction_message: true
+          payment_friction_message: true,
+          booking_theme: true,
+          booking_primary_color: true
         },
       }),
       prisma.scheduleRule.findMany({
@@ -131,6 +133,8 @@ export class SettingsService {
       termsOfUse: settings?.terms_of_use || "",
       futureBookingLimitDays: settings?.future_booking_limit_days ?? 30,
       welcomeMessage: settings?.welcome_message || "Bem-vindo, aqui você pode agendar seu horário de forma rápida e fácil.",
+      bookingTheme: settings?.booking_theme || "light",
+      bookingPrimaryColor: settings?.booking_primary_color || "#0f172a",
       paymentRules: {
         confirmationTitle: settings?.payment_confirmation_title || "",
         pixInstructions: settings?.payment_pix_instructions || "",
@@ -167,9 +171,6 @@ export class SettingsService {
     };
   }
 
-  /**
-   * Atualiza as regras, recriando as tabelas de horários e exceções em uma transação.
-   */
   static async updateSelfServiceSettings(organizationId: string, data: any) {
     const prisma = getTenantPrisma(organizationId);
 
@@ -179,13 +180,18 @@ export class SettingsService {
         data.termsOfUse !== undefined ||
         data.futureBookingLimitDays !== undefined ||
         data.welcomeMessage !== undefined ||
-        data.paymentRules !== undefined
+        data.paymentRules !== undefined ||
+        data.bookingTheme !== undefined ||
+        data.bookingPrimaryColor !== undefined
       ) {
         const updateData: any = {};
         if (data.termsOfUse !== undefined) updateData.terms_of_use = data.termsOfUse;
         if (data.futureBookingLimitDays !== undefined) updateData.future_booking_limit_days = data.futureBookingLimitDays;
         if (data.welcomeMessage !== undefined) updateData.welcome_message = data.welcomeMessage;
         
+        if (data.bookingTheme !== undefined) updateData.booking_theme = data.bookingTheme;
+        if (data.bookingPrimaryColor !== undefined) updateData.booking_primary_color = data.bookingPrimaryColor;
+
         if (data.paymentRules !== undefined) {
           if (data.paymentRules.confirmationTitle !== undefined) updateData.payment_confirmation_title = data.paymentRules.confirmationTitle;
           if (data.paymentRules.pixInstructions !== undefined) updateData.payment_pix_instructions = data.paymentRules.pixInstructions;
