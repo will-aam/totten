@@ -1,4 +1,3 @@
-// app/(private)/admin/self-service/_components/rules-form.tsx
 "use client";
 
 import { useMemo, useState } from "react";
@@ -36,9 +35,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { LoaderLines, Plus, Trash, CalendarAlt } from "@boxicons/react";
-import { updateSelfServiceSettingsAction } from "@/app/actions/settings";
+import { LoaderLines, Plus, Trash, CalendarAlt, Clock, Star, Edit, InfoCircle } from "@boxicons/react";
+import { updateSelfServiceSettingsAction, createScheduleRuleAction, updateScheduleRuleAction, deleteScheduleRuleAction } from "@/app/actions/settings";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -63,34 +69,21 @@ const timeSchema = z.object({
   breakVisibleToClient: z.boolean().default(false),
 });
 
-const rulesFormSchema = z.object({
+const settingsSchema = z.object({
   futureBookingLimitDays: z.coerce.number().min(1, "Mínimo 1 dia"),
   welcomeMessage: z.string().optional(),
+});
+
+const scheduleRuleSchema = z.object({
+  name: z.string().min(1, "Nome obrigatório"),
+  isDefault: z.boolean().default(false),
   schedule: z.array(timeSchema.extend({ dayOfWeek: z.number() })),
   exceptions: z.array(timeSchema.extend({ date: z.string() })),
 });
 
-export type RulesFormValues = z.infer<typeof rulesFormSchema>;
+export type ScheduleRuleValues = z.infer<typeof scheduleRuleSchema>;
+export type SettingsFormValues = z.infer<typeof settingsSchema>;
 
-const defaultValues: Partial<RulesFormValues> = {
-  schedule: DAYS_OF_WEEK.map((day) => ({
-    dayOfWeek: day.id,
-    isOpen: day.id >= 1 && day.id <= 6,
-    openTime: day.id >= 1 && day.id <= 6 ? "09:00" : "",
-    closeTime: day.id >= 1 && day.id <= 6 ? "18:00" : "",
-    breakStart: day.id >= 1 && day.id <= 6 ? "12:00" : "",
-    breakEnd: day.id >= 1 && day.id <= 6 ? "13:00" : "",
-    breakReason: "",
-    breakVisibleToClient: false,
-  })),
-  exceptions: [],
-  futureBookingLimitDays: 30,
-  welcomeMessage: "Bem-vindo, aqui você pode agendar seu horário de forma rápida e fácil.",
-};
-
-// ---------------------------------------------------------------------------
-// Seletor de horário
-// ---------------------------------------------------------------------------
 const TIME_OPTIONS = (() => {
   const options: string[] = [];
   for (let h = 0; h < 24; h++) {
@@ -132,9 +125,6 @@ function TimeSelect({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Date picker
-// ---------------------------------------------------------------------------
 function DatePicker({
   value,
   onChange,
@@ -175,9 +165,6 @@ function DatePicker({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Bloco de horário reutilizável (Desktop & Exceções)
-// ---------------------------------------------------------------------------
 function TimeRangeFields({
   control,
   basePath,
@@ -227,7 +214,6 @@ function TimeRangeFields({
         </div>
       </div>
 
-      {/* Motivo do Intervalo */}
       <div className="flex flex-wrap items-center gap-4 pl-0 sm:pl-[4.5rem]">
         <FormField
           control={control}
@@ -266,19 +252,14 @@ function TimeRangeFields({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Componente MobileWeeklySchedule (Editor em Lote)
-// ---------------------------------------------------------------------------
 function MobileWeeklySchedule({ form }: { form: any }) {
-  const [selectedDays, setSelectedDays] = useState<number[]>([1, 2, 3, 4, 5]); // Padrão: Seg a Sex
+  const [selectedDays, setSelectedDays] = useState<number[]>([1, 2, 3, 4, 5]);
 
-  // Para mostrar nos campos de edição em lote, usamos os valores do primeiro dia selecionado
   const referenceDayIndex = selectedDays.length > 0 ? selectedDays[0] : 1;
   const referenceValues = form.watch(`schedule.${referenceDayIndex}`);
 
   const [hasBreak, setHasBreak] = useState(!!referenceValues?.breakStart);
 
-  // Sincroniza sempre que os valores de referência mudarem, mas só para os selecionados
   const handleBatchChange = (field: string, value: any) => {
     selectedDays.forEach((dayId) => {
       form.setValue(`schedule.${dayId}.${field}`, value, { shouldDirty: true });
@@ -288,7 +269,6 @@ function MobileWeeklySchedule({ form }: { form: any }) {
   const toggleDay = (dayId: number) => {
     const isCurrentlySelected = selectedDays.includes(dayId);
 
-    // Efeitos colaterais (atualizar formulário) fora da função de atualização de estado
     if (!isCurrentlySelected) {
       form.setValue(`schedule.${dayId}.isOpen`, true);
       if (referenceValues) {
@@ -300,7 +280,6 @@ function MobileWeeklySchedule({ form }: { form: any }) {
         form.setValue(`schedule.${dayId}.breakVisibleToClient`, referenceValues.breakVisibleToClient);
       }
     } else {
-      // Quando desseleciona um dia, define is_open = false
       form.setValue(`schedule.${dayId}.isOpen`, false);
     }
 
@@ -318,12 +297,10 @@ function MobileWeeklySchedule({ form }: { form: any }) {
     if (preset === "todos") newDays = [0, 1, 2, 3, 4, 5, 6];
     if (preset === "limpar") newDays = [];
 
-    // Limpa todos primeiro (fechado)
     [0, 1, 2, 3, 4, 5, 6].forEach((dayId) => {
       form.setValue(`schedule.${dayId}.isOpen`, false);
     });
 
-    // Ativa os novos e copia
     newDays.forEach((dayId) => {
       form.setValue(`schedule.${dayId}.isOpen`, true);
       if (referenceValues) {
@@ -339,19 +316,11 @@ function MobileWeeklySchedule({ form }: { form: any }) {
     setSelectedDays(newDays);
   };
 
-  // Calcula o resumo
-  const summaryDays = selectedDays.length === 7
-    ? "Todos os dias"
-    : selectedDays.length === 0
-      ? "Nenhum dia selecionado"
-      : selectedDays.map(id => DAYS_OF_WEEK.find(d => d.id === id)?.short).join(", ");
-
   return (
     <div className="flex flex-col gap-6 w-full">
       <div className="space-y-3">
         <h3 className="text-sm font-medium text-foreground">Dias de Funcionamento</h3>
 
-        {/* Botoes de dia */}
         <div className="flex flex-wrap gap-2">
           {DAYS_OF_WEEK.map((day) => {
             const isSelected = selectedDays.includes(day.id);
@@ -367,14 +336,12 @@ function MobileWeeklySchedule({ form }: { form: any }) {
                     : "bg-background text-muted-foreground border-border hover:bg-muted"
                 )}
               >
-                <span className="md:hidden">{day.short}</span>
-                <span className="hidden md:inline">{day.label}</span>
+                <span>{day.short}</span>
               </button>
             );
           })}
         </div>
 
-        {/* Atalhos Rápidos */}
         <div className="flex flex-wrap gap-2 pt-2">
           <Button type="button" variant="outline" size="sm" className="rounded-full text-xs" onClick={() => applyPreset("seg-sex")}>
             Seg a Sex
@@ -418,7 +385,7 @@ function MobileWeeklySchedule({ form }: { form: any }) {
 
         <div className="space-y-4 pt-2 border-t">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold">Intervalo / Pausa</h3>
+            <h3 className="text-sm font-semibold">Intervalo</h3>
             <Switch
               checked={hasBreak}
               onCheckedChange={(checked) => {
@@ -453,76 +420,48 @@ function MobileWeeklySchedule({ form }: { form: any }) {
                   />
                 </div>
               </div>
-
-              <div className="space-y-3 pt-2">
-                <div className="space-y-1">
-                  <span className="text-xs text-muted-foreground">Motivo do intervalo (Ex: Almoço, Café)</span>
-                  <Input
-                    value={referenceValues?.breakReason || ""}
-                    onChange={(e) => handleBatchChange("breakReason", e.target.value)}
-                  />
-                </div>
-
-                <div className="flex items-center gap-2 pt-1">
-                  <Switch
-                    checked={referenceValues?.breakVisibleToClient || false}
-                    onCheckedChange={(c) => handleBatchChange("breakVisibleToClient", c)}
-                  />
-                  <span className="text-sm text-muted-foreground">Cliente vê o motivo?</span>
-                </div>
-              </div>
             </div>
           )}
         </div>
       </div>
-
-      <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 text-sm text-primary/80">
-        <p className="font-semibold mb-1">Resumo do funcionamento:</p>
-        <p className="opacity-90">
-          Das {referenceValues?.openTime || "--:--"} às {referenceValues?.closeTime || "--:--"}
-          {hasBreak && referenceValues?.breakStart ? `, intervalo de ${referenceValues.breakStart} às ${referenceValues.breakEnd}` : ""},
-          funcionando de {summaryDays}.
-        </p>
-      </div>
-
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Componente principal
+// ScheduleRuleEditor Component (Modal de Edição de Grade)
 // ---------------------------------------------------------------------------
-interface RulesAndHoursFormProps {
-  initialData?: Partial<RulesFormValues>;
-}
-
-export function RulesAndHoursForm({ initialData }: RulesAndHoursFormProps) {
+function ScheduleRuleEditor({
+  rule,
+  open,
+  onOpenChange,
+}: {
+  rule: any;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const [isPending, setIsPending] = useState(false);
 
-  // MERGE INTELIGENTE
-  const resolvedData = useMemo(() => {
-    if (!initialData) return defaultValues;
+  const defaultSchedule = DAYS_OF_WEEK.map((day) => ({
+    dayOfWeek: day.id,
+    isOpen: day.id >= 1 && day.id <= 5,
+    openTime: day.id >= 1 && day.id <= 5 ? "09:00" : "",
+    closeTime: day.id >= 1 && day.id <= 5 ? "18:00" : "",
+    breakStart: day.id >= 1 && day.id <= 5 ? "12:00" : "",
+    breakEnd: day.id >= 1 && day.id <= 5 ? "13:00" : "",
+    breakReason: "",
+    breakVisibleToClient: false,
+  }));
 
-    return {
-      schedule:
-        initialData.schedule && initialData.schedule.length > 0
-          ? initialData.schedule
-          : defaultValues.schedule,
-      exceptions: initialData.exceptions || [],
-      futureBookingLimitDays: initialData.futureBookingLimitDays ?? defaultValues.futureBookingLimitDays,
-      welcomeMessage: initialData.welcomeMessage ?? defaultValues.welcomeMessage,
-    };
-  }, [initialData]);
-
-  const form = useForm<RulesFormValues>({
-    resolver: zodResolver(rulesFormSchema),
-    defaultValues: resolvedData,
+  const form = useForm<ScheduleRuleValues>({
+    resolver: zodResolver(scheduleRuleSchema),
+    defaultValues: {
+      name: rule?.name || "Nova Grade",
+      isDefault: rule?.isDefault || false,
+      schedule: rule?.schedule && rule.schedule.length > 0 ? rule.schedule : defaultSchedule,
+      exceptions: rule?.exceptions || [],
+    },
     mode: "onChange",
-  });
-
-  const { fields: scheduleFields } = useFieldArray({
-    name: "schedule",
-    control: form.control,
   });
 
   const {
@@ -534,210 +473,365 @@ export function RulesAndHoursForm({ initialData }: RulesAndHoursFormProps) {
     control: form.control,
   });
 
-  const applyToAllDays = () => {
-    const monday = form.getValues("schedule.1");
-
-    [0, 2, 3, 4, 5, 6].forEach((dayIndex) => {
-      form.setValue(`schedule.${dayIndex}.isOpen`, monday.isOpen);
-      form.setValue(`schedule.${dayIndex}.openTime`, monday.openTime);
-      form.setValue(`schedule.${dayIndex}.closeTime`, monday.closeTime);
-      form.setValue(`schedule.${dayIndex}.breakStart`, monday.breakStart);
-      form.setValue(`schedule.${dayIndex}.breakEnd`, monday.breakEnd);
-      form.setValue(`schedule.${dayIndex}.breakReason`, monday.breakReason);
-      form.setValue(`schedule.${dayIndex}.breakVisibleToClient`, monday.breakVisibleToClient);
-    });
-
-    toast.success(
-      "Os horários de Segunda-feira foram aplicados para toda a semana.",
-    );
-  };
-
-  async function onSubmit(data: RulesFormValues) {
+  async function onSubmit(data: ScheduleRuleValues) {
     setIsPending(true);
     try {
-      const response = await updateSelfServiceSettingsAction(data);
+      let response;
+      if (rule?.id) {
+        response = await updateScheduleRuleAction(rule.id, data);
+      } else {
+        response = await createScheduleRuleAction(data.name, data.isDefault);
+        if (response.success && response.data) {
+          // Update the newly created rule with its schedule/exceptions
+          response = await updateScheduleRuleAction(response.data.id, data);
+        }
+      }
 
       if (!response.success) {
-        toast.error(response.error || "Erro ao salvar os horários");
+        toast.error(response.error || "Erro ao salvar a grade.");
         return;
       }
 
-      toast.success("Os horários foram salvos com sucesso.");
+      toast.success("Grade de horários salva com sucesso!");
+      onOpenChange(false);
     } catch (error) {
-      toast.error("Ocorreu um erro inesperado ao conectar com o servidor.");
+      toast.error("Ocorreu um erro inesperado.");
     } finally {
       setIsPending(false);
     }
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl w-full h-[100dvh] sm:h-[90vh] flex flex-col p-0 gap-0 rounded-none sm:rounded-2xl overflow-hidden bg-background border-0 sm:border">
+        <DialogHeader className="p-6 pb-4 border-b">
+          <DialogTitle>{rule?.id ? "Editar Grade de Horários" : "Nova Grade de Horários"}</DialogTitle>
+          <DialogDescription>
+            Defina o padrão semanal e exceções para esta grade, que poderá ser atribuída a um ou mais profissionais.
+          </DialogDescription>
+        </DialogHeader>
 
-        {/* Padrão semanal */}
-        <Card className="border-none shadow-none bg-transparent sm:bg-card">
-          <CardHeader className="flex flex-col gap-4 px-0 sm:px-6 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <CardTitle>Padrão semanal de expediente</CardTitle>
-              <CardDescription>
-                Defina os horários base da sua semana.
-              </CardDescription>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto flex flex-col">
+            <div className="p-6 space-y-8 flex-1">
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome da Grade</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: Grade Manhã" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="isDefault"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-xl border p-4 shadow-sm h-[76px] mt-2 sm:mt-0">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Tornar Padrão</FormLabel>
+
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-muted-foreground" />
+                  Padrão Semanal
+                </h3>
+                <MobileWeeklySchedule form={form} />
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <CalendarAlt className="w-5 h-5 text-muted-foreground" />
+                    Exceções (Feriados, Folgas)
+                  </h3>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => appendException({ date: "", isOpen: false, breakVisibleToClient: false })}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Adicionar
+                  </Button>
+                </div>
+
+                <div className="space-y-4">
+                  {exceptionFields.length === 0 && (
+                    <p className="text-sm text-muted-foreground">Nenhuma exceção configurada.</p>
+                  )}
+                  {exceptionFields.map((field, index) => {
+                    const isOpen = form.watch(`exceptions.${index}.isOpen`);
+                    return (
+                      <div key={field.id} className="p-4 rounded-xl border bg-card">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex flex-wrap items-center gap-4">
+                            <FormField
+                              control={form.control}
+                              name={`exceptions.${index}.date`}
+                              render={({ field }) => (
+                                <DatePicker value={field.value} onChange={field.onChange} />
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name={`exceptions.${index}.isOpen`}
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-center space-y-0 space-x-3">
+                                  <FormControl>
+                                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                  </FormControl>
+                                  <FormLabel className="cursor-pointer">Aberto neste dia?</FormLabel>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="text-muted-foreground hover:text-destructive"
+                            onClick={() => removeException(index)}
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        {isOpen && (
+                          <div className="pt-4 mt-4 border-t">
+                            <TimeRangeFields control={form.control} basePath={`exceptions.${index}`} />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
-          </CardHeader>
 
-          {/* Unified UI (Mobile & Desktop) */}
-          <CardContent className="px-0 sm:px-6">
-            <MobileWeeklySchedule form={form} />
-          </CardContent>
-        </Card>
+            <div className="p-6 border-t bg-card flex justify-end gap-3 sticky bottom-0">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isPending}>
+                {isPending && <LoaderLines className="mr-2 h-4 w-4 animate-spin" />}
+                Salvar Grade
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
-        {/* Regras de Agendamento e Recepção */}
-        <Card className="border-none shadow-none bg-transparent sm:bg-card">
-          <CardHeader className="flex flex-col gap-4 px-0 sm:px-6">
-            <div>
+// ---------------------------------------------------------------------------
+// Main RulesAndHoursForm (Regras Globais e Lista de Grades)
+// ---------------------------------------------------------------------------
+export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
+  const [isPending, setIsPending] = useState(false);
+  const [selectedRule, setSelectedRule] = useState<any>(null);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+
+  const form = useForm<SettingsFormValues>({
+    resolver: zodResolver(settingsSchema),
+    defaultValues: {
+      futureBookingLimitDays: initialData?.futureBookingLimitDays ?? 30,
+      welcomeMessage: initialData?.welcomeMessage ?? "Bem-vindo, aqui você pode agendar seu horário de forma rápida e fácil.",
+    },
+  });
+
+  async function onSubmitSettings(data: SettingsFormValues) {
+    setIsPending(true);
+    try {
+      const response = await updateSelfServiceSettingsAction({
+        futureBookingLimitDays: data.futureBookingLimitDays,
+        welcomeMessage: data.welcomeMessage,
+      } as any);
+
+      if (!response.success) {
+        toast.error(response.error || "Erro ao salvar as configurações");
+        return;
+      }
+      toast.success("Configurações globais salvas com sucesso.");
+    } catch (error) {
+      toast.error("Ocorreu um erro inesperado ao salvar.");
+    } finally {
+      setIsPending(false);
+    }
+  }
+
+  const handleDeleteRule = async (ruleId: string) => {
+    if (confirm("Tem certeza que deseja excluir esta grade de horários?")) {
+      const response = await deleteScheduleRuleAction(ruleId);
+      if (!response.success) {
+        toast.error(response.error || "Erro ao excluir a regra.");
+      } else {
+        toast.success("Grade excluída com sucesso!");
+      }
+    }
+  };
+
+  const scheduleRules = initialData?.scheduleRules || [];
+
+  return (
+    <div className="space-y-8">
+
+      {/* Lista de Templates de Horários */}
+      <Card className="border-none shadow-none bg-transparent sm:bg-card">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-0 sm:px-6">
+          <div>
+            <CardTitle>Grades de Horários (Templates)</CardTitle>
+            <CardDescription>
+              Crie grades de horários e associe aos seus profissionais.
+            </CardDescription>
+          </div>
+          <Button onClick={() => {
+            setSelectedRule(null);
+            setIsEditorOpen(true);
+          }}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Grade
+          </Button>
+        </CardHeader>
+        <CardContent className="px-0 sm:px-6 space-y-4">
+          {scheduleRules.map((rule: any) => (
+            <div
+              key={rule.id}
+              className="flex items-center justify-between p-4 rounded-xl border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
+              onClick={() => {
+                setSelectedRule(rule);
+                setIsEditorOpen(true);
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-primary/10 p-2 rounded-lg text-primary">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-semibold flex items-center gap-2">
+                    {rule.name}
+                    {rule.isDefault && (
+                      <span className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-500 px-2 py-0.5 rounded-full">
+                        <Star className="w-3 h-3" /> Padrão
+                      </span>
+                    )}
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    {rule.schedule.filter((s: any) => s.isOpen).length} dias abertos na semana
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedRule(rule);
+                  setIsEditorOpen(true);
+                }}>
+                  <Edit className="w-4 h-4 text-muted-foreground" />
+                </Button>
+                {!rule.isDefault && (
+                  <Button variant="ghost" size="icon" onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteRule(rule.id);
+                  }}>
+                    <Trash className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Regras Globais de Agendamento */}
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmitSettings)}>
+          <Card className="border-none shadow-none bg-transparent sm:bg-card">
+            <CardHeader className="px-0 sm:px-6">
               <CardTitle>Regras de Agendamento e Recepção</CardTitle>
               <CardDescription>
-                Configure os limites de agendamento e a comunicação inicial.
+                Configure limites globais aplicáveis a todos os horários e serviços.
               </CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent className="px-0 sm:px-6 space-y-6">
-            <FormField
-              control={form.control}
-              name="futureBookingLimitDays"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-bold">Dias no futuro disponíveis para agendamento</FormLabel>
-                  <CardDescription className="mb-2">
-                    Limite máximo de dias para frente que um cliente pode reservar.
-                  </CardDescription>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min="1"
-                      className="rounded-xl bg-muted/40 border-none h-11 font-bold max-w-xs"
-                      {...field}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="welcomeMessage"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-bold">Mensagem de Boas-vindas</FormLabel>
-                  <CardDescription className="mb-2">
-                    Mensagem exibida ao cliente na tela de agendamento.
-                  </CardDescription>
-                  <FormControl>
-                    <Textarea
-                      className="rounded-xl bg-muted/40 border-none resize-none font-medium min-h-[100px]"
-                      placeholder="Ex: Bem-vindo, aqui você pode agendar seu horário..."
-                      {...field}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Exceções */}
-        <Card className="border-none shadow-none">
-          <CardHeader className="flex flex-row items-start justify-between px-0 sm:px-6">
-            <div>
-              <CardTitle>Exceções e datas específicas</CardTitle>
-              <CardDescription>
-                Configure feriados, folgas ou dias diferentes do padrão.
-              </CardDescription>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => appendException({ date: "", isOpen: false, breakVisibleToClient: false })}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Adicionar
-            </Button>
-          </CardHeader>
-          <CardContent className="divide-y px-0 sm:px-6">
-            {exceptionFields.length === 0 && (
-              <p className="py-4 text-sm text-muted-foreground first:pt-0">
-                Nenhuma exceção configurada.
-              </p>
-            )}
-            {exceptionFields.map((field, index) => {
-              const isOpen = form.watch(`exceptions.${index}.isOpen`);
-              return (
-                <div
-                  key={field.id}
-                  className="flex flex-col gap-4 py-6 first:pt-0 last:pb-0"
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex flex-wrap items-center gap-4">
-                      <FormField
-                        control={form.control}
-                        name={`exceptions.${index}.date`}
-                        render={({ field }) => (
-                          <DatePicker
-                            value={field.value}
-                            onChange={field.onChange}
-                          />
-                        )}
+            </CardHeader>
+            <CardContent className="px-0 sm:px-6 space-y-6">
+              <FormField
+                control={form.control}
+                name="futureBookingLimitDays"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-bold">Dias disponíveis para agendamento (Limite)</FormLabel>
+                    <CardDescription className="mb-2">
+                      Limite máximo de dias no futuro que um cliente pode reservar.
+                    </CardDescription>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="1"
+                        className="rounded-xl bg-muted/40 border-none h-11 font-bold max-w-xs"
+                        {...field}
                       />
-                      <FormField
-                        control={form.control}
-                        name={`exceptions.${index}.isOpen`}
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center space-y-0 space-x-3">
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                            <FormLabel className="cursor-pointer">
-                              Aberto neste dia?
-                            </FormLabel>
-                          </FormItem>
-                        )}
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="welcomeMessage"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-bold">Mensagem de Boas-vindas</FormLabel>
+                    <CardDescription className="mb-2">
+                      Mensagem exibida ao cliente na tela de agendamento (BookingFlow).
+                    </CardDescription>
+                    <FormControl>
+                      <Textarea
+                        className="rounded-xl bg-muted/40 border-none resize-none font-medium min-h-[100px]"
+                        placeholder="Ex: Bem-vindo, aqui você pode agendar seu horário..."
+                        {...field}
                       />
-                    </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
 
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="text-muted-foreground hover:text-destructive"
-                      onClick={() => removeException(index)}
-                    >
-                      <Trash className="h-4 w-4" />
-                    </Button>
-                  </div>
+              <div className="flex justify-end pt-4">
+                <Button type="submit" size="lg" disabled={isPending} className="w-full sm:w-auto h-12 rounded-xl">
+                  {isPending && <LoaderLines className="mr-2 h-4 w-4 animate-spin" />}
+                  Salvar Regras Globais
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </form>
+      </Form>
 
-                  {isOpen && (
-                    <TimeRangeFields
-                      control={form.control}
-                      basePath={`exceptions.${index}`}
-                    />
-                  )}
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-
-        <div className="flex justify-end pb-12 sm:pb-0">
-          <Button type="submit" size="lg" disabled={isPending} className="w-full sm:w-auto h-12 rounded-xl">
-            {isPending && <LoaderLines className="mr-2 h-4 w-4 animate-spin" />}
-            Salvar horários
-          </Button>
-        </div>
-      </form>
-    </Form>
+      {/* Editor Modal */}
+      {isEditorOpen && (
+        <ScheduleRuleEditor
+          rule={selectedRule}
+          open={isEditorOpen}
+          onOpenChange={(open) => setIsEditorOpen(open)}
+        />
+      )}
+    </div>
   );
 }

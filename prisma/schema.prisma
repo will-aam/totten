@@ -34,6 +34,8 @@ model Organization {
 
   working_hours       WorkingHour[]
   schedule_exceptions ScheduleException[]
+  schedule_rules      ScheduleRule[]
+
   @@map("organizations")
 }
 
@@ -62,6 +64,9 @@ model Admin {
   organizations      Organization[] @relation("AdminToOrganization")
   services           Service[]      @relation("AdminToService")
   package_templates  PackageTemplate[] @relation("AdminToPackageTemplate")
+
+  schedule_rule_id   String?
+  schedule_rule      ScheduleRule? @relation(fields: [schedule_rule_id], references: [id], onDelete: SetNull)
 
   @@map("admins")
 }
@@ -102,6 +107,19 @@ model Settings {
   @@map("settings")
 }
 
+model ScheduleRule {
+  id              String       @id @default(cuid())
+  name            String
+  is_default      Boolean      @default(false)
+  organization_id String
+  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  working_hours   WorkingHour[]
+  schedule_exceptions ScheduleException[]
+  admins          Admin[]
+
+  @@map("schedule_rules")
+}
+
 model WorkingHour {
   id              String       @id @default(cuid())
   day_of_week     Int          // 0 = Domingo, 1 = Segunda, etc.
@@ -113,10 +131,13 @@ model WorkingHour {
   break_reason             String?
   break_visible_to_client  Boolean      @default(false)
   
+  schedule_rule_id String
+  schedule_rule    ScheduleRule @relation(fields: [schedule_rule_id], references: [id], onDelete: Cascade)
+
   organization_id String
   organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
-  @@unique([organization_id, day_of_week])
+  @@unique([organization_id, day_of_week, schedule_rule_id])
   @@map("working_hours")
 }
 
@@ -131,10 +152,13 @@ model ScheduleException {
   break_reason             String?
   break_visible_to_client  Boolean      @default(false)
   
+  schedule_rule_id String
+  schedule_rule    ScheduleRule @relation(fields: [schedule_rule_id], references: [id], onDelete: Cascade)
+
   organization_id String
   organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
-  @@unique([organization_id, date])
+  @@unique([organization_id, date, schedule_rule_id])
   @@map("schedule_exceptions")
 }
 

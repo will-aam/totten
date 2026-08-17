@@ -29,6 +29,7 @@ export async function getTeam() {
         show_instagram: true,
         show_on_site: true,
         created_at: true,
+        schedule_rule_id: true,
         services: { select: { id: true, name: true } },
         package_templates: { select: { id: true, name: true } },
       },
@@ -55,6 +56,7 @@ export async function createCollaborator(data: {
   show_on_site?: boolean;
   service_ids?: string[];
   package_template_ids?: string[];
+  schedule_rule_id?: string;
 }) {
   try {
     const admin = await requireAuth();
@@ -93,6 +95,7 @@ export async function createCollaborator(data: {
         show_on_site: data.show_on_site !== undefined ? data.show_on_site : true,
         email_verified: true,
         organizations: { connect: { id: admin.organizationId } },
+        schedule_rule: data.schedule_rule_id ? { connect: { id: data.schedule_rule_id } } : undefined,
         services: {
           connect: data.service_ids?.map((id) => ({ id })) || [],
         },
@@ -125,6 +128,7 @@ export async function updateCollaborator(
     show_on_site?: boolean;
     service_ids?: string[];
     package_template_ids?: string[];
+    schedule_rule_id?: string;
   },
 ) {
   try {
@@ -157,7 +161,13 @@ export async function updateCollaborator(
     if (data.instagram_url !== undefined) updateData.instagram_url = data.instagram_url;
     if (data.show_instagram !== undefined) updateData.show_instagram = data.show_instagram;
     if (data.show_on_site !== undefined) updateData.show_on_site = data.show_on_site;
-
+    if (data.schedule_rule_id !== undefined) {
+      if (data.schedule_rule_id) {
+        updateData.schedule_rule = { connect: { id: data.schedule_rule_id } };
+      } else {
+        updateData.schedule_rule = { disconnect: true };
+      }
+    }
     if (data.service_ids !== undefined) {
       updateData.services = { set: data.service_ids.map((id) => ({ id })) };
     }
@@ -238,7 +248,13 @@ export async function getCatalogOptions() {
       orderBy: { name: "asc" },
     });
 
-    return { success: true, services, packages };
+    const scheduleRules = await prisma.scheduleRule.findMany({
+      where: { organization_id: admin.organizationId },
+      select: { id: true, name: true, is_default: true },
+      orderBy: { is_default: "desc" },
+    });
+
+    return { success: true, services, packages, scheduleRules };
   } catch (error) {
     console.error("Erro ao buscar opções de catálogo:", error);
     return { success: false, error: "Erro ao buscar opções." };

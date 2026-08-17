@@ -102,7 +102,7 @@ export class SettingsService {
   static async getSelfServiceSettings(organizationId: string) {
     const prisma = getTenantPrisma(organizationId);
 
-    const [settings, schedule, exceptions] = await Promise.all([
+    const [settings, scheduleRules] = await Promise.all([
       prisma.settings.findUnique({
         where: { organization_id: organizationId },
         select: { 
@@ -117,13 +117,13 @@ export class SettingsService {
           payment_friction_message: true
         },
       }),
-      prisma.workingHour.findMany({
+      prisma.scheduleRule.findMany({
         where: { organization_id: organizationId },
-        orderBy: { day_of_week: "asc" },
-      }),
-      prisma.scheduleException.findMany({
-        where: { organization_id: organizationId },
-        orderBy: { date: "asc" },
+        include: {
+          working_hours: { orderBy: { day_of_week: "asc" } },
+          schedule_exceptions: { orderBy: { date: "asc" } }
+        },
+        orderBy: { is_default: "desc" },
       }),
     ]);
 
@@ -139,25 +139,30 @@ export class SettingsService {
         securityWarning: settings?.payment_security_warning || "",
         frictionMessage: settings?.payment_friction_message || "",
       },
-      schedule: schedule.map((s) => ({
-        dayOfWeek: s.day_of_week,
-        isOpen: s.is_open,
-        openTime: s.open_time || "",
-        closeTime: s.close_time || "",
-        breakStart: s.break_start || "",
-        breakEnd: s.break_end || "",
-        breakReason: s.break_reason || "",
-        breakVisibleToClient: s.break_visible_to_client,
-      })),
-      exceptions: exceptions.map((e) => ({
-        date: e.date,
-        isOpen: e.is_open,
-        openTime: e.open_time || "",
-        closeTime: e.close_time || "",
-        breakStart: e.break_start || "",
-        breakEnd: e.break_end || "",
-        breakReason: e.break_reason || "",
-        breakVisibleToClient: e.break_visible_to_client,
+      scheduleRules: scheduleRules.map((rule) => ({
+        id: rule.id,
+        name: rule.name,
+        isDefault: rule.is_default,
+        schedule: rule.working_hours.map((s) => ({
+          dayOfWeek: s.day_of_week,
+          isOpen: s.is_open,
+          openTime: s.open_time || "",
+          closeTime: s.close_time || "",
+          breakStart: s.break_start || "",
+          breakEnd: s.break_end || "",
+          breakReason: s.break_reason || "",
+          breakVisibleToClient: s.break_visible_to_client,
+        })),
+        exceptions: rule.schedule_exceptions.map((e) => ({
+          date: e.date,
+          isOpen: e.is_open,
+          openTime: e.open_time || "",
+          closeTime: e.close_time || "",
+          breakStart: e.break_start || "",
+          breakEnd: e.break_end || "",
+          breakReason: e.break_reason || "",
+          breakVisibleToClient: e.break_visible_to_client,
+        })),
       })),
     };
   }
@@ -195,16 +200,78 @@ export class SettingsService {
           data: updateData,
         });
       }
+    });
+  }
 
-      // 2. Substituir grade semanal
+
+  // ---------------------------------------------------------------------------
+  // GERENCIAMENTO DE REGRAS DE HORÁRIOS
+  // ---------------------------------------------------------------------------
+
+  static async createScheduleRule(organizationId: string, name: string, isDefault: boolean) {
+    const prisma = getTenantPrisma(organizationId);
+    
+    // Se for default, remove o default das outras
+    if (isDefault) {
+      await prisma.scheduleRule.updateMany({
+        where: { organization_id: organizationId, is_default: true },
+        data: { is_default: false },
+      });
+    }
+
+    return await prisma.scheduleRule.create({
+      data: {
+        organization_id: organizationId,
+        name,
+        is_default: isDefault,
+        // Cria grade vazia 7 dias
+        working_hours: {
+          create: Array.from({ length: 7 }).map((_, i) => ({
+            organization_id: organizationId,
+            day_of_week: i,
+            is_open: i >= 1 && i <= 5, // Seg a Sex aberto
+            open_time: "08:00",
+            close_time: "18:00",
+          })),
+        },
+      },
+    });
+  }
+
+  static async updateScheduleRule(
+    organizationId: string, 
+    ruleId: string, 
+    data: any
+  ) {
+    const prisma = getTenantPrisma(organizationId);
+
+    return await prisma.$transaction(async (tx) => {
+      if (data.name !== undefined || data.isDefault !== undefined) {
+        if (data.isDefault) {
+          await tx.scheduleRule.updateMany({
+            where: { organization_id: organizationId, is_default: true, id: { not: ruleId } },
+            data: { is_default: false },
+          });
+        }
+        await tx.scheduleRule.update({
+          where: { id: ruleId, organization_id: organizationId },
+          data: {
+            name: data.name,
+            is_default: data.isDefault,
+          },
+        });
+      }
+
+      // Substituir grade semanal da regra
       if (data.schedule && Array.isArray(data.schedule)) {
         await tx.workingHour.deleteMany({
-          where: { organization_id: organizationId },
+          where: { organization_id: organizationId, schedule_rule_id: ruleId },
         });
 
         await tx.workingHour.createMany({
           data: data.schedule.map((s: any) => ({
             organization_id: organizationId,
+            schedule_rule_id: ruleId,
             day_of_week: s.dayOfWeek,
             is_open: s.isOpen,
             open_time: s.openTime || null,
@@ -217,16 +284,17 @@ export class SettingsService {
         });
       }
 
-      // 3. Substituir exceções
+      // Substituir exceções
       if (data.exceptions && Array.isArray(data.exceptions)) {
         await tx.scheduleException.deleteMany({
-          where: { organization_id: organizationId },
+          where: { organization_id: organizationId, schedule_rule_id: ruleId },
         });
 
         if (data.exceptions.length > 0) {
           await tx.scheduleException.createMany({
             data: data.exceptions.map((e: any) => ({
               organization_id: organizationId,
+              schedule_rule_id: ruleId,
               date: e.date,
               is_open: e.isOpen,
               open_time: e.openTime || null,
@@ -239,6 +307,23 @@ export class SettingsService {
           });
         }
       }
+    });
+  }
+
+  static async deleteScheduleRule(organizationId: string, ruleId: string) {
+    const prisma = getTenantPrisma(organizationId);
+    
+    // Verifica se é a default
+    const rule = await prisma.scheduleRule.findUnique({
+      where: { id: ruleId, organization_id: organizationId },
+    });
+    
+    if (rule?.is_default) {
+      throw new Error("Não é possível excluir a regra de horário padrão.");
+    }
+    
+    return await prisma.scheduleRule.delete({
+      where: { id: ruleId, organization_id: organizationId },
     });
   }
 }

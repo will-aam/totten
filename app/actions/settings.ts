@@ -77,26 +77,6 @@ export async function updateSelfServiceSettingsAction(data: {
   termsOfUse?: string;
   futureBookingLimitDays?: number;
   welcomeMessage?: string;
-  schedule: Array<{
-    dayOfWeek: number;
-    isOpen: boolean;
-    openTime?: string;
-    closeTime?: string;
-    breakStart?: string;
-    breakEnd?: string;
-    breakReason?: string;
-    breakVisibleToClient?: boolean;
-  }>;
-  exceptions: Array<{
-    date: string;
-    isOpen: boolean;
-    openTime?: string;
-    closeTime?: string;
-    breakStart?: string;
-    breakEnd?: string;
-    breakReason?: string;
-    breakVisibleToClient?: boolean;
-  }>;
   paymentRules?: {
     confirmationTitle?: string;
     pixInstructions?: string;
@@ -129,5 +109,42 @@ export async function updateSelfServiceSettingsAction(data: {
       success: false,
       error: "Erro interno ao atualizar configurações de autoatendimento.",
     };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Ações para Regras de Horários
+// ---------------------------------------------------------------------------
+
+export async function createScheduleRuleAction(name: string, isDefault: boolean) {
+  try {
+    const admin = await requireAuth();
+    const rule = await SettingsService.createScheduleRule(admin.organizationId, name, isDefault);
+    revalidatePath("/admin/self-service");
+    return { success: true, data: rule };
+  } catch (error: any) {
+    return { success: false, error: "Erro ao criar regra de horários." };
+  }
+}
+
+export async function updateScheduleRuleAction(ruleId: string, data: any) {
+  try {
+    const admin = await requireAuth();
+    await SettingsService.updateScheduleRule(admin.organizationId, ruleId, data);
+    revalidatePath("/admin/self-service");
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: "Erro ao atualizar regra de horários." };
+  }
+}
+
+export async function deleteScheduleRuleAction(ruleId: string) {
+  try {
+    const admin = await requireAuth();
+    await SettingsService.deleteScheduleRule(admin.organizationId, ruleId);
+    revalidatePath("/admin/self-service");
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Erro ao excluir regra de horários." };
   }
 }

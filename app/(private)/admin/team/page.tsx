@@ -12,6 +12,13 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -74,6 +81,7 @@ type TeamMember = {
   show_on_site?: boolean;
   services?: { id: string; name: string }[];
   package_templates?: { id: string; name: string }[];
+  schedule_rule_id?: string | null;
 };
 
 export default function TeamPage() {
@@ -90,7 +98,11 @@ export default function TeamPage() {
   >(null);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   
-  const [catalogOptions, setCatalogOptions] = useState<{ services: { id: string; name: string }[]; packages: { id: string; name: string }[] }>({ services: [], packages: [] });
+  const [catalogOptions, setCatalogOptions] = useState<{ 
+    services: { id: string; name: string }[]; 
+    packages: { id: string; name: string }[]; 
+    scheduleRules: { id: string; name: string; is_default: boolean }[] 
+  }>({ services: [], packages: [], scheduleRules: [] });
 
   const [formData, setFormData] = useState({
     name: "",
@@ -105,6 +117,7 @@ export default function TeamPage() {
     show_on_site: true,
     service_ids: [] as string[],
     package_template_ids: [] as string[],
+    schedule_rule_id: "",
   });
 
   useEffect(() => {
@@ -119,7 +132,11 @@ export default function TeamPage() {
   const loadOptions = async () => {
     const res = await getCatalogOptions();
     if (res.success) {
-      setCatalogOptions({ services: res.services || [], packages: res.packages || [] });
+      setCatalogOptions({ 
+        services: res.services || [], 
+        packages: res.packages || [], 
+        scheduleRules: res.scheduleRules || [] 
+      });
     }
   };
 
@@ -136,7 +153,8 @@ export default function TeamPage() {
   // HANDLERS DE ABERTURA DOS MODAIS
   // --------------------------------------------------------
   const openCreate = () => {
-    setFormData({ name: "", email: "", password: "", permissions: [], instagram_url: "", show_instagram: true, profile_image_url: "", profession: "", bio: "", show_on_site: true, service_ids: [], package_template_ids: [] });
+    const defaultRule = catalogOptions.scheduleRules.find(r => r.is_default);
+    setFormData({ name: "", email: "", password: "", permissions: [], instagram_url: "", show_instagram: true, profile_image_url: "", profession: "", bio: "", show_on_site: true, service_ids: [], package_template_ids: [], schedule_rule_id: defaultRule?.id || "" });
     setSelectedMember(null);
     setModalView("create");
   };
@@ -155,6 +173,7 @@ export default function TeamPage() {
       show_on_site: member.show_on_site !== false,
       service_ids: member.services?.map((s) => s.id) || [],
       package_template_ids: member.package_templates?.map((p) => p.id) || [],
+      schedule_rule_id: member.schedule_rule_id || "",
     });
     setSelectedMember(member);
     setModalView("edit");
@@ -305,7 +324,7 @@ export default function TeamPage() {
         open={modalView === "create" || modalView === "edit"}
         onOpenChange={closeModal}
       >
-        <DialogContent className="w-screen h-[100dvh] max-w-none max-h-none rounded-none p-6 sm:w-full sm:h-auto sm:max-w-md sm:max-h-[90vh] sm:rounded-3xl overflow-y-auto border-0 sm:border">
+        <DialogContent className="w-screen h-[100dvh] max-w-none max-h-none rounded-none p-6 sm:w-full sm:h-auto sm:max-w-2xl sm:max-h-[90vh] sm:rounded-3xl overflow-y-auto border-0 sm:border">
           <DialogHeader>
             <DialogTitle>
               {modalView === "create"
@@ -537,7 +556,32 @@ export default function TeamPage() {
               </div>
             )}
 
-            {/* ⚡ SERVIÇOS E PACOTES */}
+            {/* ⚡ HORÁRIOS, SERVIÇOS E PACOTES */}
+            <div className="grid gap-2 mt-2 pt-2 border-t border-border/50">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Grade de Horários
+              </p>
+              <Select
+                value={formData.schedule_rule_id}
+                onValueChange={(val: string) => setFormData(prev => ({ ...prev, schedule_rule_id: val }))}
+              >
+                <SelectTrigger className="w-full bg-background font-normal">
+                  <SelectValue placeholder="Selecione uma grade..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {catalogOptions.scheduleRules.length === 0 ? (
+                    <SelectItem value="none" disabled>Nenhuma grade encontrada</SelectItem>
+                  ) : (
+                    catalogOptions.scheduleRules.map((rule) => (
+                      <SelectItem key={rule.id} value={rule.id}>
+                        {rule.name} {rule.is_default && "(Padrão)"}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="grid gap-2 mt-2 pt-2 border-t border-border/50">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Serviços que Realiza
