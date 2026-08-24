@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { cn } from "@/lib/utils";
+import { cn, sanitizeUrl } from "@/lib/utils";
 import {
   Star, Briefcase, Youtube, Pin, Globe, Menu, X, Envelope, User, Phone,
   CheckCircle, Whatsapp, Instagram, Facebook, Twitter, Tiktok, Clock,
@@ -641,9 +641,9 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                   {professionals.map((prof: any) => (
                     <div key={prof.id} className="flex flex-col group w-full max-w-[240px]">
                       <div className={cn("w-full aspect-[4/5] rounded-3xl shadow-sm flex items-center justify-center mb-4 overflow-hidden border relative group/card", cardBg, borderColor)}>
-                        {prof.show_instagram && prof.instagram_url && (
+                        {prof.show_instagram && prof.instagram_url && sanitizeUrl(prof.instagram_url) && (
                           <a
-                            href={prof.instagram_url}
+                            href={sanitizeUrl(prof.instagram_url)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="absolute bottom-3 right-3 z-10 p-2 rounded-full bg-white/90 shadow-md text-pink-600 hover:scale-110 hover:bg-white transition-all"
@@ -718,7 +718,7 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
 
                     {contact.address && (
                       <a
-                        href={contact.mapUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contact.address)}`}
+                        href={sanitizeUrl(contact.mapUrl) || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contact.address)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-4 hover:opacity-80 transition-opacity"
@@ -852,7 +852,7 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                         return (
                           <a
                             key={i}
-                            href={link.url}
+                            href={sanitizeUrl(link.url)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"

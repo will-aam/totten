@@ -3,6 +3,7 @@
 import { requireAuth } from "@/lib/auth";
 import { CustomPageService } from "@/lib/server/services/custom-page/custom-page.service";
 import { revalidatePath } from "next/cache";
+import { sanitizeUrl } from "@/lib/utils";
 
 export async function getCustomPageAction() {
   try {
@@ -32,6 +33,19 @@ export async function updateCustomPageAction(data: {
   profileConfig?: any;
 }) {
   try {
+    // Sanitização de links contra XSS
+    if (data.socialLinks && data.socialLinks.links) {
+      data.socialLinks.links = data.socialLinks.links.map((link: any) => ({
+        ...link,
+        url: sanitizeUrl(link.url) || "",
+      }));
+    }
+    if (data.profileConfig && data.profileConfig.contact && data.profileConfig.contact.mapUrl) {
+      data.profileConfig.contact.mapUrl = sanitizeUrl(data.profileConfig.contact.mapUrl) || "";
+    }
+    if (data.professionalSiteConfig && data.professionalSiteConfig.contact && data.professionalSiteConfig.contact.mapUrl) {
+      data.professionalSiteConfig.contact.mapUrl = sanitizeUrl(data.professionalSiteConfig.contact.mapUrl) || "";
+    }
     const admin = await requireAuth();
     await CustomPageService.updateCustomPage(admin.organizationId, data);
     

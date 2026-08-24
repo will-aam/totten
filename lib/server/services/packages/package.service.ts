@@ -99,16 +99,22 @@ export class PackageService {
     }
 
     let finalPackageName = service.name;
+    let finalPrice = Number(price);
+    let finalTotalSessions = Number(total_sessions);
+
     if (package_template_id) {
       const template = await prisma.packageTemplate.findUnique({
         where: {
           id: package_template_id,
           organization_id: organizationId,
         },
-        select: { name: true },
+        select: { name: true, price: true, total_sessions: true },
       });
       if (template) {
         finalPackageName = template.name;
+        // BLOQUEIO DE SEGURANÇA: Sobrescreve valores do frontend com a regra do banco de dados
+        finalPrice = Number(template.price);
+        finalTotalSessions = template.total_sessions;
       }
     }
 
@@ -117,9 +123,9 @@ export class PackageService {
       const novoPacote = await tx.package.create({
         data: {
           name: finalPackageName,
-          total_sessions: total_sessions,
+          total_sessions: finalTotalSessions,
           used_sessions: 0,
-          price: price,
+          price: finalPrice,
           client_id,
           service_id,
           organization_id: organizationId,
@@ -132,7 +138,7 @@ export class PackageService {
       });
 
       // 2. GERAR RECEITA À VISTA
-      if (pay_upfront && payment_method && Number(price) > 0) {
+      if (pay_upfront && payment_method && finalPrice > 0) {
         const orgPaymentMethod = await tx.organizationPaymentMethod.findFirst({
           where: {
             organization_id: organizationId,
@@ -141,7 +147,7 @@ export class PackageService {
           },
         });
 
-        let netAmount = Number(price);
+        let netAmount = finalPrice;
         let feeDiscount = 0;
 
         if (orgPaymentMethod) {
@@ -176,10 +182,10 @@ export class PackageService {
         !pay_upfront &&
         generate_installments &&
         installments_count > 0 &&
-        Number(price) > 0
+        finalPrice > 0
       ) {
         const count = Number(installments_count);
-        const amountPerInstallment = Number(price) / count;
+        const amountPerInstallment = finalPrice / count;
         const baseDate = new Date();
 
         for (let i = 0; i < count; i++) {

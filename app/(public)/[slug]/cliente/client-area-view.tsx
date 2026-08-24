@@ -7,53 +7,32 @@ import { ArrowLeft, History } from "@boxicons/react";
 import { LogOut } from "lucide-react";
 import { getClientHistoryByPhone } from "@/app/actions/public-client";
 
-export function ClientAreaView({ org, theme }: { org: any; theme: any }) {
+import { logoutClientSession } from "@/app/actions/client-auth";
+
+export function ClientAreaView({ 
+  org, 
+  theme,
+  initialHistory,
+  initialClientName,
+  error
+}: { 
+  org: any; 
+  theme: any;
+  initialHistory: any[];
+  initialClientName: string;
+  error?: string;
+}) {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [history, setHistory] = useState<any[]>([]);
-  const [clientName, setClientName] = useState<string>("");
-  const [error, setError] = useState<string>("");
-  useEffect(() => {
-    const checkLogin = async () => {
-      if (typeof window !== "undefined") {
-        const loggedIn = localStorage.getItem(`totten_client_logged_in_${org.slug}`);
-        const phone = localStorage.getItem(`totten_client_phone_${org.slug}`);
-
-        if (!loggedIn || !phone) {
-          router.push(`/${org.slug}/login`);
-          return;
-        }
-
-        const res = await getClientHistoryByPhone(org.slug, phone);
-        if (res.success) {
-          setHistory(res.data || []);
-          setClientName(res.clientName || "");
-        } else {
-          setError(res.error || "Erro ao buscar informações.");
-        }
-        setLoading(false);
-      }
-    };
-    checkLogin();
-  }, [org.slug, router]);
-
-  const handleLogout = () => {
+  
+  const handleLogout = async () => {
+    await logoutClientSession(org.slug);
     if (typeof window !== "undefined") {
       localStorage.removeItem(`totten_client_logged_in_${org.slug}`);
       localStorage.removeItem(`totten_client_phone_${org.slug}`);
-      router.push(`/${org.slug}/agendar`);
     }
+    router.push(`/${org.slug}/agendar`);
+    router.refresh();
   };
-
-  if (loading) {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center p-4 bg-slate-50 text-slate-900"
-      >
-        <p className="font-medium opacity-70 animate-pulse">Carregando...</p>
-      </div>
-    );
-  }
 
   return (
     <div
@@ -85,7 +64,7 @@ export function ClientAreaView({ org, theme }: { org: any; theme: any }) {
           <div className="w-16 h-16 rounded-full mx-auto flex items-center justify-center bg-black/5">
             <span className="text-2xl">👋</span>
           </div>
-          <h2 className="text-xl font-bold">Olá, {clientName || "Cliente"}</h2>
+          <h2 className="text-xl font-bold">Olá, {initialClientName || "Cliente"}</h2>
           <p className="text-sm opacity-70">
             Área do cliente. Em breve novas coisas!
           </p>
@@ -104,7 +83,7 @@ export function ClientAreaView({ org, theme }: { org: any; theme: any }) {
               <h3 className="font-bold">Seu Histórico (Últimos 10)</h3>
             </div>
 
-            {history.length === 0 ? (
+            {initialHistory.length === 0 ? (
               <div
                 className="p-6 rounded-2xl border flex flex-col items-center justify-center text-center space-y-2 bg-white border-black/5"
               >
@@ -112,7 +91,7 @@ export function ClientAreaView({ org, theme }: { org: any; theme: any }) {
               </div>
             ) : (
               <div className="space-y-3">
-                {history.map((item, idx) => (
+                {initialHistory.map((item, idx) => (
                   <div
                     key={item.id || idx}
                     className="p-4 rounded-2xl border text-left bg-white border-black/5"

@@ -3,6 +3,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
+import { sanitizeUrl } from "@/lib/utils";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
@@ -89,8 +90,8 @@ export async function createCollaborator(data: {
         permissions: data.permissions || [], //  Salva as permissões garantindo que seja um array
         profession: data.profession || null,
         bio: data.bio || null,
-        profile_image_url: data.profile_image_url || null,
-        instagram_url: data.instagram_url || null,
+        profile_image_url: sanitizeUrl(data.profile_image_url) || null,
+        instagram_url: sanitizeUrl(data.instagram_url) || null,
         show_instagram: data.show_instagram !== undefined ? data.show_instagram : true,
         show_on_site: data.show_on_site !== undefined ? data.show_on_site : true,
         email_verified: true,
@@ -157,8 +158,8 @@ export async function updateCollaborator(
 
     if (data.profession !== undefined) updateData.profession = data.profession;
     if (data.bio !== undefined) updateData.bio = data.bio;
-    if (data.profile_image_url !== undefined) updateData.profile_image_url = data.profile_image_url;
-    if (data.instagram_url !== undefined) updateData.instagram_url = data.instagram_url;
+    if (data.profile_image_url !== undefined) updateData.profile_image_url = sanitizeUrl(data.profile_image_url);
+    if (data.instagram_url !== undefined) updateData.instagram_url = sanitizeUrl(data.instagram_url);
     if (data.show_instagram !== undefined) updateData.show_instagram = data.show_instagram;
     if (data.show_on_site !== undefined) updateData.show_on_site = data.show_on_site;
     if (data.schedule_rule_id !== undefined) {

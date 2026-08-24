@@ -50,3 +50,32 @@ export async function getClientHistoryByPhone(slug: string, phone: string) {
     return { success: false, error: "Erro ao buscar histórico" };
   }
 }
+
+export async function getClientHistoryById(slug: string, clientId: string) {
+  try {
+    const org = await prisma.organization.findUnique({
+      where: { slug }
+    });
+
+    if (!org) {
+      return { success: false, error: "Organização não encontrada" };
+    }
+
+    const client = await prisma.client.findFirst({
+      where: {
+        id: clientId,
+        organization_id: org.id
+      }
+    });
+
+    if (!client) {
+      return { success: false, error: "Cliente não encontrado" };
+    }
+
+    const history = await TotemService.getClientHistory(client.id, slug);
+    return { success: true, data: history, clientName: client.name };
+  } catch (error: any) {
+    console.error("Erro ao buscar histórico por id:", error);
+    return { success: false, error: "Erro ao buscar histórico" };
+  }
+}

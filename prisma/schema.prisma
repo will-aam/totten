@@ -182,6 +182,11 @@ model Client {
   created_at          DateTime            @default(now())
   updated_at          DateTime            @updatedAt
   active              Boolean             @default(true)
+  
+  // Autenticação da Área do Cliente
+  auth_code           String?
+  auth_code_expires_at DateTime?
+
   anamnesis_responses AnamnesisResponse[]
   appointments        Appointment[]
   check_ins           CheckIn[]

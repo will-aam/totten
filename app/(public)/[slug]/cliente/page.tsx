@@ -20,6 +20,14 @@ export default async function ClientAreaPage({
     return notFound();
   }
 
+  const { getClientSession } = await import("@/app/actions/client-auth");
+  const { redirect } = await import("next/navigation");
+  
+  const clientId = await getClientSession(slug);
+  if (!clientId) {
+    redirect(`/${slug}/login`);
+  }
+
   const tc = (org.link_bio?.theme_config as any) || {};
   const theme = {
     primaryColor: tc.buttonBg || "#0f172a",
@@ -27,5 +35,16 @@ export default async function ClientAreaPage({
     css: tc.css || "",
   };
 
-  return <ClientAreaView org={org} theme={theme} />;
+  const { getClientHistoryById } = await import("@/app/actions/public-client");
+  const historyRes = await getClientHistoryById(slug, clientId);
+
+  return (
+    <ClientAreaView 
+      org={org} 
+      theme={theme} 
+      initialHistory={historyRes.success ? historyRes.data : []}
+      initialClientName={historyRes.success ? historyRes.clientName : ""}
+      error={historyRes.success ? "" : historyRes.error}
+    />
+  );
 }

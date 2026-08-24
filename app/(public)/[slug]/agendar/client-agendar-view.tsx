@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn, sanitizeUrl } from "@/lib/utils";
 import {
   MapPin,
   Clock,
@@ -60,6 +60,7 @@ export function ClientAgendarView({ org }: { org: any }) {
     time: null as string | null,
     firstName: "",
     phone: "",
+    email: "",
     professionalId: null as string | null,
     professionalName: null as string | null,
     professionalImage: null as string | null,
@@ -403,8 +404,8 @@ export function ClientAgendarView({ org }: { org: any }) {
                     <MapPin className={cn("w-5 h-5 mt-0.5 shrink-0", mutedTextClass)} />
                     <div>
                       <p className="text-sm font-medium">{globalContact.address}</p>
-                      {globalContact.mapUrl && (
-                        <a href={globalContact.mapUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline mt-1 inline-block">
+                      {globalContact.mapUrl && sanitizeUrl(globalContact.mapUrl) && (
+                        <a href={sanitizeUrl(globalContact.mapUrl)} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline mt-1 inline-block">
                           Ver no mapa
                         </a>
                       )}
@@ -616,6 +617,17 @@ export function ClientAgendarView({ org }: { org: any }) {
                       className={cn(isDark ? "bg-black/20 border-white/10" : "")}
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label>E-mail</Label>
+                    <Input
+                      type="email"
+                      value={bookingData.email || ""}
+                      onChange={e => setBookingData({ ...bookingData, email: e.target.value })}
+                      placeholder="seu.email@exemplo.com"
+                      className={cn(isDark ? "bg-black/20 border-white/10" : "")}
+                    />
+                    <p className="text-xs opacity-70">Necessário para acessar sua área do cliente no futuro.</p>
+                  </div>
                 </div>
               </div>
             )}
@@ -791,9 +803,9 @@ export function ClientAgendarView({ org }: { org: any }) {
             {bookingStep === 2 && (
               <Button
                 onClick={() => setBookingStep(3)}
-                disabled={!bookingData.firstName || !bookingData.phone}
+                disabled={!bookingData.firstName || !bookingData.phone || !bookingData.email}
                 className="w-full h-12 rounded-xl font-bold"
-                style={(!bookingData.firstName || !bookingData.phone) ? {} : { backgroundColor: theme.primaryColor, color: tc.buttonText || "#fff" }}
+                style={(!bookingData.firstName || !bookingData.phone || !bookingData.email) ? {} : { backgroundColor: theme.primaryColor, color: tc.buttonText || "#fff" }}
               >
                 Próximo <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
