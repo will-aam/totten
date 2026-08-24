@@ -25,7 +25,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { ptBR } from "date-fns/locale";
 import { format } from "date-fns";
 import { getAvailableTimesAndProfessionals } from "@/app/actions/availability";
-import { SYSTEM_THEMES } from "@/app/(private)/admin/custom-page/_components/theme-settings";
+import { PRO_THEMES } from "@/app/(private)/admin/self-service/_components/booking-appearance-settings";
 
 export function ClientAgendarView({ org }: { org: any }) {
   const router = useRouter();
@@ -101,21 +101,19 @@ export function ClientAgendarView({ org }: { org: any }) {
   const tc = (org.link_bio?.theme_config as any) || {};
   const presentation = (org.link_bio?.presentation as any) || {};
 
-  const bookingThemeId = org.settings?.booking_theme || "solid";
-  const systemTheme = SYSTEM_THEMES.find(t => t.id === bookingThemeId) || SYSTEM_THEMES[0];
+  const bookingThemeId = org.settings?.booking_theme || "light";
+  const systemTheme = PRO_THEMES.find(t => t.id === bookingThemeId) || PRO_THEMES[0];
 
-  const isDark = systemTheme.txt === "#ffffff";
+  const isDark = systemTheme.id === "dark";
 
   const theme = {
-    primaryColor: systemTheme.btnBg === "#ffffff" ? "#0f172a" : systemTheme.btnBg,
+    primaryColor: systemTheme.primary,
     textColor: systemTheme.txt,
     css: systemTheme.css,
     fontFamily: tc.fontFamily || "Inter, sans-serif",
-    buttonBg: systemTheme.btnBg,
-    buttonText: systemTheme.btnTxt,
   };
 
-  const bgClass = bookingThemeId === "solid" ? "bg-slate-50 text-slate-900" : systemTheme.css;
+  const bgClass = systemTheme.css;
   const cardBgClass = isDark ? "bg-white/10 border-white/20 backdrop-blur-md" : "bg-white/80 border-black/10 backdrop-blur-md";
   const textClass = isDark ? "text-white" : "text-slate-900";
   const mutedTextClass = isDark ? "text-white/70" : "text-slate-600";

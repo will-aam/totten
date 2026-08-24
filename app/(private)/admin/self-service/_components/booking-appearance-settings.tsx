@@ -11,9 +11,20 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Palette, CheckCircle, Loader2, Check } from "lucide-react";
+import { Palette, Loader2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SYSTEM_THEMES } from "@/app/(private)/admin/custom-page/_components/theme-settings";
+
+// Cores pré-definidas para garantir estética e acessibilidade.
+export const PRO_THEMES = [
+  { id: "light", name: "Clean (Branco)", css: "bg-white", txt: "#0f172a", primary: "#0f172a" },
+  { id: "dark", name: "Elegante (Escuro)", css: "bg-slate-950", txt: "#f8fafc", primary: "#38bdf8" },
+  { id: "rose", name: "Suave (Rose)", css: "bg-rose-50", txt: "#4c0519", primary: "#e11d48" },
+  { id: "nature", name: "Natural (Verde)", css: "bg-emerald-50", txt: "#022c22", primary: "#059669" },
+  { id: "purple", name: "Vibrante (Lilás)", css: "bg-purple-50", txt: "#2e1065", primary: "#9333ea" },
+  { id: "blue", name: "Clássico (Azul)", css: "bg-blue-50", txt: "#1e3a8a", primary: "#2563eb" },
+  { id: "warm", name: "Acolhedor (Bege)", css: "bg-orange-50", txt: "#431407", primary: "#ea580c" },
+  { id: "stone", name: "Sóbrio (Cinza)", css: "bg-stone-50", txt: "#1c1917", primary: "#57534e" },
+];
 
 interface BookingAppearanceSettingsProps {
   initialData?: any;
@@ -26,9 +37,9 @@ export function BookingAppearanceSettings({
   const [isLoading, setIsLoading] = useState(!initialData);
 
   const [bookingTheme, setBookingTheme] = useState(
-    initialData?.bookingTheme || "solid"
+    initialData?.bookingTheme || "light"
   );
-  // We can still keep bookingPrimaryColor around just in case, but we mainly care about bookingTheme for the predefined ones
+  
   const [bookingPrimaryColor, setBookingPrimaryColor] = useState(
     initialData?.bookingPrimaryColor || "#0f172a"
   );
@@ -37,13 +48,18 @@ export function BookingAppearanceSettings({
     if (!initialData) {
       getSelfServiceSettingsAction().then(res => {
         if (res.success && res.data) {
-          setBookingTheme(res.data.bookingTheme || "solid");
+          setBookingTheme(res.data.bookingTheme || "light");
           setBookingPrimaryColor(res.data.bookingPrimaryColor || "#0f172a");
         }
         setIsLoading(false);
       });
     }
   }, [initialData]);
+
+  const handleThemeChange = (theme: (typeof PRO_THEMES)[0]) => {
+    setBookingTheme(theme.id);
+    setBookingPrimaryColor(theme.primary);
+  };
 
   const handleSave = () => {
     startTransition(async () => {
@@ -85,27 +101,29 @@ export function BookingAppearanceSettings({
           </CardDescription>
         </CardHeader>
         <CardContent className="px-0 space-y-8">
-          
-          <div className="flex overflow-x-auto sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 pb-2 no-scrollbar">
-            {SYSTEM_THEMES.map((theme) => (
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {PRO_THEMES.map((theme) => (
               <button
                 key={theme.id}
-                onClick={() => setBookingTheme(theme.id)}
+                onClick={() => handleThemeChange(theme)}
                 className={cn(
-                  "relative flex flex-col items-center gap-2 rounded-xl border-2 p-2 transition-all outline-none shrink-0 w-[120px] sm:w-auto",
+                  "relative flex flex-col items-center gap-2 rounded-xl border-2 p-2 transition-all outline-none",
                   bookingTheme === theme.id
                     ? "border-primary bg-primary/5"
-                    : "border-border/50 bg-card hover:border-primary/50"
+                    : "border-border/50 bg-card hover:border-primary/50",
                 )}
               >
                 <div
                   className={cn(
-                    "w-full h-24 rounded-lg shadow-sm flex items-center justify-center relative overflow-hidden",
-                    theme.id === "solid" && bookingTheme === "solid"
-                      ? "bg-slate-200"
-                      : theme.css
+                    "w-full h-24 rounded-lg shadow-sm flex flex-col gap-2 p-2 relative overflow-hidden",
+                    theme.css,
                   )}
                 >
+                  <div className="h-2 w-1/2 rounded-full" style={{ backgroundColor: theme.txt, opacity: 0.8 }} />
+                  <div className="h-2 w-3/4 rounded-full" style={{ backgroundColor: theme.txt, opacity: 0.5 }} />
+                  <div className="h-4 w-1/3 rounded-md mt-auto" style={{ backgroundColor: theme.primary }} />
+
                   {bookingTheme === theme.id && (
                     <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
                       <div className="bg-background/80 backdrop-blur-sm rounded-full p-1 shadow-sm">
@@ -131,3 +149,4 @@ export function BookingAppearanceSettings({
     </div>
   );
 }
+
