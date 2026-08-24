@@ -103,7 +103,7 @@ export function ClientAgendarView({ org }: { org: any }) {
 
   const bookingThemeId = org.settings?.booking_theme || "solid";
   const systemTheme = SYSTEM_THEMES.find(t => t.id === bookingThemeId) || SYSTEM_THEMES[0];
-  
+
   const isDark = systemTheme.txt === "#ffffff";
 
   const theme = {
@@ -147,7 +147,7 @@ export function ClientAgendarView({ org }: { org: any }) {
           className="rounded-full shadow-xl text-xs font-bold h-10 px-5 backdrop-blur-md border border-white/20"
           style={{
             backgroundColor: theme.primaryColor,
-            color: tc.buttonText || "#ffffff"
+            color: "#ffffff"
           }}
         >
           <a href={`/${org.slug}/login`}>
@@ -495,18 +495,18 @@ export function ClientAgendarView({ org }: { org: any }) {
                           setAvailableSlots({});
                           return;
                         }
-                        
+
                         setIsLoadingAvailability(true);
                         const formattedDate = format(date, "yyyy-MM-dd");
                         // Asumindo que selectedItem tem um id de serviço
                         const res = await getAvailableTimesAndProfessionals(org.slug, selectedItem?.id || selectedItem?.service?.id, formattedDate);
-                        
+
                         if (res.success && res.availableSlots) {
                           setAvailableSlots(res.availableSlots);
                         } else {
                           setAvailableSlots({});
                         }
-                        
+
                         setIsLoadingAvailability(false);
 
                         setTimeout(() => {
@@ -571,7 +571,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                               "relative p-3 rounded-xl flex items-center gap-3 border text-left transition-all overflow-hidden",
                               isSelected ? "shadow-md scale-[1.02] ring-2 ring-offset-2" : "bg-transparent hover:bg-black/5 dark:hover:bg-white/5"
                             )}
-                            style={isSelected ? { borderColor: theme.primaryColor, ringColor: theme.primaryColor, ringOffsetColor: isDark ? '#0f172a' : '#ffffff' } : { borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' }}
+                            style={(isSelected ? { borderColor: theme.primaryColor, "--tw-ring-color": theme.primaryColor, "--tw-ring-offset-color": isDark ? '#0f172a' : '#ffffff' } : { borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' }) as React.CSSProperties}
                           >
                             <div className="w-10 h-10 rounded-full bg-muted overflow-hidden shrink-0 border" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
                               {pro.image_url ? (
@@ -637,28 +637,28 @@ export function ClientAgendarView({ org }: { org: any }) {
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
                 <div className="space-y-5">
 
-                    <div className="flex justify-between items-start border-b pb-5" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
-                      <div className="space-y-1">
-                        <p className="text-xs font-semibold uppercase tracking-wider opacity-60">Resumo do Serviço</p>
-                        <p className="font-bold text-lg leading-tight">{selectedItem?.name}</p>
-                        <div className="flex items-center gap-2 mt-2 opacity-80">
-                          <Calendar className="w-4 h-4" />
-                          <span className="text-sm">{bookingData.date ? format(bookingData.date, "dd 'de' MMMM", { locale: ptBR }) : ""} às {bookingData.time}</span>
+                  <div className="flex justify-between items-start border-b pb-5" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold uppercase tracking-wider opacity-60">Resumo do Serviço</p>
+                      <p className="font-bold text-lg leading-tight">{selectedItem?.name}</p>
+                      <div className="flex items-center gap-2 mt-2 opacity-80">
+                        <Calendar className="w-4 h-4" />
+                        <span className="text-sm">{bookingData.date ? format(bookingData.date, "dd 'de' MMMM", { locale: ptBR }) : ""} às {bookingData.time}</span>
+                      </div>
+                      {bookingData.professionalName && (
+                        <div className="flex items-center gap-2 mt-1 opacity-80">
+                          <User className="w-4 h-4" />
+                          <span className="text-sm">Com {bookingData.professionalName}</span>
                         </div>
-                        {bookingData.professionalName && (
-                          <div className="flex items-center gap-2 mt-1 opacity-80">
-                            <User className="w-4 h-4" />
-                            <span className="text-sm">Com {bookingData.professionalName}</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs font-semibold uppercase tracking-wider opacity-60 mb-1">Valor</p>
-                        <span className="font-black text-xl">
-                          R$ {Number(selectedItem?.price || 0).toFixed(2)}
-                        </span>
-                      </div>
+                      )}
                     </div>
+                    <div className="text-right">
+                      <p className="text-xs font-semibold uppercase tracking-wider opacity-60 mb-1">Valor</p>
+                      <span className="font-black text-xl">
+                        R$ {Number(selectedItem?.price || 0).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
