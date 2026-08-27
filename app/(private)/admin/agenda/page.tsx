@@ -20,6 +20,7 @@ import {
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import {
   ChevronLeft,
   ChevronRight,
@@ -369,118 +370,31 @@ export default function AgendaPage() {
         filtersNode={
           <AgendaFilters filters={filters} onFiltersChange={setFilters} />
         }
+        viewMode={viewMode}
+        onViewModeChange={(val) => setViewMode(val)}
       />
 
       <div className="flex flex-col gap-4 p-4 md:p-6 max-w-400 mx-auto w-full pb-32 md:pb-6 relative min-h-[calc(100vh-100px)]">
-        <div className="flex justify-end pb-4">
-          <div className="flex flex-col lg:flex-row items-center justify-end gap-3 w-full xl:w-auto flex-wrap">
-            <Tabs
-              value={viewMode}
-              onValueChange={(val) =>
-                setViewMode(val as "day" | "week" | "month")
-              }
-              className="w-full lg:w-auto shrink-0"
-            >
-              <TabsList className="grid w-full lg:w-64 grid-cols-3 h-11 rounded-2xl bg-muted/40 p-1">
-                <TabsTrigger value="day" className="rounded-xl font-bold">
-                  Dia
-                </TabsTrigger>
-                <TabsTrigger value="week" className="rounded-xl font-bold">
-                  Semana
-                </TabsTrigger>
-                <TabsTrigger value="month" className="rounded-xl font-bold">
-                  Mês
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-
-            <div className="hidden md:flex items-center w-full lg:w-auto justify-between bg-muted/20 lg:bg-transparent rounded-2xl p-1 lg:p-0 shrink-0 overflow-hidden">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={goPrev}
-                className="h-10 w-10 rounded-full shrink-0 z-20 bg-background/50 backdrop-blur-sm shadow-sm"
-              >
-                <ChevronLeft removePadding size="sm" />
-              </Button>
-
-              {viewMode !== "month" && (
-                <div
-                  ref={scrollContainerRef}
-                  onScroll={handleDaysScroll}
-                  className="flex gap-2 lg:gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden scroll-smooth snap-x snap-mandatory flex-1 max-w-60 sm:max-w-[320px] relative px-1 py-1 items-center"
-                  style={{
-                    maskImage:
-                      "linear-gradient(to right, transparent, black 15%, black 85%, transparent)",
-                    WebkitMaskImage:
-                      "linear-gradient(to right, transparent, black 15%, black 85%, transparent)",
-                  }}
-                >
-                  <div className="shrink-0 w-[calc(50%-24px)] sm:w-[calc(50%-28px)]" />
-
-                  {rouletteDays.map((day) => {
-                    const isSelected = isSameDay(day, selectedDate);
-                    const isToday = isSameDay(day, new Date());
-
-                    return (
-                      <button
-                        key={`roleta-${day.toISOString()}`}
-                        data-selected={isSelected}
-                        data-date={format(day, "yyyy-MM-dd")}
-                        onClick={() => {
-                          isProgrammaticScroll.current = true;
-                          setSelectedDate(day);
-                          setWeekStart(startOfWeek(day, { weekStartsOn: 0 }));
-                        }}
-                        className={cn(
-                          "day-btn snap-center flex flex-col items-center justify-center h-12 w-12 sm:h-14 sm:w-14 rounded-[14px] border transition-all shrink-0 duration-300",
-                          isSelected
-                            ? "bg-primary text-primary-foreground shadow-md border-primary scale-110 z-10"
-                            : isToday
-                              ? "bg-primary/10 text-primary border-primary/30"
-                              : "bg-card text-muted-foreground border-transparent hover:bg-muted opacity-50 hover:opacity-100",
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            "text-[9px] uppercase",
-                            isSelected ? "font-bold" : "font-semibold",
-                          )}
-                        >
-                          {format(day, "EEE", { locale: ptBR }).substring(0, 3)}
-                        </span>
-                        <span
-                          className={cn(
-                            "text-sm sm:text-base tracking-tighter",
-                            isSelected ? "font-black" : "font-bold",
-                          )}
-                        >
-                          {format(day, "dd")}
-                        </span>
-                      </button>
-                    );
-                  })}
-
-                  <div className="shrink-0 w-[calc(50%-24px)] sm:w-[calc(50%-28px)]" />
-                </div>
-              )}
-
-              {viewMode === "month" && (
-                <div className="px-4 text-sm font-bold text-muted-foreground capitalize flex-1 text-center">
-                  {format(selectedDate, "MMMM", { locale: ptBR })}
-                </div>
-              )}
-
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={goNext}
-                className="h-10 w-10 rounded-full shrink-0 z-20 bg-background/50 backdrop-blur-sm shadow-sm"
-              >
-                <ChevronRight removePadding size="sm" />
-              </Button>
-            </div>
-          </div>
+        <div className="flex justify-end md:hidden">
+          <Tabs
+            value={viewMode}
+            onValueChange={(val) =>
+              setViewMode(val as "day" | "week" | "month")
+            }
+            className="w-full sm:w-auto shrink-0"
+          >
+            <TabsList className="grid w-full sm:w-64 grid-cols-3 h-11 rounded-2xl bg-muted/40 p-1">
+              <TabsTrigger value="day" className="rounded-xl font-bold">
+                Dia
+              </TabsTrigger>
+              <TabsTrigger value="week" className="rounded-xl font-bold">
+                Semana
+              </TabsTrigger>
+              <TabsTrigger value="month" className="rounded-xl font-bold">
+                Mês
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
         {/* GRIDS DA AGENDA */}

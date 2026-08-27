@@ -12,6 +12,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +23,8 @@ interface AgendaHeaderProps {
   subtitle: ReactNode;
   onOpenSettings: () => void;
   filtersNode?: ReactNode;
+  viewMode: "day" | "week" | "month";
+  onViewModeChange: (val: "day" | "week" | "month") => void;
 }
 
 export function AgendaHeader({
@@ -31,6 +34,8 @@ export function AgendaHeader({
   subtitle,
   onOpenSettings,
   filtersNode,
+  viewMode,
+  onViewModeChange,
 }: AgendaHeaderProps) {
   const { toggleSidebar } = useSidebar();
   const { data: session } = useSession();
@@ -79,6 +84,24 @@ export function AgendaHeader({
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
+        <Tabs
+          value={viewMode}
+          onValueChange={(val) => onViewModeChange(val as "day" | "week" | "month")}
+          className="hidden md:block mr-2"
+        >
+          <TabsList className="grid w-56 grid-cols-3 h-9 rounded-full bg-muted/40 p-1">
+            <TabsTrigger value="day" className="rounded-full font-bold text-xs">
+              Dia
+            </TabsTrigger>
+            <TabsTrigger value="week" className="rounded-full font-bold text-xs">
+              Semana
+            </TabsTrigger>
+            <TabsTrigger value="month" className="rounded-full font-bold text-xs">
+              Mês
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         {filtersNode}
 
         <Button

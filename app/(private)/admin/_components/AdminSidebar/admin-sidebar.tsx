@@ -90,9 +90,6 @@ export function AdminSidebar() {
     pathname.startsWith(i.href),
   );
 
-  // Rota fixa do sub-item de Agendamento
-  const remindersHref = "/admin/reminders";
-  const isRemindersActive = pathname.startsWith(remindersHref);
 
   return (
     <Sidebar>
@@ -182,41 +179,7 @@ export function AdminSidebar() {
 
                 const isActive = pathname.startsWith(item.href) && item.active;
 
-                // 👇 Agendamento ganha um sub-item FIXO (Confirmações Manuais),
-                // sem colapsar/expandir — sempre visível, com a linha de hierarquia.
-                if (item.title === "Agendamento") {
-                  return (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive}
-                        className="hover:bg-muted/50"
-                      >
-                        <Link href={item.href} onClick={closeMobile}>
-                          <NavIcon icon={item.icon} isActive={isActive} />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
 
-                      <div className="mx-3.5 my-0.5 flex items-stretch">
-                        {/* Conector curvo: desce e curva à direita até o item */}
-                        <div className="relative w-3 shrink-0">
-                          <span className="absolute left-0 top-0 h-4 w-3 rounded-bl-lg border-b border-l border-sidebar-border" />
-                        </div>
-
-                        <SidebarMenuSubButton
-                          asChild
-                          isActive={isRemindersActive}
-                          className="flex-1 pl-1"
-                        >
-                          <Link href={remindersHref} onClick={closeMobile}>
-                            <span>Confirmações Manuais</span>
-                          </Link>
-                        </SidebarMenuSubButton>
-                      </div>
-                    </SidebarMenuItem>
-                  );
-                }
 
                 return (
                   <SidebarMenuItem key={item.title}>

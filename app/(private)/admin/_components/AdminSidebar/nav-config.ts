@@ -7,6 +7,7 @@ import {
   CalendarDetail,
   LinkAlt,
   Layers,
+  ClipboardCheck,
 } from "@boxicons/react";
 import type { BoxIcon } from "./nav-icon";
 
@@ -37,6 +38,12 @@ export const navItems: NavItem[] = [
     title: "Agendamento",
     href: "/admin/agenda",
     icon: CalendarDetail as BoxIcon,
+    active: true,
+  },
+  {
+    title: "Confirmações Manuais",
+    href: "/admin/reminders",
+    icon: ClipboardCheck as BoxIcon,
     active: true,
   },
   {
