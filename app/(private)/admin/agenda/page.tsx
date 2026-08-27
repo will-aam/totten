@@ -145,7 +145,7 @@ export default function AgendaPage() {
 
   const currentViewAppointments = useMemo(() => {
     let list = mapAppointments(agendaData);
-    
+
     if (filters.professionalId) {
       list = list.filter((a) => a.professionalId === filters.professionalId);
     }
@@ -337,9 +337,9 @@ export default function AgendaPage() {
       ? `Semana de ${format(weekStart, "dd MMM", { locale: ptBR })}`
       : viewMode === "month"
         ? format(selectedDate, "MMMM 'de' yyyy", { locale: ptBR }).replace(
-            /^\w/,
-            (c) => c.toUpperCase(),
-          )
+          /^\w/,
+          (c) => c.toUpperCase(),
+        )
         : formattedDateDesktop;
 
   return (
@@ -574,8 +574,8 @@ export default function AgendaPage() {
       <ScheduleSettingsModal
         open={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
-        initialSettings={{ 
-          openingTime, 
+        initialSettings={{
+          openingTime,
           closingTime,
           autoConfirmAppointments: settings?.autoConfirmAppointments,
           scheduleGenerationType: settings?.scheduleGenerationType,

@@ -96,7 +96,7 @@ export function AdminSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="p-4 border-b">
+      <SidebarHeader className="p-4">
         <Link
           href="/admin/dashboard"
           className="flex items-center gap-3"

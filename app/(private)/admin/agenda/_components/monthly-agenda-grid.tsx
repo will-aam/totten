@@ -203,8 +203,8 @@ export function MonthlyAgendaGrid({
                       appt.color,
                       isCancelled && "opacity-40 grayscale border-dashed",
                       isPackageArchived &&
-                        !isCancelled &&
-                        "border-2 border-destructive/80 opacity-80",
+                      !isCancelled &&
+                      "border-2 border-destructive/80 opacity-80",
                     )}
                   >
                     <div className="flex flex-col items-center justify-start w-11 shrink-0 border-r border-black/5 pr-3 pt-1">
@@ -217,7 +217,7 @@ export function MonthlyAgendaGrid({
                         className={cn(
                           "text-sm font-black truncate flex items-center gap-1.5",
                           (isCancelled || isPackageArchived) &&
-                            "line-through opacity-70",
+                          "line-through opacity-70",
                         )}
                       >
                         {isPackageArchived && !isCancelled && (
@@ -298,7 +298,7 @@ export function MonthlyAgendaGrid({
                   isCurrentMonth && "hover:bg-muted/10",
                 )}
               >
-                <div className="flex justify-between items-center mb-1">
+                <div className="flex justify-center items-center mb-1">
                   <span
                     className={cn(
                       "text-xs font-black h-6 w-6 flex items-center justify-center rounded-full",
@@ -330,11 +330,11 @@ export function MonthlyAgendaGrid({
                         className={cn(
                           "text-[9px] font-bold leading-none px-2 py-1.5 rounded-lg truncate border shadow-sm transition-transform hover:scale-[1.03] flex items-center gap-1 justify-between",
                           appt.color ||
-                            "bg-blue-100 border-blue-200 text-blue-900",
+                          "bg-blue-100 border-blue-200 text-blue-900",
                           isCancelled && "opacity-40 grayscale border-dashed",
                           isPackageArchived &&
-                            !isCancelled &&
-                            "border-destructive/80 opacity-80",
+                          !isCancelled &&
+                          "border-destructive/80 opacity-80",
                         )}
                       >
                         <div className="flex items-center gap-1 truncate">
@@ -342,7 +342,7 @@ export function MonthlyAgendaGrid({
                             className={cn(
                               "opacity-70 font-black",
                               (isCancelled || isPackageArchived) &&
-                                "line-through",
+                              "line-through",
                             )}
                           >
                             {appt.time}
@@ -356,7 +356,7 @@ export function MonthlyAgendaGrid({
                             className={cn(
                               "truncate",
                               (isCancelled || isPackageArchived) &&
-                                "line-through opacity-70",
+                              "line-through opacity-70",
                             )}
                           >
                             {appt.clientName.split(" ")[0]}

@@ -80,7 +80,7 @@ export function AgendaHeader({
 
       <div className="flex items-center gap-2 shrink-0">
         {filtersNode}
-        
+
         <Button
           variant="ghost"
           size="icon"
