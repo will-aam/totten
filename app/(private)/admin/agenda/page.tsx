@@ -40,6 +40,8 @@ import { AppointmentDetailsModal } from "./_components/appointment-details-modal
 import { ScheduleSettingsModal } from "./_components/schedule-settings-modal";
 import { AgendaHeader } from "./_components/agenda-header";
 import { AgendaFilters, AgendaFiltersState } from "./_components/agenda-filters";
+import { AgendaSidebar } from "./_components/agenda-sidebar";
+import { useSidebar } from "@/components/ui/sidebar";
 import { apiClient, ApiError } from "@/lib/api-client";
 
 interface AgendaSettings {
@@ -63,6 +65,17 @@ export default function AgendaPage() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] =
     useState<Appointment | null>(null);
+
+  const { state, setOpen } = useSidebar();
+  const isMainSidebarOpen = state === "expanded";
+
+  useEffect(() => {
+    // Only on desktop, default to closing the main sidebar so the agenda sidebar is visible
+    if (window.innerWidth >= 768) {
+      setOpen(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | undefined>(
     undefined,
@@ -374,78 +387,95 @@ export default function AgendaPage() {
         onViewModeChange={(val) => setViewMode(val)}
       />
 
-      <div className="flex flex-col gap-4 p-4 md:p-6 max-w-400 mx-auto w-full pb-32 md:pb-6 relative min-h-[calc(100vh-100px)]">
-        <div className="flex justify-end md:hidden">
-          <Tabs
-            value={viewMode}
-            onValueChange={(val) =>
-              setViewMode(val as "day" | "week" | "month")
-            }
-            className="w-full sm:w-auto shrink-0"
-          >
-            <TabsList className="grid w-full sm:w-64 grid-cols-3 h-11 rounded-2xl bg-muted/40 p-1">
-              <TabsTrigger value="day" className="rounded-xl font-bold">
-                Dia
-              </TabsTrigger>
-              <TabsTrigger value="week" className="rounded-xl font-bold">
-                Semana
-              </TabsTrigger>
-              <TabsTrigger value="month" className="rounded-xl font-bold">
-                Mês
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
+      <div className="flex flex-1 relative min-h-[calc(100vh-64px)]">
+        <AgendaSidebar
+          isOpen={!isMainSidebarOpen}
+          filters={filters}
+          onFiltersChange={setFilters}
+          onCreateClick={() => setIsNewModalOpen(true)}
+          selectedDate={selectedDate}
+          onSelectDate={(date) => {
+            isProgrammaticScroll.current = true;
+            setSelectedDate(date);
+            setWeekStart(startOfWeek(date, { weekStartsOn: 0 }));
+          }}
+        />
 
-        {/* GRIDS DA AGENDA */}
-        <div className="flex-1 animate-in fade-in slide-in-from-bottom-2 duration-500">
-          {viewMode === "day" && (
-            <DailyAgendaGrid
-              appointments={appointments}
-              onAppointmentClick={setSelectedAppointment}
-              onRefresh={mutateAll}
-              startHour={openingHourNumber}
-              endHour={closingHourNumber}
-              onEmptySlotClick={(time) => {
-                setSelectedTimeSlot(time);
-                setIsNewModalOpen(true);
-              }}
-              onQuickConfirm={handleQuickConfirm}
-            />
-          )}
-          {viewMode === "week" && (
-            <WeeklyAgendaGrid
-              appointments={weekAppointments}
-              weekStart={weekStart}
-              onAppointmentClick={setSelectedAppointment}
-              startHour={openingHourNumber}
-              endHour={closingHourNumber}
-              onQuickConfirm={handleQuickConfirm}
-            />
-          )}
-          {viewMode === "month" && (
-            <MonthlyAgendaGrid
-              appointments={monthAppointments}
-              currentDate={selectedDate}
-              onAppointmentClick={setSelectedAppointment}
-              onDayClick={(day) => {
-                setSelectedDate(day);
-                setWeekStart(startOfWeek(day, { weekStartsOn: 0 }));
-                setViewMode("day");
-              }}
-            />
-          )}
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-col gap-4 p-4 md:p-6 max-w-400 mx-auto w-full pb-32 md:pb-6 relative min-h-[calc(100vh-100px)]">
+            <div className="flex justify-end md:hidden">
+              <Tabs
+                value={viewMode}
+                onValueChange={(val) =>
+                  setViewMode(val as "day" | "week" | "month")
+                }
+                className="w-full sm:w-auto shrink-0"
+              >
+                <TabsList className="grid w-full sm:w-64 grid-cols-3 h-11 rounded-2xl bg-muted/40 p-1">
+                  <TabsTrigger value="day" className="rounded-xl font-bold">
+                    Dia
+                  </TabsTrigger>
+                  <TabsTrigger value="week" className="rounded-xl font-bold">
+                    Semana
+                  </TabsTrigger>
+                  <TabsTrigger value="month" className="rounded-xl font-bold">
+                    Mês
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+
+            {/* GRIDS DA AGENDA */}
+            <div className="flex-1 animate-in fade-in slide-in-from-bottom-2 duration-500">
+              {viewMode === "day" && (
+                <DailyAgendaGrid
+                  appointments={appointments}
+                  onAppointmentClick={setSelectedAppointment}
+                  onRefresh={mutateAll}
+                  startHour={openingHourNumber}
+                  endHour={closingHourNumber}
+                  onEmptySlotClick={(time) => {
+                    setSelectedTimeSlot(time);
+                    setIsNewModalOpen(true);
+                  }}
+                  onQuickConfirm={handleQuickConfirm}
+                />
+              )}
+              {viewMode === "week" && (
+                <WeeklyAgendaGrid
+                  appointments={weekAppointments}
+                  weekStart={weekStart}
+                  onAppointmentClick={setSelectedAppointment}
+                  startHour={openingHourNumber}
+                  endHour={closingHourNumber}
+                  onQuickConfirm={handleQuickConfirm}
+                />
+              )}
+              {viewMode === "month" && (
+                <MonthlyAgendaGrid
+                  appointments={monthAppointments}
+                  currentDate={selectedDate}
+                  onAppointmentClick={setSelectedAppointment}
+                  onDayClick={(day) => {
+                    setSelectedDate(day);
+                    setWeekStart(startOfWeek(day, { weekStartsOn: 0 }));
+                    setViewMode("day");
+                  }}
+                />
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* BOTÕES FLUTUANTES */}
+      {/* BOTÕES FLUTUANTES (Apenas no Mobile para Criar) */}
       <Button
         onClick={() => {
           setSelectedTimeSlot(undefined);
           setIsNewModalOpen(true);
         }}
         className={cn(
-          "fixed bottom-20 right-4 md:bottom-8 md:right-8 h-14 w-14 rounded-full shadow-2xl bg-primary text-primary-foreground z-40 transition-all duration-300",
+          "fixed bottom-20 right-4 md:hidden h-14 w-14 rounded-full shadow-2xl bg-primary text-primary-foreground z-40 transition-all duration-300",
           showScrollTop
             ? "translate-y-16 opacity-0 pointer-events-none"
             : "translate-y-0 opacity-100 hover:scale-110",

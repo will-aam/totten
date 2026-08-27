@@ -35,7 +35,7 @@ export type OpenModule =
 
 export const navItems: NavItem[] = [
   {
-    title: "Agendamento",
+    title: "Agenda",
     href: "/admin/agenda",
     icon: CalendarDetail as BoxIcon,
     active: true,

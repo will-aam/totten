@@ -54,13 +54,13 @@ export function AgendaHeader({
 
         <Popover>
           <PopoverTrigger asChild>
-            <div className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1.5 rounded-2xl transition-colors group min-w-0">
+            <div className="flex items-center gap-2 cursor-pointer md:cursor-default md:pointer-events-none hover:bg-muted/50 md:hover:bg-transparent p-1.5 rounded-2xl transition-colors group min-w-0">
               <div className="text-left min-w-0">
                 <h1 className="text-sm sm:text-base font-bold tracking-tight text-foreground leading-tight flex items-center gap-1.5 truncate">
                   <span className="truncate">{title}</span>
                   <ChevronDown
                     size="sm"
-                    className="text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity shrink-0"
+                    className="text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity shrink-0 md:hidden"
                   />
                 </h1>
                 <p className="text-xs text-muted-foreground mt-0.5 font-medium truncate">
@@ -102,10 +102,12 @@ export function AgendaHeader({
           </TabsList>
         </Tabs>
 
-        {filtersNode}
+        <div className="md:hidden">
+          {filtersNode}
+        </div>
 
         <Button
-          variant="ghost"
+          variant="outline"
           size="icon"
           onClick={onOpenSettings}
           className="rounded-full h-9 w-9 text-muted-foreground hover:bg-muted"

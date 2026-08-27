@@ -98,95 +98,108 @@ export function AgendaFilters({ filters, onFiltersChange }: AgendaFiltersProps) 
           )}
         </div>
 
-        <div className="flex flex-col gap-4">
-          {isOwner && (
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                Profissional
-              </Label>
-              <Select
-                value={filters.professionalId || "ALL"}
-                onValueChange={(val) => onFiltersChange({ ...filters, professionalId: val === "ALL" ? undefined : val })}
-              >
-                <SelectTrigger className="bg-muted/30 border-none rounded-xl h-10">
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border border-border/50 shadow-lg z-[100]">
-                  <SelectItem value="ALL" className="font-medium">Todos</SelectItem>
-                  <SelectItem value={session?.user?.id || ""} className="font-medium">Admin</SelectItem>
-                  {team.filter((m) => m.id !== session?.user?.id).map((member) => (
-                    <SelectItem key={member.id} value={member.id} className="font-medium">
-                      {member.display_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          <div className="space-y-1.5">
-            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-              Serviço
-            </Label>
-            <Select
-              value={filters.serviceId || "ALL"}
-              onValueChange={(val) => onFiltersChange({ ...filters, serviceId: val === "ALL" ? undefined : val })}
-            >
-              <SelectTrigger className="bg-muted/30 border-none rounded-xl h-10">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border border-border/50 shadow-lg max-h-[200px] z-[100]">
-                <SelectItem value="ALL" className="font-medium">Todos</SelectItem>
-                {services.map((s: any) => (
-                  <SelectItem key={s.id} value={s.id} className="font-medium">
-                    {s.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-              Tipo
-            </Label>
-            <Select
-              value={filters.type || "ALL"}
-              onValueChange={(val: any) => onFiltersChange({ ...filters, type: val })}
-            >
-              <SelectTrigger className="bg-muted/30 border-none rounded-xl h-10">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border border-border/50 shadow-lg z-[100]">
-                <SelectItem value="ALL" className="font-medium">Todos</SelectItem>
-                <SelectItem value="SINGLE" className="font-medium">Avulso</SelectItem>
-                <SelectItem value="PACKAGE" className="font-medium">Pacote</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-              Status
-            </Label>
-            <Select
-              value={filters.status || "ALL"}
-              onValueChange={(val) => onFiltersChange({ ...filters, status: val === "ALL" ? undefined : val })}
-            >
-              <SelectTrigger className="bg-muted/30 border-none rounded-xl h-10">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border border-border/50 shadow-lg z-[100]">
-                <SelectItem value="ALL" className="font-medium">Todos</SelectItem>
-                <SelectItem value="PENDENTE" className="font-medium">Pendente</SelectItem>
-                <SelectItem value="CONFIRMADO" className="font-medium">Confirmado</SelectItem>
-                <SelectItem value="REALIZADO" className="font-medium">Realizado</SelectItem>
-                <SelectItem value="CANCELADO" className="font-medium">Cancelado</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+        <AgendaFilterForm 
+          filters={filters} 
+          onFiltersChange={onFiltersChange} 
+          isOwner={isOwner} 
+          team={team} 
+          services={services} 
+          session={session}
+        />
       </PopoverContent>
     </Popover>
+  );
+}
+
+export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, services, session }: any) {
+  return (
+    <div className="flex flex-col gap-4">
+      {isOwner && (
+        <div className="space-y-1.5">
+          <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+            Profissional
+          </Label>
+          <Select
+            value={filters.professionalId || "ALL"}
+            onValueChange={(val) => onFiltersChange({ ...filters, professionalId: val === "ALL" ? undefined : val })}
+          >
+            <SelectTrigger className="bg-muted/30 border-none rounded-xl h-10">
+              <SelectValue placeholder="Todos" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border border-border/50 shadow-lg z-[100]">
+              <SelectItem value="ALL" className="font-medium">Todos</SelectItem>
+              <SelectItem value={session?.user?.id || ""} className="font-medium">Admin</SelectItem>
+              {team?.filter((m: any) => m.id !== session?.user?.id).map((member: any) => (
+                <SelectItem key={member.id} value={member.id} className="font-medium">
+                  {member.display_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      <div className="space-y-1.5">
+        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+          Serviço
+        </Label>
+        <Select
+          value={filters.serviceId || "ALL"}
+          onValueChange={(val) => onFiltersChange({ ...filters, serviceId: val === "ALL" ? undefined : val })}
+        >
+          <SelectTrigger className="bg-muted/30 border-none rounded-xl h-10">
+            <SelectValue placeholder="Todos" />
+          </SelectTrigger>
+          <SelectContent className="rounded-xl border border-border/50 shadow-lg max-h-[200px] z-[100]">
+            <SelectItem value="ALL" className="font-medium">Todos</SelectItem>
+            {services?.map((s: any) => (
+              <SelectItem key={s.id} value={s.id} className="font-medium">
+                {s.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+          Tipo
+        </Label>
+        <Select
+          value={filters.type || "ALL"}
+          onValueChange={(val: any) => onFiltersChange({ ...filters, type: val })}
+        >
+          <SelectTrigger className="bg-muted/30 border-none rounded-xl h-10">
+            <SelectValue placeholder="Todos" />
+          </SelectTrigger>
+          <SelectContent className="rounded-xl border border-border/50 shadow-lg z-[100]">
+            <SelectItem value="ALL" className="font-medium">Todos</SelectItem>
+            <SelectItem value="SINGLE" className="font-medium">Avulso</SelectItem>
+            <SelectItem value="PACKAGE" className="font-medium">Pacote</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+          Status
+        </Label>
+        <Select
+          value={filters.status || "ALL"}
+          onValueChange={(val) => onFiltersChange({ ...filters, status: val === "ALL" ? undefined : val })}
+        >
+          <SelectTrigger className="bg-muted/30 border-none rounded-xl h-10">
+            <SelectValue placeholder="Todos" />
+          </SelectTrigger>
+          <SelectContent className="rounded-xl border border-border/50 shadow-lg z-[100]">
+            <SelectItem value="ALL" className="font-medium">Todos</SelectItem>
+            <SelectItem value="PENDENTE" className="font-medium">Pendente</SelectItem>
+            <SelectItem value="CONFIRMADO" className="font-medium">Confirmado</SelectItem>
+            <SelectItem value="REALIZADO" className="font-medium">Realizado</SelectItem>
+            <SelectItem value="CANCELADO" className="font-medium">Cancelado</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
   );
 }
