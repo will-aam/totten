@@ -402,7 +402,7 @@ export default function AgendaPage() {
         />
 
         <div className="flex-1 min-w-0">
-          <div className="flex flex-col gap-4 p-4 md:p-6 max-w-400 mx-auto w-full pb-32 md:pb-6 relative min-h-[calc(100vh-100px)]">
+          <div className="flex flex-col gap-4 p-4 md:p-6 w-full pb-32 md:pb-6 relative min-h-[calc(100vh-100px)]">
             <div className="flex justify-end md:hidden">
               <Tabs
                 value={viewMode}
