@@ -35,6 +35,21 @@ export function ClientAgendarView({ org }: { org: any }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [likes, setLikes] = useState<Record<string, boolean>>({});
   const [isMounted, setIsMounted] = useState(false);
+  const [selectedProfessional, setSelectedProfessional] = useState<any>(null);
+
+  const handleSelectProfessional = (prof: any) => {
+    if (selectedProfessional?.id === prof.id) {
+      setSelectedProfessional(null);
+    } else {
+      setSelectedProfessional(prof);
+      setTimeout(() => {
+        const servicosElement = document.getElementById("servicos");
+        const pacotesElement = document.getElementById("pacotes");
+        if (servicosElement) servicosElement.scrollIntoView({ behavior: "smooth", block: "start" });
+        else if (pacotesElement) pacotesElement.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  };
   const [previewFeatures, setPreviewFeatures] = useState<{
     showPackages: boolean;
     showTeam: boolean;
@@ -71,7 +86,10 @@ export function ClientAgendarView({ org }: { org: any }) {
     setSelectedItem(item);
     setBookingData(prev => ({
       ...prev,
-      phone: typeof window !== "undefined" ? localStorage.getItem(`totten_client_phone_${org.slug}`) || "" : ""
+      phone: typeof window !== "undefined" ? localStorage.getItem(`totten_client_phone_${org.slug}`) || "" : "",
+      professionalId: selectedProfessional?.id || null,
+      professionalName: selectedProfessional?.name || null,
+      professionalImage: selectedProfessional?.image_url || null,
     }));
     setBookingStep(1);
     setPolicyAccepted(false);
@@ -119,8 +137,23 @@ export function ClientAgendarView({ org }: { org: any }) {
   const mutedTextClass = isDark ? "text-white/70" : "text-slate-600";
 
   const professionals = org.professionals || [];
-  const services = org.services || [];
-  const packageTemplates = org.packageTemplates || [];
+
+  const getFilteredServices = () => {
+    const allServices = org.services || [];
+    if (!selectedProfessional) return allServices;
+    if (selectedProfessional.role === "OWNER" && (!selectedProfessional.services || selectedProfessional.services.length === 0)) return allServices;
+    return allServices.filter((srv: any) => selectedProfessional.services?.some((ps: any) => ps.id === srv.id));
+  };
+
+  const getFilteredPackages = () => {
+    const allPackages = org.packageTemplates || [];
+    if (!selectedProfessional) return allPackages;
+    if (selectedProfessional.role === "OWNER" && (!selectedProfessional.package_templates || selectedProfessional.package_templates.length === 0)) return allPackages;
+    return allPackages.filter((pkg: any) => selectedProfessional.package_templates?.some((pp: any) => pp.id === pkg.id));
+  };
+
+  const services = getFilteredServices();
+  const packageTemplates = getFilteredPackages();
 
   // Live preview feature flags (from postMessage) override defaults
   const showTeam = previewFeatures ? previewFeatures.showTeam : true;
@@ -193,14 +226,25 @@ export function ClientAgendarView({ org }: { org: any }) {
               <section>
                 <h2 className="font-bold text-lg md:text-xl mb-4">Nossa Equipe</h2>
 
-                <div className="flex overflow-x-auto gap-4 md:gap-6 pb-6 scrollbar-hide -mx-5 px-5 md:-mx-10 md:px-10 snap-x">
-                  {professionals.map((prof: any) => (
+                <div className="flex overflow-x-auto gap-4 md:gap-6 pb-6 pt-4 scrollbar-hide -mx-5 px-5 md:-mx-10 md:px-10 snap-x">
+                  {professionals.map((prof: any) => {
+                    const isSelected = selectedProfessional?.id === prof.id;
+                    return (
                     <div
                       key={prof.id}
-                      className="flex flex-col items-center gap-3 min-w-[120px] md:min-w-[150px] shrink-0 snap-start"
+                      className={cn(
+                        "flex flex-col items-center gap-3 min-w-[120px] md:min-w-[150px] shrink-0 snap-start cursor-pointer transition-all",
+                        isSelected ? "opacity-100" : "opacity-80 hover:opacity-100"
+                      )}
+                      onClick={() => handleSelectProfessional(prof)}
                     >
                       {/* Foto */}
-                      <div className="w-28 h-36 md:w-36 md:h-48 rounded-[1.5rem] overflow-hidden shadow-lg border bg-muted relative">
+                      <div className={cn(
+                        "w-28 h-36 md:w-36 md:h-48 rounded-[1.5rem] overflow-hidden shadow-lg border bg-muted relative",
+                        isSelected ? `ring-4 ring-offset-2 ring-[${theme.primaryColor}]` : ""
+                      )}
+                      style={isSelected ? { '--tw-ring-color': theme.primaryColor } as any : {}}
+                      >
                         {prof.image_url ? (
                           <img
                             src={prof.image_url}
@@ -217,7 +261,7 @@ export function ClientAgendarView({ org }: { org: any }) {
 
                       {/* Nome + Curtidas */}
                       <div className="flex flex-col items-center gap-1">
-                        <span className="text-base md:text-lg font-bold text-center leading-tight tracking-tight">
+                        <span className={cn("text-base md:text-lg font-bold text-center leading-tight tracking-tight", isSelected && "text-primary")} style={isSelected ? { color: theme.primaryColor } : {}}>
                           {prof.name.split(" ")[0]}
                         </span>
                         {prof.profession && (
@@ -247,8 +291,14 @@ export function ClientAgendarView({ org }: { org: any }) {
                         </div>
                       </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
+                {selectedProfessional && selectedProfessional.bio && (
+                  <div className="mt-8 p-6 rounded-2xl bg-muted/50 border shadow-sm animate-fade-up max-w-3xl mx-auto text-center" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
+                    <h3 className="font-bold text-lg mb-2" style={{ color: theme.primaryColor }}>Sobre {selectedProfessional.name?.split(' ')[0]}</h3>
+                    <p className="text-sm opacity-80 leading-relaxed whitespace-pre-wrap">{selectedProfessional.bio}</p>
+                  </div>
+                )}
               </section>
             )}
 
@@ -488,7 +538,14 @@ export function ClientAgendarView({ org }: { org: any }) {
                       mode="single"
                       selected={bookingData.date}
                       onSelect={async (date) => {
-                        setBookingData({ ...bookingData, date, time: null, professionalId: null, professionalName: null, professionalImage: null });
+                        setBookingData({ 
+                          ...bookingData, 
+                          date, 
+                          time: null, 
+                          professionalId: selectedProfessional?.id || null, 
+                          professionalName: selectedProfessional?.name || null, 
+                          professionalImage: selectedProfessional?.image_url || null 
+                        });
                         if (!date) {
                           setAvailableSlots({});
                           return;
@@ -500,7 +557,19 @@ export function ClientAgendarView({ org }: { org: any }) {
                         const res = await getAvailableTimesAndProfessionals(org.slug, selectedItem?.id || selectedItem?.service?.id, formattedDate);
 
                         if (res.success && res.availableSlots) {
-                          setAvailableSlots(res.availableSlots);
+                          let finalSlots = res.availableSlots;
+                          if (selectedProfessional) {
+                            const filteredSlots: Record<string, any[]> = {};
+                            for (const time in finalSlots) {
+                              const prosAtTime = finalSlots[time];
+                              const hasProf = prosAtTime.some((p: any) => p.id === selectedProfessional.id);
+                              if (hasProf) {
+                                filteredSlots[time] = prosAtTime.filter((p: any) => p.id === selectedProfessional.id);
+                              }
+                            }
+                            finalSlots = filteredSlots;
+                          }
+                          setAvailableSlots(finalSlots);
                         } else {
                           setAvailableSlots({});
                         }
@@ -532,7 +601,12 @@ export function ClientAgendarView({ org }: { org: any }) {
                           return (
                             <button
                               key={time}
-                              onClick={() => setBookingData({ ...bookingData, time, professionalId: null, professionalName: null, professionalImage: null })}
+                              onClick={() => {
+                                const nextProfId = selectedProfessional ? selectedProfessional.id : null;
+                                const nextProfName = selectedProfessional ? selectedProfessional.name : null;
+                                const nextProfImage = selectedProfessional ? selectedProfessional.image_url : null;
+                                setBookingData({ ...bookingData, time, professionalId: nextProfId, professionalName: nextProfName, professionalImage: nextProfImage });
+                              }}
                               className={cn(
                                 "relative py-3 rounded-xl text-sm font-bold border text-center transition-all overflow-hidden",
                                 isSelected ? "shadow-md scale-[1.02]" : "bg-transparent hover:bg-black/5 dark:hover:bg-white/5"
@@ -555,10 +629,28 @@ export function ClientAgendarView({ org }: { org: any }) {
                 )}
 
                 {/* Seleção de Profissional (Aparece após selecionar o horário) */}
-                {bookingData.time && availableSlots[bookingData.time] && (
+                {bookingData.time && availableSlots[bookingData.time] && !selectedProfessional && (
                   <div className="space-y-3 animate-in fade-in pt-4 border-t" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
                     <h3 className="font-bold">Com quem você deseja agendar?</h3>
                     <div className="grid grid-cols-1 gap-2">
+                      <button
+                        onClick={() => setBookingData({ ...bookingData, professionalId: "ANY", professionalName: "Qualquer Profissional", professionalImage: null })}
+                        className={cn(
+                          "relative p-3 rounded-xl flex items-center gap-3 border text-left transition-all overflow-hidden",
+                          bookingData.professionalId === "ANY" ? "shadow-md scale-[1.02] ring-2 ring-offset-2" : "bg-transparent hover:bg-black/5 dark:hover:bg-white/5"
+                        )}
+                        style={(bookingData.professionalId === "ANY" ? { borderColor: theme.primaryColor, "--tw-ring-color": theme.primaryColor, "--tw-ring-offset-color": isDark ? '#0f172a' : '#ffffff' } : { borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' }) as React.CSSProperties}
+                      >
+                        <div className="w-10 h-10 rounded-full bg-muted overflow-hidden shrink-0 border flex items-center justify-center opacity-50" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
+                          <User className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-sm truncate">Qualquer Profissional</p>
+                          <p className="text-xs opacity-70">Escolha automática (Aleatório)</p>
+                        </div>
+                        {bookingData.professionalId === "ANY" && <CheckCircle2 className="w-5 h-5 shrink-0" style={{ color: theme.primaryColor }} />}
+                      </button>
+
                       {availableSlots[bookingData.time].map((pro: any) => {
                         const isSelected = bookingData.professionalId === pro.id;
                         return (
@@ -763,7 +855,7 @@ export function ClientAgendarView({ org }: { org: any }) {
 
                 <div className="px-4">
                   <a
-                    href={`https://wa.me/${globalContact?.phone?.replace(/\D/g, '') || ""}?text=Ol%C3%A1%2C%20fiz%20um%20agendamento%20para%20o%20dia%20${bookingData.date ? format(bookingData.date, "dd/MM/yyyy") : ""}%20%C3%A0s%20${bookingData.time}%20e%20aqui%20est%C3%A1%20meu%20comprovante%3A`}
+                    href={`https://wa.me/${globalContact?.phone?.replace(/\D/g, '') || ""}?text=Ol%C3%A1%2C%20fiz%20um%20agendamento%20para%20o%20dia%20${bookingData.date ? format(bookingData.date, "dd/MM/yyyy") : ""}%20%C3%A0s%20${bookingData.time}%20${bookingData.professionalName ? `com%20${bookingData.professionalName}%20` : ""}e%20aqui%20est%C3%A1%20meu%20comprovante%3A`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex w-full items-center justify-center rounded-xl h-14 font-bold mb-6 bg-[#25D366] hover:bg-[#25D366]/90 text-white transition-colors shadow-lg shadow-[#25D366]/20"
@@ -815,7 +907,8 @@ export function ClientAgendarView({ org }: { org: any }) {
                   if (previewGeneral?.requirePrepayment !== false) {
                     setBookingStep(4);
                   } else {
-                    const waUrl = `https://wa.me/${globalContact?.phone?.replace(/\D/g, '') || ""}?text=Ol%C3%A1%2C%20gostaria%20de%20agendar%20o%20servi%C3%A7o%20*${selectedItem?.name}*%20para%20o%20dia%20*${bookingData.date ? format(bookingData.date, "dd/MM/yyyy") : ""}*%20%C3%A0s%20*${bookingData.time}*.%0A%0AMeus%20dados%3A%0ANome%3A%20${bookingData.firstName}%0ATelefone%3A%20${bookingData.phone}`;
+                    const profNameText = bookingData.professionalName ? `%0AProfissional%3A%20${bookingData.professionalName}` : "";
+                    const waUrl = `https://wa.me/${globalContact?.phone?.replace(/\D/g, '') || ""}?text=Ol%C3%A1%2C%20gostaria%20de%20agendar%20o%20servi%C3%A7o%20*${selectedItem?.name}*%20para%20o%20dia%20*${bookingData.date ? format(bookingData.date, "dd/MM/yyyy") : ""}*%20%C3%A0s%20*${bookingData.time}*.%0A%0AMeus%20dados%3A%0ANome%3A%20${bookingData.firstName}%0ATelefone%3A%20${bookingData.phone}${profNameText}`;
                     window.open(waUrl, '_blank');
                     setBookingWizardOpen(false);
                   }

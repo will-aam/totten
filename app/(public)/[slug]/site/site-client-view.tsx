@@ -61,6 +61,21 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
   const [mobileCurrentSlide, setMobileCurrentSlide] = useState(0);
   const [desktopCarouselApi, setDesktopCarouselApi] = useState<any>(null);
   const [desktopCurrentSlide, setDesktopCurrentSlide] = useState(0);
+  const [selectedProfessional, setSelectedProfessional] = useState<any>(null);
+
+  const handleSelectProfessional = (prof: any) => {
+    if (selectedProfessional?.id === prof.id) {
+      setSelectedProfessional(null);
+    } else {
+      setSelectedProfessional(prof);
+      setTimeout(() => {
+        const servicosElement = document.getElementById("servicos");
+        const pacotesElement = document.getElementById("pacotes");
+        if (servicosElement) servicosElement.scrollIntoView({ behavior: "smooth", block: "start" });
+        else if (pacotesElement) pacotesElement.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  };
 
   useEffect(() => {
     if (!mobileCarouselApi) return;
@@ -101,8 +116,23 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
 
   // Dados do banco
   const professionals = org.admins || [];
-  const dbServices = org.services || [];
-  const dbPackages = org.package_templates || [];
+  
+  const getFilteredServices = () => {
+    const allServices = org.services || [];
+    if (!selectedProfessional) return allServices;
+    if (selectedProfessional.role === "OWNER" && (!selectedProfessional.services || selectedProfessional.services.length === 0)) return allServices;
+    return allServices.filter((srv: any) => selectedProfessional.services?.some((ps: any) => ps.id === srv.id));
+  };
+
+  const getFilteredPackages = () => {
+    const allPackages = org.package_templates || [];
+    if (!selectedProfessional) return allPackages;
+    if (selectedProfessional.role === "OWNER" && (!selectedProfessional.package_templates || selectedProfessional.package_templates.length === 0)) return allPackages;
+    return allPackages.filter((pkg: any) => selectedProfessional.package_templates?.some((pp: any) => pp.id === pkg.id));
+  };
+
+  const dbServices = getFilteredServices();
+  const dbPackages = getFilteredPackages();
   const dbCategories = org.categories || [];
 
   // Tema
@@ -637,16 +667,34 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                 <h2 className="font-bold text-2xl md:text-4xl mb-12 flex items-center gap-3">
                   <User className="h-8 w-8" style={{ color: theme.primaryColor }} /> Nossa Equipe
                 </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-8 justify-items-center">
-                  {professionals.map((prof: any) => (
-                    <div key={prof.id} className="flex flex-col group w-full max-w-[240px]">
-                      <div className={cn("w-full aspect-[4/5] rounded-3xl shadow-sm flex items-center justify-center mb-4 overflow-hidden border relative group/card", cardBg, borderColor)}>
-                        {prof.show_instagram && prof.instagram_url && sanitizeUrl(prof.instagram_url) && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-8 justify-items-center pt-4">
+                  {professionals.map((prof: any) => {
+                    const isSelected = selectedProfessional?.id === prof.id;
+                    return (
+                    <div
+                      key={prof.id}
+                      className={cn(
+                        "flex flex-col items-center gap-3 snap-start cursor-pointer transition-all",
+                        isSelected ? "opacity-100" : "opacity-80 hover:opacity-100"
+                      )}
+                      onClick={() => handleSelectProfessional(prof)}
+                    >
+                      <div className={cn(
+                        "w-28 h-36 md:w-36 md:h-48 rounded-[1.5rem] overflow-hidden shadow-lg border relative",
+                        isSelected ? `ring-4 ring-offset-2 ring-[${theme.primaryColor}]` : ""
+                      )}
+                      style={isSelected ? { '--tw-ring-color': theme.primaryColor } as any : {}}
+                      >
+                        {prof.instagram_url && (
                           <a
                             href={sanitizeUrl(prof.instagram_url)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="absolute bottom-3 right-3 z-10 p-2 rounded-full bg-white/90 shadow-md text-pink-600 hover:scale-110 hover:bg-white transition-all"
+                            className={cn(
+                              "absolute top-2 right-2 p-1.5 rounded-full z-10 backdrop-blur-md bg-black/30 text-white hover:bg-black/50 transition-colors",
+                              !prof.show_instagram && "hidden"
+                            )}
+                            onClick={(e) => e.stopPropagation()}
                           >
                             <Instagram className="h-5 w-5" />
                           </a>
@@ -665,12 +713,18 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                         )}
                       </div>
                       <div className="flex flex-col items-center justify-center px-2 text-center">
-                        <h4 className="font-bold text-lg leading-tight">{prof.display_name || "Profissional"}</h4>
+                        <h4 className={cn("font-bold text-lg leading-tight", isSelected && "text-primary")} style={isSelected ? { color: theme.primaryColor } : {}}>{prof.display_name || "Profissional"}</h4>
                         <p className="text-sm opacity-60 mt-1">{prof.profession || "Especialista"}</p>
                       </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
+                {selectedProfessional && selectedProfessional.bio && (
+                  <div className="mt-8 p-6 rounded-2xl bg-muted/50 border shadow-sm animate-fade-up max-w-3xl mx-auto text-center" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
+                    <h3 className="font-bold text-lg mb-2" style={{ color: theme.primaryColor }}>Sobre {selectedProfessional.display_name || selectedProfessional.name?.split(' ')[0]}</h3>
+                    <p className="text-sm opacity-80 leading-relaxed whitespace-pre-wrap">{selectedProfessional.bio}</p>
+                  </div>
+                )}
               </div>
             </div>
           )}

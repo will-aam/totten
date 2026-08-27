@@ -25,6 +25,7 @@ export type SubNavItem = {
   href: string;
   active: boolean;
   icon?: BoxIcon;
+  ownerOnly?: boolean;
 };
 
 export type OpenModule =
@@ -53,13 +54,7 @@ export const navItems: NavItem[] = [
     active: true,
     permission: "FINANCE", // mantém a mesma regra de acesso de antes (owner ou permissão FINANCE) — remova essa linha se quiser liberar geral
   },
-  {
-    title: "Profissionais",
-    href: "/admin/team",
-    icon: Group as BoxIcon,
-    active: true,
-    ownerOnly: true, // Apenas a administradora (Owner) vê
-  },
+
   {
     title: "Histórico Check-in",
     href: "/admin/history",
@@ -94,6 +89,12 @@ export const cadastrosSubItems: SubNavItem[] = [
   { title: "Estoque", href: "/admin/stock", active: true },
   { title: "Serviços e Pacotes", href: "/admin/services", active: true },
   { title: "Fichas de Anamnese", href: "/admin/anamnesis", active: true },
+  { 
+    title: "Profissionais", 
+    href: "/admin/team", 
+    active: true,
+    ownerOnly: true, 
+  },
 ];
 
 export const autoatendimentoSubItems: SubNavItem[] = [

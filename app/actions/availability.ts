@@ -31,7 +31,10 @@ export async function getAvailableTimesAndProfessionals(
       where: {
         organizations: { some: { id: org.id } },
         active: true,
-        services: { some: { id: serviceId } },
+        OR: [
+          { services: { some: { id: serviceId } } },
+          { role: "OWNER", services: { none: {} } }
+        ],
         schedule_rule_id: { not: null }
       },
       include: {

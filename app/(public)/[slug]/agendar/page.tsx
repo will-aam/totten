@@ -28,6 +28,10 @@ export default async function AgendarPage({
       admins: {
         where: { active: true },
         orderBy: { display_name: "asc" },
+        include: {
+          services: { select: { id: true } },
+          package_templates: { select: { id: true } },
+        }
       },
       package_templates: {
         where: { active: true, available_online: true },
