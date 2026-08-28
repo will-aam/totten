@@ -21,12 +21,15 @@ import {
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import { ImageGalleryForm } from "./_components/image-gallery-form";
 
 
 const MobileGlobe = ({ pack, ...props }: any) => <Cog {...props} />;
 const MobileLink = ({ pack, ...props }: any) => <Link {...props} />;
 const MobileSite = ({ pack, ...props }: any) => <GlobeAmericas {...props} />;
 const MobileCalendar = ({ pack, ...props }: any) => <Calendar {...props} />;
+import { ImageAlt } from "@boxicons/react";
+const MobileGallery = ({ pack, ...props }: any) => <ImageAlt {...props} />;
 
 import { ProfileSettings } from "./_components/profile-settings";
 import { ThemeSettings } from "./_components/theme-settings";
@@ -383,7 +386,8 @@ export default function CustomPage() {
           style: socials.style,
           size: socials.size,
           links: links
-        }
+        },
+        globalContactWhatsapp: globalContact.whatsapp
       });
 
       if (response.success) {
@@ -437,11 +441,7 @@ export default function CustomPage() {
   };
 
   const getIconSize = () => {
-    switch (socials.size) {
-      case "small": return "h-4 w-4";
-      case "large": return "h-7 w-7";
-      default: return "h-5 w-5"; // medium
-    }
+    return "h-7 w-7"; // Sempre grande
   };
 
 
@@ -453,7 +453,7 @@ export default function CustomPage() {
       <div className="flex flex-col gap-6 p-6 md:p-8 relative pb-32 md:pb-8">
 
         <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)} className="w-full">
-          <TabsList className="hidden md:grid w-full lg:w-[600px] grid-cols-4 h-auto gap-1 bg-muted p-1 rounded-xl mb-8">
+          <TabsList className="hidden md:grid w-full lg:w-[750px] grid-cols-4 h-auto gap-1 bg-muted p-1 rounded-xl mb-8">
             <TabsTrigger
               value="global"
               className="flex items-center gap-2 py-2 rounded-lg"
@@ -495,15 +495,13 @@ export default function CustomPage() {
             <GlobalSettings
               profile={profile} setProfile={setProfile}
               socials={socials} setSocials={setSocials}
-              globalContact={globalContact}
+              globalContact={globalContact} setGlobalContact={setGlobalContact}
               theme={theme} setTheme={setTheme}
               globalLocation={globalLocation} setGlobalLocation={setGlobalLocation}
+              proSiteConfig={proSiteConfig} setProSiteConfig={setProSiteConfig}
+              onSave={handleSave}
+              isSaving={isSaving}
             />
-            <div className="flex justify-end mt-6">
-              <Button onClick={handleSave} disabled={isSaving} className="min-w-32">
-                {isSaving ? "Salvando..." : "Salvar Configurações"}
-              </Button>
-            </div>
           </TabsContent>
 
           <TabsContent value="link-bio" className="mt-0">

@@ -53,6 +53,20 @@ export class CustomPageService {
         where: { id: organizationId },
         data: orgUpdateData,
       });
+
+      if (data.name) {
+        await prisma.settings.updateMany({
+          where: { organization_id: organizationId },
+          data: { company_name: data.name },
+        });
+      }
+    }
+    
+    if (data.globalContactWhatsapp !== undefined) {
+      await prisma.settings.updateMany({
+        where: { organization_id: organizationId },
+        data: { phone_whatsapp: data.globalContactWhatsapp },
+      });
     }
 
     return await prisma.linkBio.upsert({

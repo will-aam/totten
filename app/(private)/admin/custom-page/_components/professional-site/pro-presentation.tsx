@@ -103,68 +103,14 @@ export function ProPresentation({ data, onChange, hasServices }: { data: any, on
             onCheckedChange={(checked) => onChange({ ...data, showWhatsappHeaderButton: checked })}
           />
         </div>
-        {/* Upload de Imagens para Layout de Blog/Lateral (Slider) */}
+        {/* Slider Images Notice */}
         <div className="flex flex-col gap-4 pt-2">
-          <div>
-              <Label className="text-foreground font-medium">Imagens do Slider / Banner Lateral</Label>
-              <p className="text-xs text-muted-foreground mt-1">
-                Adicione até 5 fotos para criar um slide automático. Se adicionar apenas 1, será uma imagem estática.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              {heroImages.map((img, idx) => (
-                <div key={idx} className="relative h-24 w-24 rounded-lg border border-border/50 overflow-hidden group">
-                  <img src={img} alt={`Slide ${idx + 1}`} className="w-full h-full object-cover" />
-                  <button
-                    onClick={() => handleRemoveImage(idx)}
-                    className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Remover imagem"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
-
-              {heroImages.length < 5 && (
-                <div className="relative h-24 w-24 rounded-lg border-2 border-dashed border-border flex items-center justify-center overflow-hidden hover:bg-muted/30 transition-colors cursor-pointer">
-                  <input
-                    type="file"
-                    accept="image/png, image/jpeg, image/webp"
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                    onChange={handleProHeroImageUpload}
-                    disabled={isUploading}
-                  />
-                  <div className="flex flex-col items-center gap-1 text-muted-foreground">
-                    <ArrowInUpSquareHalf className="h-5 w-5" />
-                    <span className="text-[10px] font-medium text-center px-1">Upload</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {heroImages.length < 5 && (
-              <div className="flex gap-2 items-center">
-                <div className="relative flex-1">
-                  <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    value={newUrl}
-                    onChange={(e) => setNewUrl(e.target.value)}
-                    className="bg-background border-border/50 h-9 pl-9 text-xs focus-visible:ring-1"
-                    placeholder="Ou cole a URL da imagem aqui..."
-                    onKeyDown={(e) => e.key === "Enter" && handleAddUrl()}
-                  />
-                </div>
-                <button
-                  onClick={handleAddUrl}
-                  disabled={!newUrl.trim()}
-                  className="bg-muted hover:bg-muted/80 text-foreground text-xs font-medium px-3 h-9 rounded-md border border-border/50 disabled:opacity-50"
-                >
-                  Adicionar
-                </button>
-              </div>
-            )}
+          <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
+            <p className="text-sm text-primary font-medium text-center">
+              As imagens do Slider/Banner agora são gerenciadas na aba <strong>Galeria de Imagens</strong>.
+            </p>
           </div>
+        </div>
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="headline" className="text-foreground font-medium">

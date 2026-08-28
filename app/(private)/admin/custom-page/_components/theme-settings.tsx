@@ -183,27 +183,10 @@ export function ThemeSettings({ data, onChange }: any) {
           <div className="flex flex-col gap-6 pt-2 animate-in fade-in slide-in-from-top-2">
             <Label className="text-foreground font-medium">Seu Wallpaper Personalizado</Label>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {/* Upload Didático */}
-              <div className="flex flex-col items-center justify-center border-2 border-dashed border-border/50 rounded-xl p-6 bg-muted/20 hover:bg-muted/50 transition-colors cursor-pointer group">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                  <ImageIcon className="h-5 w-5 text-primary" />
-                </div>
-                <p className="text-sm font-medium text-foreground text-center">Fazer Upload</p>
-                <p className="text-xs text-muted-foreground text-center mt-1">PNG ou JPG (Máximo 5MB)</p>
-              </div>
-
-              {/* Inserção por Link */}
-              <div className="flex flex-col gap-3 justify-center">
-                <Label className="text-sm font-medium text-foreground">Ou use um Link (URL)</Label>
-                <Input
-                  placeholder="https://exemplo.com/imagem.jpg"
-                  value={data.backgroundImage || ""}
-                  onChange={(e) => onChange({ ...data, backgroundImage: e.target.value })}
-                  className="bg-background h-11"
-                />
-                <p className="text-[11px] text-muted-foreground">O preview será atualizado automaticamente ao colar um link de imagem válido.</p>
-              </div>
+            <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
+              <p className="text-sm text-primary font-medium text-center">
+                A imagem de fundo personalizada agora é gerenciada na aba <strong>Galeria de Imagens</strong>.
+              </p>
             </div>
 
             {/* Efeitos de Fundo (Wallpaper) */}

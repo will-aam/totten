@@ -287,11 +287,10 @@ export default function RegisterPage() {
                   }}
                   placeholder="••••••••"
                   required
-                  className={`h-12 sm:h-11 bg-muted/50 border-transparent hover:border-border focus-visible:bg-transparent text-base sm:text-sm ${
-                    confirmPassword && password !== confirmPassword
+                  className={`h-12 sm:h-11 bg-muted/50 border-transparent hover:border-border focus-visible:bg-transparent text-base sm:text-sm ${confirmPassword && password !== confirmPassword
                       ? "border-destructive focus-visible:border-destructive bg-destructive/5"
                       : ""
-                  }`}
+                    }`}
                 />
                 {confirmPassword && (
                   <p

@@ -120,76 +120,11 @@ export function ProHistory({ data, onChange, profile }: { data: any, onChange: (
             )}
           </div>
 
-          {/* Imagem da História */}
-          <div className="flex flex-col gap-3 p-4 border border-border/50 rounded-xl bg-muted/10">
-            <Label className="text-foreground font-medium">Imagem (Opcional)</Label>
-            <p className="text-xs text-muted-foreground -mt-1">Uma foto sua, da sua equipe ou do seu espaço para acompanhar o texto.</p>
-
-            <div className="flex flex-col gap-4 mt-2">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="historyImageUrl" className="text-xs text-muted-foreground">URL da Imagem (Opção 1)</Label>
-                <div className="relative">
-                  <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="historyImageUrl"
-                    value={data.historyImage || ""}
-                    onChange={(e) => onChange({ ...data, historyImage: e.target.value })}
-                    className="bg-background border-border/50 h-10 pl-9 focus-visible:ring-1"
-                    placeholder="Cole o link da imagem aqui..."
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="historyImageUpload" className="text-xs text-muted-foreground">Fazer Upload (Opção 2)</Label>
-                <div className="relative">
-                  <Input
-                    id="historyImageUpload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleHistoryImageUpload}
-                    disabled={isUploading}
-                    className="sr-only"
-                  />
-                  <Label
-                    htmlFor="historyImageUpload"
-                    className="flex items-center justify-center gap-2 w-full h-10 px-4 rounded-md border border-border/50 bg-background hover:bg-muted/50 cursor-pointer transition-colors text-sm font-medium"
-                  >
-                    {isUploading ? <LoaderLines className="h-4 w-4 animate-spin text-muted-foreground" /> : <ArrowInUpSquareHalf className="h-4 w-4 text-muted-foreground" />}
-                    {isUploading ? "Enviando..." : "Escolher arquivo do computador"}
-                  </Label>
-                </div>
-              </div>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                  <div className="w-full border-t border-border/50" />
-                </div>
-                <div className="relative flex justify-center text-xs">
-                  <span className="bg-muted/10 px-2 text-muted-foreground">OU</span>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <Label className="text-xs text-muted-foreground">Fazer Upload de Foto (Opção 2)</Label>
-                <div className="relative h-24 w-full rounded-lg border-2 border-dashed border-border flex items-center justify-center overflow-hidden hover:bg-muted/30 transition-colors">
-                  <input
-                    type="file"
-                    accept="image/png, image/jpeg, image/webp"
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                    onChange={handleHistoryImageUpload}
-                  />
-                  {data.historyImage && data.historyImage.startsWith('data:image') ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={data.historyImage} alt="Preview" className="absolute inset-0 w-full h-full object-cover opacity-50" />
-                  ) : null}
-                  <div className="flex flex-col items-center gap-1 text-muted-foreground relative z-0">
-                    <ArrowInUpSquareHalf className="h-5 w-5" />
-                    <span className="text-xs font-medium">Clique para enviar imagem</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+          {/* History Image Notice */}
+          <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
+            <p className="text-sm text-primary font-medium text-center">
+              A Imagem da História (Capa) agora é gerenciada na aba <strong>Galeria de Imagens</strong>.
+            </p>
           </div>
 
           {/* Métricas / Estatísticas */}

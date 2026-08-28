@@ -15,6 +15,8 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { getSelfServiceSettingsAction } from "@/app/actions/settings";
+import { ImageGalleryForm } from "./image-gallery-form";
+import { ChevronRight, ChevronLeft } from "lucide-react";
 
 function RulesSummaryPreview({ data, onChange }: any) {
   const [rulesData, setRulesData] = useState<any>(null);
@@ -107,19 +109,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-interface GlobalSettingsProps {
-  profile: any;
-  setProfile: (profile: any) => void;
-  socials?: any;
-  setSocials?: (socials: any) => void;
-  globalContact?: any;
-  theme?: any;
-  setTheme?: (theme: any) => void;
-  globalLocation?: any;
-  setGlobalLocation?: (loc: any) => void;
-}
 
-export function GlobalSettings({ profile, setProfile, socials, setSocials, globalContact, theme, setTheme, globalLocation, setGlobalLocation }: GlobalSettingsProps) {
+export function GlobalSettings({
+  profile,
+  setProfile,
+  socials,
+  setSocials,
+  globalContact,
+  setGlobalContact,
+  theme,
+  setTheme,
+  globalLocation,
+  setGlobalLocation,
+  proSiteConfig,
+  setProSiteConfig,
+  onSave,
+  isSaving,
+}: any) {
   const handleValueChange = (id: string, text: string) => {
     if (setSocials && socials) {
       setSocials({ ...socials, values: { ...socials.values, [id]: text } });
@@ -127,9 +133,36 @@ export function GlobalSettings({ profile, setProfile, socials, setSocials, globa
   };
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [showGallery, setShowGallery] = useState(false);
 
   const [cep, setCep] = useState("");
   const [isSearchingCep, setIsSearchingCep] = useState(false);
+
+  const getGalleryStatus = () => {
+    let score = 0;
+    
+    // Nível 1: Identidade Global (Mais importante) - 75% total (25% cada)
+    if (profile?.image) score += 25;
+    if (profile?.logo) score += 25;
+    if (profile?.bannerImage) score += 25;
+
+    // Nível 2: Slide do Site (15%)
+    const heroImages = proSiteConfig?.presentation?.proHeroImages || (proSiteConfig?.presentation?.proHeroImage ? [proSiteConfig.presentation.proHeroImage] : []);
+    if (heroImages.length > 0) score += 15;
+
+    // Nível 3: História (5%)
+    if (proSiteConfig?.history?.historyImage) score += 5;
+
+    // Nível 4: Wallpaper Link na Bio (5%)
+    if (theme?.backgroundImage) score += 5;
+
+    if (score === 100) return { label: "Completo", color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20", barColor: "bg-emerald-500", percentage: score };
+    if (score >= 75) return { label: "Excelente", color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20", barColor: "bg-emerald-500", percentage: score };
+    if (score >= 40) return { label: "Bom", color: "bg-amber-500/10 text-amber-600 border-amber-500/20", barColor: "bg-amber-500", percentage: score };
+    return { label: "Incompleto", color: "bg-rose-500/10 text-rose-600 border-rose-500/20", barColor: "bg-rose-500", percentage: score };
+  };
+
+  const galleryStatus = getGalleryStatus();
 
   const handleSearchCep = async () => {
     const cleanCep = cep.replace(/\D/g, "");
@@ -194,347 +227,312 @@ export function GlobalSettings({ profile, setProfile, socials, setSocials, globa
   };
 
   return (
-    <div className="flex flex-col gap-6 animate-in fade-in duration-300">
-      <div className="flex flex-col gap-2">
-        <h3 className="text-xl font-bold flex items-center gap-2 text-foreground">
-          Configurações Globais
-        </h3>
-        <p className="text-sm text-muted-foreground">
-          Estas informações são o coração da sua marca. Elas aparecerão no Link na Bio, Site Profissional e Autoagendamento.
-        </p>
-      </div>
+    <div className="flex flex-col animate-in fade-in duration-300">
 
-      <div className="flex flex-col gap-8 mt-4">
+      {showGallery ? (
+        <div className="w-full animate-in fade-in slide-in-from-right-4 duration-300 relative pb-16">
+          <Button
+            variant="ghost"
+            onClick={() => setShowGallery(false)}
+            className="mb-6 -ml-2 text-muted-foreground hover:text-foreground"
+          >
+            <ChevronLeft className="h-5 w-5 mr-1" /> Voltar para Configurações Globais
+          </Button>
 
-        {/* IMAGENS */}
-        <div className="flex flex-col gap-4">
-          <h4 className="text-sm font-semibold text-foreground">Imagens Principais</h4>
-          <div className="flex flex-col sm:flex-row gap-6">
-            {/* Avatar */}
-            <div className="flex items-center gap-4 flex-1 border border-border/50 p-4 rounded-lg bg-muted/20">
-              <div className="h-16 w-16 rounded-full bg-muted border-2 border-dashed border-border flex items-center justify-center relative overflow-hidden group cursor-pointer hover:bg-muted/80 transition-colors shrink-0">
-                {profile.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={profile.image} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <Camera className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
-                )}
-                {isUploadingAvatar && (
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-full z-20">
-                    <LoaderLines className="w-6 h-6 text-white animate-spin" />
-                  </div>
-                )}
-                <input type="file" accept="image/png, image/jpeg" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={handleAvatarUpload} disabled={isUploadingAvatar} />
-              </div>
-              <div className="flex flex-col">
-                <p className="font-medium text-xs text-foreground">Avatar (Perfil)</p>
-                <label className="text-[11px] font-semibold text-primary hover:underline w-fit cursor-pointer mt-1">
-                  Fazer upload
-                  <input type="file" accept="image/png, image/jpeg" className="hidden" onChange={handleAvatarUpload} />
-                </label>
-                {profile.image && (
-                  <button onClick={() => setProfile({ ...profile, image: "" })} className="text-[11px] font-semibold text-destructive hover:underline w-fit mt-1">
-                    Remover
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Banner */}
-            <div className="flex items-center gap-4 flex-1 border border-border/50 p-4 rounded-lg bg-muted/20">
-              <div className="h-16 w-24 rounded-md bg-muted border-2 border-dashed border-border flex items-center justify-center relative overflow-hidden group cursor-pointer hover:bg-muted/80 transition-colors shrink-0">
-                {profile.bannerImage ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={profile.bannerImage} alt="Banner" className="w-full h-full object-cover" />
-                ) : (
-                  <ImageIcon className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
-                )}
-                {isUploadingBanner && (
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-xl z-20">
-                    <LoaderLines className="w-6 h-6 text-white animate-spin" />
-                  </div>
-                )}
-                <input type="file" accept="image/png, image/jpeg" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={handleBannerUpload} disabled={isUploadingBanner} />
-              </div>
-              <div className="flex flex-col gap-2 w-full max-w-sm">
-                <p className="font-medium text-xs text-foreground">Imagem de Capa (Banner)</p>
-                <div className="flex flex-col gap-2">
-                  <div className="flex gap-2 items-center">
-                    <label className="text-[11px] font-semibold text-primary hover:underline w-fit cursor-pointer">
-                      Fazer upload
-                      <input type="file" accept="image/png, image/jpeg" className="hidden" onChange={handleBannerUpload} />
-                    </label>
-                    {profile.bannerImage && (
-                      <button onClick={() => setProfile({ ...profile, bannerImage: "" })} className="text-[11px] font-semibold text-destructive hover:underline w-fit">
-                        Remover
-                      </button>
-                    )}
-                  </div>
-                  <Input
-                    value={profile.bannerImage || ""}
-                    onChange={(e) => setProfile({ ...profile, bannerImage: e.target.value })}
-                    className="bg-background h-8 text-xs focus-visible:ring-1"
-                    placeholder="Ou cole a URL da imagem aqui..."
-                  />
-                </div>
-              </div>
-            </div>
+          <ImageGalleryForm
+            profile={profile} setProfile={setProfile}
+            theme={theme} setTheme={setTheme}
+            proSiteConfig={proSiteConfig} setProSiteConfig={setProSiteConfig}
+          />
+          <div className="flex justify-end mt-6">
+            <Button onClick={onSave} disabled={isSaving} className="min-w-32">
+              {isSaving ? "Salvando..." : "Salvar Configurações"}
+            </Button>
           </div>
         </div>
-
-        {/* TEXTOS */}
-        <div className="flex flex-col gap-6">
-          <h4 className="text-sm font-semibold text-foreground">Informações de Texto</h4>
-
+      ) : (
+        <div className="flex flex-col gap-6 relative pb-16">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="name" className="text-foreground font-medium">
-              Nome de Exibição
-            </Label>
-            <Input
-              id="name"
-              value={profile.name || ""}
-              onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-              className="bg-background h-11"
-              placeholder="Ex: Clínica Totten"
-            />
+            <h3 className="text-xl font-bold flex items-center gap-2 text-foreground">
+              Configurações Globais
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Estas informações são o coração da sua marca. Elas aparecerão no Link na Bio, Site Profissional e Autoagendamento.
+            </p>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <div className="flex justify-between items-end">
-              <Label htmlFor="bio" className="text-foreground font-medium">
-                Descreva brevemente seu negócio
-              </Label>
-              <span
-                className={`text-[11px] font-medium ${(profile.bio?.length || 0) > 300 ? "text-destructive" : "text-muted-foreground"}`}
-              >
-                {profile.bio?.length || 0} caracteres
-              </span>
-            </div>
-            <Textarea
-              id="bio"
-              value={profile.bio || ""}
-              onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-              className="bg-background min-h-32 resize-none"
-              placeholder="Descreva seu negócio, sua história ou missão. Este texto será adaptado para o Link na Bio e para a seção Sobre do Site Profissional."
-            />
-          </div>
-        </div>
-
-        {/* TIPOGRAFIA */}
-        {theme && setTheme && (
-          <div className="flex flex-col gap-6">
-            <h4 className="text-sm font-semibold text-foreground">Tipografia</h4>
-            <div className="flex flex-col gap-3">
-              <Label className="text-foreground font-medium flex items-center gap-2">
-                <Capitalize className="h-4 w-4" /> Fonte do Texto Principal
-              </Label>
-              <Select
-                value={theme.fontFamily || "Inter, sans-serif"}
-                onValueChange={(val) => setTheme({ ...theme, fontFamily: val })}
-              >
-                <SelectTrigger className="h-11">
-                  <SelectValue placeholder="Selecione uma fonte" />
-                </SelectTrigger>
-                <SelectContent>
-                  {FONTS.map((font) => (
-                    <SelectItem key={font.id} value={font.value} style={{ fontFamily: font.value }}>
-                      {font.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        )}
-
-        {/* REDES SOCIAIS E CONTATOS */}
-        {socials && setSocials && (
-          <div className="flex flex-col gap-6">
-            <h4 className="text-sm font-semibold text-foreground">Redes Sociais e Contatos</h4>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-foreground font-medium flex items-center gap-2 text-sm">
-                  <Whatsapp className="h-4 w-4 text-muted-foreground" /> WhatsApp
-                </Label>
-                <div className="flex items-center">
-                  <span className="bg-muted text-muted-foreground px-3 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
-                    +55
-                  </span>
-                  <Input
-                    value={globalContact?.whatsapp || ""}
-                    disabled
-                    className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
-                    placeholder="DDD + Número"
-                  />
-                </div>
-                <p className="text-[11px] text-muted-foreground mt-1">
-                  Editado em Configurações &gt; Dados da Empresa
-                </p>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-foreground font-medium flex items-center gap-2 text-sm">
-                  <Instagram className="h-4 w-4 text-muted-foreground" /> Instagram
-                </Label>
-                <div className="flex items-center">
-                  <span className="bg-muted text-muted-foreground px-3 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
-                    @
-                  </span>
-                  <Input
-                    value={socials.values.instagram || ""}
-                    onChange={(e) => handleValueChange("instagram", e.target.value)}
-                    className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
-                    placeholder="seuusuario"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-foreground font-medium flex items-center gap-2 text-sm">
-                  <Facebook className="h-4 w-4 text-muted-foreground" /> Facebook
-                </Label>
-                <div className="flex items-center">
-                  <span className="bg-muted text-muted-foreground px-3 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
-                    facebook.com/
-                  </span>
-                  <Input
-                    value={socials.values.facebook || ""}
-                    onChange={(e) => handleValueChange("facebook", e.target.value)}
-                    className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
-                    placeholder="suapagina"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-foreground font-medium flex items-center gap-2 text-sm">
-                  <Youtube className="h-4 w-4 text-muted-foreground" /> YouTube
-                </Label>
-                <div className="flex items-center">
-                  <span className="bg-muted text-muted-foreground px-3 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
-                    youtube.com/@
-                  </span>
-                  <Input
-                    value={socials.values.youtube || ""}
-                    onChange={(e) => handleValueChange("youtube", e.target.value)}
-                    className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
-                    placeholder="seucanal"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5 md:col-span-2">
-                <Label className="text-foreground font-medium flex items-center gap-2 text-sm">
-                  <Globe className="h-4 w-4 text-muted-foreground" /> Meu Site
-                </Label>
-                <div className="flex items-center">
-                  <span className="bg-muted text-muted-foreground px-3 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
-                    https://
-                  </span>
-                  <Input
-                    value={socials.values.website || ""}
-                    onChange={(e) => handleValueChange("website", e.target.value)}
-                    className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
-                    placeholder="www.seusite.com.br"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* LOCALIZAÇÃO E ENDEREÇO */}
-        {globalLocation && setGlobalLocation && (
-          <div className="flex flex-col gap-6 mt-4">
-            <div>
-              <h4 className="text-sm font-semibold flex items-center gap-2 text-foreground">
-                Localização e Contato
-              </h4>
-              <p className="text-sm text-muted-foreground mt-1">
-                Informe onde você atende e como os clientes podem te achar.
-              </p>
-            </div>
-
-            {/* CEP */}
-            <div className="flex flex-col gap-3 p-4 border border-border/50 rounded-xl bg-muted/10">
-              <Label className="text-sm font-medium">Buscar Endereço (CEP)</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={cep}
-                  onChange={(e) => setCep(e.target.value)}
-                  placeholder="00000-000"
-                  className="bg-background max-w-[200px]"
-                  maxLength={9}
-                />
-                <Button
-                  variant="secondary"
-                  onClick={handleSearchCep}
-                  disabled={isSearchingCep || cep.replace(/\D/g, "").length !== 8}
-                >
-                  {isSearchingCep ? <LoaderLines className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                  <span className="ml-2 hidden sm:inline">Buscar</span>
-                </Button>
-              </div>
-              <p className="text-[11px] text-muted-foreground">O endereço será preenchido abaixo. Você pode editá-lo se necessário.</p>
-            </div>
+          <div className="flex flex-col gap-8 mt-4">
 
             <div className="flex flex-col gap-2">
-              <Label htmlFor="address" className="text-foreground font-medium">
-                Endereço Completo
-              </Label>
-              <Textarea
-                id="address"
-                value={globalLocation.address || ""}
-                onChange={(e) => setGlobalLocation({ ...globalLocation, address: e.target.value })}
-                className="bg-background border-border/50 focus-visible:ring-1 min-h-[80px]"
-                placeholder="Rua, Número, Bairro, Cidade - Estado, CEP"
-              />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="mapUrl" className="text-foreground font-medium">
-                Link do Google Maps
+              <Label htmlFor="name" className="text-foreground font-medium">
+                Nome da Empresa
               </Label>
               <Input
-                id="mapUrl"
-                value={globalLocation.mapUrl || ""}
-                onChange={(e) => setGlobalLocation({ ...globalLocation, mapUrl: e.target.value })}
-                className="bg-background border-border/50 h-11 focus-visible:ring-1"
-                placeholder="Ex: https://goo.gl/maps/..."
+                id="name"
+                value={profile.name || ""}
+                onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                className="bg-background h-11"
+                placeholder="Ex: Clínica Totten"
+                required
+                minLength={3}
+                maxLength={30}
               />
             </div>
 
-            {/* HORÁRIO */}
-            <div className="flex flex-col gap-4 p-5 border border-border/50 rounded-xl bg-muted/10 mt-2">
-              <Label className="text-foreground font-medium flex items-center gap-2 mb-1">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                Horário de Funcionamento
-              </Label>
-
-              <RulesSummaryPreview data={globalLocation} onChange={setGlobalLocation} />
-
-              <div className="flex flex-col sm:flex-row sm:items-center gap-6 pt-4 mt-2 border-t border-border/50">
-                <div className="flex items-center gap-3">
-                  <Switch
-                    checked={globalLocation.showBusinessHoursSite !== false}
-                    onCheckedChange={(c) => setGlobalLocation({ ...globalLocation, showBusinessHoursSite: c })}
-                  />
-                  <span className="text-xs text-foreground font-medium">Exibir no Site Profissional?</span>
+            {/* Menu para Galeria de Imagens */}
+            <div
+              onClick={() => setShowGallery(true)}
+              className="flex items-center justify-between p-4 bg-card border border-border/50 rounded-xl cursor-pointer hover:bg-muted/50 hover:border-primary/50 transition-colors shadow-sm"
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                  <ImageIcon className="h-5 w-5" />
                 </div>
-                <div className="flex items-center gap-3">
-                  <Switch
-                    checked={globalLocation.showBusinessHoursBooking !== false}
-                    onCheckedChange={(c) => setGlobalLocation({ ...globalLocation, showBusinessHoursBooking: c })}
-                  />
-                  <span className="text-xs text-foreground font-medium">Exibir na Agenda?</span>
+                <div className="flex flex-col gap-1">
+                  <span className="font-semibold text-foreground text-sm">Galeria de Imagens</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground hidden sm:block">
+                      Logos, Avatares e Fotos
+                    </span>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${galleryStatus.color}`}>
+                      {galleryStatus.label}
+                    </span>
+                  </div>
                 </div>
               </div>
+              <div className="flex items-center gap-4">
+                <div className="hidden sm:flex w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div className={`h-full ${galleryStatus.barColor}`} style={{ width: `${galleryStatus.percentage}%` }} />
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </div>
+            </div>
+
+
+
+            {/* TIPOGRAFIA */}
+            {theme && setTheme && (
+              <div className="flex flex-col gap-6">
+                <h4 className="text-sm font-semibold text-foreground">Tipografia</h4>
+                <div className="flex flex-col gap-3">
+                  <Label className="text-foreground font-medium flex items-center gap-2">
+                    <Capitalize className="h-4 w-4" /> Fonte do Texto Principal
+                  </Label>
+                  <Select
+                    value={theme.fontFamily || "Inter, sans-serif"}
+                    onValueChange={(val) => setTheme({ ...theme, fontFamily: val })}
+                  >
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Selecione uma fonte" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FONTS.map((font) => (
+                        <SelectItem key={font.id} value={font.value} style={{ fontFamily: font.value }}>
+                          {font.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
+            {/* REDES SOCIAIS E CONTATOS */}
+            {socials && setSocials && (
+              <div className="flex flex-col gap-6">
+                <h4 className="text-sm font-semibold text-foreground">Redes Sociais e Contatos</h4>
+
+                <div className="flex flex-col gap-4 max-w-md">
+                  <div className="flex flex-col gap-1.5">
+                    <Label className="text-foreground font-medium flex items-center gap-2 text-sm">
+                      <Whatsapp className="h-4 w-4 text-muted-foreground" /> WhatsApp
+                    </Label>
+                    <div className="flex items-center">
+                      <span className="bg-muted text-muted-foreground px-3 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
+                        +55
+                      </span>
+                      <Input
+                        value={globalContact?.whatsapp || ""}
+                        onChange={(e) => {
+                          if (setGlobalContact) {
+                            setGlobalContact({ ...globalContact, whatsapp: e.target.value });
+                          }
+                        }}
+                        className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
+                        placeholder="DDD + Número"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <Label className="text-foreground font-medium flex items-center gap-2 text-sm">
+                      <Instagram className="h-4 w-4 text-muted-foreground" /> Instagram
+                    </Label>
+                    <div className="flex items-center">
+                      <span className="bg-muted text-muted-foreground px-3 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
+                        @
+                      </span>
+                      <Input
+                        value={socials.values.instagram || ""}
+                        onChange={(e) => handleValueChange("instagram", e.target.value)}
+                        className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
+                        placeholder="seuusuario"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <Label className="text-foreground font-medium flex items-center gap-2 text-sm">
+                      <Facebook className="h-4 w-4 text-muted-foreground" /> Facebook
+                    </Label>
+                    <div className="flex items-center">
+                      <span className="bg-muted text-muted-foreground px-3 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
+                        facebook.com/
+                      </span>
+                      <Input
+                        value={socials.values.facebook || ""}
+                        onChange={(e) => handleValueChange("facebook", e.target.value)}
+                        className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
+                        placeholder="suapagina"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <Label className="text-foreground font-medium flex items-center gap-2 text-sm">
+                      <Youtube className="h-4 w-4 text-muted-foreground" /> YouTube
+                    </Label>
+                    <div className="flex items-center">
+                      <span className="bg-muted text-muted-foreground px-3 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
+                        youtube.com/@
+                      </span>
+                      <Input
+                        value={socials.values.youtube || ""}
+                        onChange={(e) => handleValueChange("youtube", e.target.value)}
+                        className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
+                        placeholder="seucanal"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5 md:col-span-2">
+                    <Label className="text-foreground font-medium flex items-center gap-2 text-sm">
+                      <Globe className="h-4 w-4 text-muted-foreground" /> Meu Site
+                    </Label>
+                    <div className="flex items-center">
+                      <span className="bg-muted text-muted-foreground px-3 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
+                        https://
+                      </span>
+                      <Input
+                        value={socials.values.website || ""}
+                        onChange={(e) => handleValueChange("website", e.target.value)}
+                        className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
+                        placeholder="www.seusite.com.br"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* LOCALIZAÇÃO E ENDEREÇO */}
+            {globalLocation && setGlobalLocation && (
+              <div className="flex flex-col gap-6 mt-4">
+                <div>
+                  <h4 className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                    Localização e Contato
+                  </h4>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Informe onde você atende e como os clientes podem te achar.
+                  </p>
+                </div>
+
+                {/* CEP */}
+                <div className="flex flex-col gap-3 p-4 border border-border/50 rounded-xl bg-muted/10">
+                  <Label className="text-sm font-medium">Buscar Endereço (CEP)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={cep}
+                      onChange={(e) => setCep(e.target.value)}
+                      placeholder="00000-000"
+                      className="bg-background max-w-[200px]"
+                      maxLength={9}
+                    />
+                    <Button
+                      variant="secondary"
+                      onClick={handleSearchCep}
+                      disabled={isSearchingCep || cep.replace(/\D/g, "").length !== 8}
+                    >
+                      {isSearchingCep ? <LoaderLines className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                      <span className="ml-2 hidden sm:inline">Buscar</span>
+                    </Button>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">O endereço será preenchido abaixo. Você pode editá-lo se necessário.</p>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="address" className="text-foreground font-medium">
+                    Endereço Completo
+                  </Label>
+                  <Textarea
+                    id="address"
+                    value={globalLocation.address || ""}
+                    onChange={(e) => setGlobalLocation({ ...globalLocation, address: e.target.value })}
+                    className="bg-background border-border/50 focus-visible:ring-1 min-h-[80px]"
+                    placeholder="Rua, Número, Bairro, Cidade - Estado, CEP"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="mapUrl" className="text-foreground font-medium">
+                    Link do Google Maps
+                  </Label>
+                  <Input
+                    id="mapUrl"
+                    value={globalLocation.mapUrl || ""}
+                    onChange={(e) => setGlobalLocation({ ...globalLocation, mapUrl: e.target.value })}
+                    className="bg-background border-border/50 h-11 focus-visible:ring-1"
+                    placeholder="Ex: https://goo.gl/maps/..."
+                  />
+                </div>
+
+                {/* HORÁRIO */}
+                <div className="flex flex-col gap-4 p-5 border border-border/50 rounded-xl bg-muted/10 mt-2">
+                  <Label className="text-foreground font-medium flex items-center gap-2 mb-1">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    Horário de Funcionamento
+                  </Label>
+
+                  <RulesSummaryPreview data={globalLocation} onChange={setGlobalLocation} />
+
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-6 pt-4 mt-2 border-t border-border/50">
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={globalLocation.showBusinessHoursSite !== false}
+                        onCheckedChange={(c) => setGlobalLocation({ ...globalLocation, showBusinessHoursSite: c })}
+                      />
+                      <span className="text-xs text-foreground font-medium">Exibir no Site Profissional?</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={globalLocation.showBusinessHoursBooking !== false}
+                        onCheckedChange={(c) => setGlobalLocation({ ...globalLocation, showBusinessHoursBooking: c })}
+                      />
+                      <span className="text-xs text-foreground font-medium">Exibir na Agenda?</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end mt-6">
+              <Button onClick={onSave} disabled={isSaving} className="min-w-32">
+                {isSaving ? "Salvando..." : "Salvar Configurações"}
+              </Button>
             </div>
           </div>
-        )}
-
-      </div>
+        </div>
+      )}
     </div>
   );
 }

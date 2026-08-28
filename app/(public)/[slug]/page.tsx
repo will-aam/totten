@@ -50,19 +50,11 @@ export default async function PublicLinkBioPage({
   };
 
   const getIconSize = () => {
-    switch (socials.size) {
-      case "small": return "h-4 w-4";
-      case "large": return "h-7 w-7";
-      default: return "h-5 w-5"; // medium
-    }
+    return "h-7 w-7";
   };
 
   const getWrapperSize = () => {
-    switch (socials.size) {
-      case "small": return "h-8 w-8";
-      case "large": return "h-14 w-14";
-      default: return "h-11 w-11"; // medium
-    }
+    return "h-14 w-14";
   };
 
   const getHref = (platform: string, value: string) => {
@@ -331,12 +323,6 @@ export default async function PublicLinkBioPage({
                   </p>
                 )}
 
-                {/* Redes Sociais - Topo */}
-                {socials.position === "top" && socials.activePlatforms.length > 0 && (
-                  <div className="mt-8 w-full">
-                    <SocialIconsBlock />
-                  </div>
-                )}
 
                 {/* Botões/Links */}
                 <div className="w-full mt-8 flex flex-col gap-4">
@@ -371,7 +357,7 @@ export default async function PublicLinkBioPage({
                 {/* Push to bottom block */}
                 <div className="mt-auto w-full pt-10 pb-4 flex flex-col items-center">
                   {/* Redes Sociais - Rodapé */}
-                  {socials.position === "bottom" && socials.activePlatforms.length > 0 && (
+                  {socials.activePlatforms.length > 0 && (
                     <div className="w-full mb-6">
                       <SocialIconsBlock />
                     </div>

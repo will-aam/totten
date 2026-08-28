@@ -211,7 +211,7 @@ export function GeneralSettings() {
       <CardContent className="grid gap-6 px-0 pb-0 md:pb-6 md:px-6">
         <div className="grid gap-2">
           <Label htmlFor="companyName" className="font-medium">
-            Nome da Empresa / Razão Social
+            Nome da Empresa
           </Label>
           <Input
             id="companyName"
@@ -220,10 +220,11 @@ export function GeneralSettings() {
               setFormData({ ...formData, companyName: e.target.value })
             }
             placeholder="Ex: Clínica Bem-Estar LTDA"
+            required
+            minLength={3}
+            maxLength={30}
           />
-          <p className="text-xs text-muted-foreground">
-            O nome principal da sua empresa (este nome será usado na maioria dos locais).
-          </p>
+
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4">

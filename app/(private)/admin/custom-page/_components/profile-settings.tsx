@@ -5,6 +5,7 @@ import { User } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 export function ProfileSettings({ data, onChange }: any) {
 
@@ -38,6 +39,26 @@ export function ProfileSettings({ data, onChange }: any) {
           <p className="text-[11px] text-muted-foreground">
             Escolha como o seu Avatar e Banner (definidos acima) serão exibidos nesta página.
           </p>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <div className="flex justify-between items-end">
+            <Label htmlFor="bio" className="text-foreground font-medium">
+              Descreva brevemente seu negócio
+            </Label>
+            <span
+              className={`text-[11px] font-medium ${(data.bio?.length || 0) > 300 ? "text-destructive" : "text-muted-foreground"}`}
+            >
+              {data.bio?.length || 0} caracteres
+            </span>
+          </div>
+          <Textarea
+            id="bio"
+            value={data.bio || ""}
+            onChange={(e) => onChange({ ...data, bio: e.target.value })}
+            className="bg-background min-h-32 resize-none"
+            placeholder="Descreva seu negócio, sua história ou missão. Este texto será exibido no seu Link na Bio."
+          />
         </div>
 
       </div>

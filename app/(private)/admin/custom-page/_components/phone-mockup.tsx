@@ -136,11 +136,7 @@ export function PhoneMockup({
   };
 
   const getIconSize = () => {
-    switch (socials?.size) {
-      case "small": return "h-4 w-4";
-      case "large": return "h-7 w-7";
-      default: return "h-5 w-5"; // medium
-    }
+    return "h-7 w-7"; // Sempre grande
   };
 
   const SocialIconsBlock = () => (
@@ -307,12 +303,7 @@ export function PhoneMockup({
               {profile?.bio || "Sua biografia aparecerá aqui..."}
             </p>
 
-            {/* Renderiza as redes sociais no Topo (acima dos botões) */}
-            {socials?.position === "top" && socials?.activePlatforms?.length > 0 && (
-              <div className="mt-6 w-full">
-                <SocialIconsBlock />
-              </div>
-            )}
+
 
             {/* Botões lendo as cores novas */}
             <div className="w-full mt-6 flex flex-col gap-3">
@@ -329,7 +320,7 @@ export function PhoneMockup({
 
             <div className="mt-auto w-full pt-8 flex flex-col items-center">
               {/* Renderiza as redes sociais no Rodapé (abaixo dos botões) */}
-              {socials?.position === "bottom" && socials?.activePlatforms?.length > 0 && (
+              {socials?.activePlatforms?.length > 0 && (
                 <div className="w-full mb-6">
                   <SocialIconsBlock />
                 </div>

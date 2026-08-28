@@ -95,64 +95,6 @@ export function SocialSettings({ data, onChange, globalContact }: any) {
         </p>
       </div>
 
-      {/* SEÇÃO DE EXIBIÇÃO (Posição, Estilo e Tamanho) */}
-      <div className="flex flex-col gap-5">
-        <h4 className="font-medium text-sm">Opções de Exibição</h4>
-
-        <div className="flex flex-wrap md:flex-nowrap gap-6">
-          {/* POSIÇÃO */}
-          <div className="flex flex-col gap-3 flex-1">
-            <Label className="text-xs text-muted-foreground">Posição na Tela</Label>
-            <div className="flex bg-muted p-1 rounded-lg border border-border/50">
-              <button
-                onClick={() => updateSetting("position", "top")}
-                className={cn(
-                  "flex-1 text-xs py-2 rounded-md transition-colors flex items-center justify-center gap-1.5 font-medium",
-                  position === "top"
-                    ? "bg-background shadow-sm text-foreground"
-                    : "text-muted-foreground hover:bg-background/50",
-                )}
-              >
-                <ArrowUp className="h-4 w-4" /> Acima dos Botões
-              </button>
-              <button
-                onClick={() => updateSetting("position", "bottom")}
-                className={cn(
-                  "flex-1 text-xs py-2 rounded-md transition-colors flex items-center justify-center gap-1.5 font-medium",
-                  position === "bottom"
-                    ? "bg-background shadow-sm text-foreground"
-                    : "text-muted-foreground hover:bg-background/50",
-                )}
-              >
-                <ArrowDown className="h-4 w-4" /> No Rodapé
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* TAMANHO */}
-        <div className="flex flex-col gap-3 mt-1">
-          <Label className="text-xs text-muted-foreground">Tamanho</Label>
-          <div className="flex bg-muted p-1 rounded-lg border border-border/50 w-full md:w-1/2">
-            {["medium", "large"].map((s) => (
-              <button
-                key={s}
-                onClick={() => updateSetting("size", s)}
-                className={cn(
-                  "flex-1 text-xs py-2 rounded-md transition-colors font-medium",
-                  size === s
-                    ? "bg-background shadow-sm text-foreground"
-                    : "text-muted-foreground hover:bg-background/50",
-                )}
-              >
-                {s === "medium" ? "Médio" : "Grande"}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-
 
       {/* SEÇÃO DE PLATAFORMAS E LINKS */}
       <div className="flex flex-col gap-6">
