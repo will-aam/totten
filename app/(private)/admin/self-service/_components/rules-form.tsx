@@ -71,7 +71,7 @@ const timeSchema = z.object({
 
 const settingsSchema = z.object({
   futureBookingLimitDays: z.coerce.number().min(1, "Mínimo 1 dia"),
-  welcomeMessage: z.string().optional(),
+
 });
 
 const scheduleRuleSchema = z.object({
@@ -654,7 +654,7 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
     resolver: zodResolver(settingsSchema),
     defaultValues: {
       futureBookingLimitDays: initialData?.futureBookingLimitDays ?? 30,
-      welcomeMessage: initialData?.welcomeMessage ?? "Bem-vindo, aqui você pode agendar seu horário de forma rápida e fácil.",
+
     },
   });
 
@@ -663,7 +663,7 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
     try {
       const response = await updateSelfServiceSettingsAction({
         futureBookingLimitDays: data.futureBookingLimitDays,
-        welcomeMessage: data.welcomeMessage,
+
       } as any);
 
       if (!response.success) {
@@ -793,25 +793,7 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="welcomeMessage"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-bold">Mensagem de Boas-vindas</FormLabel>
-                    <CardDescription className="mb-2">
-                      Mensagem exibida ao cliente na tela de agendamento (BookingFlow).
-                    </CardDescription>
-                    <FormControl>
-                      <Textarea
-                        className="rounded-xl bg-muted/40 border-none resize-none font-medium min-h-[100px]"
-                        placeholder="Ex: Bem-vindo, aqui você pode agendar seu horário..."
-                        {...field}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+
 
               <div className="flex justify-end pt-4">
                 <Button type="submit" size="lg" disabled={isPending} className="w-full sm:w-auto h-12 rounded-xl">

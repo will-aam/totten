@@ -76,17 +76,10 @@ export async function getSelfServiceSettingsAction() {
 export async function updateSelfServiceSettingsAction(data: {
   termsOfUse?: string;
   futureBookingLimitDays?: number;
-  welcomeMessage?: string;
+
   bookingTheme?: string;
   bookingPrimaryColor?: string;
-  paymentRules?: {
-    confirmationTitle?: string;
-    pixInstructions?: string;
-    pixKeyType?: string;
-    pixKey?: string;
-    securityWarning?: string;
-    frictionMessage?: string;
-  };
+
 }) {
   try {
     const admin = await requireAuth();

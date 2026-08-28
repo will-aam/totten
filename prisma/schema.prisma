@@ -93,17 +93,11 @@ model Settings {
   booking_primary_color     String  @default("#0f172a")
 
   future_booking_limit_days     Int     @default(30)
-  welcome_message               String? @db.Text @default("Bem-vindo, aqui você pode agendar seu horário de forma rápida e fácil.")
+
   
   require_cpf      Boolean      @default(true)
   terms_of_use     String?      @db.Text
 
-  payment_confirmation_title    String?
-  payment_pix_instructions      String? @db.Text
-  payment_pix_key_type          String?
-  payment_pix_key               String?
-  payment_security_warning      String? @db.Text
-  payment_friction_message      String? @db.Text
 
   organization     Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 

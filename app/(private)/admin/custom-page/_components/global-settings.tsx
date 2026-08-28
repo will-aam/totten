@@ -39,8 +39,10 @@ function RulesSummaryPreview({ data, onChange }: any) {
     );
   }
 
-  const rules = rulesData;
-  if (!rules || !rules.schedule || rules.schedule.length === 0) {
+  const defaultRule = rulesData?.scheduleRules?.find((r: any) => r.isDefault) || rulesData?.scheduleRules?.[0];
+  const schedule = defaultRule?.schedule;
+
+  if (!schedule || schedule.length === 0) {
     return (
       <div className="text-sm text-muted-foreground">
         Nenhum horário configurado em Regras e Horários.
@@ -48,8 +50,8 @@ function RulesSummaryPreview({ data, onChange }: any) {
     );
   }
 
-  const referenceValues = rules.schedule.find((s: any) => s.isOpen);
-  const openDays = rules.schedule.filter((s: any) => s.isOpen).map((s: any) => s.dayOfWeek);
+  const referenceValues = schedule.find((s: any) => s.isOpen);
+  const openDays = schedule.filter((s: any) => s.isOpen).map((s: any) => s.dayOfWeek);
 
   if (openDays.length === 0) {
     return (
@@ -447,7 +449,6 @@ export function GlobalSettings({ profile, setProfile, socials, setSocials, globa
           <div className="flex flex-col gap-6 mt-4">
             <div>
               <h4 className="text-sm font-semibold flex items-center gap-2 text-foreground">
-                <Pin className="h-5 w-5 text-primary" />
                 Localização e Contato
               </h4>
               <p className="text-sm text-muted-foreground mt-1">

@@ -57,7 +57,7 @@ export default function CustomPage() {
     let lockMessage = "";
 
     if (tab === "link-bio") {
-      const hasValidLink = links && links.some((l: any) => 
+      const hasValidLink = links && links.some((l: any) =>
         (l.type === 'system-site' || l.type === 'system-booking') ? !!l.title?.trim() : (l.title?.trim() && l.url?.trim())
       );
       if (!hasValidLink) {
@@ -97,7 +97,7 @@ export default function CustomPage() {
               {suffix}
             </span>
           )}
-          
+
           {isLocked ? (
             <div
               className="bg-muted/50 text-muted-foreground/50 px-4 py-2 border border-border/50 border-l-0 rounded-r-md text-sm h-11 flex items-center shrink-0 cursor-not-allowed"
@@ -137,7 +137,7 @@ export default function CustomPage() {
         </div>
         {isLocked ? (
           <p className="text-[12px] text-amber-600 dark:text-amber-400 font-medium">
-            ⚠️ {lockMessage}
+            {lockMessage}
           </p>
         ) : (
           <p className="text-[11px] text-muted-foreground">
@@ -389,8 +389,8 @@ export default function CustomPage() {
       if (response.success) {
         cachedCustomPageData = null; // Invalidate cache after saving
         toast.success(
-          activeTab === "global" 
-            ? "Configurações Globais salvas com sucesso!" 
+          activeTab === "global"
+            ? "Configurações Globais salvas com sucesso!"
             : "Link na Bio salvo com sucesso!"
         );
         setPreviewKey(k => k + 1);
