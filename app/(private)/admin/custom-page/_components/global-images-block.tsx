@@ -96,92 +96,128 @@ export function GlobalImagesBlock({ profile, setProfile, children }: GlobalImage
         </p>
         <div className="flex flex-col xl:flex-row gap-6">
           {/* Avatar */}
-          <div className="flex items-center gap-4 flex-1 border border-border/50 p-4 rounded-lg bg-muted/20">
-            <div className="h-16 w-16 rounded-full bg-muted border-2 border-dashed border-border flex items-center justify-center relative overflow-hidden group cursor-pointer hover:bg-muted/80 transition-colors shrink-0">
-              {profile.image ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={profile.image} alt="Avatar" className="w-full h-full object-cover" />
-              ) : (
-                <Camera className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
-              )}
-              {isUploadingAvatar && (
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-full z-20">
-                  <LoaderLines className="w-6 h-6 text-white animate-spin" />
-                </div>
-              )}
-              <input type="file" accept="image/png, image/jpeg" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={handleAvatarUpload} disabled={isUploadingAvatar} />
+          <div className="flex flex-col gap-3 flex-1 border border-border/50 p-4 rounded-lg bg-muted/20">
+            <div className="flex items-center gap-4">
+              <div className="h-16 w-16 rounded-full bg-muted border-2 border-dashed border-border flex items-center justify-center relative overflow-hidden group cursor-pointer hover:bg-muted/80 transition-colors shrink-0">
+                {profile.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={profile.image} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <Camera className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
+                )}
+                {isUploadingAvatar && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-full z-20">
+                    <LoaderLines className="w-6 h-6 text-white animate-spin" />
+                  </div>
+                )}
+                <input type="file" accept="image/png, image/jpeg" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={handleAvatarUpload} disabled={isUploadingAvatar} />
+              </div>
+              <div className="flex flex-col">
+                <p className="font-medium text-xs text-foreground">Avatar (Perfil)</p>
+                <label className="text-[11px] font-semibold text-primary hover:underline w-fit cursor-pointer mt-1">
+                  Fazer upload
+                  <input type="file" accept="image/png, image/jpeg" className="hidden" onChange={handleAvatarUpload} />
+                </label>
+                {profile.image && (
+                  <button onClick={() => setProfile({ ...profile, image: "" })} className="text-[11px] font-semibold text-destructive hover:underline w-fit mt-1">
+                    Remover
+                  </button>
+                )}
+              </div>
             </div>
-            <div className="flex flex-col">
-              <p className="font-medium text-xs text-foreground">Avatar (Perfil)</p>
-              <label className="text-[11px] font-semibold text-primary hover:underline w-fit cursor-pointer mt-1">
-                Fazer upload
-                <input type="file" accept="image/png, image/jpeg" className="hidden" onChange={handleAvatarUpload} />
-              </label>
-              {profile.image && (
-                <button onClick={() => setProfile({ ...profile, image: "" })} className="text-[11px] font-semibold text-destructive hover:underline w-fit mt-1">
-                  Remover
-                </button>
-              )}
+            <div className="flex flex-col gap-1.5 mt-1">
+              <label className="text-[11px] font-medium text-muted-foreground">Ou cole a URL da imagem:</label>
+              <input 
+                type="text" 
+                value={profile.image || ""} 
+                onChange={(e) => setProfile({ ...profile, image: e.target.value })} 
+                placeholder="https://..." 
+                className="w-full text-xs h-8 px-2 rounded-md border border-border/50 bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+              />
             </div>
           </div>
 
           {/* Banner */}
-          <div className="flex items-center gap-4 flex-1 border border-border/50 p-4 rounded-lg bg-muted/20">
-            <div className="h-16 w-24 rounded-md bg-muted border-2 border-dashed border-border flex items-center justify-center relative overflow-hidden group cursor-pointer hover:bg-muted/80 transition-colors shrink-0">
-              {profile.bannerImage ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={profile.bannerImage} alt="Banner" className="w-full h-full object-cover" />
-              ) : (
-                <ImageIcon className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
-              )}
-              {isUploadingBanner && (
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-xl z-20">
-                  <LoaderLines className="w-6 h-6 text-white animate-spin" />
-                </div>
-              )}
-              <input type="file" accept="image/png, image/jpeg" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={handleBannerUpload} disabled={isUploadingBanner} />
+          <div className="flex flex-col gap-3 flex-1 border border-border/50 p-4 rounded-lg bg-muted/20">
+            <div className="flex items-center gap-4">
+              <div className="h-16 w-24 rounded-md bg-muted border-2 border-dashed border-border flex items-center justify-center relative overflow-hidden group cursor-pointer hover:bg-muted/80 transition-colors shrink-0">
+                {profile.bannerImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={profile.bannerImage} alt="Banner" className="w-full h-full object-cover" />
+                ) : (
+                  <ImageIcon className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
+                )}
+                {isUploadingBanner && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-xl z-20">
+                    <LoaderLines className="w-6 h-6 text-white animate-spin" />
+                  </div>
+                )}
+                <input type="file" accept="image/png, image/jpeg" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={handleBannerUpload} disabled={isUploadingBanner} />
+              </div>
+              <div className="flex flex-col">
+                <p className="font-medium text-xs text-foreground">Imagem de Capa (Banner)</p>
+                <label className="text-[11px] font-semibold text-primary hover:underline w-fit cursor-pointer mt-1">
+                  Fazer upload
+                  <input type="file" accept="image/png, image/jpeg" className="hidden" onChange={handleBannerUpload} />
+                </label>
+                {profile.bannerImage && (
+                  <button onClick={() => setProfile({ ...profile, bannerImage: "" })} className="text-[11px] font-semibold text-destructive hover:underline w-fit mt-1">
+                    Remover
+                  </button>
+                )}
+              </div>
             </div>
-            <div className="flex flex-col">
-              <p className="font-medium text-xs text-foreground">Imagem de Capa (Banner)</p>
-              <label className="text-[11px] font-semibold text-primary hover:underline w-fit cursor-pointer mt-1">
-                Fazer upload
-                <input type="file" accept="image/png, image/jpeg" className="hidden" onChange={handleBannerUpload} />
-              </label>
-              {profile.bannerImage && (
-                <button onClick={() => setProfile({ ...profile, bannerImage: "" })} className="text-[11px] font-semibold text-destructive hover:underline w-fit mt-1">
-                  Remover
-                </button>
-              )}
+            <div className="flex flex-col gap-1.5 mt-1">
+              <label className="text-[11px] font-medium text-muted-foreground">Ou cole a URL da imagem:</label>
+              <input 
+                type="text" 
+                value={profile.bannerImage || ""} 
+                onChange={(e) => setProfile({ ...profile, bannerImage: e.target.value })} 
+                placeholder="https://..." 
+                className="w-full text-xs h-8 px-2 rounded-md border border-border/50 bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+              />
             </div>
           </div>
 
           {/* Logo */}
-          <div className="flex items-center gap-4 flex-1 border border-border/50 p-4 rounded-lg bg-muted/20">
-            <div className="h-16 w-16 rounded-md bg-muted border-2 border-dashed border-border flex items-center justify-center relative overflow-hidden group cursor-pointer hover:bg-muted/80 transition-colors shrink-0">
-              {profile.logo ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={profile.logo} alt="Logo" className="w-full h-full object-contain" />
-              ) : (
-                <ImageIcon className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
-              )}
-              {isUploadingLogo && (
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-md z-20">
-                  <LoaderLines className="w-6 h-6 text-white animate-spin" />
-                </div>
-              )}
-              <input type="file" accept="image/png, image/jpeg" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={handleLogoUpload} disabled={isUploadingLogo} />
+          <div className="flex flex-col gap-3 flex-1 border border-border/50 p-4 rounded-lg bg-muted/20">
+            <div className="flex items-center gap-4">
+              <div className="h-16 w-16 rounded-md bg-muted border-2 border-dashed border-border flex items-center justify-center relative overflow-hidden group cursor-pointer hover:bg-muted/80 transition-colors shrink-0">
+                {profile.logo ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={profile.logo} alt="Logo" className="w-full h-full object-contain" />
+                ) : (
+                  <ImageIcon className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
+                )}
+                {isUploadingLogo && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-md z-20">
+                    <LoaderLines className="w-6 h-6 text-white animate-spin" />
+                  </div>
+                )}
+                <input type="file" accept="image/png, image/jpeg" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={handleLogoUpload} disabled={isUploadingLogo} />
+              </div>
+              <div className="flex flex-col">
+                <p className="font-medium text-xs text-foreground">Logomarca</p>
+                <label className="text-[11px] font-semibold text-primary hover:underline w-fit cursor-pointer mt-1">
+                  Fazer upload
+                  <input type="file" accept="image/png, image/jpeg" className="hidden" onChange={handleLogoUpload} />
+                </label>
+                {profile.logo && (
+                  <button onClick={() => setProfile({ ...profile, logo: "" })} className="text-[11px] font-semibold text-destructive hover:underline w-fit mt-1">
+                    Remover
+                  </button>
+                )}
+              </div>
             </div>
-            <div className="flex flex-col">
-              <p className="font-medium text-xs text-foreground">Logomarca</p>
-              <label className="text-[11px] font-semibold text-primary hover:underline w-fit cursor-pointer mt-1">
-                Fazer upload
-                <input type="file" accept="image/png, image/jpeg" className="hidden" onChange={handleLogoUpload} />
-              </label>
-              {profile.logo && (
-                <button onClick={() => setProfile({ ...profile, logo: "" })} className="text-[11px] font-semibold text-destructive hover:underline w-fit mt-1">
-                  Remover
-                </button>
-              )}
+            <div className="flex flex-col gap-1.5 mt-1">
+              <label className="text-[11px] font-medium text-muted-foreground">Ou cole a URL da imagem:</label>
+              <input 
+                type="text" 
+                value={profile.logo || ""} 
+                onChange={(e) => setProfile({ ...profile, logo: e.target.value })} 
+                placeholder="https://..." 
+                className="w-full text-xs h-8 px-2 rounded-md border border-border/50 bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+              />
             </div>
           </div>
         </div>

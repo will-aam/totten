@@ -18,6 +18,8 @@ import {
   GlobeAmericas,
   Calendar,
   ArrowOutUpLeftStrokeSquare,
+  LoaderLines,
+  Save,
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
@@ -31,7 +33,6 @@ const MobileGallery = ({ pack, ...props }: any) => <ImageAlt {...props} />;
 
 import { ProfileSettings } from "./_components/profile-settings";
 import { ThemeSettings } from "./_components/theme-settings";
-import { SocialSettings } from "./_components/social-settings";
 import { AdditionalLinks } from "./_components/additional-links";
 import { ProfessionalSiteView } from "./_components/professional-site/professional-site-view";
 import { BookingSiteView } from "./_components/booking-site/booking-site-view";
@@ -44,7 +45,7 @@ let cachedCustomPageData: any = null;
 
 export default function CustomPage() {
   const [activeTab, setActiveTab] = useState<"global" | "link-bio" | "professional-site" | "booking-site">("global");
-  const [activeStepId, setActiveStepId] = useState<string | null>(null);
+  
   const [showMobilePreview, setShowMobilePreview] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -74,6 +75,10 @@ export default function CustomPage() {
       }
     }
 
+    if (isLocked) {
+      return null;
+    }
+
     return (
       <div className="flex flex-col gap-2 mb-6 w-full max-w-[1600px] mx-auto">
         <span className="text-sm font-medium text-foreground">{title}</span>
@@ -88,63 +93,43 @@ export default function CustomPage() {
             disabled={isLocked}
             className={cn(
               "rounded-none bg-background border-border/50 h-11 focus-visible:ring-1 max-w-[140px]",
-              tab !== "link-bio" ? "border-r-0" : "",
-              isLocked && "opacity-50 pointer-events-none"
+              tab !== "link-bio" ? "border-r-0" : ""
             )}
             placeholder="seunome"
           />
           {tab !== "link-bio" && (
-            <span className={cn("bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-l-0 text-sm h-11 flex items-center shrink-0", isLocked && "opacity-50")}>
+            <span className={cn("bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-l-0 text-sm h-11 flex items-center shrink-0")}>
               {suffix}
             </span>
           )}
 
-          {isLocked ? (
-            <div
-              className="bg-muted/50 text-muted-foreground/50 px-4 py-2 border border-border/50 border-l-0 rounded-r-md text-sm h-11 flex items-center shrink-0 cursor-not-allowed"
-              title={lockMessage}
-            >
-              <div className="w-5 h-5 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-              </div>
-            </div>
-          ) : (
-            <>
-              {/* Copiar */}
-              <button
-                onClick={() => {
-                  const origin = typeof window !== 'undefined' && window.location.origin.includes('localhost') ? window.location.origin : 'https://www.totten.com.br';
-                  navigator.clipboard.writeText(`${origin}/${profile.slug}${suffix}`);
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 2000);
-                }}
-                className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-l-0 text-sm h-11 flex items-center hover:bg-muted/80 hover:text-foreground transition-colors shrink-0 outline-none"
-                title="Copiar link"
-              >
-                {copied ? <Check className="h-5 w-5 text-emerald-500" /> : <Copy className="h-5 w-5" />}
-              </button>
-              {/* Abrir em nova aba */}
-              <a
-                href={`/${profile.slug}${suffix}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-l-0 rounded-r-md text-sm h-11 flex items-center hover:bg-muted/80 hover:text-foreground transition-colors shrink-0"
-                title="Abrir página"
-              >
-                <ArrowOutUpLeftStrokeSquare flip="horizontal" className="h-5 w-5" />
-              </a>
-            </>
-          )}
+          {/* Copiar */}
+          <button
+            onClick={() => {
+              const origin = typeof window !== 'undefined' && window.location.origin.includes('localhost') ? window.location.origin : 'https://www.totten.com.br';
+              navigator.clipboard.writeText(`${origin}/${profile.slug}${suffix}`);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            }}
+            className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-l-0 text-sm h-11 flex items-center hover:bg-muted/80 hover:text-foreground transition-colors shrink-0 outline-none"
+            title="Copiar link"
+          >
+            {copied ? <Check className="h-5 w-5 text-emerald-500" /> : <Copy className="h-5 w-5" />}
+          </button>
+          {/* Abrir em nova aba */}
+          <a
+            href={`/${profile.slug}${suffix}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-muted text-muted-foreground px-3 py-2 border border-border/50 border-l-0 rounded-r-md text-sm h-11 flex items-center hover:bg-muted/80 hover:text-foreground transition-colors shrink-0"
+            title="Abrir página"
+          >
+            <ArrowOutUpLeftStrokeSquare flip="horizontal" className="h-5 w-5" />
+          </a>
         </div>
-        {isLocked ? (
-          <p className="text-[12px] text-amber-600 dark:text-amber-400 font-medium">
-            {lockMessage}
-          </p>
-        ) : (
-          <p className="text-[11px] text-muted-foreground">
-            Apenas letras minúsculas. Sem espaços ou números.
-          </p>
-        )}
+        <p className="text-[11px] text-muted-foreground">
+          Apenas letras minúsculas. Sem espaços ou números.
+        </p>
       </div>
     );
   };
@@ -163,14 +148,14 @@ export default function CustomPage() {
   const [touchEnd, setTouchEnd] = useState(0);
 
   const [profile, setProfile] = useState({
-    slug: "studiomaria",
-    name: "Studio Maria Spa",
-    role: "Especialista",
-    bio: "Especialistas em relaxamento e estética avançada. Agende seu horário!",
-    image: "", // Novo estado para a foto de perfil
+    slug: "",
+    name: "",
+    role: "",
+    bio: "",
+    image: "",
     bannerImage: "",
     logo: "",
-    layout: "classic", // 'classic', 'banner', 'header'
+    layout: "classic",
   });
   const [theme, setTheme] = useState({
     id: "solid",
@@ -233,30 +218,28 @@ export default function CustomPage() {
         if (response.success && response.data) {
           const data = response.data;
 
-          if (data.organization) {
+          if (data.organization_name !== undefined || data.profile_image_url !== undefined) {
             setProfile(prev => ({
               ...prev,
-              slug: data.organization.slug || prev.slug,
-              name: data.organization.name || prev.name,
+              slug: data.organization_slug || prev.slug,
+              name: data.organization_name || prev.name,
               image: data.profile_image_url || prev.image,
+              logo: data.logo_url || prev.logo,
               bio: data.bio_text || prev.bio
             }));
-            if (data.organization.settings) {
+            
+            if (data.global_contact) {
               setGlobalContact({
-                whatsapp: data.organization.settings.phone_whatsapp || "",
-                phone: data.organization.settings.phone_landline || ""
+                whatsapp: data.global_contact.whatsapp || "",
+                phone: data.global_contact.landline || ""
               });
+            }
+            if (data.global_location !== undefined) {
               setGlobalLocation((prev: any) => ({
                 ...prev,
-                address: data.organization.settings.address || prev.address
+                address: data.global_location || prev.address
               }));
             }
-          } else if (data.profile_image_url || data.bio_text) {
-            setProfile(prev => ({
-              ...prev,
-              image: data.profile_image_url || prev.image,
-              bio: data.bio_text || prev.bio
-            }));
           }
 
           if (data.profile_config) {
@@ -268,7 +251,6 @@ export default function CustomPage() {
               bannerImage: pc.bannerImage || prev.bannerImage
             }));
           }
-
           let loadedContact = null;
           if (data.profile_config && (data.profile_config as any).contact) {
             loadedContact = (data.profile_config as any).contact;
@@ -345,8 +327,8 @@ export default function CustomPage() {
 
   const handleSave = async () => {
     if (activeTab === "global") {
-      if (!profile.name || profile.name.trim().length < 3) {
-        toast.error("O Nome de exibição deve ter pelo menos 3 caracteres.");
+      if (!profile.name || profile.name.trim().length < 3 || profile.name.trim().length > 30) {
+        toast.error("O Nome de exibição deve ter entre 3 e 30 caracteres.");
         return;
       }
       if (!profile.bio || profile.bio.trim().length < 32) {
@@ -365,14 +347,14 @@ export default function CustomPage() {
         slug: profile.slug,
         name: profile.name,
         profileImageUrl: profile.image,
+        logoUrl: profile.logo,
         bioText: profile.bio,
         themeColorLight: theme.color,
+        themeColorDark: theme.bgGradientColor2,
         fontFamily: theme.fontFamily,
         themeConfig: {
           id: theme.id,
-          color: theme.color,
           css: theme.css,
-          fontFamily: theme.fontFamily,
           textColor: theme.textColor,
           buttonBg: theme.buttonBg,
           buttonText: theme.buttonText,
@@ -423,11 +405,10 @@ export default function CustomPage() {
   const STEPS = [
     {
       id: "profile",
-      title: "Perfil e Redes Sociais",
+      title: "Perfil",
       component: (
         <div className="flex flex-col gap-8">
           <ProfileSettings data={profile} onChange={setProfile} />
-          <SocialSettings data={socials} onChange={setSocials} globalContact={globalContact} />
         </div>
       ),
     },
@@ -443,14 +424,7 @@ export default function CustomPage() {
     },
   ];
 
-  const isStepDone = (stepId: string) => {
-    switch (stepId) {
-      case "profile": return !!(profile.layout) && (socials.activePlatforms && socials.activePlatforms.length > 0);
-      case "theme": return true;
-      case "links": return links && links.length > 0 && links.some(l => l.title || l.url);
-      default: return false;
-    }
-  };
+
 
   const getIconSize = () => {
     return "h-7 w-7"; // Sempre grande
@@ -459,10 +433,10 @@ export default function CustomPage() {
 
   const isGlobalSettingsValid = () => {
     if (!profile.name || profile.name.trim().length < 3) return false;
-    if (!profile.image || !profile.bannerImage || !profile.logo) return false;
+    if (!profile.image && !profile.logo) return false;
     return true;
   };
-  
+
   const globalValid = isGlobalSettingsValid();
 
   return (
@@ -555,56 +529,30 @@ export default function CustomPage() {
                     <Button
                       onClick={handleSave}
                       disabled={isLoading || isSaving}
-                      className="flex-1 md:flex-none rounded-full h-10 shadow-sm w-full md:w-32"
+                      className="flex-1 md:hidden rounded-full h-10 shadow-sm w-full"
                     >
                       {isSaving ? "Salvando..." : "Salvar"}
                     </Button>
                   </div>
                 </div>
 
-                {/* Menu de Etapas ou Etapa Ativa */}
-                {activeStepId === null ? (
-                  <div className="flex flex-col gap-3 animate-in fade-in duration-300">
-                    {STEPS.map((step) => {
-                      const done = isStepDone(step.id);
-                      return (
-                        <div
-                          key={step.id}
-                          onClick={() => setActiveStepId(step.id)}
-                          className="flex items-center justify-between p-4 bg-card border border-border/50 rounded-xl cursor-pointer hover:bg-muted/50 hover:border-primary/50 transition-colors shadow-sm"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={cn(
-                              "h-10 w-10 rounded-full flex items-center justify-center shrink-0",
-                              done ? "bg-emerald-500/10 text-emerald-500" : "bg-muted text-muted-foreground"
-                            )}>
-                              {done ? <Check className="h-5 w-5" /> : <div className="h-3 w-3 rounded-full bg-current opacity-20" />}
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="font-semibold text-foreground text-sm">{step.title}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {done ? "Configurado" : "Não configurado"}
-                              </span>
-                            </div>
-                          </div>
-                          <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="w-full animate-in fade-in slide-in-from-right-4 duration-300">
-                    <Button
-                      variant="ghost"
-                      onClick={() => setActiveStepId(null)}
-                      className="mb-6 -ml-2 text-muted-foreground hover:text-foreground"
-                    >
-                      <ChevronLeft className="h-5 w-5 mr-1" /> Voltar para o menu
-                    </Button>
-
-                    {STEPS.find(s => s.id === activeStepId)?.component}
-                  </div>
-                )}
+                <div className="flex flex-col gap-10 mt-2">
+                  {STEPS.map((step, index) => (
+                    <div key={step.id} id={`step-${step.id}`} className="flex flex-col gap-2 scroll-m-20 p-5 border border-border/50 rounded-xl bg-card shadow-sm">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-sm">
+                          {index + 1}
+                        </span>
+                        {step.id === 'profile' || step.id === 'theme' ? (
+                          <span className="text-[10px] uppercase font-bold text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">Obrigatório</span>
+                        ) : (
+                          <span className="text-[10px] uppercase font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Opcional</span>
+                        )}
+                      </div>
+                      {step.component}
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* COLUNA DIREITA: Preview do Celular (Desktop) */}
@@ -636,6 +584,26 @@ export default function CustomPage() {
         </Tabs>
       </div>
 
+      {/* Desktop Fixed Floating Save Button */}
+      <div className="hidden md:flex fixed bottom-8 right-8 z-50">
+        <Button
+          onClick={handleSave}
+          disabled={isSaving || !globalValid}
+          className={cn(
+            "h-16 w-16 rounded-full shadow-lg flex items-center justify-center transition-all duration-300",
+            globalValid
+              ? "bg-black hover:bg-black/90 text-white hover:scale-105"
+              : "bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+          )}
+          title={globalValid ? "Salvar alterações" : "Preencha os campos obrigatórios (Nome e Avatar/Logo) na aba Global"}
+        >
+          {isSaving ? (
+            <LoaderLines className="animate-spin" style={{ width: '32px', height: '32px', fontSize: '32px' }} />
+          ) : (
+            <Save style={{ width: '32px', height: '32px', fontSize: '32px' }} />
+          )}
+        </Button>
+      </div>
 
 
       {/* MODAL DE PREVIEW MOBILE */}

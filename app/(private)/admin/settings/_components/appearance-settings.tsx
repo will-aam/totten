@@ -121,22 +121,7 @@ export function AppearanceSettings() {
               </span>
             </button>
 
-            {/*  QUADRADO AZUL (BLOQUEADO / EM BREVE) */}
-            <button
-              disabled
-              className="relative flex h-28 w-28 flex-col items-center justify-center rounded-2xl border-2 border-border/50 bg-muted/30 cursor-not-allowed opacity-70 transition-all group"
-            >
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/40 backdrop-blur-[1px] rounded-xl z-10">
-                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest bg-background/80 px-2 py-0.5 rounded-full shadow-sm border border-border/50">
-                  Em Breve
-                </span>
-              </div>
 
-              <div className="h-10 w-10 rounded-full bg-linear-to-br from-blue-500 to-indigo-700 border border-blue-600/50 shadow-sm grayscale-[0.3]" />
-              <span className="mt-3 text-sm font-bold text-foreground/50">
-                Azul
-              </span>
-            </button>
           </div>
         </CardContent>
       </Card>

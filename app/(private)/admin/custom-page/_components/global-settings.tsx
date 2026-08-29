@@ -244,6 +244,8 @@ export function GlobalSettings({
       }
     }
   };
+  const isGlobalValid = profile.name && profile.name.trim().length >= 3 && (profile.image || profile.logo);
+
   const handleSave = () => {
     if (!profile.name || profile.name.trim().length < 3) {
       toast.error("O Nome da Empresa é obrigatório e deve ter no mínimo 3 caracteres.");
@@ -251,8 +253,8 @@ export function GlobalSettings({
       return;
     }
 
-    if (!profile.image || !profile.bannerImage || !profile.logo) {
-      toast.error("As Imagens Globais (Avatar, Banner e Logomarca) são obrigatórias.");
+    if (!profile.image && !profile.logo) {
+      toast.error("É obrigatório preencher pelo menos a Foto de Perfil (Avatar) ou a Logomarca.");
       document.getElementById("step-2")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
@@ -282,14 +284,13 @@ export function GlobalSettings({
             <Input
               id="name"
               value={profile.name || ""}
-              onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+              onChange={(e) => setProfile({ ...profile, name: e.target.value.slice(0, 30) })}
               className="bg-background h-11 max-w-md"
               placeholder="Ex: Clínica Totten"
               required
               minLength={3}
               maxLength={30}
             />
-            <p className="text-xs text-muted-foreground mt-1">Este nome aparecerá em todos os seus canais (de 3 a 30 caracteres).</p>
           </div>
 
           {/* STEP 2 */}
@@ -510,7 +511,8 @@ export function GlobalSettings({
         </div>
       </div>
 
-      <div className="flex justify-end mt-10 sticky bottom-4 z-50 bg-background/80 backdrop-blur-md p-4 rounded-xl border border-border/50 shadow-md">
+      {/* Mobile Save Button */}
+      <div className="flex justify-end mt-10 md:hidden sticky bottom-4 z-50 bg-background/80 backdrop-blur-md p-4 rounded-xl border border-border/50 shadow-md">
         <Button onClick={handleSave} disabled={isSaving} className="min-w-32 shadow-sm font-semibold">
           {isSaving ? "Salvando..." : "Salvar"}
         </Button>

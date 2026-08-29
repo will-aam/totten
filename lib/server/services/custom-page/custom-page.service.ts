@@ -26,7 +26,85 @@ export class CustomPageService {
       }
     });
 
-    return linkBio;
+    if (linkBio) {
+      return {
+        id: linkBio.id,
+        profile_image_url: linkBio.profile_image_url,
+        logo_url: linkBio.logo_url,
+        bio_text: linkBio.bio_text,
+        theme_color_light: linkBio.theme_color_light,
+        theme_color_dark: linkBio.theme_color_dark,
+        font_family: linkBio.font_family,
+        theme_config: linkBio.theme_config as any || {},
+        social_links: linkBio.social_links as any || {},
+        professional_site_config: linkBio.professional_site_config as any || {},
+        profile_config: linkBio.profile_config as any || {},
+        organization_slug: linkBio.organization.slug,
+        organization_name: linkBio.organization.name,
+        global_contact: {
+          whatsapp: linkBio.organization.settings?.phone_whatsapp,
+          landline: linkBio.organization.settings?.phone_landline
+        },
+        global_location: linkBio.organization.settings?.address
+      };
+    }
+
+    // Se não existe, cria um padrão
+    const newLinkBio = await prisma.linkBio.create({
+      data: {
+        organization_id: organizationId,
+        theme_color_light: "#ffffff",
+        theme_color_dark: "#000000",
+        font_family: "Inter",
+        social_links: {
+          instagram: "",
+          facebook: "",
+          youtube: "",
+          website: ""
+        },
+        profile_config: {
+          displayName: "",
+          occupation: "",
+          location: ""
+        }
+      },
+      include: { 
+        organization: { 
+          select: { 
+            slug: true, 
+            name: true,
+            settings: {
+              select: {
+                phone_whatsapp: true,
+                phone_landline: true,
+                address: true
+              }
+            }
+          } 
+        } 
+      }
+    });
+
+    return {
+      id: newLinkBio.id,
+      profile_image_url: newLinkBio.profile_image_url,
+      logo_url: newLinkBio.logo_url,
+      bio_text: newLinkBio.bio_text,
+      theme_color_light: newLinkBio.theme_color_light,
+      theme_color_dark: newLinkBio.theme_color_dark,
+      font_family: newLinkBio.font_family,
+      theme_config: newLinkBio.theme_config as any || {},
+      social_links: newLinkBio.social_links as any || {},
+      professional_site_config: newLinkBio.professional_site_config as any || {},
+      profile_config: newLinkBio.profile_config as any || {},
+      organization_slug: newLinkBio.organization.slug,
+      organization_name: newLinkBio.organization.name,
+      global_contact: {
+        whatsapp: newLinkBio.organization.settings?.phone_whatsapp,
+        landline: newLinkBio.organization.settings?.phone_landline
+      },
+      global_location: newLinkBio.organization.settings?.address
+    };
   }
 
   /**
@@ -37,6 +115,7 @@ export class CustomPageService {
 
     const updateData: any = {};
     if (data.profileImageUrl !== undefined) updateData.profile_image_url = data.profileImageUrl;
+    if (data.logoUrl !== undefined) updateData.logo_url = data.logoUrl;
     if (data.bioText !== undefined) updateData.bio_text = data.bioText;
     if (data.themeColorLight !== undefined) updateData.theme_color_light = data.themeColorLight;
     if (data.themeColorDark !== undefined) updateData.theme_color_dark = data.themeColorDark;

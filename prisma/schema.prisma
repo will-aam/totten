@@ -208,6 +208,7 @@ model MessageTemplate {
 model LinkBio {
   id                String       @id @default(cuid())
   profile_image_url String?
+  logo_url          String?
   bio_text          String?
   theme_color_light String       @default("#ffffff")
   theme_color_dark  String       @default("#000000")

@@ -26,18 +26,28 @@ export function ProfileSettings({ data, onChange }: any) {
 
         <div className="flex flex-col gap-3">
           <Label className="text-foreground font-medium">Layout do Perfil</Label>
-          <Select value={data.layout || "classic"} onValueChange={(val) => onChange({ ...data, layout: val })}>
-            <SelectTrigger className="bg-background h-11 w-full">
-              <SelectValue placeholder="Selecione o layout" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="classic">Clássico</SelectItem>
-              <SelectItem value="banner">Banner</SelectItem>
-              <SelectItem value="header">Header Blur</SelectItem>
-            </SelectContent>
-          </Select>
-          <p className="text-[11px] text-muted-foreground">
-            Escolha como o seu Avatar e Banner (definidos acima) serão exibidos nesta página.
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { id: "classic", label: "Clássico" },
+              { id: "banner", label: "Banner" },
+              { id: "header", label: "Header Blur" },
+            ].map((option) => (
+              <div
+                key={option.id}
+                onClick={() => onChange({ ...data, layout: option.id })}
+                className={cn(
+                  "cursor-pointer border rounded-xl p-3 flex flex-col items-center justify-center gap-2 text-center transition-all",
+                  data.layout === option.id
+                    ? "border-primary bg-primary/10 text-primary font-semibold"
+                    : "border-border/50 bg-card hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <span className="text-sm">{option.label}</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-1">
+            Escolha como o seu Avatar e Banner (definidos nas Configurações Globais) serão exibidos nesta página.
           </p>
         </div>
 

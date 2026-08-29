@@ -9,9 +9,7 @@ import {
   Clock,
   Package as PackageIcon,
   Lock,
-  AlertTriangle,
   Check,
-  User,
   DotsVerticalRounded,
   InfoCircle,
   Cog,
@@ -182,7 +180,6 @@ export function AppointmentCardContent({
 
             {appt.professionalName && (
               <div className="flex items-center gap-1 bg-background/50 px-1.5 py-0.5 rounded text-[9px] font-bold text-foreground/90 backdrop-blur-sm border border-black/5 shadow-sm shrink-0">
-                <User className="h-2.5 w-2.5" />
                 <span className="truncate max-w-15">
                   {appt.professionalName.split(" ")[0]}
                 </span>

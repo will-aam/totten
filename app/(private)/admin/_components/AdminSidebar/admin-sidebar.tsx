@@ -11,7 +11,6 @@ import {
   Wallet,
   Mobile,
   ListPlus,
-  Shield,
 } from "@boxicons/react";
 import {
   Sidebar,
@@ -23,9 +22,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";

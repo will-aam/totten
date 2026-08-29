@@ -23,6 +23,7 @@ export async function updateCustomPageAction(data: {
   slug?: string;
   name?: string;
   profileImageUrl?: string;
+  logoUrl?: string;
   bioText?: string;
   themeColorLight?: string;
   themeColorDark?: string;
@@ -35,6 +36,15 @@ export async function updateCustomPageAction(data: {
   globalLocationAddress?: string;
 }) {
   try {
+    // Validação de segurança no backend
+    if (data.name !== undefined) {
+      const trimmedName = data.name.trim();
+      if (trimmedName.length < 3 || trimmedName.length > 30) {
+        return { success: false, error: "O nome da empresa deve ter entre 3 e 30 caracteres." };
+      }
+      data.name = trimmedName; // Salva sem espaços extras
+    }
+
     // Sanitização de links contra XSS
     if (data.socialLinks && data.socialLinks.links) {
       data.socialLinks.links = data.socialLinks.links.map((link: any) => ({
