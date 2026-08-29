@@ -523,14 +523,14 @@ export default function CustomPage() {
                     <Button
                       variant="outline"
                       onClick={() => setShowMobilePreview(true)}
-                      className="flex-1 lg:hidden md:flex-none rounded-full h-10 w-full md:w-32"
+                      className="flex-1 lg:hidden md:flex-none rounded-full h-10 w-full md:w-32 shrink-0"
                     >
                       Ver Preview
                     </Button>
                     <Button
                       onClick={handleSave}
                       disabled={isLoading || isSaving}
-                      className="flex-1 md:hidden rounded-full h-10 shadow-sm w-full"
+                      className="flex-1 md:flex-none rounded-full h-10 shadow-sm w-full md:w-32 shrink-0"
                     >
                       {isSaving ? "Salvando..." : "Salvar"}
                     </Button>
@@ -585,28 +585,7 @@ export default function CustomPage() {
         </Tabs>
       </div>
 
-      {/* Fixed Floating Save Button (Mobile & Desktop) */}
-      {(activeTab === "global" || activeTab === "link-bio") && (
-        <div className="flex fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50">
-          <Button
-            onClick={handleSave}
-            disabled={isSaving || !globalValid}
-            className={cn(
-              "h-16 w-16 rounded-full shadow-lg flex items-center justify-center transition-all duration-300",
-              globalValid
-                ? "bg-black hover:bg-black/90 text-white hover:scale-105"
-                : "bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed"
-            )}
-            title={globalValid ? "Salvar alterações" : "Preencha os campos obrigatórios (Nome e Avatar/Logo) na aba Global"}
-          >
-            {isSaving ? (
-              <LoaderLines className="animate-spin" style={{ width: '32px', height: '32px', fontSize: '32px' }} />
-            ) : (
-              <Save style={{ width: '32px', height: '32px', fontSize: '32px' }} />
-            )}
-          </Button>
-        </div>
-      )}
+
 
 
       {/* MODAL DE PREVIEW MOBILE */}

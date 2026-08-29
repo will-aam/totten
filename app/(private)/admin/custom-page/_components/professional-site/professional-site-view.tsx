@@ -674,7 +674,8 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
 
 
         {/* Menu de Etapas ou Etapa Ativa */}
-        {activeStepId === null ? (
+        <div className="mt-2 lg:h-[calc(100vh-360px)] lg:overflow-y-auto custom-scrollbar lg:pr-4 pb-20">
+          {activeStepId === null ? (
           <div className="flex flex-col gap-3 animate-in fade-in duration-300">
             {STEPS.map((step) => {
               const done = isStepDone(step.id);
@@ -810,6 +811,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
             {STEPS.find(s => s.id === activeStepId)?.component}
           </div>
         )}
+        </div>
       </div>
 
       {/* COLUNA DIREITA: Preview do Celular */}

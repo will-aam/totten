@@ -272,13 +272,24 @@ export function GlobalSettings({
   return (
     <div className="flex flex-col animate-in fade-in duration-300 relative pb-16">
       <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-2 border-b border-border/50 pb-4">
-          <h3 className="text-2xl font-bold flex items-center gap-2 text-foreground">
-            Configurações Globais
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            Siga as etapas abaixo para configurar as informações essenciais que representarão sua marca.
-          </p>
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border/50 pb-6">
+          <div>
+            <h3 className="text-2xl font-bold flex items-center gap-2 text-foreground">
+              Configurações Globais
+            </h3>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Siga as etapas abaixo para configurar as informações essenciais que representarão sua marca.
+            </p>
+          </div>
+          <div className="flex gap-2 w-full md:w-auto">
+            <Button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="flex-1 md:flex-none rounded-full h-10 shadow-sm w-full md:w-32 shrink-0"
+            >
+              {isSaving ? "Salvando..." : "Salvar"}
+            </Button>
+          </div>
         </div>
 
         <div className="flex flex-col gap-10 mt-2">
@@ -518,12 +529,6 @@ export function GlobalSettings({
         </div>
       </div>
 
-      {/* Mobile Save Button */}
-      <div className="flex justify-end mt-10 md:hidden sticky bottom-4 z-50 bg-background/80 backdrop-blur-md p-4 rounded-xl border border-border/50 shadow-md">
-        <Button onClick={handleSave} disabled={isSaving} className="min-w-32 shadow-sm font-semibold">
-          {isSaving ? "Salvando..." : "Salvar"}
-        </Button>
-      </div>
     </div>
   );
 }
