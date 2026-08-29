@@ -123,7 +123,7 @@ export function ProContact({ data, onChange, globalContact }: any) {
       <div className="flex flex-col gap-6">
         {/* CEP */}
         <div className="flex flex-col gap-3 p-4 border border-border/50 rounded-xl bg-muted/10">
-          <Label className="text-sm font-medium">Buscar Endereço (CEP)</Label>
+          <Label className="text-sm font-medium">1. Buscar Endereço (CEP)</Label>
           <div className="flex gap-2">
             <Input
               value={cep}
@@ -146,7 +146,7 @@ export function ProContact({ data, onChange, globalContact }: any) {
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="address" className="text-foreground font-medium">
-            Endereço Completo
+            2. Endereço Completo
           </Label>
           <Textarea
             id="address"
@@ -159,7 +159,7 @@ export function ProContact({ data, onChange, globalContact }: any) {
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="mapUrl" className="text-foreground font-medium">
-            Link do Google Maps
+            3. Link do Google Maps
           </Label>
           <Input
             id="mapUrl"
@@ -180,7 +180,7 @@ export function ProContact({ data, onChange, globalContact }: any) {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <Label className="text-foreground font-medium flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
-              Horário de Funcionamento
+              4. Horário de Funcionamento
             </Label>
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Exibir no site?</span>
@@ -197,7 +197,7 @@ export function ProContact({ data, onChange, globalContact }: any) {
         <div className="w-full h-px bg-border/50" />
 
         <h4 className="font-medium text-sm flex items-center gap-2">
-          Outras Formas de Contato
+          5. Outras Formas de Contato
         </h4>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -61,7 +61,7 @@ export function ProHistory({ data, onChange, profile }: { data: any, onChange: (
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-2">
             <Label htmlFor="historyOverline" className="text-foreground font-medium">
-              Texto Menor (Acima do Título)
+              1. Texto Menor (Acima do Título)
             </Label>
             <Input
               id="historyOverline"
@@ -74,7 +74,7 @@ export function ProHistory({ data, onChange, profile }: { data: any, onChange: (
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="historyTitle" className="text-foreground font-medium">
-              Título Principal
+              2. Título Principal
             </Label>
             <Input
               id="historyTitle"
@@ -87,7 +87,7 @@ export function ProHistory({ data, onChange, profile }: { data: any, onChange: (
 
           <div className="flex flex-col gap-3">
             <Label className="text-foreground font-medium">
-              Descrição / Texto
+              3. Descrição / Texto
             </Label>
             
             <RadioGroup 
@@ -144,7 +144,7 @@ export function ProHistory({ data, onChange, profile }: { data: any, onChange: (
             </div>
             <div className="flex flex-col gap-2 w-full max-w-sm">
               <div className="flex flex-col">
-                <p className="font-medium text-xs text-foreground">Imagem da História (Capa)</p>
+                <p className="font-medium text-xs text-foreground">4. Imagem da História (Capa)</p>
                 <p className="text-[11px] text-muted-foreground">Ilustra a seção sobre você ou seu espaço.</p>
               </div>
               <div className="flex flex-col gap-2">
@@ -176,7 +176,7 @@ export function ProHistory({ data, onChange, profile }: { data: any, onChange: (
 
           {/* Métricas / Estatísticas */}
           <div className="flex flex-col gap-4 p-4 border border-border/50 rounded-xl bg-muted/10">
-            <Label className="text-foreground font-medium">Métricas / Estatísticas (Opcional)</Label>
+            <Label className="text-foreground font-medium">5. Métricas / Estatísticas (Opcional)</Label>
             <p className="text-xs text-muted-foreground -mt-2">Números que trazem autoridade para sua história.</p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

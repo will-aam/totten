@@ -101,7 +101,8 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
 
   const [termsOpen, setTermsOpen] = useState(false);
   const [formSent, setFormSent] = useState(false);
-  const [formData, setFormData] = useState({ name: "", whatsapp: "", email: "", service: "", message: "" });
+  const [formData, setFormData] = useState({ name: "", whatsapp: "", email: "", message: "" });
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterSent, setNewsletterSent] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
@@ -116,7 +117,7 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
 
   // Dados do banco
   const professionals = org.admins || [];
-  
+
   const getFilteredServices = () => {
     const allServices = org.services || [];
     if (!selectedProfessional) return allServices;
@@ -152,11 +153,11 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
     }
     const msg = [
       `Olá! Me chamo *${formData.name}*.`,
-      formData.service ? `Tenho interesse em: *${formData.service}*` : "",
+      selectedItems.length > 0 ? `Tenho interesse em:\n${selectedItems.map(item => `- *${item}*`).join('\n')}` : "",
       formData.message ? `Mensagem: ${formData.message}` : "",
       formData.whatsapp ? `Meu WhatsApp: ${formData.whatsapp}` : "",
       formData.email ? `E-mail: ${formData.email}` : "",
-    ].filter(Boolean).join("\n");
+    ].filter(Boolean).join("\n\n");
     const encoded = encodeURIComponent(msg);
     window.open(`https://wa.me/55${whatsappNumber}?text=${encoded}`, "_blank");
     setFormSent(true);
@@ -496,17 +497,6 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                 {/* Serviços */}
                 {dbServices.length > 0 && servicesConfig.showServices !== false && (
                   <div className="mb-14">
-                    {servicesConfig.servicesDisplay === "pills" ? (
-                      <div className="flex flex-wrap justify-center gap-3">
-                        {sortedServices.map((srv: any) => (
-                          <div key={srv.id} className={cn("px-5 py-3 rounded-full flex items-center gap-3 border shadow-sm transition-transform hover:-translate-y-1", cardBg, borderColor)}>
-                            <span className="font-bold text-sm">{srv.name}</span>
-                            <span className="text-xs opacity-50 px-3 border-l" style={{ borderColor: theme.primaryColor }}>{srv.duration}m</span>
-                            <span className="font-bold whitespace-nowrap" style={{ color: theme.primaryColor }}>R$ {Number(srv.price).toFixed(2)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
                       <div className="relative w-full group/carousel">
                         <Carousel
                           opts={{
@@ -555,6 +545,22 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                                           <span className="text-slate-400 font-normal">/</span>
                                           <span className="text-slate-500 font-normal">{srv.duration} min</span>
                                         </div>
+                                        <button
+                                          onClick={() => {
+                                            if (!selectedItems.includes(srv.name)) {
+                                              setSelectedItems(prev => [...prev, srv.name]);
+                                            }
+                                            document.getElementById('contato')?.scrollIntoView({ behavior: 'smooth' });
+                                          }}
+                                          className="text-sm font-bold flex items-center gap-1.5 transition-all hover:opacity-80"
+                                          style={{ color: theme.primaryColor }}
+                                        >
+                                          Reservar
+                                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                            <path d="M12 5L19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                          </svg>
+                                        </button>
                                       </div>
                                     </div>
                                   </div>
@@ -569,7 +575,6 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                           )}
                         </Carousel>
                       </div>
-                    )}
                   </div>
                 )}
               </div>
@@ -587,17 +592,6 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                   {servicesConfig.packagesSubtitle || "Planos flexíveis para quem quer incluir o autocuidado na rotina."}
                 </p>
 
-                {servicesConfig.packagesDisplay === "pills" ? (
-                  <div className="flex flex-wrap gap-3">
-                    {sortedPackages.map((pkg: any) => (
-                      <div key={pkg.id} className={cn("px-5 py-3 rounded-full flex items-center gap-3 border shadow-sm transition-transform hover:-translate-y-1", altBg, borderColor)}>
-                        <span className="font-bold text-sm whitespace-nowrap">{pkg.name}</span>
-                        <span className="text-xs opacity-50 px-3 border-l whitespace-nowrap" style={{ borderColor: theme.primaryColor }}>{pkg.total_sessions} sessões</span>
-                        <span className="font-bold whitespace-nowrap" style={{ color: theme.primaryColor }}>R$ {Number(pkg.price).toFixed(2)}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
                   <div className="relative w-full group/carousel">
                     <Carousel opts={{ align: "start", loop: false }} className="w-full">
                       <CarouselContent className="-ml-4 md:-ml-6 py-4 -my-4">
@@ -633,6 +627,12 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                                     R$ {Number(pkg.price).toFixed(2)}
                                   </span>
                                   <button
+                                    onClick={() => {
+                                      if (!selectedItems.includes(pkg.name)) {
+                                        setSelectedItems(prev => [...prev, pkg.name]);
+                                      }
+                                      document.getElementById('contato')?.scrollIntoView({ behavior: 'smooth' });
+                                    }}
                                     className="text-sm font-bold flex items-center gap-1.5 transition-all hover:opacity-80"
                                     style={{ color: theme.primaryColor }}
                                   >
@@ -655,7 +655,6 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                       )}
                     </Carousel>
                   </div>
-                )}
               </div>
             </div>
           )}
@@ -671,53 +670,54 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                   {professionals.map((prof: any) => {
                     const isSelected = selectedProfessional?.id === prof.id;
                     return (
-                    <div
-                      key={prof.id}
-                      className={cn(
-                        "flex flex-col items-center gap-3 snap-start cursor-pointer transition-all",
-                        isSelected ? "opacity-100" : "opacity-80 hover:opacity-100"
-                      )}
-                      onClick={() => handleSelectProfessional(prof)}
-                    >
-                      <div className={cn(
-                        "w-28 h-36 md:w-36 md:h-48 rounded-[1.5rem] overflow-hidden shadow-lg border relative",
-                        isSelected ? `ring-4 ring-offset-2 ring-[${theme.primaryColor}]` : ""
-                      )}
-                      style={isSelected ? { '--tw-ring-color': theme.primaryColor } as any : {}}
+                      <div
+                        key={prof.id}
+                        className={cn(
+                          "flex flex-col items-center gap-3 snap-start cursor-pointer transition-all",
+                          isSelected ? "opacity-100" : "opacity-80 hover:opacity-100"
+                        )}
+                        onClick={() => handleSelectProfessional(prof)}
                       >
-                        {prof.instagram_url && (
-                          <a
-                            href={sanitizeUrl(prof.instagram_url)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={cn(
-                              "absolute top-2 right-2 p-1.5 rounded-full z-10 backdrop-blur-md bg-black/30 text-white hover:bg-black/50 transition-colors",
-                              !prof.show_instagram && "hidden"
-                            )}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Instagram className="h-5 w-5" />
-                          </a>
+                        <div className={cn(
+                          "w-28 h-36 md:w-36 md:h-48 rounded-[1.5rem] overflow-hidden shadow-lg border relative",
+                          isSelected ? `ring-4 ring-offset-2 ring-[${theme.primaryColor}]` : ""
                         )}
-                        {prof.profile_image_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={prof.profile_image_url}
-                            alt={prof.display_name || "Profissional"}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-4xl font-bold opacity-20">
-                            {prof.display_name ? prof.display_name.charAt(0).toUpperCase() : (prof.email ? prof.email.charAt(0).toUpperCase() : "U")}
-                          </span>
-                        )}
+                          style={isSelected ? { '--tw-ring-color': theme.primaryColor } as any : {}}
+                        >
+                          {prof.instagram_url && (
+                            <a
+                              href={sanitizeUrl(prof.instagram_url)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={cn(
+                                "absolute top-2 right-2 p-1.5 rounded-full z-10 backdrop-blur-md bg-black/30 text-white hover:bg-black/50 transition-colors",
+                                !prof.show_instagram && "hidden"
+                              )}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Instagram className="h-5 w-5" />
+                            </a>
+                          )}
+                          {prof.profile_image_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={prof.profile_image_url}
+                              alt={prof.display_name || "Profissional"}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-4xl font-bold opacity-20">
+                              {prof.display_name ? prof.display_name.charAt(0).toUpperCase() : (prof.email ? prof.email.charAt(0).toUpperCase() : "U")}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-col items-center justify-center px-2 text-center">
+                          <h4 className={cn("font-bold text-lg leading-tight", isSelected && "text-primary")} style={isSelected ? { color: theme.primaryColor } : {}}>{prof.display_name || "Profissional"}</h4>
+                          <p className="text-sm opacity-60 mt-1">{prof.profession || "Especialista"}</p>
+                        </div>
                       </div>
-                      <div className="flex flex-col items-center justify-center px-2 text-center">
-                        <h4 className={cn("font-bold text-lg leading-tight", isSelected && "text-primary")} style={isSelected ? { color: theme.primaryColor } : {}}>{prof.display_name || "Profissional"}</h4>
-                        <p className="text-sm opacity-60 mt-1">{prof.profession || "Especialista"}</p>
-                      </div>
-                    </div>
-                  )})}
+                    )
+                  })}
                 </div>
                 {selectedProfessional && selectedProfessional.bio && (
                   <div className="mt-8 p-6 rounded-2xl bg-muted/50 border shadow-sm animate-fade-up max-w-3xl mx-auto text-center" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
@@ -839,26 +839,51 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                           placeholder="exemplo@email.com"
                         />
                       </div>
-                      {dbServices.length > 0 && (
-                        <div className="flex flex-col gap-1.5">
-                          <label className="text-xs font-semibold opacity-70">Serviço de Interesse</label>
-                          <Select
-                            value={formData.service}
-                            onValueChange={(val) => setFormData({ ...formData, service: val === "none" ? "" : val })}
-                          >
-                            <SelectTrigger className={cn("w-full h-11 rounded-xl border px-4 text-sm focus:outline-none focus:ring-1 transition bg-transparent", inputBg)}>
-                              <SelectValue placeholder="Selecione um serviço..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none" className="text-muted-foreground">Selecione um serviço...</SelectItem>
-                              {dbServices.map((srv: any) => (
-                                <SelectItem key={`srv-${srv.id}`} value={srv.name}>{srv.name} — R$ {Number(srv.price).toFixed(2)}</SelectItem>
-                              ))}
-                              {dbPackages.map((pkg: any) => (
-                                <SelectItem key={`pkg-${pkg.id}`} value={pkg.name}>{pkg.name} (Pacote) — R$ {Number(pkg.price).toFixed(2)}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                      {(dbServices.length > 0 || dbPackages.length > 0) && (
+                        <div className="flex flex-col gap-2">
+                          <label className="text-xs font-semibold opacity-70">Serviço, pacote ou plano</label>
+                          <div className={cn("w-full max-h-[160px] overflow-y-auto rounded-xl border p-3 flex flex-col gap-2 shadow-inner", inputBg)}>
+                            {dbServices.map((srv: any) => (
+                              <label key={`srv-${srv.id}`} className="flex items-start gap-3 cursor-pointer hover:opacity-80 transition-opacity">
+                                <div className="pt-0.5">
+                                  <input 
+                                    type="checkbox"
+                                    checked={selectedItems.includes(srv.name)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) setSelectedItems(prev => [...prev, srv.name]);
+                                      else setSelectedItems(prev => prev.filter(i => i !== srv.name));
+                                    }}
+                                    className="w-4 h-4 rounded border-gray-300 shadow-sm transition-all focus:ring-1" 
+                                    style={{ accentColor: theme.primaryColor }}
+                                  />
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-medium leading-tight">{srv.name}</span>
+                                  <span className="text-[11px] opacity-60">R$ {Number(srv.price).toFixed(2)}</span>
+                                </div>
+                              </label>
+                            ))}
+                            {dbPackages.map((pkg: any) => (
+                              <label key={`pkg-${pkg.id}`} className="flex items-start gap-3 cursor-pointer hover:opacity-80 transition-opacity mt-1">
+                                <div className="pt-0.5">
+                                  <input 
+                                    type="checkbox"
+                                    checked={selectedItems.includes(pkg.name)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) setSelectedItems(prev => [...prev, pkg.name]);
+                                      else setSelectedItems(prev => prev.filter(i => i !== pkg.name));
+                                    }}
+                                    className="w-4 h-4 rounded border-gray-300 shadow-sm transition-all focus:ring-1"
+                                    style={{ accentColor: theme.primaryColor }}
+                                  />
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-medium leading-tight">{pkg.name} <span className="opacity-70 font-normal">(Pacote)</span></span>
+                                  <span className="text-[11px] opacity-60">R$ {Number(pkg.price).toFixed(2)}</span>
+                                </div>
+                              </label>
+                            ))}
+                          </div>
                         </div>
                       )}
                       <div className="flex flex-col gap-1.5">
@@ -903,21 +928,21 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                       {(socialLinks.activePlatforms || []).filter((platform: string) => socialLinks.visibility?.[platform]?.site).map((platform: string, i: number) => {
                         const Icon = SOCIAL_ICONS[platform] || Globe;
                         const val = platform === "whatsapp" ? (contact?.phone || socialLinks.values?.[platform]) : socialLinks.values?.[platform];
-                        
+
                         const getHref = (p: string, v: string) => {
-                           if (!v) return "#";
-                           if (p === "whatsapp") {
-                             let number = v.replace(/\D/g, "");
-                             if (number.length === 10 || number.length === 11) number = `55${number}`;
-                             return `https://wa.me/${number}`;
-                           }
-                           if (p === "instagram") return v.includes("instagram.com") ? v : `https://instagram.com/${v.replace("@", "")}`;
-                           if (p === "facebook") return v.includes("facebook.com") ? v : `https://facebook.com/${v}`;
-                           if (p === "youtube") return v.includes("youtube.com") ? v : `https://youtube.com/${v}`;
-                           if (v.startsWith("http")) return v;
-                           return `https://${v}`;
+                          if (!v) return "#";
+                          if (p === "whatsapp") {
+                            let number = v.replace(/\D/g, "");
+                            if (number.length === 10 || number.length === 11) number = `55${number}`;
+                            return `https://wa.me/${number}`;
+                          }
+                          if (p === "instagram") return v.includes("instagram.com") ? v : `https://instagram.com/${v.replace("@", "")}`;
+                          if (p === "facebook") return v.includes("facebook.com") ? v : `https://facebook.com/${v}`;
+                          if (p === "youtube") return v.includes("youtube.com") ? v : `https://youtube.com/${v}`;
+                          if (v.startsWith("http")) return v;
+                          return `https://${v}`;
                         };
-                        
+
                         return (
                           <a
                             key={i}

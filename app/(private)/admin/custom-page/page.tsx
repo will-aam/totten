@@ -45,7 +45,7 @@ let cachedCustomPageData: any = null;
 
 export default function CustomPage() {
   const [activeTab, setActiveTab] = useState<"global" | "link-bio" | "professional-site" | "booking-site">("global");
-  
+
   const [showMobilePreview, setShowMobilePreview] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -227,7 +227,7 @@ export default function CustomPage() {
               logo: data.logo_url || prev.logo,
               bio: data.bio_text || prev.bio
             }));
-            
+
             if (data.global_contact) {
               setGlobalContact({
                 whatsapp: data.global_contact.whatsapp || "",
@@ -588,24 +588,24 @@ export default function CustomPage() {
       {/* Fixed Floating Save Button (Mobile & Desktop) */}
       {(activeTab === "global" || activeTab === "link-bio") && (
         <div className="flex fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50">
-        <Button
-          onClick={handleSave}
-          disabled={isSaving || !globalValid}
-          className={cn(
-            "h-16 w-16 rounded-full shadow-lg flex items-center justify-center transition-all duration-300",
-            globalValid
-              ? "bg-black hover:bg-black/90 text-white hover:scale-105"
-              : "bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed"
-          )}
-          title={globalValid ? "Salvar alterações" : "Preencha os campos obrigatórios (Nome e Avatar/Logo) na aba Global"}
-        >
-          {isSaving ? (
-            <LoaderLines className="animate-spin" style={{ width: '32px', height: '32px', fontSize: '32px' }} />
-          ) : (
-            <Save style={{ width: '32px', height: '32px', fontSize: '32px' }} />
-          )}
-        </Button>
-      </div>
+          <Button
+            onClick={handleSave}
+            disabled={isSaving || !globalValid}
+            className={cn(
+              "h-16 w-16 rounded-full shadow-lg flex items-center justify-center transition-all duration-300",
+              globalValid
+                ? "bg-black hover:bg-black/90 text-white hover:scale-105"
+                : "bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+            )}
+            title={globalValid ? "Salvar alterações" : "Preencha os campos obrigatórios (Nome e Avatar/Logo) na aba Global"}
+          >
+            {isSaving ? (
+              <LoaderLines className="animate-spin" style={{ width: '32px', height: '32px', fontSize: '32px' }} />
+            ) : (
+              <Save style={{ width: '32px', height: '32px', fontSize: '32px' }} />
+            )}
+          </Button>
+        </div>
       )}
 
 

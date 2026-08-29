@@ -10,8 +10,6 @@ import useSWR from "swr";
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export function ProServices({ data, onChange }: any) {
-  const servicesDisplay = data.servicesDisplay || "cards";
-  const packagesDisplay = data.packagesDisplay || "cards";
   const { data: dbPackages, isLoading } = useSWR("/api/package-templates", fetcher);
 
   return (
@@ -29,7 +27,7 @@ export function ProServices({ data, onChange }: any) {
       <div className="flex flex-col gap-4 p-5 border border-border/50 rounded-xl bg-muted/10">
         <Label className="text-foreground font-medium text-base mb-1">Configuração de Exibição</Label>
         <p className="text-sm text-muted-foreground mb-2">Escolha quais módulos mostrar e o seu formato visual.</p>
-        
+
         {/* SERVIÇOS AVULSOS */}
         <div className="flex flex-col py-4 border-b border-border/50 gap-4">
           <div className="flex items-center justify-between">
@@ -41,7 +39,7 @@ export function ProServices({ data, onChange }: any) {
               onClick={() => onChange({ ...data, showServices: data.showServices !== false ? false : true })}
               className={cn(
                 "w-12 h-6 rounded-full transition-colors relative shadow-inner",
-                data.showServices !== false ? "bg-emerald-500" : "bg-muted-foreground/30"
+                data.showServices !== false ? "bg-foreground" : "bg-muted-foreground/30"
               )}
             >
               <div className={cn(
@@ -50,27 +48,36 @@ export function ProServices({ data, onChange }: any) {
               )} />
             </button>
           </div>
-          
+
           {data.showServices !== false && (
-            <div className="flex bg-background p-1 rounded-lg border border-border/50 w-full sm:w-2/3 ml-auto mr-0">
-              <button
-                onClick={() => onChange({ ...data, servicesDisplay: "cards" })}
-                className={cn(
-                  "flex-1 text-xs py-2 rounded-md transition-colors flex items-center justify-center gap-1.5 font-medium",
-                  servicesDisplay === "cards" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted"
-                )}
-              >
-                <Layout className="h-4 w-4" /> Em Cards
-              </button>
-              <button
-                onClick={() => onChange({ ...data, servicesDisplay: "pills" })}
-                className={cn(
-                  "flex-1 text-xs py-2 rounded-md transition-colors flex items-center justify-center gap-1.5 font-medium",
-                  servicesDisplay === "pills" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted"
-                )}
-              >
-                <List className="h-4 w-4" /> Em Pílulas
-              </button>
+            <div className="flex flex-col gap-4 mt-2 p-4 bg-background rounded-lg border border-border/50">
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs text-muted-foreground">1. Texto Acima do Título (Overline)</Label>
+                <Input
+                  className="h-8 text-sm"
+                  placeholder="Nossos Serviços"
+                  value={data.servicesOverline || ""}
+                  onChange={(e) => onChange({ ...data, servicesOverline: e.target.value })}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs text-muted-foreground">2. Título Principal</Label>
+                <Input
+                  className="h-8 text-sm font-semibold"
+                  placeholder="Terapias para cada momento"
+                  value={data.servicesTitle || ""}
+                  onChange={(e) => onChange({ ...data, servicesTitle: e.target.value })}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs text-muted-foreground">3. Subtítulo</Label>
+                <Input
+                  className="h-8 text-sm"
+                  placeholder="Escolha a experiência que melhor se adapta ao que você precisa hoje."
+                  value={data.servicesSubtitle || ""}
+                  onChange={(e) => onChange({ ...data, servicesSubtitle: e.target.value })}
+                />
+              </div>
             </div>
           )}
         </div>
@@ -86,7 +93,7 @@ export function ProServices({ data, onChange }: any) {
               onClick={() => onChange({ ...data, showPackages: data.showPackages !== false ? false : true })}
               className={cn(
                 "w-12 h-6 rounded-full transition-colors relative shadow-inner",
-                data.showPackages !== false ? "bg-emerald-500" : "bg-muted-foreground/30"
+                data.showPackages !== false ? "bg-foreground" : "bg-muted-foreground/30"
               )}
             >
               <div className={cn(
@@ -97,9 +104,9 @@ export function ProServices({ data, onChange }: any) {
           </div>
 
           {data.showPackages !== false && (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 mt-2 p-4 bg-background rounded-lg border border-border/50">
               <div className="flex flex-col gap-1.5">
-                <Label className="text-xs text-muted-foreground">Subtítulo dos Pacotes</Label>
+                <Label className="text-xs text-muted-foreground">1. Subtítulo dos Pacotes</Label>
                 <Input
                   className="h-8 text-sm"
                   placeholder="Planos flexíveis para quem quer incluir o autocuidado na rotina."
@@ -107,26 +114,6 @@ export function ProServices({ data, onChange }: any) {
                   onChange={(e) => onChange({ ...data, packagesSubtitle: e.target.value })}
                 />
               </div>
-              <div className="flex bg-background p-1 rounded-lg border border-border/50 w-full sm:w-2/3 ml-auto mr-0">
-              <button
-                onClick={() => onChange({ ...data, packagesDisplay: "cards" })}
-                className={cn(
-                  "flex-1 text-xs py-2 rounded-md transition-colors flex items-center justify-center gap-1.5 font-medium",
-                  packagesDisplay === "cards" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted"
-                )}
-              >
-                <Layout className="h-4 w-4" /> Em Cards
-              </button>
-              <button
-                onClick={() => onChange({ ...data, packagesDisplay: "pills" })}
-                className={cn(
-                  "flex-1 text-xs py-2 rounded-md transition-colors flex items-center justify-center gap-1.5 font-medium",
-                  packagesDisplay === "pills" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted"
-                )}
-              >
-                <List className="h-4 w-4" /> Em Pílulas
-              </button>
-            </div>
             </div>
           )}
         </div>
@@ -141,8 +128,8 @@ export function ProServices({ data, onChange }: any) {
               </Label>
               <span className="text-xs text-muted-foreground">Escolha qual pacote deseja destacar visualmente.</span>
             </div>
-            <Select 
-              value={data.featuredPackageName || ""} 
+            <Select
+              value={data.featuredPackageName || ""}
               onValueChange={(val) => onChange({ ...data, featuredPackageName: val })}
             >
               <SelectTrigger className="bg-background border-border/50 h-10">

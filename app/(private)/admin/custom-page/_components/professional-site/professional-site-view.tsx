@@ -17,6 +17,7 @@ import { ProHistory } from "./pro-history";
 import { ProServices } from "./pro-services";
 import { ProTheme } from "./pro-theme";
 import { updateCustomPageAction } from "@/app/actions/custom-page";
+import { sendSuggestionAction } from "@/app/actions/suggestion";
 import { toast } from "sonner";
 import useSWR from "swr";
 
@@ -33,6 +34,9 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
   const [activeStepId, setActiveStepId] = useState<string | null>(null);
   const [showMobilePreview, setShowMobilePreview] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [suggestionText, setSuggestionText] = useState("");
+  const [isSendingSuggestion, setIsSendingSuggestion] = useState(false);
+  const [suggestionImages, setSuggestionImages] = useState<File[]>([]);
 
   // Estados dos formulários do Site Profissional
   const [presentation, setPresentation] = useState<any>({ headline: "", subheadline: "", bio: "", heroImage: "", heroLayout: "fade-cover", ctaPrimaryText: "", ctaSecondaryText: "", ctaSecondaryType: "services", aboutTitle: "" });
@@ -698,6 +702,100 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
                 </div>
               );
             })}
+
+            {/* Caixinha de Sugestão */}
+            <div className="mt-4 p-5 bg-primary/5 border border-primary/20 rounded-2xl flex flex-col gap-3 animate-in fade-in duration-500">
+              <div className="flex items-center gap-2 text-primary font-bold">
+                <Envelope className="w-5 h-5" />
+                <span>Sugestão de Melhoria</span>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Sentiu falta de alguma funcionalidade no seu site? (ex: "gostaria de ter a opção de ocultar os preços"). Mande sua ideia para nós e ajudaremos a melhorar a plataforma!
+              </p>
+              <div className="relative">
+                <textarea 
+                  value={suggestionText}
+                  onChange={(e) => setSuggestionText(e.target.value)}
+                  disabled={isSendingSuggestion}
+                  maxLength={1000}
+                  className="w-full h-24 rounded-xl border border-border/50 bg-background p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm disabled:opacity-50 pb-6"
+                  placeholder="Descreva sua sugestão de melhoria..."
+                />
+                <span className="absolute bottom-2 right-3 text-[10px] text-muted-foreground">
+                  {suggestionText.length}/1000
+                </span>
+              </div>
+              
+              <div className="flex flex-col gap-2">
+                <label className="cursor-pointer text-xs font-semibold text-primary/80 hover:text-primary flex items-center gap-1 transition-colors w-fit">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                  Anexar Imagem (Até 2)
+                  <input type="file" accept="image/*" className="hidden" disabled={isSendingSuggestion} onChange={(e) => {
+                    if (e.target.files) {
+                      const newFiles = Array.from(e.target.files);
+                      if (suggestionImages.length + newFiles.length > 2) {
+                        toast.error("Você pode anexar no máximo 2 imagens.");
+                        return;
+                      }
+                      const validFiles = newFiles.filter(f => {
+                        if (f.size > 2 * 1024 * 1024) {
+                          toast.error(`A imagem ${f.name} excede o limite de 2MB.`);
+                          return false;
+                        }
+                        return true;
+                      });
+                      setSuggestionImages(prev => [...prev, ...validFiles].slice(0, 2));
+                      e.target.value = '';
+                    }
+                  }} multiple />
+                </label>
+                
+                {suggestionImages.length > 0 && (
+                  <div className="flex gap-2 flex-wrap">
+                    {suggestionImages.map((img, i) => (
+                      <div key={i} className="flex items-center gap-1 bg-background border rounded-lg px-2 py-1 text-[10px] text-muted-foreground relative pr-6 shadow-sm">
+                        <span className="truncate max-w-[120px] font-medium">{img.name}</span>
+                        <button disabled={isSendingSuggestion} className="absolute right-1 hover:text-red-500 transition-colors" onClick={() => setSuggestionImages(prev => prev.filter((_, index) => index !== i))}>
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <Button 
+                disabled={isSendingSuggestion}
+                className="w-full sm:w-auto self-start rounded-full shadow-sm mt-1"
+                onClick={async () => {
+                  if (!suggestionText.trim()) {
+                     toast.error("Por favor, digite uma sugestão antes de enviar.");
+                     return;
+                  }
+                  setIsSendingSuggestion(true);
+                  try {
+                    const formData = new FormData();
+                    formData.append("suggestionText", suggestionText);
+                    suggestionImages.forEach(img => formData.append("images", img));
+                    
+                    const res = await sendSuggestionAction(formData);
+                    if (res.success) {
+                      toast.success("Sugestão enviada com sucesso! Muito obrigado.");
+                      setSuggestionText("");
+                      setSuggestionImages([]);
+                    } else {
+                      toast.error(res.error || "Erro ao enviar sugestão.");
+                    }
+                  } catch (error) {
+                    toast.error("Ocorreu um erro ao tentar enviar sua sugestão.");
+                  } finally {
+                    setIsSendingSuggestion(false);
+                  }
+                }}
+              >
+                {isSendingSuggestion ? "Enviando..." : "Enviar Sugestão"}
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="w-full animate-in fade-in slide-in-from-right-4 duration-300">

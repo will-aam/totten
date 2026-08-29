@@ -39,9 +39,39 @@ export function ProTheme({ data, onChange }: any) {
         </p>
       </div>
 
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-8">
         <div className="flex flex-col gap-3">
-          <Label className="text-foreground font-medium">Paleta de Cores</Label>
+          <Label className="text-foreground font-medium">1. Formato do Cabeçalho</Label>
+          <p className="text-xs text-muted-foreground -mt-1 mb-1">Escolha o alinhamento principal do topo do seu site.</p>
+          <div className="flex flex-col gap-3 w-full md:w-2/3">
+            <label className={cn("flex items-center justify-between p-3 border rounded-xl cursor-pointer transition-colors", (data.headerStyle || "center") === "center" ? "border-foreground bg-foreground/5" : "border-border/50 hover:border-foreground/30")}>
+              <span className="text-sm font-medium text-foreground">Centralizado</span>
+              <input 
+                type="radio" 
+                name="headerStyle" 
+                checked={(data.headerStyle || "center") === "center"}
+                onChange={() => onChange({ ...data, headerStyle: "center" })}
+                className="w-4 h-4 cursor-pointer accent-foreground"
+              />
+            </label>
+            <label className={cn("flex items-center justify-between p-3 border rounded-xl cursor-pointer transition-colors", data.headerStyle === "left" ? "border-foreground bg-foreground/5" : "border-border/50 hover:border-foreground/30")}>
+              <span className="text-sm font-medium text-foreground">Alinhado à Esquerda</span>
+              <input 
+                type="radio" 
+                name="headerStyle" 
+                checked={data.headerStyle === "left"}
+                onChange={() => onChange({ ...data, headerStyle: "left" })}
+                className="w-4 h-4 cursor-pointer accent-foreground"
+              />
+            </label>
+          </div>
+        </div>
+
+        <div className="w-full h-px bg-border/50" />
+
+        <div className="flex flex-col gap-3">
+          <Label className="text-foreground font-medium">2. Paleta de Cores</Label>
+          <p className="text-xs text-muted-foreground -mt-1 mb-1">Selecione o esquema de cores ideal para sua marca.</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {PRO_THEMES.map((theme) => (
               <button
@@ -77,36 +107,6 @@ export function ProTheme({ data, onChange }: any) {
                 </span>
               </button>
             ))}
-          </div>
-        </div>
-
-        <div className="w-full h-px bg-border/50" />
-
-        <div className="flex flex-col gap-3">
-          <Label className="text-foreground font-medium">Formato do Cabeçalho</Label>
-          <div className="flex bg-muted p-1 rounded-lg border border-border/50 w-full md:w-2/3">
-            <button
-              onClick={() => onChange({ ...data, headerStyle: "center" })}
-              className={cn(
-                "flex-1 text-xs py-2 rounded-md transition-colors flex items-center justify-center gap-1.5 font-medium",
-                (data.headerStyle || "center") === "center"
-                  ? "bg-background shadow-sm text-foreground"
-                  : "text-muted-foreground hover:bg-background/50",
-              )}
-            >
-              <Layout className="h-4 w-4" /> Centralizado
-            </button>
-            <button
-              onClick={() => onChange({ ...data, headerStyle: "left" })}
-              className={cn(
-                "flex-1 text-xs py-2 rounded-md transition-colors flex items-center justify-center gap-1.5 font-medium",
-                data.headerStyle === "left"
-                  ? "bg-background shadow-sm text-foreground"
-                  : "text-muted-foreground hover:bg-background/50",
-              )}
-            >
-              <Layout className="h-4 w-4 rotate-180" /> Alinhado à Esquerda
-            </button>
           </div>
         </div>
       </div>

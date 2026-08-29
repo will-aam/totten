@@ -108,7 +108,7 @@ export function ProPresentation({ data, onChange, hasServices }: { data: any, on
             {/* Slider Images */}
             <div className="flex flex-col gap-4 border border-border/50 p-4 rounded-lg bg-muted/20">
               <div className="flex flex-col">
-                <p className="font-medium text-xs text-foreground">Imagens do Slider / Banner Lateral (Máx: 5)</p>
+                <p className="font-medium text-xs text-foreground">1. Imagens do Slider / Banner Lateral (Máx: 5)</p>
                 <p className="text-[11px] text-muted-foreground">Adicione até 5 fotos para criar um slide automático no topo do site.</p>
               </div>
 
@@ -173,7 +173,7 @@ export function ProPresentation({ data, onChange, hasServices }: { data: any, on
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="headline" className="text-foreground font-medium">
-            Título / Chamada Principal (Headline)
+            2. Título / Chamada Principal (Headline)
           </Label>
           <Input
             id="headline"
@@ -186,7 +186,7 @@ export function ProPresentation({ data, onChange, hasServices }: { data: any, on
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="subheadline" className="text-foreground font-medium">
-            Subtítulo (Opcional)
+            3. Subtítulo (Opcional)
           </Label>
           <Textarea
             id="subheadline"
@@ -199,7 +199,7 @@ export function ProPresentation({ data, onChange, hasServices }: { data: any, on
 
         {/* CTAs do Hero */}
         <div className="flex flex-col gap-4 pt-2">
-          <Label className="text-foreground font-medium">Botões de Ação (CTAs)</Label>
+          <Label className="text-foreground font-medium">4. Botões de Ação (CTAs)</Label>
           
           <div className="flex items-center justify-between border rounded-lg p-3">
             <div className="flex flex-col gap-1">
@@ -250,7 +250,7 @@ export function ProPresentation({ data, onChange, hasServices }: { data: any, on
         {/* Categoria / Badge de Destaque */}
         <div className="flex flex-col gap-2">
           <Label htmlFor="badgeText" className="text-foreground font-medium">
-            Tag de Categoria (Badge de Destaque)
+            5. Tag de Categoria (Badge de Destaque)
           </Label>
           <Input
             id="badgeText"
@@ -264,7 +264,7 @@ export function ProPresentation({ data, onChange, hasServices }: { data: any, on
 
         {/* Destaques (Highlights) */}
         <div className="flex flex-col gap-4 pt-2">
-          <Label className="text-foreground font-medium">Destaques (Checkmarks)</Label>
+          <Label className="text-foreground font-medium">6. Destaques (Checkmarks)</Label>
           <p className="text-xs text-muted-foreground -mt-2">Pequenos textos com ícone de "check" que ficam abaixo dos botões.</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <Input
