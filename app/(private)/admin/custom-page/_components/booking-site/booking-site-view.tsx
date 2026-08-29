@@ -2,16 +2,32 @@
 
 import { toast } from "sonner";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { BookingAppearanceSettings } from "@/app/(private)/admin/self-service/_components/booking-appearance-settings";
+import { getSelfServiceSettingsAction, updateSelfServiceSettingsAction } from "@/app/actions/settings";
+import { Loader2 } from "lucide-react";
 
 export function BookingSiteView({ profile }: { profile?: any }) {
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [bookingTheme, setBookingTheme] = useState("light");
+  const [bookingPrimaryColor, setBookingPrimaryColor] = useState("#0f172a");
+
+  useEffect(() => {
+    getSelfServiceSettingsAction().then(res => {
+      if (res.success && res.data) {
+        setBookingTheme(res.data.bookingTheme || "light");
+        setBookingPrimaryColor(res.data.bookingPrimaryColor || "#0f172a");
+      }
+      setIsLoading(false);
+    });
+  }, []);
 
   const [general, setGeneral] = useState({
     requirePrepayment: true,
@@ -35,11 +51,33 @@ export function BookingSiteView({ profile }: { profile?: any }) {
     }
     
     setIsSaving(true);
-    setTimeout(() => {
+    try {
+      const response = await updateSelfServiceSettingsAction({
+        bookingTheme,
+        bookingPrimaryColor,
+      });
+
+      if (response.success) {
+        toast.success("Configurações da agenda salvas com sucesso!");
+      } else {
+        toast.error("Erro ao salvar", {
+          description: response.error,
+        });
+      }
+    } catch (e) {
+      toast.error("Ocorreu um erro ao salvar as configurações.");
+    } finally {
       setIsSaving(false);
-      toast.success("Configurações da agenda salvas com sucesso!");
-    }, 800);
-  }, [general]);
+    }
+  }, [general, bookingTheme, bookingPrimaryColor]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex flex-col gap-6 animate-in fade-in duration-300">
@@ -189,7 +227,12 @@ export function BookingSiteView({ profile }: { profile?: any }) {
           </div>
 
           <div className="mt-8 border-t border-border/50 pt-8">
-            <BookingAppearanceSettings />
+            <BookingAppearanceSettings
+              bookingTheme={bookingTheme}
+              setBookingTheme={setBookingTheme}
+              bookingPrimaryColor={bookingPrimaryColor}
+              setBookingPrimaryColor={setBookingPrimaryColor}
+            />
           </div>
         </section>
 

@@ -1,8 +1,5 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
-import { toast } from "sonner";
-import { updateSelfServiceSettingsAction, getSelfServiceSettingsAction } from "@/app/actions/settings";
 import {
   Card,
   CardContent,
@@ -27,66 +24,23 @@ export const PRO_THEMES = [
 ];
 
 interface BookingAppearanceSettingsProps {
-  initialData?: any;
+  bookingTheme: string;
+  setBookingTheme: (theme: string) => void;
+  bookingPrimaryColor: string;
+  setBookingPrimaryColor: (color: string) => void;
 }
 
 export function BookingAppearanceSettings({
-  initialData,
+  bookingTheme,
+  setBookingTheme,
+  bookingPrimaryColor,
+  setBookingPrimaryColor,
 }: BookingAppearanceSettingsProps) {
-  const [isPending, startTransition] = useTransition();
-  const [isLoading, setIsLoading] = useState(!initialData);
-
-  const [bookingTheme, setBookingTheme] = useState(
-    initialData?.bookingTheme || "light"
-  );
-  
-  const [bookingPrimaryColor, setBookingPrimaryColor] = useState(
-    initialData?.bookingPrimaryColor || "#0f172a"
-  );
-
-  useEffect(() => {
-    if (!initialData) {
-      getSelfServiceSettingsAction().then(res => {
-        if (res.success && res.data) {
-          setBookingTheme(res.data.bookingTheme || "light");
-          setBookingPrimaryColor(res.data.bookingPrimaryColor || "#0f172a");
-        }
-        setIsLoading(false);
-      });
-    }
-  }, [initialData]);
 
   const handleThemeChange = (theme: (typeof PRO_THEMES)[0]) => {
     setBookingTheme(theme.id);
     setBookingPrimaryColor(theme.primary);
   };
-
-  const handleSave = () => {
-    startTransition(async () => {
-      const response = await updateSelfServiceSettingsAction({
-        bookingTheme,
-        bookingPrimaryColor,
-      });
-
-      if (response.success) {
-        toast.success("Aparência atualizada", {
-          description: "O tema da sua página de agendamento foi salvo.",
-        });
-      } else {
-        toast.error("Erro ao salvar", {
-          description: response.error,
-        });
-      }
-    });
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-500">
@@ -139,11 +93,6 @@ export function BookingAppearanceSettings({
             ))}
           </div>
 
-          <div className="flex justify-end pt-4">
-            <Button onClick={handleSave} disabled={isPending}>
-              {isPending ? "Salvando..." : "Salvar Configurações"}
-            </Button>
-          </div>
         </CardContent>
       </Card>
     </div>

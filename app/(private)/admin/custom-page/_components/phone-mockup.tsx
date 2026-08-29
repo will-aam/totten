@@ -188,7 +188,8 @@ export function PhoneMockup({
       <style>{`
       @import url('https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Oxanium:wght@400;500;600;700&family=Roboto:ital,wght@0,400;0,500;0,700;1,400&family=Sora:wght@400;500;600;700&display=swap');
     `}</style>
-      <div className={cn("bg-black relative overflow-hidden mx-auto", isFullScreen ? "w-full h-full" : "w-[320px] h-[650px] rounded-[3rem] border-8 border-black")}>
+      <div className={cn("bg-black relative overflow-hidden mx-auto", isFullScreen ? "w-full h-full" : "w-[320px] h-[650px] rounded-[3rem] border-8 border-black shadow-2xl ring-1 ring-border/20")}>
+        {!isFullScreen && <div className="absolute top-0 inset-x-0 h-6 bg-black z-30 rounded-b-2xl w-40 mx-auto" />}
 
         {/* CAMADA DE FUNDO BASE */}
         <div

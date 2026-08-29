@@ -586,7 +586,8 @@ export default function CustomPage() {
       </div>
 
       {/* Fixed Floating Save Button (Mobile & Desktop) */}
-      <div className="flex fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50">
+      {(activeTab === "global" || activeTab === "link-bio") && (
+        <div className="flex fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50">
         <Button
           onClick={handleSave}
           disabled={isSaving || !globalValid}
@@ -605,6 +606,7 @@ export default function CustomPage() {
           )}
         </Button>
       </div>
+      )}
 
 
       {/* MODAL DE PREVIEW MOBILE */}
