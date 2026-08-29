@@ -17,6 +17,7 @@ import {
   Repeat,
   LoaderDots,
   Save,
+  Search
 } from "@boxicons/react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
@@ -31,6 +32,7 @@ interface GeneralSettingsResponse {
   document: string;
   contactPhone: string;
   whatsapp: string;
+  address: string;
 }
 
 export function GeneralSettings() {
@@ -46,10 +48,41 @@ export function GeneralSettings() {
     document: "",
     contactPhone: "",
     whatsapp: "",
+    address: "",
   });
 
   const [cpfCache, setCpfCache] = useState("");
   const [cnpjCache, setCnpjCache] = useState("");
+
+  const [cep, setCep] = useState("");
+  const [searchingCep, setSearchingCep] = useState(false);
+
+  const handleCepSearch = async () => {
+    const cleanCep = cep.replace(/\D/g, "");
+    if (cleanCep.length !== 8) {
+      toast.error("CEP inválido (deve conter 8 dígitos)");
+      return;
+    }
+    
+    setSearchingCep(true);
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      const data = await response.json();
+      
+      if (data.erro) {
+        toast.error("CEP não encontrado");
+        return;
+      }
+      
+      const newAddress = `${data.logradouro},  - ${data.bairro}, ${data.localidade}/${data.uf}`;
+      setFormData(prev => ({ ...prev, address: newAddress }));
+      toast.success("Endereço preenchido! Complete com o número.");
+    } catch (error) {
+      toast.error("Erro ao buscar CEP");
+    } finally {
+      setSearchingCep(false);
+    }
+  };
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -62,6 +95,7 @@ export function GeneralSettings() {
           document: data.document || "",
           contactPhone: data.contactPhone || "",
           whatsapp: data.whatsapp || "",
+          address: data.address || "",
         });
         const cleanDoc = data.document?.replace(/\D/g, "") || "";
         if (cleanDoc.length > 0) {
@@ -290,6 +324,38 @@ export function GeneralSettings() {
                 className="flex-1"
               />
             </div>
+          </div>
+        </div>
+        
+        <div className="flex flex-col gap-4 mt-2 p-4 rounded-xl border border-border/50 bg-muted/10">
+          <div className="grid gap-2">
+            <Label htmlFor="cep">Buscar por CEP</Label>
+            <div className="flex gap-2">
+              <Input
+                id="cep"
+                value={cep}
+                onChange={(e) => {
+                  let v = e.target.value.replace(/\D/g, "");
+                  if (v.length > 5) v = v.replace(/^(\d{5})(\d)/, "$1-$2");
+                  setCep(v.slice(0, 9));
+                }}
+                placeholder="00000-000"
+                className="max-w-[150px]"
+                onKeyDown={(e) => e.key === "Enter" && handleCepSearch()}
+              />
+              <Button type="button" onClick={handleCepSearch} disabled={searchingCep} variant="secondary">
+                {searchingCep ? <LoaderDots className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              </Button>
+            </div>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="address">Endereço Completo</Label>
+            <Input
+              id="address"
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              placeholder="Ex: Rua das Flores, 123 - Centro, São Paulo/SP"
+            />
           </div>
         </div>
       </CardContent>

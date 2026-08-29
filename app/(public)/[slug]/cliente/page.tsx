@@ -36,15 +36,15 @@ export default async function ClientAreaPage({
   };
 
   const { getClientHistoryById } = await import("@/app/actions/public-client");
-  const historyRes = await getClientHistoryById(slug, clientId);
+  const historyRes = await getClientHistoryById(slug, clientId || "");
 
   return (
     <ClientAreaView 
       org={org} 
       theme={theme} 
-      initialHistory={historyRes.success ? historyRes.data : []}
-      initialClientName={historyRes.success ? historyRes.clientName : ""}
-      error={historyRes.success ? "" : historyRes.error}
+      initialHistory={historyRes.success && historyRes.data ? historyRes.data : []}
+      initialClientName={historyRes.success && historyRes.clientName ? historyRes.clientName : ""}
+      error={historyRes.success ? "" : (historyRes.error || "Erro desconhecido")}
     />
   );
 }

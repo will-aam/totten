@@ -17,7 +17,8 @@ export class CustomPageService {
             settings: {
               select: {
                 phone_whatsapp: true,
-                phone_landline: true
+                phone_landline: true,
+                address: true
               }
             }
           } 
@@ -66,6 +67,13 @@ export class CustomPageService {
       await prisma.settings.updateMany({
         where: { organization_id: organizationId },
         data: { phone_whatsapp: data.globalContactWhatsapp },
+      });
+    }
+    
+    if (data.globalLocationAddress !== undefined) {
+      await prisma.settings.updateMany({
+        where: { organization_id: organizationId },
+        data: { address: data.globalLocationAddress },
       });
     }
 

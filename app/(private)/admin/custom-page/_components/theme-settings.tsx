@@ -3,8 +3,12 @@
 
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Palette, Check, Plus, Image as ImageIcon } from "@boxicons/react";
+import { Palette, Check, Plus, Image as ImageIcon, LoaderLines } from "@boxicons/react";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { compressImage } from "@/lib/image-utils";
+import { uploadImageAction } from "@/app/actions/upload-image";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -62,6 +66,28 @@ const SOLID_COLORS = ["#000000", "#FFFFFF", "#2563EB", "#DB2777", "#16A34A"];
 
 
 export function ThemeSettings({ data, onChange }: any) {
+  const [isUploadingWallpaper, setIsUploadingWallpaper] = useState(false);
+
+  const handleWallpaperUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setIsUploadingWallpaper(true);
+      try {
+        const compressedBase64 = await compressImage(file, 1200);
+        const res = await uploadImageAction(compressedBase64, "wallpaper");
+        if (res.success && res.url) {
+          onChange({ ...data, backgroundImage: res.url });
+        } else {
+          toast.error(res.error || "Erro ao fazer upload da imagem");
+        }
+      } catch (error) {
+        console.error("Erro ao processar wallpaper:", error);
+        toast.error("Erro inesperado ao processar wallpaper.");
+      } finally {
+        setIsUploadingWallpaper(false);
+      }
+    }
+  };
   const handleThemeChange = (theme: (typeof SYSTEM_THEMES)[0]) => {
     onChange({
       ...data,
@@ -183,10 +209,33 @@ export function ThemeSettings({ data, onChange }: any) {
           <div className="flex flex-col gap-6 pt-2 animate-in fade-in slide-in-from-top-2">
             <Label className="text-foreground font-medium">Seu Wallpaper Personalizado</Label>
 
-            <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
-              <p className="text-sm text-primary font-medium text-center">
-                A imagem de fundo personalizada agora é gerenciada na aba <strong>Galeria de Imagens</strong>.
-              </p>
+            {/* Wallpaper Upload */}
+            <div className="flex flex-col gap-2 mt-4">
+              <div className="flex gap-2 items-center">
+                <label className="text-[11px] font-semibold text-primary hover:underline w-fit cursor-pointer">
+                  Fazer upload
+                  <input
+                    type="file"
+                    accept="image/png, image/jpeg"
+                    className="hidden"
+                    onChange={handleWallpaperUpload}
+                  />
+                </label>
+                {data.backgroundImage && (
+                  <button onClick={() => onChange({ ...data, backgroundImage: "" })} className="text-[11px] font-semibold text-destructive hover:underline w-fit">
+                    Remover
+                  </button>
+                )}
+                {isUploadingWallpaper && (
+                  <LoaderLines className="h-4 w-4 animate-spin text-primary" />
+                )}
+              </div>
+              <Input
+                value={data.backgroundImage || ""}
+                onChange={(e) => onChange({ ...data, backgroundImage: e.target.value })}
+                className="bg-background h-8 text-xs focus-visible:ring-1 max-w-sm"
+                placeholder="Ou cole a URL do wallpaper aqui..."
+              />
             </div>
 
             {/* Efeitos de Fundo (Wallpaper) */}

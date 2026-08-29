@@ -83,6 +83,7 @@ model Settings {
   organization_id  String       @unique
   updated_at       DateTime     @updatedAt
   trade_name       String?
+  address          String?
   
   auto_confirm_appointments     Boolean @default(true)
   schedule_generation_type      String  @default("automatic")

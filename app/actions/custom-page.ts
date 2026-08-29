@@ -32,6 +32,7 @@ export async function updateCustomPageAction(data: {
   professionalSiteConfig?: any;
   profileConfig?: any;
   globalContactWhatsapp?: string;
+  globalLocationAddress?: string;
 }) {
   try {
     // Sanitização de links contra XSS

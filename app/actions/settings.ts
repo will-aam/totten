@@ -17,6 +17,7 @@ export async function updateSettingsAction(data: {
   scheduleGenerationType?: string;
   allowOverLimitAppointments?: boolean;
   defaultScheduleView?: string;
+  address?: string;
 }) {
   try {
     // 🛡️ Validação unificada de sessão e extração do tenant

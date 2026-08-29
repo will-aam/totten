@@ -120,11 +120,58 @@ export function ProHistory({ data, onChange, profile }: { data: any, onChange: (
             )}
           </div>
 
-          {/* History Image Notice */}
-          <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
-            <p className="text-sm text-primary font-medium text-center">
-              A Imagem da História (Capa) agora é gerenciada na aba <strong>Galeria de Imagens</strong>.
-            </p>
+          {/* History Image */}
+          <div className="flex items-center gap-4 border border-border/50 p-4 rounded-lg bg-muted/20">
+            <div className="h-20 w-32 rounded-md bg-muted border-2 border-dashed border-border flex items-center justify-center relative overflow-hidden group cursor-pointer hover:bg-muted/80 transition-colors shrink-0">
+              {data?.historyImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={data.historyImage} alt="História" className="w-full h-full object-cover" />
+              ) : (
+                <BookOpen className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
+              )}
+              {isUploading && (
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-xl z-20">
+                  <LoaderLines className="w-6 h-6 text-white animate-spin" />
+                </div>
+              )}
+              <input
+                type="file"
+                accept="image/png, image/jpeg"
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                onChange={handleHistoryImageUpload}
+                disabled={isUploading}
+              />
+            </div>
+            <div className="flex flex-col gap-2 w-full max-w-sm">
+              <div className="flex flex-col">
+                <p className="font-medium text-xs text-foreground">Imagem da História (Capa)</p>
+                <p className="text-[11px] text-muted-foreground">Ilustra a seção sobre você ou seu espaço.</p>
+              </div>
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2 items-center">
+                  <label className="text-[11px] font-semibold text-primary hover:underline w-fit cursor-pointer">
+                    Fazer upload
+                    <input
+                      type="file"
+                      accept="image/png, image/jpeg"
+                      className="hidden"
+                      onChange={handleHistoryImageUpload}
+                    />
+                  </label>
+                  {data?.historyImage && (
+                    <button onClick={() => onChange({ ...data, historyImage: "" })} className="text-[11px] font-semibold text-destructive hover:underline w-fit">
+                      Remover
+                    </button>
+                  )}
+                </div>
+                <Input
+                  value={data?.historyImage || ""}
+                  onChange={(e) => onChange({ ...data, historyImage: e.target.value })}
+                  className="bg-background h-8 text-xs focus-visible:ring-1"
+                  placeholder="Ou cole a URL da imagem aqui..."
+                />
+              </div>
+            </div>
           </div>
 
           {/* Métricas / Estatísticas */}

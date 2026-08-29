@@ -21,6 +21,7 @@ export class SettingsService {
       document: settings.document || "",
       contactPhone: settings.phone_landline || "",
       whatsapp: settings.phone_whatsapp || "",
+      address: settings.address || "",
       email: settings.email_admin || "",
       openingTime: settings.opening_time,
       closingTime: settings.closing_time,
@@ -56,6 +57,7 @@ export class SettingsService {
     if (data.contactPhone !== undefined)
       updateData.phone_landline = data.contactPhone;
     if (data.whatsapp !== undefined) updateData.phone_whatsapp = data.whatsapp;
+    if (data.address !== undefined) updateData.address = data.address;
     if (data.openingTime !== undefined)
       updateData.opening_time = data.openingTime;
     if (data.closingTime !== undefined)

@@ -21,8 +21,6 @@ import {
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
-import { ImageGalleryForm } from "./_components/image-gallery-form";
-
 
 const MobileGlobe = ({ pack, ...props }: any) => <Cog {...props} />;
 const MobileLink = ({ pack, ...props }: any) => <Link {...props} />;
@@ -171,6 +169,7 @@ export default function CustomPage() {
     bio: "Especialistas em relaxamento e estética avançada. Agende seu horário!",
     image: "", // Novo estado para a foto de perfil
     bannerImage: "",
+    logo: "",
     layout: "classic", // 'classic', 'banner', 'header'
   });
   const [theme, setTheme] = useState({
@@ -195,6 +194,13 @@ export default function CustomPage() {
   const [socials, setSocials] = useState({
     activePlatforms: ["whatsapp", "instagram"],
     values: { whatsapp: "", instagram: "" },
+    visibility: {
+      whatsapp: { site: false, booking: false, bio: false },
+      instagram: { site: false, booking: false, bio: false },
+      facebook: { site: false, booking: false, bio: false },
+      youtube: { site: false, booking: false, bio: false },
+      website: { site: false, booking: false, bio: false }
+    },
     position: "top", // 'top' ou 'bottom'
     style: "circle", // 'circle' ou 'transparent'
     size: "medium", // 'small', 'medium', 'large'
@@ -240,6 +246,10 @@ export default function CustomPage() {
                 whatsapp: data.organization.settings.phone_whatsapp || "",
                 phone: data.organization.settings.phone_landline || ""
               });
+              setGlobalLocation((prev: any) => ({
+                ...prev,
+                address: data.organization.settings.address || prev.address
+              }));
             }
           } else if (data.profile_image_url || data.bio_text) {
             setProfile(prev => ({
@@ -309,6 +319,7 @@ export default function CustomPage() {
               ...prev,
               activePlatforms: sl.activePlatforms || prev.activePlatforms,
               values: sl.values || prev.values,
+              visibility: sl.visibility || prev.visibility,
               position: sl.position || prev.position,
               style: sl.style || prev.style,
               size: sl.size || prev.size
@@ -387,7 +398,8 @@ export default function CustomPage() {
           size: socials.size,
           links: links
         },
-        globalContactWhatsapp: globalContact.whatsapp
+        globalContactWhatsapp: globalContact.whatsapp,
+        globalLocationAddress: globalLocation.address
       });
 
       if (response.success) {
@@ -445,6 +457,13 @@ export default function CustomPage() {
   };
 
 
+  const isGlobalSettingsValid = () => {
+    if (!profile.name || profile.name.trim().length < 3) return false;
+    if (!profile.image || !profile.bannerImage || !profile.logo) return false;
+    return true;
+  };
+  
+  const globalValid = isGlobalSettingsValid();
 
   return (
     <>
@@ -462,19 +481,22 @@ export default function CustomPage() {
             </TabsTrigger>
             <TabsTrigger
               value="link-bio"
-              className="flex items-center gap-2 py-2 rounded-lg"
+              disabled={!globalValid}
+              className="flex items-center gap-2 py-2 rounded-lg disabled:opacity-50"
             >
               <Link size="sm" /> Link na Bio
             </TabsTrigger>
             <TabsTrigger
               value="professional-site"
-              className="flex items-center gap-2 py-2 rounded-lg"
+              disabled={!globalValid}
+              className="flex items-center gap-2 py-2 rounded-lg disabled:opacity-50"
             >
               <GlobeAmericas size="sm" /> Site
             </TabsTrigger>
             <TabsTrigger
               value="booking-site"
-              className="flex items-center gap-2 py-2 rounded-lg"
+              disabled={!globalValid}
+              className="flex items-center gap-2 py-2 rounded-lg disabled:opacity-50"
             >
               <Calendar size="sm" /> Agenda
             </TabsTrigger>
@@ -488,7 +510,13 @@ export default function CustomPage() {
               { id: "booking-site", label: "Agenda", icon: MobileCalendar },
             ]}
             activeId={activeTab}
-            onChange={(id) => setActiveTab(id as any)}
+            onChange={(id) => {
+              if (id !== "global" && !globalValid) {
+                toast.error("Preencha as configurações globais obrigatórias (Nome e Imagens) primeiro.");
+                return;
+              }
+              setActiveTab(id as any);
+            }}
           />
 
           <TabsContent value="global" className="mt-0">
