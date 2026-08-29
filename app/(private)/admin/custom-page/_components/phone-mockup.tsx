@@ -13,6 +13,7 @@ interface PhoneMockupProps {
   activeTab: "global" | "link-bio" | "professional-site" | "booking-site";
   proSiteConfig: any;
   previewKey?: number;
+  isFullScreen?: boolean;
 }
 
 export function PhoneMockup({
@@ -23,12 +24,13 @@ export function PhoneMockup({
   activeTab,
   proSiteConfig,
   previewKey = 0,
+  isFullScreen = false,
 }: PhoneMockupProps) {
   const [localKey, setLocalKey] = useState(0);
 
   if (!profile?.slug) {
     return (
-      <div className="relative mx-auto flex items-center justify-center bg-black rounded-[3rem] border-8 border-black" style={{ width: "320px", height: "650px" }}>
+      <div className={cn("relative mx-auto flex items-center justify-center bg-black", isFullScreen ? "w-full h-full" : "rounded-[3rem] border-8 border-black w-[320px] h-[650px]")}>
         <p className="text-white/50 text-sm">Carregando prévia...</p>
       </div>
     );
@@ -46,7 +48,7 @@ export function PhoneMockup({
     const iframeSrc = `${url}?t=${previewKey + localKey}`;
 
     return (
-      <div className="relative mx-auto" style={{ width: "320px", height: "650px" }}>
+      <div className={cn("relative mx-auto", isFullScreen ? "w-full h-full" : "w-[320px] h-[650px]")}>
         {/* Fake Notch Removed */}
 
         {/* Refresh button */}
@@ -58,7 +60,7 @@ export function PhoneMockup({
           <RefreshCw className="h-4 w-4" />
         </button>
 
-        <div className="w-[320px] h-[650px] bg-black rounded-[3rem] border-8 border-black relative overflow-hidden mx-auto flex">
+        <div className={cn("bg-black relative overflow-hidden mx-auto flex", isFullScreen ? "w-full h-full" : "w-[320px] h-[650px] rounded-[3rem] border-8 border-black")}>
           <iframe
             key={iframeSrc}
             src={iframeSrc}
@@ -141,7 +143,7 @@ export function PhoneMockup({
 
   const SocialIconsBlock = () => (
     <div className="flex flex-wrap justify-center w-full gap-1">
-      {socials?.activePlatforms?.map((platform: string) => (
+      {(socials?.activePlatforms || []).filter((platform: string) => socials?.visibility?.[platform]?.bio).map((platform: string) => (
         <div
           key={platform}
           className="rounded-full flex items-center justify-center hover:scale-110 transition-transform cursor-pointer p-2.5 bg-transparent"
@@ -186,7 +188,7 @@ export function PhoneMockup({
       <style>{`
       @import url('https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Oxanium:wght@400;500;600;700&family=Roboto:ital,wght@0,400;0,500;0,700;1,400&family=Sora:wght@400;500;600;700&display=swap');
     `}</style>
-      <div className="w-[320px] h-[650px] bg-black rounded-[3rem] border-8 border-black relative overflow-hidden mx-auto">
+      <div className={cn("bg-black relative overflow-hidden mx-auto", isFullScreen ? "w-full h-full" : "w-[320px] h-[650px] rounded-[3rem] border-8 border-black")}>
 
         {/* CAMADA DE FUNDO BASE */}
         <div

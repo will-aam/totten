@@ -184,7 +184,7 @@ export default async function PublicLinkBioPage({
 
   const SocialIconsBlock = () => (
     <div className="flex flex-wrap justify-center w-full gap-3">
-      {socials.activePlatforms.map((platform: string) => {
+      {(socials?.activePlatforms || []).filter((platform: string) => socials?.visibility?.[platform]?.bio).map((platform: string) => {
         const val = platform === "whatsapp" ? (org.settings?.phone_whatsapp || socials.values[platform]) : socials.values[platform];
         return (
           <a

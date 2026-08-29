@@ -897,20 +897,35 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                   <p className="text-sm opacity-60 leading-relaxed mb-6">
                     {presentation.subheadline || "Transformando vidas e oferecendo o melhor atendimento para você se sentir especial todos os dias."}
                   </p>
-                  {/* Redes sociais do link na bio */}
-                  {socialLinks && socialLinks.length > 0 && (
+                  {/* Redes sociais */}
+                  {socialLinks?.activePlatforms?.length > 0 && (
                     <div className="flex gap-3 flex-wrap">
-                      {socialLinks.map((link: any, i: number) => {
-                        const platform = link.platform?.toLowerCase() || "";
+                      {(socialLinks.activePlatforms || []).filter((platform: string) => socialLinks.visibility?.[platform]?.site).map((platform: string, i: number) => {
                         const Icon = SOCIAL_ICONS[platform] || Globe;
+                        const val = platform === "whatsapp" ? (contact?.phone || socialLinks.values?.[platform]) : socialLinks.values?.[platform];
+                        
+                        const getHref = (p: string, v: string) => {
+                           if (!v) return "#";
+                           if (p === "whatsapp") {
+                             let number = v.replace(/\D/g, "");
+                             if (number.length === 10 || number.length === 11) number = `55${number}`;
+                             return `https://wa.me/${number}`;
+                           }
+                           if (p === "instagram") return v.includes("instagram.com") ? v : `https://instagram.com/${v.replace("@", "")}`;
+                           if (p === "facebook") return v.includes("facebook.com") ? v : `https://facebook.com/${v}`;
+                           if (p === "youtube") return v.includes("youtube.com") ? v : `https://youtube.com/${v}`;
+                           if (v.startsWith("http")) return v;
+                           return `https://${v}`;
+                        };
+                        
                         return (
                           <a
                             key={i}
-                            href={sanitizeUrl(link.url)}
+                            href={sanitizeUrl(getHref(platform, val))}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
-                            title={link.platform}
+                            title={platform}
                           >
                             <Icon className="h-4 w-4" />
                           </a>

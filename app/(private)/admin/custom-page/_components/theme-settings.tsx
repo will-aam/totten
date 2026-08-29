@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export const SYSTEM_THEMES = [
   {
@@ -113,8 +114,7 @@ export function ThemeSettings({ data, onChange }: any) {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
-          <Palette className="h-5 w-5 text-primary" />
+        <h3 className="text-lg font-semibold text-foreground">
           Aparência e Temas
         </h3>
         <p className="text-sm text-muted-foreground mt-1">
@@ -125,9 +125,7 @@ export function ThemeSettings({ data, onChange }: any) {
       <div className="flex flex-col gap-6">
         {/* TEMAS DO SISTEMA */}
         <div className="flex flex-col gap-3">
-          <Label className="text-foreground font-medium">
-            Temas do Sistema
-          </Label>
+          <Label className="text-foreground font-semibold">2.1 Temas do Sistema</Label>
           <div className="flex overflow-x-auto sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 pb-2 no-scrollbar">
             {SYSTEM_THEMES.map((theme) => (
               <button
@@ -207,7 +205,7 @@ export function ThemeSettings({ data, onChange }: any) {
         {/* OPÇÕES DE CUSTOMIZAÇÃO DO WALLPAPER */}
         {data.id === "custom" && (
           <div className="flex flex-col gap-6 pt-2 animate-in fade-in slide-in-from-top-2">
-            <Label className="text-foreground font-medium">Seu Wallpaper Personalizado</Label>
+            <Label className="text-foreground font-semibold">2.2 Configuração do Fundo</Label>
 
             {/* Wallpaper Upload */}
             <div className="flex flex-col gap-2 mt-4">
@@ -239,17 +237,30 @@ export function ThemeSettings({ data, onChange }: any) {
             </div>
 
             {/* Efeitos de Fundo (Wallpaper) */}
-            <div className="flex flex-col gap-5 mt-2">
-              <Label className="text-sm font-medium text-foreground">Efeitos Adicionais</Label>
+            <div className="flex flex-col gap-3 mt-2">
+              <Label className="text-foreground font-semibold mb-1">2.3 Efeitos Adicionais</Label>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="flex items-center justify-between bg-muted/20 p-3 rounded-lg border border-border/50">
-                  <Label className="text-xs font-medium cursor-pointer" htmlFor="bg-noise-custom">Textura Granulada</Label>
-                  <Switch id="bg-noise-custom" checked={!!data.bgNoise} onCheckedChange={(checked) => onChange({ ...data, bgNoise: checked })} />
+              <div className="flex flex-col gap-3">
+                <div
+                  onClick={() => onChange({ ...data, bgNoise: !data.bgNoise })}
+                  className={cn(
+                    "flex items-center gap-3 bg-card hover:bg-muted/50 p-4 rounded-xl border transition-all cursor-pointer shadow-sm",
+                    data.bgNoise ? "border-primary bg-primary/5" : "border-border/50"
+                  )}
+                >
+                  <div className={cn(
+                    "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
+                    data.bgNoise ? "border-primary" : "border-muted-foreground/30"
+                  )}>
+                    {data.bgNoise && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                  </div>
+                  <Label className="text-sm font-medium cursor-pointer pointer-events-none">
+                    Textura Granulada
+                  </Label>
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <Label className="text-xs text-muted-foreground font-medium">Intensidade do Borrão (Blur)</Label>
+                <div className="flex flex-col gap-3 bg-card p-4 rounded-xl border border-border/50 shadow-sm">
+                  <Label className="text-sm font-medium">Intensidade do Borrão (Blur)</Label>
                   <Select
                     value={data.bgBlur === true ? "3xl" : (data.bgBlur || "none")}
                     onValueChange={(val) => onChange({ ...data, bgBlur: val })}
@@ -274,7 +285,7 @@ export function ThemeSettings({ data, onChange }: any) {
         {/* COR DO FUNDO SÓLIDO (Só aparece se o tema for Sólido) */}
         {data.id === "solid" && (
           <div className="flex flex-col gap-6 pt-2 animate-in fade-in slide-in-from-top-2">
-            <Label className="text-foreground font-medium">Estilo de Papel de Parede</Label>
+            <Label className="text-foreground font-semibold">2.2 Configuração do Fundo</Label>
 
             {/* Preenchimento: Sólido ou Gradiente e Direção */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -347,16 +358,30 @@ export function ThemeSettings({ data, onChange }: any) {
             </div>
 
             {/* Efeitos de Fundo */}
-            <div className="flex flex-col gap-5 mt-2">
-              <Label className="text-sm font-medium text-foreground">Efeitos Adicionais</Label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="flex items-center justify-between bg-muted/20 p-3 rounded-lg border border-border/50">
-                  <Label className="text-xs font-medium cursor-pointer" htmlFor="bg-noise-solid">Textura Granulada</Label>
-                  <Switch id="bg-noise-solid" checked={!!data.bgNoise} onCheckedChange={(checked) => onChange({ ...data, bgNoise: checked })} />
+            <div className="flex flex-col gap-3 mt-2">
+              <Label className="text-foreground font-semibold mb-1">2.3 Efeitos Adicionais</Label>
+              
+              <div className="flex flex-col gap-3">
+                <div
+                  onClick={() => onChange({ ...data, bgNoise: !data.bgNoise })}
+                  className={cn(
+                    "flex items-center gap-3 bg-card hover:bg-muted/50 p-4 rounded-xl border transition-all cursor-pointer shadow-sm",
+                    data.bgNoise ? "border-primary bg-primary/5" : "border-border/50"
+                  )}
+                >
+                  <div className={cn(
+                    "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
+                    data.bgNoise ? "border-primary" : "border-muted-foreground/30"
+                  )}>
+                    {data.bgNoise && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                  </div>
+                  <Label className="text-sm font-medium cursor-pointer pointer-events-none">
+                    Textura Granulada
+                  </Label>
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <Label className="text-xs text-muted-foreground font-medium">Intensidade do Borrão (Blur)</Label>
+                <div className="flex flex-col gap-3 bg-card p-4 rounded-xl border border-border/50 shadow-sm">
+                  <Label className="text-sm font-medium">Intensidade do Borrão (Blur)</Label>
                   <Select
                     value={data.bgBlur === true ? "3xl" : (data.bgBlur || "none")}
                     onValueChange={(val) => onChange({ ...data, bgBlur: val })}
@@ -384,8 +409,8 @@ export function ThemeSettings({ data, onChange }: any) {
 
           <div className="flex flex-wrap gap-6">
             <div className="flex flex-col gap-2">
-              <Label className="text-xs text-muted-foreground">
-                Cor do Texto Geral
+              <Label className="text-foreground font-semibold">
+                2.4 Cor do Texto Geral
               </Label>
               <div className="flex items-center gap-2">
                 <div className="relative h-8 w-8 rounded-full overflow-hidden border border-border/50 shadow-sm cursor-pointer">
@@ -408,8 +433,8 @@ export function ThemeSettings({ data, onChange }: any) {
 
         {/* ESTILO DOS BOTÕES */}
         <div className="flex flex-col gap-5 pt-2">
-          <Label className="text-foreground font-medium flex items-center gap-2">
-            Estilo dos Botões
+          <Label className="text-foreground font-semibold flex items-center gap-2">
+            2.5 Estilo dos Botões
           </Label>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -539,3 +564,4 @@ export function ThemeSettings({ data, onChange }: any) {
     </div>
   );
 }
+

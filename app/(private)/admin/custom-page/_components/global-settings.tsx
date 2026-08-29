@@ -35,12 +35,14 @@ const SocialVisibilityToggles = ({ platformId, socials, setSocials, hasValue }: 
   const vis = socials?.visibility?.[platformId] || { site: false, booking: false, bio: false };
   const updateVis = (field: string, val: boolean) => {
     if (!setSocials || !hasValue) return;
+    const isNew = !socials.activePlatforms?.includes(platformId);
     setSocials({
       ...socials,
       visibility: {
         ...(socials.visibility || {}),
         [platformId]: { ...vis, [field]: val }
-      }
+      },
+      activePlatforms: isNew ? [...(socials.activePlatforms || []), platformId] : socials.activePlatforms
     });
   };
 
@@ -172,7 +174,12 @@ export function GlobalSettings({
 }: any) {
   const handleValueChange = (id: string, text: string) => {
     if (setSocials && socials) {
-      setSocials({ ...socials, values: { ...socials.values, [id]: text } });
+      const isNew = !socials.activePlatforms?.includes(id);
+      setSocials({ 
+        ...socials, 
+        values: { ...socials.values, [id]: text },
+        activePlatforms: isNew && text.trim() !== "" ? [...(socials.activePlatforms || []), id] : socials.activePlatforms
+      });
     }
   };
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);

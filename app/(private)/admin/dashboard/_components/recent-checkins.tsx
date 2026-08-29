@@ -176,7 +176,7 @@ export function RecentCheckIns() {
         </div>
       </CardContent>
 
-      <CardFooter className="p-1 flex justify-center bg-muted/5 rounded-b-xl">
+      <CardFooter className="p-1 flex justify-center rounded-b-xl">
         <Link
           href="/admin/history"
           className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors flex items-center py-1"

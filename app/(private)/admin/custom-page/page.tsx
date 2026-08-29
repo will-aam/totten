@@ -378,7 +378,8 @@ export default function CustomPage() {
           position: socials.position,
           style: socials.style,
           size: socials.size,
-          links: links
+          links: links,
+          visibility: socials.visibility
         },
         globalContactWhatsapp: globalContact.whatsapp,
         globalLocationAddress: globalLocation.address
@@ -536,7 +537,7 @@ export default function CustomPage() {
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-10 mt-2">
+                <div className="flex flex-col gap-10 mt-2 lg:h-[calc(100vh-360px)] lg:overflow-y-auto custom-scrollbar lg:pr-4 pb-20">
                   {STEPS.map((step, index) => (
                     <div key={step.id} id={`step-${step.id}`} className="flex flex-col gap-2 scroll-m-20 p-5 border border-border/50 rounded-xl bg-card shadow-sm">
                       <div className="flex items-center gap-2 mb-2">
@@ -584,8 +585,8 @@ export default function CustomPage() {
         </Tabs>
       </div>
 
-      {/* Desktop Fixed Floating Save Button */}
-      <div className="hidden md:flex fixed bottom-8 right-8 z-50">
+      {/* Fixed Floating Save Button (Mobile & Desktop) */}
+      <div className="flex fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50">
         <Button
           onClick={handleSave}
           disabled={isSaving || !globalValid}
@@ -608,32 +609,29 @@ export default function CustomPage() {
 
       {/* MODAL DE PREVIEW MOBILE */}
       <Dialog open={showMobilePreview} onOpenChange={setShowMobilePreview}>
-        <DialogContent className="w-screen h-dvh max-w-none bg-background/95 backdrop-blur-md border-0 p-0 m-0 flex flex-col rounded-none z-50">
+        <DialogContent className="w-screen h-dvh max-w-none bg-black border-0 p-0 m-0 flex flex-col rounded-none z-[100] overflow-hidden">
           <DialogTitle className="sr-only">Preview do Celular</DialogTitle>
-          <div className="flex items-center justify-between p-4 bg-background/80 backdrop-blur-md z-50 absolute top-0 w-full">
-            <span className="font-semibold text-foreground">
-              Preview ao vivo
-            </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowMobilePreview(false)}
-              className="rounded-full bg-muted/50"
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
-          <div className="flex-1 flex items-center justify-center overflow-hidden pt-12">
-            <div className="scale-90 origin-center">
-              <PhoneMockup
-                profile={profile}
-                theme={theme}
-                socials={socials}
-                links={links}
-                activeTab={activeTab}
-                proSiteConfig={proSiteConfig}
-              />
-            </div>
+
+          {/* BOTÃO FECHAR FLUTUANTE POR CIMA */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowMobilePreview(false)}
+            className="absolute top-4 right-4 z-[999] rounded-full bg-black/40 text-white hover:bg-black/60 backdrop-blur-md"
+          >
+            <X className="h-6 w-6" />
+          </Button>
+
+          <div className="w-full h-full overflow-hidden">
+            <PhoneMockup
+              profile={profile}
+              theme={theme}
+              socials={socials}
+              links={links}
+              activeTab={activeTab}
+              proSiteConfig={proSiteConfig}
+              isFullScreen={true}
+            />
           </div>
         </DialogContent>
       </Dialog>

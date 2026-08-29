@@ -16,7 +16,7 @@ import {
   Copy,
 
 } from "lucide-react";
-import { Heart, ArrowLeft, ArrowRight, Check } from "@boxicons/react";
+import { Heart, ArrowLeft, ArrowRight, Check, Instagram, Facebook, Youtube, Whatsapp, Globe } from "@boxicons/react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -137,6 +137,7 @@ export function ClientAgendarView({ org }: { org: any }) {
   const mutedTextClass = isDark ? "text-white/70" : "text-slate-600";
 
   const professionals = org.professionals || [];
+  const socialLinks = (org.link_bio?.social_links as any) || {};
 
   const getFilteredServices = () => {
     const allServices = org.services || [];
@@ -475,7 +476,47 @@ export function ClientAgendarView({ org }: { org: any }) {
           </div>
 
           {/* Simple Footer */}
-          <footer className="p-6 pb-10 border-t mt-auto" style={{ borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }}>
+          <footer className="p-6 pb-10 border-t mt-auto flex flex-col items-center gap-4" style={{ borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }}>
+            {socialLinks?.activePlatforms?.length > 0 && (
+              <div className="flex gap-3 flex-wrap justify-center">
+                {(socialLinks.activePlatforms || []).filter((platform: string) => socialLinks.visibility?.[platform]?.booking).map((platform: string, i: number) => {
+                  let Icon = Globe;
+                  if (platform === "whatsapp") Icon = Whatsapp;
+                  if (platform === "instagram") Icon = Instagram;
+                  if (platform === "facebook") Icon = Facebook;
+                  if (platform === "youtube") Icon = Youtube;
+
+                  const val = platform === "whatsapp" ? (globalContact?.phone || socialLinks.values?.[platform]) : socialLinks.values?.[platform];
+                  
+                  const getHref = (p: string, v: string) => {
+                     if (!v) return "#";
+                     if (p === "whatsapp") {
+                       let number = v.replace(/\D/g, "");
+                       if (number.length === 10 || number.length === 11) number = `55${number}`;
+                       return `https://wa.me/${number}`;
+                     }
+                     if (p === "instagram") return v.includes("instagram.com") ? v : `https://instagram.com/${v.replace("@", "")}`;
+                     if (p === "facebook") return v.includes("facebook.com") ? v : `https://facebook.com/${v}`;
+                     if (p === "youtube") return v.includes("youtube.com") ? v : `https://youtube.com/${v}`;
+                     if (v.startsWith("http")) return v;
+                     return `https://${v}`;
+                  };
+                  
+                  return (
+                    <a
+                      key={i}
+                      href={sanitizeUrl(getHref(platform, val))}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-9 h-9 rounded-full bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20 flex items-center justify-center transition-colors"
+                      title={platform}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </a>
+                  );
+                })}
+              </div>
+            )}
             <p className="text-center text-xs opacity-50 font-medium">
               &copy; {new Date().getFullYear()} {org.name}. Todos os direitos reservados.
             </p>
