@@ -110,10 +110,12 @@ export class SettingsService {
         select: { 
           terms_of_use: true, 
           future_booking_limit_days: true,
-
-
+          opening_time: true,
+          closing_time: true,
+          schedule_generation_type: true,
           booking_theme: true,
-          booking_primary_color: true
+          booking_primary_color: true,
+          allow_over_limit_appointments: true
         },
       }),
       prisma.scheduleRule.findMany({
@@ -129,9 +131,12 @@ export class SettingsService {
     return {
       termsOfUse: settings?.terms_of_use || "",
       futureBookingLimitDays: settings?.future_booking_limit_days ?? 30,
-
+      openingTime: settings?.opening_time || "08:00",
+      closingTime: settings?.closing_time || "19:00",
+      scheduleGenerationType: settings?.schedule_generation_type || "fixed_30",
       bookingTheme: settings?.booking_theme || "light",
       bookingPrimaryColor: settings?.booking_primary_color || "#0f172a",
+      allowOverLimitAppointments: settings?.allow_over_limit_appointments ?? false,
 
       scheduleRules: scheduleRules.map((rule) => ({
         id: rule.id,
@@ -169,20 +174,23 @@ export class SettingsService {
       if (
         data.termsOfUse !== undefined ||
         data.futureBookingLimitDays !== undefined ||
-
-
+        data.openingTime !== undefined ||
+        data.closingTime !== undefined ||
+        data.scheduleGenerationType !== undefined ||
         data.bookingTheme !== undefined ||
-        data.bookingPrimaryColor !== undefined
+        data.bookingPrimaryColor !== undefined ||
+        data.allowOverLimitAppointments !== undefined
       ) {
         const updateData: any = {};
         if (data.termsOfUse !== undefined) updateData.terms_of_use = data.termsOfUse;
         if (data.futureBookingLimitDays !== undefined) updateData.future_booking_limit_days = data.futureBookingLimitDays;
-
+        if (data.openingTime !== undefined) updateData.opening_time = data.openingTime;
+        if (data.closingTime !== undefined) updateData.closing_time = data.closingTime;
+        if (data.scheduleGenerationType !== undefined) updateData.schedule_generation_type = data.scheduleGenerationType;
         
         if (data.bookingTheme !== undefined) updateData.booking_theme = data.bookingTheme;
         if (data.bookingPrimaryColor !== undefined) updateData.booking_primary_color = data.bookingPrimaryColor;
-
-
+        if (data.allowOverLimitAppointments !== undefined) updateData.allow_over_limit_appointments = data.allowOverLimitAppointments;
 
         await tx.settings.update({
           where: { organization_id: organizationId },

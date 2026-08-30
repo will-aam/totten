@@ -37,10 +37,7 @@ import {
 import { clearTodayAgenda } from "@/app/actions/appointments";
 
 export type ScheduleSettings = {
-  openingTime: string;
-  closingTime: string;
   autoConfirmAppointments?: boolean;
-  scheduleGenerationType?: string;
   allowOverLimitAppointments?: boolean;
   defaultScheduleView?: string;
 };
@@ -66,10 +63,7 @@ export const ScheduleSettingsModal = memo(
     onSave,
     onClearToday,
   }: ScheduleSettingsModalProps) => {
-    const [openingTime, setOpeningTime] = useState(initialSettings.openingTime);
-    const [closingTime, setClosingTime] = useState(initialSettings.closingTime);
-    const [autoConfirmAppointments, setAutoConfirmAppointments] = useState(initialSettings.autoConfirmAppointments ?? true);
-    const [scheduleGenerationType, setScheduleGenerationType] = useState(initialSettings.scheduleGenerationType || "automatic");
+    const [autoConfirmAppointments, setAutoConfirmAppointments] = useState(initialSettings.autoConfirmAppointments ?? false);
     const [allowOverLimitAppointments, setAllowOverLimitAppointments] = useState(initialSettings.allowOverLimitAppointments ?? false);
     const [defaultScheduleView, setDefaultScheduleView] = useState(initialSettings.defaultScheduleView || "day");
 
@@ -81,28 +75,17 @@ export const ScheduleSettingsModal = memo(
     // Sincroniza quando o modal abre (caso o initialSettings mude no banco)
     useEffect(() => {
       if (open) {
-        setOpeningTime(initialSettings.openingTime);
-        setClosingTime(initialSettings.closingTime);
-        setAutoConfirmAppointments(initialSettings.autoConfirmAppointments ?? true);
-        setScheduleGenerationType(initialSettings.scheduleGenerationType || "automatic");
+        setAutoConfirmAppointments(initialSettings.autoConfirmAppointments ?? false);
         setAllowOverLimitAppointments(initialSettings.allowOverLimitAppointments ?? false);
         setDefaultScheduleView(initialSettings.defaultScheduleView || "day");
       }
     }, [open, initialSettings]);
 
     const handleConfirm = async () => {
-      if (closingTime <= openingTime) {
-        toast.error("O fechamento deve ser após a abertura.");
-        return;
-      }
-
       setIsSaving(true);
       try {
         await onSave({
-          openingTime,
-          closingTime,
           autoConfirmAppointments,
-          scheduleGenerationType,
           allowOverLimitAppointments,
           defaultScheduleView
         });
@@ -164,104 +147,12 @@ export const ScheduleSettingsModal = memo(
                 </p>
               </div>
               <Switch
-                disabled
                 checked={autoConfirmAppointments}
                 onCheckedChange={setAutoConfirmAppointments}
               />
             </div>
 
-            {/* Faixa de Horários */}
-            <div className="space-y-3">
-              <div className="space-y-1 text-sm">
-                <Label className="font-bold text-foreground">Faixa de horários da agenda</Label>
-                <p className="text-muted-foreground text-xs">
-                  Define quais horários serão exibidos na agenda. Não altera seu horário de atendimento.
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">
-                    Início da grade
-                  </Label>
-                  <Select value={openingTime} onValueChange={setOpeningTime}>
-                    <SelectTrigger className="rounded-xl bg-muted/40 border-none h-11 font-bold">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl">
-                      {HOUR_SLOTS.map((slot) => (
-                        <SelectItem key={slot} value={slot} className="rounded-lg">
-                          {slot}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
 
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">
-                    Fim da grade
-                  </Label>
-                  <Select value={closingTime} onValueChange={setClosingTime}>
-                    <SelectTrigger className="rounded-xl bg-muted/40 border-none h-11 font-bold">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl">
-                      {HOUR_SLOTS.map((slot) => (
-                        <SelectItem key={slot} value={slot} className="rounded-lg">
-                          {slot}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-
-            {/* Horários da Grade */}
-            <div className="space-y-3">
-              <div className="space-y-1 text-sm">
-                <Label className="font-bold text-foreground">Horários da grade</Label>
-                <p className="text-muted-foreground text-xs">
-                  Como os horários disponíveis são gerados.
-                </p>
-              </div>
-              <Select
-                disabled
-                value={scheduleGenerationType === "automatic" ? "automatic" : "fixed"}
-                onValueChange={(val) => {
-                  if (val === "automatic") setScheduleGenerationType("automatic");
-                  else if (scheduleGenerationType === "automatic") setScheduleGenerationType("fixed_30");
-                }}
-              >
-                <SelectTrigger className="rounded-xl bg-muted/40 border-none h-11 font-bold">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="rounded-2xl">
-                  <SelectItem value="automatic" className="rounded-lg">Automática</SelectItem>
-                  <SelectItem value="fixed" className="rounded-lg">Intervalos fixos</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {scheduleGenerationType !== "automatic" && (
-                <div className="pt-2 animate-in fade-in slide-in-from-top-2">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1 mb-1.5 block">
-                    Intervalo entre horários
-                  </Label>
-                  <Select disabled value={scheduleGenerationType} onValueChange={setScheduleGenerationType}>
-                    <SelectTrigger className="rounded-xl bg-muted/40 border-none h-11 font-bold">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl">
-                      <SelectItem value="fixed_10" className="rounded-lg">A cada 10 minutos</SelectItem>
-                      <SelectItem value="fixed_15" className="rounded-lg">A cada 15 minutos</SelectItem>
-                      <SelectItem value="fixed_20" className="rounded-lg">A cada 20 minutos</SelectItem>
-                      <SelectItem value="fixed_30" className="rounded-lg">A cada 30 minutos</SelectItem>
-                      <SelectItem value="fixed_60" className="rounded-lg">A cada 1 hora</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </div>
 
             {/* Permitir Ultrapassar */}
             <div className="flex items-start justify-between gap-4">
@@ -272,7 +163,6 @@ export const ScheduleSettingsModal = memo(
                 </p>
               </div>
               <Switch
-                disabled
                 checked={allowOverLimitAppointments}
                 onCheckedChange={setAllowOverLimitAppointments}
               />

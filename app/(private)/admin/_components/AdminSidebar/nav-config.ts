@@ -102,7 +102,7 @@ export const autoatendimentoSubItems: SubNavItem[] = [
   {
     title: "Solicitações Pendentes",
     href: "/admin/auto/requests",
-    active: false,
+    active: true,
   },
   {
     title: "Página Personalizada",
@@ -110,7 +110,7 @@ export const autoatendimentoSubItems: SubNavItem[] = [
     icon: LinkAlt as BoxIcon,
     active: true,
   },
-  { title: "Grades de Horários", href: "/admin/self-service", active: true },
+  { title: "Regras e Horários", href: "/admin/self-service", active: true },
   { title: "WhatsApp Automático", href: "/admin/whatsapp-auto", active: false },
 ];
 

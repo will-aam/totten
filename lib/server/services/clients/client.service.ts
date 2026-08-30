@@ -93,6 +93,7 @@ export class ClientService {
     search: string,
     activeParam: string | null,
     multiplePackages: boolean,
+    sourceParam?: string | null,
   ) {
     const prisma = getTenantPrisma(organizationId);
     const skip = (page - 1) * limit;
@@ -103,6 +104,10 @@ export class ClientService {
 
     if (activeParam === "true") {
       andConditions.push({ active: true });
+    }
+
+    if (sourceParam) {
+      andConditions.push({ source: sourceParam });
     }
 
     if (search) {
@@ -119,6 +124,21 @@ export class ClientService {
       });
     }
 
+    // Exclude SELF_SERVICE clients that don't have any non-pending appointments
+    const approvedSelfServiceCondition: Prisma.ClientWhereInput = {
+      OR: [
+        { source: { not: "SELF_SERVICE" } },
+        {
+          appointments: {
+            some: {
+              status: { in: ["CONFIRMADO", "REALIZADO"] }
+            }
+          }
+        }
+      ]
+    };
+    andConditions.push(approvedSelfServiceCondition);
+
     const whereClause: Prisma.ClientWhereInput = {
       AND: andConditions,
     };
@@ -133,6 +153,7 @@ export class ClientService {
       phone_whatsapp: true,
       email: true,
       active: true,
+      source: true,
       packages: {
         where: { active: true },
         select: {
@@ -212,6 +233,7 @@ export class ClientService {
         activePackagesCount: activePackages.length,
         hasHistory,
         hasAnamnesis: client._count.anamnesis_responses > 0,
+        source: client.source,
       };
     });
 

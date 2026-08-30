@@ -702,3 +702,128 @@ export async function registerManualNoShow(
     return { success: false, error: "Falha ao registrar a falta." };
   }
 }
+
+// --- 8. AUTO-AGENDAMENTO (PELO CLIENTE) ---
+export type CreateClientAppointmentInput = {
+  slug: string;
+  firstName: string;
+  phone: string;
+  email?: string;
+  serviceId?: string;
+  packageId?: string;
+  date: string; // ISO date or yyyy-MM-dd
+  time: string; // HH:mm
+  professionalId: string;
+  notes?: string;
+};
+
+export async function createClientAppointmentAction(input: CreateClientAppointmentInput) {
+  try {
+    const org = await prisma.organization.findUnique({
+      where: { slug: input.slug },
+      include: {
+        settings: true,
+      }
+    });
+
+    if (!org) {
+      return { success: false, error: "Organização não encontrada." };
+    }
+
+    const tenantPrisma = getTenantPrisma(org.id);
+
+    // Encontrar ou criar cliente
+    let client = await tenantPrisma.client.findFirst({
+      where: {
+        organization_id: org.id,
+        phone_whatsapp: input.phone,
+      },
+    });
+
+    if (!client) {
+      client = await tenantPrisma.client.create({
+        data: {
+          name: input.firstName,
+          phone_whatsapp: input.phone,
+          email: input.email || null,
+          organization_id: org.id,
+          source: "SELF_SERVICE"
+        },
+      });
+    }
+
+    let service = null;
+    if (input.serviceId) {
+      service = await tenantPrisma.service.findUnique({
+        where: { id: input.serviceId },
+      });
+    } else if (input.packageId) {
+      const pkg = await tenantPrisma.packageTemplate.findUnique({
+        where: { id: input.packageId },
+        include: { service: true }
+      });
+      service = pkg?.service || null;
+    }
+
+    if (!service) {
+      return { success: false, error: "Serviço não encontrado." };
+    }
+
+    // Se professionalId for "ANY", vamos pegar um profissional disponível? 
+    // O frontend já deve mandar o ID de um profissional (pode selecionar o primeiro disponível no frontend).
+    // Se ainda vier "ANY", pegamos qualquer um vinculado ao serviço.
+    let finalProfessionalId = input.professionalId;
+    if (finalProfessionalId === "ANY") {
+      const availablePros = await tenantPrisma.admin.findMany({
+        where: {
+          organizations: { some: { id: org.id } },
+          OR: [
+            { role: "OWNER" }, // Owner faz todos
+            { services: { some: { id: service.id } } }
+          ]
+        },
+      });
+      if (availablePros.length > 0) {
+        finalProfessionalId = availablePros[0].id;
+      }
+    }
+
+    // Date/Time parsing
+    const [year, month, day] = input.date.split("-").map(Number);
+    const [hours, minutes] = input.time.split(":").map(Number);
+    const appointmentDateTime = new Date(year, month - 1, day, hours, minutes);
+
+    const autoConfirm = org.settings?.auto_confirm_appointments ?? true;
+    const status = autoConfirm ? AppointmentStatus.CONFIRMADO : AppointmentStatus.PENDENTE;
+
+    const appointment = await tenantPrisma.appointment.create({
+      data: {
+        date_time: appointmentDateTime,
+        observations: input.notes,
+        status: status,
+        client_id: client.id,
+        service_id: service.id,
+        package_id: null, // Self-service booking of packages creates a NEW package, mas por enquanto vamos manter simples.
+        organization_id: org.id,
+        professional_id: finalProfessionalId,
+        snapshot_service_name: service.name,
+        snapshot_service_price: service.price,
+        snapshot_service_duration: service.duration,
+      },
+    });
+
+    revalidatePath("/admin/agenda");
+    revalidatePath("/admin/auto/requests");
+
+    // Return a plain object safely avoiding Prisma Decimal errors
+    return { 
+      success: true, 
+      appointment: JSON.parse(JSON.stringify(appointment)),
+      isPending: status === AppointmentStatus.PENDENTE 
+    };
+
+  } catch (error) {
+    console.error("Erro no autoagendamento:", error);
+    return { success: false, error: "Falha ao criar o agendamento." };
+  }
+}

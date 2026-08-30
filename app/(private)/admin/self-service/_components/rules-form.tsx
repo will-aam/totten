@@ -71,7 +71,10 @@ const timeSchema = z.object({
 
 const settingsSchema = z.object({
   futureBookingLimitDays: z.coerce.number().min(1, "Mínimo 1 dia"),
-
+  openingTime: z.string().optional(),
+  closingTime: z.string().optional(),
+  scheduleGenerationType: z.string().optional(),
+  allowOverLimitAppointments: z.boolean().default(false),
 });
 
 const scheduleRuleSchema = z.object({
@@ -253,7 +256,12 @@ function TimeRangeFields({
 }
 
 function MobileWeeklySchedule({ form }: { form: any }) {
-  const [selectedDays, setSelectedDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [selectedDays, setSelectedDays] = useState<number[]>(() => {
+    const schedule = form.getValues("schedule") || [];
+    return schedule
+      .filter((s: any) => s.isOpen)
+      .map((s: any) => s.dayOfWeek);
+  });
 
   const referenceDayIndex = selectedDays.length > 0 ? selectedDays[0] : 1;
   const referenceValues = form.watch(`schedule.${referenceDayIndex}`);
@@ -654,7 +662,10 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
     resolver: zodResolver(settingsSchema),
     defaultValues: {
       futureBookingLimitDays: initialData?.futureBookingLimitDays ?? 30,
-
+      openingTime: initialData?.openingTime || "08:00",
+      closingTime: initialData?.closingTime || "19:00",
+      scheduleGenerationType: initialData?.scheduleGenerationType || "fixed_30",
+      allowOverLimitAppointments: initialData?.allowOverLimitAppointments ?? false,
     },
   });
 
@@ -663,7 +674,10 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
     try {
       const response = await updateSelfServiceSettingsAction({
         futureBookingLimitDays: data.futureBookingLimitDays,
-
+        openingTime: data.openingTime,
+        closingTime: data.closingTime,
+        scheduleGenerationType: data.scheduleGenerationType,
+        allowOverLimitAppointments: data.allowOverLimitAppointments,
       } as any);
 
       if (!response.success) {
@@ -793,7 +807,96 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
                 )}
               />
 
+              <FormField
+                control={form.control}
+                name="scheduleGenerationType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-bold">Intervalo da Grade (Horários)</FormLabel>
+                    <CardDescription className="mb-2">
+                      Define de quanto em quanto tempo os horários aparecerão para o cliente (ex: a cada 15 min, 30 min).
+                    </CardDescription>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="rounded-xl bg-muted/40 border-none h-11 max-w-xs">
+                          <SelectValue placeholder="Selecione o intervalo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="fixed_10">A cada 10 minutos</SelectItem>
+                        <SelectItem value="fixed_15">A cada 15 minutos</SelectItem>
+                        <SelectItem value="fixed_20">A cada 20 minutos</SelectItem>
+                        <SelectItem value="fixed_30">A cada 30 minutos</SelectItem>
+                        <SelectItem value="fixed_60">A cada 60 minutos</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-lg">
+                <FormField
+                  control={form.control}
+                  name="openingTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-bold">Início da Grade (Global)</FormLabel>
+                      <CardDescription className="mb-2">
+                        Horário em que a agenda diária começa a ser exibida.
+                      </CardDescription>
+                      <FormControl>
+                        <Input
+                          type="time"
+                          className="rounded-xl bg-muted/40 border-none h-11"
+                          {...field}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="closingTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-bold">Fim da Grade (Global)</FormLabel>
+                      <CardDescription className="mb-2">
+                        Horário limite em que a agenda diária termina.
+                      </CardDescription>
+                      <FormControl>
+                        <Input
+                          type="time"
+                          className="rounded-xl bg-muted/40 border-none h-11"
+                          {...field}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="allowOverLimitAppointments"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-xl border p-4 shadow-sm bg-card">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base font-bold">
+                        Permitir agendamentos além do horário de fechamento
+                      </FormLabel>
+                      <CardDescription>
+                        Se o serviço durar 1h e o profissional fechar às 19:00, o cliente poderá agendar às 18:30 ou 19:00 (o modo padrão bloqueia esses horários).
+                      </CardDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
 
               <div className="flex justify-end pt-4">
                 <Button type="submit" size="lg" disabled={isPending} className="w-full sm:w-auto h-12 rounded-xl">

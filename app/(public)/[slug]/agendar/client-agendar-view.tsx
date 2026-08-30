@@ -25,7 +25,9 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { ptBR } from "date-fns/locale";
 import { format } from "date-fns";
 import { getAvailableTimesAndProfessionals } from "@/app/actions/availability";
+import { createClientAppointmentAction } from "@/app/actions/appointments";
 import { PRO_THEMES } from "@/app/(private)/admin/self-service/_components/booking-appearance-settings";
+import { toast } from "sonner";
 
 export function ClientAgendarView({ org }: { org: any }) {
   const router = useRouter();
@@ -69,6 +71,7 @@ export function ClientAgendarView({ org }: { org: any }) {
   // Booking Wizard State
   const [bookingWizardOpen, setBookingWizardOpen] = useState(false);
   const [bookingStep, setBookingStep] = useState(1);
+  const [isBooking, setIsBooking] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [bookingData, setBookingData] = useState({
     date: undefined as Date | undefined,
@@ -81,6 +84,17 @@ export function ClientAgendarView({ org }: { org: any }) {
     professionalImage: null as string | null,
     notes: "",
   });
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let v = e.target.value.replace(/\D/g, "");
+    if (v.length <= 10) {
+      v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
+      v = v.replace(/(\d{4})(\d)/g, "$1-$2");
+    } else {
+      v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
+      v = v.replace(/(\d{5})(\d)/g, "$1-$2");
+    }
+    setBookingData({ ...bookingData, phone: v.slice(0, 15) });
+  };
 
   const handleOpenBooking = (item: any) => {
     setSelectedItem(item);
@@ -91,7 +105,14 @@ export function ClientAgendarView({ org }: { org: any }) {
       professionalName: selectedProfessional?.name || null,
       professionalImage: selectedProfessional?.image_url || null,
     }));
-    setBookingStep(1);
+    
+    // Se tiver 'total_sessions', é um Pacote/Plano.
+    if (item.total_sessions !== undefined) {
+      setBookingStep(5);
+    } else {
+      setBookingStep(1);
+    }
+    
     setPolicyAccepted(false);
     setBookingWizardOpen(true);
   };
@@ -744,7 +765,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                     <Label>WhatsApp</Label>
                     <Input
                       value={bookingData.phone}
-                      onChange={e => setBookingData({ ...bookingData, phone: e.target.value })}
+                      onChange={handlePhoneChange}
                       placeholder="(00) 00000-0000"
                       className={cn(isDark ? "bg-black/20 border-white/10" : "")}
                     />
@@ -833,7 +854,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                       )}
                     </div>
 
-                    <label className="flex items-start gap-3 p-4 bg-muted/40 cursor-pointer hover:bg-muted/60 transition-colors mt-2">
+                    <label className="flex items-start gap-3 p-4 cursor-pointer hover:bg-muted/60 hover:bg- rounded-xl transition-colors mt-2">
                       <div className="mt-0.5">
                         <input
                           type="checkbox"
@@ -852,7 +873,7 @@ export function ClientAgendarView({ org }: { org: any }) {
             )}
 
             {/* STEP 4: Payment */}
-            {bookingStep === 4 && (
+            {bookingStep === 4 && previewGeneral?.requirePrepayment !== false && (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4 text-center">
 
                 <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-2 dark:bg-emerald-900/30 dark:text-emerald-400">
@@ -917,6 +938,54 @@ export function ClientAgendarView({ org }: { org: any }) {
               </div>
             )}
 
+            {/* STEP 5: Pacotes / Planos */}
+            {bookingStep === 5 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4 text-center pb-4">
+                <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mx-auto mb-2 dark:bg-blue-900/30 dark:text-blue-400">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <h3 className="font-bold text-xl px-4">Tudo certo!</h3>
+                <p className="text-sm opacity-70 px-6 mt-2 mb-6">
+                  Pacotes e planos são negociados diretamente com a nossa equipe. Clique no botão abaixo para conversar no WhatsApp e finalizar a aquisição do seu pacote.
+                </p>
+                <div className="px-6">
+                  <a
+                    href={`https://wa.me/${globalContact?.phone?.replace(/\D/g, '') || ""}?text=Ol%C3%A1%2C%20tenho%20interesse%20no%20pacote%2Fplano%20*${selectedItem?.name}*%20no%20valor%20de%20R%24%20${Number(selectedItem?.price || 0).toFixed(2)}.`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setBookingWizardOpen(false)}
+                    className="flex w-full items-center justify-center rounded-xl h-14 font-bold bg-[#25D366] hover:bg-[#25D366]/90 text-white transition-colors shadow-lg shadow-[#25D366]/20"
+                  >
+                    Falar via WhatsApp
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 6: Confirmação sem Pagamento (Sinal Desativado) */}
+            {bookingStep === 6 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4 text-center pb-4">
+                <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-2 dark:bg-emerald-900/30 dark:text-emerald-400">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <h3 className="font-bold text-xl px-4">Sua solicitação foi registrada!</h3>
+                <p className="text-sm opacity-70 px-6 mt-2 mb-6">
+                  Falta muito pouco! Para confirmar seu agendamento, entre em contato conosco através do WhatsApp clicando no botão abaixo.
+                </p>
+                <div className="px-6">
+                  <a
+                    href={`https://wa.me/${globalContact?.phone?.replace(/\D/g, '') || ""}?text=Ol%C3%A1%2C%20gostaria%20de%20avisar%20sobre%20meu%20agendamento%20do%20servi%C3%A7o%20*${selectedItem?.name}*%20para%20o%20dia%20*${bookingData.date ? format(bookingData.date, "dd/MM/yyyy") : ""}*%20%C3%A0s%20*${bookingData.time}*.%0A%0AMeus%20dados%3A%0ANome%3A%20${bookingData.firstName}%0ATelefone%3A%20${bookingData.phone}${bookingData.professionalName ? `%0AProfissional%3A%20${bookingData.professionalName}` : ""}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setBookingWizardOpen(false)}
+                    className="flex w-full items-center justify-center rounded-xl h-14 font-bold bg-[#25D366] hover:bg-[#25D366]/90 text-white transition-colors shadow-lg shadow-[#25D366]/20"
+                  >
+                    Confirmar via WhatsApp
+                  </a>
+                </div>
+              </div>
+            )}
+
           </div>
 
           {/* Footer Actions */}
@@ -945,31 +1014,73 @@ export function ClientAgendarView({ org }: { org: any }) {
 
             {bookingStep === 3 && (
               <Button
-                onClick={() => {
-                  if (previewGeneral?.requirePrepayment !== false) {
-                    setBookingStep(4);
-                  } else {
-                    const profNameText = bookingData.professionalName ? `%0AProfissional%3A%20${bookingData.professionalName}` : "";
-                    const waUrl = `https://wa.me/${globalContact?.phone?.replace(/\D/g, '') || ""}?text=Ol%C3%A1%2C%20gostaria%20de%20agendar%20o%20servi%C3%A7o%20*${selectedItem?.name}*%20para%20o%20dia%20*${bookingData.date ? format(bookingData.date, "dd/MM/yyyy") : ""}*%20%C3%A0s%20*${bookingData.time}*.%0A%0AMeus%20dados%3A%0ANome%3A%20${bookingData.firstName}%0ATelefone%3A%20${bookingData.phone}${profNameText}`;
-                    window.open(waUrl, '_blank');
-                    setBookingWizardOpen(false);
+                onClick={async () => {
+                  setIsBooking(true);
+                  try {
+                    const res = await createClientAppointmentAction({
+                      slug: org.slug,
+                      firstName: bookingData.firstName,
+                      phone: bookingData.phone,
+                      email: bookingData.email,
+                      serviceId: selectedItem?.id,
+                      packageId: selectedItem?.service ? selectedItem?.id : undefined,
+                      date: bookingData.date ? format(bookingData.date, "yyyy-MM-dd") : "",
+                      time: bookingData.time || "",
+                      professionalId: bookingData.professionalId || "ANY",
+                      notes: bookingData.notes,
+                    });
+
+                    if (!res.success) {
+                      toast.error(res.error || "Erro ao criar agendamento.");
+                      return;
+                    }
+
+                    if (previewGeneral?.requirePrepayment !== false) {
+                      setBookingStep(4);
+                    } else {
+                      if (res.isPending) {
+                        toast.success("Solicitação enviada com sucesso! Aguarde a confirmação.");
+                      } else {
+                        toast.success("Agendamento confirmado com sucesso!");
+                      }
+
+                      setBookingStep(6);
+                    }
+                  } catch (e) {
+                    toast.error("Ocorreu um erro ao processar.");
+                  } finally {
+                    setIsBooking(false);
                   }
                 }}
-                disabled={!policyAccepted}
+                disabled={!policyAccepted || isBooking}
                 className="w-full h-12 rounded-xl font-bold text-base"
-                style={!policyAccepted ? {} : { backgroundColor: theme.primaryColor, color: tc.buttonText || "#fff" }}
+                style={(!policyAccepted || isBooking) ? {} : { backgroundColor: theme.primaryColor, color: tc.buttonText || "#fff" }}
               >
-                {previewGeneral?.requirePrepayment !== false ? "Confirmar" : "Confirmar pelo WhatsApp"}
+                {isBooking ? (
+                  <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  previewGeneral?.requirePrepayment !== false ? "Confirmar" : "Solicitar Agendamento"
+                )}
               </Button>
             )}
 
-            {bookingStep === 4 && (
+            {bookingStep === 4 && previewGeneral?.requirePrepayment !== false && (
               <Button
                 onClick={() => { setBookingWizardOpen(false); }}
                 variant="outline"
                 className="w-full h-12 rounded-xl font-bold"
               >
                 Fechar
+              </Button>
+            )}
+
+            {(bookingStep === 5 || bookingStep === 6) && (
+              <Button
+                onClick={() => { setBookingWizardOpen(false); }}
+                variant="outline"
+                className="w-full h-12 rounded-xl font-bold"
+              >
+                Voltar
               </Button>
             )}
           </div>

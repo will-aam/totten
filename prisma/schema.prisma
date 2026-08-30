@@ -177,6 +177,7 @@ model Client {
   created_at          DateTime            @default(now())
   updated_at          DateTime            @updatedAt
   active              Boolean             @default(true)
+  source              String              @default("MANUAL")
   
   // Autenticação da Área do Cliente
   auth_code           String?

@@ -9,21 +9,21 @@ import { getClientHistoryByPhone } from "@/app/actions/public-client";
 
 import { logoutClientSession } from "@/app/actions/client-auth";
 
-export function ClientAreaView({ 
-  org, 
+export function ClientAreaView({
+  org,
   theme,
   initialHistory,
   initialClientName,
   error
-}: { 
-  org: any; 
+}: {
+  org: any;
   theme: any;
   initialHistory: any[];
   initialClientName: string;
   error?: string;
 }) {
   const router = useRouter();
-  
+
   const handleLogout = async () => {
     await logoutClientSession(org.slug);
     if (typeof window !== "undefined") {

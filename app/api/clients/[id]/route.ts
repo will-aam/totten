@@ -31,3 +31,29 @@ export async function GET(
   }
 }
 
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const admin = await requireAuth();
+    const { id } = await params;
+
+    const result = await ClientService.deleteClient(id, admin.organizationId);
+
+    return NextResponse.json(result);
+  } catch (error: any) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    if (error.message === "CLIENT_NOT_FOUND") {
+      return NextResponse.json(
+        { error: "Cliente não encontrado" },
+        { status: 404 },
+      );
+    }
+
+    console.error("[CLIENT_DELETE]", error);
+    return NextResponse.json({ error: "Erro no servidor ao excluir cliente" }, { status: 500 });
+  }
+}

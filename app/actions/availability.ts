@@ -66,8 +66,17 @@ export async function getAvailableTimesAndProfessionals(
 
     const baseOpening = org.settings?.opening_time || "08:00";
     const baseClosing = org.settings?.closing_time || "19:00";
+    const allowOverLimit = org.settings?.allow_over_limit_appointments ?? false;
+    const genType = org.settings?.schedule_generation_type || "fixed_30";
+    
+    let interval = 30;
+    if (genType === "automatic") {
+      interval = serviceDuration;
+    } else if (genType.startsWith("fixed_")) {
+      interval = parseInt(genType.replace("fixed_", ""), 10) || 30;
+    }
 
-    // Generate intervals for the day (e.g. every 30 mins from org opening to closing)
+    // Generate intervals for the day
     // We check each slot for each professional
     const generateSlots = (start: string, end: string, interval: number) => {
         const slots = [];
@@ -81,7 +90,7 @@ export async function getAvailableTimesAndProfessionals(
         return slots;
     };
 
-    const allDaySlots = generateSlots(baseOpening, baseClosing, 30); // 30 min intervals
+    const allDaySlots = generateSlots(baseOpening, baseClosing, interval);
 
     for (const timeStr of allDaySlots) {
       const slotStart = parse(timeStr, 'HH:mm', date);
@@ -124,7 +133,15 @@ export async function getAvailableTimesAndProfessionals(
         const proEnd = parse(closeTime, 'HH:mm', date);
 
         // Se o slot estiver fora do expediente do profissional
-        if (isBefore(slotStart, proStart) || isAfter(slotEnd, proEnd)) continue;
+        if (isBefore(slotStart, proStart)) continue;
+
+        if (allowOverLimit) {
+          // Se permite ultrapassar, o início do serviço só precisa ser antes do fechamento
+          if (isAfter(slotStart, proEnd) || isEqual(slotStart, proEnd)) continue;
+        } else {
+          // Se não permite, o serviço deve terminar antes ou exatamente no horário de fechamento
+          if (isAfter(slotEnd, proEnd)) continue;
+        }
 
         // Verifica conflito com intervalo (break)
         let conflictWithBreak = false;

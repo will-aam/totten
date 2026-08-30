@@ -237,7 +237,7 @@ export default function AgendaPage() {
     mutateAgenda();
   };
 
-  const handleSaveSettings = async (newSettings: AgendaSettings) => {
+  const handleSaveSettings = async (newSettings: Partial<AgendaSettings>) => {
     try {
       await apiClient("settings", {
         method: "PUT",
@@ -519,10 +519,7 @@ export default function AgendaPage() {
         open={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
         initialSettings={{
-          openingTime,
-          closingTime,
           autoConfirmAppointments: settings?.autoConfirmAppointments,
-          scheduleGenerationType: settings?.scheduleGenerationType,
           allowOverLimitAppointments: settings?.allowOverLimitAppointments,
           defaultScheduleView: settings?.defaultScheduleView,
         }}

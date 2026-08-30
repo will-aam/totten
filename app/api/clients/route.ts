@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "10", 10);
     const search = searchParams.get("q") || "";
     const activeParam = searchParams.get("active");
+    const sourceParam = searchParams.get("source");
     const multiplePackages = searchParams.get("multiple_packages") === "true";
 
     // Delega a busca, paginação e filtros pesados para a camada de serviço
@@ -25,6 +26,7 @@ export async function GET(request: NextRequest) {
       search,
       activeParam,
       multiplePackages,
+      sourceParam,
     );
 
     return NextResponse.json(result);
@@ -36,4 +38,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }
-

@@ -79,6 +79,7 @@ type Client = {
   hasHistory?: boolean;
   hasAnamnesis?: boolean;
   active: boolean;
+  source: string;
 };
 
 type ApiResponse = {
@@ -138,8 +139,19 @@ function ClientMobileItem({
           )}
         </div>
         <div className="flex flex-col">
-          <span className="text-sm font-semibold text-foreground leading-none mb-1.5">
+          <span className="text-sm font-semibold text-foreground leading-none mb-1.5 flex items-center gap-2">
             {client.name}
+            {client.source === "SELF_SERVICE" && (
+              <button
+                type="button"
+                className="inline-block w-2 h-2 rounded-full bg-blue-500 ml-1 transition-transform hover:scale-125"
+                title="Cadastrado via autoatendimento"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toast("Agendamento realizado via autoatendimento");
+                }}
+              />
+            )}
           </span>
           <span className="text-xs text-muted-foreground leading-none">
             {client.cpf}
@@ -231,11 +243,13 @@ function AdminClientsPageContent() {
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   const hasMultiplePackagesFilter = debouncedSearch.includes("**");
-  let cleanSearch = debouncedSearch.replace(/\*\*/g, "").trim();
+  const hasAutoagendamentoFilter = debouncedSearch.includes("++");
+  let cleanSearch = debouncedSearch.replace(/\*\*/g, "").replace(/\+\+/g, "").trim();
 
   // Chave sem prefixo /api: o apiClient já resolve o base path sozinho
   let apiUrl = `clients?page=${page}&limit=${ITEMS_PER_PAGE}`;
   if (hasMultiplePackagesFilter) apiUrl += `&multiple_packages=true`;
+  if (hasAutoagendamentoFilter) apiUrl += `&source=SELF_SERVICE`;
   if (cleanSearch.length >= 3)
     apiUrl += `&q=${encodeURIComponent(cleanSearch)}`;
 
@@ -365,13 +379,21 @@ function AdminClientsPageContent() {
               className={cn(
                 "bg-card pl-10 text-foreground rounded-full md:rounded-md shadow-sm border-border transition-all duration-300",
                 search.includes("**") && "pr-32 border-primary/50 bg-primary/5",
+                search.includes("++") && "pr-32 border-blue-500/50 bg-blue-500/5",
               )}
             />
-            {search.includes("**") && (
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold bg-primary text-primary-foreground px-2 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 animate-in zoom-in duration-300 pointer-events-none">
-                <Layers size="xs" /> Mais de 1 Pacote
-              </span>
-            )}
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 pointer-events-none">
+              {search.includes("**") && (
+                <span className="text-[10px] font-bold bg-primary text-primary-foreground px-2 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 animate-in zoom-in duration-300">
+                  <Layers size="xs" /> Mais de 1 Pacote
+                </span>
+              )}
+              {search.includes("++") && (
+                <span className="text-[10px] font-bold bg-blue-500 text-white px-2 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 animate-in zoom-in duration-300">
+                  <Mobile size="xs" /> Autoagendamento
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
@@ -565,7 +587,22 @@ function AdminClientsPageContent() {
                                 </div>
                               )}
                             </div>
-                            <span className="font-semibold">{client.name}</span>
+                            <div className="flex flex-col">
+                              <span className="font-semibold flex items-center gap-2">
+                                {client.name}
+                                {client.source === "SELF_SERVICE" && (
+                                  <button
+                                    type="button"
+                                    className="inline-block w-2 h-2 rounded-full bg-blue-500 ml-1 transition-transform hover:scale-125"
+                                    title="Cadastrado via autoatendimento"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toast("Agendamento realizado via autoatendimento");
+                                    }}
+                                  />
+                                )}
+                              </span>
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground">
@@ -651,7 +688,7 @@ function AdminClientsPageContent() {
                           className={page === 1 ? "pointer-events-none opacity-50" : ""}
                         />
                       </PaginationItem>
-                      
+
                       {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
                         if (
                           p === 1 ||
@@ -669,7 +706,7 @@ function AdminClientsPageContent() {
                             </PaginationItem>
                           );
                         }
-                        
+
                         if (p === page - 2 || p === page + 2) {
                           return (
                             <PaginationItem key={p}>

@@ -77,6 +77,10 @@ export async function getSelfServiceSettingsAction() {
 export async function updateSelfServiceSettingsAction(data: {
   termsOfUse?: string;
   futureBookingLimitDays?: number;
+  openingTime?: string;
+  closingTime?: string;
+  scheduleGenerationType?: string;
+  allowOverLimitAppointments?: boolean;
 
   bookingTheme?: string;
   bookingPrimaryColor?: string;
