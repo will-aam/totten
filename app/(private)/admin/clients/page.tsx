@@ -11,6 +11,7 @@ import { ImportClientsModal } from "./_components/import-clients-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useSession } from "next-auth/react";
 import {
   Table,
   TableBody,
@@ -95,12 +96,10 @@ function ClientMobileItem({
   client,
   onClick,
   onActionClick,
-  onShareClick,
 }: {
   client: Client;
   onClick: () => void;
   onActionClick: (c: Client, e: React.MouseEvent) => void;
-  onShareClick: (c: Client, e: React.MouseEvent) => void;
 }) {
   const initial = client.name.charAt(0).toUpperCase();
 
@@ -177,17 +176,6 @@ function ClientMobileItem({
           </div>
         )}
 
-        {/*  NOVO: Botão de Compartilhar Portal (Mobile) */}
-        {client.active && (
-          <button
-            onClick={(e) => onShareClick(client, e)}
-            className="p-2 rounded-full transition-all active:scale-95 text-blue-600 hover:text-blue-700 hover:bg-blue-500/10 active:bg-blue-500/20"
-            title="Compartilhar Portal com a Cliente"
-          >
-            <Share size="sm" />
-          </button>
-        )}
-
         <button
           onClick={(e) => onActionClick(client, e)}
           className={cn(
@@ -233,6 +221,8 @@ function AdminClientsPageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
+  const orgSlug = session?.user?.organizationSlug;
 
   const pageParam = searchParams.get("page");
   const page = pageParam ? parseInt(pageParam, 10) : 1;
@@ -453,6 +443,17 @@ function AdminClientsPageContent() {
 
             <Button
               asChild
+              variant="outline"
+              className="h-12 w-full sm:w-auto px-6 rounded-xl font-medium shadow-sm transition-all border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+            >
+              <Link href={orgSlug ? `/${orgSlug}/login` : "#"} target="_blank">
+                <Share className="mr-2 h-4 w-4" />
+                Área do Cliente
+              </Link>
+            </Button>
+
+            <Button
+              asChild
               className="h-12 w-full sm:w-auto px-8 rounded-xl font-medium shadow-sm transition-all"
             >
               <Link href="/admin/clients/new">
@@ -520,7 +521,6 @@ function AdminClientsPageContent() {
                     client={client}
                     onClick={() => router.push(`/admin/clients/${client.id}`)}
                     onActionClick={handleActionClick}
-                    onShareClick={handleSharePortal}
                   />
                 ))}
               </div>
@@ -635,16 +635,6 @@ function AdminClientsPageContent() {
                         </TableCell>
                         <TableCell className="text-center">
                           <div className="flex justify-center items-center gap-1">
-                            {/*  NOVO: Botão de Compartilhar Portal (Desktop) */}
-                            {client.active && (
-                              <button
-                                onClick={(e) => handleSharePortal(client, e)}
-                                className="p-2 rounded-full transition-all active:scale-95 text-blue-600 hover:text-blue-700 hover:bg-blue-500/10 active:bg-blue-500/20"
-                                title="Compartilhar Portal com a Cliente"
-                              >
-                                <Share size="sm" />
-                              </button>
-                            )}
 
                             <button
                               onClick={(e) => handleActionClick(client, e)}

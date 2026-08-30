@@ -152,3 +152,51 @@ export async function logoutClientSession(orgSlug: string) {
   (await cookies()).delete(`totten_client_session_${orgSlug}`);
   return { success: true };
 }
+
+export async function loginWithCpfPhone(cpf: string, phone: string, orgSlug: string) {
+  try {
+    const org = await db.organization.findUnique({ where: { slug: orgSlug } });
+    if (!org) return { success: false, message: "Organização não encontrada" };
+
+    // Limpar formatação
+    const rawCpf = cpf.replace(/\D/g, "");
+    const rawPhone = phone.replace(/\D/g, "");
+
+    if (!rawCpf || !rawPhone) {
+      return { success: false, message: "Preencha o CPF e o WhatsApp corretamente." };
+    }
+
+    const client = await db.client.findFirst({
+      where: { 
+        organization_id: org.id,
+        cpf: { contains: rawCpf },
+        phone_whatsapp: { contains: rawPhone }
+      },
+    });
+
+    if (!client) {
+      return { success: false, message: "Nenhum cadastro encontrado com este CPF e WhatsApp." };
+    }
+
+    // Sucesso! Gerar JWT e setar cookie seguro
+    const secret = new TextEncoder().encode(JWT_SECRET);
+    const token = await new jose.SignJWT({ clientId: client.id, orgId: org.id })
+      .setProtectedHeader({ alg: "HS256" })
+      .setIssuedAt()
+      .setExpirationTime("30d")
+      .sign(secret);
+
+    (await cookies()).set(`totten_client_session_${org.slug}`, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 30 * 24 * 60 * 60, // 30 dias
+      path: "/",
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erro em loginWithCpfPhone:", error);
+    return { success: false, message: "Erro interno ao validar os dados." };
+  }
+}
