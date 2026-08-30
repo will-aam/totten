@@ -28,7 +28,7 @@ export class AgendaService {
         lte: to,
       },
       status: {
-        in: ["CONFIRMADO", "REALIZADO", "CANCELADO"],
+        in: ["CONFIRMADO", "REALIZADO", "CANCELADO", "PENDENTE"],
       },
     };
 
