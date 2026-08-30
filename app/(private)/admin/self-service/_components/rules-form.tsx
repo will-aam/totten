@@ -533,7 +533,7 @@ function ScheduleRuleEditor({
                   control={form.control}
                   name="isDefault"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-xl border p-4 shadow-sm h-[76px] mt-2 sm:mt-0">
+                    <FormItem className="flex flex-row items-center justify-between h-[76px] mt-2 sm:mt-0">
                       <div className="space-y-0.5">
                         <FormLabel className="text-base">Tornar Padrão</FormLabel>
 

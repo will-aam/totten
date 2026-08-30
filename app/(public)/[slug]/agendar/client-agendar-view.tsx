@@ -231,68 +231,69 @@ export function ClientAgendarView({ org }: { org: any }) {
                   {professionals.map((prof: any) => {
                     const isSelected = selectedProfessional?.id === prof.id;
                     return (
-                    <div
-                      key={prof.id}
-                      className={cn(
-                        "flex flex-col items-center gap-3 min-w-[120px] md:min-w-[150px] shrink-0 snap-start cursor-pointer transition-all",
-                        isSelected ? "opacity-100" : "opacity-80 hover:opacity-100"
-                      )}
-                      onClick={() => handleSelectProfessional(prof)}
-                    >
-                      {/* Foto */}
-                      <div className={cn(
-                        "w-28 h-36 md:w-36 md:h-48 rounded-[1.5rem] overflow-hidden shadow-lg border bg-muted relative",
-                        isSelected ? `ring-4 ring-offset-2 ring-[${theme.primaryColor}]` : ""
-                      )}
-                      style={isSelected ? { '--tw-ring-color': theme.primaryColor } as any : {}}
+                      <div
+                        key={prof.id}
+                        className={cn(
+                          "flex flex-col items-center gap-3 min-w-[120px] md:min-w-[150px] shrink-0 snap-start cursor-pointer transition-all",
+                          isSelected ? "opacity-100" : "opacity-80 hover:opacity-100"
+                        )}
+                        onClick={() => handleSelectProfessional(prof)}
                       >
-                        {prof.image_url ? (
-                          <img
-                            src={prof.image_url}
-                            alt={prof.name}
-                            className="w-full h-full object-cover object-center"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-slate-400 bg-slate-100">
-                            {prof.name.charAt(0)}
-                          </div>
+                        {/* Foto */}
+                        <div className={cn(
+                          "w-28 h-36 md:w-36 md:h-48 rounded-[1.5rem] overflow-hidden shadow-lg border bg-muted relative",
+                          isSelected ? `ring-4 ring-offset-2 ring-[${theme.primaryColor}]` : ""
                         )}
-                        <div className="absolute inset-0 ring-1 ring-inset ring-black/10 rounded-[2rem]"></div>
-                      </div>
-
-                      {/* Nome + Curtidas */}
-                      <div className="flex flex-col items-center gap-1">
-                        <span className={cn("text-base md:text-lg font-bold text-center leading-tight tracking-tight", isSelected && "text-primary")} style={isSelected ? { color: theme.primaryColor } : {}}>
-                          {prof.name.split(" ")[0]}
-                        </span>
-                        {prof.profession && (
-                          <span className={cn("text-xs font-medium text-center leading-tight uppercase tracking-wider", mutedTextClass)}>
-                            {prof.profession}
-                          </span>
-                        )}
-                        <div className="flex items-center gap-1 mt-2 bg-black/5 dark:bg-white/5 py-1 px-3 rounded-full">
-                          {showTeamLikes && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (isLoggedIn) {
-                                  setLikes(prev => ({ ...prev, [prof.id]: !prev[prof.id] }));
-                                }
-                              }}
-                              className={cn("flex items-center gap-1.5 transition-all hover:scale-110 active:scale-95",
-                                isMounted && likes[prof.id] ? "text-rose-500" : (isDark ? "text-white/40 hover:text-rose-400" : "text-slate-400 hover:text-rose-500"),
-                                isMounted && isLoggedIn ? "cursor-pointer" : "cursor-default"
-                              )}
-                            >
-                              <Heart pack={isMounted && likes[prof.id] ? "filled" : "basic"} className="w-4 h-4 md:w-5 md:h-5" />
-                              <span className="text-xs font-bold">{isMounted && likes[prof.id] ? "1" : "0"}</span>
-                            </button>
+                          style={isSelected ? { '--tw-ring-color': theme.primaryColor } as any : {}}
+                        >
+                          {prof.image_url ? (
+                            <img
+                              src={prof.image_url}
+                              alt={prof.name}
+                              className="w-full h-full object-cover object-center"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-slate-400 bg-slate-100">
+                              {prof.name.charAt(0)}
+                            </div>
                           )}
+                          <div className="absolute inset-0 ring-1 ring-inset ring-black/10 rounded-[2rem]"></div>
+                        </div>
+
+                        {/* Nome + Curtidas */}
+                        <div className="flex flex-col items-center gap-1">
+                          <span className={cn("text-base md:text-lg font-bold text-center leading-tight tracking-tight", isSelected && "text-primary")} style={isSelected ? { color: theme.primaryColor } : {}}>
+                            {prof.name.split(" ")[0]}
+                          </span>
+                          {prof.profession && (
+                            <span className={cn("text-xs font-medium text-center leading-tight uppercase tracking-wider", mutedTextClass)}>
+                              {prof.profession}
+                            </span>
+                          )}
+                          <div className="flex items-center gap-1 mt-2 bg-black/5 dark:bg-white/5 py-1 px-3 rounded-full">
+                            {showTeamLikes && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (isLoggedIn) {
+                                    setLikes(prev => ({ ...prev, [prof.id]: !prev[prof.id] }));
+                                  }
+                                }}
+                                className={cn("flex items-center gap-1.5 transition-all hover:scale-110 active:scale-95",
+                                  isMounted && likes[prof.id] ? "text-rose-500" : (isDark ? "text-white/40 hover:text-rose-400" : "text-slate-400 hover:text-rose-500"),
+                                  isMounted && isLoggedIn ? "cursor-pointer" : "cursor-default"
+                                )}
+                              >
+                                <Heart pack={isMounted && likes[prof.id] ? "filled" : "basic"} className="w-4 h-4 md:w-5 md:h-5" />
+                                <span className="text-xs font-bold">{isMounted && likes[prof.id] ? "1" : "0"}</span>
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )})}
+                    )
+                  })}
                 </div>
                 {selectedProfessional && selectedProfessional.bio && (
                   <div className="mt-8 p-6 rounded-2xl bg-muted/50 border shadow-sm animate-fade-up max-w-3xl mx-auto text-center" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
@@ -487,21 +488,21 @@ export function ClientAgendarView({ org }: { org: any }) {
                   if (platform === "youtube") Icon = Youtube;
 
                   const val = platform === "whatsapp" ? (globalContact?.phone || socialLinks.values?.[platform]) : socialLinks.values?.[platform];
-                  
+
                   const getHref = (p: string, v: string) => {
-                     if (!v) return "#";
-                     if (p === "whatsapp") {
-                       let number = v.replace(/\D/g, "");
-                       if (number.length === 10 || number.length === 11) number = `55${number}`;
-                       return `https://wa.me/${number}`;
-                     }
-                     if (p === "instagram") return v.includes("instagram.com") ? v : `https://instagram.com/${v.replace("@", "")}`;
-                     if (p === "facebook") return v.includes("facebook.com") ? v : `https://facebook.com/${v}`;
-                     if (p === "youtube") return v.includes("youtube.com") ? v : `https://youtube.com/${v}`;
-                     if (v.startsWith("http")) return v;
-                     return `https://${v}`;
+                    if (!v) return "#";
+                    if (p === "whatsapp") {
+                      let number = v.replace(/\D/g, "");
+                      if (number.length === 10 || number.length === 11) number = `55${number}`;
+                      return `https://wa.me/${number}`;
+                    }
+                    if (p === "instagram") return v.includes("instagram.com") ? v : `https://instagram.com/${v.replace("@", "")}`;
+                    if (p === "facebook") return v.includes("facebook.com") ? v : `https://facebook.com/${v}`;
+                    if (p === "youtube") return v.includes("youtube.com") ? v : `https://youtube.com/${v}`;
+                    if (v.startsWith("http")) return v;
+                    return `https://${v}`;
                   };
-                  
+
                   return (
                     <a
                       key={i}
@@ -579,13 +580,13 @@ export function ClientAgendarView({ org }: { org: any }) {
                       mode="single"
                       selected={bookingData.date}
                       onSelect={async (date) => {
-                        setBookingData({ 
-                          ...bookingData, 
-                          date, 
-                          time: null, 
-                          professionalId: selectedProfessional?.id || null, 
-                          professionalName: selectedProfessional?.name || null, 
-                          professionalImage: selectedProfessional?.image_url || null 
+                        setBookingData({
+                          ...bookingData,
+                          date,
+                          time: null,
+                          professionalId: selectedProfessional?.id || null,
+                          professionalName: selectedProfessional?.name || null,
+                          professionalImage: selectedProfessional?.image_url || null
                         });
                         if (!date) {
                           setAvailableSlots({});

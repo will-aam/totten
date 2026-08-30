@@ -357,7 +357,7 @@ export const ScheduleSettingsModal = memo(
               disabled={isSaving}
               className="flex-1 rounded-xl h-12 bg-primary font-black text-primary-foreground"
             >
-              {isSaving ? <LoaderDots className="animate-spin h-5 w-5" /> : "Finalizar"}
+              {isSaving ? <LoaderDots className="animate-spin h-5 w-5" /> : "Salvar"}
             </Button>
           </div>
         </SheetContent>
