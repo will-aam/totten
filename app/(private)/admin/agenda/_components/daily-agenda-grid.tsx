@@ -264,7 +264,7 @@ export function DailyAgendaGrid({
         modifiers={[restrictToVerticalAxis, restrictToFirstScrollableAncestor]}
       >
         <div className="overflow-y-auto max-h-175 relative w-full scroll-smooth custom-scrollbar">
-          <div className="flex relative min-w-75" ref={setDroppableRef}>
+          <div className="flex relative min-w-[300px]" ref={setDroppableRef}>
             <div className="w-20 shrink-0 border-r border-border/50 bg-muted/5 relative z-20 pointer-events-none">
               {HOURS_ARRAY.map((hour) => (
                 <div key={hour} className="h-24 relative flex justify-center">

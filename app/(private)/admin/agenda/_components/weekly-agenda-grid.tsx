@@ -237,7 +237,7 @@ export function WeeklyAgendaGrid({
         modifiers={[restrictToVerticalAxis, restrictToFirstScrollableAncestor]}
       >
         <div className="overflow-x-auto custom-scrollbar">
-          <div className="min-w-200 flex relative" ref={setDroppableRef}>
+          <div className="min-w-[800px] flex relative" ref={setDroppableRef}>
             <div className="w-16 shrink-0 border-r border-border/50 bg-muted/30 sticky left-0 z-30 backdrop-blur-md">
               <div className="h-14 border-b border-border/50 flex items-center justify-center text-muted-foreground bg-muted/50">
                 <Clock className="w-4 h-4" />
@@ -357,7 +357,7 @@ export function WeeklyAgendaGrid({
                   <div
                     key={dateKey}
                     className={cn(
-                      "flex-1 min-w-27.5 relative border-r border-border/50 last:border-r-0 transition-colors",
+                      "flex-1 min-w-[110px] relative border-r border-border/50 last:border-r-0 transition-colors",
                       today ? "bg-primary/5" : "hover:bg-muted/20",
                     )}
                   >
