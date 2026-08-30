@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { cn, sanitizeUrl } from "@/lib/utils";
 import {
@@ -146,6 +147,11 @@ export function ClientAgendarView({ org }: { org: any }) {
 
   const bookingThemeId = org.settings?.booking_theme || "light";
   const systemTheme = PRO_THEMES.find(t => t.id === bookingThemeId) || PRO_THEMES[0];
+
+  const { setTheme } = useTheme();
+  useEffect(() => {
+    setTheme(bookingThemeId);
+  }, [bookingThemeId, setTheme]);
 
   const isDark = systemTheme.id === "dark";
 
