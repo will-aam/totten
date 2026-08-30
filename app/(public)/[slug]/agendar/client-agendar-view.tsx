@@ -98,13 +98,17 @@ export function ClientAgendarView({ org }: { org: any }) {
 
   const handleOpenBooking = (item: any) => {
     setSelectedItem(item);
-    setBookingData(prev => ({
-      ...prev,
+    setBookingData({
+      date: undefined,
+      time: null,
+      firstName: typeof window !== "undefined" ? localStorage.getItem(`totten_client_name_${org.slug}`) || "" : "",
       phone: typeof window !== "undefined" ? localStorage.getItem(`totten_client_phone_${org.slug}`) || "" : "",
+      email: "",
+      notes: "",
       professionalId: selectedProfessional?.id || null,
       professionalName: selectedProfessional?.name || null,
       professionalImage: selectedProfessional?.image_url || null,
-    }));
+    });
     
     // Se tiver 'total_sessions', é um Pacote/Plano.
     if (item.total_sessions !== undefined) {
