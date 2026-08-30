@@ -49,8 +49,16 @@ export function AgendaSidebar({
   }, [isOwner]);
   const [month, setMonth] = useState<Date>(selectedDate);
 
-  const nextMonth = () => setMonth(addMonths(month, 1));
-  const prevMonth = () => setMonth(subMonths(month, 1));
+  const nextMonth = () => {
+    const next = addMonths(month, 1);
+    setMonth(next);
+    onSelectDate(next);
+  };
+  const prevMonth = () => {
+    const prev = subMonths(month, 1);
+    setMonth(prev);
+    onSelectDate(prev);
+  };
 
   return (
     <aside 
@@ -92,7 +100,10 @@ export function AgendaSidebar({
             if (day) onSelectDate(day);
           }}
           month={month}
-          onMonthChange={setMonth}
+          onMonthChange={(newMonth) => {
+            setMonth(newMonth);
+            onSelectDate(newMonth);
+          }}
           locale={ptBR}
           className="p-0 border-none pointer-events-auto"
           classNames={{
