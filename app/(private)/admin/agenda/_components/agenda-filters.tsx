@@ -39,7 +39,7 @@ interface AgendaFiltersProps {
 export function AgendaFilters({ filters, onFiltersChange }: AgendaFiltersProps) {
   const { data: session } = useSession();
   const isOwner = session?.user?.role === "OWNER";
-  
+
   const [team, setTeam] = useState<{ id: string; display_name: string | null }[]>([]);
   const { data: servicesResponse } = useSWR<any>("services?active=true", apiClient);
   const services = Array.isArray(servicesResponse) ? servicesResponse : servicesResponse?.data || [];
@@ -56,10 +56,10 @@ export function AgendaFilters({ filters, onFiltersChange }: AgendaFiltersProps) 
     fetchTeam();
   }, [isOwner]);
 
-  const hasActiveFilters = 
-    !!filters.professionalId || 
-    !!filters.serviceId || 
-    !!filters.status || 
+  const hasActiveFilters =
+    !!filters.professionalId ||
+    !!filters.serviceId ||
+    !!filters.status ||
     !!filters.patientId ||
     !!filters.roomId ||
     (filters.type && filters.type !== "ALL");
@@ -76,8 +76,8 @@ export function AgendaFilters({ filters, onFiltersChange }: AgendaFiltersProps) 
           size="icon"
           className={cn(
             "rounded-full h-9 w-9 relative transition-colors",
-            hasActiveFilters 
-              ? "bg-primary/10 text-primary hover:bg-primary/20" 
+            hasActiveFilters
+              ? "bg-primary/10 text-primary hover:bg-primary/20"
               : "text-muted-foreground hover:bg-muted"
           )}
         >
@@ -88,12 +88,12 @@ export function AgendaFilters({ filters, onFiltersChange }: AgendaFiltersProps) 
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[340px] p-5 rounded-[20px] shadow-xl z-50 bg-background border-border">
-        <AgendaFilterForm 
-          filters={filters} 
-          onFiltersChange={onFiltersChange} 
-          isOwner={isOwner} 
-          team={team} 
-          services={services} 
+        <AgendaFilterForm
+          filters={filters}
+          onFiltersChange={onFiltersChange}
+          isOwner={isOwner}
+          team={team}
+          services={services}
           session={session}
         />
       </PopoverContent>
@@ -102,10 +102,10 @@ export function AgendaFilters({ filters, onFiltersChange }: AgendaFiltersProps) 
 }
 
 export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, services, session }: any) {
-  const hasActiveFilters = 
-    !!filters.professionalId || 
-    !!filters.serviceId || 
-    !!filters.status || 
+  const hasActiveFilters =
+    !!filters.professionalId ||
+    !!filters.serviceId ||
+    !!filters.status ||
     !!filters.patientId ||
     !!filters.roomId ||
     (filters.type && filters.type !== "ALL");
@@ -129,7 +129,7 @@ export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, serv
       <div className="flex items-center justify-between mb-1">
         <h4 className="font-bold text-lg text-foreground">Filtros</h4>
         {hasActiveFilters ? (
-          <button 
+          <button
             onClick={clearFilters}
             className="text-sm font-medium text-primary hover:underline"
           >

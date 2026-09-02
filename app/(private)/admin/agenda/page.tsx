@@ -83,11 +83,6 @@ export default function AgendaPage() {
 
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const isProgrammaticScroll = useRef(false);
-  const [rosterBaseDate, setRosterBaseDate] = useState(new Date());
-
   const [filters, setFilters] = useState<AgendaFiltersState>({ type: "ALL" });
 
   // Chave sem prefixo /api: o apiClient já resolve o base path sozinho
@@ -192,28 +187,12 @@ export default function AgendaPage() {
   const weekAppointments = currentViewAppointments;
   const monthAppointments = currentViewAppointments;
 
-  useEffect(() => {
-    const diff =
-      Math.abs(selectedDate.getTime() - rosterBaseDate.getTime()) /
-      (1000 * 60 * 60 * 24);
-    if (diff > 45) {
-      setRosterBaseDate(selectedDate);
-    }
-  }, [selectedDate, rosterBaseDate]);
-
-  const rouletteDays = useMemo(() => {
-    return Array.from({ length: 181 }, (_, i) =>
-      addDays(rosterBaseDate, i - 90),
-    );
-  }, [rosterBaseDate]);
-
   const goNext = () => {
     if (viewMode === "month") {
       const newDate = addMonths(selectedDate, 1);
       setSelectedDate(newDate);
       setWeekStart(startOfWeek(newDate, { weekStartsOn: 0 }));
     } else {
-      isProgrammaticScroll.current = true;
       const newDate = addDays(selectedDate, viewMode === "day" ? 1 : 7);
       setSelectedDate(newDate);
       setWeekStart(startOfWeek(newDate, { weekStartsOn: 0 }));
@@ -226,7 +205,6 @@ export default function AgendaPage() {
       setSelectedDate(newDate);
       setWeekStart(startOfWeek(newDate, { weekStartsOn: 0 }));
     } else {
-      isProgrammaticScroll.current = true;
       const newDate = subDays(selectedDate, viewMode === "day" ? 1 : 7);
       setSelectedDate(newDate);
       setWeekStart(startOfWeek(newDate, { weekStartsOn: 0 }));
@@ -276,68 +254,6 @@ export default function AgendaPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  useEffect(() => {
-    if (scrollContainerRef.current && viewMode !== "month") {
-      const container = scrollContainerRef.current;
-      const selectedBtn = container.querySelector(
-        `[data-date="${format(selectedDate, "yyyy-MM-dd")}"]`,
-      ) as HTMLElement;
-
-      if (selectedBtn) {
-        const scrollLeft =
-          selectedBtn.offsetLeft -
-          container.clientWidth / 2 +
-          selectedBtn.clientWidth / 2;
-
-        isProgrammaticScroll.current = true;
-        container.scrollTo({ left: scrollLeft, behavior: "smooth" });
-
-        setTimeout(() => {
-          isProgrammaticScroll.current = false;
-        }, 500);
-      }
-    }
-  }, [selectedDate, viewMode, rosterBaseDate]);
-
-  const handleDaysScroll = () => {
-    if (isProgrammaticScroll.current) return;
-
-    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-
-    scrollTimeoutRef.current = setTimeout(() => {
-      const container = scrollContainerRef.current;
-      if (!container) return;
-
-      const centerLine = container.scrollLeft + container.clientWidth / 2;
-      let minDistance = Infinity;
-
-      let closestDateStr = "";
-
-      const buttons = container.querySelectorAll(".day-btn");
-      buttons.forEach((btn) => {
-        const el = btn as HTMLElement;
-        const btnCenter = el.offsetLeft + el.clientWidth / 2;
-        const distance = Math.abs(btnCenter - centerLine);
-
-        if (distance < minDistance) {
-          minDistance = distance;
-          const attr = el.getAttribute("data-date");
-          if (attr) closestDateStr = attr;
-        }
-      });
-
-      if (closestDateStr !== "") {
-        const [y, m, d] = closestDateStr.split("-").map(Number);
-        const newDate = new Date(y, m - 1, d);
-
-        if (!isSameDay(newDate, selectedDate)) {
-          setSelectedDate(newDate);
-          setWeekStart(startOfWeek(newDate, { weekStartsOn: 0 }));
-        }
-      }
-    }, 150);
-  };
-
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
   const formattedDateDesktop = format(selectedDate, "EEEE, dd MMM", {
@@ -361,7 +277,6 @@ export default function AgendaPage() {
       <AgendaHeader
         selectedDate={selectedDate}
         onSelectDate={(date) => {
-          isProgrammaticScroll.current = true;
           setSelectedDate(date);
           setWeekStart(startOfWeek(date, { weekStartsOn: 0 }));
         }}
@@ -395,7 +310,6 @@ export default function AgendaPage() {
           onCreateClick={() => setIsNewModalOpen(true)}
           selectedDate={selectedDate}
           onSelectDate={(date) => {
-            isProgrammaticScroll.current = true;
             setSelectedDate(date);
             setWeekStart(startOfWeek(date, { weekStartsOn: 0 }));
           }}

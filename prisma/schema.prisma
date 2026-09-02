@@ -64,6 +64,8 @@ model Admin {
   organizations      Organization[] @relation("AdminToOrganization")
   services           Service[]      @relation("AdminToService")
   package_templates  PackageTemplate[] @relation("AdminToPackageTemplate")
+  professional_likes    ProfessionalLike[]
+  professional_reviews  ProfessionalReview[]
 
   schedule_rule_id   String?
   schedule_rule      ScheduleRule? @relation(fields: [schedule_rule_id], references: [id], onDelete: SetNull)
@@ -190,6 +192,8 @@ model Client {
   organization        Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   packages            Package[]
   transactions        Transaction[]
+  professional_likes    ProfessionalLike[]
+  professional_reviews  ProfessionalReview[]
 
   @@unique([cpf, organization_id])
   @@map("clients")
@@ -556,4 +560,32 @@ enum TransactionStatus {
   PAGO
   PENDENTE
   ATRASADO
+}
+
+model ProfessionalLike {
+  id        String   @id @default(cuid())
+  client_id String
+  admin_id  String
+  createdAt DateTime @default(now())
+
+  client    Client   @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  admin     Admin    @relation(fields: [admin_id], references: [id], onDelete: Cascade)
+
+  @@unique([client_id, admin_id])
+  @@map("professional_likes")
+}
+
+model ProfessionalReview {
+  id        String   @id @default(cuid())
+  text      String   @db.Text
+  reply     String?  @db.Text
+  client_id String
+  admin_id  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  client    Client   @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  admin     Admin    @relation(fields: [admin_id], references: [id], onDelete: Cascade)
+
+  @@map("professional_reviews")
 }

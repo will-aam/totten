@@ -10,11 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { BookingAppearanceSettings } from "@/app/(private)/admin/self-service/_components/booking-appearance-settings";
 import { getSelfServiceSettingsAction, updateSelfServiceSettingsAction } from "@/app/actions/settings";
-import { Loader2 } from "lucide-react";
 
 export function BookingSiteView({ profile }: { profile?: any }) {
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
   const [bookingTheme, setBookingTheme] = useState("light");
   const [bookingPrimaryColor, setBookingPrimaryColor] = useState("#0f172a");
@@ -25,7 +23,6 @@ export function BookingSiteView({ profile }: { profile?: any }) {
         setBookingTheme(res.data.bookingTheme || "light");
         setBookingPrimaryColor(res.data.bookingPrimaryColor || "#0f172a");
       }
-      setIsLoading(false);
     });
   }, []);
 
@@ -70,14 +67,6 @@ export function BookingSiteView({ profile }: { profile?: any }) {
       setIsSaving(false);
     }
   }, [general, bookingTheme, bookingPrimaryColor]);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
 
   return (
     <div className="w-full flex flex-col gap-6 animate-in fade-in duration-300">

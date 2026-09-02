@@ -27,6 +27,7 @@ import { ptBR } from "date-fns/locale";
 import { format } from "date-fns";
 import { getAvailableTimesAndProfessionals } from "@/app/actions/availability";
 import { createClientAppointmentAction } from "@/app/actions/appointments";
+import { toggleProfessionalLike, getProfessionalInteractions, createProfessionalReview, replyProfessionalReview, deleteProfessionalReview } from "@/app/actions/reviews";
 import { PRO_THEMES } from "@/app/(private)/admin/self-service/_components/booking-appearance-settings";
 import { toast } from "sonner";
 
@@ -37,14 +38,38 @@ export function ClientAgendarView({ org }: { org: any }) {
   const [servicesOpen, setServicesOpen] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [likes, setLikes] = useState<Record<string, boolean>>({});
+  const [likesCount, setLikesCount] = useState<Record<string, number>>({});
   const [isMounted, setIsMounted] = useState(false);
   const [selectedProfessional, setSelectedProfessional] = useState<any>(null);
 
-  const handleSelectProfessional = (prof: any) => {
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(false);
+  const [newReviewText, setNewReviewText] = useState("");
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [currentClientId, setCurrentClientId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [replyText, setReplyText] = useState<Record<string, string>>({});
+  const [isSubmittingReply, setIsSubmittingReply] = useState<Record<string, boolean>>({});
+
+  const handleSelectProfessional = async (prof: any) => {
     if (selectedProfessional?.id === prof.id) {
       setSelectedProfessional(null);
+      setReviews([]);
     } else {
       setSelectedProfessional(prof);
+      setIsLoadingReviews(true);
+      
+      const res = await getProfessionalInteractions(prof.id, org.slug);
+      if (res.success && res.data) {
+        setReviews(res.data.reviews);
+        setLikes(prev => ({ ...prev, [prof.id]: res.data!.userHasLiked }));
+        setLikesCount(prev => ({ ...prev, [prof.id]: res.data!.likesCount }));
+        setCurrentClientId(res.data!.currentClientId);
+        setIsAdmin(res.data!.isAdmin);
+      }
+      
+      setIsLoadingReviews(false);
+      
       setTimeout(() => {
         const servicosElement = document.getElementById("servicos");
         const pacotesElement = document.getElementById("pacotes");
@@ -303,38 +328,43 @@ export function ClientAgendarView({ org }: { org: any }) {
                           )}
                           <div className="flex items-center gap-1 mt-2 bg-black/5 dark:bg-white/5 py-1 px-3 rounded-full">
                             {showTeamLikes && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (isLoggedIn) {
-                                    setLikes(prev => ({ ...prev, [prof.id]: !prev[prof.id] }));
-                                  }
-                                }}
-                                className={cn("flex items-center gap-1.5 transition-all hover:scale-110 active:scale-95",
-                                  isMounted && likes[prof.id] ? "text-rose-500" : (isDark ? "text-white/40 hover:text-rose-400" : "text-slate-400 hover:text-rose-500"),
-                                  isMounted && isLoggedIn ? "cursor-pointer" : "cursor-default"
-                                )}
-                              >
-                                <Heart pack={isMounted && likes[prof.id] ? "filled" : "basic"} className="w-4 h-4 md:w-5 md:h-5" />
-                                <span className="text-xs font-bold">{isMounted && likes[prof.id] ? "1" : "0"}</span>
-                              </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (isLoggedIn) {
+                                      const isCurrentlyLiked = likes[prof.id];
+                                      setLikes(prev => ({ ...prev, [prof.id]: !isCurrentlyLiked }));
+                                      setLikesCount(prev => ({ ...prev, [prof.id]: (prev[prof.id] || 0) + (isCurrentlyLiked ? -1 : 1) }));
+                                      toggleProfessionalLike(prof.id, org.slug).then(res => {
+                                        if (!res.success) {
+                                          toast.error(res.message);
+                                          // revert
+                                          setLikes(prev => ({ ...prev, [prof.id]: isCurrentlyLiked }));
+                                          setLikesCount(prev => ({ ...prev, [prof.id]: (prev[prof.id] || 0) + (!isCurrentlyLiked ? -1 : 1) }));
+                                        }
+                                      });
+                                    } else {
+                                      toast.error("Faça login na área do cliente para curtir!");
+                                    }
+                                  }}
+                                  className={cn("flex items-center gap-1.5 transition-all hover:scale-110 active:scale-95",
+                                    isMounted && likes[prof.id] ? "text-rose-500" : (isDark ? "text-white/40 hover:text-rose-400" : "text-slate-400 hover:text-rose-500"),
+                                    isMounted && isLoggedIn ? "cursor-pointer" : "cursor-default"
+                                  )}
+                                >
+                                  <Heart pack={isMounted && likes[prof.id] ? "filled" : "basic"} className="w-4 h-4 md:w-5 md:h-5" />
+                                  <span className="text-xs font-bold">{likesCount[prof.id] || 0}</span>
+                                </button>
                             )}
                           </div>
                         </div>
                       </div>
-                    )
+                    );
                   })}
                 </div>
-                {selectedProfessional && selectedProfessional.bio && (
-                  <div className="mt-8 p-6 rounded-2xl bg-muted/50 border shadow-sm animate-fade-up max-w-3xl mx-auto text-center" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
-                    <h3 className="font-bold text-lg mb-2" style={{ color: theme.primaryColor }}>Sobre {selectedProfessional.name?.split(' ')[0]}</h3>
-                    <p className="text-sm opacity-80 leading-relaxed whitespace-pre-wrap">{selectedProfessional.bio}</p>
-                  </div>
-                )}
               </section>
             )}
-
             {/* Pacotes e Planos */}
             {showPackages && packageTemplates.length > 0 && (
               <section>
@@ -462,16 +492,144 @@ export function ClientAgendarView({ org }: { org: any }) {
               </section>
             )}
 
-            {/* Avaliações (apenas clientes logados) */}
-            {isMounted && isLoggedIn && (
-              <section className={cn("p-4 rounded-2xl border", cardBgClass)}>
-                <h2 className="font-bold text-lg mb-3">Avaliações</h2>
-                <div className="flex flex-col items-center justify-center py-6 text-center">
-                  <span className={cn("text-sm", mutedTextClass)}>Nenhuma avaliação encontrada.</span>
-                  <button className={cn("mt-4 px-4 py-2 rounded-full text-sm font-medium transition-transform active:scale-95", "bg-slate-900 text-white dark:bg-white dark:text-slate-900")}>
-                    Deixar Avaliação
-                  </button>
-                </div>
+            {/* Avaliações */}
+            {selectedProfessional && (
+              <section className={cn("p-4 md:p-6 rounded-2xl border", cardBgClass)}>
+                <h2 className="font-bold text-lg md:text-xl mb-4">Avaliações para {selectedProfessional.name.split(" ")[0]}</h2>
+                
+                {isLoadingReviews ? (
+                  <div className="flex justify-center py-6"><div className="w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin opacity-50"></div></div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Lista de Avaliações */}
+                    {reviews.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-6 text-center">
+                        <span className={cn("text-sm", mutedTextClass)}>Nenhuma avaliação encontrada.</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {reviews.map((rev) => (
+                          <div key={rev.id} className="p-4 rounded-xl bg-black/5 dark:bg-white/5 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden">
+                                  {rev.client?.image ? (
+                                    <img src={rev.client.image} alt="User" className="w-full h-full object-cover" />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-xs font-bold text-slate-400">
+                                      {rev.client?.name?.charAt(0) || "U"}
+                                    </div>
+                                  )}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-sm">{rev.client?.name}</p>
+                                  <p className="text-[10px] opacity-60">{format(new Date(rev.createdAt), "dd/MM/yyyy HH:mm")}</p>
+                                </div>
+                              </div>
+                              {isAdmin && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-8 text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                                  onClick={async () => {
+                                    if(confirm("Tem certeza que deseja deletar este comentário?")) {
+                                      await deleteProfessionalReview(rev.id);
+                                      setReviews(reviews.filter(r => r.id !== rev.id));
+                                    }
+                                  }}
+                                >
+                                  Apagar
+                                </Button>
+                              )}
+                            </div>
+                            <p className="text-sm leading-relaxed whitespace-pre-wrap">{rev.text}</p>
+                            
+                            {rev.reply ? (
+                              <div className="mt-3 p-3 bg-black/5 dark:bg-black/20 border-l-2 border-primary rounded-r-xl">
+                                <p className="text-xs font-bold mb-1 opacity-70">Resposta do Profissional:</p>
+                                <p className="text-sm leading-relaxed whitespace-pre-wrap">{rev.reply}</p>
+                              </div>
+                            ) : isAdmin ? (
+                              <div className="mt-3">
+                                <Textarea 
+                                  placeholder="Sua resposta..."
+                                  value={replyText[rev.id] || ""}
+                                  onChange={e => setReplyText(prev => ({...prev, [rev.id]: e.target.value}))}
+                                  className={cn("min-h-[60px] text-sm", isDark ? "bg-black/20 border-white/10" : "")}
+                                />
+                                <div className="flex justify-end mt-2">
+                                  <Button
+                                    size="sm"
+                                    disabled={!replyText[rev.id] || isSubmittingReply[rev.id]}
+                                    onClick={async () => {
+                                      setIsSubmittingReply(prev => ({...prev, [rev.id]: true}));
+                                      const res = await replyProfessionalReview(rev.id, replyText[rev.id]);
+                                      if(res.success) {
+                                        toast.success("Resposta enviada!");
+                                        setReviews(reviews.map(r => r.id === rev.id ? { ...r, reply: replyText[rev.id] } : r));
+                                      } else {
+                                        toast.error(res.message || "Erro ao responder");
+                                      }
+                                      setIsSubmittingReply(prev => ({...prev, [rev.id]: false}));
+                                    }}
+                                  >
+                                    Responder
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Formulário de Nova Avaliação */}
+                    {isLoggedIn && !isAdmin && (
+                      <div className="pt-4 border-t" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
+                        <h3 className="font-bold text-sm mb-2">Deixe sua avaliação</h3>
+                        <Textarea 
+                          placeholder="Escreva seu comentário..."
+                          value={newReviewText}
+                          onChange={e => {
+                            if (e.target.value.length <= 280) {
+                              setNewReviewText(e.target.value);
+                            }
+                          }}
+                          className={cn("min-h-[100px]", isDark ? "bg-black/20 border-white/10" : "")}
+                        />
+                        <div className="flex items-center justify-between mt-2">
+                          <span className={cn("text-xs", newReviewText.length >= 280 ? "text-rose-500" : mutedTextClass)}>
+                            {newReviewText.length} / 280
+                          </span>
+                          <Button
+                            disabled={!newReviewText.trim() || isSubmittingReview}
+                            onClick={async () => {
+                              setIsSubmittingReview(true);
+                              const res = await createProfessionalReview(selectedProfessional.id, org.slug, newReviewText);
+                              if (res.success) {
+                                toast.success("Avaliação enviada!");
+                                setNewReviewText("");
+                                // refetch
+                                const fresh = await getProfessionalInteractions(selectedProfessional.id, org.slug);
+                                if (fresh.success && fresh.data) setReviews(fresh.data.reviews);
+                              } else {
+                                toast.error(res.message || "Erro ao avaliar");
+                              }
+                              setIsSubmittingReview(false);
+                            }}
+                          >
+                            Enviar
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    {!isLoggedIn && !isAdmin && (
+                      <div className="mt-4 p-4 rounded-xl bg-black/5 dark:bg-white/5 text-center">
+                        <p className={cn("text-sm", mutedTextClass)}>Faça login na área do cliente para deixar uma avaliação.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </section>
             )}
 
