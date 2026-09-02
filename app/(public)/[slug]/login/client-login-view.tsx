@@ -79,6 +79,9 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
     try {
       const res = await verifyClientOtp(email, code, org.slug);
       if (res.success) {
+        if (typeof window !== "undefined") {
+          localStorage.setItem(`totten_client_logged_in_${org.slug}`, "true");
+        }
         toast.success("Login realizado com sucesso!");
         router.push(`/${org.slug}/cliente`);
       } else {
@@ -109,6 +112,10 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
     try {
       const res = await loginWithCpfPhone(cpf, phone, org.slug);
       if (res.success) {
+        if (typeof window !== "undefined") {
+          localStorage.setItem(`totten_client_logged_in_${org.slug}`, "true");
+          localStorage.setItem(`totten_client_phone_${org.slug}`, phone);
+        }
         toast.success("Login realizado com sucesso!");
         router.push(`/${org.slug}/cliente`);
       } else {
