@@ -10,7 +10,7 @@ export default async function RequestsPage() {
   const pendingAppointments = await prisma.appointment.findMany({
     where: {
       organization_id: admin.organizationId,
-      status: AppointmentStatus.PENDENTE,
+      status: AppointmentStatus.SOLICITADO,
       date_time: {
         gte: new Date(new Date().setHours(0, 0, 0, 0)),
       },

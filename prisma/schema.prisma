@@ -537,6 +537,7 @@ model ClientNote {
 }
 
 enum AppointmentStatus {
+  SOLICITADO
   PENDENTE
   CONFIRMADO
   REALIZADO

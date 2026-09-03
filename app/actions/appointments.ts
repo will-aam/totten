@@ -197,6 +197,7 @@ export async function updateAppointment(
     const statusMap: Record<string, AppointmentStatus> = {
       a_confirmar: AppointmentStatus.PENDENTE,
       confirmado: AppointmentStatus.CONFIRMADO,
+      aprovado: AppointmentStatus.PENDENTE,
       atrasou: AppointmentStatus.PENDENTE,
       nao_compareceu: AppointmentStatus.CANCELADO,
       cancelado: AppointmentStatus.CANCELADO,
@@ -794,7 +795,7 @@ export async function createClientAppointmentAction(input: CreateClientAppointme
     const appointmentDateTime = new Date(year, month - 1, day, hours, minutes);
 
     const autoConfirm = org.settings?.auto_confirm_appointments ?? true;
-    const status = autoConfirm ? AppointmentStatus.CONFIRMADO : AppointmentStatus.PENDENTE;
+    const status = autoConfirm ? AppointmentStatus.CONFIRMADO : AppointmentStatus.SOLICITADO;
 
     const appointment = await tenantPrisma.appointment.create({
       data: {
@@ -819,7 +820,7 @@ export async function createClientAppointmentAction(input: CreateClientAppointme
     return { 
       success: true, 
       appointment: JSON.parse(JSON.stringify(appointment)),
-      isPending: status === AppointmentStatus.PENDENTE 
+      isPending: status === AppointmentStatus.SOLICITADO 
     };
 
   } catch (error) {

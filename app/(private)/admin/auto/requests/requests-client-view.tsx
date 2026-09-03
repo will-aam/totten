@@ -24,7 +24,7 @@ export function RequestsClientView({ initialRequests }: { initialRequests: any[]
       });
 
       if (res.success) {
-        toast.success(`Solicitação ${newStatus === "confirmado" ? "aprovada" : "recusada"} com sucesso.`);
+        toast.success(`Solicitação ${newStatus === "aprovado" ? "aprovada" : "recusada"} com sucesso.`);
         router.refresh();
       } else {
         toast.error(res.error || "Erro ao processar solicitação.");
@@ -81,7 +81,7 @@ export function RequestsClientView({ initialRequests }: { initialRequests: any[]
                     <Clock className="w-4 h-4 text-slate-400 shrink-0" />
                     <p className="text-sm font-bold text-slate-700">{format(new Date(req.date_time), "HH:mm")}</p>
                   </div>
-                  
+
                   {req.observations && (
                     <div className="mt-3 bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs text-slate-600">
                       <span className="font-semibold block mb-1">Observações do Cliente:</span>
@@ -91,18 +91,18 @@ export function RequestsClientView({ initialRequests }: { initialRequests: any[]
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 mt-auto">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="w-full text-rose-600 border-rose-200 hover:bg-rose-50 hover:text-rose-700 font-bold h-10"
                     disabled={loadingId === req.id}
                     onClick={() => handleStatusChange(req.id, "cancelado")}
                   >
                     {loadingId === req.id ? "Processando..." : <><X className="w-4 h-4 mr-1.5" /> Recusar</>}
                   </Button>
-                  <Button 
+                  <Button
                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-10"
                     disabled={loadingId === req.id}
-                    onClick={() => handleStatusChange(req.id, "confirmado")}
+                    onClick={() => handleStatusChange(req.id, "aprovado")}
                   >
                     {loadingId === req.id ? "Processando..." : <><Check className="w-4 h-4 mr-1.5" /> Aprovar</>}
                   </Button>
