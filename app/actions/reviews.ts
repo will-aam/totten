@@ -55,7 +55,7 @@ export async function getProfessionalInteractions(adminId: string, orgSlug: stri
       db.professionalLike.count({ where: { admin_id: adminId } }),
       db.professionalReview.findMany({
         where: { admin_id: adminId },
-        include: { client: { select: { name: true, image: true } } },
+        include: { client: { select: { name: true } } },
         orderBy: { createdAt: "desc" },
       }),
       clientId
