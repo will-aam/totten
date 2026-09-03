@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ClientAgendarView } from "./client-agendar-view";
+import { getClientSession } from "@/app/actions/client-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,8 @@ export default async function AgendarPage({
   const { slug } = await params;
 
   if (!slug) return notFound();
+
+  const clientId = await getClientSession(slug);
 
   const org = await prisma.organization.findUnique({
     where: { slug },
@@ -31,6 +34,8 @@ export default async function AgendarPage({
         include: {
           services: { select: { id: true } },
           package_templates: { select: { id: true } },
+          _count: { select: { professional_likes: true } },
+          professional_likes: clientId ? { where: { client_id: clientId } } : false
         }
       },
       package_templates: {
@@ -60,6 +65,8 @@ export default async function AgendarPage({
       ...admin,
       name: admin.display_name || "Profissional",
       image_url: admin.profile_image_url,
+      likesCount: admin._count?.professional_likes || 0,
+      userHasLiked: admin.professional_likes?.length > 0
     })),
     services: plainOrg.services,
     packageTemplates: plainOrg.package_templates,

@@ -166,13 +166,22 @@ export async function loginWithCpfPhone(cpf: string, phone: string, orgSlug: str
       return { success: false, message: "Preencha o CPF e o WhatsApp corretamente." };
     }
 
-    const client = await db.client.findFirst({
+    // Buscar clientes potenciais (para ser robusto contra variações de formatação)
+    const last4Phone = rawPhone.slice(-4);
+    const last2Cpf = rawCpf.slice(-2);
+
+    const potentialClients = await db.client.findMany({
       where: { 
         organization_id: org.id,
-        cpf: { contains: rawCpf },
-        phone_whatsapp: { contains: rawPhone }
+        cpf: { contains: last2Cpf },
+        phone_whatsapp: { contains: last4Phone }
       },
     });
+
+    const client = potentialClients.find(c => 
+      c.cpf?.replace(/\D/g, "") === rawCpf && 
+      c.phone_whatsapp?.replace(/\D/g, "") === rawPhone
+    );
 
     if (!client) {
       return { success: false, message: "Nenhum cadastro encontrado com este CPF e WhatsApp." };

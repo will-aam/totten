@@ -37,8 +37,20 @@ export function ClientAgendarView({ org }: { org: any }) {
   const [packagesOpen, setPackagesOpen] = useState(true);
   const [servicesOpen, setServicesOpen] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [likes, setLikes] = useState<Record<string, boolean>>({});
-  const [likesCount, setLikesCount] = useState<Record<string, number>>({});
+  const [likes, setLikes] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    org.professionals?.forEach((p: any) => {
+      initial[p.id] = p.userHasLiked || false;
+    });
+    return initial;
+  });
+  const [likesCount, setLikesCount] = useState<Record<string, number>>(() => {
+    const initial: Record<string, number> = {};
+    org.professionals?.forEach((p: any) => {
+      initial[p.id] = p.likesCount || 0;
+    });
+    return initial;
+  });
   const [isMounted, setIsMounted] = useState(false);
   const [selectedProfessional, setSelectedProfessional] = useState<any>(null);
 
@@ -238,7 +250,7 @@ export function ClientAgendarView({ org }: { org: any }) {
             color: "#ffffff"
           }}
         >
-          <a href={`/${org.slug}/login`}>
+          <a href={isLoggedIn ? `/${org.slug}/cliente` : `/${org.slug}/login`}>
             <User className="w-4 h-4 mr-2" /> Área do Cliente
           </a>
         </Button>
