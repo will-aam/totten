@@ -826,7 +826,16 @@ export function ClientAgendarView({ org }: { org: any }) {
                         }, 100);
                       }}
                       locale={ptBR}
-                      disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                      disabled={(date) => {
+                        const today = new Date(new Date().setHours(0, 0, 0, 0));
+                        if (date < today) return true;
+                        if (org?.settings?.future_booking_limit_days) {
+                          const maxDate = new Date(today);
+                          maxDate.setDate(maxDate.getDate() + org.settings.future_booking_limit_days);
+                          if (date > maxDate) return true;
+                        }
+                        return false;
+                      }}
                       className="w-full flex justify-center [&_.rdp]:w-full [&_.rdp-months]:w-full [&_.rdp-month]:w-full [&_.rdp-table]:w-full [&_.rdp-table_th]:font-medium [&_.rdp-table_th]:text-muted-foreground [&_.rdp-day]:w-full [&_.rdp-day]:h-12"
                     />
                   </div>
