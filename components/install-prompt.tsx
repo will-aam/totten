@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { X, ArrowToBottom, Share, PlusSquare } from "@boxicons/react";
+import { usePathname } from "next/navigation";
 
 export function InstallPrompt() {
+  const pathname = usePathname();
   const [isStandalone, setIsStandalone] = useState(true); // Começa true para não piscar na tela
   const [isIOS, setIsIOS] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -82,6 +84,11 @@ export function InstallPrompt() {
       setDeferredPrompt(null);
     }
   };
+
+  // Só exibir o prompt se estivermos na rota de admin
+  if (pathname && !pathname.startsWith('/admin')) {
+    return null;
+  }
 
   if (!showPrompt || isStandalone) return null;
 
