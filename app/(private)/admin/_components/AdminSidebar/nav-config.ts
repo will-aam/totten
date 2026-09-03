@@ -48,7 +48,7 @@ export const navItems: NavItem[] = [
     active: true,
   },
   {
-    title: "Pacotes e Planos",
+    title: "Gestão de Pacotes",
     href: "/admin/packages",
     icon: Layers as BoxIcon,
     active: true,

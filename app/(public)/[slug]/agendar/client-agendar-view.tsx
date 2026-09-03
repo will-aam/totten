@@ -70,7 +70,7 @@ export function ClientAgendarView({ org }: { org: any }) {
     } else {
       setSelectedProfessional(prof);
       setIsLoadingReviews(true);
-      
+
       const res = await getProfessionalInteractions(prof.id, org.slug);
       if (res.success && res.data) {
         setReviews(res.data.reviews);
@@ -79,9 +79,9 @@ export function ClientAgendarView({ org }: { org: any }) {
         setCurrentClientId(res.data!.currentClientId);
         setIsAdmin(res.data!.isAdmin);
       }
-      
+
       setIsLoadingReviews(false);
-      
+
       setTimeout(() => {
         const servicosElement = document.getElementById("servicos");
         const pacotesElement = document.getElementById("pacotes");
@@ -147,14 +147,14 @@ export function ClientAgendarView({ org }: { org: any }) {
       professionalName: selectedProfessional?.name || null,
       professionalImage: selectedProfessional?.image_url || null,
     });
-    
+
     // Se tiver 'total_sessions', é um Pacote/Plano.
     if (item.total_sessions !== undefined) {
       setBookingStep(5);
     } else {
       setBookingStep(1);
     }
-    
+
     setPolicyAccepted(false);
     setBookingWizardOpen(true);
   };
@@ -251,7 +251,7 @@ export function ClientAgendarView({ org }: { org: any }) {
           }}
         >
           <a href={isLoggedIn ? `/${org.slug}/cliente` : `/${org.slug}/login`}>
-            <User className="w-4 h-4 mr-2" /> Área do Cliente
+            <User className="w-4 h-4 mr-2" /> {isLoggedIn ? "Área do Cliente" : "Login"}
           </a>
         </Button>
       </div>
@@ -340,34 +340,34 @@ export function ClientAgendarView({ org }: { org: any }) {
                           )}
                           <div className="flex items-center gap-1 mt-2 bg-black/5 dark:bg-white/5 py-1 px-3 rounded-full">
                             {showTeamLikes && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (isLoggedIn) {
-                                      const isCurrentlyLiked = likes[prof.id];
-                                      setLikes(prev => ({ ...prev, [prof.id]: !isCurrentlyLiked }));
-                                      setLikesCount(prev => ({ ...prev, [prof.id]: (prev[prof.id] || 0) + (isCurrentlyLiked ? -1 : 1) }));
-                                      toggleProfessionalLike(prof.id, org.slug).then(res => {
-                                        if (!res.success) {
-                                          toast.error(res.message);
-                                          // revert
-                                          setLikes(prev => ({ ...prev, [prof.id]: isCurrentlyLiked }));
-                                          setLikesCount(prev => ({ ...prev, [prof.id]: (prev[prof.id] || 0) + (!isCurrentlyLiked ? -1 : 1) }));
-                                        }
-                                      });
-                                    } else {
-                                      toast.error("Faça login na área do cliente para curtir!");
-                                    }
-                                  }}
-                                  className={cn("flex items-center gap-1.5 transition-all hover:scale-110 active:scale-95",
-                                    isMounted && likes[prof.id] ? "text-rose-500" : (isDark ? "text-white/40 hover:text-rose-400" : "text-slate-400 hover:text-rose-500"),
-                                    isMounted && isLoggedIn ? "cursor-pointer" : "cursor-default"
-                                  )}
-                                >
-                                  <Heart pack={isMounted && likes[prof.id] ? "filled" : "basic"} className="w-4 h-4 md:w-5 md:h-5" />
-                                  <span className="text-xs font-bold">{likesCount[prof.id] || 0}</span>
-                                </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (isLoggedIn) {
+                                    const isCurrentlyLiked = likes[prof.id];
+                                    setLikes(prev => ({ ...prev, [prof.id]: !isCurrentlyLiked }));
+                                    setLikesCount(prev => ({ ...prev, [prof.id]: (prev[prof.id] || 0) + (isCurrentlyLiked ? -1 : 1) }));
+                                    toggleProfessionalLike(prof.id, org.slug).then(res => {
+                                      if (!res.success) {
+                                        toast.error(res.message);
+                                        // revert
+                                        setLikes(prev => ({ ...prev, [prof.id]: isCurrentlyLiked }));
+                                        setLikesCount(prev => ({ ...prev, [prof.id]: (prev[prof.id] || 0) + (!isCurrentlyLiked ? -1 : 1) }));
+                                      }
+                                    });
+                                  } else {
+                                    toast.error("Faça login na área do cliente para curtir!");
+                                  }
+                                }}
+                                className={cn("flex items-center gap-1.5 transition-all hover:scale-110 active:scale-95",
+                                  isMounted && likes[prof.id] ? "text-rose-500" : (isDark ? "text-white/40 hover:text-rose-400" : "text-slate-400 hover:text-rose-500"),
+                                  isMounted && isLoggedIn ? "cursor-pointer" : "cursor-default"
+                                )}
+                              >
+                                <Heart pack={isMounted && likes[prof.id] ? "filled" : "basic"} className="w-4 h-4 md:w-5 md:h-5" />
+                                <span className="text-xs font-bold">{likesCount[prof.id] || 0}</span>
+                              </button>
                             )}
                           </div>
                         </div>
@@ -508,7 +508,7 @@ export function ClientAgendarView({ org }: { org: any }) {
             {selectedProfessional && (
               <section className={cn("p-4 md:p-6 rounded-2xl border", cardBgClass)}>
                 <h2 className="font-bold text-lg md:text-xl mb-4">Avaliações para {selectedProfessional.name.split(" ")[0]}</h2>
-                
+
                 {isLoadingReviews ? (
                   <div className="flex justify-center py-6"><div className="w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin opacity-50"></div></div>
                 ) : (
@@ -539,12 +539,12 @@ export function ClientAgendarView({ org }: { org: any }) {
                                 </div>
                               </div>
                               {isAdmin && (
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
                                   className="h-8 text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
                                   onClick={async () => {
-                                    if(confirm("Tem certeza que deseja deletar este comentário?")) {
+                                    if (confirm("Tem certeza que deseja deletar este comentário?")) {
                                       await deleteProfessionalReview(rev.id);
                                       setReviews(reviews.filter(r => r.id !== rev.id));
                                     }
@@ -555,7 +555,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                               )}
                             </div>
                             <p className="text-sm leading-relaxed whitespace-pre-wrap">{rev.text}</p>
-                            
+
                             {rev.reply ? (
                               <div className="mt-3 p-3 bg-black/5 dark:bg-black/20 border-l-2 border-primary rounded-r-xl">
                                 <p className="text-xs font-bold mb-1 opacity-70">Resposta do Profissional:</p>
@@ -563,10 +563,10 @@ export function ClientAgendarView({ org }: { org: any }) {
                               </div>
                             ) : isAdmin ? (
                               <div className="mt-3">
-                                <Textarea 
+                                <Textarea
                                   placeholder="Sua resposta..."
                                   value={replyText[rev.id] || ""}
-                                  onChange={e => setReplyText(prev => ({...prev, [rev.id]: e.target.value}))}
+                                  onChange={e => setReplyText(prev => ({ ...prev, [rev.id]: e.target.value }))}
                                   className={cn("min-h-[60px] text-sm", isDark ? "bg-black/20 border-white/10" : "")}
                                 />
                                 <div className="flex justify-end mt-2">
@@ -574,15 +574,15 @@ export function ClientAgendarView({ org }: { org: any }) {
                                     size="sm"
                                     disabled={!replyText[rev.id] || isSubmittingReply[rev.id]}
                                     onClick={async () => {
-                                      setIsSubmittingReply(prev => ({...prev, [rev.id]: true}));
+                                      setIsSubmittingReply(prev => ({ ...prev, [rev.id]: true }));
                                       const res = await replyProfessionalReview(rev.id, replyText[rev.id]);
-                                      if(res.success) {
+                                      if (res.success) {
                                         toast.success("Resposta enviada!");
                                         setReviews(reviews.map(r => r.id === rev.id ? { ...r, reply: replyText[rev.id] } : r));
                                       } else {
                                         toast.error(res.message || "Erro ao responder");
                                       }
-                                      setIsSubmittingReply(prev => ({...prev, [rev.id]: false}));
+                                      setIsSubmittingReply(prev => ({ ...prev, [rev.id]: false }));
                                     }}
                                   >
                                     Responder
@@ -594,12 +594,12 @@ export function ClientAgendarView({ org }: { org: any }) {
                         ))}
                       </div>
                     )}
-                    
+
                     {/* Formulário de Nova Avaliação */}
                     {isLoggedIn && !isAdmin && (
                       <div className="pt-4 border-t" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
                         <h3 className="font-bold text-sm mb-2">Deixe sua avaliação</h3>
-                        <Textarea 
+                        <Textarea
                           placeholder="Escreva seu comentário..."
                           value={newReviewText}
                           onChange={e => {
@@ -743,7 +743,7 @@ export function ClientAgendarView({ org }: { org: any }) {
           {/* Header */}
           <div className="shrink-0 p-4 border-b flex items-center justify-between" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
             <div className="flex items-center gap-3">
-              {bookingStep > 1 && (
+              {bookingStep > 1 && bookingStep < 4 && (
                 <button
                   onClick={() => setBookingStep(bookingStep - 1)}
                   className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
@@ -756,6 +756,8 @@ export function ClientAgendarView({ org }: { org: any }) {
                 {bookingStep === 2 && "Seus Dados"}
                 {bookingStep === 3 && "Revisão do Agendamento"}
                 {bookingStep === 4 && "Pagamento Antecipado"}
+                {bookingStep === 5 && "Aquisição de Pacote"}
+                {bookingStep === 6 && "Solicitação Registrada"}
               </DialogTitle>
             </div>
           </div>
@@ -1122,11 +1124,11 @@ export function ClientAgendarView({ org }: { org: any }) {
             {bookingStep === 5 && (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4 text-center pb-4">
                 <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mx-auto mb-2 dark:bg-blue-900/30 dark:text-blue-400">
-                  <CheckCircle2 className="w-8 h-8" />
+                  <User className="w-8 h-8" />
                 </div>
-                <h3 className="font-bold text-xl px-4">Tudo certo!</h3>
+                <h3 className="font-bold text-xl px-4">Fale com nossa equipe</h3>
                 <p className="text-sm opacity-70 px-6 mt-2 mb-6">
-                  Pacotes e planos são negociados diretamente com a nossa equipe. Clique no botão abaixo para conversar no WhatsApp e finalizar a aquisição do seu pacote.
+                  Os pacotes e planos são ativados diretamente com a nossa equipe. Clique no botão abaixo para conversar no WhatsApp e garantir o seu.
                 </p>
                 <div className="px-6">
                   <a

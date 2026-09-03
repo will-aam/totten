@@ -203,7 +203,7 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
               className="w-full h-12 rounded-xl font-bold flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 mt-2"
               style={{ backgroundColor: theme?.primaryColor || "#0f172a", color: "#fff" }}
             >
-              {isLoading ? "Entrando..." : "Acessar Painel"} <ArrowRight className="h-5 w-5" />
+              {isLoading ? "Entrando..." : "Entrar na sua conta"} <ArrowRight className="h-5 w-5" />
             </button>
           </form>
         )}
