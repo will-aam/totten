@@ -115,7 +115,14 @@ export class SettingsService {
           schedule_generation_type: true,
           booking_theme: true,
           booking_primary_color: true,
-          allow_over_limit_appointments: true
+          allow_over_limit_appointments: true,
+          require_prepayment: true,
+          pix_key: true,
+          payment_instructions: true,
+          show_packages: true,
+          show_most_booked: true,
+          show_team: true,
+          show_team_likes: true,
         },
       }),
       prisma.scheduleRule.findMany({
@@ -137,6 +144,13 @@ export class SettingsService {
       bookingTheme: settings?.booking_theme || "light",
       bookingPrimaryColor: settings?.booking_primary_color || "#0f172a",
       allowOverLimitAppointments: settings?.allow_over_limit_appointments ?? false,
+      requirePrepayment: settings?.require_prepayment ?? true,
+      pixKey: settings?.pix_key || "",
+      paymentInstructions: settings?.payment_instructions || "",
+      showPackages: settings?.show_packages ?? true,
+      showMostBooked: settings?.show_most_booked ?? true,
+      showTeam: settings?.show_team ?? true,
+      showTeamLikes: settings?.show_team_likes ?? true,
 
       scheduleRules: scheduleRules.map((rule) => ({
         id: rule.id,
@@ -179,7 +193,14 @@ export class SettingsService {
         data.scheduleGenerationType !== undefined ||
         data.bookingTheme !== undefined ||
         data.bookingPrimaryColor !== undefined ||
-        data.allowOverLimitAppointments !== undefined
+        data.allowOverLimitAppointments !== undefined ||
+        data.requirePrepayment !== undefined ||
+        data.pixKey !== undefined ||
+        data.paymentInstructions !== undefined ||
+        data.showPackages !== undefined ||
+        data.showMostBooked !== undefined ||
+        data.showTeam !== undefined ||
+        data.showTeamLikes !== undefined
       ) {
         const updateData: any = {};
         if (data.termsOfUse !== undefined) updateData.terms_of_use = data.termsOfUse;
@@ -191,6 +212,13 @@ export class SettingsService {
         if (data.bookingTheme !== undefined) updateData.booking_theme = data.bookingTheme;
         if (data.bookingPrimaryColor !== undefined) updateData.booking_primary_color = data.bookingPrimaryColor;
         if (data.allowOverLimitAppointments !== undefined) updateData.allow_over_limit_appointments = data.allowOverLimitAppointments;
+        if (data.requirePrepayment !== undefined) updateData.require_prepayment = data.requirePrepayment;
+        if (data.pixKey !== undefined) updateData.pix_key = data.pixKey;
+        if (data.paymentInstructions !== undefined) updateData.payment_instructions = data.paymentInstructions;
+        if (data.showPackages !== undefined) updateData.show_packages = data.showPackages;
+        if (data.showMostBooked !== undefined) updateData.show_most_booked = data.showMostBooked;
+        if (data.showTeam !== undefined) updateData.show_team = data.showTeam;
+        if (data.showTeamLikes !== undefined) updateData.show_team_likes = data.showTeamLikes;
 
         await tx.settings.update({
           where: { organization_id: organizationId },

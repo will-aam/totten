@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { cn, sanitizeUrl } from "@/lib/utils";
+import { detectAndFormatPixKey, getRawPixKey } from "@/lib/pix";
 import {
   MapPin,
   Clock,
@@ -225,9 +226,17 @@ export function ClientAgendarView({ org }: { org: any }) {
   const packageTemplates = getFilteredPackages();
 
   // Live preview feature flags (from postMessage) override defaults
-  const showTeam = previewFeatures ? previewFeatures.showTeam : true;
-  const showTeamLikes = previewFeatures ? previewFeatures.showTeamLikes : true;
-  const showPackages = previewFeatures ? previewFeatures.showPackages : true;
+  const showTeam = previewFeatures ? previewFeatures.showTeam : (org.settings?.show_team ?? true);
+  const showTeamLikes = previewFeatures ? previewFeatures.showTeamLikes : (org.settings?.show_team_likes ?? true);
+  const showPackages = previewFeatures ? previewFeatures.showPackages : (org.settings?.show_packages ?? true);
+  const showMostBooked = previewFeatures ? previewFeatures.showMostBooked : (org.settings?.show_most_booked ?? true);
+
+  const activeGeneral = previewGeneral || {
+    requirePrepayment: org.settings?.require_prepayment ?? true,
+    pixKey: org.settings?.pix_key || "",
+    termsText: org.settings?.terms_of_use || "",
+    paymentInstructions: org.settings?.payment_instructions || ""
+  };
 
   // Header Banner
   const profileConfig = (org.link_bio?.profile_config as any) || {};
@@ -1019,7 +1028,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                     </div>
                   </div>
 
-                  {previewGeneral?.requirePrepayment !== false && (
+                  {activeGeneral.requirePrepayment !== false && (
                     <div className="bg-amber-100 text-amber-900 p-4 rounded-none border-l-4 border-amber-500 text-sm flex items-start gap-3 dark:bg-amber-900/30 dark:text-amber-200">
                       <p>
                         Será necessário realizar o <strong>pagamento antecipado de 50%</strong> do valor via PIX na próxima tela para confirmar a reserva do seu horário.
@@ -1041,8 +1050,8 @@ export function ClientAgendarView({ org }: { org: any }) {
                   <div className="space-y-3 pt-4 border-t" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
                     <Label className="text-xs font-bold uppercase tracking-wider opacity-80">Política de Cancelamento</Label>
                     <div className="text-xs p-4 rounded-xl border bg-muted/30 overflow-y-auto max-h-32 whitespace-pre-wrap leading-relaxed">
-                      {previewGeneral?.termsText || `Política de Cancelamento\n\n• Cancelamentos ou remarcações devem ser feitos com no mínimo 24 horas de antecedência.\n• Em caso de atraso, o atendimento poderá ser reduzido ou cancelado, respeitando o tempo da agenda.\n• Em situações excepcionais, cada caso será avaliado com carinho.`}
-                      {previewGeneral?.requirePrepayment !== false && (
+                      {activeGeneral.termsText || `Política de Cancelamento\n\n• Cancelamentos ou remarcações devem ser feitos com no mínimo 24 horas de antecedência.\n• Em caso de atraso, o atendimento poderá ser reduzido ou cancelado, respeitando o tempo da agenda.\n• Em situações excepcionais, cada caso será avaliado com carinho.`}
+                      {activeGeneral.requirePrepayment !== false && (
                         <span className="font-bold block mt-3">
                           • A taxa de sinal não é reembolsável em casos de cancelamento fora do prazo ou não comparecimento.
                         </span>
@@ -1068,7 +1077,7 @@ export function ClientAgendarView({ org }: { org: any }) {
             )}
 
             {/* STEP 4: Payment */}
-            {bookingStep === 4 && previewGeneral?.requirePrepayment !== false && (
+            {bookingStep === 4 && activeGeneral.requirePrepayment !== false && (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4 text-center">
 
                 <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-2 dark:bg-emerald-900/30 dark:text-emerald-400">
@@ -1090,7 +1099,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                   <div className="flex items-center gap-2">
                     <Input
                       readOnly
-                      value={previewGeneral?.pixKey || "(00) 00000-0000"}
+                      value={detectAndFormatPixKey(activeGeneral.pixKey || "(00) 00000-0000")}
                       className={cn("font-mono text-center", isDark ? "bg-black/40 border-white/10" : "bg-white")}
                     />
                     <Button
@@ -1098,6 +1107,8 @@ export function ClientAgendarView({ org }: { org: any }) {
                       variant="outline"
                       className={cn("shrink-0 transition-colors", copiedPix ? "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500" : "")}
                       onClick={() => {
+                        const rawKey = getRawPixKey(activeGeneral.pixKey || "");
+                        navigator.clipboard.writeText(rawKey);
                         setCopiedPix(true);
                         setTimeout(() => setCopiedPix(false), 2000);
                       }}
@@ -1108,12 +1119,12 @@ export function ClientAgendarView({ org }: { org: any }) {
                 </div>
 
                 <div className="text-left bg-blue-50 text-blue-900 p-5 text-sm mx-4 mb-6 dark:bg-blue-950/40 dark:text-blue-200 whitespace-pre-wrap border-l-4 border-blue-500 leading-relaxed shadow-sm">
-                  {previewGeneral?.paymentInstructions || `Agendamento confirmado com sucesso!\n\nRecebi seu pagamento e seu horário está oficialmente reservado.\n\nPeço, por gentileza, que chegue no horário agendado. Para manter a organização da agenda e não prejudicar os atendimentos seguintes, não tolero atrasos.\n\nEm caso de atraso, o atendimento poderá ser reduzido, remarcado ou cancelado, conforme a disponibilidade do dia.\n\nAgradeço pela compreensão e estou ansiosa para atender você!`}
+                  {activeGeneral.paymentInstructions || `Agendamento confirmado com sucesso!\n\nRecebi seu pagamento e seu horário está oficialmente reservado.\n\nPeço, por gentileza, que chegue no horário agendado. Para manter a organização da agenda e não prejudicar os atendimentos seguintes, não tolero atrasos.\n\nEm caso de atraso, o atendimento poderá ser reduzido, remarcado ou cancelado, conforme a disponibilidade do dia.\n\nAgradeço pela compreensão e estou ansiosa para atender você!`}
                 </div>
 
                 <div className="px-4">
                   <a
-                    href={`https://wa.me/${adminWhatsApp}?text=${encodeURIComponent(`Olá! Fiz um agendamento e aqui estão os detalhes:\n\n*Data:* ${bookingData.date ? format(bookingData.date, "dd/MM/yyyy") : ""}\n*Horário:* ${bookingData.time}\n${bookingData.professionalName ? `*Profissional:* ${bookingData.professionalName}\n` : ""}${selectedItem?.name ? `*Serviço:* ${selectedItem.name}\n` : ""}*Valor Total:* R$ ${Number(selectedItem?.price || 0).toFixed(2).replace('.', ',')}\n${previewGeneral?.requirePrepayment !== false ? `*Sinal (50%):* R$ ${(Number(selectedItem?.price || 0) / 2).toFixed(2).replace('.', ',')}\n` : ""}\nAqui está meu comprovante:`)}`}
+                    href={`https://wa.me/${adminWhatsApp}?text=${encodeURIComponent(`Olá! Fiz um agendamento e aqui estão os detalhes:\n\n*Data:* ${bookingData.date ? format(bookingData.date, "dd/MM/yyyy") : ""}\n*Horário:* ${bookingData.time}\n${bookingData.professionalName ? `*Profissional:* ${bookingData.professionalName}\n` : ""}${selectedItem?.name ? `*Serviço:* ${selectedItem.name}\n` : ""}*Valor Total:* R$ ${Number(selectedItem?.price || 0).toFixed(2).replace('.', ',')}\n${activeGeneral.requirePrepayment !== false ? `*Sinal (50%):* R$ ${(Number(selectedItem?.price || 0) / 2).toFixed(2).replace('.', ',')}\n` : ""}\nAqui está meu comprovante:`)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex w-full items-center justify-center rounded-xl h-14 font-bold mb-6 bg-[#25D366] hover:bg-[#25D366]/90 text-white transition-colors shadow-lg shadow-[#25D366]/20"
@@ -1126,7 +1137,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                 <div className="px-4 text-left">
                   <p className="text-xs font-bold uppercase tracking-wider opacity-60 mb-2">Lembrete</p>
                   <div className="text-xs p-4 rounded-xl border bg-muted/30 overflow-y-auto max-h-32 whitespace-pre-wrap leading-relaxed opacity-80">
-                    {previewGeneral?.termsText || `Política de Cancelamento\n\n• Cancelamentos ou remarcações devem ser feitos com no mínimo 24 horas de antecedência.\n• A taxa de sinal não é reembolsável em casos de cancelamento fora do prazo ou não comparecimento.\n• Em caso de atraso, o atendimento poderá ser reduzido ou cancelado, respeitando o tempo da agenda.\n• O não comparecimento sem aviso implica na perda do sinal.\n• Em situações excepcionais, cada caso será avaliado com carinho.`}
+                    {activeGeneral.termsText || `Política de Cancelamento\n\n• Cancelamentos ou remarcações devem ser feitos com no mínimo 24 horas de antecedência.\n• A taxa de sinal não é reembolsável em casos de cancelamento fora do prazo ou não comparecimento.\n• Em caso de atraso, o atendimento poderá ser reduzido ou cancelado, respeitando o tempo da agenda.\n• O não comparecimento sem aviso implica na perda do sinal.\n• Em situações excepcionais, cada caso será avaliado com carinho.`}
                   </div>
                 </div>
 

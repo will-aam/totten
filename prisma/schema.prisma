@@ -101,6 +101,13 @@ model Settings {
   require_cpf      Boolean      @default(true)
   terms_of_use     String?      @db.Text
 
+  require_prepayment   Boolean  @default(true)
+  pix_key              String?
+  payment_instructions String?  @db.Text
+  show_packages        Boolean  @default(true)
+  show_most_booked     Boolean  @default(true)
+  show_team            Boolean  @default(true)
+  show_team_likes      Boolean  @default(true)
 
   organization     Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 

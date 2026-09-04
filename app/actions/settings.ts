@@ -85,6 +85,13 @@ export async function updateSelfServiceSettingsAction(data: {
   bookingTheme?: string;
   bookingPrimaryColor?: string;
 
+  requirePrepayment?: boolean;
+  pixKey?: string;
+  paymentInstructions?: string;
+  showPackages?: boolean;
+  showMostBooked?: boolean;
+  showTeam?: boolean;
+  showTeamLikes?: boolean;
 }) {
   try {
     const admin = await requireAuth();

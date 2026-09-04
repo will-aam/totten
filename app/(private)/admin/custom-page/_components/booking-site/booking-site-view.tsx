@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { BookingAppearanceSettings } from "@/app/(private)/admin/self-service/_components/booking-appearance-settings";
 import { getSelfServiceSettingsAction, updateSelfServiceSettingsAction } from "@/app/actions/settings";
+import { detectAndFormatPixKey } from "@/lib/pix";
 
 export function BookingSiteView({ profile }: { profile?: any }) {
   const [isSaving, setIsSaving] = useState(false);
@@ -22,6 +23,20 @@ export function BookingSiteView({ profile }: { profile?: any }) {
       if (res.success && res.data) {
         setBookingTheme(res.data.bookingTheme || "light");
         setBookingPrimaryColor(res.data.bookingPrimaryColor || "#0f172a");
+
+        setGeneral({
+          requirePrepayment: res.data.requirePrepayment ?? true,
+          termsText: res.data.termsOfUse || "Política de Cancelamento\n\n• Cancelamentos ou remarcações devem ser feitos com no mínimo 24 horas de antecedência.\n• Em caso de atraso, o atendimento poderá ser reduzido ou cancelado, respeitando o tempo da agenda.\n• Em situações excepcionais, cada caso será avaliado com carinho.",
+          pixKey: res.data.pixKey || "",
+          paymentInstructions: res.data.paymentInstructions || "Agendamento confirmado com sucesso!\n\nRecebi seu pagamento e seu horário está oficialmente reservado.\n\nPeço, por gentileza, que chegue no horário agendado. Para manter a organização da agenda e não prejudicar os atendimentos seguintes, não tolero atrasos.\n\nEm caso de atraso, o atendimento poderá ser reduzido, remarcado ou cancelado, conforme a disponibilidade do dia.\n\nAgradeço pela compreensão e estou ansiosa para atender você!",
+        });
+
+        setFeatures({
+          showPackages: res.data.showPackages ?? true,
+          showMostBooked: res.data.showMostBooked ?? true,
+          showTeam: res.data.showTeam ?? true,
+          showTeamLikes: res.data.showTeamLikes ?? true,
+        });
       }
     });
   }, []);
@@ -46,12 +61,20 @@ export function BookingSiteView({ profile }: { profile?: any }) {
       toast.error("A Chave Pix é obrigatória quando o Pagamento Antecipado (Sinal) está ativado.");
       return;
     }
-    
+
     setIsSaving(true);
     try {
       const response = await updateSelfServiceSettingsAction({
         bookingTheme,
         bookingPrimaryColor,
+        requirePrepayment: general.requirePrepayment,
+        termsOfUse: general.termsText,
+        pixKey: general.pixKey,
+        paymentInstructions: general.paymentInstructions,
+        showPackages: features.showPackages,
+        showMostBooked: features.showMostBooked,
+        showTeam: features.showTeam,
+        showTeamLikes: features.showTeamLikes,
       });
 
       if (response.success) {
@@ -139,6 +162,7 @@ export function BookingSiteView({ profile }: { profile?: any }) {
                 <Input
                   value={general.pixKey}
                   onChange={(e) => setGeneral({ ...general, pixKey: e.target.value })}
+                  onBlur={(e) => setGeneral({ ...general, pixKey: detectAndFormatPixKey(e.target.value) })}
                   placeholder="Ex: (00) 00000-0000, email@exemplo.com ou CPF"
                   disabled={!general.requirePrepayment}
                 />
