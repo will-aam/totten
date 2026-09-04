@@ -236,6 +236,10 @@ export function ClientAgendarView({ org }: { org: any }) {
     ? profileConfig.contact
     : professionalSiteConfig.contact || {};
   const bannerUrl = profileConfig.bannerImage || org.settings?.cover_image_url || presentation.heroImage;
+  
+  const rawAdminPhone = org.settings?.phone_whatsapp?.replace(/\D/g, '') || globalContact?.phone?.replace(/\D/g, '') || "";
+  const adminWhatsApp = rawAdminPhone.length >= 10 && !rawAdminPhone.startsWith("55") ? `55${rawAdminPhone}` : rawAdminPhone;
+
   return (
     <div className={cn("min-h-screen w-full relative", bgClass, theme.css)} style={{ color: theme.textColor, fontFamily: theme.fontFamily }}>
 
@@ -1109,7 +1113,7 @@ export function ClientAgendarView({ org }: { org: any }) {
 
                 <div className="px-4">
                   <a
-                    href={`https://wa.me/${globalContact?.phone?.replace(/\D/g, '') || ""}?text=Ol%C3%A1%2C%20fiz%20um%20agendamento%20para%20o%20dia%20${bookingData.date ? format(bookingData.date, "dd/MM/yyyy") : ""}%20%C3%A0s%20${bookingData.time}%20${bookingData.professionalName ? `com%20${bookingData.professionalName}%20` : ""}e%20aqui%20est%C3%A1%20meu%20comprovante%3A`}
+                    href={`https://wa.me/${adminWhatsApp}?text=${encodeURIComponent(`Olá! Fiz um agendamento e aqui estão os detalhes:\n\n*Data:* ${bookingData.date ? format(bookingData.date, "dd/MM/yyyy") : ""}\n*Horário:* ${bookingData.time}\n${bookingData.professionalName ? `*Profissional:* ${bookingData.professionalName}\n` : ""}${selectedItem?.name ? `*Serviço:* ${selectedItem.name}\n` : ""}*Valor Total:* R$ ${Number(selectedItem?.price || 0).toFixed(2).replace('.', ',')}\n${previewGeneral?.requirePrepayment !== false ? `*Sinal (50%):* R$ ${(Number(selectedItem?.price || 0) / 2).toFixed(2).replace('.', ',')}\n` : ""}\nAqui está meu comprovante:`)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex w-full items-center justify-center rounded-xl h-14 font-bold mb-6 bg-[#25D366] hover:bg-[#25D366]/90 text-white transition-colors shadow-lg shadow-[#25D366]/20"
