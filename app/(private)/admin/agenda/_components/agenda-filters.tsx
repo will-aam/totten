@@ -44,6 +44,9 @@ export function AgendaFilters({ filters, onFiltersChange }: AgendaFiltersProps) 
   const { data: servicesResponse } = useSWR<any>("services?active=true", apiClient);
   const services = Array.isArray(servicesResponse) ? servicesResponse : servicesResponse?.data || [];
 
+  const { data: clientsResponse } = useSWR<any>("clients?limit=1000&active=true", apiClient);
+  const clients = Array.isArray(clientsResponse) ? clientsResponse : clientsResponse?.data || [];
+
   useEffect(() => {
     async function fetchTeam() {
       if (isOwner) {
@@ -95,13 +98,14 @@ export function AgendaFilters({ filters, onFiltersChange }: AgendaFiltersProps) 
           team={team}
           services={services}
           session={session}
+          clients={clients}
         />
       </PopoverContent>
     </Popover>
   );
 }
 
-export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, services, session }: any) {
+export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, services, session, clients }: any) {
   const hasActiveFilters =
     !!filters.professionalId ||
     !!filters.serviceId ||
@@ -173,7 +177,7 @@ export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, serv
             <CustomTrigger placeholder="Todos" />
             <SelectContent className="rounded-xl border border-border/50 shadow-lg z-[100]">
               <SelectItem value="ALL" className="font-medium text-muted-foreground">Todos</SelectItem>
-              <SelectItem value={session?.user?.id || ""} className="font-medium">Admin</SelectItem>
+              <SelectItem value={session?.user?.id || ""} className="font-medium">{session?.user?.name || "Admin"}</SelectItem>
               {team?.filter((m: any) => m.id !== session?.user?.id).map((member: any) => (
                 <SelectItem key={member.id} value={member.id} className="font-medium">
                   {member.display_name}
@@ -194,9 +198,13 @@ export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, serv
           onValueChange={(val) => onFiltersChange({ ...filters, patientId: val === "ALL" ? undefined : val })}
         >
           <CustomTrigger placeholder="Todos" />
-          <SelectContent className="rounded-xl border border-border/50 shadow-lg z-[100]">
+          <SelectContent className="rounded-xl border border-border/50 shadow-lg z-[100] max-h-[200px]">
             <SelectItem value="ALL" className="font-medium text-muted-foreground">Todos</SelectItem>
-            {/* Lista de pacientes será injetada aqui futuramente */}
+            {clients?.map((c: any) => (
+              <SelectItem key={c.id} value={c.id} className="font-medium">
+                {c.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -221,26 +229,6 @@ export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, serv
           </SelectContent>
         </Select>
       </div>
-
-      {/* 5. Sala de atendimento */}
-      <div className="space-y-1">
-        <Label className="text-sm font-medium text-muted-foreground">
-          Sala de atendimento
-        </Label>
-        <Select
-          value={filters.roomId || "ALL"}
-          onValueChange={(val) => onFiltersChange({ ...filters, roomId: val === "ALL" ? undefined : val })}
-        >
-          <CustomTrigger placeholder="Todas" />
-          <SelectContent className="rounded-xl border border-border/50 shadow-lg z-[100]">
-            <SelectItem value="ALL" className="font-medium text-muted-foreground">Todas</SelectItem>
-            {/* Lista de salas será injetada aqui futuramente */}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Tipo mantido oculto visualmente caso precise, mas para bater 100% com o print, nós não o mostramos */}
-      {/* 
       <div className="space-y-1">
         <Label className="text-sm font-medium text-[#666666]">Tipo</Label>
         <Select value={filters.type || "ALL"} onValueChange={(val: any) => onFiltersChange({ ...filters, type: val })}>
@@ -252,7 +240,7 @@ export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, serv
           </SelectContent>
         </Select>
       </div>
-      */}
+
 
     </div>
   );

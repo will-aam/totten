@@ -249,7 +249,7 @@ export function DailyAgendaGrid({
   );
 
   return (
-    <div className="bg-card border border-border/50 rounded-2xl shadow-sm overflow-hidden flex flex-col relative select-none">
+    <div className="bg-card border border-border/50 rounded-lg shadow-sm overflow-hidden flex flex-col relative select-none">
       {isMoving && (
         <div className="absolute inset-0 bg-background/40 z-100 flex items-center justify-center backdrop-blur-[2px]">
           <LoaderDots className="h-10 w-10 animate-spin text-primary" />

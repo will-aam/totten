@@ -90,7 +90,7 @@ export function AppointmentCardContent({
     return (
       <div
         className={cn(
-          "h-full w-full rounded-xl border border-dashed flex items-center justify-between px-2 py-1 shadow-sm transition-transform overflow-hidden",
+          "h-full w-full rounded-md border border-dashed flex items-center justify-between px-2 py-1 shadow-sm transition-transform overflow-hidden",
           cardColor, // Aplicando a cor
           "opacity-50 grayscale-[0.8]",
           isOverlay && "shadow-2xl scale-105 rotate-1 cursor-grabbing",
@@ -113,7 +113,7 @@ export function AppointmentCardContent({
   return (
     <div
       className={cn(
-        "h-full w-full rounded-xl border flex shadow-sm group overflow-hidden transition-transform relative",
+        "h-full w-full rounded-md border flex shadow-sm group overflow-hidden transition-transform relative",
         isCompact ? "flex-row items-center px-2 py-1 gap-2" : "flex-col p-3",
         cardColor, // Aplicando a cor
         appt.hasCharge && !isPackageArchived && "border-2 border-destructive",
@@ -267,57 +267,7 @@ export function DraggableAppointmentCard({
         onClick();
       }}
     >
-      {!isCancelled && (
-        <div className="absolute top-1 right-1 z-50">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-6 w-6 bg-transparent hover:bg-black/5 text-black/50 hover:text-black shadow-none border-none p-0 m-0"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <DotsVerticalRounded className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 z-100 rounded-xl">
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onClick();
-                }}
-                className="font-medium"
-              >
-                <InfoCircle className="mr-2 h-4 w-4" /> Detalhes da Sessão
-              </DropdownMenuItem>
 
-              <DropdownMenuSeparator />
-
-              {!isLocked && appt.status?.toUpperCase() !== "CONFIRMADO" && (
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (onQuickConfirm) onQuickConfirm(appt);
-                  }}
-                  className="text-blue-600 focus:text-blue-700 font-medium"
-                >
-                  <Check className="mr-2 h-4 w-4" /> Marcar Confirmado
-                </DropdownMenuItem>
-              )}
-
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onWhatsApp(e);
-                }}
-                className="text-emerald-600 focus:text-emerald-700 font-medium"
-              >
-                <MessageCircle className="mr-2 h-4 w-4" /> Enviar WhatsApp
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      )}
 
       <AppointmentCardContent
         appt={appt}

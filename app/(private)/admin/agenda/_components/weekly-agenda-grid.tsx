@@ -222,7 +222,7 @@ export function WeeklyAgendaGrid({
   }, [now, startHour, endHour]);
 
   return (
-    <div className="flex flex-col bg-card rounded-3xl border border-border/50 overflow-hidden shadow-sm relative select-none">
+    <div className="flex flex-col bg-card rounded-lg border border-border/50 overflow-hidden shadow-sm relative select-none">
       {isMoving && (
         <div className="absolute inset-0 bg-background/40 z-100 flex items-center justify-center backdrop-blur-[2px]">
           <LoaderDots className="h-10 w-10 animate-spin text-primary" />

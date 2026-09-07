@@ -76,7 +76,7 @@ export function MonthlyAgendaGrid({
       {/* VISÃO MOBILE                               */}
       {/* ========================================== */}
       <div className="flex flex-col h-full md:hidden gap-4">
-        <div className="bg-card rounded-3xl border border-border/50 shadow-sm p-5 shrink-0">
+        <div className="bg-card rounded-lg border border-border/50 shadow-sm p-5 shrink-0">
           <div className="grid grid-cols-7 mb-4">
             {weekDaysHeaders.map((day, i) => (
               <div
@@ -158,7 +158,7 @@ export function MonthlyAgendaGrid({
           </div>
         </div>
 
-        <div className="flex-1 bg-card rounded-3xl border border-border/50 shadow-sm p-5 overflow-hidden flex flex-col">
+        <div className="flex-1 bg-card rounded-lg border border-border/50 shadow-sm p-5 overflow-hidden flex flex-col">
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-xs font-black text-foreground uppercase tracking-widest flex items-center gap-2">
               <span className="w-1.5 h-4 bg-primary rounded-full" />
@@ -262,7 +262,7 @@ export function MonthlyAgendaGrid({
       {/* ========================================== */}
       {/* VISÃO DESKTOP                              */}
       {/* ========================================== */}
-      <div className="hidden md:flex flex-col bg-card rounded-3xl border border-border/50 overflow-hidden shadow-sm h-full">
+      <div className="hidden md:flex flex-col bg-card rounded-lg border border-border/50 overflow-hidden shadow-sm h-full">
         <div className="grid grid-cols-7 bg-muted/30 border-b border-border/50">
           {weekDaysHeaders.map((day, i) => (
             <div

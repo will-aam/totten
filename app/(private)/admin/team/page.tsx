@@ -97,11 +97,11 @@ export default function TeamPage() {
     "create" | "edit" | "toggle" | "delete" | null
   >(null);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
-  
-  const [catalogOptions, setCatalogOptions] = useState<{ 
-    services: { id: string; name: string }[]; 
-    packages: { id: string; name: string }[]; 
-    scheduleRules: { id: string; name: string; is_default: boolean }[] 
+
+  const [catalogOptions, setCatalogOptions] = useState<{
+    services: { id: string; name: string }[];
+    packages: { id: string; name: string }[];
+    scheduleRules: { id: string; name: string; is_default: boolean }[]
   }>({ services: [], packages: [], scheduleRules: [] });
 
   const [formData, setFormData] = useState({
@@ -132,10 +132,10 @@ export default function TeamPage() {
   const loadOptions = async () => {
     const res = await getCatalogOptions();
     if (res.success) {
-      setCatalogOptions({ 
-        services: res.services || [], 
-        packages: res.packages || [], 
-        scheduleRules: res.scheduleRules || [] 
+      setCatalogOptions({
+        services: res.services || [],
+        packages: res.packages || [],
+        scheduleRules: res.scheduleRules || []
       });
     }
   };
@@ -380,7 +380,7 @@ export default function TeamPage() {
             </div>
 
             <div className="grid gap-2">
-              <Label>Profissão / Especialidade (Opcional)</Label>
+              <Label>Especialidade (Opcional)</Label>
               <Input
                 placeholder="Ex: Médica Dermatologista"
                 value={formData.profession}
@@ -389,7 +389,7 @@ export default function TeamPage() {
                 }
               />
             </div>
-            
+
             <div className="grid gap-2">
               <div className="flex items-center justify-between">
                 <Label>Sobre o Profissional (Opcional)</Label>
@@ -609,8 +609,8 @@ export default function TeamPage() {
                         onCheckedChange={(checked) => {
                           setFormData(prev => ({
                             ...prev,
-                            service_ids: checked 
-                              ? [...prev.service_ids, service.id] 
+                            service_ids: checked
+                              ? [...prev.service_ids, service.id]
                               : prev.service_ids.filter(id => id !== service.id)
                           }));
                         }}
@@ -650,8 +650,8 @@ export default function TeamPage() {
                         onCheckedChange={(checked) => {
                           setFormData(prev => ({
                             ...prev,
-                            package_template_ids: checked 
-                              ? [...prev.package_template_ids, pkg.id] 
+                            package_template_ids: checked
+                              ? [...prev.package_template_ids, pkg.id]
                               : prev.package_template_ids.filter(id => id !== pkg.id)
                           }));
                         }}
@@ -810,7 +810,7 @@ const TeamMemberCard = memo(
                   )}
                 </div>
               )}
-              
+
               <div className="flex flex-wrap items-center gap-1.5 ml-1 sm:ml-2 sm:border-l sm:border-border/50 sm:pl-2">
                 {member.services && member.services.length > 0 && (
                   <span className="text-[10px] text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded-full">
