@@ -198,6 +198,7 @@ export function ClientAgendarView({ org }: { org: any }) {
     textColor: systemTheme.txt,
     css: systemTheme.css,
     fontFamily: tc.fontFamily || "Inter, sans-serif",
+    btnTxt: systemTheme.btnTxt,
   };
 
   const bgClass = systemTheme.css;
@@ -245,7 +246,7 @@ export function ClientAgendarView({ org }: { org: any }) {
     ? profileConfig.contact
     : professionalSiteConfig.contact || {};
   const bannerUrl = profileConfig.bannerImage || org.settings?.cover_image_url || presentation.heroImage;
-  
+
   const rawAdminPhone = org.settings?.phone_whatsapp?.replace(/\D/g, '') || globalContact?.phone?.replace(/\D/g, '') || "";
   const adminWhatsApp = rawAdminPhone.length >= 10 && !rawAdminPhone.startsWith("55") ? `55${rawAdminPhone}` : rawAdminPhone;
 
@@ -429,7 +430,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                             R$ {Number(pkg.price).toFixed(2)}
                           </span>
                           <Button
-                            className="rounded-xl px-6 h-10 shadow-sm font-bold transition-transform active:scale-95 whitespace-nowrap bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+                            className={cn("rounded-xl px-6 h-10 shadow-sm font-bold transition-transform active:scale-95 whitespace-nowrap", isDark ? "bg-white text-slate-900 hover:bg-slate-200" : "bg-slate-900 text-white hover:bg-slate-800")}
                             onClick={(e) => { e.stopPropagation(); handleOpenBooking(pkg); }}
                           >
                             Agendar
@@ -503,7 +504,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                             </div>
 
                             <Button
-                              className="rounded-xl px-6 h-10 w-full md:w-auto shadow-sm font-bold transition-transform active:scale-95 whitespace-nowrap shrink-0 bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+                              className={cn("rounded-xl px-6 h-10 w-full md:w-auto shadow-sm font-bold transition-transform active:scale-95 whitespace-nowrap shrink-0", isDark ? "bg-white text-slate-900 hover:bg-slate-200" : "bg-slate-900 text-white hover:bg-slate-800")}
                               onClick={(e) => { e.stopPropagation(); handleOpenBooking(srv); }}
                             >
                               Agendar
@@ -784,7 +785,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                 <div className="bg-muted/50 p-4 rounded-xl flex items-center gap-3 border" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
                   <Calendar className="w-6 h-6 opacity-50" />
                   <div>
-                    <p className="font-bold text-sm">Serviço/Pacote Selecionado</p>
+                    <p className="font-bold text-sm">Serviço Selecionado</p>
                     <p className="text-xs opacity-70">{selectedItem?.name}</p>
                   </div>
                 </div>
@@ -878,10 +879,10 @@ export function ClientAgendarView({ org }: { org: any }) {
                                 "relative py-3 rounded-xl text-sm font-bold border text-center transition-all overflow-hidden",
                                 isSelected ? "shadow-md scale-[1.02]" : "bg-transparent hover:bg-black/5 dark:hover:bg-white/5"
                               )}
-                              style={isSelected ? { backgroundColor: theme.primaryColor, color: tc.buttonText || "#fff", borderColor: theme.primaryColor } : { borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' }}
+                              style={isSelected ? { backgroundColor: theme.primaryColor, color: theme.btnTxt, borderColor: theme.primaryColor } : { borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' }}
                             >
                               {isSelected && (
-                                <div className="absolute inset-0 flex items-center justify-between px-3" style={{ backgroundColor: theme.primaryColor }}>
+                                <div className="absolute inset-0 flex items-center justify-between px-3" style={{ backgroundColor: theme.primaryColor, color: theme.btnTxt }}>
                                   <span className="flex-1 text-center font-black text-base">{time}</span>
                                   <CheckCircle2 className="w-5 h-5 shrink-0" />
                                 </div>
@@ -1201,7 +1202,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                 onClick={() => setBookingStep(2)}
                 disabled={!bookingData.date || !bookingData.time || !bookingData.professionalId}
                 className="w-full h-12 rounded-xl font-bold"
-                style={(!bookingData.date || !bookingData.time || !bookingData.professionalId) ? {} : { backgroundColor: theme.primaryColor, color: tc.buttonText || "#fff" }}
+                style={(!bookingData.date || !bookingData.time || !bookingData.professionalId) ? {} : { backgroundColor: theme.primaryColor, color: theme.btnTxt }}
               >
                 Próximo <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
@@ -1212,7 +1213,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                 onClick={() => setBookingStep(3)}
                 disabled={!bookingData.firstName || !bookingData.phone || !bookingData.email}
                 className="w-full h-12 rounded-xl font-bold"
-                style={(!bookingData.firstName || !bookingData.phone || !bookingData.email) ? {} : { backgroundColor: theme.primaryColor, color: tc.buttonText || "#fff" }}
+                style={(!bookingData.firstName || !bookingData.phone || !bookingData.email) ? {} : { backgroundColor: theme.primaryColor, color: theme.btnTxt }}
               >
                 Próximo <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
@@ -1260,7 +1261,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                 }}
                 disabled={!policyAccepted || isBooking}
                 className="w-full h-12 rounded-xl font-bold text-base"
-                style={(!policyAccepted || isBooking) ? {} : { backgroundColor: theme.primaryColor, color: tc.buttonText || "#fff" }}
+                style={(!policyAccepted || isBooking) ? {} : { backgroundColor: theme.primaryColor, color: theme.btnTxt }}
               >
                 {isBooking ? (
                   <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
