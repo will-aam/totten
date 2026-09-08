@@ -90,10 +90,10 @@ export function AppointmentCardContent({
     return (
       <div
         className={cn(
-          "h-full w-full rounded-md border border-dashed flex items-center justify-between px-2 py-1 shadow-sm transition-transform overflow-hidden",
+          "h-full w-full rounded-sm border border-dashed flex items-center justify-between px-2 py-1 shadow-sm transition-all overflow-hidden",
           cardColor, // Aplicando a cor
           "opacity-50 grayscale-[0.8]",
-          isOverlay && "shadow-2xl scale-105 rotate-1 cursor-grabbing",
+          isOverlay && "shadow-2xl cursor-grabbing ring-1 ring-primary/50",
         )}
       >
         <div className="flex items-center gap-1.5 truncate pr-2 w-full">
@@ -113,13 +113,13 @@ export function AppointmentCardContent({
   return (
     <div
       className={cn(
-        "h-full w-full rounded-md border flex shadow-sm group overflow-hidden transition-transform relative",
+        "h-full w-full rounded-sm border flex shadow-sm hover:shadow-md transition-all duration-200 group overflow-hidden relative",
         isCompact ? "flex-row items-center px-2 py-1 gap-2" : "flex-col p-3",
         cardColor, // Aplicando a cor
         appt.hasCharge && !isPackageArchived && "border-2 border-destructive",
         isPackageArchived && "border-2 border-destructive/80 opacity-80",
         isOverlay &&
-        "shadow-2xl scale-105 rotate-1 border-primary/50 cursor-grabbing",
+        "shadow-2xl border-primary/50 cursor-grabbing ring-1 ring-primary/50 bg-background/90 backdrop-blur-md",
       )}
     >
       <div

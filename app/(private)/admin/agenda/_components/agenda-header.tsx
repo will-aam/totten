@@ -110,7 +110,7 @@ export function AgendaHeader({
           variant="outline"
           size="icon"
           onClick={onOpenSettings}
-          className="rounded-full h-9 w-9 text-muted-foreground hover:bg-muted"
+          className=" h-9 w-9 bg-none border border-none hover:bg-muted"
         >
           <Slider size="sm" />
         </Button>

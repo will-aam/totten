@@ -127,7 +127,7 @@ export function RecentCheckIns() {
   }, [handleObserver, checkIns]);
 
   return (
-    <Card className="border-border shadow-sm flex flex-col w-full h-full">
+    <Card className="border-border/50 shadow-md bg-card flex flex-col w-full h-full rounded-2xl dark:border-white/10 dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] transition-all">
       <CardHeader className="py-3 px-4">
         <div className="flex items-center gap-2">
           <CardTitle className="text-base font-bold text-foreground">

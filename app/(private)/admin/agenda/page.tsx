@@ -41,6 +41,9 @@ import { ScheduleSettingsModal } from "./_components/schedule-settings-modal";
 import { AgendaHeader } from "./_components/agenda-header";
 import { AgendaFilters, AgendaFiltersState } from "./_components/agenda-filters";
 import { AgendaSidebar } from "./_components/agenda-sidebar";
+import { AgendaSpeedDial } from "./_components/agenda-speed-dial";
+import { NewBlockModal } from "./_components/new-block-modal";
+import { NewWalkInModal } from "./_components/new-walk-in-modal";
 import { useSidebar } from "@/components/ui/sidebar";
 import { apiClient, ApiError } from "@/lib/api-client";
 
@@ -62,6 +65,8 @@ export default function AgendaPage() {
   const [hasSetInitialView, setHasSetInitialView] = useState(false);
 
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
+  const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
+  const [isWalkInModalOpen, setIsWalkInModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] =
     useState<Appointment | null>(null);
@@ -151,6 +156,8 @@ export default function AgendaPage() {
       time: appt.time || format(new Date(appt.date_time), "HH:mm"),
     })) as Appointment[];
   };
+
+  const scheduleBlocks = (agendaData as any)?.scheduleBlocks || [];
 
   const currentViewAppointments = useMemo(() => {
     let list = mapAppointments(agendaData);
@@ -302,7 +309,7 @@ export default function AgendaPage() {
         onViewModeChange={(val) => setViewMode(val)}
       />
 
-      <div className="flex flex-1 relative min-h-[calc(100vh-64px)]">
+      <div className="flex flex-1 relative h-[calc(100vh-64px)] overflow-hidden">
         <AgendaSidebar
           isOpen={!isMainSidebarOpen}
           filters={filters}
@@ -315,8 +322,8 @@ export default function AgendaPage() {
           }}
         />
 
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-col gap-4 p-4 md:p-6 w-full pb-32 md:pb-6 relative min-h-[calc(100vh-100px)]">
+        <div className="flex-1 flex flex-col min-w-0 min-h-0">
+          <div className="flex flex-col gap-4 p-4 pb-24 md:p-6 w-full relative flex-1 min-h-0">
             <div className="flex justify-end md:hidden">
               <Tabs
                 value={viewMode}
@@ -340,10 +347,11 @@ export default function AgendaPage() {
             </div>
 
             {/* GRIDS DA AGENDA */}
-            <div className="flex-1 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <div className="flex-1 flex flex-col min-h-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
               {viewMode === "day" && (
                 <DailyAgendaGrid
                   appointments={appointments}
+                  scheduleBlocks={scheduleBlocks}
                   onAppointmentClick={setSelectedAppointment}
                   onRefresh={mutateAll}
                   startHour={openingHourNumber}
@@ -358,6 +366,7 @@ export default function AgendaPage() {
               {viewMode === "week" && (
                 <WeeklyAgendaGrid
                   appointments={weekAppointments}
+                  scheduleBlocks={scheduleBlocks}
                   weekStart={weekStart}
                   onAppointmentClick={setSelectedAppointment}
                   startHour={openingHourNumber}
@@ -382,27 +391,22 @@ export default function AgendaPage() {
         </div>
       </div>
 
-      {/* BOTÕES FLUTUANTES (Apenas no Mobile para Criar) */}
-      <Button
-        onClick={() => {
+      <AgendaSpeedDial
+        showScrollTop={showScrollTop}
+        onNewAppointment={() => {
           setSelectedTimeSlot(undefined);
           setIsNewModalOpen(true);
         }}
-        className={cn(
-          "fixed bottom-20 right-4 md:hidden h-14 w-14 rounded-full shadow-2xl bg-primary text-primary-foreground z-40 transition-all duration-300",
-          showScrollTop
-            ? "translate-y-16 opacity-0 pointer-events-none"
-            : "translate-y-0 opacity-100 hover:scale-110",
-        )}
-        size="icon"
-      >
-        <Plus className="h-6 w-6" />
-      </Button>
+        onNewBlock={() => setIsBlockModalOpen(true)}
+        onManualCheckIn={() => setIsWalkInModalOpen(true)}
+        onNewSale={() => toast("Redirecionando para PDV / Financeiro...")}
+        onNewPackage={() => toast("Redirecionando para Venda de Pacote...")}
+      />
 
       <button
         onClick={scrollToTop}
         className={cn(
-          "fixed bottom-20 right-4 md:bottom-8 md:right-8 h-14 w-14 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 z-50",
+          "fixed bottom-20 right-24 md:bottom-8 md:right-28 h-14 w-14 flex items-center justify-center rounded-full bg-secondary text-secondary-foreground shadow-lg transition-all duration-300 z-40 border",
           showScrollTop
             ? "translate-y-0 opacity-100 hover:scale-110"
             : "translate-y-16 opacity-0 pointer-events-none",
@@ -423,6 +427,22 @@ export default function AgendaPage() {
         initialTime={selectedTimeSlot}
         onCreated={mutateAll}
       />
+
+      <NewBlockModal
+        open={isBlockModalOpen}
+        onOpenChange={setIsBlockModalOpen}
+        openingTime={openingTime}
+        closingTime={closingTime}
+        initialDate={selectedDate}
+        onCreated={mutateAll}
+      />
+
+      <NewWalkInModal
+        open={isWalkInModalOpen}
+        onOpenChange={setIsWalkInModalOpen}
+        onCreated={mutateAll}
+      />
+
       <AppointmentDetailsModal
         open={!!selectedAppointment}
         onOpenChange={(open) => !open && setSelectedAppointment(null)}

@@ -142,7 +142,7 @@ A Totten expõe **quatro superfícies distintas**, cada uma direcionada a uma pe
 ```
 totten/
 ├── 📁 app/
-│   ├── 📁 (private)/                    # 🔒 Grupo de rotas protegidas
+│   ├── 📁 (private)/                    #  Grupo de rotas protegidas
 │   │   └── 📁 admin/                    # Painel admin completo (20+ sub-rotas)
 │   │       ├── 📁 agenda/               # Agendamentos e recorrências
 │   │       ├── 📁 dashboard/            # Visão geral do negócio

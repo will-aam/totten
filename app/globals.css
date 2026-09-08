@@ -5,7 +5,7 @@
 
 /* Tema Claro (Padrão SaaS: Branco, Cinza e Preto) */
 :root, .light {
-  --background: #ffffff;
+  --background: #f8fafc;
   --foreground: #09090b;
   --card: #ffffff;
   --card-foreground: #09090b;
@@ -30,7 +30,7 @@
   --chart-4: #a1a1aa;
   --chart-5: #e4e4e7;
   --radius: 0.75rem;
-  --sidebar: #ffffff;
+  --sidebar: #f8fafc;
   --sidebar-foreground: #09090b;
   --sidebar-primary: #18181b;
   --sidebar-primary-foreground: #ffffff;
@@ -42,7 +42,7 @@
 
 /* Tema Escuro (Modo Dark) */
 .dark {
-  --background: #09090b;
+  --background: #000000;
   --foreground: #fafafa;
   --card: #09090b;
   --card-foreground: #fafafa;
@@ -66,7 +66,7 @@
   --chart-3: #a1a1aa;
   --chart-4: #71717a;
   --chart-5: #3f3f46;
-  --sidebar: #09090b;
+  --sidebar: #000000;
   --sidebar-foreground: #fafafa;
   --sidebar-primary: #fafafa;
   --sidebar-primary-foreground: #18181b;

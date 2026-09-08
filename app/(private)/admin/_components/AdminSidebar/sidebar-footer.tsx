@@ -1,6 +1,5 @@
 import Link from "next/link";
 import {
-  User,
   HeadphoneMic,
   Cog,
   Power,
@@ -11,7 +10,6 @@ import { cn } from "@/lib/utils";
 
 interface SidebarUserFooterProps {
   isOwner: boolean;
-  userEmail?: string | null;
   whatsappUrl: string;
   loggingOut: boolean;
   onLogout: () => void;
@@ -20,38 +18,19 @@ interface SidebarUserFooterProps {
 
 export function SidebarUserFooter({
   isOwner,
-  userEmail,
   whatsappUrl,
   loggingOut,
   onLogout,
   onNavigate,
 }: SidebarUserFooterProps) {
   return (
-    <SidebarFooter className="p-4 border-t flex flex-col gap-3">
-      <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <User size="sm" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium leading-none mb-1">
-              {isOwner ? "Administrador" : "Colaborador(a)"}
-            </span>
-            <span className="text-[10px] text-muted-foreground leading-none truncate max-w-35">
-              {userEmail || "usuario@totten.com"}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="h-px bg-border/50 w-full" />
-
-      <div className="flex w-full items-center gap-1">
+    <SidebarFooter className="p-4 mt-auto">
+      <div className="flex items-center w-full bg-accent/40 border border-border/40 rounded-2xl p-1.5 shadow-sm">
         <SidebarMenuButton
           asChild
           tooltip="Suporte"
           className={cn(
-            "flex-1 justify-center bg-transparent hover:bg-transparent text-muted-foreground hover:text-primary",
+            "flex-1 h-10 justify-center rounded-xl bg-transparent hover:bg-background hover:text-primary transition-all hover:shadow-sm",
             !isOwner && "hidden", // Esconde suporte para colaborador
           )}
         >
@@ -64,7 +43,7 @@ export function SidebarUserFooter({
           <SidebarMenuButton
             asChild
             tooltip="Configurações"
-            className="flex-1 justify-center bg-transparent hover:bg-transparent text-muted-foreground hover:text-foreground"
+            className="flex-1 h-10 justify-center rounded-xl bg-transparent hover:bg-background hover:text-primary transition-all hover:shadow-sm"
           >
             <Link href="/admin/settings" onClick={onNavigate}>
               <Cog size="sm" />
@@ -75,7 +54,8 @@ export function SidebarUserFooter({
         <SidebarMenuButton
           onClick={onLogout}
           disabled={loggingOut}
-          className="flex-2 justify-center text-destructive hover:text-destructive hover:bg-destructive/10"
+          tooltip="Sair"
+          className="flex-1 h-10 justify-center rounded-xl bg-transparent hover:bg-destructive/10 text-destructive hover:text-destructive transition-all"
         >
           {loggingOut ? (
             <LoaderDots size="sm" className="animate-spin" />

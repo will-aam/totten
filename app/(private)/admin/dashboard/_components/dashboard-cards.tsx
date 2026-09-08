@@ -37,7 +37,7 @@ function KpiCard({
   return (
     <Card
       className={cn(
-        "relative overflow-hidden border-none shadow-sm bg-accent flex flex-col justify-between min-w-[85vw] md:min-w-0 snap-center shrink-0",
+        "relative overflow-hidden border border-border/50 shadow-md bg-card flex flex-col justify-between min-w-[85vw] md:min-w-0 snap-center shrink-0 rounded-2xl dark:border-white/10 dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] transition-all",
         className,
       )}
     >

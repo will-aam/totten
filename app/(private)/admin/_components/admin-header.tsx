@@ -31,14 +31,13 @@ export function AdminHeader({ title }: { title: string }) {
       <div className="flex items-center gap-2 sm:gap-3">
         {title === "Dashboard" && (
           <div className="flex items-center gap-2 sm:gap-3">
-            <button className="relative flex items-center justify-center p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground rounded-full transition-all">
+            {/* <button className="relative flex items-center justify-center p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground rounded-full transition-all">
               <Bell className="w-5 h-5" removePadding />
               <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
-            </button>
+            </button> */}
             <div className="w-px h-5 bg-border/50" />
           </div>
         )}
-        {/*  Removida a trava "isOwner". Agora a colaboradora também pode acessar o Totem para os clientes */}
         <Button
           asChild
           variant="secondary"

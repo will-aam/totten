@@ -20,7 +20,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Clock, LoaderDots, AlertTriangle, ChevronLeft } from "@boxicons/react";
+import { LoaderDots } from "@boxicons/react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
@@ -192,7 +192,6 @@ export const ScheduleSettingsModal = memo(
               <div className="flex flex-col gap-3">
                 <div className="space-y-1">
                   <p className="text-sm font-black text-destructive flex items-center gap-1.5">
-                    <AlertTriangle className="h-4 w-4" />
                     Limpar hoje
                   </p>
                   <p className="text-xs font-medium text-muted-foreground leading-relaxed">

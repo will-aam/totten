@@ -22,7 +22,7 @@ import {
   restrictToVerticalAxis,
   restrictToFirstScrollableAncestor,
 } from "@dnd-kit/modifiers";
-import { Clock, LoaderDots, Plus } from "@boxicons/react";
+import { Clock, LoaderDots, Plus, Lock } from "@boxicons/react";
 import { toast } from "sonner";
 import { updateAppointmentDateTime } from "@/app/actions/appointments";
 
@@ -33,14 +33,32 @@ import {
   cleanPhone,
 } from "./appointment-card";
 
+function DroppableDayColumn({
+  dateKey,
+  children,
+  className,
+}: {
+  dateKey: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const { setNodeRef } = useDroppable({ id: dateKey });
+  return (
+    <div ref={setNodeRef} className={className}>
+      {children}
+    </div>
+  );
+}
+
 interface WeeklyAgendaGridProps {
   appointments: Appointment[];
   weekStart: Date;
   onAppointmentClick: (appointment: Appointment) => void;
   startHour?: number;
   endHour?: number;
-  onQuickConfirm?: (appt: Appointment) => void;
   onEmptySlotClick?: (time: string) => void;
+  scheduleBlocks?: any[];
+  onQuickConfirm?: (appt: Appointment) => void;
 }
 
 const HOUR_HEIGHT = 96;
@@ -50,9 +68,10 @@ export function WeeklyAgendaGrid({
   weekStart,
   onAppointmentClick,
   startHour = 8,
-  endHour = 19,
+  endHour = 20,
   onQuickConfirm,
   onEmptySlotClick,
+  scheduleBlocks = [],
 }: WeeklyAgendaGridProps) {
   const [now, setNow] = useState(new Date());
 
@@ -154,11 +173,11 @@ export function WeeklyAgendaGrid({
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, delta } = event;
+    const { active, delta, over } = event;
     setActiveId(null);
     setDragTime(null);
 
-    if (!active || Math.abs(delta.y) < 5) return;
+    if (!active || (Math.abs(delta.y) < 5 && Math.abs(delta.x) < 5)) return;
 
     const appt = active.data.current as Appointment;
 
@@ -180,12 +199,20 @@ export function WeeklyAgendaGrid({
       return;
     }
 
+    const overId = over?.id as string | undefined;
+
     const timeString = `${newHours.toString().padStart(2, "0")}:${newMins.toString().padStart(2, "0")}`;
-    if (timeString === appt.time) return;
+    if (timeString === appt.time && !overId) return;
 
     setIsMoving(true);
     try {
       let baseDate = appt.date_time ? new Date(appt.date_time) : new Date();
+      
+      if (overId) {
+        const [year, month, day] = overId.split("-").map(Number);
+        baseDate.setFullYear(year, month - 1, day);
+      }
+
       baseDate.setHours(newHours, newMins, 0, 0);
 
       const result = await updateAppointmentDateTime(
@@ -222,7 +249,7 @@ export function WeeklyAgendaGrid({
   }, [now, startHour, endHour]);
 
   return (
-    <div className="flex flex-col bg-card rounded-lg border border-border/50 overflow-hidden shadow-sm relative select-none">
+    <div className="flex flex-col flex-1 min-h-0 bg-card rounded-2xl overflow-hidden relative select-none transition-all">
       {isMoving && (
         <div className="absolute inset-0 bg-background/40 z-100 flex items-center justify-center backdrop-blur-[2px]">
           <LoaderDots className="h-10 w-10 animate-spin text-primary" />
@@ -234,12 +261,11 @@ export function WeeklyAgendaGrid({
         onDragStart={handleDragStart}
         onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
-        modifiers={[restrictToVerticalAxis, restrictToFirstScrollableAncestor]}
       >
-        <div className="overflow-x-auto custom-scrollbar">
+        <div className="overflow-auto flex-1 custom-scrollbar">
           <div className="min-w-[800px] flex relative" ref={setDroppableRef}>
             <div className="w-16 shrink-0 border-r border-border/50 bg-muted/30 sticky left-0 z-30 backdrop-blur-md">
-              <div className="h-14 border-b border-border/50 flex items-center justify-center text-muted-foreground bg-muted/50">
+              <div className="h-14 border-b border-border/50 flex items-center justify-center text-muted-foreground bg-muted/50 sticky top-0 z-40 backdrop-blur-md">
                 <Clock className="w-4 h-4" />
               </div>
               {hours.map((hour) => (
@@ -354,8 +380,9 @@ export function WeeklyAgendaGrid({
                 });
 
                 return (
-                  <div
+                  <DroppableDayColumn
                     key={dateKey}
+                    dateKey={dateKey}
                     className={cn(
                       "flex-1 min-w-[110px] relative border-r border-border/50 last:border-r-0 transition-colors",
                       today ? "bg-primary/5" : "hover:bg-muted/20",
@@ -434,8 +461,45 @@ export function WeeklyAgendaGrid({
                           </div>
                         );
                       })}
+
+                      {/* BLOQUEIOS NA SEMANA */}
+                      {scheduleBlocks
+                        .filter((block) => isSameDay(new Date(block.start_time), day))
+                        .map((block) => {
+                          const startDate = new Date(block.start_time);
+                          const endDate = new Date(block.end_time);
+                          const startMins = startDate.getHours() * 60 + startDate.getMinutes();
+                          const endMins = endDate.getHours() * 60 + endDate.getMinutes();
+
+                          const top = ((startMins - (startHour * 60)) / 60) * HOUR_HEIGHT;
+                          const height = ((endMins - startMins) / 60) * HOUR_HEIGHT;
+
+                          return (
+                            <div
+                              key={block.id}
+                              onClick={(e) => e.stopPropagation()}
+                              className="absolute flex flex-col items-center justify-center p-1 text-rose-800/80 z-[5] bg-rose-50/60 border-y border-rose-200/50 overflow-hidden pointer-events-auto cursor-not-allowed"
+                              style={{
+                                top: `${top}px`,
+                                height: `${height}px`,
+                                left: "0px",
+                                width: "100%",
+                                backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(225,29,72,0.06) 10px, rgba(225,29,72,0.06) 20px)`
+                              }}
+                            >
+                              <span className="text-[10px] font-black uppercase tracking-widest bg-white/70 px-2 py-0.5 rounded-full backdrop-blur-sm border border-rose-100 max-w-[90%] truncate text-center flex items-center justify-center">
+                                <Lock className="h-3 w-3 mr-1 shrink-0" /> {block.title}
+                              </span>
+                              {block.professionalName && (
+                                <span className="text-[8px] font-bold opacity-80 truncate mt-1">
+                                  {block.professionalName}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
                     </div>
-                  </div>
+                  </DroppableDayColumn>
                 );
               })}
             </div>
@@ -450,21 +514,15 @@ export function WeeklyAgendaGrid({
           }}
         >
           {activeAppt && (
-            <div className="relative w-[calc(100%-40px)] ml-4 pointer-events-none">
+            <div className="relative w-full h-full pointer-events-none">
               <div className="absolute -top-8 left-2 bg-primary text-primary-foreground text-xs font-black px-3 py-1 rounded-full shadow-xl animate-in zoom-in-50 z-50">
                 {dragTime}
               </div>
-              <div
-                style={{
-                  height: `${calculatePosition(activeAppt).height}px`,
-                }}
-              >
-                <AppointmentCardContent
-                  appt={activeAppt}
-                  height={calculatePosition(activeAppt).height}
-                  isOverlay
-                />
-              </div>
+              <AppointmentCardContent
+                appt={activeAppt}
+                height={calculatePosition(activeAppt).height}
+                isOverlay
+              />
             </div>
           )}
         </DragOverlay>

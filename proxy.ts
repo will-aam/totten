@@ -37,7 +37,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 🔒 ROTAS PROTEGIDAS: Verifica se tem token de autenticação
+  //  ROTAS PROTEGIDAS: Verifica se tem token de autenticação
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,

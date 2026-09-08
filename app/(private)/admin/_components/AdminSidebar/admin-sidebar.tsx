@@ -273,7 +273,6 @@ export function AdminSidebar() {
 
       <SidebarUserFooter
         isOwner={isOwner}
-        userEmail={session?.user?.email}
         whatsappUrl={whatsappUrl}
         loggingOut={loggingOut}
         onLogout={handleLogout}

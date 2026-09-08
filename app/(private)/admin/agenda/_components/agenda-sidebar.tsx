@@ -31,7 +31,7 @@ export function AgendaSidebar({
 }: AgendaSidebarProps) {
   const { data: session } = useSession();
   const isOwner = session?.user?.role === "OWNER";
-  
+
   const [team, setTeam] = useState<{ id: string; display_name: string | null }[]>([]);
   const { data: servicesResponse } = useSWR<any>("services?active=true", apiClient);
   const services = Array.isArray(servicesResponse) ? servicesResponse : servicesResponse?.data || [];
@@ -61,19 +61,19 @@ export function AgendaSidebar({
   };
 
   return (
-    <aside 
-      className={`hidden md:flex flex-col shrink-0 bg-background overflow-y-auto overflow-x-hidden custom-scrollbar h-full relative z-10 p-4 gap-6 transition-[width,padding,opacity] duration-300 ease-in-out ${
-        isOpen ? "w-[17rem] xl:w-[18rem] opacity-100" : "w-0 px-0 opacity-0 pointer-events-none"
-      }`}
+    <aside
+      className={`hidden md:flex flex-col shrink-0 bg-background overflow-y-auto overflow-x-hidden custom-scrollbar h-full relative z-10 p-4 gap-6 transition-[width,padding,opacity] duration-300 ease-in-out ${isOpen ? "w-[17rem] xl:w-[18rem] opacity-100" : "w-0 px-0 opacity-0 pointer-events-none"
+        }`}
     >
+      {/* botão para apagar depois */}
       <div className="px-2 pt-2 whitespace-nowrap">
-        <Button 
+        <Button
           onClick={onCreateClick}
           className="rounded-full shadow-[0_1px_3px_1px_rgba(0,0,0,0.15)] hover:shadow-[0_2px_6px_2px_rgba(0,0,0,0.15)] transition-shadow flex items-center gap-2 px-6 py-7 font-medium text-base bg-background border-none text-foreground hover:bg-accent hover:text-accent-foreground"
         >
           <div className="flex items-center gap-3">
             <Plus size={32} className="text-foreground" strokeWidth={2.5} />
-            <span className="text-[1.05rem]">Criar</span>
+            <span className="text-[1.05rem]">Novo agendamento</span>
           </div>
         </Button>
       </div>
@@ -92,7 +92,7 @@ export function AgendaSidebar({
             </Button>
           </div>
         </div>
-        
+
         <Calendar
           mode="single"
           selected={selectedDate}

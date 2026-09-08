@@ -60,6 +60,7 @@ export function MonthlyAgendaGrid({
   const endDate = endOfWeek(monthEnd, { weekStartsOn: 0 });
 
   const Calendar = eachDayOfInterval({ start: startDate, end: endDate });
+  const weekDaysHeadersDesktop = ["Dom.", "Seg.", "Ter.", "Qua.", "Qui.", "Sex.", "Sáb."];
   const weekDaysHeaders = ["D", "S", "T", "Q", "Q", "S", "S"];
 
   const activeDayKey = format(activeDate, "yyyy-MM-dd");
@@ -71,12 +72,12 @@ export function MonthlyAgendaGrid({
   const MAX_DESKTOP_APPTS = 5;
 
   return (
-    <div className="h-full flex flex-col animate-in fade-in duration-500">
+    <div className="flex-1 min-h-0 flex flex-col animate-in fade-in duration-500">
       {/* ========================================== */}
       {/* VISÃO MOBILE                               */}
       {/* ========================================== */}
       <div className="flex flex-col h-full md:hidden gap-4">
-        <div className="bg-card rounded-lg border border-border/50 shadow-sm p-5 shrink-0">
+        <div className="bg-card rounded-2xl p-5 shrink-0 transition-all">
           <div className="grid grid-cols-7 mb-4">
             {weekDaysHeaders.map((day, i) => (
               <div
@@ -262,9 +263,9 @@ export function MonthlyAgendaGrid({
       {/* ========================================== */}
       {/* VISÃO DESKTOP                              */}
       {/* ========================================== */}
-      <div className="hidden md:flex flex-col bg-card rounded-lg border border-border/50 overflow-hidden shadow-sm h-full">
-        <div className="grid grid-cols-7 bg-muted/30 border-b border-border/50">
-          {weekDaysHeaders.map((day, i) => (
+      <div className="hidden md:flex flex-col flex-1 min-h-0 bg-card rounded-2xl overflow-y-auto custom-scrollbar transition-all relative">
+        <div className="grid grid-cols-7 bg-muted/30 border-b border-border/50 sticky top-0 z-20 backdrop-blur-md">
+          {weekDaysHeadersDesktop.map((day, i) => (
             <div
               key={`desk-h-${i}`}
               className="text-center py-3 text-[10px] font-black uppercase text-muted-foreground/60"
@@ -328,7 +329,7 @@ export function MonthlyAgendaGrid({
                           onAppointmentClick(appt);
                         }}
                         className={cn(
-                          "text-[9px] font-bold leading-none px-2 py-1.5 rounded-lg truncate border shadow-sm transition-transform hover:scale-[1.03] flex items-center gap-1 justify-between",
+                          "text-[9px] font-bold leading-none px-2 py-1.5 rounded-sm truncate border shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.02] flex items-center gap-1 justify-between",
                           appt.color ||
                           "bg-blue-100 border-blue-200 text-blue-900",
                           isCancelled && "opacity-40 grayscale border-dashed",

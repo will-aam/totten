@@ -56,11 +56,10 @@ export const navItems: NavItem[] = [
   },
 
   {
-    title: "Histórico Check-in",
-    href: "/admin/history",
+    title: "Sala de Espera (Live)",
+    href: "/admin/waiting-room",
     icon: ClipboardDetail as BoxIcon,
     active: true,
-    permission: "HISTORY", //  Depende dessa permissão específica
   },
   {
     title: "Vouchers",

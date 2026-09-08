@@ -19,7 +19,7 @@ import {
   restrictToVerticalAxis,
   restrictToFirstScrollableAncestor,
 } from "@dnd-kit/modifiers";
-import { LoaderDots, Plus } from "@boxicons/react";
+import { LoaderDots, Plus, Lock } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { updateAppointmentDateTime } from "@/app/actions/appointments";
@@ -36,6 +36,7 @@ const HOUR_HEIGHT = 96;
 
 interface DailyAgendaGridProps {
   appointments: Appointment[];
+  scheduleBlocks?: any[];
   onAppointmentClick: (appointment: Appointment) => void;
   onRefresh: () => void;
   startHour?: number;
@@ -46,6 +47,7 @@ interface DailyAgendaGridProps {
 
 export function DailyAgendaGrid({
   appointments,
+  scheduleBlocks = [],
   onAppointmentClick,
   onRefresh,
   startHour = DEFAULT_START_HOUR,
@@ -249,7 +251,7 @@ export function DailyAgendaGrid({
   );
 
   return (
-    <div className="bg-card border border-border/50 rounded-lg shadow-sm overflow-hidden flex flex-col relative select-none">
+    <div className="bg-card rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0 relative select-none transition-all">
       {isMoving && (
         <div className="absolute inset-0 bg-background/40 z-100 flex items-center justify-center backdrop-blur-[2px]">
           <LoaderDots className="h-10 w-10 animate-spin text-primary" />
@@ -261,9 +263,8 @@ export function DailyAgendaGrid({
         onDragStart={handleDragStart}
         onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
-        modifiers={[restrictToVerticalAxis, restrictToFirstScrollableAncestor]}
       >
-        <div className="overflow-y-auto max-h-175 relative w-full scroll-smooth custom-scrollbar">
+        <div className="overflow-y-auto flex-1 relative w-full scroll-smooth custom-scrollbar">
           <div className="flex relative min-w-[300px]" ref={setDroppableRef}>
             <div className="w-20 shrink-0 border-r border-border/50 bg-muted/5 relative z-20 pointer-events-none">
               {HOURS_ARRAY.map((hour) => (
@@ -342,6 +343,41 @@ export function DailyAgendaGrid({
                     />
                   );
                 })}
+
+                {/* BLOQUEIOS DE HORÁRIO */}
+                {scheduleBlocks.map((block) => {
+                  const startDate = new Date(block.start_time);
+                  const endDate = new Date(block.end_time);
+                  const startMins = startDate.getHours() * 60 + startDate.getMinutes();
+                  const endMins = endDate.getHours() * 60 + endDate.getMinutes();
+
+                  const top = ((startMins - (startHour * 60)) / 60) * HOUR_HEIGHT;
+                  const height = ((endMins - startMins) / 60) * HOUR_HEIGHT;
+
+                  return (
+                    <div
+                      key={block.id}
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute flex flex-col items-center justify-center p-1 text-rose-800/80 z-[5] bg-rose-50/60 border-y border-rose-200/50 overflow-hidden pointer-events-auto cursor-not-allowed"
+                      style={{
+                        top: `${top}px`,
+                        height: `${height}px`,
+                        left: "0px",
+                        width: "100%",
+                        backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(225,29,72,0.06) 10px, rgba(225,29,72,0.06) 20px)`
+                      }}
+                    >
+                      <span className="text-[10px] font-black uppercase tracking-widest bg-white/70 px-2 py-0.5 rounded-full backdrop-blur-sm border border-rose-100 max-w-[90%] truncate text-center flex items-center justify-center">
+                        <Lock className="h-3 w-3 mr-1 shrink-0" /> {block.title}
+                      </span>
+                      {block.professionalName && (
+                        <span className="text-[8px] font-bold opacity-80 truncate mt-1">
+                          {block.professionalName}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -355,21 +391,15 @@ export function DailyAgendaGrid({
           }}
         >
           {activeAppt && (
-            <div className="relative w-[calc(100%-40px)] ml-4 pointer-events-none">
+            <div className="relative w-full h-full pointer-events-none">
               <div className="absolute -top-8 left-2 bg-primary text-primary-foreground text-xs font-black px-3 py-1 rounded-full shadow-xl animate-in zoom-in-50 z-50">
                 {dragTime}
               </div>
-              <div
-                style={{
-                  height: `${calculatePosition(activeAppt).height}px`,
-                }}
-              >
-                <AppointmentCardContent
-                  appt={activeAppt}
-                  height={calculatePosition(activeAppt).height}
-                  isOverlay
-                />
-              </div>
+              <AppointmentCardContent
+                appt={activeAppt}
+                height={calculatePosition(activeAppt).height}
+                isOverlay
+              />
             </div>
           )}
         </DragOverlay>

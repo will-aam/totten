@@ -141,6 +141,32 @@ export class AgendaService {
       };
     });
 
-    return { appointments: mapped };
+    // Buscar Bloqueios de Horário
+    const blocksWhereClause: any = {
+      organization_id: organizationId,
+      start_time: { lte: to },
+      end_time: { gte: from },
+    };
+    if (role === "COLLABORATOR") {
+      blocksWhereClause.professional_id = userId;
+    }
+
+    const scheduleBlocks = await prisma.scheduleBlock.findMany({
+      where: blocksWhereClause,
+      include: {
+        professional: { select: { display_name: true } },
+      },
+    });
+
+    const mappedBlocks = scheduleBlocks.map((b) => ({
+      id: b.id,
+      title: b.title,
+      start_time: b.start_time.toISOString(),
+      end_time: b.end_time.toISOString(),
+      professional_id: b.professional_id,
+      professionalName: b.professional?.display_name,
+    }));
+
+    return { appointments: mapped, scheduleBlocks: mappedBlocks };
   }
 }
