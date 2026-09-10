@@ -194,41 +194,36 @@ export function FullCalendarAgenda({
         }
 
         /* ==== DESIGN CLEAN E SOFISTICADO ==== */
-        /* Bordas da grade principal muito sutis */
         .fc-custom-theme .fc-theme-standard .fc-scrollgrid,
         .fc-custom-theme .fc-theme-standard td, 
         .fc-custom-theme .fc-theme-standard th {
            border: 1px solid hsl(var(--border) / 0.4) !important;
         }
-        /* Remover borda dupla no topo/laterais para ficar mais flat */
+        
         .fc-custom-theme .fc-scrollgrid {
            border-radius: var(--radius);
            overflow: hidden;
         }
         
-        /* Estilo do cabeçalho de colunas (Dias da Semana) */
         .fc-custom-theme .fc-col-header-cell {
            padding: 12px 0;
            font-size: 11px;
            text-transform: uppercase;
            color: hsl(var(--muted-foreground));
-           border-bottom: none !important; /* Sem linha grossa abaixo do cabeçalho */
+           border-bottom: none !important; 
         }
 
         /* ==== SLOTS DE TEMPO ==== */
         .fc-custom-theme .fc-timegrid-slot {
-           height: 48px; /* 30 min = 48px */
+           height: 48px; 
         }
-        /* Linha cheia sólida e super leve */
         .fc-custom-theme .fc-timegrid-slot-lane {
            border-bottom: 1px solid hsl(var(--border) / 0.3) !important;
         }
-        /* Meia hora sem linha ou linha quase invisível para não poluir */
         .fc-custom-theme .fc-timegrid-slot-minor .fc-timegrid-slot-lane {
            border-bottom: 1px solid hsl(var(--border) / 0.15) !important;
         }
         
-        /* Texto dos horários no eixo Y */
         .fc-custom-theme .fc-timegrid-slot-label-cushion {
            font-size: 10px;
            font-weight: 600;
@@ -236,39 +231,26 @@ export function FullCalendarAgenda({
            padding-right: 8px !important;
         }
 
-        /* ==== EVENTOS (TimeGrid - Dia e Semana) ==== */
+        /* ==== EVENTOS ==== */
         .fc-custom-theme .fc-timegrid-event {
            background: transparent !important;
            border: none !important;
            box-shadow: none !important;
-           padding: 2px 6px !important; /* Espaço pro card respirar dentro da coluna */
+           padding: 2px 6px !important; 
         }
         .fc-custom-theme .fc-timegrid-event .fc-event-main {
            padding: 0 !important;
            height: 100%;
         }
-
-        /* ==== EVENTOS (DayGrid - Mês) ==== */
         .fc-custom-theme .fc-daygrid-event {
            background: transparent !important;
            border: none !important;
            box-shadow: none !important;
-           /* Não usar height: 100% nem padding no daygrid para não bugar as coordenadas do drag mirror */
         }
         .fc-custom-theme .fc-daygrid-event .fc-event-main {
            padding: 0 !important;
         }
 
-        /* ==== INDICADOR DE HORÁRIO ATUAL ==== */
-        .fc-custom-theme .fc-timegrid-now-indicator-line {
-           border-color: hsl(var(--primary)) !important;
-           border-width: 2px !important;
-        }
-        .fc-custom-theme .fc-timegrid-now-indicator-arrow {
-           border-color: transparent transparent transparent hsl(var(--primary)) !important;
-           border-width: 5px !important;
-        }
-        
         /* Esconder a palavra 'today' se houver */
         .fc-custom-theme .fc-timeGridDay-view .fc-col-header-cell.fc-day-today {
            background-color: transparent !important;
@@ -286,27 +268,28 @@ export function FullCalendarAgenda({
            color: hsl(var(--foreground) / 0.8);
            text-decoration: none !important;
         }
-        /* ==== REMOVER FUNDO AMARELO (HOJE) NA VISÃO DE DIA ==== */
-        /* O FullCalendar pinta a coluna de "hoje" de amarelo. Como no dia só tem 1 coluna, a tela inteira fica amarela. */
+        
         .fc-custom-theme .fc-timeGridDay-view .fc-day-today,
         .fc-custom-theme .fc-timeGridDay-view .fc-col-header-cell.fc-day-today {
            background-color: transparent !important;
         }
-        /* ==== LINHA DO TEMPO (NOW INDICATOR) MAIS ELEGANTE E VERMELHA ==== */
-        .fc-now-indicator-line {
-          border-top-width: 2px !important;
-          border-color: #ef4444 !important; /* Vermelho elegante (Tailwind red-500) */
-          box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
-          z-index: 10 !important;
+
+        /* ==== LINHA DO TEMPO (NOW INDICATOR) TAILWIND RED-500 ==== */
+        /* A seta (triângulo) que fica grudada na hora */
+        .fc-custom-theme .fc-timegrid-now-indicator-arrow {
+           border-width: 6px !important;
+           /* #ef4444 é a cor exata do text-red-500 do Tailwind */
+           border-color: transparent transparent transparent #ef4444 !important; 
+           margin-top: -6px !important;
+           z-index: 50 !important; /* Garante que fique acima de tudo */
         }
-        .fc-now-indicator-arrow {
-          border-width: 6px !important;
-          border-color: transparent transparent transparent #ef4444 !important;
-          border-top-color: transparent !important;
-          border-bottom-color: transparent !important;
-          margin-top: -5px !important;
-          z-index: 10 !important;
-          filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.5));
+        /* A linha vermelha que cruza a coluna */
+        .fc-custom-theme .fc-timegrid-now-indicator-line {
+           border-top-width: 2px !important;
+           border-color: #ef4444 !important; /* red-500 */
+           border-style: solid !important;
+           z-index: 50 !important; /* Joga pra cima dos agendamentos */
+           box-shadow: 0 1px 3px rgba(239, 68, 68, 0.4); /* Efeito shadow-sm com tom vermelho */
         }
       `}</style>
 
