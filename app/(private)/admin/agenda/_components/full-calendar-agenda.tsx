@@ -186,7 +186,7 @@ export function FullCalendarAgenda({
    };
 
    return (
-      <div className="bg-card rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0 relative select-none w-full fc-custom-theme">
+      <div className="bg-card rounded-2xl overflow-hidden h-full flex flex-col flex-1 min-h-0 relative select-none w-full fc-custom-theme">
          <style>{`
         /* Remoção do toolbar nativo */
         .fc-custom-theme .fc-header-toolbar {
@@ -231,9 +231,9 @@ export function FullCalendarAgenda({
         /* Texto dos horários no eixo Y */
         .fc-custom-theme .fc-timegrid-slot-label-cushion {
            font-size: 10px;
-           font-weight: 500;
-           color: hsl(var(--muted-foreground));
-           padding-right: 12px;
+           font-weight: 600;
+           color: hsl(var(--muted-foreground) / 0.7);
+           padding-right: 8px !important;
         }
 
         /* ==== EVENTOS (TimeGrid - Dia e Semana) ==== */
@@ -261,13 +261,17 @@ export function FullCalendarAgenda({
 
         /* ==== INDICADOR DE HORÁRIO ATUAL ==== */
         .fc-custom-theme .fc-timegrid-now-indicator-line {
-           border-color: hsl(var(--primary) / 0.8) !important;
-           border-width: 1.5px !important;
+           border-color: hsl(var(--primary)) !important;
+           border-width: 2px !important;
         }
         .fc-custom-theme .fc-timegrid-now-indicator-arrow {
-           border-color: hsl(var(--primary) / 0.8) !important;
-           border-width: 4px !important;
-           margin-top: -4px !important;
+           border-color: transparent transparent transparent hsl(var(--primary)) !important;
+           border-width: 5px !important;
+        }
+        
+        /* Esconder a palavra 'today' se houver */
+        .fc-custom-theme .fc-timeGridDay-view .fc-col-header-cell.fc-day-today {
+           background-color: transparent !important;
         }
 
         /* ==== MESES: CENTRALIZAR NÚMEROS DO DIA ==== */
@@ -308,6 +312,7 @@ export function FullCalendarAgenda({
 
          <FullCalendar
             ref={calendarRef}
+            height="100%"
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
             initialView="timeGridDay"
             locale={ptBrLocale}

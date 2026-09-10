@@ -353,7 +353,7 @@ export default function AgendaPage() {
                 </div>
               ) : (
                 <>
-                  <div className={cn("absolute inset-0 overflow-y-auto", viewMode === "month" ? "hidden md:block" : "block")}>
+                  <div className={cn("absolute inset-0", viewMode === "month" ? "hidden md:block" : "block")}>
                     <FullCalendarAgenda
                       appointments={currentViewAppointments}
                       scheduleBlocks={scheduleBlocks}
