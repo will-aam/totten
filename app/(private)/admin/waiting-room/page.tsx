@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
-import { LoaderDots, CheckCircle, User, Time } from "@boxicons/react";
+import { LoaderDots, Check, CheckCircle, Timer, Play, User } from "@boxicons/react";
 import { getWaitingRoomData, completeCheckIn } from "@/app/actions/waiting-room";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -93,7 +93,7 @@ export default function WaitingRoomPage() {
                     </div>
                     <div className="flex items-center justify-between bg-amber-500/10 p-2.5 rounded-xl text-amber-600 dark:text-amber-500">
                       <span className="text-[10px] font-black uppercase flex items-center gap-1">
-                        <Time className="h-3 w-3" /> Espera
+                        <Timer className="h-3 w-3" /> Espera
                       </span>
                       <span className="text-sm font-bold">
                         {formatDistanceToNow(new Date(item.date_time), { locale: ptBR })}

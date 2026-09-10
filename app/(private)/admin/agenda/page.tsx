@@ -30,11 +30,10 @@ import {
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { MobileMonthAgenda } from "./_components/mobile-month-agenda";
 
-import { DailyAgendaGrid } from "./_components/daily-agenda-grid";
+import { FullCalendarAgenda } from "./_components/full-calendar-agenda";
 import { Appointment } from "./_components/appointment-card";
-import { WeeklyAgendaGrid } from "./_components/weekly-agenda-grid";
-import { MonthlyAgendaGrid } from "./_components/monthly-agenda-grid";
 import { NewAppointmentModal } from "./_components/new-appointment-modal";
 import { AppointmentDetailsModal } from "./_components/appointment-details-modal";
 import { ScheduleSettingsModal } from "./_components/schedule-settings-modal";
@@ -104,17 +103,17 @@ export default function AgendaPage() {
   const previousDefaultView = useRef(settings?.defaultScheduleView);
 
   useEffect(() => {
-    if (settings?.defaultScheduleView) {
+    if (settings) {
       // Se for a primeira vez carregando OU se a configuração mudou (ex: usuário salvou no modal)
-      if (!hasSetInitialView || previousDefaultView.current !== settings.defaultScheduleView) {
+      if (settings.defaultScheduleView && (!hasSetInitialView || previousDefaultView.current !== settings.defaultScheduleView)) {
         if (["day", "week", "month"].includes(settings.defaultScheduleView)) {
           setViewMode(settings.defaultScheduleView as "day" | "week" | "month");
         }
-        setHasSetInitialView(true);
         previousDefaultView.current = settings.defaultScheduleView;
       }
+      setHasSetInitialView(true);
     }
-  }, [settings?.defaultScheduleView, hasSetInitialView]);
+  }, [settings, hasSetInitialView]);
 
   //  LÓGICA DE UNIFICAÇÃO DA ROTA: Calculando os limites com base na view atual
   const { fromISO, toISO } = useMemo(() => {
@@ -347,44 +346,54 @@ export default function AgendaPage() {
             </div>
 
             {/* GRIDS DA AGENDA */}
-            <div className="flex-1 flex flex-col min-h-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
-              {viewMode === "day" && (
-                <DailyAgendaGrid
-                  appointments={appointments}
-                  scheduleBlocks={scheduleBlocks}
-                  onAppointmentClick={setSelectedAppointment}
-                  onRefresh={mutateAll}
-                  startHour={openingHourNumber}
-                  endHour={closingHourNumber}
-                  onEmptySlotClick={(time) => {
-                    setSelectedTimeSlot(time);
-                    setIsNewModalOpen(true);
-                  }}
-                  onQuickConfirm={handleQuickConfirm}
-                />
-              )}
-              {viewMode === "week" && (
-                <WeeklyAgendaGrid
-                  appointments={weekAppointments}
-                  scheduleBlocks={scheduleBlocks}
-                  weekStart={weekStart}
-                  onAppointmentClick={setSelectedAppointment}
-                  startHour={openingHourNumber}
-                  endHour={closingHourNumber}
-                  onQuickConfirm={handleQuickConfirm}
-                />
-              )}
-              {viewMode === "month" && (
-                <MonthlyAgendaGrid
-                  appointments={monthAppointments}
-                  currentDate={selectedDate}
-                  onAppointmentClick={setSelectedAppointment}
-                  onDayClick={(day) => {
-                    setSelectedDate(day);
-                    setWeekStart(startOfWeek(day, { weekStartsOn: 0 }));
-                    setViewMode("day");
-                  }}
-                />
+            <div className="flex-1 flex flex-col min-h-0 animate-in fade-in slide-in-from-bottom-2 duration-500 relative">
+              {!hasSetInitialView ? (
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin opacity-50" />
+                </div>
+              ) : (
+                <>
+                  <div className={cn("absolute inset-0 overflow-y-auto", viewMode === "month" ? "hidden md:block" : "block")}>
+                    <FullCalendarAgenda
+                      appointments={currentViewAppointments}
+                      scheduleBlocks={scheduleBlocks}
+                      viewMode={viewMode}
+                      currentDate={selectedDate}
+                      startHour={openingHourNumber}
+                      endHour={closingHourNumber}
+                      onAppointmentClick={(appt) => {
+                        setSelectedAppointment(appt);
+                      }}
+                      onRefresh={mutateAll}
+                      onEmptySlotClick={(time) => {
+                        setSelectedTimeSlot(time);
+                        setIsNewModalOpen(true);
+                      }}
+                      onDayClick={(day) => {
+                        setSelectedDate(day);
+                        setWeekStart(startOfWeek(day, { weekStartsOn: 0 }));
+                        setViewMode("day");
+                      }}
+                      onQuickConfirm={handleQuickConfirm}
+                    />
+                  </div>
+
+                  {viewMode === "month" && (
+                    <div className="md:hidden flex-1 h-full w-full flex flex-col min-h-0 overflow-hidden bg-background">
+                      <MobileMonthAgenda
+                        appointments={currentViewAppointments}
+                        selectedDate={selectedDate}
+                        onSelectDate={(date) => {
+                          setSelectedDate(date);
+                          setWeekStart(startOfWeek(date, { weekStartsOn: 0 }));
+                        }}
+                        onAppointmentClick={(appt) => {
+                          setSelectedAppointment(appt);
+                        }}
+                      />
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
