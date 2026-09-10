@@ -12,6 +12,7 @@ import { updateAppointmentDateTime } from "@/app/actions/appointments";
 
 import { Appointment, AppointmentCardContent, cleanPhone } from "./appointment-card";
 import { Lock } from "@boxicons/react";
+import { cn } from "@/lib/utils";
 
 interface FullCalendarAgendaProps {
    appointments: Appointment[];
@@ -288,62 +289,72 @@ export function FullCalendarAgenda({
            border-top-width: 2px !important;
            border-color: #ef4444 !important; /* red-500 */
            border-style: solid !important;
-           z-index: 50 !important; /* Joga pra cima dos agendamentos */
-           box-shadow: 0 1px 3px rgba(239, 68, 68, 0.4); /* Efeito shadow-sm com tom vermelho */
+           z-index: 50 !important; 
+           box-shadow: 0 1px 3px rgba(239, 68, 68, 0.4); 
+        }
+
+        /* ESCONDER O INDICADOR NA VISÃO DE SEMANA */
+        .fc-timeGridWeek-view .fc-timegrid-now-indicator-line,
+        .fc-timeGridWeek-view .fc-timegrid-now-indicator-arrow {
+            display: none !important;
         }
       `}</style>
 
-         <FullCalendar
-            ref={calendarRef}
-            height="100%"
-            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-            initialView="timeGridDay"
-            locale={ptBrLocale}
-            events={allEvents}
-            editable={viewMode !== "month"}
-            eventStartEditable={viewMode !== "month"}
-            eventDurationEditable={false} // don't resize duration
-            slotMinTime={`${startHour.toString().padStart(2, "0")}:00:00`}
-            slotMaxTime={`${Math.min(24, endHour + 1).toString().padStart(2, "0")}:00:00`}
-            slotDuration="00:30:00"
-            views={{
-               timeGridThreeDay: {
-                  type: 'timeGrid',
-                  duration: { days: 3 },
-                  buttonText: '3 Dias'
-               }
-            }}
-            allDaySlot={false}
-            nowIndicator={true}
-            stickyHeaderDates={true}
-            fixedWeekCount={false}
-            dayMaxEvents={3}
-            eventDrop={handleEventDrop}
-            eventResize={handleEventResize}
-            dayHeaders={viewMode !== "day"} // Esconde o cabeçalho no modo Dia
-            dayHeaderContent={(args) => {
-               const dayName = new Intl.DateTimeFormat('pt-BR', { weekday: 'short' }).format(args.date).replace('.', '');
+         <div className="overflow-x-auto overflow-y-hidden h-full w-full custom-scrollbar">
+            <div className={cn("h-full", viewMode === "week" ? "min-w-[800px]" : "w-full")}>
+               <FullCalendar
+                  ref={calendarRef}
+                  height="100%"
+                  plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                  initialView="timeGridDay"
+                  locale={ptBrLocale}
+                  events={allEvents}
+                  editable={viewMode !== "month"}
+                  eventStartEditable={viewMode !== "month"}
+                  eventDurationEditable={false} // don't resize duration
+                  slotMinTime={`${startHour.toString().padStart(2, "0")}:00:00`}
+                  slotMaxTime={`${Math.min(24, endHour + 1).toString().padStart(2, "0")}:00:00`}
+                  slotDuration="00:30:00"
+                  views={{
+                     timeGridThreeDay: {
+                        type: 'timeGrid',
+                        duration: { days: 3 },
+                        buttonText: '3 Dias'
+                     }
+                  }}
+                  allDaySlot={false}
+                  nowIndicator={true}
+                  stickyHeaderDates={true}
+                  fixedWeekCount={false}
+                  dayMaxEvents={3}
+                  eventDrop={handleEventDrop}
+                  eventResize={handleEventResize}
+                  dayHeaders={viewMode !== "day"} // Esconde o cabeçalho no modo Dia
+                  dayHeaderContent={(args) => {
+                     const dayName = new Intl.DateTimeFormat('pt-BR', { weekday: 'short' }).format(args.date).replace('.', '');
 
-               if (viewMode === "month") {
-                  // No mês, o cabeçalho é SÓ o nome da semana
-                  return (
-                     <div className="flex items-center justify-center py-2">
-                        <span className="text-xs uppercase font-semibold text-muted-foreground">{dayName}.</span>
-                     </div>
-                  );
-               }
+                     if (viewMode === "month") {
+                        // No mês, o cabeçalho é SÓ o nome da semana
+                        return (
+                           <div className="flex items-center justify-center py-2">
+                              <span className="text-xs uppercase font-semibold text-muted-foreground">{dayName}.</span>
+                           </div>
+                        );
+                     }
 
-               // Na semana, é o nome em cima e o número embaixo
-               const dayNumber = args.date.getDate();
-               return (
-                  <div className="flex flex-col items-center justify-center space-y-0.5 pt-1">
-                     <span className="text-[10px] uppercase font-semibold text-muted-foreground">{dayName}.</span>
-                     <span className="text-lg font-medium text-foreground opacity-90">{dayNumber}</span>
-                  </div>
-               );
-            }}
-            eventContent={renderEventContent}
-         />
+                     // Na semana, é o nome em cima e o número embaixo
+                     const dayNumber = args.date.getDate();
+                     return (
+                        <div className="flex flex-col items-center justify-center space-y-0.5 pt-1">
+                           <span className="text-[10px] uppercase font-semibold text-muted-foreground">{dayName}.</span>
+                           <span className="text-lg font-medium text-foreground opacity-90">{dayNumber}</span>
+                        </div>
+                     );
+                  }}
+                  eventContent={renderEventContent}
+               />
+            </div>
+         </div>
       </div>
    );
 }
