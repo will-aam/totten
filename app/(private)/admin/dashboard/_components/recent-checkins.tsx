@@ -1,7 +1,6 @@
 // app/(private)/admin/dashboard/_components/recent-checkins.tsx
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
 import useSWRInfinite from "swr/infinite";
 import Link from "next/link";
 import { apiClient } from "@/lib/api-client";
@@ -78,7 +77,7 @@ function CheckInListItem({ checkIn }: { checkIn: CheckIn }) {
 export function RecentCheckIns() {
   const getCheckInsKey = (pageIndex: number, previousPageData: any) => {
     if (previousPageData && !previousPageData.hasMore) return null;
-    return `dashboard/checkins?page=${pageIndex + 1}&limit=8`;
+    return `dashboard/checkins?page=${pageIndex + 1}&limit=5`;
   };
 
   const {
@@ -102,29 +101,7 @@ export function RecentCheckIns() {
   const isReachingEnd =
     isEmpty ||
     (checkinsPages &&
-      checkinsPages[checkinsPages.length - 1]?.data?.length < 8);
-
-  const observerTarget = useRef<HTMLDivElement>(null);
-
-  const handleObserver = useCallback(
-    (entries: IntersectionObserverEntry[]) => {
-      const target = entries[0];
-      if (target.isIntersecting && !isReachingEnd && !isLoadingMore) {
-        setSize(size + 1);
-      }
-    },
-    [isReachingEnd, isLoadingMore, setSize, size],
-  );
-
-  useEffect(() => {
-    const element = observerTarget.current;
-    if (!element) return;
-    const observer = new IntersectionObserver(handleObserver, {
-      threshold: 0.1,
-    });
-    observer.observe(element);
-    return () => observer.unobserve(element);
-  }, [handleObserver, checkIns]);
+      checkinsPages[checkinsPages.length - 1]?.data?.length < 5);
 
   return (
     <Card className="border-border/50 shadow-md bg-card flex flex-col w-full h-full rounded-2xl dark:border-white/10 dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] transition-all">
@@ -163,26 +140,31 @@ export function RecentCheckIns() {
               {checkIns.map((checkIn: CheckIn) => (
                 <CheckInListItem key={checkIn.id} checkIn={checkIn} />
               ))}
-              <div
-                ref={observerTarget}
-                className="h-10 w-full flex items-center justify-center mt-2"
-              >
-                {isLoadingMore && (
-                  <RefreshCw size="sm" className="text-primary animate-spin" />
-                )}
-              </div>
             </div>
           )}
         </div>
       </CardContent>
 
-      <CardFooter className="p-1 flex justify-center rounded-b-xl">
-        <Link
-          href="/admin/history"
-          className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors flex items-center py-1"
-        >
-          Ver Histórico Completo <ChevronRight size="xs" className="ml-0.5" />
-        </Link>
+      <CardFooter className="p-2 flex justify-center rounded-b-xl min-h-[40px]">
+        {isLoadingMore && size > 0 ? (
+          <div className="flex items-center justify-center py-1">
+            <RefreshCw size="sm" className="text-muted-foreground animate-spin" />
+          </div>
+        ) : size < 3 && !isReachingEnd ? (
+          <button
+            onClick={() => setSize(size + 1)}
+            className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors flex items-center py-1 cursor-pointer"
+          >
+            Exibir mais <ChevronRight size="xs" className="ml-0.5" />
+          </button>
+        ) : !isEmpty ? (
+          <Link
+            href="/admin/history"
+            className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors flex items-center py-1"
+          >
+            Ver Histórico Completo <ChevronRight size="xs" className="ml-0.5" />
+          </Link>
+        ) : null}
       </CardFooter>
     </Card>
   );
