@@ -25,13 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -42,6 +36,7 @@ import { DurationManager } from "./_components/duration-manager";
 import { ServiceEditModal } from "./_components/service-edit-modal";
 import { CategoryEditModal } from "./_components/category-edit-modal";
 import { PackageEditModal } from "./_components/package-edit-modal";
+import { ResponsiveModal } from "../agenda/_components/responsive-modal";
 import { apiClient } from "@/lib/api-client";
 
 const STORAGE_KEY = "totem_catalog_show_inactive";
@@ -605,19 +600,15 @@ function ServicesTabs() {
       />
 
       {/* Modal: Nova Categoria */}
-      <Dialog
+      <ResponsiveModal
         open={createCategoryOpen}
-        onOpenChange={(open) => {
+        onOpenChange={(open: boolean) => {
           setCreateCategoryOpen(open);
           if (!open) setNewCategoryName("");
         }}
+        title="Nova Categoria"
       >
-        <DialogContent className="sm:max-w-100 rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">
-              Nova Categoria
-            </DialogTitle>
-          </DialogHeader>
+        <div className="px-1">
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="new-cat-name" className="text-sm font-medium">
@@ -633,7 +624,7 @@ function ServicesTabs() {
               />
             </div>
           </div>
-          <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-4 border-t mt-4">
+          <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t mt-4">
             <Button
               variant="outline"
               onClick={() => {
@@ -658,9 +649,9 @@ function ServicesTabs() {
                 </>
               )}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      </ResponsiveModal>
 
       <MobileBottomNav
         items={mobileNavItems}

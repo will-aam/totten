@@ -41,11 +41,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { ResponsiveModal } from "../agenda/_components/responsive-modal";
 
 import {
   AlertDialog,
@@ -90,6 +90,7 @@ function StockPageContent() {
   const [isLoading, setIsLoading] = useState(true);
 
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const fetchItems = async () => {
     setIsLoading(true);
@@ -238,33 +239,14 @@ function StockPageContent() {
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="md:hidden rounded-full shrink-0 border-border"
-                >
-                  <Filter className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel>Ordenar por</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setSortBy("name")}>
-                  Nome
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortBy("unit_cost")}>
-                  Maior Custo
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortBy("quantity")}>
-                  Maior Quantidade
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortBy("total")}>
-                  Maior Valor Total
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button
+              variant="outline"
+              size="icon"
+              className="md:hidden rounded-full shrink-0 border-border"
+              onClick={() => setIsFilterOpen(true)}
+            >
+              <Filter className="h-4 w-4" />
+            </Button>
 
             {/* Novo Botão de Exportar com o seu ícone */}
             <Button
@@ -290,36 +272,34 @@ function StockPageContent() {
             <h2 className="text-xl font-semibold text-foreground tracking-tight">
               Gestão de Insumos
             </h2>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button className="text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center">
-                    <InfoCircle className="h-5 w-5" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs text-sm" align="start">
-                  <p>
-                    <strong>Como funciona o desconto de estoque por serviço:</strong> quando você
-                    cadastra uma receita para um serviço (por exemplo, "2 ml de produto X"), é essa
-                    quantidade que será descontada do estoque toda vez que o serviço for realizado.
-                  </p>
-                  <p>
-                    <strong>Atenção:</strong> se você alterar essa quantidade depois, a mudança vale
-                    só para os atendimentos futuros. Os atendimentos que já aconteceram não são
-                    recalculados com o novo valor.
-                  </p>
-                  <p>
-                    <strong>Ao excluir um check-in antigo:</strong> o sistema devolve ao estoque a
-                    quantidade que está configurada <em>hoje</em> na receita — e não a quantidade que
-                    estava configurada na época em que o atendimento foi feito.
-                  </p>
-                  <p>
-                    Por isso, é importante manter as receitas sempre atualizadas, para que o controle
-                    de estoque reflita a realidade do seu negócio.
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center">
+                  <InfoCircle className="h-5 w-5" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="max-w-xs text-sm" align="start">
+                <p>
+                  <strong>Como funciona o desconto de estoque por serviço:</strong> quando você
+                  cadastra uma receita para um serviço (por exemplo, "2 ml de produto X"), é essa
+                  quantidade que será descontada do estoque toda vez que o serviço for realizado.
+                </p>
+                <p>
+                  <strong>Atenção:</strong> se você alterar essa quantidade depois, a mudança vale
+                  só para os atendimentos futuros. Os atendimentos que já aconteceram não são
+                  recalculados com o novo valor.
+                </p>
+                <p>
+                  <strong>Ao excluir um check-in antigo:</strong> o sistema devolve ao estoque a
+                  quantidade que está configurada <em>hoje</em> na receita — e não a quantidade que
+                  estava configurada na época em que o atendimento foi feito.
+                </p>
+                <p>
+                  Por isso, é importante manter as receitas sempre atualizadas, para que o controle
+                  de estoque reflita a realidade do seu negócio.
+                </p>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
 
@@ -425,6 +405,20 @@ function StockPageContent() {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveNewItem}
       />
+
+      <ResponsiveModal
+        open={isFilterOpen}
+        onOpenChange={setIsFilterOpen}
+        title="Ordenar por"
+      >
+        <div className="flex flex-col gap-1 p-2">
+          <Button variant="ghost" className="justify-start font-medium h-12" onClick={() => { setSortBy("name"); setIsFilterOpen(false); }}>Nome</Button>
+          <Button variant="ghost" className="justify-start font-medium h-12" onClick={() => { setSortBy("unit_cost"); setIsFilterOpen(false); }}>Maior Custo</Button>
+          <Button variant="ghost" className="justify-start font-medium h-12" onClick={() => { setSortBy("quantity"); setIsFilterOpen(false); }}>Maior Quantidade</Button>
+          <Button variant="ghost" className="justify-start font-medium h-12" onClick={() => { setSortBy("total"); setIsFilterOpen(false); }}>Maior Valor Total</Button>
+        </div>
+      </ResponsiveModal>
+
 
       <AlertDialog
         open={!!itemToDelete}

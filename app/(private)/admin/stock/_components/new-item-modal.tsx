@@ -1,14 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ResponsiveModal } from "../../agenda/_components/responsive-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -72,18 +65,16 @@ export function NewStockItemModal({
   };
 
   return (
-    <Dialog
+    <ResponsiveModal
       open={isOpen}
-      onOpenChange={(open) => !open && !isSubmitting && onClose()}
+      onOpenChange={(open: boolean) => !open && !isSubmitting && onClose()}
+      title="Cadastro"
     >
-      <DialogContent className="sm:max-w-106.25">
-        <DialogHeader>
-          <DialogTitle>Cadastro</DialogTitle>
-          <DialogDescription>
-            Adicione um novo item ao seu estoque. Você pode optar por já lançar
-            o valor pago como uma <strong>despesa financeira.</strong>
-          </DialogDescription>
-        </DialogHeader>
+      <div className="px-1">
+        <p className="text-sm text-muted-foreground mb-4">
+          Adicione um novo item ao seu estoque. Você pode optar por já lançar
+          o valor pago como uma <strong>despesa financeira.</strong>
+        </p>
 
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
@@ -158,7 +149,7 @@ export function NewStockItemModal({
           </div>
         </div>
 
-        <DialogFooter>
+        <div className="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
           <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
             Cancelar
           </Button>
@@ -177,8 +168,8 @@ export function NewStockItemModal({
               "Salvar Insumo"
             )}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </ResponsiveModal>
   );
 }
