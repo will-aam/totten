@@ -40,11 +40,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+
 import { ResponsiveModal } from "../agenda/_components/responsive-modal";
 
 import {
@@ -91,6 +87,7 @@ function StockPageContent() {
 
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
 
   const fetchItems = async () => {
     setIsLoading(true);
@@ -272,36 +269,42 @@ function StockPageContent() {
             <h2 className="text-xl font-semibold text-foreground tracking-tight">
               Gestão de Insumos
             </h2>
-            <Popover>
-              <PopoverTrigger asChild>
-                <button className="text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center">
-                  <InfoCircle className="h-5 w-5" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="max-w-xs text-sm" align="start">
-                <p>
-                  <strong>Como funciona o desconto de estoque por serviço:</strong> quando você
-                  cadastra uma receita para um serviço (por exemplo, "2 ml de produto X"), é essa
-                  quantidade que será descontada do estoque toda vez que o serviço for realizado.
-                </p>
-                <p>
-                  <strong>Atenção:</strong> se você alterar essa quantidade depois, a mudança vale
-                  só para os atendimentos futuros. Os atendimentos que já aconteceram não são
-                  recalculados com o novo valor.
-                </p>
-                <p>
-                  <strong>Ao excluir um check-in antigo:</strong> o sistema devolve ao estoque a
-                  quantidade que está configurada <em>hoje</em> na receita — e não a quantidade que
-                  estava configurada na época em que o atendimento foi feito.
-                </p>
-                <p>
-                  Por isso, é importante manter as receitas sempre atualizadas, para que o controle
-                  de estoque reflita a realidade do seu negócio.
-                </p>
-              </PopoverContent>
-            </Popover>
+            <button 
+              className="text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center p-2 -m-2"
+              onClick={() => setIsInfoOpen(true)}
+            >
+              <InfoCircle className="h-5 w-5" />
+            </button>
           </div>
         </div>
+
+        <ResponsiveModal
+          open={isInfoOpen}
+          onOpenChange={setIsInfoOpen}
+          title="Sobre o Estoque"
+        >
+          <div className="flex flex-col gap-4 p-4 text-sm text-muted-foreground">
+            <p>
+              <strong>Como funciona o desconto de estoque por serviço:</strong> quando você
+              cadastra uma receita para um serviço (por exemplo, "2 ml de produto X"), é essa
+              quantidade que será descontada do estoque toda vez que o serviço for realizado.
+            </p>
+            <p>
+              <strong>Atenção:</strong> se você alterar essa quantidade depois, a mudança vale
+              só para os atendimentos futuros. Os atendimentos que já aconteceram não são
+              recalculados com o novo valor.
+            </p>
+            <p>
+              <strong>Ao excluir um check-in antigo:</strong> o sistema devolve ao estoque a
+              quantidade que está configurada <em>hoje</em> na receita — e não a quantidade que
+              estava configurada na época em que o atendimento foi feito.
+            </p>
+            <p>
+              Por isso, é importante manter as receitas sempre atualizadas, para que o controle
+              de estoque reflita a realidade do seu negócio.
+            </p>
+          </div>
+        </ResponsiveModal>
 
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">

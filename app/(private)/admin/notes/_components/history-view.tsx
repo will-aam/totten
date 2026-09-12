@@ -1,41 +1,28 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { ChevronLeft, Folder, Send } from "@boxicons/react";
+import { ChevronLeft, Folder, ChevronRight, LoaderDots } from "@boxicons/react";
 import { Button } from "@/components/ui/button";
-import { ChatBubble, Note } from "./chat-bubble";
+import { HistoryLog, Note } from "./history-log";
 
-interface ChatViewProps {
+interface HistoryViewProps {
   clientName: string;
   notes: Note[];
+  page: number;
+  totalPages: number;
+  isLoading?: boolean;
+  onPageChange: (page: number) => void;
   onBack: () => void;
-  onSend: (text: string) => void;
-  onEdit: (note: Note) => void;
-  onDelete: (id: string) => void;
 }
 
-export function ChatView({
+export function HistoryView({
   clientName,
   notes,
+  page,
+  totalPages,
+  isLoading,
+  onPageChange,
   onBack,
-  onSend,
-  onEdit,
-  onDelete,
-}: ChatViewProps) {
-  const [newNote, setNewNote] = useState("");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Rola para o final (última mensagem) quando a lista de notas muda
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [notes]);
-
-  const handleSend = () => {
-    if (!newNote.trim()) return;
-    onSend(newNote);
-    setNewNote("");
-  };
-
+}: HistoryViewProps) {
   // 1. Agrupar as notas por data (YYYY-MM-DD)
   const groupedNotes = notes.reduce(
     (acc, note) => {
@@ -79,14 +66,14 @@ export function ChatView({
   return (
     <div className="flex flex-col h-full min-h-screen bg-background">
       {/* Header Customizado com Botão de Voltar */}
-      <header className="sticky top-0 z-30 flex h-16 items-center gap-3 bg-background px-4 shadow-sm">
+      <header className="sticky top-0 z-30 flex h-16 items-center gap-3 bg-background px-4 shadow-sm border-b">
         <Button
           variant="ghost"
           size="icon"
           onClick={onBack}
           className="-ml-2 text-muted-foreground hover:text-foreground"
         >
-          <ChevronLeft removePadding className="h-6 w-6" />
+          <ChevronLeft className="h-6 w-6" />
         </Button>
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-sm border border-primary/20">
@@ -97,7 +84,7 @@ export function ChatView({
               {clientName}
             </h1>
             <span className="text-[11px] text-muted-foreground mt-1 tracking-wide">
-              Anotações Internas
+              Histórico de Ações
             </span>
           </div>
         </div>
@@ -106,74 +93,71 @@ export function ChatView({
       {/* Container das Notas */}
       <div className="flex-1 p-4 md:p-6 pb-28 max-w-400 mx-auto w-full overflow-y-auto">
         <div className="flex flex-col gap-6">
-          {notes.length === 0 ? (
+          {isLoading ? (
+            <div className="flex justify-center py-20">
+              <LoaderDots className="h-8 w-8 text-primary opacity-50 animate-spin" />
+            </div>
+          ) : notes.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center opacity-60">
               <div className="bg-primary/5 p-4 rounded-full mb-4">
                 <Folder className="h-8 w-8 text-primary/60" />
               </div>
               <p className="text-sm font-medium text-foreground">
-                Nenhuma anotação registrada.
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Use a barra abaixo para adicionar algo importante.
+                Nenhum histórico registrado.
               </p>
             </div>
           ) : (
-            // Ordena as chaves de data cronologicamente e renderiza
+            // Ordena as chaves de data cronologicamente inversa (mais recentes primeiro)
             Object.keys(groupedNotes)
-              .sort()
+              .sort((a, b) => b.localeCompare(a))
               .map((dateKey) => (
                 <div key={dateKey} className="flex flex-col gap-4">
-                  {/* Divisor de Data estilo WhatsApp */}
+                  {/* Divisor de Data */}
                   <div className="flex justify-center my-2">
-                    <span className="bg-muted/80 text-muted-foreground text-[11px] font-medium px-3 py-1 rounded-full  capitalize">
+                    <span className="bg-muted text-muted-foreground border border-border text-[11px] font-medium px-3 py-1 rounded-full capitalize">
                       {formatGroupDate(dateKey)}
                     </span>
                   </div>
 
-                  {/* Renderiza as bolhas de chat para aquele dia específico */}
-                  {groupedNotes[dateKey].map((note) => (
-                    <ChatBubble
-                      key={note.id}
-                      note={note}
-                      onEdit={onEdit}
-                      onDelete={onDelete}
-                    />
-                  ))}
+                  {/* Renderiza as ações (mais recentes primeiro) */}
+                  <div className="flex flex-col gap-2 relative">
+                    <div className="absolute left-6 top-2 bottom-2 w-px bg-border z-0 hidden md:block"></div>
+                    {groupedNotes[dateKey].map((note) => (
+                      <HistoryLog
+                        key={note.id}
+                        note={note}
+                      />
+                    ))}
+                  </div>
                 </div>
               ))
           )}
-          {/* Âncora invisível para forçar o scroll para o final */}
-          <div ref={messagesEndRef} />
         </div>
-      </div>
-
-      {/* Input Fixo na parte inferior */}
-      <div className="fixed bottom-0 left-0 right-0 md:left-64 bg-background p-3 md:p-4 shadow-[0_-4px_10px_rgba(0,0,0,0.03)] pb-safe z-40">
-        <div className="max-w-400 mx-auto flex items-end gap-2 md:gap-4">
-          <textarea
-            value={newNote}
-            onChange={(e) => setNewNote(e.target.value)}
-            // Envia ao apertar Enter (sem shift) no Desktop
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-            placeholder="Digite uma nota para este cliente..."
-            className="flex-1 min-h-11min-h-[52px] max-h-30 bg-muted/50 border border-transparent focus:border-primary/30 rounded-2xl md:rounded-lg px-4 py-3 md:py-4 text-sm resize-none outline-none transition-colors"
-            rows={1}
-          />
-          <Button
-            size="icon"
-            className="h-11 w-11 md:h-12 md:w-12 rounded-2xl md:rounded-lg shrink-0 shadow-md active:scale-95 transition-all"
-            disabled={!newNote.trim()}
-            onClick={handleSend}
-          >
-            <Send className="h-4 w-4 md:h-5 md:w-5 ml-0.5" />
-          </Button>
-        </div>
+        
+        {/* Paginação */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-4 mt-8 pt-6 border-t">
+            <Button
+              variant="outline"
+              size="icon"
+              disabled={page <= 1 || isLoading}
+              onClick={() => onPageChange(page - 1)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm font-medium text-muted-foreground">
+              Página {page} de {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="icon"
+              disabled={page >= totalPages || isLoading}
+              onClick={() => onPageChange(page + 1)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

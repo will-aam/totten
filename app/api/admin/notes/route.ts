@@ -15,6 +15,8 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const clientId = searchParams.get("clientId");
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "20", 10);
 
     if (!clientId) {
       return NextResponse.json(
@@ -24,12 +26,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Delega a busca no banco (com isolamento de tenant) para o serviço
-    const notes = await ClientNoteService.getClientNotes(
+    const notesResult = await ClientNoteService.getClientNotes(
       admin.organizationId,
       clientId,
+      page,
+      limit
     );
 
-    return NextResponse.json({ data: notes });
+    return NextResponse.json(notesResult);
   } catch (error) {
     if (error instanceof AuthError) {
       return NextResponse.json({ error: error.message }, { status: 401 });

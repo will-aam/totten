@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { LoaderDots, Save, Power, AlertTriangle, Trash } from "@boxicons/react";
 import { updateCategory, toggleCategoryStatus } from "@/app/actions/services";
 import { apiClient } from "@/lib/api-client";
+import { ResponsiveModal } from "../../agenda/_components/responsive-modal";
 
 interface CategoryEditModalProps {
   open: boolean;
@@ -137,14 +138,12 @@ export function CategoryEditModal({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-100 rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">
-              Editar Categoria
-            </DialogTitle>
-          </DialogHeader>
-
+      <ResponsiveModal
+        open={open}
+        onOpenChange={onOpenChange}
+        title="Editar Categoria"
+      >
+        <div className="px-1">
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="cat-name" className="text-sm font-medium">
@@ -160,7 +159,7 @@ export function CategoryEditModal({
             </div>
           </div>
 
-          <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-4 border-t mt-4">
+          <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t mt-4">
             <div className="flex gap-2">
               <Button
                 type="button"
@@ -178,8 +177,8 @@ export function CategoryEditModal({
                   variant="outline"
                   className={
                     category.active
-                      ? "text-destructive hover:bg-destructive/10 border-destructive/20 rounded-xl"
-                      : "text-emerald-600 hover:bg-emerald-50 border-emerald-200 rounded-xl"
+                      ? "text-destructive hover:bg-destructive/10 border-destructive/20 rounded-xl flex-1"
+                      : "text-emerald-600 hover:bg-emerald-50 border-emerald-200 rounded-xl flex-1"
                   }
                   onClick={() => handleToggleStatus(false)}
                   disabled={loading}
@@ -199,7 +198,7 @@ export function CategoryEditModal({
               )}
             </div>
 
-            <div className="flex-1" />
+            <div className="hidden sm:block flex-1" />
 
             <Button
               onClick={handleSave}
@@ -214,9 +213,9 @@ export function CategoryEditModal({
                 </>
               )}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      </ResponsiveModal>
 
       {/* Modal de Confirmação para Cascata */}
       <Dialog
