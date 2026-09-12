@@ -51,7 +51,7 @@ export function FullCalendarAgenda({
                const isMobile = window.innerWidth < 768; // Tailwind md breakpoint
                const viewMap: any = {
                   day: "timeGridDay",
-                  week: isMobile ? "timeGridThreeDay" : "timeGridWeek",
+                  week: "timeGridWeek", // Sempre mostrar a semana inteira, com rolagem horizontal no mobile
                   month: "dayGridMonth",
                };
 
@@ -187,7 +187,7 @@ export function FullCalendarAgenda({
    };
 
    return (
-      <div className="bg-card rounded-2xl overflow-hidden h-full flex flex-col flex-1 min-h-0 relative select-none w-full fc-custom-theme">
+      <div className="bg-card md:rounded-2xl overflow-hidden h-full flex flex-col flex-1 min-h-0 relative select-none w-full fc-custom-theme border-t md:border-none">
          <style>{`
         /* Remoção do toolbar nativo */
         .fc-custom-theme .fc-header-toolbar {
@@ -202,6 +202,18 @@ export function FullCalendarAgenda({
            background: transparent !important;
         }
         
+        /* Congelar coluna de horários na rolagem horizontal */
+        .fc-custom-theme .fc-timegrid-axis,
+        .fc-custom-theme .fc-timegrid-slot-label {
+           position: sticky !important;
+           left: 0 !important;
+           z-index: 20 !important;
+           background-color: hsl(var(--card)) !important;
+        }
+        .fc-custom-theme .fc-timegrid-axis {
+           z-index: 30 !important;
+        }
+
         .fc-custom-theme .fc-scrollgrid {
            border-radius: var(--radius);
            overflow: hidden;

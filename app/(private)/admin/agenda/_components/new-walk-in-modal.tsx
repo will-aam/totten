@@ -2,7 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import useSWR from "swr";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Sheet as Dialog,
+  SheetContent as DialogContent,
+  SheetHeader as DialogHeader,
+  SheetTitle as DialogTitle,
+  SheetFooter as DialogFooter,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -92,7 +98,7 @@ export function NewWalkInModal({ open, onOpenChange, onCreated }: NewWalkInModal
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[95vh] overflow-y-auto rounded-4xl border-none shadow-2xl bg-background">
+      <DialogContent side="bottom" className="rounded-t-[32px] p-4 sm:p-6 max-h-[90dvh] overflow-y-auto border-t-0 shadow-2xl sm:max-w-md sm:mx-auto">
         <DialogHeader className="space-y-1 mt-2">
           <DialogTitle className="text-center text-xl font-black text-primary">Check-in Rápido (Encaixe)</DialogTitle>
         </DialogHeader>

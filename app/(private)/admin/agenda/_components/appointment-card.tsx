@@ -1,29 +1,11 @@
-// components/agenda/appointment-card.tsx
+// app/(private)/admin/agenda/_components/appointment-card.tsx
 "use client";
 
 import React from "react";
 import { useDraggable } from "@dnd-kit/core";
-import { Button } from "@/components/ui/button";
-import {
-  MessageCircle,
-  Clock,
-  Package as PackageIcon,
-  Lock,
-  Check,
-  DotsVerticalRounded,
-  InfoCircle,
-  Cog,
-} from "@boxicons/react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Clock, Lock, Cog } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
-//  A interface que vai ser usada por TUDO na agenda
 export interface Appointment {
   id: string;
   time: string;
@@ -67,7 +49,7 @@ export function AppointmentCardContent({
   isOverlay = false,
   isCancelled = false,
   isLocked = false,
-  isEmployee = false, //  NOVO: Recebendo a prop para identificar a funcionária
+  isEmployee = false,
 }: {
   appt: Appointment;
   height: number;
@@ -76,26 +58,26 @@ export function AppointmentCardContent({
   isLocked?: boolean;
   isEmployee?: boolean;
 }) {
-  // Se o agendamento já foi realizado, ignoramos a inativação do pacote para manter o histórico visual intacto
-  const isPackageArchived = appt.package && appt.package.active === false && appt.status?.toUpperCase() !== "REALIZADO";
+  const isPackageArchived =
+    appt.package &&
+    appt.package.active === false &&
+    appt.status?.toUpperCase() !== "REALIZADO";
   const isCompact = height <= 40;
 
-  // Lendo o snapshot aqui dentro da nossa pecinha universal!
   const serviceName = appt.snapshot_service_name ?? appt.service;
 
-  //  NOVO: Definindo a cor do card dinamicamente
   const cardColor = isPackageArchived
-    ? "bg-red-100 border-red-300 text-red-900 dark:bg-red-950 dark:border-red-900 dark:text-red-300" // Cor vermelha SÓLIDA para Inativos
+    ? "bg-red-100 border-red-300 text-red-900 dark:bg-red-950 dark:border-red-900 dark:text-red-300"
     : isEmployee
-      ? "bg-purple-100 border-purple-300 text-purple-900 dark:bg-purple-900 dark:border-purple-800 dark:text-purple-300" // Cor de destaque para a funcionária
-      : appt.color; // Cor padrão do sistema para a Cris
+      ? "bg-purple-100 border-purple-300 text-purple-900 dark:bg-purple-900 dark:border-purple-800 dark:text-purple-300"
+      : appt.color;
 
   if (isCancelled) {
     return (
       <div
         className={cn(
           "h-full w-full rounded-sm border border-dashed flex items-center justify-between px-2 py-1 shadow-sm transition-all overflow-hidden",
-          cardColor, // Aplicando a cor
+          cardColor,
           "opacity-50 grayscale-[0.8]",
           isOverlay && "shadow-2xl cursor-grabbing ring-1 ring-primary/50",
         )}
@@ -117,11 +99,11 @@ export function AppointmentCardContent({
   return (
     <div
       className={cn(
-        "h-full w-full rounded-sm border flex shadow-sm hover:shadow-md transition-all duration-200 group overflow-hidden relative",
+        "h-full w-full rounded-md border flex shadow-sm hover:shadow-md transition-all duration-200 group overflow-hidden relative",
         isCompact ? "flex-row items-center px-2 py-1 gap-2" : "flex-col p-3",
-        cardColor, // Aplicando a cor
+        cardColor,
         appt.hasCharge && !isPackageArchived && "border-2 border-destructive",
-        isPackageArchived && "border-2 border-destructive/80", // <-- removido o opacity-80 para não ficar transparente
+        isPackageArchived && "border-2 border-destructive/80",
         isOverlay &&
         "shadow-2xl border-primary/50 cursor-grabbing ring-1 ring-primary/50 bg-background/90 backdrop-blur-md",
       )}
@@ -200,7 +182,6 @@ export function AppointmentCardContent({
                   : "bg-white/30 text-black/70 dark:text-white/80",
               )}
             >
-              {isPackageArchived}
               {isPackageArchived ? "Inativo" : appt.sessionInfo}
             </span>
           )}
@@ -219,7 +200,7 @@ export function DraggableAppointmentCard({
   onClick,
   onWhatsApp,
   onQuickConfirm,
-  isEmployee = false, //  NOVO: Recebendo na casca do Draggable
+  isEmployee = false,
 }: {
   appt: Appointment;
   top: number;
@@ -227,7 +208,7 @@ export function DraggableAppointmentCard({
   width?: string;
   left?: string;
   onClick: () => void;
-  onWhatsApp: (e: React.MouseEvent) => void;
+  onWhatsApp?: (e: React.MouseEvent) => void;
   onQuickConfirm?: (appt: Appointment) => void;
   isEmployee?: boolean;
 }) {
@@ -271,14 +252,12 @@ export function DraggableAppointmentCard({
         onClick();
       }}
     >
-
-
       <AppointmentCardContent
         appt={appt}
         height={height}
         isCancelled={isCancelled}
         isLocked={isLocked}
-        isEmployee={isEmployee} //  NOVO: Repassando pro conteúdo interno
+        isEmployee={isEmployee}
       />
     </div>
   );

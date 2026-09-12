@@ -325,8 +325,8 @@ export default function AgendaPage() {
         />
 
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
-          <div className="flex flex-col gap-4 p-4 pb-24 md:p-6 w-full relative flex-1 min-h-0">
-            <div className="flex justify-end md:hidden">
+          <div className="flex flex-col gap-4 p-0 md:p-6 w-full relative flex-1 min-h-0">
+            <div className="flex justify-end md:hidden px-4 pt-4">
               <Tabs
                 value={viewMode}
                 onValueChange={(val) =>

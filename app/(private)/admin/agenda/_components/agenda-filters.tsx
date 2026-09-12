@@ -10,6 +10,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -81,8 +88,8 @@ export function AgendaFilters({ filters, onFiltersChange }: AgendaFiltersProps) 
   };
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>
+    <Sheet>
+      <SheetTrigger asChild>
         <Button
           variant="ghost"
           size="icon"
@@ -98,19 +105,24 @@ export function AgendaFilters({ filters, onFiltersChange }: AgendaFiltersProps) 
             <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary" />
           )}
         </Button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-[340px] p-5 rounded-[20px] shadow-xl z-50 bg-background border-border">
-        <AgendaFilterForm
-          filters={filters}
-          onFiltersChange={onFiltersChange}
-          isOwner={isOwner}
-          team={team}
-          services={services}
-          session={session}
-          clients={clients}
-        />
-      </PopoverContent>
-    </Popover>
+      </SheetTrigger>
+      <SheetContent side="bottom" className="rounded-t-[24px] p-0 flex flex-col max-h-[85dvh] border-t-0 shadow-2xl">
+        <SheetHeader className="px-6 py-5 border-b text-left shrink-0">
+          <SheetTitle className="font-bold text-lg">Filtros da Agenda</SheetTitle>
+        </SheetHeader>
+        <div className="flex-1 overflow-y-auto px-6 py-6 pb-12 custom-scrollbar">
+          <AgendaFilterForm
+            filters={filters}
+            onFiltersChange={onFiltersChange}
+            isOwner={isOwner}
+            team={team}
+            services={services}
+            session={session}
+            clients={clients}
+          />
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 
