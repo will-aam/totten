@@ -2,6 +2,7 @@ import { requireAuth } from "@/lib/auth";
 import { getTenantPrisma } from "@/lib/prisma";
 import { RequestsClientView } from "./requests-client-view";
 import { AppointmentStatus } from "@prisma/client";
+import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 
 export default async function RequestsPage() {
   const admin = await requireAuth();
@@ -27,8 +28,11 @@ export default async function RequestsPage() {
   });
 
   return (
-    <div className="flex flex-col h-full bg-slate-50 overflow-hidden">
-      <RequestsClientView initialRequests={JSON.parse(JSON.stringify(pendingAppointments))} />
-    </div>
+    <>
+      <AdminHeader title="Solicitações" />
+      <div className="flex flex-col h-full bg-background overflow-hidden relative">
+        <RequestsClientView initialRequests={JSON.parse(JSON.stringify(pendingAppointments))} />
+      </div>
+    </>
   );
 }

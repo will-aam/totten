@@ -37,54 +37,54 @@ export function RequestsClientView({ initialRequests }: { initialRequests: any[]
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
-      <div className="max-w-5xl mx-auto space-y-6">
+    <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-background">
+      <div className="max-w-400 mx-auto space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Solicitações Pendentes</h1>
-          <p className="text-slate-500 mt-1">Aprove ou recuse agendamentos solicitados pelos clientes.</p>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Solicitações Pendentes</h1>
+          <p className="text-muted-foreground mt-1">Aprove ou recuse agendamentos solicitados pelos clientes.</p>
         </div>
 
         {initialRequests.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-2xl border shadow-sm">
-            <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-4">
+          <div className="flex flex-col items-center justify-center py-20 text-center bg-card rounded-2xl border border-border shadow-sm">
+            <div className="w-16 h-16 bg-muted text-muted-foreground rounded-full flex items-center justify-center mb-4">
               <Check className="w-8 h-8" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900">Tudo em dia!</h3>
-            <p className="text-slate-500 mt-1">Não há solicitações de agendamento pendentes no momento.</p>
+            <h3 className="text-lg font-bold text-foreground">Tudo em dia!</h3>
+            <p className="text-muted-foreground mt-1">Não há solicitações de agendamento pendentes no momento.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {initialRequests.map((req) => (
-              <div key={req.id} className="bg-white rounded-2xl p-5 border shadow-sm flex flex-col hover:shadow-md transition-shadow">
+              <div key={req.id} className="bg-card rounded-2xl p-5 border border-border shadow-sm flex flex-col hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
-                      <User className="w-5 h-5 text-slate-600" />
+                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                      <User className="w-5 h-5 text-muted-foreground" />
                     </div>
                     <div>
-                      <p className="font-bold text-sm leading-tight text-slate-900">{req.client?.name}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{req.client?.phone}</p>
+                      <p className="font-bold text-sm leading-tight text-foreground">{req.client?.name}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{req.client?.phone}</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-3 mb-6 flex-1">
                   <div className="flex items-start gap-2">
-                    <Briefcase className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-                    <p className="text-sm font-medium leading-tight">{req.snapshot_service_name || req.service?.name}</p>
+                    <Briefcase className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <p className="text-sm font-medium leading-tight text-foreground">{req.snapshot_service_name || req.service?.name}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
-                    <p className="text-sm">{format(new Date(req.date_time), "dd 'de' MMMM, yyyy", { locale: ptBR })}</p>
+                    <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <p className="text-sm text-foreground">{format(new Date(req.date_time), "dd 'de' MMMM, yyyy", { locale: ptBR })}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-slate-400 shrink-0" />
-                    <p className="text-sm font-bold text-slate-700">{format(new Date(req.date_time), "HH:mm")}</p>
+                    <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <p className="text-sm font-bold text-foreground">{format(new Date(req.date_time), "HH:mm")}</p>
                   </div>
 
                   {req.observations && (
-                    <div className="mt-3 bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs text-slate-600">
-                      <span className="font-semibold block mb-1">Observações do Cliente:</span>
+                    <div className="mt-3 bg-muted/50 p-3 rounded-xl border border-border text-xs text-muted-foreground">
+                      <span className="font-semibold block mb-1 text-foreground">Observações do Cliente:</span>
                       <p className="italic line-clamp-3">{req.observations}</p>
                     </div>
                   )}
@@ -93,14 +93,14 @@ export function RequestsClientView({ initialRequests }: { initialRequests: any[]
                 <div className="grid grid-cols-2 gap-3 mt-auto">
                   <Button
                     variant="outline"
-                    className="w-full text-rose-600 border-rose-200 hover:bg-rose-50 hover:text-rose-700 font-bold h-10"
+                    className="w-full font-bold h-10 rounded-xl"
                     disabled={loadingId === req.id}
                     onClick={() => handleStatusChange(req.id, "cancelado")}
                   >
                     {loadingId === req.id ? "Processando..." : <><X className="w-4 h-4 mr-1.5" /> Recusar</>}
                   </Button>
                   <Button
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-10"
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-10 rounded-xl"
                     disabled={loadingId === req.id}
                     onClick={() => handleStatusChange(req.id, "aprovado")}
                   >
