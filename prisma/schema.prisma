@@ -19,6 +19,7 @@ model Organization {
   categories          Category[]
   check_ins           CheckIn[]
   client_notes        ClientNote[]
+  manual_notes        ClientManualNote[]
   clients             Client[]
   link_bio            LinkBio?
   message_templates   MessageTemplate[]
@@ -199,6 +200,7 @@ model Client {
   appointments        Appointment[]
   check_ins           CheckIn[]
   notes               ClientNote[]
+  manual_notes        ClientManualNote[]
   organization        Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   packages            Package[]
   transactions        Transaction[]
@@ -545,6 +547,21 @@ model ClientNote {
 
   @@index([client_id, date])
   @@map("client_notes")
+}
+
+model ClientManualNote {
+  id              String       @id @default(cuid())
+  text            String
+  date            DateTime     @default(now())
+  client_id       String
+  organization_id String
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @default(now()) @updatedAt
+  client          Client       @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@index([client_id, date])
+  @@map("client_manual_notes")
 }
 
 enum AppointmentStatus {

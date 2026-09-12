@@ -1,5 +1,5 @@
 import {
-  Group,
+  Note,
   ClipboardDetail,
   Tickets,
   History,
@@ -75,6 +75,12 @@ export const navItems: NavItem[] = [
     icon: History as BoxIcon,
     active: true,
     ownerOnly: true,
+  },
+  {
+    title: "Notas",
+    href: "/admin/manual-notes",
+    icon: Note as BoxIcon,
+    active: true,
   },
   {
     title: "Aniversariantes",
