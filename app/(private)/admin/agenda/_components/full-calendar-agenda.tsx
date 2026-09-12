@@ -1,7 +1,7 @@
 // app/(private)/admin/agenda/_components/full-calendar-agenda.tsx
 "use client";
 
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -9,10 +9,12 @@ import interactionPlugin from "@fullcalendar/interaction";
 import ptBrLocale from "@fullcalendar/core/locales/pt-br";
 import { toast } from "sonner";
 import { updateAppointmentDateTime } from "@/app/actions/appointments";
+import { deleteScheduleBlock } from "@/app/actions/schedule-blocks";
 
 import { Appointment, AppointmentCardContent, cleanPhone } from "./appointment-card";
 import { Lock } from "@boxicons/react";
 import { cn } from "@/lib/utils";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface FullCalendarAgendaProps {
    appointments: Appointment[];
@@ -42,6 +44,22 @@ export function FullCalendarAgenda({
    onQuickConfirm,
 }: FullCalendarAgendaProps) {
    const calendarRef = useRef<any>(null);
+   const [blockToDelete, setBlockToDelete] = useState<any>(null);
+   const [isDeletingBlock, setIsDeletingBlock] = useState(false);
+
+   const handleDeleteBlock = async () => {
+      if (!blockToDelete) return;
+      setIsDeletingBlock(true);
+      const res = await deleteScheduleBlock(blockToDelete.id);
+      if (res.success) {
+         toast.success("Bloqueio removido com sucesso.");
+         onRefresh();
+         setBlockToDelete(null);
+      } else {
+         toast.error(res.error || "Erro ao remover bloqueio.");
+      }
+      setIsDeletingBlock(false);
+   };
 
    useEffect(() => {
       if (calendarRef.current) {
@@ -136,10 +154,15 @@ export function FullCalendarAgenda({
       if (eventInfo.event.display === "background") {
          const block = eventInfo.event.extendedProps.block;
          return (
-            <div className="flex flex-col items-center justify-center h-full w-full opacity-80" style={{
-               backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(225,29,72,0.15) 10px, rgba(225,29,72,0.15) 20px)`
-            }}>
-               <span className="text-[10px] font-black uppercase tracking-widest bg-white/80 px-2 py-0.5 rounded-full text-rose-800 border border-rose-200">
+            <div 
+               onDoubleClick={() => setBlockToDelete(block)}
+               className="flex flex-col items-center justify-center h-full w-full opacity-80 cursor-pointer pointer-events-auto hover:opacity-100 transition-opacity" 
+               style={{
+                  backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(225,29,72,0.15) 10px, rgba(225,29,72,0.15) 20px)`
+               }}
+               title="Dê dois cliques para excluir este bloqueio"
+            >
+               <span className="text-[10px] font-black uppercase tracking-widest bg-white/80 px-2 py-0.5 rounded-full text-rose-800 border border-rose-200 pointer-events-none shadow-sm">
                   <Lock className="h-3 w-3 mr-1 inline" /> {block?.title || "BLOQUEIO"}
                </span>
             </div>
@@ -410,6 +433,33 @@ export function FullCalendarAgenda({
                />
             </div>
          </div>
+
+         {/* Delete Block Confirmation Modal */}
+         <AlertDialog open={!!blockToDelete} onOpenChange={(open) => !open && setBlockToDelete(null)}>
+            <AlertDialogContent className="rounded-3xl border-none shadow-2xl">
+               <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir bloqueio?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                     Tem certeza que deseja remover o bloqueio "{blockToDelete?.title || "BLOQUEIO"}"? Esta ação não pode ser desfeita e o horário ficará disponível na agenda.
+                  </AlertDialogDescription>
+               </AlertDialogHeader>
+               <AlertDialogFooter className="mt-6">
+                  <AlertDialogCancel disabled={isDeletingBlock} className="rounded-2xl h-12 font-bold w-full sm:w-1/2">
+                     Cancelar
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                     disabled={isDeletingBlock}
+                     onClick={(e) => {
+                        e.preventDefault();
+                        handleDeleteBlock();
+                     }}
+                     className="rounded-2xl h-12 font-black bg-destructive text-destructive-foreground hover:bg-destructive/90 w-full sm:w-1/2"
+                  >
+                     {isDeletingBlock ? "Removendo..." : "Sim, excluir"}
+                  </AlertDialogAction>
+               </AlertDialogFooter>
+            </AlertDialogContent>
+         </AlertDialog>
       </div>
    );
 }

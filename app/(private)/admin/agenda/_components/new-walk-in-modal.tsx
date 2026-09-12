@@ -6,7 +6,7 @@ import { ResponsiveModal } from "./responsive-modal";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LoaderDots, User } from "@boxicons/react";
+import { LoaderDots, User, Calendar as CalendarIcon } from "@boxicons/react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { getTeam } from "@/app/actions/team";
@@ -91,86 +91,94 @@ export function NewWalkInModal({ open, onOpenChange, onCreated }: NewWalkInModal
   };
 
   return (
-    <ResponsiveModal open={open} onOpenChange={onOpenChange} title="Check-in Rápido (Encaixe)">
+    <ResponsiveModal open={open} onOpenChange={onOpenChange} title="Check-in Rápido">
       <div className="grid gap-5 py-4">
+        <div className="space-y-1.5">
+          <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+            Paciente Presente
+          </Label>
+          <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+            <SelectTrigger className="bg-muted/40 border-none rounded-2xl h-12 transition-all">
+              <SelectValue placeholder={loadingClients ? "Carregando..." : "Selecione a paciente..."} />
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl border border-border/50 bg-background shadow-xl">
+              {clients.map((c: any) => (
+                <SelectItem key={c.id} value={c.id} className="rounded-xl py-2 font-medium">
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+            Serviço Desejado
+          </Label>
+          <Select disabled={loadingServices} value={selectedServiceId} onValueChange={setSelectedServiceId}>
+            <SelectTrigger className="rounded-2xl bg-muted/40 border-none h-12 transition-all">
+              <SelectValue placeholder="O que será feito agora?" />
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl border border-border/50 bg-background shadow-xl">
+              {services.map((s: any) => (
+                <SelectItem key={s.id} value={s.id} className="rounded-xl py-2 font-medium">
+                  {s.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {isOwner && (
           <div className="space-y-1.5">
             <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-              Paciente Presente
+              Profissional Designado
             </Label>
-            <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+            <Select value={selectedProfessionalId} onValueChange={setSelectedProfessionalId}>
               <SelectTrigger className="bg-muted/40 border-none rounded-2xl h-12 transition-all">
-                <SelectValue placeholder={loadingClients ? "Carregando..." : "Selecione a paciente..."} />
+                <User className="mr-2 h-4 w-4 text-primary" />
+                <SelectValue placeholder="Quem fará o encaixe?" />
               </SelectTrigger>
               <SelectContent className="rounded-2xl border border-border/50 bg-background shadow-xl">
-                {clients.map((c: any) => (
-                  <SelectItem key={c.id} value={c.id} className="rounded-xl py-2 font-medium">
-                    {c.name}
+                <SelectItem value={session?.user?.id || ""} className="rounded-xl py-2 font-medium">
+                  Admin
+                </SelectItem>
+                {team.filter((m) => m.id !== session?.user?.id).map((member) => (
+                  <SelectItem key={member.id} value={member.id} className="rounded-xl py-2 font-medium">
+                    {member.display_name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-              Serviço Desejado
-            </Label>
-            <Select disabled={loadingServices} value={selectedServiceId} onValueChange={setSelectedServiceId}>
-              <SelectTrigger className="rounded-2xl bg-muted/40 border-none h-12 transition-all">
-                <SelectValue placeholder="O que será feito agora?" />
-              </SelectTrigger>
-              <SelectContent className="rounded-2xl border border-border/50 bg-background shadow-xl">
-                {services.map((s: any) => (
-                  <SelectItem key={s.id} value={s.id} className="rounded-xl py-2 font-medium">
-                    {s.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        )}
+        <div className="bg-primary/5 border border-primary/20 rounded-2xl p-3.5 flex items-center gap-3">
+          <div className="bg-primary/10 p-2 rounded-xl text-primary shrink-0">
+            <CalendarIcon className="h-5 w-5" />
           </div>
-
-          {isOwner && (
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                Profissional Designado
-              </Label>
-              <Select value={selectedProfessionalId} onValueChange={setSelectedProfessionalId}>
-                <SelectTrigger className="bg-muted/40 border-none rounded-2xl h-12 transition-all">
-                  <User className="mr-2 h-4 w-4 text-primary" />
-                  <SelectValue placeholder="Quem fará o encaixe?" />
-                </SelectTrigger>
-                <SelectContent className="rounded-2xl border border-border/50 bg-background shadow-xl">
-                  <SelectItem value={session?.user?.id || ""} className="rounded-xl py-2 font-medium">
-                    Admin
-                  </SelectItem>
-                  {team.filter((m) => m.id !== session?.user?.id).map((member) => (
-                    <SelectItem key={member.id} value={member.id} className="rounded-xl py-2 font-medium">
-                      {member.display_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          <div>
+            <p className="text-xs font-black uppercase text-primary tracking-widest">Encaixe Imediato</p>
+          </div>
         </div>
+      </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 pt-2 pb-2 mt-4">
-          <Button
-            variant="ghost"
-            onClick={() => onOpenChange(false)}
-            disabled={saving}
-            className="rounded-2xl h-12 font-bold text-muted-foreground w-full sm:w-1/3"
-          >
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="rounded-2xl h-12 font-black bg-primary text-primary-foreground w-full sm:w-2/3 active:scale-[0.98] transition-all"
-          >
-            {saving ? <LoaderDots className="mr-2 h-5 w-5 animate-spin" /> : "Fazer Check-in"}
-          </Button>
-        </div>
+      <div className="flex flex-col sm:flex-row gap-3 pt-2 pb-2 mt-4">
+        <Button
+          variant="secondary"
+          onClick={() => onOpenChange(false)}
+          disabled={saving}
+          className="rounded-2xl h-12 font-bold w-full sm:w-1/2"
+        >
+          Cancelar
+        </Button>
+        <Button
+          onClick={handleSave}
+          disabled={saving}
+          className="rounded-2xl h-12 font-black bg-primary text-primary-foreground w-full sm:w-1/2 active:scale-[0.98] transition-all"
+        >
+          {saving ? <LoaderDots className="mr-2 h-5 w-5 animate-spin" /> : "Fazer Check-in"}
+        </Button>
+      </div>
     </ResponsiveModal>
   );
 }

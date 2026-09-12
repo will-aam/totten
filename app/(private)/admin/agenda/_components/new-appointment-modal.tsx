@@ -427,7 +427,7 @@ export const NewAppointmentModal = memo(
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full rounded-2xl bg-muted/40 border-none justify-start h-12 font-bold"
+                    className="w-full rounded-2xl bg-muted/40 border-none justify-start h-12 transition-all font-medium"
                   >
                     <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
                     {date ? format(date, "dd/MM/yy") : "Selecione"}
@@ -453,16 +453,16 @@ export const NewAppointmentModal = memo(
                 Horário
               </Label>
               <Select value={time} onValueChange={setTime}>
-                <SelectTrigger className="rounded-2xl bg-muted/40 border-none h-12 font-bold">
+                <SelectTrigger className="rounded-2xl bg-muted/40 border-none h-12 transition-all font-medium">
                   <Clock className="mr-2 h-4 w-4 text-primary" />
-                  <SelectValue placeholder="--" />
+                  <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl border border-border/50 bg-background max-h-48">
+                <SelectContent className="rounded-2xl border border-border/50 bg-background max-h-48 shadow-xl">
                   {TIME_SLOTS.map((slot) => (
                     <SelectItem
                       key={slot}
                       value={slot}
-                      className="rounded-lg font-bold"
+                      className="rounded-lg font-medium py-2"
                     >
                       {slot}
                     </SelectItem>
@@ -473,38 +473,37 @@ export const NewAppointmentModal = memo(
           </div>
 
           <div
+            onClick={() => {
+              if (!(usePackage && saldoDisponivel < 2)) {
+                setIsRecurring(!isRecurring);
+              }
+            }}
             className={cn(
-              "border-2 rounded-3xl p-4 transition-all duration-500",
+              "border-2 rounded-3xl p-4 transition-all duration-300 cursor-pointer select-none",
               isRecurring
-                ? "border-primary/20 bg-primary/3"
-                : "border-muted/30 bg-muted/5 opacity-80",
+                ? "border-primary/30 bg-primary/5 shadow-sm"
+                : "border-muted/30 bg-muted/5 opacity-80 hover:bg-muted/10",
+              usePackage && saldoDisponivel < 2 && "opacity-50 cursor-not-allowed"
             )}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div
-                  className={cn(
-                    "p-2 rounded-xl transition-colors",
-                    isRecurring
-                      ? "bg-primary text-primary-foreground shadow-md"
-                      : "bg-muted text-muted-foreground",
-                  )}
-                >
-                  <Repeat className="h-4 w-4" />
-                </div>
-                <Label className="font-black text-sm cursor-pointer">
-                  Agendamento Recorrente
-                </Label>
+            <div className="flex items-center gap-3">
+              <div
+                className={cn(
+                  "p-2 rounded-xl transition-colors shrink-0",
+                  isRecurring
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "bg-muted text-muted-foreground",
+                )}
+              >
+                <Repeat className="h-4 w-4" />
               </div>
-              <Switch
-                checked={isRecurring}
-                onCheckedChange={setIsRecurring}
-                disabled={usePackage && saldoDisponivel < 2}
-              />
+              <Label className="font-black text-sm cursor-pointer pointer-events-none">
+                Agendamento Recorrente
+              </Label>
             </div>
 
             {isRecurring && (
-              <div className="mt-4 pt-4 border-t border-dashed border-primary/20 animate-in fade-in slide-in-from-top-2">
+              <div className="mt-4 pt-4 border-t border-dashed border-primary/20 animate-in fade-in slide-in-from-top-2" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-between bg-white dark:bg-black/20 p-3 rounded-2xl border border-primary/10">
                   <div className="flex flex-col gap-0.5">
                     <span className="text-[10px] font-black text-primary uppercase">
@@ -548,17 +547,17 @@ export const NewAppointmentModal = memo(
 
         <div className="flex flex-col sm:flex-row gap-3 pt-2 pb-2 mt-4">
           <Button
-            variant="ghost"
+            variant="secondary"
             onClick={() => onOpenChange(false)}
             disabled={saving}
-            className="rounded-2xl h-12 font-bold text-muted-foreground w-full sm:w-1/3"
+            className="rounded-2xl h-12 font-bold w-full sm:w-1/2"
           >
             Cancelar
           </Button>
           <Button
             onClick={handleSave}
             disabled={saving}
-            className="rounded-2xl h-12 font-black bg-primary text-primary-foreground w-full sm:w-2/3 active:scale-[0.98] transition-all"
+            className="rounded-2xl h-12 font-black bg-primary text-primary-foreground w-full sm:w-1/2 active:scale-[0.98] transition-all"
           >
             {saving ? (
               <LoaderDots className="mr-2 h-5 w-5 animate-spin" />

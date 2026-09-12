@@ -173,7 +173,7 @@ export function NewBlockModal({
             </Label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full rounded-2xl bg-muted/40 border-none justify-start h-12 font-bold">
+                <Button variant="outline" className="w-full rounded-2xl bg-muted/40 border-none justify-start h-12 transition-all font-medium">
                   <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
                   {date ? format(date, "dd/MM/yy") : "Selecione"}
                 </Button>
@@ -190,13 +190,13 @@ export function NewBlockModal({
                 Início
               </Label>
               <Select value={startTime} onValueChange={setStartTime}>
-                <SelectTrigger className="rounded-2xl bg-muted/40 border-none h-12 font-bold">
+                <SelectTrigger className="rounded-2xl bg-muted/40 border-none h-12 transition-all font-medium">
                   <Clock className="mr-2 h-4 w-4 text-primary" />
-                  <SelectValue placeholder="--" />
+                  <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl border border-border/50 bg-background max-h-48">
+                <SelectContent className="rounded-2xl border border-border/50 bg-background max-h-48 shadow-xl">
                   {TIME_SLOTS.map((slot) => (
-                    <SelectItem key={slot} value={slot} className="rounded-lg font-bold">{slot}</SelectItem>
+                    <SelectItem key={slot} value={slot} className="rounded-lg font-medium py-2">{slot}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -207,13 +207,13 @@ export function NewBlockModal({
                 Fim
               </Label>
               <Select value={endTime} onValueChange={setEndTime}>
-                <SelectTrigger className="rounded-2xl bg-muted/40 border-none h-12 font-bold">
+                <SelectTrigger className="rounded-2xl bg-muted/40 border-none h-12 transition-all font-medium">
                   <Clock className="mr-2 h-4 w-4 text-primary" />
-                  <SelectValue placeholder="--" />
+                  <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl border border-border/50 bg-background max-h-48">
+                <SelectContent className="rounded-2xl border border-border/50 bg-background max-h-48 shadow-xl">
                   {TIME_SLOTS.map((slot) => (
-                    <SelectItem key={slot} value={slot} className="rounded-lg font-bold">{slot}</SelectItem>
+                    <SelectItem key={slot} value={slot} className="rounded-lg font-medium py-2">{slot}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -223,17 +223,17 @@ export function NewBlockModal({
 
         <div className="flex flex-col sm:flex-row gap-3 pt-2 pb-2 mt-4">
           <Button
-            variant="ghost"
+            variant="secondary"
             onClick={() => onOpenChange(false)}
             disabled={saving}
-            className="rounded-2xl h-12 font-bold text-muted-foreground w-full sm:w-1/3"
+            className="rounded-2xl h-12 font-bold w-full sm:w-1/2"
           >
             Cancelar
           </Button>
           <Button
             onClick={handleSave}
             disabled={saving}
-            className="rounded-2xl h-12 font-black bg-primary text-primary-foreground w-full sm:w-2/3 active:scale-[0.98] transition-all"
+            className="rounded-2xl h-12 font-black bg-primary text-primary-foreground w-full sm:w-1/2 active:scale-[0.98] transition-all"
           >
             {saving ? <LoaderDots className="mr-2 h-5 w-5 animate-spin" /> : "Bloquear"}
           </Button>
