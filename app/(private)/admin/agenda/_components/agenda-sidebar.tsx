@@ -70,7 +70,7 @@ export function AgendaSidebar({
     >
       {/* botão para apagar depois */}
       <div className="px-2 pt-2 whitespace-nowrap">
-        <Button
+        {/* <Button
           onClick={onCreateClick}
           className="rounded-full shadow-sm hover:shadow-md transition-shadow flex items-center gap-2 px-6 py-7 font-medium text-base bg-background border border-border/50 text-foreground hover:bg-accent hover:text-accent-foreground dark:shadow-none"
         >
@@ -78,7 +78,7 @@ export function AgendaSidebar({
             <Plus size={32} className="text-foreground" strokeWidth={2.5} />
             <span className="text-[1.05rem]">Novo agendamento</span>
           </div>
-        </Button>
+        </Button> */}
       </div>
 
       <div className="flex flex-col px-2 min-w-[15rem]">

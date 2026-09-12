@@ -265,310 +265,310 @@ export const NewAppointmentModal = memo(
     return (
       <ResponsiveModal open={open} onOpenChange={onOpenChange} title="Novo Agendamento">
 
-          <div className="grid gap-5 py-4">
-            {isOwner && (
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                  Profissional
-                </Label>
-                <Select
-                  value={selectedProfessionalId}
-                  onValueChange={setSelectedProfessionalId}
-                >
-                  <SelectTrigger className="bg-muted/40 border-none rounded-2xl h-12 transition-all">
-                    <User className="mr-2 h-4 w-4 text-primary" />
-                    <SelectValue placeholder="Quem vai atender?" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl border border-border/50 bg-background shadow-xl">
-                    <SelectItem
-                      value={session?.user?.id || ""}
-                      className="rounded-xl py-2 font-medium"
-                    >
-                      Admin
-                    </SelectItem>
-                    {team
-                      .filter((member) => member.id !== session?.user?.id)
-                      .map((member) => (
-                        <SelectItem
-                          key={member.id}
-                          value={member.id}
-                          className="rounded-xl py-2 font-medium"
-                        >
-                          {member.display_name}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
+        <div className="grid gap-5 py-4">
+          {isOwner && (
             <div className="space-y-1.5">
               <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                Cliente
+                Profissional
               </Label>
               <Select
-                value={selectedClientId}
-                onValueChange={setSelectedClientId}
+                value={selectedProfessionalId}
+                onValueChange={setSelectedProfessionalId}
               >
                 <SelectTrigger className="bg-muted/40 border-none rounded-2xl h-12 transition-all">
-                  <SelectValue
-                    placeholder={
-                      loadingClients
-                        ? "Carregando..."
-                        : "Selecione a cliente..."
-                    }
-                  />
+                  <User className="mr-2 h-4 w-4 text-primary" />
+                  <SelectValue placeholder="Quem vai atender?" />
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl border border-border/50 bg-background shadow-xl">
-                  {clients.map((c: any) => (
-                    <SelectItem
-                      key={c.id}
-                      value={c.id}
-                      className="rounded-xl py-2 font-medium"
-                    >
-                      {c.name}
-                    </SelectItem>
-                  ))}
+                  <SelectItem
+                    value={session?.user?.id || ""}
+                    className="rounded-xl py-2 font-medium"
+                  >
+                    Admin
+                  </SelectItem>
+                  {team
+                    .filter((member) => member.id !== session?.user?.id)
+                    .map((member) => (
+                      <SelectItem
+                        key={member.id}
+                        value={member.id}
+                        className="rounded-xl py-2 font-medium"
+                      >
+                        {member.display_name}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
+          )}
 
-            {activePackage && (
-              <div
-                className={cn(
-                  "flex items-center justify-between p-4 rounded-2xl border-2 transition-all duration-300",
-                  usePackage
-                    ? "bg-primary/5 border-primary shadow-inner"
-                    : "bg-muted/20 border-transparent opacity-80",
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={cn(
-                      "p-2.5 rounded-xl transition-colors",
-                      usePackage
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground shadow-sm",
-                    )}
+          <div className="space-y-1.5">
+            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+              Cliente
+            </Label>
+            <Select
+              value={selectedClientId}
+              onValueChange={setSelectedClientId}
+            >
+              <SelectTrigger className="bg-muted/40 border-none rounded-2xl h-12 transition-all">
+                <SelectValue
+                  placeholder={
+                    loadingClients
+                      ? "Carregando..."
+                      : "Selecione a cliente..."
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl border border-border/50 bg-background shadow-xl">
+                {clients.map((c: any) => (
+                  <SelectItem
+                    key={c.id}
+                    value={c.id}
+                    className="rounded-xl py-2 font-medium"
                   >
-                    <PackageIcon className="h-5 w-5" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-black leading-none">
-                      {activePackage.name}
-                    </span>
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase mt-1">
-                      Saldo: {saldoDisponivel} sessões
-                    </span>
-                  </div>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {activePackage && (
+            <div
+              className={cn(
+                "flex items-center justify-between p-4 rounded-2xl border-2 transition-all duration-300",
+                usePackage
+                  ? "bg-primary/5 border-primary shadow-inner"
+                  : "bg-muted/20 border-transparent opacity-80",
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={cn(
+                    "p-2.5 rounded-xl transition-colors",
+                    usePackage
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground shadow-sm",
+                  )}
+                >
+                  <PackageIcon className="h-5 w-5" />
                 </div>
-                <div className="flex items-center gap-3">
-                  <Label className="text-[10px] font-black uppercase opacity-60 cursor-pointer">
-                    Utilizar
-                  </Label>
-                  <Switch
-                    checked={usePackage}
-                    onCheckedChange={(checked) => {
-                      setUsePackage(checked);
-                      if (checked && activePackage) {
-                        setSelectedServiceId(activePackage.service_id);
-                        if (saldoDisponivel > 1) {
-                          setIsRecurring(true);
-                          setRepeatCount(saldoDisponivel);
-                        } else {
-                          setIsRecurring(false);
-                        }
-                      }
-                    }}
-                    className="data-[state=checked]:bg-primary"
-                  />
+                <div className="flex flex-col">
+                  <span className="text-sm font-black leading-none">
+                    {activePackage.name}
+                  </span>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase mt-1">
+                    Saldo: {saldoDisponivel} sessões
+                  </span>
                 </div>
               </div>
-            )}
+              <div className="flex items-center gap-3">
+                <Label className="text-[10px] font-black uppercase opacity-60 cursor-pointer">
+                  Utilizar
+                </Label>
+                <Switch
+                  checked={usePackage}
+                  onCheckedChange={(checked) => {
+                    setUsePackage(checked);
+                    if (checked && activePackage) {
+                      setSelectedServiceId(activePackage.service_id);
+                      if (saldoDisponivel > 1) {
+                        setIsRecurring(true);
+                        setRepeatCount(saldoDisponivel);
+                      } else {
+                        setIsRecurring(false);
+                      }
+                    }
+                  }}
+                  className="data-[state=checked]:bg-primary"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+              Serviço
+            </Label>
+            <Select
+              disabled={loadingServices || usePackage}
+              value={selectedServiceId}
+              onValueChange={setSelectedServiceId}
+            >
+              <SelectTrigger
+                className={cn(
+                  "rounded-2xl bg-muted/40 border-none h-12 transition-all",
+                  usePackage &&
+                  "bg-primary/5 text-primary font-black opacity-100",
+                )}
+              >
+                <SelectValue placeholder="O que será feito?" />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl border border-border/50 bg-background shadow-xl">
+                {services.map((s: any) => (
+                  <SelectItem
+                    key={s.id}
+                    value={s.id}
+                    className="rounded-xl py-2 font-medium"
+                  >
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                Data
+              </Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full rounded-2xl bg-muted/40 border-none justify-start h-12 font-bold"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
+                    {date ? format(date, "dd/MM/yy") : "Selecione"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-auto p-0 border-none shadow-2xl rounded-3xl"
+                  align="start"
+                >
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={setDate}
+                    locale={ptBR}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
 
             <div className="space-y-1.5">
               <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                Serviço
+                Horário
               </Label>
-              <Select
-                disabled={loadingServices || usePackage}
-                value={selectedServiceId}
-                onValueChange={setSelectedServiceId}
-              >
-                <SelectTrigger
-                  className={cn(
-                    "rounded-2xl bg-muted/40 border-none h-12 transition-all",
-                    usePackage &&
-                    "bg-primary/5 text-primary font-black opacity-100",
-                  )}
-                >
-                  <SelectValue placeholder="O que será feito?" />
+              <Select value={time} onValueChange={setTime}>
+                <SelectTrigger className="rounded-2xl bg-muted/40 border-none h-12 font-bold">
+                  <Clock className="mr-2 h-4 w-4 text-primary" />
+                  <SelectValue placeholder="--" />
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl border border-border/50 bg-background shadow-xl">
-                  {services.map((s: any) => (
+                <SelectContent className="rounded-2xl border border-border/50 bg-background max-h-48">
+                  {TIME_SLOTS.map((slot) => (
                     <SelectItem
-                      key={s.id}
-                      value={s.id}
-                      className="rounded-xl py-2 font-medium"
+                      key={slot}
+                      value={slot}
+                      className="rounded-lg font-bold"
                     >
-                      {s.name}
+                      {slot}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+          </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                  Data
+          <div
+            className={cn(
+              "border-2 rounded-3xl p-4 transition-all duration-500",
+              isRecurring
+                ? "border-primary/20 bg-primary/3"
+                : "border-muted/30 bg-muted/5 opacity-80",
+            )}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div
+                  className={cn(
+                    "p-2 rounded-xl transition-colors",
+                    isRecurring
+                      ? "bg-primary text-primary-foreground shadow-md"
+                      : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  <Repeat className="h-4 w-4" />
+                </div>
+                <Label className="font-black text-sm cursor-pointer">
+                  Agendamento Recorrente
                 </Label>
-                <Popover>
-                  <PopoverTrigger asChild>
+              </div>
+              <Switch
+                checked={isRecurring}
+                onCheckedChange={setIsRecurring}
+                disabled={usePackage && saldoDisponivel < 2}
+              />
+            </div>
+
+            {isRecurring && (
+              <div className="mt-4 pt-4 border-t border-dashed border-primary/20 animate-in fade-in slide-in-from-top-2">
+                <div className="flex items-center justify-between bg-white dark:bg-black/20 p-3 rounded-2xl border border-primary/10">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[10px] font-black text-primary uppercase">
+                      Sessões Programadas
+                    </span>
+                    <span className="text-[9px] text-muted-foreground font-bold">
+                      Total de {repeatCount} horários.
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
                     <Button
-                      variant="outline"
-                      className="w-full rounded-2xl bg-muted/40 border-none justify-start h-12 font-bold"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 rounded-lg bg-muted/50 hover:bg-muted"
+                      onClick={() =>
+                        setRepeatCount(Math.max(2, repeatCount - 1))
+                      }
+                      disabled={repeatCount <= 2}
                     >
-                      <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
-                      {date ? format(date, "dd/MM/yy") : "Selecione"}
+                      <Minus className="h-4 w-4" />
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    className="w-auto p-0 border-none shadow-2xl rounded-3xl"
-                    align="start"
-                  >
-                    <Calendar
-                      mode="single"
-                      selected={date}
-                      onSelect={setDate}
-                      locale={ptBR}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                  Horário
-                </Label>
-                <Select value={time} onValueChange={setTime}>
-                  <SelectTrigger className="rounded-2xl bg-muted/40 border-none h-12 font-bold">
-                    <Clock className="mr-2 h-4 w-4 text-primary" />
-                    <SelectValue placeholder="--" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl border border-border/50 bg-background max-h-48">
-                    {TIME_SLOTS.map((slot) => (
-                      <SelectItem
-                        key={slot}
-                        value={slot}
-                        className="rounded-lg font-bold"
-                      >
-                        {slot}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div
-              className={cn(
-                "border-2 rounded-3xl p-4 transition-all duration-500",
-                isRecurring
-                  ? "border-primary/20 bg-primary/3"
-                  : "border-muted/30 bg-muted/5 opacity-80",
-              )}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={cn(
-                      "p-2 rounded-xl transition-colors",
-                      isRecurring
-                        ? "bg-primary text-primary-foreground shadow-md"
-                        : "bg-muted text-muted-foreground",
-                    )}
-                  >
-                    <Repeat className="h-4 w-4" />
-                  </div>
-                  <Label className="font-black text-sm cursor-pointer">
-                    Agendamento Recorrente
-                  </Label>
-                </div>
-                <Switch
-                  checked={isRecurring}
-                  onCheckedChange={setIsRecurring}
-                  disabled={usePackage && saldoDisponivel < 2}
-                />
-              </div>
-
-              {isRecurring && (
-                <div className="mt-4 pt-4 border-t border-dashed border-primary/20 animate-in fade-in slide-in-from-top-2">
-                  <div className="flex items-center justify-between bg-white dark:bg-black/20 p-3 rounded-2xl border border-primary/10">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] font-black text-primary uppercase">
-                        Sessões Programadas
-                      </span>
-                      <span className="text-[9px] text-muted-foreground font-bold">
-                        Total de {repeatCount} horários.
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 rounded-lg bg-muted/50 hover:bg-muted"
-                        onClick={() =>
-                          setRepeatCount(Math.max(2, repeatCount - 1))
-                        }
-                        disabled={repeatCount <= 2}
-                      >
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                      <span className="w-5 text-center font-black">
-                        {repeatCount}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 rounded-lg bg-muted/50 hover:bg-muted"
-                        onClick={() => setRepeatCount(repeatCount + 1)}
-                        disabled={usePackage && repeatCount >= saldoDisponivel}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <span className="w-5 text-center font-black">
+                      {repeatCount}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 rounded-lg bg-muted/50 hover:bg-muted"
+                      onClick={() => setRepeatCount(repeatCount + 1)}
+                      disabled={usePackage && repeatCount >= saldoDisponivel}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
+        </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 pt-2 pb-2 mt-4">
-            <Button
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-              disabled={saving}
-              className="rounded-2xl h-12 font-bold text-muted-foreground w-full sm:w-1/3"
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-              className="rounded-2xl h-12 font-black bg-primary text-primary-foreground w-full sm:w-2/3 active:scale-[0.98] transition-all"
-            >
-              {saving ? (
-                <LoaderDots className="mr-2 h-5 w-5 animate-spin" />
-              ) : isRecurring ? (
-                `Agendar ${repeatCount} Sessões`
-              ) : (
-                "Confirmar Agendamento"
-              )}
-            </Button>
-          </div>
+        <div className="flex flex-col sm:flex-row gap-3 pt-2 pb-2 mt-4">
+          <Button
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+            disabled={saving}
+            className="rounded-2xl h-12 font-bold text-muted-foreground w-full sm:w-1/3"
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            className="rounded-2xl h-12 font-black bg-primary text-primary-foreground w-full sm:w-2/3 active:scale-[0.98] transition-all"
+          >
+            {saving ? (
+              <LoaderDots className="mr-2 h-5 w-5 animate-spin" />
+            ) : isRecurring ? (
+              `Agendar ${repeatCount} Sessões`
+            ) : (
+              "Confirmar"
+            )}
+          </Button>
+        </div>
       </ResponsiveModal>
     );
   },

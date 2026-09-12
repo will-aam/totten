@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, UserPlus, UserCheck, Package, Block, Store } from "@boxicons/react";
+import { Plus, UserPlus, UserCheck, Cart, Block } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
 interface AgendaSpeedDialProps {
@@ -29,8 +29,7 @@ export function AgendaSpeedDial({
     { name: "Novo Agendamento", icon: <UserPlus className="w-5 h-5" />, onClick: onNewAppointment },
     { name: "Check-in Manual", icon: <UserCheck className="w-5 h-5" />, onClick: onManualCheckIn },
     { name: "Bloquear Horário", icon: <Block className="w-5 h-5" />, onClick: onNewBlock },
-    { name: "Vender Serviço", icon: <Store className="w-5 h-5" />, onClick: onNewSale },
-    { name: "Vender Pacote", icon: <Package className="w-5 h-5" />, onClick: onNewPackage },
+    { name: "Vender Pacote", icon: <Cart className="w-5 h-5" />, onClick: onNewPackage },
   ];
 
   return (
@@ -43,20 +42,22 @@ export function AgendaSpeedDial({
       {isOpen && (
         <div className="flex flex-col items-end gap-3 mb-4">
           {actions.map((action, i) => (
-            <div key={i} className="flex items-center gap-3 animate-in fade-in slide-in-from-bottom-5" style={{ animationDelay: `${(actions.length - i) * 50}ms`, animationFillMode: 'backwards' }}>
-              <span className="bg-background border shadow-md text-sm font-bold px-3 py-1.5 rounded-xl whitespace-nowrap text-foreground">
+            <button
+              key={i}
+              onClick={() => {
+                action.onClick();
+                setIsOpen(false);
+              }}
+              className="flex items-center gap-3 bg-background/60 backdrop-blur-md rounded-full py-1.5 pl-1.5 pr-5 border border-border/50 hover:bg-background/80 transition-colors animate-in fade-in slide-in-from-bottom-5 active:scale-[0.98]"
+              style={{ animationDelay: `${(actions.length - i) * 50}ms`, animationFillMode: 'backwards' }}
+            >
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                {action.icon}
+              </div>
+              <span className="text-sm font-bold text-foreground whitespace-nowrap">
                 {action.name}
               </span>
-              <button
-                onClick={() => {
-                  action.onClick();
-                  setIsOpen(false);
-                }}
-                className="w-12 h-12 rounded-full bg-background border shadow-lg flex items-center justify-center text-primary hover:bg-accent hover:text-accent-foreground transition-colors"
-              >
-                {action.icon}
-              </button>
-            </div>
+            </button>
           ))}
         </div>
       )}
