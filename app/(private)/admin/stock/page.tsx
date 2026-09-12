@@ -77,7 +77,7 @@ function StockPageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  
+
   const pageParam = searchParams.get("page");
   const page = pageParam ? parseInt(pageParam, 10) : 1;
   const itemsPerPage = 15;
@@ -173,7 +173,7 @@ function StockPageContent() {
     });
 
   const totalPages = Math.ceil(filteredAndSortedItems.length / itemsPerPage);
-  
+
   // Reseta para página 1 se filtrar
   useEffect(() => {
     if (page > 1 && filteredAndSortedItems.length <= itemsPerPage) {
@@ -298,25 +298,25 @@ function StockPageContent() {
                   </button>
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs text-sm" align="start">
-              <p>
-  <strong>Como funciona o desconto de estoque por serviço:</strong> quando você
-  cadastra uma receita para um serviço (por exemplo, "2 ml de produto X"), é essa
-  quantidade que será descontada do estoque toda vez que o serviço for realizado.
-</p>
-<p>
-  <strong>Atenção:</strong> se você alterar essa quantidade depois, a mudança vale
-  só para os atendimentos futuros. Os atendimentos que já aconteceram não são
-  recalculados com o novo valor.
-</p>
-<p>
-  <strong>Ao excluir um check-in antigo:</strong> o sistema devolve ao estoque a
-  quantidade que está configurada <em>hoje</em> na receita — e não a quantidade que
-  estava configurada na época em que o atendimento foi feito.
-</p>
-<p>
-  Por isso, é importante manter as receitas sempre atualizadas, para que o controle
-  de estoque reflita a realidade do seu negócio.
-</p>
+                  <p>
+                    <strong>Como funciona o desconto de estoque por serviço:</strong> quando você
+                    cadastra uma receita para um serviço (por exemplo, "2 ml de produto X"), é essa
+                    quantidade que será descontada do estoque toda vez que o serviço for realizado.
+                  </p>
+                  <p>
+                    <strong>Atenção:</strong> se você alterar essa quantidade depois, a mudança vale
+                    só para os atendimentos futuros. Os atendimentos que já aconteceram não são
+                    recalculados com o novo valor.
+                  </p>
+                  <p>
+                    <strong>Ao excluir um check-in antigo:</strong> o sistema devolve ao estoque a
+                    quantidade que está configurada <em>hoje</em> na receita — e não a quantidade que
+                    estava configurada na época em que o atendimento foi feito.
+                  </p>
+                  <p>
+                    Por isso, é importante manter as receitas sempre atualizadas, para que o controle
+                    de estoque reflita a realidade do seu negócio.
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -353,7 +353,7 @@ function StockPageContent() {
                 </div>
               )}
             </div>
-            
+
             {/* Paginação do Estoque */}
             {totalPages > 1 && (
               <div className="mt-8">
@@ -365,7 +365,7 @@ function StockPageContent() {
                         className={page === 1 ? "pointer-events-none opacity-50" : ""}
                       />
                     </PaginationItem>
-                    
+
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
                       if (
                         p === 1 ||
@@ -383,7 +383,7 @@ function StockPageContent() {
                           </PaginationItem>
                         );
                       }
-                      
+
                       if (p === page - 2 || p === page + 2) {
                         return (
                           <PaginationItem key={p}>

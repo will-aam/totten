@@ -34,11 +34,11 @@ import {
 import { Package, Plus, LoaderDots, Archive, Calendar } from "@boxicons/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { getPaymentMethods } from "@/app/actions/payment-methods";
-import { OrganizationPaymentMethod } from "@/types/finance";
+
 //  CORREÇÃO: Importando exatamente o nome exportado na Action
 import { archivePackage, createPackageAction } from "@/app/actions/packages";
 import { apiClient } from "@/lib/api-client";
+import { NewPackageSaleModal } from "../../_components/new-package-sale-modal";
 
 export type PackageType = {
   id: string;
@@ -50,15 +50,6 @@ export type PackageType = {
   sessionDates?: string[];
   created_at?: string;
 };
-
-interface PackageTemplate {
-  id: string;
-  name: string;
-  total_sessions: number;
-  price: number;
-  service_id: string;
-  active: boolean;
-}
 
 interface ClientPackageProps {
   clientId: string;
@@ -74,22 +65,10 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
   const activePackages = packages?.filter((pkg) => pkg.active) || [];
 
   const [addPkgOpen, setAddPkgOpen] = useState(false);
-  const [templates, setTemplates] = useState<PackageTemplate[]>([]);
-  const [templateId, setTemplateId] = useState<string>("");
-  const [loading, setLoading] = useState(false);
 
   const [isArchiving, setIsArchiving] = useState(false);
   const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
   const [pkgToArchive, setPkgToArchive] = useState<PackageType | null>(null);
-
-  const [paymentMethods, setPaymentMethods] = useState<
-    OrganizationPaymentMethod[]
-  >([]);
-  const [payUpfront, setPayUpfront] = useState(false);
-  const [selectedMethod, setSelectedMethod] = useState<string>("");
-
-  const [generateInstallments, setGenerateInstallments] = useState(false);
-  const [installmentsCount, setInstallmentsCount] = useState<number>(2);
 
   const [api, setApi] = useState<any>();
   const [current, setCurrent] = useState(0);
@@ -102,76 +81,6 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
     });
   }, [api]);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [templatesData, methodsData] = await Promise.all([
-          apiClient<PackageTemplate[]>("package-templates", {
-            params: { active: "true" },
-          }),
-          getPaymentMethods(),
-        ]);
-
-        setTemplates(templatesData);
-        if (templatesData.length > 0) setTemplateId(templatesData[0].id);
-
-        setPaymentMethods(methodsData as OrganizationPaymentMethod[]);
-      } catch (e) {
-        console.error("Erro ao carregar dados:", e);
-      }
-    };
-    if (addPkgOpen) loadData();
-  }, [addPkgOpen]);
-
-  const handleAddPackage = async () => {
-    if (!templateId) return toast.error("Selecione um pacote do catálogo");
-    if (payUpfront && !selectedMethod)
-      return toast.error("Selecione a forma de pagamento.");
-    if (
-      !payUpfront &&
-      generateInstallments &&
-      (installmentsCount < 2 || installmentsCount > 24)
-    ) {
-      return toast.error("O número de parcelas deve ser entre 2 e 24.");
-    }
-
-    const selectedTemplate = templates.find((t) => t.id === templateId);
-    if (!selectedTemplate) return;
-
-    setLoading(true);
-    try {
-      //  CORREÇÃO: Usando a função importada corretamente
-      const result = await createPackageAction({
-        client_id: clientId,
-        service_id: selectedTemplate.service_id,
-        total_sessions: Number(selectedTemplate.total_sessions),
-        price: Number(selectedTemplate.price),
-        pay_upfront: payUpfront,
-        payment_method: payUpfront ? selectedMethod : null,
-        generate_installments: !payUpfront ? generateInstallments : false,
-        installments_count: installmentsCount,
-        package_template_id: selectedTemplate.id,
-      });
-
-      // Lida com erros amigáveis retornados pela action
-      if (result && result.error) {
-        toast.error(result.error);
-        return;
-      }
-
-      toast.success("Pacote vendido com sucesso!");
-      mutate(packageCacheKey);
-      setAddPkgOpen(false);
-      setPayUpfront(false);
-      setGenerateInstallments(false);
-      setInstallmentsCount(2);
-    } catch (error: any) {
-      console.error("[handleAddPackage] Erro:", error);
-      toast.error("Ocorreu um erro ao processar a venda.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleArchivePackage = async () => {
     if (!pkgToArchive) return;
@@ -192,8 +101,6 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
       setIsArchiving(false);
     }
   };
-
-  const currentTemplate = templates.find((t) => t.id === templateId);
 
   const renderPackageInfo = (pkg: PackageType) => {
     const progress = Math.round((pkg.used_sessions / pkg.total_sessions) * 100);
@@ -259,225 +166,21 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
           <Package className="h-5 w-5 text-primary" /> Pacote Ativo
         </CardTitle>
 
-        <Dialog open={addPkgOpen} onOpenChange={setAddPkgOpen}>
-          <DialogTrigger asChild>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={!clientActive || activePackages.length >= 1}
-              title={
-                activePackages.length >= 1
-                  ? "Encerre o Pacote atual para vender outro"
-                  : ""
-              }
-              className="h-8 rounded-full border-primary/20 text-primary select-none transition-transform duration-100 ease-out hover:bg-transparent hover:text-primary active:scale-95 active:bg-primary/10 text-xs font-medium px-3 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Plus className="h-3.5 w-3.5 mr-1" strokeWidth={2} />
-              {activePackages.length >= 1 ? "Limite Atingido" : "Nova venda"}
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md rounded-2xl">
-            <DialogHeader>
-              <DialogTitle>Vender Novo Pacote</DialogTitle>
-              <DialogDescription>
-                Selecione um Pacote do seu catálogo para aplicar a este cliente.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="flex flex-col gap-4 py-4 max-h-[60vh] overflow-y-auto px-1">
-              <div className="flex flex-col gap-2">
-                <Label>Pacote Disponível</Label>
-                <Select
-                  value={templateId}
-                  onValueChange={(val) => {
-                    setTemplateId(val);
-                    const tpl = templates.find((t) => t.id === val);
-                    if (tpl) setInstallmentsCount(tpl.total_sessions);
-                  }}
-                  disabled={templates.length === 0 || loading}
-                >
-                  <SelectTrigger className="h-11 rounded-xl bg-muted/30">
-                    <SelectValue
-                      placeholder={
-                        templates.length === 0
-                          ? "Nenhum pacote ativo"
-                          : "Selecione um Pacote"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {templates.map((tpl) => (
-                      <SelectItem key={tpl.id} value={tpl.id}>
-                        {tpl.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {currentTemplate && (
-                <div className="bg-muted/30 p-4 rounded-xl border border-border space-y-2 mt-2">
-                  <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider">
-                    Resumo do Pacote
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Sessões:</span>
-                    <span className="font-bold text-foreground">
-                      {currentTemplate.total_sessions}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Preço Total:</span>
-                    <span className="font-bold text-primary">
-                      {new Intl.NumberFormat("pt-BR", {
-                        style: "currency",
-                        currency: "BRL",
-                      }).format(currentTemplate.price)}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              <div className="my-1 border-t border-border/50" />
-
-              <div className="flex flex-col gap-4">
-                <div className="flex flex-row items-center justify-between rounded-xl border border-border/50 p-3 bg-muted/20">
-                  <div className="space-y-0.5 pr-4">
-                    <Label className="text-sm font-bold">
-                      Pagar Pacote à Vista?
-                    </Label>
-                    <p className="text-[11px] text-muted-foreground leading-tight">
-                      Registra o valor total no caixa agora.
-                    </p>
-                  </div>
-                  <Switch
-                    checked={payUpfront}
-                    onCheckedChange={(val) => {
-                      setPayUpfront(val);
-                      if (val) setGenerateInstallments(false);
-                    }}
-                    disabled={loading}
-                  />
-                </div>
-
-                {payUpfront && (
-                  <div className="flex flex-col gap-2 animate-in fade-in zoom-in-95 duration-200">
-                    <Label className="text-xs font-bold uppercase text-muted-foreground">
-                      Forma de Pagamento
-                    </Label>
-                    <Select
-                      value={selectedMethod}
-                      onValueChange={setSelectedMethod}
-                      disabled={loading}
-                    >
-                      <SelectTrigger className="h-11 rounded-xl">
-                        <SelectValue placeholder="Como o cliente está pagando?" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {paymentMethods
-                          .filter((pm) => pm.isActive)
-                          .map((pm) => (
-                            <SelectItem key={pm.id} value={pm.type}>
-                              {pm.name}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {!payUpfront && (
-                  <div className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
-                    <div className="flex flex-row items-center justify-between rounded-xl border border-border/50 p-3 bg-amber-500/10 dark:bg-amber-500/5">
-                      <div className="space-y-0.5 pr-4">
-                        <Label className="text-sm font-bold text-amber-700 dark:text-amber-500">
-                          Gerar Contas a Receber?
-                        </Label>
-                        <p className="text-[11px] text-amber-600/80 dark:text-amber-500/80 leading-tight">
-                          Cria parcelas mensais pendentes.
-                        </p>
-                      </div>
-                      <Switch
-                        checked={generateInstallments}
-                        onCheckedChange={setGenerateInstallments}
-                        disabled={loading}
-                      />
-                    </div>
-
-                    {generateInstallments && (
-                      <div className="flex flex-col gap-2">
-                        <Label className="text-xs font-bold uppercase text-muted-foreground">
-                          Quantidade de Parcelas
-                        </Label>
-                        <Input
-                          type="number"
-                          inputMode="numeric"
-                          min={2}
-                          max={48}
-                          step={1}
-                          value={installmentsCount}
-                          onChange={(e) => {
-                            let value = e.target.value;
-
-                            if (value === "") {
-                              setInstallmentsCount(0);
-                              return;
-                            }
-
-                            let num = parseInt(value, 10);
-
-                            if (isNaN(num)) return;
-
-                            if (num < 2) num = 2;
-                            if (num > 48) num = 48;
-
-                            setInstallmentsCount(num);
-                          }}
-                          onWheel={(e) => e.currentTarget.blur()}
-                          onKeyDown={(e) => {
-                            if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                              e.preventDefault();
-                            }
-                          }}
-                          disabled={loading}
-                          className="h-11 rounded-xl w-32 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
-                        {currentTemplate && installmentsCount >= 2 && (
-                          <p className="text-xs text-muted-foreground mt-1 font-medium">
-                            Serão geradas {installmentsCount} parcelas de{" "}
-                            {new Intl.NumberFormat("pt-BR", {
-                              style: "currency",
-                              currency: "BRL",
-                            }).format(
-                              currentTemplate.price / installmentsCount,
-                            )}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button
-                onClick={handleAddPackage}
-                disabled={loading || templates.length === 0 || !templateId}
-                className="w-full h-14 sm:h-12 text-lg sm:text-base rounded-xl transition-all hover:scale-[1.02] shadow-md"
-              >
-                {loading ? (
-                  <>
-                    <LoaderDots className="h-4 w-4 mr-2 animate-spin" />
-                    Processando...
-                  </>
-                ) : (
-                  "Confirmar Venda"
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setAddPkgOpen(true)}
+          disabled={!clientActive || activePackages.length >= 1}
+          title={
+            activePackages.length >= 1
+              ? "Encerre o Pacote atual para vender outro"
+              : ""
+          }
+          className="h-8 rounded-full border-primary/20 text-primary select-none transition-transform duration-100 ease-out hover:bg-transparent hover:text-primary active:scale-95 active:bg-primary/10 text-xs font-medium px-3 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Plus className="h-3.5 w-3.5 mr-1" strokeWidth={2} />
+          {activePackages.length >= 1 ? "Limite Atingido" : "Nova venda"}
+        </Button>
       </CardHeader>
 
       <div className="w-[90%] mx-auto border-t border-border/50 mb-4" />
@@ -586,6 +289,13 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <NewPackageSaleModal
+        open={addPkgOpen}
+        onOpenChange={setAddPkgOpen}
+        clientId={clientId}
+        onCreated={() => mutate(packageCacheKey)}
+      />
     </Card>
   );
 }

@@ -45,6 +45,7 @@ import { NewBlockModal } from "./_components/new-block-modal";
 import { NewWalkInModal } from "./_components/new-walk-in-modal";
 import { useSidebar } from "@/components/ui/sidebar";
 import { apiClient, ApiError } from "@/lib/api-client";
+import { NewPackageSaleModal } from "../_components/new-package-sale-modal";
 
 interface AgendaSettings {
   openingTime: string;
@@ -66,6 +67,7 @@ export default function AgendaPage() {
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
   const [isWalkInModalOpen, setIsWalkInModalOpen] = useState(false);
+  const [isPackageSaleModalOpen, setIsPackageSaleModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] =
     useState<Appointment | null>(null);
@@ -412,7 +414,7 @@ export default function AgendaPage() {
         onNewBlock={() => setIsBlockModalOpen(true)}
         onManualCheckIn={() => setIsWalkInModalOpen(true)}
         onNewSale={() => toast("Redirecionando para PDV / Financeiro...")}
-        onNewPackage={() => toast("Redirecionando para Venda de Pacote...")}
+        onNewPackage={() => setIsPackageSaleModalOpen(true)}
       />
 
       <button
@@ -452,6 +454,12 @@ export default function AgendaPage() {
       <NewWalkInModal
         open={isWalkInModalOpen}
         onOpenChange={setIsWalkInModalOpen}
+        onCreated={mutateAll}
+      />
+
+      <NewPackageSaleModal
+        open={isPackageSaleModalOpen}
+        onOpenChange={setIsPackageSaleModalOpen}
         onCreated={mutateAll}
       />
 
