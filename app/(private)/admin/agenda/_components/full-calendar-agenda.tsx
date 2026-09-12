@@ -312,6 +312,47 @@ export function FullCalendarAgenda({
         .fc-timeGridWeek-view .fc-timegrid-now-indicator-arrow {
             display: none !important;
         }
+
+        /* ==== POPOVER (MAIS +X EVENTOS NO MÊS) ==== */
+        .fc-custom-theme .fc-popover {
+           background-color: var(--card) !important;
+           border: 1px solid var(--border) !important;
+           border-radius: var(--radius) !important;
+           box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
+           z-index: 100 !important;
+        }
+        
+        .fc-custom-theme .fc-popover-header {
+           background-color: var(--muted) !important;
+           color: var(--foreground) !important;
+           border-bottom: 1px solid var(--border) !important;
+           border-top-left-radius: var(--radius) !important;
+           border-top-right-radius: var(--radius) !important;
+           padding: 8px 12px !important;
+        }
+        
+        .fc-custom-theme .fc-popover-title {
+           font-weight: 600 !important;
+           font-size: 14px !important;
+        }
+
+        .fc-custom-theme .fc-popover-close {
+           opacity: 0.7 !important;
+           color: var(--foreground) !important;
+           transition: opacity 0.2s !important;
+        }
+        .fc-custom-theme .fc-popover-close:hover {
+           opacity: 1 !important;
+           background: transparent !important;
+        }
+        
+        .fc-custom-theme .fc-popover-body {
+           padding: 8px !important;
+           background-color: var(--card) !important;
+           color: var(--foreground) !important;
+           border-bottom-left-radius: var(--radius) !important;
+           border-bottom-right-radius: var(--radius) !important;
+        }
       `}</style>
 
          <div className="overflow-x-auto overflow-y-hidden h-full w-full custom-scrollbar">

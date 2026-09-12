@@ -2,13 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import useSWR from "swr";
-import {
-  Sheet as Dialog,
-  SheetContent as DialogContent,
-  SheetHeader as DialogHeader,
-  SheetTitle as DialogTitle,
-  SheetFooter as DialogFooter,
-} from "@/components/ui/sheet";
+import { ResponsiveModal } from "./responsive-modal";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -97,13 +91,8 @@ export function NewWalkInModal({ open, onOpenChange, onCreated }: NewWalkInModal
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent side="bottom" className="rounded-t-[32px] p-4 sm:p-6 max-h-[90dvh] overflow-y-auto border-t-0 shadow-2xl sm:max-w-md sm:mx-auto">
-        <DialogHeader className="space-y-1 mt-2">
-          <DialogTitle className="text-center text-xl font-black text-primary">Check-in Rápido (Encaixe)</DialogTitle>
-        </DialogHeader>
-
-        <div className="grid gap-5 py-4">
+    <ResponsiveModal open={open} onOpenChange={onOpenChange} title="Check-in Rápido (Encaixe)">
+      <div className="grid gap-5 py-4">
           <div className="space-y-1.5">
             <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
               Paciente Presente
@@ -165,7 +154,7 @@ export function NewWalkInModal({ open, onOpenChange, onCreated }: NewWalkInModal
           )}
         </div>
 
-        <DialogFooter className="flex flex-col sm:flex-row gap-3 pt-2 pb-2">
+        <div className="flex flex-col sm:flex-row gap-3 pt-2 pb-2 mt-4">
           <Button
             variant="ghost"
             onClick={() => onOpenChange(false)}
@@ -181,8 +170,7 @@ export function NewWalkInModal({ open, onOpenChange, onCreated }: NewWalkInModal
           >
             {saving ? <LoaderDots className="mr-2 h-5 w-5 animate-spin" /> : "Fazer Check-in"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+    </ResponsiveModal>
   );
 }

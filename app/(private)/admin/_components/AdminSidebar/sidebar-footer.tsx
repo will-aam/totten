@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import {
@@ -29,6 +30,11 @@ export function SidebarUserFooter({
   onNavigate,
 }: SidebarUserFooterProps) {
   const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <SidebarFooter className="p-4 mt-auto">
@@ -38,7 +44,7 @@ export function SidebarUserFooter({
           tooltip="Alternar Tema"
           className="flex-1 h-10 justify-center rounded-xl bg-transparent hover:bg-background hover:text-primary transition-all hover:shadow-sm"
         >
-          {theme === "dark" ? <Sun size="sm" /> : <Moon size="sm" />}
+          {mounted ? (theme === "dark" ? <Sun size="sm" /> : <Moon size="sm" />) : <span className="w-5 h-5" />}
         </SidebarMenuButton>
 
         <SidebarMenuButton
