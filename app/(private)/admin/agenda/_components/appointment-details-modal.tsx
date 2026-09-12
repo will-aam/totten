@@ -4,12 +4,9 @@
 import React, { useState, useEffect, useRef, memo, useMemo } from "react";
 import { useReactToPrint } from "react-to-print";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { ResponsiveModal } from "./responsive-modal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -289,23 +286,60 @@ export const AppointmentDetailsModal = memo(
       }
     };
 
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent
-          className={cn(
-            "w-[95vw] sm:max-w-125 p-4 sm:p-6 rounded-3xl flex flex-col max-h-[90dvh] bg-background border border-border/20 transition-all duration-300",
-            hasCharge &&
-              status !== "cancelado" &&
-              !isPackageArchived &&
-              !isLocked
-              ? "ring-2 ring-destructive border-destructive/50"
-              : "",
-            isPackageArchived &&
-            !isLocked &&
-            "ring-2 ring-destructive/80 border-destructive/50",
-            isLocked && "opacity-95",
+    const customTitle = (
+      <div className="flex flex-col gap-1 w-full text-left">
+        <div className="text-xl font-black flex items-center justify-center sm:justify-start gap-2">
+          <User className="h-5 w-5 text-primary shrink-0" />
+          <span className="truncate">{appointment.clientName}</span>
+        </div>
+        <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap mt-0.5">
+          <span className="text-muted-foreground text-sm font-medium">
+            {serviceName}
+          </span>
+          {isRecurrent && (
+            <Badge
+              variant="secondary"
+              className="bg-primary/10 text-primary border-none flex gap-1 items-center rounded-full px-2"
+            >
+              <Repeat className="h-3 w-3" /> Série
+            </Badge>
           )}
-        >
+          {appointment.professionalName && (
+            <>
+              <span className="text-muted-foreground/30 hidden sm:inline">
+                •
+              </span>
+              <Badge
+                variant="secondary"
+                className="bg-emerald-100/50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-none flex gap-1 items-center rounded-full px-2 shadow-sm"
+              >
+                <User className="h-3 w-3" />
+                {appointment.professionalName}
+              </Badge>
+            </>
+          )}
+        </div>
+      </div>
+    );
+
+    return (
+      <ResponsiveModal 
+        open={open} 
+        onOpenChange={onOpenChange}
+        title={customTitle}
+        className={cn(
+          hasCharge &&
+            status !== "cancelado" &&
+            !isPackageArchived &&
+            !isLocked
+            ? "ring-2 ring-destructive border-destructive/50"
+            : "",
+          isPackageArchived &&
+          !isLocked &&
+          "ring-2 ring-destructive/80 border-destructive/50",
+          isLocked && "opacity-95",
+        )}
+      >
           <ThermalReceipt
             ref={componentRef}
             appointment={{
@@ -315,42 +349,6 @@ export const AppointmentDetailsModal = memo(
             }}
             settings={settings}
           />
-
-          <DialogHeader className="flex flex-row justify-between items-start">
-            <div className="flex flex-col gap-1 w-full">
-              <DialogTitle className="text-xl font-black flex items-center gap-2">
-                <User className="h-5 w-5 text-primary shrink-0" />
-                <span className="truncate">{appointment.clientName}</span>
-              </DialogTitle>
-              <div className="flex items-center gap-2 flex-wrap mt-0.5">
-                <span className="text-muted-foreground text-sm font-medium">
-                  {serviceName}
-                </span>
-                {isRecurrent && (
-                  <Badge
-                    variant="secondary"
-                    className="bg-primary/10 text-primary border-none flex gap-1 items-center rounded-full px-2"
-                  >
-                    <Repeat className="h-3 w-3" /> Série
-                  </Badge>
-                )}
-                {appointment.professionalName && (
-                  <>
-                    <span className="text-muted-foreground/30 hidden sm:inline">
-                      •
-                    </span>
-                    <Badge
-                      variant="secondary"
-                      className="bg-emerald-100/50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-none flex gap-1 items-center rounded-full px-2 shadow-sm"
-                    >
-                      <User className="h-3 w-3" />
-                      {appointment.professionalName}
-                    </Badge>
-                  </>
-                )}
-              </div>
-            </div>
-          </DialogHeader>
 
           <div className="flex flex-col gap-5 overflow-y-auto py-2 pr-1 custom-scrollbar">
             {/*  BANNER INTELIGENTE DE FALTAS */}
@@ -679,8 +677,7 @@ export const AppointmentDetailsModal = memo(
               )}
             </DialogFooter>
           )}
-        </DialogContent>
-      </Dialog>
+      </ResponsiveModal>
     );
   },
 );

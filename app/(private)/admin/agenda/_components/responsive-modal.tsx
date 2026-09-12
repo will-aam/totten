@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 interface ResponsiveModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  title: string;
+  title?: string | React.ReactNode;
   children: React.ReactNode;
   className?: string; // Optional custom classes for the content
 }
@@ -43,11 +43,13 @@ export function ResponsiveModal({
             className
           )}
         >
-          <SheetHeader className="space-y-1 mt-2">
-            <SheetTitle className="text-center text-xl font-black">
-              {title}
-            </SheetTitle>
-          </SheetHeader>
+          {title && (
+            <SheetHeader className="space-y-1 mt-2">
+              <SheetTitle className="text-center text-xl font-black">
+                {title}
+              </SheetTitle>
+            </SheetHeader>
+          )}
           <div className="py-2">{children}</div>
         </SheetContent>
       </Sheet>
@@ -62,11 +64,13 @@ export function ResponsiveModal({
           className
         )}
       >
-        <DialogHeader className="space-y-1 mt-2">
-          <DialogTitle className="text-center text-xl font-black">
-            {title}
-          </DialogTitle>
-        </DialogHeader>
+        {title && (
+          <DialogHeader className="space-y-1 mt-2">
+            <DialogTitle className="text-center text-xl font-black">
+              {title}
+            </DialogTitle>
+          </DialogHeader>
+        )}
         <div className="py-2">{children}</div>
       </DialogContent>
     </Dialog>
