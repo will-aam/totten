@@ -10,11 +10,6 @@ Substituiu o antigo botão `+` por um menu dinâmico que oferece as seguintes op
 - **Vender Produto/Serviço:** (Redirecionamento).
 - **Vender Pacote:** (Redirecionamento).
 
-## 2. Sala de Espera Live (Novo Check-in Flow)
-O painel de Histórico de Check-in foi transformado ou espelhado em uma nova página **Sala de Espera (Live)** acessível em `/admin/waiting-room`.
-- **Como funciona:** Exibe em tempo real (atualização a cada 30s) todos os pacientes que fizeram check-in hoje mas ainda não foram atendidos.
-- **Banco de Dados:** Foi adicionado o campo `completed_at` (DateTime?) na tabela `CheckIn`. Ao clicar em "Iniciar Atendimento", esse campo é preenchido e o paciente sai da tela da Sala de Espera.
-- Isso traz o benefício de ter uma tela clara de fila de atendimento, medindo o tempo em que o paciente está aguardando.
 
 ## 3. Bloqueio de Horário
 Permite fechar horários específicos (como horário de almoço ou pausas) diretamente na grade da agenda.

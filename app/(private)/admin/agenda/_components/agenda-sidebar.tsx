@@ -36,6 +36,9 @@ export function AgendaSidebar({
   const { data: servicesResponse } = useSWR<any>("services?active=true", apiClient);
   const services = Array.isArray(servicesResponse) ? servicesResponse : servicesResponse?.data || [];
 
+  const { data: clientsResponse } = useSWR<any>("clients?limit=1000&active=true", apiClient);
+  const clients = Array.isArray(clientsResponse) ? clientsResponse : clientsResponse?.data || [];
+
   useEffect(() => {
     async function fetchTeam() {
       if (isOwner) {
@@ -67,15 +70,15 @@ export function AgendaSidebar({
     >
       {/* botão para apagar depois */}
       <div className="px-2 pt-2 whitespace-nowrap">
-        <Button
+        {/* <Button
           onClick={onCreateClick}
-          className="rounded-full shadow-[0_1px_3px_1px_rgba(0,0,0,0.15)] hover:shadow-[0_2px_6px_2px_rgba(0,0,0,0.15)] transition-shadow flex items-center gap-2 px-6 py-7 font-medium text-base bg-background border-none text-foreground hover:bg-accent hover:text-accent-foreground"
+          className="rounded-full shadow-sm hover:shadow-md transition-shadow flex items-center gap-2 px-6 py-7 font-medium text-base bg-background border border-border/50 text-foreground hover:bg-accent hover:text-accent-foreground dark:shadow-none"
         >
           <div className="flex items-center gap-3">
             <Plus size={32} className="text-foreground" strokeWidth={2.5} />
             <span className="text-[1.05rem]">Novo agendamento</span>
           </div>
-        </Button>
+        </Button> */}
       </div>
 
       <div className="flex flex-col px-2 min-w-[15rem]">
@@ -134,6 +137,7 @@ export function AgendaSidebar({
           team={team}
           services={services}
           session={session}
+          clients={clients}
         />
       </div>
     </aside>

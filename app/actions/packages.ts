@@ -316,6 +316,17 @@ export async function createManualPackageCheckIn(
         where: { id: pkg.id },
         data: { used_sessions: { increment: 1 }, active: willRemainActive },
       });
+
+      // Se esse check-in manual encerrou o pacote, limpamos as vagas futuras
+      if (!willRemainActive) {
+        await tx.appointment.deleteMany({
+          where: {
+            package_id: pkg.id,
+            organization_id: admin.organizationId,
+            status: { not: "REALIZADO" },
+          },
+        });
+      }
     });
 
     revalidatePath("/admin/packages");
@@ -482,6 +493,15 @@ export async function archivePackage(packageId: string) {
       await tx.package.update({
         where: { id: pkg.id },
         data: { active: false },
+      });
+
+      // C. OTIMIZAÇÃO DE AGENDA: Exclui todos os agendamentos pendentes deste pacote (já que ele não pode mais ser usado)
+      await tx.appointment.deleteMany({
+        where: {
+          package_id: pkg.id,
+          organization_id: admin.organizationId,
+          status: { not: "REALIZADO" },
+        },
       });
     });
 

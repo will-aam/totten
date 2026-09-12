@@ -164,6 +164,9 @@ export default function AgendaPage() {
     if (filters.professionalId) {
       list = list.filter((a) => a.professionalId === filters.professionalId);
     }
+    if (filters.patientId) {
+      list = list.filter((a) => a.clientId === filters.patientId);
+    }
     if (filters.serviceId) {
       list = list.filter((a) => a.serviceId === filters.serviceId);
     }

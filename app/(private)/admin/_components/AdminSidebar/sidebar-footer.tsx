@@ -1,9 +1,14 @@
+"use client";
+
 import Link from "next/link";
+import { useTheme } from "next-themes";
 import {
   HeadphoneMic,
   Cog,
   Power,
   LoaderDots,
+  Moon,
+  Sun,
 } from "@boxicons/react";
 import { SidebarFooter, SidebarMenuButton } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
@@ -23,9 +28,19 @@ export function SidebarUserFooter({
   onLogout,
   onNavigate,
 }: SidebarUserFooterProps) {
+  const { theme, setTheme } = useTheme();
+
   return (
     <SidebarFooter className="p-4 mt-auto">
       <div className="flex items-center w-full bg-accent/40 border border-border/40 rounded-2xl p-1.5 shadow-sm">
+        <SidebarMenuButton
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          tooltip="Alternar Tema"
+          className="flex-1 h-10 justify-center rounded-xl bg-transparent hover:bg-background hover:text-primary transition-all hover:shadow-sm"
+        >
+          {theme === "dark" ? <Sun size="sm" /> : <Moon size="sm" />}
+        </SidebarMenuButton>
+
         <SidebarMenuButton
           asChild
           tooltip="Suporte"

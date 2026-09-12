@@ -268,7 +268,7 @@ export const AppointmentDetailsModal = memo(
           deleteAll,
           appointment.recurrence_id,
         );
-        
+
         if (result.success) {
           toast.success(deleteAll ? "Série excluída!" : "Agendamento excluído!");
           onRefresh?.();
@@ -407,7 +407,6 @@ export const AppointmentDetailsModal = memo(
               status !== "cancelado" &&
               status !== "realizado" && (
                 <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-2xl flex items-start gap-3 animate-in fade-in zoom-in-95">
-                  <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
                   <div className="flex flex-col">
                     <span className="text-sm font-black text-destructive uppercase tracking-tight">
                       Atenção: Pacote Encerrado

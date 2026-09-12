@@ -7,14 +7,11 @@ import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 
 // Seções
 import { GeneralSettings } from "./_components/general-settings";
-import { AppearanceSettings } from "./_components/appearance-settings";
 import { MessageSettings } from "./_components/message-settings";
 import { SecuritySettings } from "./_components/security-settings";
 import { NotificationsSettings } from "./_components/notifications-settings";
-
 import {
   Building,
-  Palette,
   Whatsapp,
   CheckShield,
   Bell,
@@ -24,7 +21,6 @@ import { Button } from "@/components/ui/button";
 // Definimos a lista de menus aqui, de forma limpa, para injetar no componente mobile
 const mobileNavItems = [
   { id: "general", label: "Geral", icon: Building },
-  { id: "appearance", label: "Visual", icon: Palette },
   { id: "messages", label: "Msg", icon: Whatsapp },
   { id: "notifications", label: "Alertas", icon: Bell },
   { id: "security", label: "Acesso", icon: CheckShield },
@@ -48,18 +44,12 @@ export default function AdminSettingsPage() {
         >
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             {/*  DESIGN IGUAL AO ARQUIVO SERVICES: Grid menor, p-1 bg-muted, rounded-xl e triggers com py-2 */}
-            <TabsList className="hidden md:grid w-full lg:w-200 grid-cols-5 h-auto gap-1 bg-muted p-1 rounded-xl">
+            <TabsList className="hidden md:grid w-full lg:w-200 grid-cols-4 h-auto gap-1 bg-muted p-1 rounded-xl">
               <TabsTrigger
                 value="general"
                 className="flex items-center gap-2 py-2 rounded-lg"
               >
                 <Building size="sm" /> Geral
-              </TabsTrigger>
-              <TabsTrigger
-                value="appearance"
-                className="flex items-center gap-2 py-2 rounded-lg"
-              >
-                <Palette size="sm" /> Aparência
               </TabsTrigger>
               <TabsTrigger
                 value="messages"
@@ -88,12 +78,6 @@ export default function AdminSettingsPage() {
               className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500"
             >
               <GeneralSettings />
-            </TabsContent>
-            <TabsContent
-              value="appearance"
-              className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500"
-            >
-              <AppearanceSettings />
             </TabsContent>
             <TabsContent
               value="messages"

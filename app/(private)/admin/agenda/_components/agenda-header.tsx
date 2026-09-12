@@ -42,7 +42,7 @@ export function AgendaHeader({
   const slug = session?.user?.organizationSlug;
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between bg-background/60 px-4 backdrop-blur-md md:px-6">
+    <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between bg-background/60 px-4 backdrop-blur-md md:px-6 border-b border-transparent dark:border-border/40">
       <div className="flex items-center gap-1 sm:gap-2 min-w-0">
         <button
           onClick={toggleSidebar}

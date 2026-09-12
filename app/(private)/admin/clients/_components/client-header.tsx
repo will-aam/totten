@@ -30,8 +30,8 @@ export function ClientHeader({ client }: { client: ClientHeaderType }) {
           </Link>
         </Button>
         <div className="flex flex-col">
-          <span className="text-sm md:text-base font-bold text-foreground leading-tight flex items-center gap-1.5">
-            <User className="h-4 w-4 text-primary" /> Ficha do Cliente
+          <span className="text-sm md:text-base font-bold text-foreground leading-tight">
+            Ficha do Cliente
           </span>
         </div>
       </div>

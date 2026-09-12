@@ -284,14 +284,25 @@ export async function updateAppointment(
 
           const newUsedSessions =
             currentAppt.package.used_sessions + updateResult;
+          const stillActive = newUsedSessions < currentAppt.package.total_sessions;
 
           await tx.package.update({
             where: { id: currentAppt.package_id },
             data: {
               used_sessions: { increment: updateResult },
-              active: newUsedSessions < currentAppt.package.total_sessions,
+              active: stillActive,
             },
           });
+
+          if (!stillActive) {
+            await tx.appointment.deleteMany({
+              where: {
+                package_id: currentAppt.package_id,
+                organization_id: admin.organizationId,
+                status: { not: "REALIZADO" },
+              },
+            });
+          }
         }
       } else {
         await tx.appointment.update({
@@ -306,14 +317,25 @@ export async function updateAppointment(
 
         if (isMarkingAsDone && currentAppt.package_id && currentAppt.package) {
           const newUsedSessions = currentAppt.package.used_sessions + 1;
+          const stillActive = newUsedSessions < currentAppt.package.total_sessions;
 
           await tx.package.update({
             where: { id: currentAppt.package_id },
             data: {
               used_sessions: { increment: 1 },
-              active: newUsedSessions < currentAppt.package.total_sessions,
+              active: stillActive,
             },
           });
+
+          if (!stillActive) {
+            await tx.appointment.deleteMany({
+              where: {
+                package_id: currentAppt.package_id,
+                organization_id: admin.organizationId,
+                status: { not: "REALIZADO" },
+              },
+            });
+          }
         }
       }
 
@@ -670,6 +692,16 @@ export async function registerManualNoShow(
             active: stillActive,
           },
         });
+
+        if (!stillActive) {
+          await tx.appointment.deleteMany({
+            where: {
+              package_id: appt.package_id,
+              organization_id: admin.organizationId,
+              status: { not: "REALIZADO" },
+            },
+          });
+        }
       }
 
       // Cria nota no histórico da cliente

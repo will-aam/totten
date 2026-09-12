@@ -52,7 +52,7 @@ export function AgendaSpeedDial({
                   action.onClick();
                   setIsOpen(false);
                 }}
-                className="w-12 h-12 rounded-full bg-background border shadow-lg flex items-center justify-center text-primary hover:bg-muted/50 transition-colors"
+                className="w-12 h-12 rounded-full bg-background border shadow-lg flex items-center justify-center text-primary hover:bg-accent hover:text-accent-foreground transition-colors"
               >
                 {action.icon}
               </button>

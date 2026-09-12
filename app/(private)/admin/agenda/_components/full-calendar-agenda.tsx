@@ -199,6 +199,7 @@ export function FullCalendarAgenda({
         .fc-custom-theme .fc-theme-standard td, 
         .fc-custom-theme .fc-theme-standard th {
            border: 1px solid hsl(var(--border) / 0.4) !important;
+           background: transparent !important;
         }
         
         .fc-custom-theme .fc-scrollgrid {
@@ -212,6 +213,7 @@ export function FullCalendarAgenda({
            text-transform: uppercase;
            color: hsl(var(--muted-foreground));
            border-bottom: none !important; 
+           background-color: transparent !important;
         }
 
         /* ==== SLOTS DE TEMPO ==== */

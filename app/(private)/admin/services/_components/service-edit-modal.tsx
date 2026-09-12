@@ -426,7 +426,7 @@ export function ServiceEditModal({
                       className="flex items-center justify-center gap-2 w-full h-10 px-4 rounded-md border border-border/50 bg-background hover:bg-muted/50 cursor-pointer transition-colors text-sm font-medium"
                     >
                       {isUploading ? <LoaderLines className="h-4 w-4 animate-spin text-muted-foreground" /> : <ArrowInUpSquareHalf className="h-4 w-4 text-muted-foreground" />}
-                      {isUploading ? "Enviando..." : "Escolher arquivo do computador"}
+                      {isUploading ? "Enviando..." : "Escolher arquivo"}
                     </Label>
                   </div>
                 </div>

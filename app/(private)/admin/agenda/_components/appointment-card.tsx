@@ -28,6 +28,7 @@ export interface Appointment {
   id: string;
   time: string;
   duration: number;
+  clientId: string;
   clientName: string;
   service: string;
   sessionInfo: string;
@@ -75,16 +76,19 @@ export function AppointmentCardContent({
   isLocked?: boolean;
   isEmployee?: boolean;
 }) {
-  const isPackageArchived = appt.package && appt.package.active === false;
+  // Se o agendamento já foi realizado, ignoramos a inativação do pacote para manter o histórico visual intacto
+  const isPackageArchived = appt.package && appt.package.active === false && appt.status?.toUpperCase() !== "REALIZADO";
   const isCompact = height <= 40;
 
   // Lendo o snapshot aqui dentro da nossa pecinha universal!
   const serviceName = appt.snapshot_service_name ?? appt.service;
 
   //  NOVO: Definindo a cor do card dinamicamente
-  const cardColor = isEmployee
-    ? "bg-purple-100 border-purple-300 text-purple-900" // Cor de destaque para a funcionária
-    : appt.color; // Cor padrão do sistema para a Cris
+  const cardColor = isPackageArchived
+    ? "bg-red-100 border-red-300 text-red-900 dark:bg-red-950 dark:border-red-900 dark:text-red-300" // Cor vermelha SÓLIDA para Inativos
+    : isEmployee
+      ? "bg-purple-100 border-purple-300 text-purple-900 dark:bg-purple-900 dark:border-purple-800 dark:text-purple-300" // Cor de destaque para a funcionária
+      : appt.color; // Cor padrão do sistema para a Cris
 
   if (isCancelled) {
     return (
@@ -117,7 +121,7 @@ export function AppointmentCardContent({
         isCompact ? "flex-row items-center px-2 py-1 gap-2" : "flex-col p-3",
         cardColor, // Aplicando a cor
         appt.hasCharge && !isPackageArchived && "border-2 border-destructive",
-        isPackageArchived && "border-2 border-destructive/80 opacity-80",
+        isPackageArchived && "border-2 border-destructive/80", // <-- removido o opacity-80 para não ficar transparente
         isOverlay &&
         "shadow-2xl border-primary/50 cursor-grabbing ring-1 ring-primary/50 bg-background/90 backdrop-blur-md",
       )}
@@ -192,8 +196,8 @@ export function AppointmentCardContent({
               className={cn(
                 "px-1.5 rounded flex items-center gap-1",
                 isPackageArchived
-                  ? "bg-destructive/10 text-destructive font-black"
-                  : "bg-white/30",
+                  ? "bg-destructive text-destructive-foreground font-black shadow-sm"
+                  : "bg-white/30 text-black/70 dark:text-white/80",
               )}
             >
               {isPackageArchived}

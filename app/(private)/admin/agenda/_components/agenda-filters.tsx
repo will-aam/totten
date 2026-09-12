@@ -21,6 +21,15 @@ import {
 import { getTeam } from "@/app/actions/team";
 import { apiClient } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
+import { Check } from "lucide-react";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 
 export interface AgendaFiltersState {
   professionalId?: string;
@@ -106,6 +115,7 @@ export function AgendaFilters({ filters, onFiltersChange }: AgendaFiltersProps) 
 }
 
 export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, services, session, clients }: any) {
+  const [clientOpen, setClientOpen] = useState(false);
   const hasActiveFilters =
     !!filters.professionalId ||
     !!filters.serviceId ||
@@ -193,20 +203,68 @@ export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, serv
         <Label className="text-sm font-medium text-muted-foreground">
           Paciente
         </Label>
-        <Select
-          value={filters.patientId || "ALL"}
-          onValueChange={(val) => onFiltersChange({ ...filters, patientId: val === "ALL" ? undefined : val })}
-        >
-          <CustomTrigger placeholder="Todos" />
-          <SelectContent className="rounded-xl border border-border/50 shadow-lg z-[100] max-h-[200px]">
-            <SelectItem value="ALL" className="font-medium text-muted-foreground">Todos</SelectItem>
-            {clients?.map((c: any) => (
-              <SelectItem key={c.id} value={c.id} className="font-medium">
-                {c.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Popover open={clientOpen} onOpenChange={setClientOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={clientOpen}
+              className="w-full bg-muted/20 border border-input rounded-[10px] h-10 px-3 flex justify-between items-center shadow-none text-muted-foreground hover:bg-muted/40 transition-colors focus:ring-1 focus:ring-primary/20 font-medium font-normal"
+            >
+              <span className="truncate">
+                {filters.patientId
+                  ? clients?.find((c: any) => c.id === filters.patientId)?.name
+                  : "Todos"}
+              </span>
+              <div className="bg-muted/60 rounded-md h-6 w-6 flex items-center justify-center text-muted-foreground shrink-0">
+                <ChevronDown className="w-4 h-4" />
+              </div>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[300px] p-0 rounded-xl border border-border/50 shadow-lg z-[100]" align="start">
+            <Command>
+              <CommandInput placeholder="Pesquisar paciente..." className="h-9" />
+              <CommandList>
+                <CommandEmpty>Nenhum paciente encontrado.</CommandEmpty>
+                <CommandGroup>
+                  <CommandItem
+                    value="Todos"
+                    onSelect={() => {
+                      onFiltersChange({ ...filters, patientId: undefined });
+                      setClientOpen(false);
+                    }}
+                  >
+                    Todos
+                    <Check
+                      className={cn(
+                        "ml-auto h-4 w-4",
+                        !filters.patientId ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                  </CommandItem>
+                  {clients?.map((c: any) => (
+                    <CommandItem
+                      key={c.id}
+                      value={c.name}
+                      onSelect={() => {
+                        onFiltersChange({ ...filters, patientId: c.id });
+                        setClientOpen(false);
+                      }}
+                    >
+                      {c.name}
+                      <Check
+                        className={cn(
+                          "ml-auto h-4 w-4",
+                          filters.patientId === c.id ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* 4. Procedimento */}
