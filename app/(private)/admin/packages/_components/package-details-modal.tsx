@@ -188,7 +188,7 @@ export function PackageDetailsModal({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-md flex flex-col p-0 gap-0 border-none shadow-2xl bg-background rounded-l-[2.5rem]">
+      <SheetContent className="w-full sm:max-w-md flex flex-col p-0 gap-0 border-none shadow-2xl bg-background">
         <SheetHeader className="p-8 pb-6 border-b border-border/40">
           <div className="flex items-center gap-2 text-primary mb-3">
             <History className="h-4 w-4" />

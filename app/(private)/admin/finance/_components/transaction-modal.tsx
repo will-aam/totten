@@ -186,7 +186,7 @@ export function TransactionModal({
       open={isOpen}
       onOpenChange={(open) => !open && !isPending && onClose()}
     >
-      <SheetContent className="flex flex-col w-full sm:max-w-md p-0 overflow-hidden sm:rounded-l-[2.5rem] border-l border-border/40 bg-background/95 backdrop-blur-2xl shadow-2xl">
+      <SheetContent className="flex flex-col w-full sm:max-w-md p-0 overflow-hidden border-l border-border/40 bg-background/95 backdrop-blur-2xl shadow-2xl">
         <div className="flex-1 overflow-y-auto p-6 md:p-8 flex flex-col gap-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <SheetHeader className="text-left mt-2">
             <div className="flex items-center gap-4">

@@ -8,6 +8,8 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { ImportClientsModal } from "./_components/import-clients-modal";
+import { NewClientSheet } from "./_components/new-client-sheet";
+import { ClientsSpeedDial } from "./_components/clients-speed-dial";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -218,6 +220,7 @@ function AdminClientsPageContent() {
 
   const [search, setSearch] = useState("");
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isNewClientSheetOpen, setIsNewClientSheetOpen] = useState(false);
   const debouncedSearch = useDebounce(search, 500);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
@@ -231,6 +234,16 @@ function AdminClientsPageContent() {
   if (hasAutoagendamentoFilter) apiUrl += `&source=SELF_SERVICE`;
   if (cleanSearch.length >= 3)
     apiUrl += `&q=${encodeURIComponent(cleanSearch)}`;
+
+  const handleCopyLink = () => {
+    if (orgSlug) {
+      const url = `${window.location.origin}/${orgSlug}/login`;
+      navigator.clipboard.writeText(url);
+      toast.success("Link da Área do Cliente copiado!");
+    } else {
+      toast.error("Link indisponível no momento.");
+    }
+  };
 
   const {
     data: apiResponse,
@@ -343,11 +356,11 @@ function AdminClientsPageContent() {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+          <div className="hidden sm:flex flex-row gap-3 w-full lg:w-auto">
             <Button
               variant="outline"
               onClick={() => setIsImportModalOpen(true)}
-              className="h-12 w-full sm:w-auto px-6 rounded-xl font-medium shadow-sm border-border/60 hover:bg-muted/50 transition-colors"
+              className="h-12 w-full sm:w-auto px-6 rounded-full font-medium shadow-sm border-border/60 hover:bg-muted/50 transition-colors"
             >
               <ArrowOutDownSquareHalf
                 size="sm"
@@ -358,29 +371,19 @@ function AdminClientsPageContent() {
 
             <Button
               variant="outline"
-              onClick={() => {
-                if (orgSlug) {
-                  const url = `${window.location.origin}/${orgSlug}/login`;
-                  navigator.clipboard.writeText(url);
-                  toast.success("Link da Área do Cliente copiado!");
-                } else {
-                  toast.error("Link indisponível no momento.");
-                }
-              }}
-              className="h-12 w-full sm:w-auto px-6 rounded-xl font-medium shadow-sm transition-all border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+              onClick={handleCopyLink}
+              className="h-12 w-full sm:w-auto px-6 rounded-full font-medium shadow-sm transition-all border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
             >
               <Share className="mr-2 h-4 w-4" />
               Área do Cliente
             </Button>
 
             <Button
-              asChild
-              className="h-12 w-full sm:w-auto px-8 rounded-xl font-medium shadow-sm transition-all"
+              onClick={() => setIsNewClientSheetOpen(true)}
+              className="h-12 w-full sm:w-auto px-8 rounded-full font-medium shadow-sm transition-all"
             >
-              <Link href="/admin/clients/new">
-                <Plus className="mr-2 h-4 w-4" />
-                Novo Cliente
-              </Link>
+              <Plus className="mr-2 h-4 w-4" />
+              Novo Cliente
             </Button>
           </div>
         </div>
@@ -647,6 +650,22 @@ function AdminClientsPageContent() {
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
         onSuccess={() => mutate()}
+      />
+
+      <NewClientSheet
+        isOpen={isNewClientSheetOpen}
+        onClose={() => setIsNewClientSheetOpen(false)}
+        onSuccess={() => {
+          setIsNewClientSheetOpen(false);
+          mutate();
+        }}
+      />
+
+      <ClientsSpeedDial
+        onImport={() => setIsImportModalOpen(true)}
+        onCopyLink={handleCopyLink}
+        onNewClient={() => setIsNewClientSheetOpen(true)}
+        showScrollTop={showScrollTop}
       />
 
       <button

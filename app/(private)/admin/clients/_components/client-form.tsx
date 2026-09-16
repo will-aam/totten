@@ -86,7 +86,7 @@ type PackageTemplate = {
   service_id: string;
 };
 
-export function ClientForm() {
+export function ClientForm({ onSuccess }: { onSuccess?: () => void } = {}) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [loadingPackages, setLoadingPackages] = useState(true);
@@ -271,7 +271,11 @@ export function ClientForm() {
       }
 
       toast.success("Cadastro realizado com sucesso!");
-      router.push("/admin/clients");
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push("/admin/clients");
+      }
     } catch (error: any) {
       toast.error("Ocorreu um erro interno no servidor.");
       console.error(error);
@@ -286,8 +290,8 @@ export function ClientForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6 md:gap-8">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12 items-start">
-        <div className="lg:col-span-2 flex flex-col gap-6">
+      <div className="flex flex-col gap-8 md:gap-10 items-stretch">
+        <div className="flex flex-col gap-6">
           <div>
             <h2 className="text-lg font-bold flex items-center gap-2 text-foreground mb-4">
               <User className="h-5 w-5 text-primary" /> Ficha da Cliente
@@ -494,8 +498,8 @@ export function ClientForm() {
         </div>
 
         {/* ✅ Pacote inicial robusto */}
-        <div className="lg:col-span-1">
-          <div className="flex flex-col gap-5 p-5 md:p-6 rounded-2xl bg-muted/20 border border-border/50 sticky top-4">
+        <div className="w-full">
+          <div className="flex flex-col gap-5 p-5 md:p-6 rounded-2xl bg-muted/20 border border-border/50">
             <div>
               <h2 className="text-lg font-bold flex items-center gap-2 text-foreground">
                 <Package className="h-5 w-5 text-primary" /> Pacote Inicial

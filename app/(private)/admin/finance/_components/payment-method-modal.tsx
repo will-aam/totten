@@ -185,7 +185,7 @@ export function PaymentMethodModal({
       open={isOpen}
       onOpenChange={(open) => !open && !isPending && onClose()}
     >
-      <SheetContent className="flex flex-col w-full sm:max-w-md p-0 overflow-hidden sm:rounded-l-4xl border-l-0">
+      <SheetContent className="flex flex-col w-full sm:max-w-md p-0 overflow-hidden border-l-0">
         <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <SheetHeader className="text-left mt-2">
             <div className="flex justify-between items-start">

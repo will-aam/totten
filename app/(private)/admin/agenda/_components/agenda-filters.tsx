@@ -106,7 +106,7 @@ export function AgendaFilters({ filters, onFiltersChange }: AgendaFiltersProps) 
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent side="bottom" className="rounded-t-[24px] p-0 flex flex-col max-h-[85dvh] border-t-0 shadow-2xl">
+      <SheetContent side="bottom" className="p-0 flex flex-col max-h-[85dvh] border-t-0 shadow-2xl">
         <SheetHeader className="px-6 py-5 border-b text-left shrink-0">
           <SheetTitle className="font-bold text-lg">Filtros da Agenda</SheetTitle>
         </SheetHeader>
