@@ -25,8 +25,6 @@ import {
   LoaderDots,
   ChevronRight,
   ClockDashedHalf,
-  ArrowUpSquare,
-  ArrowDownSquare,
 } from "@boxicons/react";
 import * as XLSX from "xlsx";
 import { cn } from "@/lib/utils";
@@ -284,11 +282,11 @@ export function ImportClientsModal({
                 ref={fileInputRef}
                 onChange={handleFileUpload}
               />
-              <div className="h-16 w-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-4">
+              <div className="h-16 w-16  text-primary rounded-full flex items-center justify-center mb-4">
                 {loading ? (
                   <LoaderDots size="md" className="animate-spin" />
                 ) : (
-                  <ArrowUpSquare size="md" />
+                  <img width="48" height="48" src="https://img.icons8.com/parakeet/48/insert-table.png" alt="insert-table" />
                 )}
               </div>
               <h3 className="font-bold text-foreground text-lg mb-1">
@@ -305,10 +303,7 @@ export function ImportClientsModal({
                   disabled={loading}
                   className="rounded-xl px-6 h-11 border-border/60 shadow-sm"
                 >
-                  <ArrowDownSquare
-                    size="sm"
-                    className="mr-2 text-muted-foreground"
-                  />
+
                   Baixar Modelo
                 </Button>
                 <Button

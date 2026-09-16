@@ -9,9 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Bell,
-  MessageCircle,
   CalendarCheck,
   CheckCircle,
+  Whatsapp,
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
@@ -204,7 +204,7 @@ export default function RemindersPage() {
                           "w-full md:w-auto rounded-2xl h-11 px-5 shrink-0 transition-all font-bold text-sm over:bg-transparent active:scale-90 active:brightness-90",
                         )}
                       >
-                        <MessageCircle className="h-4 w-4 mr-2" />
+                        <Whatsapp removePadding className="h-5 w-5" />
                         {hasMessaged
                           ? "Mensagem Enviada"
                           : isConfirmed

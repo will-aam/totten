@@ -31,9 +31,6 @@ import {
   UserMinus,
   UserCheck,
   Mobile,
-  Table as TableIcon,
-  File,
-  Cloud,
   ArrowOutDownSquareHalf,
   Layers,
   Paperclip,
@@ -50,14 +47,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { apiClient } from "@/lib/api-client";
 import {
@@ -251,7 +240,6 @@ function AdminClientsPageContent() {
 
   const clients = apiResponse?.data || [];
   const totalPages = apiResponse?.totalPages || 1;
-  const totalClients = apiResponse?.total || 0;
 
   const [clientToProcess, setClientToProcess] = useState<Client | null>(null);
 
@@ -281,37 +269,6 @@ function AdminClientsPageContent() {
     e.preventDefault();
     e.stopPropagation();
     setClientToProcess(client);
-  };
-
-  //  NOVA FUNÇÃO: Gera o link seguro e envia pro WhatsApp
-  const handleSharePortal = (client: Client, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const origin = window.location.origin;
-    const shareLink = `${origin}/cliente/${client.id}`;
-
-    let phone = client.phone_whatsapp?.replace(/\D/g, "") || "";
-    // Adiciona o DDI (55) se a clínica salvou o número só com DDD
-    if (phone && (phone.length === 10 || phone.length === 11)) {
-      phone = `55${phone}`;
-    }
-
-    const firstName = client.name.split(" ")[0];
-    const message = `Olá, ${firstName}! Acompanhe seu pacote de sessões e histórico no nosso portal exclusivo: ${shareLink}`;
-
-    if (phone) {
-      window.open(
-        `https://wa.me/${phone}?text=${encodeURIComponent(message)}`,
-        "_blank",
-      );
-    } else {
-      // Fallback elegante caso a cliente não tenha telefone salvo
-      navigator.clipboard.writeText(message);
-      toast.success(
-        "Cliente sem número. Link copiado para a área de transferência!",
-      );
-    }
   };
 
   const confirmProcess = async () => {
@@ -387,69 +344,33 @@ function AdminClientsPageContent() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="h-12 w-full sm:w-auto px-6 rounded-xl font-medium shadow-sm border-border/60 hover:bg-muted/50 transition-colors"
-                >
-                  <ArrowOutDownSquareHalf
-                    size="sm"
-                    className="mr-2 text-muted-foreground"
-                  />
-                  Importar
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="w-64 z-100 rounded-xl shadow-lg"
-              >
-                <DropdownMenuLabel className="font-semibold text-muted-foreground text-xs">
-                  Opções de importação (em breve)
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  disabled
-                  className="cursor-not-allowed opacity-60 flex items-center py-2.5"
-                >
-                  <Mobile size="sm" className="mr-2.5" />
-                  <span>Contatos do Celular</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  disabled
-                  className="cursor-not-allowed opacity-60 flex items-center py-2.5"
-                >
-                  <Cloud size="sm" className="mr-2.5" />
-                  <span>Google Contatos</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setIsImportModalOpen(true)}
-                  className="flex items-center py-2.5 cursor-pointer"
-                >
-                  <TableIcon size="sm" className="mr-2.5 text-emerald-600" />
-                  <span className="font-medium text-foreground">
-                    Planilha (Excel/CSV)
-                  </span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  disabled
-                  className="cursor-not-allowed opacity-60 flex items-center py-2.5"
-                >
-                  <File size="sm" className="mr-2.5" />
-                  <span>Arquivo TXT / vCard</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button
+              variant="outline"
+              onClick={() => setIsImportModalOpen(true)}
+              className="h-12 w-full sm:w-auto px-6 rounded-xl font-medium shadow-sm border-border/60 hover:bg-muted/50 transition-colors"
+            >
+              <ArrowOutDownSquareHalf
+                size="sm"
+                className="mr-2 text-muted-foreground"
+              />
+              Importar
+            </Button>
 
             <Button
-              asChild
               variant="outline"
+              onClick={() => {
+                if (orgSlug) {
+                  const url = `${window.location.origin}/${orgSlug}/login`;
+                  navigator.clipboard.writeText(url);
+                  toast.success("Link da Área do Cliente copiado!");
+                } else {
+                  toast.error("Link indisponível no momento.");
+                }
+              }}
               className="h-12 w-full sm:w-auto px-6 rounded-xl font-medium shadow-sm transition-all border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
             >
-              <Link href={orgSlug ? `/${orgSlug}/login` : "#"} target="_blank">
-                <Share className="mr-2 h-4 w-4" />
-                Área do Cliente
-              </Link>
+              <Share className="mr-2 h-4 w-4" />
+              Área do Cliente
             </Button>
 
             <Button
