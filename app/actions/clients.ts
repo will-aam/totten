@@ -122,3 +122,22 @@ export async function importClientsAction(clientsData: any[]) {
     return { error: "Erro interno do servidor ao importar." };
   }
 }
+
+export async function exportClientsAction(includeHistory: boolean = false) {
+  try {
+    const admin = await requireAuth();
+
+    const data = await ClientService.exportClientsData(
+      admin.organizationId,
+      includeHistory
+    );
+
+    return { success: true, data };
+  } catch (error: any) {
+    if (error.name === "AuthError" || error.message === "Não autorizado") {
+      return { error: "Sessão expirada ou não autorizado" };
+    }
+    console.error("[ACTION exportClients] Erro ao exportar:", error);
+    return { error: "Erro interno do servidor ao exportar." };
+  }
+}

@@ -23,12 +23,12 @@ import { cn } from "@/lib/utils";
 export type TimelineEvent = {
   id: string;
   type:
-    | "CLIENT_CREATED"
-    | "PACKAGE_PURCHASED"
-    | "PACKAGE_ARCHIVED"
-    | "CHECK_IN"
-    | "CLIENT_NOTE"
-    | "NO_SHOW";
+  | "CLIENT_CREATED"
+  | "PACKAGE_PURCHASED"
+  | "PACKAGE_ARCHIVED"
+  | "CHECK_IN"
+  | "CLIENT_NOTE"
+  | "NO_SHOW";
   date: string;
   title: string;
   meta: any;
@@ -240,9 +240,9 @@ export function ClientHistory({ clientId }: { clientId: string }) {
         return isPackageCheckin
           ? { icon: Package, color: "border-primary/30 text-primary" }
           : {
-              icon: Feather,
-              color: "border-muted-foreground/30 text-muted-foreground",
-            };
+            icon: Feather,
+            color: "border-muted-foreground/30 text-muted-foreground",
+          };
       case "NO_SHOW":
         return {
           icon: UserX,
@@ -266,7 +266,7 @@ export function ClientHistory({ clientId }: { clientId: string }) {
       <CardHeader className="px-0 pt-4 md:pt-6 md:px-6 pb-4 md:pb-6 flex flex-row items-center justify-between">
         <CardTitle className="text-lg flex items-center gap-2 text-foreground">
           <CalendarCheck className="h-5 w-5 text-primary" strokeWidth={1.5} />
-          Jornada da Cliente
+          Jornada do(a) Cliente
         </CardTitle>
       </CardHeader>
 

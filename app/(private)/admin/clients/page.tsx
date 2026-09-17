@@ -8,6 +8,7 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { ImportClientsModal } from "./_components/import-clients-modal";
+import { ExportClientsModal } from "./_components/export-clients-modal";
 import { NewClientSheet } from "./_components/new-client-sheet";
 import { ClientsSpeedDial } from "./_components/clients-speed-dial";
 import { Button } from "@/components/ui/button";
@@ -38,7 +39,10 @@ import {
   Paperclip,
   Share,
   LoaderDots,
+  Filter,
+  CalendarCheck,
 } from "@boxicons/react";
+import { Download } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -220,6 +224,7 @@ function AdminClientsPageContent() {
 
   const [search, setSearch] = useState("");
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isNewClientSheetOpen, setIsNewClientSheetOpen] = useState(false);
   const debouncedSearch = useDebounce(search, 500);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -367,6 +372,18 @@ function AdminClientsPageContent() {
                 className="mr-2 text-muted-foreground"
               />
               Importar
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => setIsExportModalOpen(true)}
+              className="h-12 w-full sm:w-auto px-6 rounded-full font-medium shadow-sm border-border/60 hover:bg-muted/50 transition-colors"
+            >
+              <Download
+                size="sm"
+                className="mr-2 text-muted-foreground"
+              />
+              Exportar
             </Button>
 
             <Button
@@ -661,8 +678,14 @@ function AdminClientsPageContent() {
         }}
       />
 
+      <ExportClientsModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+      />
+
       <ClientsSpeedDial
         onImport={() => setIsImportModalOpen(true)}
+        onExport={() => setIsExportModalOpen(true)}
         onCopyLink={handleCopyLink}
         onNewClient={() => setIsNewClientSheetOpen(true)}
         showScrollTop={showScrollTop}

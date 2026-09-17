@@ -1,6 +1,6 @@
-// lib/server/services/clients/client.service.ts
 import { getTenantPrisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { ClientHistoryService } from "./client-history.service";
 
 function getSearchVariations(searchQuery: string) {
   const variations = [searchQuery];
@@ -59,6 +59,157 @@ export class ClientService {
     });
 
     return clients;
+  }
+
+  static async exportClientsData(organizationId: string, includeHistory: boolean = false) {
+    const prisma = getTenantPrisma(organizationId);
+
+    const clients = await prisma.client.findMany({
+      where: { organization_id: organizationId },
+      orderBy: { name: "asc" },
+    });
+
+    if (!includeHistory) {
+      return clients.map((c) => ({
+        "Nome": c.name,
+        "CPF": c.cpf || "",
+        "WhatsApp": c.phone_whatsapp || "",
+        "E-mail": c.email || "",
+        "Nascimento": c.birth_date ? new Date(c.birth_date).toLocaleDateString("pt-BR") : "",
+        "CEP": c.zip_code || "",
+        "Cidade": c.city || "",
+        "Rua": c.street || "",
+        "Número": c.number || "",
+        "Status": c.active ? "Ativo" : "Inativo",
+        "Cadastro": c.created_at ? new Date(c.created_at).toLocaleDateString("pt-BR") : "",
+      }));
+    }
+
+    const exportData: any[] = [];
+    
+    // OTIMIZAÇÃO: Buscar todos os dados da organização de uma vez (apenas 4 queries adicionais) 
+    // em vez de rodar 5 queries POR cliente (o que causaria N+1 queries e lentidão extrema).
+    const [allCheckIns, allPackages, allClientNotes, allCancelledAppointments] = await Promise.all([
+      prisma.checkIn.findMany({
+        where: { organization_id: organizationId },
+        include: { admin: { select: { display_name: true } }, package: { select: { name: true } } }
+      }),
+      prisma.package.findMany({
+        where: { organization_id: organizationId }
+      }),
+      prisma.clientNote.findMany({
+        where: { organization_id: organizationId }
+      }),
+      prisma.appointment.findMany({
+        where: { organization_id: organizationId, status: "CANCELADO" },
+        include: { package: { select: { name: true } }, professional: { select: { display_name: true } } }
+      })
+    ]);
+
+    const noShowAppointments = allCancelledAppointments.filter(
+      (appt) =>
+        appt.observations?.includes("Falta automática") ||
+        appt.observations?.includes("Baixa automática pelo sistema")
+    );
+
+    // Agrupar os eventos por cliente em memória
+    const eventsByClient = new Map<string, any[]>();
+    for (const c of clients) {
+      eventsByClient.set(c.id, []);
+    }
+
+    allCheckIns.forEach(ci => {
+      if (ci.client_id && eventsByClient.has(ci.client_id)) {
+        eventsByClient.get(ci.client_id)!.push({
+          type: "CHECK_IN",
+          date: ci.date_time,
+          title: ci.deleted_at ? "Check-in Removido" : "Sessão Realizada",
+          details: `${ci.package?.name || "Avulso"} - Profissional: ${ci.admin?.display_name || "N/A"}`
+        });
+      }
+    });
+
+    allPackages.forEach(pkg => {
+      if (eventsByClient.has(pkg.client_id)) {
+        eventsByClient.get(pkg.client_id)!.push({
+          type: "PACKAGE_PURCHASED",
+          date: pkg.created_at,
+          title: "Pacote Adquirido",
+          details: `${pkg.name} - R$ ${pkg.price}`
+        });
+        if (!pkg.active) {
+          eventsByClient.get(pkg.client_id)!.push({
+            type: "PACKAGE_ARCHIVED",
+            date: pkg.updated_at,
+            title: "Pacote Encerrado",
+            details: `${pkg.name} (Encerrado)`
+          });
+        }
+      }
+    });
+
+    noShowAppointments.forEach(appt => {
+      if (eventsByClient.has(appt.client_id)) {
+        eventsByClient.get(appt.client_id)!.push({
+          type: "NO_SHOW",
+          date: appt.date_time,
+          title: "Falta Registrada",
+          details: `Falta em ${appt.package?.name || "Avulso"}`
+        });
+      }
+    });
+
+    allClientNotes.forEach(note => {
+      if (note.text.includes("Falta Automática")) return;
+      if (eventsByClient.has(note.client_id)) {
+        eventsByClient.get(note.client_id)!.push({
+          type: "CLIENT_NOTE",
+          date: note.date,
+          title: "Anotação Adicionada",
+          details: note.text
+        });
+      }
+    });
+
+    for (const c of clients) {
+      const events = eventsByClient.get(c.id) || [];
+      
+      // Adicionar o evento de criação
+      events.push({
+        type: "CLIENT_CREATED",
+        date: c.created_at,
+        title: "Cadastro Realizado",
+        details: "Cadastro realizado"
+      });
+
+      // Ordenar do mais recente pro mais antigo
+      events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+      if (events.length === 0) {
+        exportData.push({
+          "Nome": c.name,
+          "CPF": c.cpf || "",
+          "WhatsApp": c.phone_whatsapp || "",
+          "Data do Evento": "",
+          "Evento": "Sem histórico",
+          "Detalhes": "",
+        });
+        continue;
+      }
+
+      for (const event of events) {
+        exportData.push({
+          "Nome": c.name,
+          "CPF": c.cpf || "",
+          "WhatsApp": c.phone_whatsapp || "",
+          "Data do Evento": new Date(event.date).toLocaleString("pt-BR"),
+          "Evento": event.title,
+          "Detalhes": event.details,
+        });
+      }
+    }
+
+    return exportData;
   }
 
   static async getBirthdayClients(organizationId: string) {
