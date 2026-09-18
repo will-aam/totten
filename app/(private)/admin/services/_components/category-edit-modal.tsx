@@ -40,7 +40,7 @@ export function CategoryEditModal({
     show: boolean;
     message: string;
     pendingAction: () => Promise<void>;
-  }>({ show: false, message: "", pendingAction: async () => {} });
+  }>({ show: false, message: "", pendingAction: async () => { } });
 
   useEffect(() => {
     if (category) {
@@ -105,7 +105,7 @@ export function CategoryEditModal({
         setConfirmCascade({
           show: false,
           message: "",
-          pendingAction: async () => {},
+          pendingAction: async () => { },
         });
       } else {
         toast.error(res.error || "Erro ao mudar o status.");
@@ -160,18 +160,8 @@ export function CategoryEditModal({
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t mt-4">
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="text-destructive hover:bg-destructive/10 border-destructive/20 rounded-xl px-3"
-                onClick={() => setConfirmDelete(true)}
-                disabled={loading}
-              >
-                <Trash size="sm" />
-              </Button>
-
-              {showDeactivateButton && (
+            {showDeactivateButton && (
+              <div className="flex gap-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -195,24 +185,36 @@ export function CategoryEditModal({
                     </>
                   )}
                 </Button>
-              )}
-            </div>
+              </div>
+            )}
 
             <div className="hidden sm:block flex-1" />
 
-            <Button
-              onClick={handleSave}
-              disabled={loading}
-              className="rounded-xl bg-primary hover:bg-primary/90 font-bold"
-            >
-              {loading ? (
-                <LoaderDots size="sm" className="animate-spin" />
-              ) : (
-                <>
-                  <Save size="sm" className="mr-2" /> Salvar
-                </>
-              )}
-            </Button>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button
+                type="button"
+                variant="outline"
+                className="text-destructive hover:bg-destructive/10 border-destructive/20 rounded-xl px-3 shrink-0"
+                onClick={() => setConfirmDelete(true)}
+                disabled={loading}
+              >
+                <Trash size="sm" />
+              </Button>
+
+              <Button
+                onClick={handleSave}
+                disabled={loading}
+                className="rounded-xl bg-primary hover:bg-primary/90 font-bold flex-1 sm:flex-none"
+              >
+                {loading ? (
+                  <LoaderDots size="sm" className="animate-spin" />
+                ) : (
+                  <>
+                    <Save size="sm" className="mr-2" /> Salvar
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </ResponsiveModal>
@@ -225,7 +227,7 @@ export function CategoryEditModal({
             setConfirmCascade({
               show: false,
               message: "",
-              pendingAction: async () => {},
+              pendingAction: async () => { },
             });
             setLoading(false);
           }
@@ -248,7 +250,7 @@ export function CategoryEditModal({
                 setConfirmCascade({
                   show: false,
                   message: "",
-                  pendingAction: async () => {},
+                  pendingAction: async () => { },
                 });
                 setLoading(false);
               }}

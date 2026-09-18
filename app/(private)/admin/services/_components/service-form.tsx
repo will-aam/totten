@@ -60,7 +60,12 @@ type SelectedStockItem = {
   quantity_used: number | string;
 };
 
-export function ServiceForm() {
+interface ServiceFormProps {
+  onSuccess?: () => void;
+  onCancel?: () => void;
+}
+
+export function ServiceForm({ onSuccess, onCancel }: ServiceFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [loadingDurations, setLoadingDurations] = useState(true);
@@ -216,7 +221,11 @@ export function ServiceForm() {
 
       if (data.success) {
         toast.success("Serviço cadastrado com sucesso!");
-        router.push("/admin/services");
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          router.push("/admin/services");
+        }
       } else {
         toast.error("Erro ao cadastrar serviço");
       }
@@ -603,14 +612,25 @@ export function ServiceForm() {
 
       {/* RODAPÉ E BOTÕES DE AÇÃO */}
       <div className="flex items-center justify-end gap-3 pt-6 border-t border-border/50 mt-4">
-        <Button
-          asChild
-          variant="ghost"
-          type="button"
-          className="hidden sm:flex text-muted-foreground rounded-full md:rounded-xl px-6"
-        >
-          <Link href="/admin/services">Cancelar</Link>
-        </Button>
+        {onCancel ? (
+          <Button
+            variant="ghost"
+            type="button"
+            className="hidden sm:flex text-muted-foreground rounded-full md:rounded-xl px-6"
+            onClick={onCancel}
+          >
+            Cancelar
+          </Button>
+        ) : (
+          <Button
+            asChild
+            variant="ghost"
+            type="button"
+            className="hidden sm:flex text-muted-foreground rounded-full md:rounded-xl px-6"
+          >
+            <Link href="/admin/services">Cancelar</Link>
+          </Button>
+        )}
         <Button
           type="submit"
           size="lg"

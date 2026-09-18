@@ -10,6 +10,13 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -110,6 +117,7 @@ export function ServiceEditModal({
     image_url: "",
   });
 
+  const isMobile = useIsMobile();
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
@@ -327,19 +335,21 @@ export function ServiceEditModal({
       setLoading(false);
     }
   };
-  return (
+  const ModalContent = (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-175 p-0 flex flex-col max-h-[90vh] overflow-hidden gap-0">
-          <DialogHeader className="px-6 py-4 border-b border-border/50 shrink-0">
-            <DialogTitle className="text-lg">Editar Serviço</DialogTitle>
-          </DialogHeader>
+      <div className={cn("px-6 py-4 border-b border-border/50 shrink-0", isMobile ? "" : "")}>
+        {isMobile ? (
+          <SheetTitle className="text-lg font-semibold">Editar Serviço</SheetTitle>
+        ) : (
+          <DialogTitle className="text-lg font-semibold">Editar Serviço</DialogTitle>
+        )}
+      </div>
 
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-border/80 [&::-webkit-scrollbar-thumb]:rounded-full">
-            {/* Informações Básicas */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="name">Nome do Serviço *</Label>
+      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-border/80 [&::-webkit-scrollbar-thumb]:rounded-full">
+        {/* Informações Básicas */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="name">Nome do Serviço *</Label>
                 <Input
                   id="name"
                   value={formData.name}
@@ -639,7 +649,7 @@ export function ServiceEditModal({
             </div>
           </div>
 
-          <DialogFooter className="px-6 py-4 border-t border-border/50 shrink-0 flex flex-col sm:flex-row gap-2 bg-card">
+          <div className="px-6 py-4 border-t border-border/50 shrink-0 flex flex-col sm:flex-row gap-2 bg-card">
             <div className="flex gap-2 w-full sm:w-auto">
               <Button
                 type="button"
@@ -690,11 +700,27 @@ export function ServiceEditModal({
               ) : (
                 <Save size="sm" className="mr-2" />
               )}
-              {loading ? "Salvando..." : "Salvar"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          {loading ? "Salvando..." : "Salvar"}
+        </Button>
+      </div>
+    </>
+  );
+
+  return (
+    <>
+      {isMobile ? (
+        <Sheet open={open} onOpenChange={onOpenChange}>
+          <SheetContent side="bottom" className="p-0 flex flex-col max-h-[90dvh] overflow-hidden gap-0 rounded-t-[32px] border-t-0 shadow-2xl">
+            {ModalContent}
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+          <DialogContent className="sm:max-w-175 p-0 flex flex-col max-h-[90vh] overflow-hidden gap-0">
+            {ModalContent}
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/*  Modal de Confirmação de Cascata */}
       <Dialog

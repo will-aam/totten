@@ -10,6 +10,13 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,6 +61,7 @@ export const PackageEditModal = memo(
     packageTemplate,
     onSuccess,
   }: PackageEditModalProps) => {
+    const isMobile = useIsMobile();
     const [loading, setLoading] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(false);
@@ -195,29 +203,31 @@ export const PackageEditModal = memo(
       }
     };
 
-    return (
+    const ModalContent = (
       <>
-        <Dialog open={open} onOpenChange={onOpenChange}>
-          <DialogContent className="sm:max-w-md rounded-4xl border-none shadow-2xl bg-background p-0 overflow-hidden">
-            {/* HEADER */}
-            <div className="p-6 pb-4 border-b border-border/40">
-              <DialogHeader>
-                <DialogTitle className="text-xl font-black flex items-center gap-2">
-                  <Package size="sm" className="text-primary" />
-                  Editar Pacote
-                </DialogTitle>
-                <DialogDescription className="font-medium">
-                  Altere as configurações do pacote{" "}
-                  <span className="font-bold text-foreground">
-                    {packageTemplate.name}
-                  </span>
-                  .
-                </DialogDescription>
-              </DialogHeader>
-            </div>
+        {/* HEADER */}
+        <div className="p-6 pb-4 border-b border-border/40 shrink-0">
+          <div className="text-xl font-black flex items-center gap-2 mb-1">
+            <Package size="sm" className="text-primary" />
+            Editar Pacote
+            {isMobile ? (
+              <SheetTitle className="sr-only">Editar Pacote</SheetTitle>
+            ) : (
+              <DialogTitle className="sr-only">Editar Pacote</DialogTitle>
+            )}
+          </div>
+          <p className="font-medium text-sm text-muted-foreground">
+            Altere as configurações do pacote{" "}
+            <span className="font-bold text-foreground">
+              {packageTemplate.name}
+            </span>
+            .
+          </p>
+        </div>
 
-            {/* BODY */}
-            <div className="p-6 space-y-5">
+        {/* BODY */}
+        <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-border/80 [&::-webkit-scrollbar-thumb]:rounded-full">
+          <div className="p-6 space-y-5">
               <div className="space-y-1.5">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 ml-1">
                   <Rename size="xs" /> Nome do Pacote
@@ -328,10 +338,11 @@ export const PackageEditModal = memo(
                   <Switch checked={formData.available_online} onCheckedChange={(checked) => setFormData({ ...formData, available_online: checked })} />
                 </div>
               </div>
-            </div>
+          </div>
+        </div>
 
-            {/* FOOTER */}
-            <div className="p-6 border-t border-border/40 flex flex-col-reverse sm:flex-row gap-3 bg-muted/10">
+        {/* FOOTER */}
+        <div className="p-6 border-t border-border/40 flex flex-col-reverse sm:flex-row gap-3 bg-muted/10 shrink-0 mt-auto">
               <div className="flex gap-2 w-full sm:w-auto">
                 <Button
                   type="button"
@@ -386,9 +397,25 @@ export const PackageEditModal = memo(
                 )}
                 Salvar
               </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        </div>
+      </>
+    );
+
+    return (
+      <>
+        {isMobile ? (
+          <Sheet open={open} onOpenChange={onOpenChange}>
+            <SheetContent side="bottom" className="p-0 flex flex-col max-h-[90dvh] overflow-hidden gap-0 rounded-t-[32px] border-t-0 shadow-2xl">
+              {ModalContent}
+            </SheetContent>
+          </Sheet>
+        ) : (
+          <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md rounded-4xl border-none shadow-2xl bg-background p-0 flex flex-col max-h-[90vh] overflow-hidden gap-0">
+              {ModalContent}
+            </DialogContent>
+          </Dialog>
+        )}
 
         {/*  Modal de Confirmação de Exclusão */}
         <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>

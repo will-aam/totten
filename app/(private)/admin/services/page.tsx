@@ -37,6 +37,8 @@ import { ServiceEditModal } from "./_components/service-edit-modal";
 import { CategoryEditModal } from "./_components/category-edit-modal";
 import { PackageEditModal } from "./_components/package-edit-modal";
 import { ResponsiveModal } from "../agenda/_components/responsive-modal";
+import { NewServiceSheet } from "./_components/new-service-sheet";
+import { NewPackageSheet } from "../packages/_components/new-package-sheet";
 import { apiClient } from "@/lib/api-client";
 
 const STORAGE_KEY = "totem_catalog_show_inactive";
@@ -140,6 +142,9 @@ function ServicesTabs() {
   const [createCategoryOpen, setCreateCategoryOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [creatingCategory, setCreatingCategory] = useState(false);
+
+  const [isNewServiceSheetOpen, setIsNewServiceSheetOpen] = useState(false);
+  const [isNewPackageSheetOpen, setIsNewPackageSheetOpen] = useState(false);
 
   const {
     data: services,
@@ -256,12 +261,10 @@ function ServicesTabs() {
               </p>
             </div>
             <Button
-              asChild
               className="h-12 px-8 rounded-full font-medium shadow-sm"
+              onClick={() => setIsNewServiceSheetOpen(true)}
             >
-              <Link href="/admin/services/new">
-                <Plus className="mr-2 h-4 w-4" /> Novo Serviço
-              </Link>
+              <Plus className="mr-2 h-4 w-4" /> Novo Serviço
             </Button>
           </div>
 
@@ -384,12 +387,10 @@ function ServicesTabs() {
               </p>
             </div>
             <Button
-              asChild
               className="h-12 px-8 rounded-full font-medium shadow-sm"
+              onClick={() => setIsNewPackageSheetOpen(true)}
             >
-              <Link href="/admin/packages/new">
-                <Plus className="mr-2 h-4 w-4" /> Novo Pacote
-              </Link>
+              <Plus className="mr-2 h-4 w-4" /> Novo Pacote
             </Button>
           </div>
 
@@ -580,6 +581,7 @@ function ServicesTabs() {
           mutatePackages();
         }}
       />
+      {/* MODAL EDITAR PACOTE */}
       <PackageEditModal
         open={!!selectedPackage}
         onOpenChange={(open) => !open && setSelectedPackage(null)}
@@ -589,6 +591,25 @@ function ServicesTabs() {
           mutateServices();
         }}
       />
+
+      <NewServiceSheet 
+        isOpen={isNewServiceSheetOpen}
+        onClose={() => setIsNewServiceSheetOpen(false)}
+        onSuccess={() => {
+          mutateServices();
+          setIsNewServiceSheetOpen(false);
+        }}
+      />
+
+      <NewPackageSheet 
+        isOpen={isNewPackageSheetOpen}
+        onClose={() => setIsNewPackageSheetOpen(false)}
+        onSuccess={() => {
+          mutatePackages();
+          setIsNewPackageSheetOpen(false);
+        }}
+      />
+
       <CategoryEditModal
         open={!!selectedCategory}
         onOpenChange={(open) => !open && setSelectedCategory(null)}

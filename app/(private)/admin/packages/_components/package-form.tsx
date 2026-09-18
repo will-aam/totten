@@ -33,7 +33,12 @@ interface ServiceOption {
   name: string;
 }
 
-export function PackageForm() {
+interface PackageFormProps {
+  onSuccess?: () => void;
+  onCancel?: () => void;
+}
+
+export function PackageForm({ onSuccess, onCancel }: PackageFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [loadingServices, setLoadingServices] = useState(true);
@@ -110,7 +115,11 @@ export function PackageForm() {
 
       if (data.success) {
         toast.success("Pacote cadastrado com sucesso!");
-        router.push("/admin/services?tab=packages");
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          router.push("/admin/services?tab=packages");
+        }
       } else {
         toast.error("Erro ao salvar.");
       }
@@ -313,13 +322,25 @@ export function PackageForm() {
 
       {/* BOTÕES DE AÇÃO */}
       <div className="flex items-center justify-end gap-3 pt-6 mt-auto md:mt-0">
-        <Button
-          asChild
-          variant="ghost"
-          className="hidden sm:flex rounded-xl h-12 font-medium"
-        >
-          <Link href="/admin/services?tab=packages">Cancelar</Link>
-        </Button>
+        {onCancel ? (
+          <Button
+            variant="ghost"
+            type="button"
+            className="hidden sm:flex text-muted-foreground rounded-full md:rounded-xl px-6"
+            onClick={onCancel}
+          >
+            Cancelar
+          </Button>
+        ) : (
+          <Button
+            asChild
+            variant="ghost"
+            type="button"
+            className="hidden sm:flex text-muted-foreground rounded-full md:rounded-xl px-6"
+          >
+            <Link href="/admin/services?tab=packages">Cancelar</Link>
+          </Button>
+        )}
         <Button
           type="submit"
           disabled={loading}
