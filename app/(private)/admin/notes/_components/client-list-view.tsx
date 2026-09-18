@@ -35,7 +35,7 @@ export function ClientListView({
             placeholder="Buscar cliente por nome ou CPF..."
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10 rounded-full shadow-sm bg-card border-border md:rounded-md"
+            className="pl-10 rounded-full shadow-sm bg-card border-border"
           />
         </div>
 

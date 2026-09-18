@@ -27,7 +27,7 @@ export function NewClientSheet({ isOpen, onClose, onSuccess }: NewClientSheetPro
         </SheetHeader>
         
         <div className="p-4 sm:p-8">
-          <ClientForm onSuccess={onSuccess} />
+          <ClientForm onSuccess={onSuccess} onCancel={onClose} />
         </div>
       </SheetContent>
     </Sheet>

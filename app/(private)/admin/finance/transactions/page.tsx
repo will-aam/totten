@@ -374,7 +374,7 @@ export default function TransactionsPage() {
                   placeholder="Buscar transação..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-11 h-12 rounded-2xl bg-muted/20 border-border/40 hover:bg-muted/30 font-bold w-full focus-visible:ring-primary/30 transition-all shadow-inner"
+                  className="pl-11 h-12 rounded-full bg-muted/20 border-border/40 hover:bg-muted/30 font-bold w-full focus-visible:ring-primary/30 transition-all shadow-inner"
                 />
               </div>
 

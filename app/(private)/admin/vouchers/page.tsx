@@ -137,7 +137,7 @@ function AdminVouchersPageContent() {
               placeholder="Buscar cliente (mín. 3 letras)..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 bg-card border-border/50 rounded-2xl h-11 md:h-12 shadow-sm font-medium focus-visible:ring-primary/20 text-sm"
+              className="pl-10 bg-card border-border/50 rounded-full h-11 md:h-12 shadow-sm font-medium focus-visible:ring-primary/20 text-sm"
             />
           </div>
         </div>

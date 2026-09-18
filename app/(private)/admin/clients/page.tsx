@@ -42,7 +42,12 @@ import {
   Filter,
   CalendarCheck,
 } from "@boxicons/react";
-import { Download } from "lucide-react";
+import { Download, Info } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -335,14 +340,15 @@ function AdminClientsPageContent() {
       <AdminHeader title="Clientes" />
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div className="relative w-full lg:max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <div className="flex items-center gap-2 w-full lg:max-w-md">
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Buscar por nome, CPF ou telefone..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className={cn(
-                "bg-card pl-10 text-foreground rounded-full md:rounded-md shadow-sm border-border transition-all duration-300",
+                "bg-card pl-10 text-foreground rounded-full shadow-sm border-border transition-all duration-300",
                 search.includes("**") && "pr-32 border-primary/50 bg-primary/5",
                 search.includes("++") && "pr-32 border-blue-500/50 bg-blue-500/5",
               )}
@@ -359,6 +365,34 @@ function AdminClientsPageContent() {
                 </span>
               )}
             </div>
+            </div>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="shrink-0 h-10 w-10 text-muted-foreground hover:text-foreground" title="Ajuda com filtros">
+                  <Info className="h-5 w-5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[300px] md:w-80" align="end" side="bottom">
+                <div className="flex flex-col gap-2">
+                  <h4 className="font-medium leading-none">Filtros de Busca</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Você pode usar atalhos na busca para filtrar os clientes:
+                  </p>
+                  <ul className="text-sm text-muted-foreground list-disc pl-4 space-y-2 mt-1">
+                    <li>
+                      Digite <strong>**</strong> para ver clientes que possuem <strong>mais de um pacote</strong> ativo.
+                    </li>
+                    <li>
+                      Digite <strong>++</strong> para ver clientes que vieram através do <strong>autoatendimento</strong>.
+                    </li>
+                  </ul>
+                  <p className="text-xs text-muted-foreground/80 mt-2">
+                    Dica: Você pode combinar os atalhos com a busca por nome.
+                  </p>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="hidden sm:flex flex-row gap-3 w-full lg:w-auto">

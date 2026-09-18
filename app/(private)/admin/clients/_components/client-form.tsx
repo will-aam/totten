@@ -15,6 +15,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { ResponsiveModal } from "../../agenda/_components/responsive-modal";
+import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
@@ -86,12 +95,14 @@ type PackageTemplate = {
   service_id: string;
 };
 
-export function ClientForm({ onSuccess }: { onSuccess?: () => void } = {}) {
+export function ClientForm({ onSuccess, onCancel }: { onSuccess?: () => void, onCancel?: () => void } = {}) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [loadingPackages, setLoadingPackages] = useState(true);
   const [loadingCep, setLoadingCep] = useState(false);
   const [showMore, setShowMore] = useState(false);
+  const [packageDrawerOpen, setPackageDrawerOpen] = useState(false);
+  const isMobile = useIsMobile();
   const [packageTemplates, setPackageTemplates] = useState<PackageTemplate[]>(
     [],
   );
@@ -509,25 +520,84 @@ export function ClientForm({ onSuccess }: { onSuccess?: () => void } = {}) {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>Escolha um Pacote do Catálogo</Label>
-                <Select
-                  value={form.package_template_id}
-                  onValueChange={(v) =>
-                    setForm({ ...form, package_template_id: v })
-                  }
-                  disabled={loadingPackages || loading}
-                >
-                  <SelectTrigger className="h-11 bg-background border-border/50 rounded-xl">
-                    <SelectValue placeholder="Selecione um pacote..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhum pacote agora</SelectItem>
-                    {packageTemplates.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        {t.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {isMobile ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      onClick={() => setPackageDrawerOpen(true)}
+                      className="w-full h-12 bg-muted/20 border-border/50 justify-between shadow-sm hover:bg-muted/40 transition-colors font-normal text-muted-foreground px-3"
+                    >
+                      <span className="truncate">
+                        {form.package_template_id && form.package_template_id !== "none"
+                          ? (() => {
+                              const pkg = packageTemplates.find((p) => p.id === form.package_template_id);
+                              return pkg ? `${pkg.name} - ${formatCurrency(Number(pkg.price))}` : "Selecione um pacote...";
+                            })()
+                          : "Selecione um pacote..."}
+                      </span>
+                      <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
+                    </Button>
+                    <ResponsiveModal 
+                      open={packageDrawerOpen} 
+                      onOpenChange={setPackageDrawerOpen}
+                      title="Pacotes do Catálogo"
+                    >
+                      <div className="flex flex-col gap-1 p-2">
+                        <Button
+                          variant="ghost"
+                          className={cn(
+                            "justify-start font-medium h-12",
+                            (form.package_template_id === "none" || !form.package_template_id) && "bg-primary/10 text-primary"
+                          )}
+                          onClick={() => {
+                            setForm({ ...form, package_template_id: "none" });
+                            setPackageDrawerOpen(false);
+                          }}
+                        >
+                          Nenhum pacote agora
+                        </Button>
+                        {packageTemplates.map((pkg) => (
+                          <Button
+                            key={pkg.id}
+                            variant="ghost"
+                            className={cn(
+                              "justify-start font-medium h-12",
+                              form.package_template_id === pkg.id && "bg-primary/10 text-primary"
+                            )}
+                            onClick={() => {
+                              setForm({ ...form, package_template_id: pkg.id });
+                              setPackageDrawerOpen(false);
+                            }}
+                          >
+                            {pkg.name} - {formatCurrency(Number(pkg.price))}
+                          </Button>
+                        ))}
+                      </div>
+                    </ResponsiveModal>
+                  </>
+                ) : (
+                  <Select
+                    value={form.package_template_id}
+                    onValueChange={(val) => {
+                      setForm({ ...form, package_template_id: val });
+                    }}
+                    disabled={loadingPackages || loading}
+                  >
+                    <SelectTrigger className="w-full h-12 bg-muted/20 border-border/50 focus:border-primary shadow-sm hover:bg-muted/40 transition-colors rounded-xl">
+                      <SelectValue placeholder="Selecione um pacote..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Nenhum pacote agora</SelectItem>
+                      {packageTemplates.map((pkg) => (
+                        <SelectItem key={pkg.id} value={pkg.id}>
+                          {pkg.name} - {formatCurrency(Number(pkg.price))} (
+                          {pkg.total_sessions} sessões)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
 
               {selectedTemplate && (
@@ -696,11 +766,15 @@ export function ClientForm({ onSuccess }: { onSuccess?: () => void } = {}) {
 
       <div className="flex flex-col sm:flex-row gap-3 pt-8 border-t border-border/50">
         <Button
-          asChild
+          type="button"
           variant="ghost"
+          onClick={() => {
+            if (onCancel) onCancel();
+            else router.push("/admin/clients");
+          }}
           className="h-12 rounded-xl font-medium order-2 sm:order-1"
         >
-          <Link href="/admin/clients">Cancelar</Link>
+          Cancelar
         </Button>
 
         <Button

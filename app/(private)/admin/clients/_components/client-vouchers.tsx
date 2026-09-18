@@ -37,6 +37,10 @@ export function ClientVouchers({ clientId, clientName }: ClientVouchersProps) {
 
   const [voucherOpen, setVoucherOpen] = useState(false);
   const [selectedPkg, setSelectedPkg] = useState<PackageType | null>(null);
+  const [visibleCount, setVisibleCount] = useState(3);
+
+  const visiblePackages = completedPackages.slice(0, visibleCount);
+  const hasMore = visibleCount < completedPackages.length;
 
   return (
     <>
@@ -54,8 +58,9 @@ export function ClientVouchers({ clientId, clientName }: ClientVouchersProps) {
               <Skeleton className="h-24 w-full rounded-2xl" />
             </div>
           ) : completedPackages.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {completedPackages.map((pkg) => (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {visiblePackages.map((pkg) => (
                 <div
                   key={pkg.id}
                   className="flex flex-col p-4 bg-card border border-border/50 rounded-2xl shadow-sm hover:border-primary/30 transition-all gap-3 animate-in fade-in zoom-in-95 duration-300"
@@ -77,13 +82,26 @@ export function ClientVouchers({ clientId, clientName }: ClientVouchersProps) {
                       setVoucherOpen(true);
                     }}
                     variant="outline"
-                    className="w-full h-9 rounded-xl border-primary/20 text-primary hover:bg-primary hover:text-primary-foreground font-bold text-xs mt-1"
+                    className="w-full h-9 rounded-xl border-primary/20 text-primary hover:bg-primary/10 hover:text-primary font-bold text-xs mt-1 transition-colors"
                   >
                     Abrir Comprovante
                   </Button>
                 </div>
               ))}
             </div>
+            {hasMore && (
+              <div className="mt-6 flex justify-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setVisibleCount((prev) => prev + 3)}
+                  className="rounded-full text-xs px-6 border-border/50 bg-background/50 hover:bg-muted"
+                >
+                  Ver mais vouchers
+                </Button>
+              </div>
+            )}
+            </>
           ) : (
             <div className="flex flex-col items-center justify-center text-center bg-muted/20 rounded-2xl border border-dashed border-border p-6 py-8">
               <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-2">

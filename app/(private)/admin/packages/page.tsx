@@ -400,7 +400,7 @@ function PackagesPageContent() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar por cliente (mín. 3 letras)..."
-              className="pl-9 h-12 bg-background rounded-2xl border-none shadow-sm focus-visible:ring-primary/20"
+              className="pl-9 h-12 bg-background rounded-full border-none shadow-sm focus-visible:ring-primary/20"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />

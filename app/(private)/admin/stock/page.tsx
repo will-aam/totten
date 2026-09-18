@@ -231,7 +231,7 @@ function StockPageContent() {
               placeholder="Buscar insumo..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-card pl-10 pr-4 py-2 text-sm text-foreground rounded-full md:rounded-md shadow-sm border border-border focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full bg-card pl-10 pr-4 py-2 text-sm text-foreground rounded-full shadow-sm border border-border focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
@@ -249,14 +249,14 @@ function StockPageContent() {
             <Button
               onClick={handleExportExcel}
               variant="outline"
-              className="h-12 px-4 rounded-xl font-medium shadow-sm border-border"
+              className="h-12 px-4 rounded-full font-medium shadow-sm border-border"
             >
               <FolderDownArrow className="mr-2 h-4 w-4" /> Exportar
             </Button>
 
             <Button
               onClick={() => setIsModalOpen(true)}
-              className="h-12 px-8 rounded-xl font-medium shadow-sm"
+              className="h-12 px-8 rounded-full font-medium shadow-sm"
             >
               <Plus className="mr-2 h-4 w-4" /> Cadastrar
             </Button>
@@ -269,7 +269,7 @@ function StockPageContent() {
             <h2 className="text-xl font-semibold text-foreground tracking-tight">
               Gestão de Insumos
             </h2>
-            <button 
+            <button
               className="text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center p-2 -m-2"
               onClick={() => setIsInfoOpen(true)}
             >

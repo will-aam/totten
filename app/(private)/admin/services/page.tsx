@@ -226,7 +226,7 @@ function ServicesTabs() {
             <Button
               variant="outline"
               onClick={() => setShowInactive(!showInactive)}
-              className="h-11 rounded-xl text-muted-foreground border-border/60 hover:bg-muted/50 transition-all w-full md:w-auto shadow-sm"
+              className="h-11 rounded-full text-muted-foreground border-border/60 hover:bg-muted/50 transition-all w-full md:w-auto shadow-sm"
             >
               {showInactive ? (
                 <>
@@ -257,7 +257,7 @@ function ServicesTabs() {
             </div>
             <Button
               asChild
-              className="h-12 px-8 rounded-xl font-medium shadow-sm"
+              className="h-12 px-8 rounded-full font-medium shadow-sm"
             >
               <Link href="/admin/services/new">
                 <Plus className="mr-2 h-4 w-4" /> Novo Serviço
@@ -385,7 +385,7 @@ function ServicesTabs() {
             </div>
             <Button
               asChild
-              className="h-12 px-8 rounded-xl font-medium shadow-sm"
+              className="h-12 px-8 rounded-full font-medium shadow-sm"
             >
               <Link href="/admin/packages/new">
                 <Plus className="mr-2 h-4 w-4" /> Novo Pacote
@@ -493,7 +493,7 @@ function ServicesTabs() {
               </p>
             </div>
             <Button
-              className="h-12 px-8 rounded-xl font-medium shadow-sm"
+              className="h-12 px-8 rounded-full font-medium shadow-sm"
               onClick={() => setCreateCategoryOpen(true)}
             >
               <Plus className="mr-2 h-4 w-4" /> Nova Categoria

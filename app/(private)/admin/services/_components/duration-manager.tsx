@@ -216,7 +216,7 @@ export function DurationManager() {
           <Button
             onClick={handleAdd}
             disabled={saving}
-            className="w-full sm:w-auto rounded-xl px-6 h-11 active:scale-95 transition-transform"
+            className="w-full sm:w-auto rounded-full px-6 h-11 active:scale-95 transition-transform"
           >
             {saving ? (
               <LoaderDots size="sm" className="animate-spin" />
