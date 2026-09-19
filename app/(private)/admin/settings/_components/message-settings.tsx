@@ -55,23 +55,23 @@ export function MessageSettings() {
 
         setMsgUpdate(
           data.msgUpdate ||
-            "Olá, {nome}! Tudo bem? 💆‍♀️✨\n\nPassando para avisar que seu check-in foi registrado. Você já realizou {usadas} de {total} sessões do seu pacote.",
+          "Olá, {nome}! Tudo bem? 💆‍♀️✨\n\nPassando para avisar que seu check-in foi registrado. Você já realizou {usadas} de {total} sessões do seu pacote.",
         );
         setMsgWelcome(
           data.msgWelcome ||
-            "Olá, {nome}! Que alegria ter você aqui na nossa empresa. 🥰\n\nSeu pacote de {total} sessões já está ativo no nosso sistema. Qualquer dúvida, é só chamar!",
+          "Olá, {nome}! Que alegria ter você aqui na nossa empresa. 🥰\n\nSeu pacote de {total} sessões já está ativo no nosso sistema. Qualquer dúvida, é só chamar!",
         );
         setMsgRenewal(
           data.msgRenewal ||
-            "Parabéns, {nome}! 🎉 Você concluiu hoje a última sessão do seu pacote.\n\nComo o seu bem-estar é nossa prioridade, que tal já deixarmos o seu próximo pacote garantido? Responda SIM para vermos os horários!",
+          "Parabéns, {nome}! 🎉 Você concluiu hoje a última sessão do seu pacote.\n\nComo o seu bem-estar é nossa prioridade, que tal já deixarmos o seu próximo pacote garantido? Responda SIM para vermos os horários!",
         );
         setMsgReminder(
           data.msgReminder ||
-            "Oi, {nome}! Passando para lembrar do nosso horário agendado para amanhã às {horario}. \n\nPodemos confirmar sua presença? 👍",
+          "Oi, {nome}! Passando para lembrar do nosso horário agendado para amanhã às {horario}. \n\nPodemos confirmar sua presença? 👍",
         );
         setMsgManualConfirmation(
           data.msgManualConfirmation ||
-            "Olá {nome}! Passando para confirmar o seu horário amanhã às *{horario}* para o serviço de {servico}. Podemos confirmar? 🥰",
+          "Olá {nome}! Passando para confirmar o seu horário amanhã às *{horario}* para o serviço de {servico}. Podemos confirmar? 🥰",
         );
       } catch (error) {
         console.error("Erro ao buscar mensagens:", error);
@@ -150,7 +150,7 @@ export function MessageSettings() {
                 onClick={() =>
                   toast.info("Recurso de criar novos modelos em breve!")
                 }
-                className="h-12 px-8 rounded-xl font-medium shadow-sm"
+                className="h-12 px-8 font-medium shadow-sm"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Modelo
@@ -160,7 +160,7 @@ export function MessageSettings() {
               <Button
                 onClick={handleSaveAll}
                 disabled={saving}
-                className="hidden md:flex h-12 px-8 rounded-xl font-medium shadow-sm"
+                className="hidden md:flex h-12 px-8 font-medium shadow-sm"
               >
                 {saving ? (
                   <>

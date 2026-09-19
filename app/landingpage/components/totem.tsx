@@ -39,7 +39,7 @@ export default function TotemSection() {
             ].map((b) => (
               <div
                 key={b}
-                className="flex items-center gap-2 rounded-xl border border-totten bg-card-totten px-4 py-3 text-sm"
+                className="flex items-center gap-2 rounded-full border border-totten bg-card-totten px-4 py-3 text-sm"
               >
                 <CheckCircle className="h-4 w-4 text-white" /> {b}
               </div>

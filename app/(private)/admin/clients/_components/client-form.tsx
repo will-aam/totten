@@ -316,7 +316,7 @@ export function ClientForm({ onSuccess, onCancel }: { onSuccess?: () => void, on
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="Ex: Maria Oliveira"
-                className="h-11 bg-muted/30 rounded-xl border-border/50"
+                className="h-11 bg-muted/30 border-border/50"
               />
               {errors.name && (
                 <p className="text-xs text-destructive">{errors.name}</p>
@@ -337,7 +337,7 @@ export function ClientForm({ onSuccess, onCancel }: { onSuccess?: () => void, on
                     })
                   }
                   placeholder="(00) 00000-0000"
-                  className="h-11 bg-muted/30 rounded-xl border-border/50"
+                  className="h-11 bg-muted/30 border-border/50"
                 />
                 {errors.phone_whatsapp && (
                   <p className="text-xs text-destructive">
@@ -355,7 +355,7 @@ export function ClientForm({ onSuccess, onCancel }: { onSuccess?: () => void, on
                     setForm({ ...form, cpf: formatCpfInput(e.target.value) })
                   }
                   placeholder="000.000.000-00"
-                  className="h-11 bg-muted/30 rounded-xl border-border/50"
+                  className="h-11 bg-muted/30 border-border/50"
                 />
                 {errors.cpf && (
                   <p className="text-xs text-destructive">{errors.cpf}</p>
@@ -372,7 +372,7 @@ export function ClientForm({ onSuccess, onCancel }: { onSuccess?: () => void, on
                 <Button
                   type="button"
                   variant="ghost"
-                  className="w-full justify-between bg-primary/5 rounded-xl h-12"
+                  className="w-full justify-between h-12"
                 >
                   <span className="text-muted-foreground font-medium">
                     {showMore
@@ -420,7 +420,7 @@ export function ClientForm({ onSuccess, onCancel }: { onSuccess?: () => void, on
                           setForm({ ...form, birth_date: undefined });
                         }
                       }}
-                      className="h-11 bg-muted/30 rounded-xl border-border/50 w-full"
+                      className="h-11 bg-muted/30 border-border/50 w-full"
                     />
                   </div>
 
@@ -433,7 +433,7 @@ export function ClientForm({ onSuccess, onCancel }: { onSuccess?: () => void, on
                         setForm({ ...form, email: e.target.value })
                       }
                       placeholder="email@exemplo.com"
-                      className="h-11 bg-muted/30 rounded-xl border-border/50"
+                      className="h-11 bg-muted/30 border-border/50"
                     />
                   </div>
                 </div>
@@ -459,7 +459,7 @@ export function ClientForm({ onSuccess, onCancel }: { onSuccess?: () => void, on
                           handleCepLookup(val);
                         }}
                         placeholder="00000-000"
-                        className="h-11 bg-muted/30 rounded-xl border-border/50"
+                        className="h-11 bg-muted/30 border-border/50"
                         maxLength={9}
                       />
                     </div>
@@ -471,7 +471,7 @@ export function ClientForm({ onSuccess, onCancel }: { onSuccess?: () => void, on
                           setForm({ ...form, city: e.target.value })
                         }
                         placeholder="Ex: Aracaju - SE"
-                        className="h-11 bg-muted/30 rounded-xl border-border/50"
+                        className="h-11 bg-muted/30 border-border/50"
                         disabled={loadingCep}
                       />
                     </div>
@@ -486,7 +486,7 @@ export function ClientForm({ onSuccess, onCancel }: { onSuccess?: () => void, on
                           setForm({ ...form, street: e.target.value })
                         }
                         placeholder="Ex: Avenida Beira Mar"
-                        className="h-11 bg-muted/30 rounded-xl border-border/50"
+                        className="h-11 bg-muted/30 border-border/50"
                         disabled={loadingCep}
                       />
                     </div>
@@ -498,7 +498,7 @@ export function ClientForm({ onSuccess, onCancel }: { onSuccess?: () => void, on
                           setForm({ ...form, number: e.target.value })
                         }
                         placeholder="Ex: 123"
-                        className="h-11 bg-muted/30 rounded-xl border-border/50"
+                        className="h-11 bg-muted/30 border-border/50"
                       />
                     </div>
                   </div>
@@ -526,28 +526,27 @@ export function ClientForm({ onSuccess, onCancel }: { onSuccess?: () => void, on
                       variant="outline"
                       role="combobox"
                       onClick={() => setPackageDrawerOpen(true)}
-                      className="w-full h-12 bg-muted/20 border-border/50 justify-between shadow-sm hover:bg-muted/40 transition-colors font-normal text-muted-foreground px-3"
+                      className="w-full h-12 rounded-lg bg-muted/20 border-border/50 justify-between shadow-sm hover:bg-muted/40 transition-colors font-normal text-muted-foreground px-3"
                     >
                       <span className="truncate">
                         {form.package_template_id && form.package_template_id !== "none"
                           ? (() => {
-                              const pkg = packageTemplates.find((p) => p.id === form.package_template_id);
-                              return pkg ? `${pkg.name} - ${formatCurrency(Number(pkg.price))}` : "Selecione um pacote...";
-                            })()
+                            const pkg = packageTemplates.find((p) => p.id === form.package_template_id);
+                            return pkg ? `${pkg.name} - ${formatCurrency(Number(pkg.price))}` : "Selecione um pacote...";
+                          })()
                           : "Selecione um pacote..."}
                       </span>
                       <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
                     </Button>
-                    <ResponsiveModal 
-                      open={packageDrawerOpen} 
+                    <ResponsiveModal
+                      open={packageDrawerOpen}
                       onOpenChange={setPackageDrawerOpen}
                       title="Pacotes do Catálogo"
                     >
                       <div className="flex flex-col gap-1 p-2">
                         <Button
                           variant="ghost"
-                          className={cn(
-                            "justify-start font-medium h-12",
+                          className={cn("justify-start font-medium h-12",
                             (form.package_template_id === "none" || !form.package_template_id) && "bg-primary/10 text-primary"
                           )}
                           onClick={() => {
@@ -561,8 +560,7 @@ export function ClientForm({ onSuccess, onCancel }: { onSuccess?: () => void, on
                           <Button
                             key={pkg.id}
                             variant="ghost"
-                            className={cn(
-                              "justify-start font-medium h-12",
+                            className={cn("justify-start font-medium h-12",
                               form.package_template_id === pkg.id && "bg-primary/10 text-primary"
                             )}
                             onClick={() => {
@@ -584,7 +582,7 @@ export function ClientForm({ onSuccess, onCancel }: { onSuccess?: () => void, on
                     }}
                     disabled={loadingPackages || loading}
                   >
-                    <SelectTrigger className="w-full h-12 bg-muted/20 border-border/50 focus:border-primary shadow-sm hover:bg-muted/40 transition-colors rounded-xl">
+                    <SelectTrigger className="w-full h-12 bg-muted/20 border-border/50 focus:border-primary shadow-sm hover:bg-muted/40 transition-colors">
                       <SelectValue placeholder="Selecione um pacote..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -601,7 +599,7 @@ export function ClientForm({ onSuccess, onCancel }: { onSuccess?: () => void, on
               </div>
 
               {selectedTemplate && (
-                <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 space-y-3 animate-in fade-in zoom-in-95 duration-200 mt-2">
+                <div className="bg-primary/5 p-4 rounded-full border border-primary/20 space-y-3 animate-in fade-in zoom-in-95 duration-200 mt-2">
                   <div className="flex items-center gap-2 text-primary font-bold text-sm">
                     Resumo Selecionado
                   </div>
@@ -628,7 +626,7 @@ export function ClientForm({ onSuccess, onCancel }: { onSuccess?: () => void, on
               {/* ✅ Opções avançadas só quando tem pacote */}
               {selectedTemplate && (
                 <div className="space-y-4 border-t border-border/50 pt-4">
-                  <div className="flex items-center justify-between rounded-xl border border-border/50 p-3 bg-muted/20">
+                  <div className="flex items-center justify-between rounded-full border border-border/50 p-3 bg-muted/20">
                     <div className="space-y-0.5 pr-4">
                       <Label className="text-sm font-bold">
                         Pagar Pacote à Vista?
@@ -659,7 +657,7 @@ export function ClientForm({ onSuccess, onCancel }: { onSuccess?: () => void, on
                         onValueChange={setSelectedMethod}
                         disabled={loading}
                       >
-                        <SelectTrigger className="h-11 rounded-xl">
+                        <SelectTrigger className="h-11">
                           <SelectValue placeholder="Como o cliente está pagando?" />
                         </SelectTrigger>
                         <SelectContent>
@@ -683,7 +681,7 @@ export function ClientForm({ onSuccess, onCancel }: { onSuccess?: () => void, on
 
                   {!payUpfront && (
                     <div className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
-                      <div className="flex items-center justify-between rounded-xl border border-border/50 p-3 bg-amber-500/10 dark:bg-amber-500/5">
+                      <div className="flex items-center justify-between rounded-full border border-border/50 p-3 bg-amber-500/10 dark:bg-amber-500/5">
                         <div className="space-y-0.5 pr-4">
                           <Label className="text-sm font-bold text-amber-700 dark:text-amber-500">
                             Gerar Contas a Receber?
@@ -735,7 +733,7 @@ export function ClientForm({ onSuccess, onCancel }: { onSuccess?: () => void, on
                               }
                             }}
                             disabled={loading}
-                            className="h-11 rounded-xl w-32 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className="h-11 w-32 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
 
                           {errors.installments && (
@@ -772,7 +770,7 @@ export function ClientForm({ onSuccess, onCancel }: { onSuccess?: () => void, on
             if (onCancel) onCancel();
             else router.push("/admin/clients");
           }}
-          className="h-12 rounded-xl font-medium order-2 sm:order-1"
+          className="h-12 font-medium order-2 sm:order-1"
         >
           Cancelar
         </Button>
@@ -780,7 +778,7 @@ export function ClientForm({ onSuccess, onCancel }: { onSuccess?: () => void, on
         <Button
           type="submit"
           disabled={loading}
-          className="h-12 rounded-xl font-bold shadow-md transition-all hover:scale-[1.02] active:scale-95 order-1 sm:order-2 w-full sm:w-auto"
+          className="h-12 font-bold transition-all order-1 sm:order-2 w-full sm:w-auto"
         >
           {loading ? (
             <>

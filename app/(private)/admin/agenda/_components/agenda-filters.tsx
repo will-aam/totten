@@ -93,8 +93,7 @@ export function AgendaFilters({ filters, onFiltersChange }: AgendaFiltersProps) 
         <Button
           variant="ghost"
           size="icon"
-          className={cn(
-            "rounded-full h-9 w-9 relative transition-colors",
+          className={cn("rounded-full h-9 w-9 relative transition-colors",
             hasActiveFilters
               ? "bg-primary/10 text-primary hover:bg-primary/20"
               : "text-muted-foreground hover:bg-muted"
@@ -142,7 +141,7 @@ export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, serv
 
   // Custom wrapper for the trigger to match the design EXACTLY
   const CustomTrigger = ({ placeholder }: { placeholder: string }) => (
-    <SelectTrigger className="w-full bg-muted/20 border border-input rounded-[10px] h-10 px-3 [&>svg]:hidden flex justify-between items-center shadow-none text-muted-foreground hover:bg-muted/40 transition-colors focus:ring-1 focus:ring-primary/20 font-medium">
+    <SelectTrigger className="w-full bg-muted/20 border border-input -[10px] h-10 px-3 [&>svg]:hidden flex justify-between items-center shadow-none text-muted-foreground hover:bg-muted/40 transition-colors focus:ring-1 focus:ring-primary/20 font-medium">
       <SelectValue placeholder={placeholder} />
       <div className="bg-muted/60 rounded-md h-6 w-6 flex items-center justify-center text-muted-foreground">
         <ChevronDown className="w-4 h-4" />
@@ -176,7 +175,7 @@ export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, serv
           onValueChange={(val) => onFiltersChange({ ...filters, status: val === "ALL" ? undefined : val })}
         >
           <CustomTrigger placeholder="Todos" />
-          <SelectContent className="rounded-xl border border-border/50 shadow-lg z-[100]">
+          <SelectContent className="border border-border/50 shadow-lg z-[100] rounded-2xl">
             <SelectItem value="ALL" className="font-medium text-muted-foreground">Todos</SelectItem>
             <SelectItem value="PENDENTE" className="font-medium">Pendente</SelectItem>
             <SelectItem value="CONFIRMADO" className="font-medium">Confirmado</SelectItem>
@@ -197,7 +196,7 @@ export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, serv
             onValueChange={(val) => onFiltersChange({ ...filters, professionalId: val === "ALL" ? undefined : val })}
           >
             <CustomTrigger placeholder="Todos" />
-            <SelectContent className="rounded-xl border border-border/50 shadow-lg z-[100]">
+            <SelectContent className="border border-border/50 shadow-lg z-[100] rounded-2xl">
               <SelectItem value="ALL" className="font-medium text-muted-foreground">Todos</SelectItem>
               <SelectItem value={session?.user?.id || ""} className="font-medium">{session?.user?.name || "Admin"}</SelectItem>
               {team?.filter((m: any) => m.id !== session?.user?.id).map((member: any) => (
@@ -221,7 +220,7 @@ export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, serv
               variant="outline"
               role="combobox"
               aria-expanded={clientOpen}
-              className="w-full bg-muted/20 border border-input rounded-[10px] h-10 px-3 flex justify-between items-center shadow-none text-muted-foreground hover:bg-muted/40 transition-colors focus:ring-1 focus:ring-primary/20 font-medium font-normal"
+              className="w-full bg-muted/20 border border-input rounded-lg h-10 px-3 flex justify-between items-center shadow-none text-muted-foreground hover:bg-muted/40 transition-colors focus:ring-1 focus:ring-primary/20 font-medium font-normal"
             >
               <span className="truncate">
                 {filters.patientId
@@ -289,7 +288,7 @@ export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, serv
           onValueChange={(val) => onFiltersChange({ ...filters, serviceId: val === "ALL" ? undefined : val })}
         >
           <CustomTrigger placeholder="Todos" />
-          <SelectContent className="rounded-xl border border-border/50 shadow-lg max-h-[200px] z-[100]">
+          <SelectContent className="border border-border/50 shadow-lg max-h-[200px] z-[100] rounded-2xl">
             <SelectItem value="ALL" className="font-medium text-muted-foreground">Todos</SelectItem>
             {services?.map((s: any) => (
               <SelectItem key={s.id} value={s.id} className="font-medium">
@@ -303,7 +302,7 @@ export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, serv
         <Label className="text-sm font-medium text-[#666666]">Tipo</Label>
         <Select value={filters.type || "ALL"} onValueChange={(val: any) => onFiltersChange({ ...filters, type: val })}>
           <CustomTrigger placeholder="Todos" />
-          <SelectContent className="rounded-xl border border-border/50 shadow-lg z-[100]">
+          <SelectContent className="border border-border/50 shadow-lg z-[100] rounded-2xl">
             <SelectItem value="ALL" className="font-medium text-muted-foreground">Todos</SelectItem>
             <SelectItem value="SINGLE" className="font-medium">Avulso</SelectItem>
             <SelectItem value="PACKAGE" className="font-medium">Pacote</SelectItem>

@@ -288,8 +288,8 @@ export default function RegisterPage() {
                   placeholder="••••••••"
                   required
                   className={`h-12 sm:h-11 bg-muted/50 border-transparent hover:border-border focus-visible:bg-transparent text-base sm:text-sm ${confirmPassword && password !== confirmPassword
-                      ? "border-destructive focus-visible:border-destructive bg-destructive/5"
-                      : ""
+                    ? "border-destructive focus-visible:border-destructive bg-destructive/5"
+                    : ""
                     }`}
                 />
                 {confirmPassword && (
@@ -312,7 +312,7 @@ export default function RegisterPage() {
 
           {/* Erros Gerais */}
           {(state.error || passwordMatchError) && (
-            <div className="p-4 rounded-xl bg-destructive/10 text-destructive text-sm font-medium text-center border border-destructive/20">
+            <div className="p-4 rounded-full bg-destructive/10 text-destructive text-sm font-medium text-center border border-destructive/20">
               {passwordMatchError || state.error}
             </div>
           )}
@@ -321,7 +321,7 @@ export default function RegisterPage() {
             <Button
               type="submit"
               size="lg"
-              className="w-full h-14 sm:h-12 text-lg sm:text-base rounded-xl transition-all hover:scale-[1.02] shadow-md"
+              className="w-full h-14 sm:h-12 text-lg sm:text-base rounded-full transition-all hover:scale-[1.02] shadow-md"
               disabled={
                 isPending || password !== confirmPassword || strength < 50
               }

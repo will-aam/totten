@@ -177,7 +177,7 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
                 placeholder="000.000.000-00"
                 value={cpf}
                 onChange={e => handleCpfChange(e.target.value)}
-                className="h-12 text-base rounded-xl focus-visible:ring-1 bg-black/5 border-black/10"
+                className="h-12 text-base rounded-full focus-visible:ring-1 bg-black/5 border-black/10"
                 required
                 disabled={isLoading}
               />
@@ -191,7 +191,7 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
                 placeholder="(00) 00000-0000"
                 value={phone}
                 onChange={e => handlePhoneChange(e.target.value)}
-                className="h-12 text-base rounded-xl focus-visible:ring-1 bg-black/5 border-black/10"
+                className="h-12 text-base rounded-full focus-visible:ring-1 bg-black/5 border-black/10"
                 required
                 disabled={isLoading}
               />
@@ -200,7 +200,7 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
             <button
               type="submit"
               disabled={isLoading || !isCpfPhoneValid}
-              className="w-full h-12 rounded-xl font-bold flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 mt-2"
+              className="w-full h-12 rounded-full font-bold flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 mt-2"
               style={{ backgroundColor: theme?.primaryColor || "#0f172a", color: "#fff" }}
             >
               {isLoading ? "Entrando..." : "Entrar na sua conta"} <ArrowRight className="h-5 w-5" />
@@ -221,7 +221,7 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
                     placeholder="seu.email@exemplo.com"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
-                    className="h-12 text-base rounded-xl focus-visible:ring-1 bg-black/5 border-black/10"
+                    className="h-12 text-base rounded-full focus-visible:ring-1 bg-black/5 border-black/10"
                     required
                     disabled={isLoading}
                   />
@@ -229,7 +229,7 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
                 <button
                   type="submit"
                   disabled={isLoading || !email.includes("@")}
-                  className="w-full h-12 rounded-xl font-bold flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 mt-2"
+                  className="w-full h-12 rounded-full font-bold flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 mt-2"
                   style={{ backgroundColor: theme?.primaryColor || "#0f172a", color: "#fff" }}
                 >
                   {isLoading ? "Enviando..." : "Receber Código"} <ArrowRight className="h-5 w-5" />
@@ -246,7 +246,7 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
                     maxLength={6}
                     value={code}
                     onChange={e => setCode(e.target.value.replace(/\D/g, ""))}
-                    className="h-12 text-center tracking-widest text-2xl font-bold rounded-xl focus-visible:ring-1 bg-black/5 border-black/10"
+                    className="h-12 text-center tracking-widest text-2xl font-bold rounded-full focus-visible:ring-1 bg-black/5 border-black/10"
                     required
                     disabled={isLoading}
                   />
@@ -254,7 +254,7 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
                 <button
                   type="submit"
                   disabled={isLoading || code.length < 6}
-                  className="w-full h-12 rounded-xl font-bold flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 mt-2"
+                  className="w-full h-12 rounded-full font-bold flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 mt-2"
                   style={{ backgroundColor: theme?.primaryColor || "#0f172a", color: "#fff" }}
                 >
                   {isLoading ? "Verificando..." : "Entrar"} <ArrowRight className="h-5 w-5" />
@@ -270,7 +270,7 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
             <p className="text-xs text-muted-foreground font-medium">Ou tente outra forma de acesso:</p>
             <Button
               variant="outline"
-              className="w-full h-10 rounded-xl font-bold"
+              className="w-full h-10 rounded-full font-bold"
               onClick={() => {
                 setLoginMethod(prev => prev === "CPF_PHONE" ? "EMAIL" : "CPF_PHONE");
                 setStep("INPUT_EMAIL");

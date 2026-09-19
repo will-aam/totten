@@ -497,84 +497,84 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                 {/* Serviços */}
                 {dbServices.length > 0 && servicesConfig.showServices !== false && (
                   <div className="mb-14">
-                      <div className="relative w-full group/carousel">
-                        <Carousel
-                          opts={{
-                            align: "start",
-                            loop: false,
-                          }}
-                          className="w-full"
-                        >
-                          <CarouselContent className="-ml-4 md:-ml-6 py-4 -my-4">
-                            {sortedServices.map((srv: any) => {
-                              const isFeatured = featuredPackageName && srv.name.toLowerCase().trim() === featuredPackageName;
-                              return (
-                                <CarouselItem key={srv.id} className="pl-4 md:pl-6 md:basis-1/2 lg:basis-1/3">
-                                  <div className={cn(
-                                    "h-full rounded-2xl flex flex-col overflow-hidden relative shadow-sm border hover:shadow-md transition-all group/card",
-                                    cardBg, borderColor
-                                  )}>
-                                    {/* Imagem do Serviço */}
-                                    <div className="w-full aspect-[4/3] shrink-0 relative bg-muted border-b overflow-hidden" style={{ borderColor: theme.primaryColor + '20' }}>
-                                      {srv.image_url ? (
-                                        // eslint-disable-next-line @next/next/no-img-element
-                                        <img
-                                          src={srv.image_url}
-                                          alt={srv.name}
-                                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105 cursor-pointer"
-                                          onClick={() => setLightboxImage(srv.image_url)}
-                                        />
-                                      ) : (
-                                        <div className="absolute inset-0 flex items-center justify-center">
-                                          <Briefcase className="w-12 h-12 text-muted-foreground/20" />
-                                        </div>
-                                      )}
+                    <div className="relative w-full group/carousel">
+                      <Carousel
+                        opts={{
+                          align: "start",
+                          loop: false,
+                        }}
+                        className="w-full"
+                      >
+                        <CarouselContent className="-ml-4 md:-ml-6 py-4 -my-4">
+                          {sortedServices.map((srv: any) => {
+                            const isFeatured = featuredPackageName && srv.name.toLowerCase().trim() === featuredPackageName;
+                            return (
+                              <CarouselItem key={srv.id} className="pl-4 md:pl-6 md:basis-1/2 lg:basis-1/3">
+                                <div className={cn(
+                                  "h-full rounded-2xl flex flex-col overflow-hidden relative shadow-sm border hover:shadow-md transition-all group/card",
+                                  cardBg, borderColor
+                                )}>
+                                  {/* Imagem do Serviço */}
+                                  <div className="w-full aspect-[4/3] shrink-0 relative bg-muted border-b overflow-hidden" style={{ borderColor: theme.primaryColor + '20' }}>
+                                    {srv.image_url ? (
+                                      // eslint-disable-next-line @next/next/no-img-element
+                                      <img
+                                        src={srv.image_url}
+                                        alt={srv.name}
+                                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105 cursor-pointer"
+                                        onClick={() => setLightboxImage(srv.image_url)}
+                                      />
+                                    ) : (
+                                      <div className="absolute inset-0 flex items-center justify-center">
+                                        <Briefcase className="w-12 h-12 text-muted-foreground/20" />
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Conteúdo */}
+                                  <div className="p-6 flex flex-col flex-1 bg-white">
+                                    <div className="flex-1">
+                                      <h4 className="font-bold text-lg mb-3 text-slate-900">{srv.name}</h4>
+                                      {srv.description && <p className="text-sm text-slate-600 mb-4 line-clamp-3 leading-relaxed">{srv.description}</p>}
                                     </div>
 
-                                    {/* Conteúdo */}
-                                    <div className="p-6 flex flex-col flex-1 bg-white">
-                                      <div className="flex-1">
-                                        <h4 className="font-bold text-lg mb-3 text-slate-900">{srv.name}</h4>
-                                        {srv.description && <p className="text-sm text-slate-600 mb-4 line-clamp-3 leading-relaxed">{srv.description}</p>}
+                                    {/* Rodapé do Card */}
+                                    <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-100">
+                                      <div className="flex items-center gap-1.5 font-bold text-sm text-slate-800">
+                                        <span style={{ color: theme.primaryColor }}>R$ {Number(srv.price).toFixed(2)}</span>
+                                        <span className="text-slate-400 font-normal">/</span>
+                                        <span className="text-slate-500 font-normal">{srv.duration} min</span>
                                       </div>
-
-                                      {/* Rodapé do Card */}
-                                      <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-100">
-                                        <div className="flex items-center gap-1.5 font-bold text-sm text-slate-800">
-                                          <span style={{ color: theme.primaryColor }}>R$ {Number(srv.price).toFixed(2)}</span>
-                                          <span className="text-slate-400 font-normal">/</span>
-                                          <span className="text-slate-500 font-normal">{srv.duration} min</span>
-                                        </div>
-                                        <button
-                                          onClick={() => {
-                                            if (!selectedItems.includes(srv.name)) {
-                                              setSelectedItems(prev => [...prev, srv.name]);
-                                            }
-                                            document.getElementById('contato')?.scrollIntoView({ behavior: 'smooth' });
-                                          }}
-                                          className="text-sm font-bold flex items-center gap-1.5 transition-all hover:opacity-80"
-                                          style={{ color: theme.primaryColor }}
-                                        >
-                                          Reservar
-                                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                            <path d="M12 5L19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                          </svg>
-                                        </button>
-                                      </div>
+                                      <button
+                                        onClick={() => {
+                                          if (!selectedItems.includes(srv.name)) {
+                                            setSelectedItems(prev => [...prev, srv.name]);
+                                          }
+                                          document.getElementById('contato')?.scrollIntoView({ behavior: 'smooth' });
+                                        }}
+                                        className="text-sm font-bold flex items-center gap-1.5 transition-all hover:opacity-80"
+                                        style={{ color: theme.primaryColor }}
+                                      >
+                                        Reservar
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                          <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                          <path d="M12 5L19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                      </button>
                                     </div>
                                   </div>
-                                </CarouselItem>
-                              );
-                            })}
-                          </CarouselContent>
+                                </div>
+                              </CarouselItem>
+                            );
+                          })}
+                        </CarouselContent>
 
-                          {/* Controles do Carrossel */}
-                          {sortedServices.length > 2 && (
-                            <CarouselDots />
-                          )}
-                        </Carousel>
-                      </div>
+                        {/* Controles do Carrossel */}
+                        {sortedServices.length > 2 && (
+                          <CarouselDots />
+                        )}
+                      </Carousel>
+                    </div>
                   </div>
                 )}
               </div>
@@ -592,69 +592,69 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                   {servicesConfig.packagesSubtitle || "Planos flexíveis para quem quer incluir o autocuidado na rotina."}
                 </p>
 
-                  <div className="relative w-full group/carousel">
-                    <Carousel opts={{ align: "start", loop: false }} className="w-full">
-                      <CarouselContent className="-ml-4 md:-ml-6 py-4 -my-4">
-                        {sortedPackages.map((pkg: any) => {
-                          const isFeatured = featuredPackageName && pkg.name.toLowerCase().trim() === featuredPackageName.toLowerCase().trim();
-                          return (
-                            <CarouselItem key={pkg.id} className="pl-4 md:pl-6 md:basis-1/2 lg:basis-1/3">
-                              <div className={cn(
-                                "h-full rounded-2xl flex flex-col relative shadow-sm border hover:shadow-md transition-all group/card p-6 bg-white border-black/10"
-                              )}
-                                style={isFeatured ? { backgroundColor: theme.primaryColor + "08" } : {}}>
+                <div className="relative w-full group/carousel">
+                  <Carousel opts={{ align: "start", loop: false }} className="w-full">
+                    <CarouselContent className="-ml-4 md:-ml-6 py-4 -my-4">
+                      {sortedPackages.map((pkg: any) => {
+                        const isFeatured = featuredPackageName && pkg.name.toLowerCase().trim() === featuredPackageName.toLowerCase().trim();
+                        return (
+                          <CarouselItem key={pkg.id} className="pl-4 md:pl-6 md:basis-1/2 lg:basis-1/3">
+                            <div className={cn(
+                              "h-full rounded-2xl flex flex-col relative shadow-sm border hover:shadow-md transition-all group/card p-6 bg-white border-black/10"
+                            )}
+                              style={isFeatured ? { backgroundColor: theme.primaryColor + "08" } : {}}>
 
-                                {/* Header */}
-                                <div className="flex items-start justify-between gap-4 mb-4">
-                                  <h4 className="font-serif font-bold text-xl text-slate-900">{pkg.name}</h4>
-                                  {isFeatured && (
-                                    <div className="shrink-0">
-                                      <span className="px-2.5 py-1 rounded-full text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 flex items-center gap-1">
-                                        <Star className="h-3 w-3" type="solid" /> Mais Popular
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* Description */}
-                                <p className="text-sm text-slate-500 mb-6 flex-1">
-                                  {pkg.description || `${pkg.total_sessions} sessões inclusas. Ideal para quem quer manter a rotina de autocuidado com desconto.`}
-                                </p>
-
-                                {/* Footer */}
-                                <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-100">
-                                  <span className="font-bold text-lg text-slate-900">
-                                    R$ {Number(pkg.price).toFixed(2)}
-                                  </span>
-                                  <button
-                                    onClick={() => {
-                                      if (!selectedItems.includes(pkg.name)) {
-                                        setSelectedItems(prev => [...prev, pkg.name]);
-                                      }
-                                      document.getElementById('contato')?.scrollIntoView({ behavior: 'smooth' });
-                                    }}
-                                    className="text-sm font-bold flex items-center gap-1.5 transition-all hover:opacity-80"
-                                    style={{ color: theme.primaryColor }}
-                                  >
-                                    Reservar
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                      <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                      <path d="M12 5L19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                    </svg>
-                                  </button>
-                                </div>
+                              {/* Header */}
+                              <div className="flex items-start justify-between gap-4 mb-4">
+                                <h4 className="font-serif font-bold text-xl text-slate-900">{pkg.name}</h4>
+                                {isFeatured && (
+                                  <div className="shrink-0">
+                                    <span className="px-2.5 py-1 rounded-full text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 flex items-center gap-1">
+                                      <Star className="h-3 w-3" type="solid" /> Mais Popular
+                                    </span>
+                                  </div>
+                                )}
                               </div>
-                            </CarouselItem>
-                          );
-                        })}
-                      </CarouselContent>
 
-                      {/* Controles do Carrossel */}
-                      {sortedPackages.length > 2 && (
-                        <CarouselDots />
-                      )}
-                    </Carousel>
-                  </div>
+                              {/* Description */}
+                              <p className="text-sm text-slate-500 mb-6 flex-1">
+                                {pkg.description || `${pkg.total_sessions} sessões inclusas. Ideal para quem quer manter a rotina de autocuidado com desconto.`}
+                              </p>
+
+                              {/* Footer */}
+                              <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-100">
+                                <span className="font-bold text-lg text-slate-900">
+                                  R$ {Number(pkg.price).toFixed(2)}
+                                </span>
+                                <button
+                                  onClick={() => {
+                                    if (!selectedItems.includes(pkg.name)) {
+                                      setSelectedItems(prev => [...prev, pkg.name]);
+                                    }
+                                    document.getElementById('contato')?.scrollIntoView({ behavior: 'smooth' });
+                                  }}
+                                  className="text-sm font-bold flex items-center gap-1.5 transition-all hover:opacity-80"
+                                  style={{ color: theme.primaryColor }}
+                                >
+                                  Reservar
+                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                    <path d="M12 5L19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+                          </CarouselItem>
+                        );
+                      })}
+                    </CarouselContent>
+
+                    {/* Controles do Carrossel */}
+                    {sortedPackages.length > 2 && (
+                      <CarouselDots />
+                    )}
+                  </Carousel>
+                </div>
               </div>
             </div>
           )}
@@ -813,7 +813,7 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                             type="text"
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            className={cn("w-full h-11 rounded-xl border px-4 text-sm focus:outline-none focus:ring-1 transition", inputBg)}
+                            className={cn("w-full h-11 rounded-full border px-4 text-sm focus:outline-none focus:ring-1 transition", inputBg)}
                             style={{ "--tw-ring-color": theme.primaryColor } as any}
                             placeholder="Seu nome completo"
                           />
@@ -824,7 +824,7 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                             type="tel"
                             value={formData.whatsapp}
                             onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
-                            className={cn("w-full h-11 rounded-xl border px-4 text-sm focus:outline-none focus:ring-1 transition", inputBg)}
+                            className={cn("w-full h-11 rounded-full border px-4 text-sm focus:outline-none focus:ring-1 transition", inputBg)}
                             placeholder="(11) 99999-9999"
                           />
                         </div>
@@ -835,25 +835,25 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                           type="email"
                           value={formData.email}
                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                          className={cn("w-full h-11 rounded-xl border px-4 text-sm focus:outline-none focus:ring-1 transition", inputBg)}
+                          className={cn("w-full h-11 rounded-full border px-4 text-sm focus:outline-none focus:ring-1 transition", inputBg)}
                           placeholder="exemplo@email.com"
                         />
                       </div>
                       {(dbServices.length > 0 || dbPackages.length > 0) && (
                         <div className="flex flex-col gap-2">
                           <label className="text-xs font-semibold opacity-70">Serviço, pacote ou plano</label>
-                          <div className={cn("w-full max-h-[160px] overflow-y-auto rounded-xl border p-3 flex flex-col gap-2 shadow-inner", inputBg)}>
+                          <div className={cn("w-full max-h-[160px] overflow-y-auto rounded-full border p-3 flex flex-col gap-2 shadow-inner", inputBg)}>
                             {dbServices.map((srv: any) => (
                               <label key={`srv-${srv.id}`} className="flex items-start gap-3 cursor-pointer hover:opacity-80 transition-opacity">
                                 <div className="pt-0.5">
-                                  <input 
+                                  <input
                                     type="checkbox"
                                     checked={selectedItems.includes(srv.name)}
                                     onChange={(e) => {
                                       if (e.target.checked) setSelectedItems(prev => [...prev, srv.name]);
                                       else setSelectedItems(prev => prev.filter(i => i !== srv.name));
                                     }}
-                                    className="w-4 h-4 rounded border-gray-300 shadow-sm transition-all focus:ring-1" 
+                                    className="w-4 h-4 rounded border-gray-300 shadow-sm transition-all focus:ring-1"
                                     style={{ accentColor: theme.primaryColor }}
                                   />
                                 </div>
@@ -866,7 +866,7 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                             {dbPackages.map((pkg: any) => (
                               <label key={`pkg-${pkg.id}`} className="flex items-start gap-3 cursor-pointer hover:opacity-80 transition-opacity mt-1">
                                 <div className="pt-0.5">
-                                  <input 
+                                  <input
                                     type="checkbox"
                                     checked={selectedItems.includes(pkg.name)}
                                     onChange={(e) => {
@@ -891,13 +891,13 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
                         <textarea
                           value={formData.message}
                           onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                          className={cn("w-full min-h-[100px] rounded-xl border p-4 text-sm focus:outline-none focus:ring-1 transition resize-none", inputBg)}
+                          className={cn("w-full min-h-[100px] rounded-full border p-4 text-sm focus:outline-none focus:ring-1 transition resize-none", inputBg)}
                           placeholder="Dúvidas, preferências de horário..."
                         />
                       </div>
                       <button
                         type="submit"
-                        className="mt-2 w-full h-12 rounded-xl text-white font-bold transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 shadow-sm"
+                        className="mt-2 w-full h-12 rounded-full text-white font-bold transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 shadow-sm"
                         style={{ backgroundColor: theme.primaryColor }}
                       >
                         <Whatsapp className="h-5 w-5" />

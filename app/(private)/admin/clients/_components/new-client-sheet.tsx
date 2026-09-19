@@ -25,7 +25,7 @@ export function NewClientSheet({ isOpen, onClose, onSuccess }: NewClientSheetPro
             Crie uma ficha básica ou preencha as opções avançadas.
           </SheetDescription>
         </SheetHeader>
-        
+
         <div className="p-4 sm:p-8">
           <ClientForm onSuccess={onSuccess} onCancel={onClose} />
         </div>

@@ -273,8 +273,8 @@ export function ClientHistory({ clientId }: { clientId: string }) {
       <CardContent className="px-0 pb-0 md:pb-6 md:px-6 flex flex-col">
         {isLoadingFirst ? (
           <div className="flex flex-col gap-5 py-2">
-            <div className="h-16 w-full bg-muted/30 animate-pulse rounded-xl" />
-            <div className="h-16 w-full bg-muted/30 animate-pulse rounded-xl" />
+            <div className="h-16 w-full bg-muted/30 animate-pulse rounded-full" />
+            <div className="h-16 w-full bg-muted/30 animate-pulse rounded-full" />
           </div>
         ) : isEmpty ? (
           <div className="flex flex-col items-center justify-center py-10 text-center bg-muted/10 rounded-2xl border border-dashed border-border">

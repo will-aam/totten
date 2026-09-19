@@ -24,23 +24,23 @@ type AppointmentOption = {
 
 type SearchResponse =
   | {
-      status: "FOUND";
-      appointment: {
-        id: string;
-        date_time: string;
-        service_name: string;
-        client_name: string;
-        package_info?: { used: number; total: number } | null;
-      };
-    }
-  | {
-      status: "NOT_FOUND";
-    }
-  | {
-      status: "MULTIPLE_FOUND";
-      clientName: string;
-      appointments: AppointmentOption[];
+    status: "FOUND";
+    appointment: {
+      id: string;
+      date_time: string;
+      service_name: string;
+      client_name: string;
+      package_info?: { used: number; total: number } | null;
     };
+  }
+  | {
+    status: "NOT_FOUND";
+  }
+  | {
+    status: "MULTIPLE_FOUND";
+    clientName: string;
+    appointments: AppointmentOption[];
+  };
 
 type CheckInResponse = {
   success: boolean;
@@ -275,12 +275,12 @@ export default function TotemCheckInContent() {
               <strong className="text-foreground font-bold">
                 {pendingAppointment
                   ? new Date(pendingAppointment.date_time).toLocaleTimeString(
-                      "pt-BR",
-                      {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      },
-                    )
+                    "pt-BR",
+                    {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    },
+                  )
                   : "--:--"}
               </strong>
               . Deseja fazer o check-in antecipado?
@@ -290,14 +290,14 @@ export default function TotemCheckInContent() {
             <Button
               variant="outline"
               size="lg"
-              className="w-full h-14 rounded-xl text-base font-semibold"
+              className="w-full h-14 rounded-full text-base font-semibold"
               onClick={() => setShowConfirmTime(false)}
             >
               Voltar
             </Button>
             <Button
               size="lg"
-              className="w-full h-14 rounded-xl text-base font-semibold"
+              className="w-full h-14 rounded-full text-base font-semibold"
               onClick={() =>
                 pendingAppointment && handleCheckIn(pendingAppointment)
               }

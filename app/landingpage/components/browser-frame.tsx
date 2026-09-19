@@ -6,7 +6,7 @@ export default function BrowserFrame({
   children: React.ReactNode;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-totten bg-card-totten shadow-2xl shadow-black/40">
+    <div className="overflow-hidden rounded-full border border-totten bg-card-totten shadow-2xl shadow-black/40">
       <div className="flex items-center gap-2 border-b border-totten bg-[#0c0c0e] px-3 py-2">
         <div className="flex gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-[#27272A]" />

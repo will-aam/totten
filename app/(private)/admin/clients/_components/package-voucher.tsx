@@ -205,7 +205,7 @@ export function PackageVoucher({
           <Button
             onClick={() => handleExport("share")}
             disabled={isExporting}
-            className="w-full rounded-full h-10 text-xs sm:text-sm active:scale-95 transition-transform"
+            className="w-full h-10 text-xs sm:text-sm active:scale-95 transition-transform"
           >
             {isExporting ? (
               <LoaderDots className="mr-2 h-4 w-4 animate-spin" />
@@ -218,7 +218,7 @@ export function PackageVoucher({
             variant="outline"
             onClick={() => handleExport("download")}
             disabled={isExporting}
-            className="w-full rounded-full border-border hover:bg-muted active:scale-95 transition-transform h-10 text-xs sm:text-sm"
+            className="w-full border-border hover:bg-muted active:scale-95 transition-transform h-10 text-xs sm:text-sm"
           >
             {isExporting ? (
               <LoaderDots className="mr-2 h-4 w-4 animate-spin" />

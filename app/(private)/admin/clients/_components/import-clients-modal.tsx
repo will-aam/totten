@@ -258,7 +258,7 @@ export function ImportClientsModal({
         <div className="p-6">
           {/* TELA DE COOLDOWN */}
           {cooldownRemaining > 0 ? (
-            <div className="flex flex-col items-center justify-center border border-border rounded-xl p-10 bg-muted/10 animate-in zoom-in-95 duration-300">
+            <div className="flex flex-col items-center justify-center border border-border rounded-full p-10 bg-muted/10 animate-in zoom-in-95 duration-300">
               <div className="h-16 w-16 bg-amber-500/10 text-amber-500 rounded-full flex items-center justify-center mb-4 relative">
                 <ClockDashedHalf size="md" className="animate-pulse" />
               </div>
@@ -274,7 +274,7 @@ export function ImportClientsModal({
               </div>
             </div>
           ) : step === 1 ? (
-            <div className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-xl p-10 bg-muted/5 transition-all hover:bg-muted/20">
+            <div className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-full p-10 bg-muted/5 transition-all hover:bg-muted/20">
               <input
                 type="file"
                 accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, text/plain"
@@ -301,7 +301,7 @@ export function ImportClientsModal({
                   variant="outline"
                   onClick={handleDownloadTemplate}
                   disabled={loading}
-                  className="rounded-xl px-6 h-11 border-border/60 shadow-sm"
+                  className="px-6 h-11 border-border/60 shadow-sm"
                 >
 
                   Baixar Modelo
@@ -309,7 +309,7 @@ export function ImportClientsModal({
                 <Button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={loading}
-                  className="rounded-xl px-8 h-11 shadow-sm"
+                  className="px-8 h-11 shadow-sm"
                 >
                   Procurar Arquivo
                 </Button>
@@ -336,7 +336,7 @@ export function ImportClientsModal({
                 {DB_FIELDS.map((field) => (
                   <div
                     key={field.key}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-muted/30 border border-border/50 rounded-xl"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-muted/30 border border-border/50 rounded-full"
                   >
                     <div className="flex flex-col">
                       <Label className="font-bold flex items-center gap-2 text-foreground">
@@ -362,8 +362,7 @@ export function ImportClientsModal({
                       }
                     >
                       <SelectTrigger
-                        className={cn(
-                          "w-full sm:w-55 h-10 rounded-lg",
+                        className={cn("w-full sm:w-55 h-10 rounded-lg",
                           !mapping[field.key] && field.required
                             ? "border-red-400 focus:ring-red-400"
                             : "",
@@ -399,14 +398,14 @@ export function ImportClientsModal({
               variant="ghost"
               onClick={handleClose}
               disabled={loading}
-              className="rounded-xl"
+              className=""
             >
               Cancelar
             </Button>
             <Button
               onClick={handleImport}
               disabled={loading}
-              className="rounded-xl font-bold px-8 shadow-md"
+              className="font-bold px-8 shadow-md"
             >
               {loading ? (
                 <>

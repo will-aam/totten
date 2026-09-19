@@ -43,7 +43,7 @@ export function FinanceSecondaryIndicators({
       {/* Recebido Hoje */}
       <div className={cardClasses}>
         <div className="absolute top-0 right-0 -mt-2 -mr-2 w-16 h-16 bg-emerald-500/10 blur-2xl rounded-full group-hover:bg-emerald-500/20 transition-all duration-500" />
-        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0 group-hover:scale-110 transition-transform duration-300">
+        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-500 shrink-0 group-hover:scale-110 transition-transform duration-300">
           <Calendar className="h-6 w-6 stroke-[1.5]" />
         </div>
         <div className="min-w-0 flex-1 flex flex-col gap-0.5 relative z-10">
@@ -59,7 +59,7 @@ export function FinanceSecondaryIndicators({
       {/* Recebido na Semana */}
       <div className={cardClasses}>
         <div className="absolute top-0 right-0 -mt-2 -mr-2 w-16 h-16 bg-blue-500/10 blur-2xl rounded-full group-hover:bg-blue-500/20 transition-all duration-500" />
-        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-500/10 text-blue-500 shrink-0 group-hover:scale-110 transition-transform duration-300">
+        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-500/10 text-blue-500 shrink-0 group-hover:scale-110 transition-transform duration-300">
           <CalendarDetail className="h-6 w-6 stroke-[1.5]" />
         </div>
         <div className="min-w-0 flex-1 flex flex-col gap-0.5 relative z-10">
@@ -75,7 +75,7 @@ export function FinanceSecondaryIndicators({
       {/* Quantidade de Pendentes */}
       <div className={cardClasses}>
         <div className="absolute top-0 right-0 -mt-2 -mr-2 w-16 h-16 bg-amber-500/10 blur-2xl rounded-full group-hover:bg-amber-500/20 transition-all duration-500" />
-        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-amber-500/10 text-amber-500 shrink-0 group-hover:scale-110 transition-transform duration-300">
+        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/10 text-amber-500 shrink-0 group-hover:scale-110 transition-transform duration-300">
           <AlertCircle className="h-6 w-6 stroke-[1.5]" />
         </div>
         <div className="min-w-0 flex-1 flex flex-col gap-0.5 relative z-10">
@@ -94,7 +94,7 @@ export function FinanceSecondaryIndicators({
       {/* Meio mais usado */}
       <div className={cardClasses}>
         <div className="absolute top-0 right-0 -mt-2 -mr-2 w-16 h-16 bg-purple-500/10 blur-2xl rounded-full group-hover:bg-purple-500/20 transition-all duration-500" />
-        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-purple-500/10 text-purple-500 shrink-0 group-hover:scale-110 transition-transform duration-300">
+        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-500/10 text-purple-500 shrink-0 group-hover:scale-110 transition-transform duration-300">
           <CreditCard className="h-6 w-6 stroke-[1.5]" />
         </div>
         <div className="min-w-0 flex-1 flex flex-col gap-0.5 relative z-10">

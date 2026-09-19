@@ -101,7 +101,7 @@ export default function FinanceDashboardPage() {
                 <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-emerald-500/20 blur-3xl rounded-full group-hover:bg-emerald-500/30 transition-all duration-500" />
 
                 <div className="flex items-center gap-5 relative z-10">
-                  <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                  <div className="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                     <WalletAlt size="md" />
                   </div>
                   <div className="flex flex-col">

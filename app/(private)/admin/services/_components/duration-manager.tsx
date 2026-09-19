@@ -154,7 +154,7 @@ export function DurationManager() {
                 setForm({ ...form, label: e.target.value });
                 setIsCustomLabel(true);
               }}
-              className="h-11 rounded-xl bg-muted/30 border-0 focus-visible:ring-1 focus-visible:ring-primary shadow-none"
+              className="h-11 bg-muted/30 border-0 focus-visible:ring-1 focus-visible:ring-primary shadow-none"
             />
           </div>
 
@@ -168,8 +168,7 @@ export function DurationManager() {
                   type="number"
                   value={form.hours}
                   onChange={(e) => handleTimeChange("hours", e.target.value)}
-                  className={cn(
-                    "h-11 pl-9 rounded-xl bg-muted/30 border-0 shadow-none focus-visible:ring-1 focus-visible:ring-primary",
+                  className={cn("h-11 pl-9 rounded-full bg-muted/30 border-0 shadow-none focus-visible:ring-1 focus-visible:ring-primary",
                     noSpinClass,
                   )}
                 />
@@ -188,8 +187,7 @@ export function DurationManager() {
                   type="number"
                   value={form.minutes}
                   onChange={(e) => handleTimeChange("minutes", e.target.value)}
-                  className={cn(
-                    "h-11 pl-9 rounded-xl bg-muted/30 border-0 shadow-none focus-visible:ring-1 focus-visible:ring-primary",
+                  className={cn("h-11 pl-9 rounded-full bg-muted/30 border-0 shadow-none focus-visible:ring-1 focus-visible:ring-primary",
                     noSpinClass,
                   )}
                 />
@@ -216,7 +214,7 @@ export function DurationManager() {
           <Button
             onClick={handleAdd}
             disabled={saving}
-            className="w-full sm:w-auto rounded-full px-6 h-11 active:scale-95 transition-transform"
+            className="w-full sm:w-auto px-6 h-11 active:scale-95 transition-transform"
           >
             {saving ? (
               <LoaderDots size="sm" className="animate-spin" />
@@ -239,13 +237,14 @@ export function DurationManager() {
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className="h-16 w-full bg-muted/30 animate-pulse rounded-xl"
+                className="h-16 w-full bg-muted/30 animate-pulse rounded-full"
               />
             ))}
           </div>
         ) : !durations || durations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/20 rounded-xl border border-dashed border-border">
-            <p className="text-sm text-muted-foreground">
+          <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/20 rounded-full border border-dashed border-border">
+            <img width="48" height="48" src="https://img.icons8.com/parakeet/48/question.png" alt="question" />
+            <p className="mt-4 text-sm font-medium text-muted-foreground">
               Nenhuma duração cadastrada.
             </p>
           </div>
@@ -254,7 +253,7 @@ export function DurationManager() {
             {durations.map((duration) => (
               <div
                 key={duration.id}
-                className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-muted/10 select-none transition-all active:scale-[0.98] active:bg-muted/30"
+                className="flex items-center justify-between p-4 rounded-full border border-border/50 bg-muted/10 select-none transition-all active:scale-[0.98] active:bg-muted/30"
               >
                 <div className="flex items-center gap-3">
                   <Timer size="sm" className="text-muted-foreground" />

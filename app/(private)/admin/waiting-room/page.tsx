@@ -81,17 +81,17 @@ export default function WaitingRoomPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2 mb-6">
-                    <div className="flex items-center justify-between bg-muted/40 p-2.5 rounded-xl">
+                    <div className="flex items-center justify-between bg-muted/40 p-2.5 rounded-full">
                       <span className="text-[10px] font-black uppercase text-muted-foreground">Serviço</span>
                       <span className="text-sm font-bold">{item.serviceName}</span>
                     </div>
-                    <div className="flex items-center justify-between bg-muted/40 p-2.5 rounded-xl">
+                    <div className="flex items-center justify-between bg-muted/40 p-2.5 rounded-full">
                       <span className="text-[10px] font-black uppercase text-muted-foreground">Profissional</span>
                       <span className="text-sm font-bold">{item.professionalName}</span>
                     </div>
-                    <div className="flex items-center justify-between bg-amber-500/10 p-2.5 rounded-xl text-amber-600 dark:text-amber-500">
+                    <div className="flex items-center justify-between bg-amber-500/10 p-2.5 rounded-full text-amber-600 dark:text-amber-500">
                       <span className="text-[10px] font-black uppercase flex items-center gap-1">
                         <Timer className="h-3 w-3" /> Espera
                       </span>

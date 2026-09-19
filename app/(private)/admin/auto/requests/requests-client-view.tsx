@@ -83,7 +83,7 @@ export function RequestsClientView({ initialRequests }: { initialRequests: any[]
                   </div>
 
                   {req.observations && (
-                    <div className="mt-3 bg-muted/50 p-3 rounded-xl border border-border text-xs text-muted-foreground">
+                    <div className="mt-3 bg-muted/50 p-3 rounded-full border border-border text-xs text-muted-foreground">
                       <span className="font-semibold block mb-1 text-foreground">Observações do Cliente:</span>
                       <p className="italic line-clamp-3">{req.observations}</p>
                     </div>
@@ -93,14 +93,14 @@ export function RequestsClientView({ initialRequests }: { initialRequests: any[]
                 <div className="grid grid-cols-2 gap-3 mt-auto">
                   <Button
                     variant="outline"
-                    className="w-full font-bold h-10 rounded-xl"
+                    className="w-full font-bold h-10"
                     disabled={loadingId === req.id}
                     onClick={() => handleStatusChange(req.id, "cancelado")}
                   >
                     {loadingId === req.id ? "Processando..." : <><X className="w-4 h-4 mr-1.5" /> Recusar</>}
                   </Button>
                   <Button
-                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-10 rounded-xl"
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-10"
                     disabled={loadingId === req.id}
                     onClick={() => handleStatusChange(req.id, "aprovado")}
                   >

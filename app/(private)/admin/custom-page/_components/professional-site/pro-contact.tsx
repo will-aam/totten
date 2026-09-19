@@ -122,7 +122,7 @@ export function ProContact({ data, onChange, globalContact }: any) {
 
       <div className="flex flex-col gap-6">
         {/* CEP */}
-        <div className="flex flex-col gap-3 p-4 border border-border/50 rounded-xl bg-muted/10">
+        <div className="flex flex-col gap-3 p-4 border border-border/50 rounded-2xl bg-muted/10">
           <Label className="text-sm font-medium">1. Buscar Endereço (CEP)</Label>
           <div className="flex gap-2">
             <Input
@@ -176,7 +176,7 @@ export function ProContact({ data, onChange, globalContact }: any) {
         <div className="w-full h-px bg-border/50" />
 
         {/* HORÁRIO */}
-        <div className="flex flex-col gap-4 p-5 border border-border/50 rounded-xl bg-muted/10">
+        <div className="flex flex-col gap-4 p-5 border border-border/50 rounded-full bg-muted/10">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <Label className="text-foreground font-medium flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />

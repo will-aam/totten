@@ -239,7 +239,7 @@ function StockPageContent() {
             <Button
               variant="outline"
               size="icon"
-              className="md:hidden rounded-full shrink-0 border-border"
+              className="md:hidden shrink-0 border-border"
               onClick={() => setIsFilterOpen(true)}
             >
               <Filter className="h-4 w-4" />
@@ -249,14 +249,14 @@ function StockPageContent() {
             <Button
               onClick={handleExportExcel}
               variant="outline"
-              className="h-12 px-4 rounded-full font-medium shadow-sm border-border"
+              className="h-12 px-4 font-medium shadow-sm border-border"
             >
               <FolderDownArrow className="mr-2 h-4 w-4" /> Exportar
             </Button>
 
             <Button
               onClick={() => setIsModalOpen(true)}
-              className="h-12 px-8 rounded-full font-medium shadow-sm"
+              className="h-12 px-8 font-medium shadow-sm"
             >
               <Plus className="mr-2 h-4 w-4" /> Cadastrar
             </Button>
@@ -331,8 +331,11 @@ function StockPageContent() {
                 />
               ))}
               {paginatedItems.length === 0 && (
-                <div className="py-12 text-center text-muted-foreground">
-                  Nenhum item encontrado.
+                <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/30 rounded-lg border border-dashed border-border mt-4">
+                  <img width="48" height="48" src="https://img.icons8.com/parakeet/48/question.png" alt="question" />
+                  <p className="mt-4 text-sm font-medium text-muted-foreground">
+                    Nenhum insumo encontrado.
+                  </p>
                 </div>
               )}
             </div>
@@ -443,7 +446,7 @@ function StockPageContent() {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
-              className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90 font-bold m-0"
+              className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 font-bold m-0"
             >
               Sim, excluir
             </AlertDialogAction>

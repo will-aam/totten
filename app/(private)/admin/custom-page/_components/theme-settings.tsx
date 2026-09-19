@@ -132,7 +132,7 @@ export function ThemeSettings({ data, onChange }: any) {
                 key={theme.id}
                 onClick={() => handleThemeChange(theme)}
                 className={cn(
-                  "relative flex flex-col items-center gap-2 rounded-xl border-2 p-2 transition-all outline-none shrink-0 w-[120px] sm:w-auto",
+                  "relative flex flex-col items-center gap-2 rounded-full border-2 p-2 transition-all outline-none shrink-0 w-[120px] sm:w-auto",
                   data.id === theme.id
                     ? "border-primary bg-primary/5"
                     : "border-border/50 bg-card hover:border-primary/50",
@@ -169,7 +169,7 @@ export function ThemeSettings({ data, onChange }: any) {
             <button
               onClick={setCustomTheme}
               className={cn(
-                "relative flex flex-col items-center gap-2 rounded-xl border-2 p-2 transition-all outline-none shrink-0 w-[120px] sm:w-auto",
+                "relative flex flex-col items-center gap-2 rounded-full border-2 p-2 transition-all outline-none shrink-0 w-[120px] sm:w-auto",
                 data.id === "custom"
                   ? "border-primary bg-primary/5"
                   : "border-border/50 bg-card hover:border-primary/50",
@@ -239,12 +239,12 @@ export function ThemeSettings({ data, onChange }: any) {
             {/* Efeitos de Fundo (Wallpaper) */}
             <div className="flex flex-col gap-3 mt-2">
               <Label className="text-foreground font-semibold mb-1">2.3 Efeitos Adicionais</Label>
-              
+
               <div className="flex flex-col gap-3">
                 <div
                   onClick={() => onChange({ ...data, bgNoise: !data.bgNoise })}
                   className={cn(
-                    "flex items-center gap-3 bg-card hover:bg-muted/50 p-4 rounded-xl border transition-all cursor-pointer shadow-sm",
+                    "flex items-center gap-3 bg-card hover:bg-muted/50 p-4 rounded-full border transition-all cursor-pointer shadow-sm",
                     data.bgNoise ? "border-primary bg-primary/5" : "border-border/50"
                   )}
                 >
@@ -259,7 +259,7 @@ export function ThemeSettings({ data, onChange }: any) {
                   </Label>
                 </div>
 
-                <div className="flex flex-col gap-3 bg-card p-4 rounded-xl border border-border/50 shadow-sm">
+                <div className="flex flex-col gap-3 bg-card p-4 rounded-full border border-border/50 shadow-sm">
                   <Label className="text-sm font-medium">Intensidade do Borrão (Blur)</Label>
                   <Select
                     value={data.bgBlur === true ? "3xl" : (data.bgBlur || "none")}
@@ -360,12 +360,12 @@ export function ThemeSettings({ data, onChange }: any) {
             {/* Efeitos de Fundo */}
             <div className="flex flex-col gap-3 mt-2">
               <Label className="text-foreground font-semibold mb-1">2.3 Efeitos Adicionais</Label>
-              
+
               <div className="flex flex-col gap-3">
                 <div
                   onClick={() => onChange({ ...data, bgNoise: !data.bgNoise })}
                   className={cn(
-                    "flex items-center gap-3 bg-card hover:bg-muted/50 p-4 rounded-xl border transition-all cursor-pointer shadow-sm",
+                    "flex items-center gap-3 bg-card hover:bg-muted/50 p-4 rounded-full border transition-all cursor-pointer shadow-sm",
                     data.bgNoise ? "border-primary bg-primary/5" : "border-border/50"
                   )}
                 >
@@ -380,7 +380,7 @@ export function ThemeSettings({ data, onChange }: any) {
                   </Label>
                 </div>
 
-                <div className="flex flex-col gap-3 bg-card p-4 rounded-xl border border-border/50 shadow-sm">
+                <div className="flex flex-col gap-3 bg-card p-4 rounded-full border border-border/50 shadow-sm">
                   <Label className="text-sm font-medium">Intensidade do Borrão (Blur)</Label>
                   <Select
                     value={data.bgBlur === true ? "3xl" : (data.bgBlur || "none")}

@@ -117,7 +117,7 @@ function TimeSelect({
       <SelectTrigger className="h-9 w-28 border-border bg-transparent shadow-sm focus:ring-1 focus:ring-ring">
         <SelectValue placeholder="--:--" />
       </SelectTrigger>
-      <SelectContent className="max-h-64">
+      <SelectContent className="max-h-64 rounded-2xl">
         {TIME_OPTIONS.map((t) => (
           <SelectItem key={t} value={t}>
             {t}
@@ -144,8 +144,7 @@ function DatePicker({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className={cn(
-            "h-9 w-45 justify-start gap-2 font-normal",
+          className={cn("h-9 w-45 justify-start gap-2 font-normal",
             !value && "text-muted-foreground",
           )}
         >
@@ -338,7 +337,7 @@ function MobileWeeklySchedule({ form }: { form: any }) {
                 type="button"
                 onClick={() => toggleDay(day.id)}
                 className={cn(
-                  "flex h-12 flex-1 items-center justify-center rounded-xl border text-sm font-medium transition-all min-w-[3.5rem] px-2",
+                  "flex h-12 flex-1 items-center justify-center rounded-full border text-sm font-medium transition-all min-w-[3.5rem] px-2",
                   isSelected
                     ? "bg-primary text-primary-foreground border-primary shadow-sm"
                     : "bg-background text-muted-foreground border-border hover:bg-muted"
@@ -351,16 +350,16 @@ function MobileWeeklySchedule({ form }: { form: any }) {
         </div>
 
         <div className="flex flex-wrap gap-2 pt-2">
-          <Button type="button" variant="outline" size="sm" className="rounded-full text-xs" onClick={() => applyPreset("seg-sex")}>
+          <Button type="button" variant="outline" size="sm" className="text-xs" onClick={() => applyPreset("seg-sex")}>
             Seg a Sex
           </Button>
-          <Button type="button" variant="outline" size="sm" className="rounded-full text-xs" onClick={() => applyPreset("seg-sab")}>
+          <Button type="button" variant="outline" size="sm" className="text-xs" onClick={() => applyPreset("seg-sab")}>
             Seg a Sáb
           </Button>
-          <Button type="button" variant="outline" size="sm" className="rounded-full text-xs" onClick={() => applyPreset("todos")}>
+          <Button type="button" variant="outline" size="sm" className="text-xs" onClick={() => applyPreset("todos")}>
             Todos
           </Button>
-          <Button type="button" variant="ghost" size="sm" className="rounded-full text-xs text-muted-foreground" onClick={() => applyPreset("limpar")}>
+          <Button type="button" variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => applyPreset("limpar")}>
             Limpar
           </Button>
         </div>
@@ -589,7 +588,7 @@ function ScheduleRuleEditor({
                   {exceptionFields.map((field, index) => {
                     const isOpen = form.watch(`exceptions.${index}.isOpen`);
                     return (
-                      <div key={field.id} className="p-4 rounded-xl border bg-card">
+                      <div key={field.id} className="p-4 rounded-full border bg-card">
                         <div className="flex items-center justify-between gap-4">
                           <div className="flex flex-wrap items-center gap-4">
                             <FormField
@@ -729,7 +728,7 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
           {scheduleRules.map((rule: any) => (
             <div
               key={rule.id}
-              className="flex items-center justify-between p-4 rounded-xl border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
+              className="flex items-center justify-between p-4 rounded-full border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
               onClick={() => {
                 setSelectedRule(rule);
                 setIsEditorOpen(true);
@@ -799,7 +798,7 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
                       <Input
                         type="number"
                         min="1"
-                        className="rounded-xl bg-muted/40 border-none h-11 font-bold max-w-xs"
+                        className="bg-muted/40 border-none h-11 font-bold max-w-xs"
                         {...field}
                       />
                     </FormControl>
@@ -818,7 +817,7 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
                     </CardDescription>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger className="rounded-xl bg-muted/40 border-none h-11 max-w-xs">
+                        <SelectTrigger className="bg-muted/40 border-none h-11 max-w-xs">
                           <SelectValue placeholder="Selecione o intervalo" />
                         </SelectTrigger>
                       </FormControl>
@@ -847,7 +846,7 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
                       <FormControl>
                         <Input
                           type="time"
-                          className="rounded-xl bg-muted/40 border-none h-11"
+                          className="bg-muted/40 border-none h-11"
                           {...field}
                         />
                       </FormControl>
@@ -866,7 +865,7 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
                       <FormControl>
                         <Input
                           type="time"
-                          className="rounded-xl bg-muted/40 border-none h-11"
+                          className="bg-muted/40 border-none h-11"
                           {...field}
                         />
                       </FormControl>
@@ -879,7 +878,7 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
                 control={form.control}
                 name="allowOverLimitAppointments"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-xl border p-4 shadow-sm bg-card">
+                  <FormItem className="flex flex-row items-center justify-between rounded-full border p-4 shadow-sm bg-card">
                     <div className="space-y-0.5">
                       <FormLabel className="text-base font-bold">
                         Permitir agendamentos além do horário de fechamento
@@ -899,7 +898,7 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
               />
 
               <div className="flex justify-end pt-4">
-                <Button type="submit" size="lg" disabled={isPending} className="w-full sm:w-auto h-12 rounded-xl">
+                <Button type="submit" size="lg" disabled={isPending} className="w-full sm:w-auto h-12">
                   {isPending && <LoaderLines className="mr-2 h-4 w-4 animate-spin" />}
                   Salvar Regras Globais
                 </Button>

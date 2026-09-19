@@ -131,113 +131,113 @@ export function NewBlockModal({
   return (
     <ResponsiveModal open={open} onOpenChange={onOpenChange} title="Bloquear Horário">
       <div className="grid gap-5 py-4">
-          {isOwner && (
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                Profissional
-              </Label>
-              <Select value={professionalId} onValueChange={setProfessionalId}>
-                <SelectTrigger className="bg-muted/40 border-none rounded-2xl h-12 transition-all">
-                  <User className="mr-2 h-4 w-4 text-primary" />
-                  <SelectValue placeholder="Selecione o profissional" />
-                </SelectTrigger>
-                <SelectContent className="rounded-2xl border border-border/50 bg-background shadow-xl">
-                  <SelectItem value={session?.user?.id || ""} className="rounded-xl py-2 font-medium">
-                    Admin
+        {isOwner && (
+          <div className="space-y-1.5">
+            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+              Profissional
+            </Label>
+            <Select value={professionalId} onValueChange={setProfessionalId}>
+              <SelectTrigger className="bg-muted/40 border-none h-12 transition-all">
+                <User className="mr-2 h-4 w-4 text-primary" />
+                <SelectValue placeholder="Selecione o profissional" />
+              </SelectTrigger>
+              <SelectContent className="border border-border/50 bg-background shadow-xl rounded-2xl">
+                <SelectItem value={session?.user?.id || ""} className="rounded-full py-2 font-medium">
+                  Admin
+                </SelectItem>
+                {team.filter((m) => m.id !== session?.user?.id).map((member) => (
+                  <SelectItem key={member.id} value={member.id} className="rounded-full py-2 font-medium">
+                    {member.display_name}
                   </SelectItem>
-                  {team.filter((m) => m.id !== session?.user?.id).map((member) => (
-                    <SelectItem key={member.id} value={member.id} className="rounded-xl py-2 font-medium">
-                      {member.display_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        <div className="space-y-1.5">
+          <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+            Motivo / Título
+          </Label>
+          <Input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Ex: Almoço, Reunião"
+            className="bg-muted/40 border-none h-12 font-bold px-4"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+            Data
+          </Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full bg-muted/40 border-none justify-start h-12 transition-all font-medium">
+                <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
+                {date ? format(date, "dd/MM/yy") : "Selecione"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0 border-none shadow-2xl rounded-3xl" align="start">
+              <Calendar mode="single" selected={date} onSelect={setDate} locale={ptBR} initialFocus />
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+              Início
+            </Label>
+            <Select value={startTime} onValueChange={setStartTime}>
+              <SelectTrigger className="bg-muted/40 border-none h-12 transition-all font-medium">
+                <Clock className="mr-2 h-4 w-4 text-primary" />
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent className="border border-border/50 bg-background max-h-48 shadow-xl rounded-2xl">
+                {TIME_SLOTS.map((slot) => (
+                  <SelectItem key={slot} value={slot} className="rounded-lg font-medium py-2">{slot}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           <div className="space-y-1.5">
             <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-              Motivo / Título
+              Fim
             </Label>
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ex: Almoço, Reunião"
-              className="bg-muted/40 border-none rounded-2xl h-12 font-bold px-4"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-              Data
-            </Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full rounded-2xl bg-muted/40 border-none justify-start h-12 transition-all font-medium">
-                  <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
-                  {date ? format(date, "dd/MM/yy") : "Selecione"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 border-none shadow-2xl rounded-3xl" align="start">
-                <Calendar mode="single" selected={date} onSelect={setDate} locale={ptBR} initialFocus />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                Início
-              </Label>
-              <Select value={startTime} onValueChange={setStartTime}>
-                <SelectTrigger className="rounded-2xl bg-muted/40 border-none h-12 transition-all font-medium">
-                  <Clock className="mr-2 h-4 w-4 text-primary" />
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent className="rounded-2xl border border-border/50 bg-background max-h-48 shadow-xl">
-                  {TIME_SLOTS.map((slot) => (
-                    <SelectItem key={slot} value={slot} className="rounded-lg font-medium py-2">{slot}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                Fim
-              </Label>
-              <Select value={endTime} onValueChange={setEndTime}>
-                <SelectTrigger className="rounded-2xl bg-muted/40 border-none h-12 transition-all font-medium">
-                  <Clock className="mr-2 h-4 w-4 text-primary" />
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent className="rounded-2xl border border-border/50 bg-background max-h-48 shadow-xl">
-                  {TIME_SLOTS.map((slot) => (
-                    <SelectItem key={slot} value={slot} className="rounded-lg font-medium py-2">{slot}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Select value={endTime} onValueChange={setEndTime}>
+              <SelectTrigger className="bg-muted/40 border-none h-12 transition-all font-medium">
+                <Clock className="mr-2 h-4 w-4 text-primary" />
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent className="border border-border/50 bg-background max-h-48 shadow-xl rounded-2xl">
+                {TIME_SLOTS.map((slot) => (
+                  <SelectItem key={slot} value={slot} className="rounded-lg font-medium py-2">{slot}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
+      </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 pt-2 pb-2 mt-4">
-          <Button
-            variant="secondary"
-            onClick={() => onOpenChange(false)}
-            disabled={saving}
-            className="rounded-2xl h-12 font-bold w-full sm:w-1/2"
-          >
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="rounded-2xl h-12 font-black bg-primary text-primary-foreground w-full sm:w-1/2 active:scale-[0.98] transition-all"
-          >
-            {saving ? <LoaderDots className="mr-2 h-5 w-5 animate-spin" /> : "Bloquear"}
-          </Button>
-        </div>
+      <div className="flex flex-col sm:flex-row gap-3 pt-2 pb-2 mt-4">
+        <Button
+          variant="secondary"
+          onClick={() => onOpenChange(false)}
+          disabled={saving}
+          className="h-12 font-bold w-full sm:w-1/2"
+        >
+          Cancelar
+        </Button>
+        <Button
+          onClick={handleSave}
+          disabled={saving}
+          className="h-12 font-black bg-primary text-primary-foreground w-full sm:w-1/2 active:scale-[0.98] transition-all"
+        >
+          {saving ? <LoaderDots className="mr-2 h-5 w-5 animate-spin" /> : "Bloquear"}
+        </Button>
+      </div>
     </ResponsiveModal>
   );
 }

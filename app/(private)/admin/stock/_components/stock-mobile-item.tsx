@@ -61,7 +61,7 @@ export function StockMobileItem({
           variant="ghost"
           size="icon"
           onClick={() => onDelete(item.id)}
-          className="h-9 w-9 shrink-0 text-muted-foreground hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-full"
+          className="h-9 w-9 shrink-0 text-muted-foreground hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50"
         >
           <Trash className="h-4 w-4" />
         </Button>
@@ -80,8 +80,7 @@ export function StockMobileItem({
             <Input
               type="number"
               step="0.01"
-              className={cn(
-                "h-10 pl-9 bg-muted/40 border-none text-sm font-semibold",
+              className={cn("h-10 pl-9 bg-muted/40 border-none text-sm font-semibold",
                 hideArrowsClass,
               )}
               defaultValue={item.unit_cost}
@@ -102,8 +101,7 @@ export function StockMobileItem({
           <Input
             type="number"
             step="0.1"
-            className={cn(
-              "h-10 text-center font-bold bg-muted/40 border-none text-base",
+            className={cn("h-10 text-center font-bold bg-muted/40 border-none text-base",
               hideArrowsClass,
             )}
             defaultValue={item.quantity}

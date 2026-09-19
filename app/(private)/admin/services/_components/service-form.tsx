@@ -239,7 +239,7 @@ export function ServiceForm({ onSuccess, onCancel }: ServiceFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-8 mt-2">
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 xl:gap-12 items-start">
+      <div className="flex flex-col gap-8 items-start">
         {/* COLUNA ESQUERDA: Informações do Serviço */}
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-1 border-b border-border/50 pb-3">
@@ -372,7 +372,7 @@ export function ServiceForm({ onSuccess, onCancel }: ServiceFormProps) {
             />
           </div>
 
-          <div className="flex flex-col gap-3 p-4 border border-border/50 rounded-xl bg-muted/10">
+          <div className="flex flex-col gap-3 p-4 border border-border/50 rounded-2xl bg-muted/10">
             <Label className="text-foreground font-medium flex items-center gap-2">
               <Image className="h-4 w-4 text-muted-foreground" />
               Imagem do Serviço (Opcional)
@@ -464,7 +464,7 @@ export function ServiceForm({ onSuccess, onCancel }: ServiceFormProps) {
 
           {/* MÓDULO HÍBRIDO DE CUSTO */}
           <div className="flex flex-col gap-4 mt-2">
-            <div className="flex items-center justify-between border border-border/60 p-3.5 rounded-xl bg-card hover:border-primary/30 transition-colors shadow-sm">
+            <div className="flex items-center justify-between border border-border/60 p-3.5 rounded-2xl bg-card hover:border-primary/30 transition-colors shadow-sm">
               <div className="flex flex-col gap-1 pr-4">
                 <Label className="flex items-center gap-2 text-foreground font-semibold cursor-pointer text-sm">
                   <Box
@@ -616,7 +616,7 @@ export function ServiceForm({ onSuccess, onCancel }: ServiceFormProps) {
           <Button
             variant="ghost"
             type="button"
-            className="hidden sm:flex text-muted-foreground rounded-full md:rounded-xl px-6"
+            className="hidden sm:flex text-muted-foreground md: px-6"
             onClick={onCancel}
           >
             Cancelar
@@ -626,7 +626,7 @@ export function ServiceForm({ onSuccess, onCancel }: ServiceFormProps) {
             asChild
             variant="ghost"
             type="button"
-            className="hidden sm:flex text-muted-foreground rounded-full md:rounded-xl px-6"
+            className="hidden sm:flex text-muted-foreground md: px-6"
           >
             <Link href="/admin/services">Cancelar</Link>
           </Button>
@@ -635,7 +635,7 @@ export function ServiceForm({ onSuccess, onCancel }: ServiceFormProps) {
           type="submit"
           size="lg"
           disabled={loading}
-          className="w-full sm:w-auto rounded-full md:rounded-xl shadow-sm hover:shadow-md transition-all active:scale-[0.98] px-8 h-12"
+          className="w-full sm:w-auto md: shadow-sm hover:shadow-md transition-all active:scale-[0.98] px-8 h-12"
         >
           {loading ? (
             <LoaderDots size="sm" className="animate-spin mr-2" />

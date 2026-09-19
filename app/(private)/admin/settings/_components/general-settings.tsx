@@ -63,17 +63,17 @@ export function GeneralSettings() {
       toast.error("CEP inválido (deve conter 8 dígitos)");
       return;
     }
-    
+
     setSearchingCep(true);
     try {
       const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
       const data = await response.json();
-      
+
       if (data.erro) {
         toast.error("CEP não encontrado");
         return;
       }
-      
+
       const newAddress = `${data.logradouro},  - ${data.bairro}, ${data.localidade}/${data.uf}`;
       setFormData(prev => ({ ...prev, address: newAddress }));
       toast.success("Endereço preenchido! Complete com o número.");
@@ -224,7 +224,7 @@ export function GeneralSettings() {
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="h-12 px-8 rounded-xl font-medium shadow-sm"
+              className="h-12 px-8 font-medium shadow-sm"
             >
               {saving ? (
                 <>
@@ -326,8 +326,8 @@ export function GeneralSettings() {
             </div>
           </div>
         </div>
-        
-        <div className="flex flex-col gap-4 mt-2 p-4 rounded-xl border border-border/50 bg-muted/10">
+
+        <div className="flex flex-col gap-4 mt-2 p-4 rounded-full border border-border/50 bg-muted/10">
           <div className="grid gap-2">
             <Label htmlFor="cep">Buscar por CEP</Label>
             <div className="flex gap-2">

@@ -19,7 +19,7 @@ export function ClientHeader({ client }: { client: ClientHeaderType }) {
           asChild
           variant="ghost"
           size="icon"
-          className="rounded-full h-10 w-10 md:h-11 md:w-11 shrink-0 text-muted-foreground hover:bg-muted/50 transition-colors"
+          className="h-10 w-10 md:h-11 md:w-11 shrink-0 text-muted-foreground hover:bg-muted/50 transition-colors"
         >
           <Link href="/admin/clients">
             <ChevronLeft

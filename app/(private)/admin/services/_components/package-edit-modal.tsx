@@ -228,175 +228,171 @@ export const PackageEditModal = memo(
         {/* BODY */}
         <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-border/80 [&::-webkit-scrollbar-thumb]:rounded-full">
           <div className="p-6 space-y-5">
+            <div className="space-y-1.5">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 ml-1">
+                <Rename size="xs" /> Nome do Pacote
+              </Label>
+              <Input
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                placeholder="Ex: Pacote Verão"
+                className="h-12 bg-muted/40 border-none font-bold focus-visible:ring-primary/20"
+              />
+            </div>
+
+            {/* Exibição do Serviço Base (Somente Leitura) */}
+            <div className="space-y-1.5 opacity-70 pointer-events-none select-none">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 ml-1">
+                <Cog size="xs" /> Serviço Base Vinculado
+              </Label>
+              <Input
+                value={serviceName}
+                disabled
+                className="h-12 bg-muted/40 border-none font-bold text-muted-foreground"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 ml-1">
-                  <Rename size="xs" /> Nome do Pacote
-                </Label>
-                <Input
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  placeholder="Ex: Pacote Verão"
-                  className="rounded-2xl h-12 bg-muted/40 border-none font-bold focus-visible:ring-primary/20"
-                />
-              </div>
-
-              {/* Exibição do Serviço Base (Somente Leitura) */}
-              <div className="space-y-1.5 opacity-70 pointer-events-none select-none">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 ml-1">
-                  <Cog size="xs" /> Serviço Base Vinculado
-                </Label>
-                <Input
-                  value={serviceName}
-                  disabled
-                  className="rounded-2xl h-12 bg-muted/40 border-none font-bold text-muted-foreground"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 ml-1">
-                    <Layers size="xs" /> Sessões
-                  </Label>
-                  <Input
-                    type="number"
-                    value={formData.total_sessions}
-                    onChange={(e) =>
-                      setFormData({ ...formData, total_sessions: e.target.value })
-                    }
-                    className={cn(
-                      "rounded-2xl h-12 bg-muted/40 border-none font-bold focus-visible:ring-primary/20",
-                      noSpinClass,
-                    )}
-                    placeholder="Ex: 10"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 ml-1">
-                    <Dollar size="xs" /> Preço (R$)
-                  </Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.price}
-                    onChange={(e) =>
-                      setFormData({ ...formData, price: e.target.value })
-                    }
-                    className={cn(
-                      "rounded-2xl h-12 bg-muted/40 border-none font-bold focus-visible:ring-primary/20",
-                      noSpinClass,
-                    )}
-                    placeholder="Ex: 150.00"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 ml-1">
-                  <CalendarDetail size="xs" /> Validade (dias)
+                  <Layers size="xs" /> Sessões
                 </Label>
                 <Input
                   type="number"
-                  placeholder="Deixe em branco para vitalício..."
-                  value={formData.validity_days}
+                  value={formData.total_sessions}
                   onChange={(e) =>
-                    setFormData({ ...formData, validity_days: e.target.value })
+                    setFormData({ ...formData, total_sessions: e.target.value })
                   }
-                  className={cn(
-                    "rounded-2xl h-12 bg-muted/40 border-none font-bold focus-visible:ring-primary/20",
+                  className={cn("rounded-2xl h-12 bg-muted/40 border-none font-bold focus-visible:ring-primary/20",
                     noSpinClass,
                   )}
+                  placeholder="Ex: 10"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                  Descrição Interna
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 ml-1">
+                  <Dollar size="xs" /> Preço (R$)
                 </Label>
-                <Textarea
-                  value={formData.description}
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={formData.price}
                   onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
+                    setFormData({ ...formData, price: e.target.value })
                   }
-                  className="h-20 resize-none rounded-2xl bg-muted/40 border-none font-medium p-4 focus-visible:ring-primary/20"
-                  placeholder="Anotações sobre este pacote..."
+                  className={cn("rounded-2xl h-12 bg-muted/40 border-none font-bold focus-visible:ring-primary/20",
+                    noSpinClass,
+                  )}
+                  placeholder="Ex: 150.00"
                 />
               </div>
+            </div>
 
-              <div className="flex flex-col gap-2 justify-end pb-1">
-                <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/50 bg-background hover:bg-muted/30 transition-colors">
-                  <div className="flex flex-col">
-                    <Label className="flex items-center gap-1.5 text-foreground font-medium text-sm cursor-pointer" onClick={() => setFormData({ ...formData, available_online: !formData.available_online })}>
-                      Agendamento Online
-                    </Label>
-                    <span className="text-[11px] text-muted-foreground mt-0.5">
-                      Mostrar este pacote no site
-                    </span>
-                  </div>
-                  <Switch checked={formData.available_online} onCheckedChange={(checked) => setFormData({ ...formData, available_online: checked })} />
+            <div className="space-y-1.5">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 ml-1">
+                <CalendarDetail size="xs" /> Validade (dias)
+              </Label>
+              <Input
+                type="number"
+                placeholder="Deixe em branco para vitalício..."
+                value={formData.validity_days}
+                onChange={(e) =>
+                  setFormData({ ...formData, validity_days: e.target.value })
+                }
+                className={cn("rounded-2xl h-12 bg-muted/40 border-none font-bold focus-visible:ring-primary/20",
+                  noSpinClass,
+                )}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                Descrição Interna
+              </Label>
+              <Textarea
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                className="h-20 resize-none bg-muted/40 border-none font-medium p-4 focus-visible:ring-primary/20"
+                placeholder="Anotações sobre este pacote..."
+              />
+            </div>
+
+            <div className="flex flex-col gap-2 justify-end pb-1">
+              <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/50 bg-background hover:bg-muted/30 transition-colors">
+                <div className="flex flex-col">
+                  <Label className="flex items-center gap-1.5 text-foreground font-medium text-sm cursor-pointer" onClick={() => setFormData({ ...formData, available_online: !formData.available_online })}>
+                    Agendamento Online
+                  </Label>
+                  <span className="text-[11px] text-muted-foreground mt-0.5">
+                    Mostrar este pacote no site
+                  </span>
                 </div>
+                <Switch checked={formData.available_online} onCheckedChange={(checked) => setFormData({ ...formData, available_online: checked })} />
               </div>
+            </div>
           </div>
         </div>
 
         {/* FOOTER */}
         <div className="p-6 border-t border-border/40 flex flex-col-reverse sm:flex-row gap-3 bg-muted/10 shrink-0 mt-auto">
-              <div className="flex gap-2 w-full sm:w-auto">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="text-destructive hover:bg-destructive/10 border-destructive/20 rounded-2xl h-12 w-12 flex items-center justify-center shrink-0"
-                  onClick={() => setConfirmDelete(true)}
-                  disabled={loading}
-                >
-                  <Trash size="sm" />
-                </Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button
+              type="button"
+              variant="outline"
+              className="text-destructive hover:bg-destructive/10 border-destructive/20 h-12 w-12 flex items-center justify-center shrink-0"
+              onClick={() => setConfirmDelete(true)}
+              disabled={loading}
+            >
+              <Trash size="sm" />
+            </Button>
 
-                <Button
-                  type="button"
-                  variant={isPackageActive ? "outline" : "secondary"}
-                  className={cn(
-                    "rounded-2xl h-12 px-6 font-bold flex-1 sm:flex-none",
-                    isPackageActive
-                      ? "text-destructive hover:bg-destructive/10 border-destructive/20"
-                      : "text-emerald-600 bg-emerald-500/10 hover:bg-emerald-500/20",
-                    !isPackageActive &&
-                    !isServiceActive &&
-                    "opacity-50 cursor-not-allowed",
-                  )}
-                  onClick={handleToggleStatus}
-                  disabled={loading || (!isPackageActive && !isServiceActive)}
-                >
-                  {loading ? (
-                    <LoaderDots size="sm" className="animate-spin" />
-                  ) : isPackageActive ? (
-                    <>
-                      <Power size="sm" className="mr-2" /> Desativar
-                    </>
-                  ) : (
-                    <>
-                      <Power size="sm" className="mr-2" /> Ativar
-                    </>
-                  )}
-                </Button>
-              </div>
+            <Button
+              type="button"
+              variant={isPackageActive ? "outline" : "secondary"}
+              className={cn("rounded-2xl h-12 px-6 font-bold flex-1 sm:flex-none",
+                isPackageActive
+                  ? "text-destructive hover:bg-destructive/10 border-destructive/20"
+                  : "text-emerald-600 bg-emerald-500/10 hover:bg-emerald-500/20",
+                !isPackageActive &&
+                !isServiceActive &&
+                "opacity-50 cursor-not-allowed",
+              )}
+              onClick={handleToggleStatus}
+              disabled={loading || (!isPackageActive && !isServiceActive)}
+            >
+              {loading ? (
+                <LoaderDots size="sm" className="animate-spin" />
+              ) : isPackageActive ? (
+                <>
+                  <Power size="sm" className="mr-2" /> Desativar
+                </>
+              ) : (
+                <>
+                  <Power size="sm" className="mr-2" /> Ativar
+                </>
+              )}
+            </Button>
+          </div>
 
-              <div className="flex-1" />
+          <div className="flex-1" />
 
-              <Button
-                onClick={handleSave}
-                disabled={loading}
-                className="rounded-2xl h-12 px-8 font-black bg-primary text-primary-foreground w-full sm:w-auto"
-              >
-                {loading ? (
-                  <LoaderDots size="sm" className="animate-spin mr-2" />
-                ) : (
-                  <Save size="sm" className="mr-2" />
-                )}
-                Salvar
-              </Button>
+          <Button
+            onClick={handleSave}
+            disabled={loading}
+            className="h-12 px-8 font-black bg-primary text-primary-foreground w-full sm:w-auto"
+          >
+            {loading ? (
+              <LoaderDots size="sm" className="animate-spin mr-2" />
+            ) : (
+              <Save size="sm" className="mr-2" />
+            )}
+            Salvar
+          </Button>
         </div>
       </>
     );

@@ -35,7 +35,7 @@ export function ClientListView({
             placeholder="Buscar cliente por nome ou CPF..."
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10 rounded-full shadow-sm bg-card border-border"
+            className="pl-10 shadow-sm bg-card border-border"
           />
         </div>
 
@@ -48,7 +48,7 @@ export function ClientListView({
               <div
                 key={client.id}
                 onClick={() => onSelectClient(client.id)}
-                className="flex items-center gap-3 p-3 bg-card border border-border/50 rounded-xl md:rounded-md shadow-sm cursor-pointer hover:bg-muted/50 active:scale-[0.98] transition-all"
+                className="flex items-center gap-3 p-3 bg-card border border-border/50 rounded-full md:rounded-md shadow-sm cursor-pointer hover:bg-muted/50 active:scale-[0.98] transition-all"
               >
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">
                   {client.name.charAt(0)}
@@ -64,7 +64,7 @@ export function ClientListView({
               </div>
             ))}
             {filteredClients.length === 0 && (
-              <div className="text-center p-6 text-muted-foreground text-sm border border-dashed rounded-xl md:rounded-md bg-muted/30">
+              <div className="text-center p-6 text-muted-foreground text-sm border border-dashed rounded-full md:rounded-md bg-muted/30">
                 Nenhum cliente encontrado.
               </div>
             )}

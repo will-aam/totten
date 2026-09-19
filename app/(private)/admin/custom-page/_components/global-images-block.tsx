@@ -82,7 +82,7 @@ export function GlobalImagesBlock({ profile, setProfile, children }: GlobalImage
   };
 
   return (
-    <div className="flex flex-col p-5 border border-border/50 bg-card rounded-xl w-full max-w-[1600px] mx-auto shadow-sm">
+    <div className="flex flex-col p-5 border border-border/50 bg-card rounded-full w-full max-w-[1600px] mx-auto shadow-sm">
       {children}
       <div className="flex items-center gap-2 mb-4">
         <h3 className="font-semibold text-foreground text-sm">
@@ -127,11 +127,11 @@ export function GlobalImagesBlock({ profile, setProfile, children }: GlobalImage
             </div>
             <div className="flex flex-col gap-1.5 mt-1">
               <label className="text-[11px] font-medium text-muted-foreground">Ou cole a URL da imagem:</label>
-              <input 
-                type="text" 
-                value={profile.image || ""} 
-                onChange={(e) => setProfile({ ...profile, image: e.target.value })} 
-                placeholder="https://..." 
+              <input
+                type="text"
+                value={profile.image || ""}
+                onChange={(e) => setProfile({ ...profile, image: e.target.value })}
+                placeholder="https://..."
                 className="w-full text-xs h-8 px-2 rounded-md border border-border/50 bg-background focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
@@ -148,7 +148,7 @@ export function GlobalImagesBlock({ profile, setProfile, children }: GlobalImage
                   <ImageIcon className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
                 )}
                 {isUploadingBanner && (
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-xl z-20">
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-full z-20">
                     <LoaderLines className="w-6 h-6 text-white animate-spin" />
                   </div>
                 )}
@@ -169,11 +169,11 @@ export function GlobalImagesBlock({ profile, setProfile, children }: GlobalImage
             </div>
             <div className="flex flex-col gap-1.5 mt-1">
               <label className="text-[11px] font-medium text-muted-foreground">Ou cole a URL da imagem:</label>
-              <input 
-                type="text" 
-                value={profile.bannerImage || ""} 
-                onChange={(e) => setProfile({ ...profile, bannerImage: e.target.value })} 
-                placeholder="https://..." 
+              <input
+                type="text"
+                value={profile.bannerImage || ""}
+                onChange={(e) => setProfile({ ...profile, bannerImage: e.target.value })}
+                placeholder="https://..."
                 className="w-full text-xs h-8 px-2 rounded-md border border-border/50 bg-background focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
@@ -211,11 +211,11 @@ export function GlobalImagesBlock({ profile, setProfile, children }: GlobalImage
             </div>
             <div className="flex flex-col gap-1.5 mt-1">
               <label className="text-[11px] font-medium text-muted-foreground">Ou cole a URL da imagem:</label>
-              <input 
-                type="text" 
-                value={profile.logo || ""} 
-                onChange={(e) => setProfile({ ...profile, logo: e.target.value })} 
-                placeholder="https://..." 
+              <input
+                type="text"
+                value={profile.logo || ""}
+                onChange={(e) => setProfile({ ...profile, logo: e.target.value })}
+                placeholder="https://..."
                 className="w-full text-xs h-8 px-2 rounded-md border border-border/50 bg-background focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>

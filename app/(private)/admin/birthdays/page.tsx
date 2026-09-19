@@ -185,7 +185,7 @@ export default function BirthdaysPage() {
                   onClick={(e) => handleWhatsApp(e, client)}
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 rounded-full bg-green-50 text-green-600 hover:bg-green-500 hover:text-white transition-colors"
+                  className="h-9 w-9 bg-green-50 text-green-600 hover:bg-green-500 hover:text-white transition-colors"
                   title="Enviar WhatsApp"
                 >
                   <Whatsapp className="h-4 w-4" />
@@ -203,7 +203,7 @@ export default function BirthdaysPage() {
       <AdminHeader title="Aniversariantes" />
 
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6">
-        <div className="flex flex-col gap-2 bg-muted/10 p-4 rounded-xl border border-border/50">
+        <div className="flex flex-col gap-2 bg-muted/10 p-4 rounded-full border border-border/50">
           <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Gift className="text-primary" />
             Mensagem Automática

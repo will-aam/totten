@@ -66,7 +66,7 @@ export function HistoryFilters({
           variant="outline"
           size="sm"
           onClick={handleThisMonth}
-          className="h-8 rounded-xl text-xs font-bold bg-background shadow-sm hover:bg-primary/10 hover:text-primary transition-colors"
+          className="h-8 text-xs font-bold bg-background shadow-sm hover:bg-primary/10 hover:text-primary transition-colors"
         >
           {/*  Usando o Ícone aqui em vez do componente interativo */}
           <CalendarIcon className="h-4 w-4 mr-1.5" /> Este Mês
@@ -75,7 +75,7 @@ export function HistoryFilters({
           variant="outline"
           size="sm"
           onClick={handleLastMonth}
-          className="h-8 rounded-xl text-xs font-bold bg-background shadow-sm hover:bg-primary/10 hover:text-primary transition-colors"
+          className="h-8 text-xs font-bold bg-background shadow-sm hover:bg-primary/10 hover:text-primary transition-colors"
         >
           {/*  Usando o Ícone aqui em vez do componente interativo */}
           <CalendarIcon className="h-4 w-4 mr-1.5" /> Mês Passado
@@ -94,7 +94,7 @@ export function HistoryFilters({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Nome ou CPF (mín. 3 letras)..."
-              className="pl-10 rounded-2xl bg-card border-border/50 h-12 shadow-sm font-medium focus-visible:ring-primary/20"
+              className="pl-10 bg-card border-border/50 h-12 shadow-sm font-medium focus-visible:ring-primary/20"
             />
           </div>
         </div>
@@ -109,8 +109,7 @@ export function HistoryFilters({
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className={cn(
-                    "justify-start text-left font-medium bg-card border-border/50 h-12 rounded-2xl shadow-sm hover:bg-muted/50 transition-colors",
+                  className={cn("justify-start text-left font-medium bg-card border-border/50 h-12 rounded-2xl shadow-sm hover:bg-muted/50 transition-colors",
                     !dateFrom && "text-muted-foreground",
                   )}
                 >
@@ -141,8 +140,7 @@ export function HistoryFilters({
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className={cn(
-                    "justify-start text-left font-medium bg-card border-border/50 h-12 rounded-2xl shadow-sm hover:bg-muted/50 transition-colors",
+                  className={cn("justify-start text-left font-medium bg-card border-border/50 h-12 rounded-2xl shadow-sm hover:bg-muted/50 transition-colors",
                     !dateTo && "text-muted-foreground",
                   )}
                 >
@@ -171,7 +169,7 @@ export function HistoryFilters({
           <Button
             variant="ghost"
             onClick={clearFilters}
-            className="rounded-2xl h-12 text-muted-foreground hover:text-destructive hover:bg-destructive/10 w-full md:w-auto font-bold transition-colors shrink-0"
+            className="h-12 text-muted-foreground hover:text-destructive hover:bg-destructive/10 w-full md:w-auto font-bold transition-colors shrink-0"
           >
             <X className="h-4 w-4 mr-2" /> Limpar
           </Button>

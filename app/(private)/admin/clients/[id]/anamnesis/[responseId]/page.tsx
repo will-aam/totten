@@ -191,7 +191,7 @@ export default function AnamnesisDocumentPage({
             asChild
             variant="outline"
             size="sm"
-            className="rounded-xl font-bold h-10 px-4"
+            className="font-bold h-10 px-4"
           >
             <Link href={`/admin/clients/${clientId}`}>
               <ChevronLeft removePadding size="sm" className="mr-2" /> Voltar
@@ -201,7 +201,7 @@ export default function AnamnesisDocumentPage({
           <Button
             variant="outline"
             size="sm"
-            className="rounded-xl font-bold shadow-sm h-10 px-4"
+            className="font-bold shadow-sm h-10 px-4"
             onClick={() => window.print()}
           >
             <Printer size="sm" className="mr-2" /> Imprimir Documento
@@ -221,12 +221,12 @@ export default function AnamnesisDocumentPage({
 
             <div className="mt-4 inline-flex items-center gap-2 print-hidden">
               {response.signed_at ? (
-                <Badge className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20 px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-xl">
+                <Badge className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20 px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full">
                   <CheckCircle size="xs" className="mr-1.5" /> Assinado
                   Legalmente
                 </Badge>
               ) : (
-                <Badge className="bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/20 px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-xl">
+                <Badge className="bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/20 px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full">
                   <Clock size="xs" className="mr-1.5" /> Rascunho Pendente
                 </Badge>
               )}
@@ -349,7 +349,7 @@ export default function AnamnesisDocumentPage({
                   <Button
                     onClick={handleSign}
                     disabled={!signature || isSigning}
-                    className="w-full md:w-auto h-12 px-8 rounded-xl font-bold shadow-md bg-primary hover:bg-primary/90 text-primary-foreground"
+                    className="w-full md:w-auto h-12 px-8 font-bold shadow-md bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
                     {isSigning ? (
                       <LoaderDots size="sm" className="animate-spin mr-2" />

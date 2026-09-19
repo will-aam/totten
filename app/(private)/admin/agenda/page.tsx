@@ -337,13 +337,13 @@ export default function AgendaPage() {
                 className="w-full sm:w-auto shrink-0"
               >
                 <TabsList className="grid w-full sm:w-64 grid-cols-3 h-11 rounded-2xl bg-muted/40 p-1">
-                  <TabsTrigger value="day" className="rounded-xl font-bold">
+                  <TabsTrigger value="day" className="rounded-full font-bold">
                     Dia
                   </TabsTrigger>
-                  <TabsTrigger value="week" className="rounded-xl font-bold">
+                  <TabsTrigger value="week" className="rounded-full font-bold">
                     Semana
                   </TabsTrigger>
-                  <TabsTrigger value="month" className="rounded-xl font-bold">
+                  <TabsTrigger value="month" className="rounded-full font-bold">
                     Mês
                   </TabsTrigger>
                 </TabsList>

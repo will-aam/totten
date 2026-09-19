@@ -187,7 +187,7 @@ export default function ReceivablesPage() {
 
             <Button
               onClick={() => setSelectedItem("ALL")}
-              className="w-full sm:w-auto rounded-2xl h-12 px-8 bg-emerald-500 hover:bg-emerald-600 text-white font-black shadow-[0_8px_25px_rgb(16,185,129,0.3)] hover:shadow-[0_10px_30px_rgb(16,185,129,0.4)] active:scale-95 transition-all relative z-10"
+              className="w-full sm:w-auto h-12 px-8 bg-emerald-500 hover:bg-emerald-600 text-white font-black shadow-[0_8px_25px_rgb(16,185,129,0.3)] hover:shadow-[0_10px_30px_rgb(16,185,129,0.4)] active:scale-95 transition-all relative z-10"
             >
               Dar Baixa em Todos
             </Button>
@@ -258,7 +258,7 @@ export default function ReceivablesPage() {
                     <Button
                       onClick={() => setSelectedItem(item)}
                       variant="outline"
-                      className="rounded-xl font-bold bg-background border-border/40 hover:bg-emerald-500/10 hover:text-emerald-600 hover:border-emerald-500/30 transition-all shadow-sm h-10"
+                      className="font-bold bg-background border-border/40 hover:bg-emerald-500/10 hover:text-emerald-600 hover:border-emerald-500/30 transition-all shadow-sm h-10"
                     >
                       Dar Baixa
                     </Button>
@@ -316,17 +316,17 @@ export default function ReceivablesPage() {
                 onValueChange={setPaymentMethodId}
                 disabled={isProcessing}
               >
-                <SelectTrigger className="h-14 rounded-2xl bg-muted/20 border-border/40 hover:bg-muted/30 font-bold focus:ring-primary/30 transition-all shadow-inner">
+                <SelectTrigger className="h-14 bg-muted/20 border-border/40 hover:bg-muted/30 font-bold focus:ring-primary/30 transition-all shadow-inner">
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl border-border/50 shadow-xl">
+                <SelectContent className="border-border/50 shadow-xl rounded-2xl">
                   {paymentMethods
                     .filter((pm) => pm.isActive)
                     .map((method) => (
                       <SelectItem
                         key={method.id}
                         value={method.id}
-                        className="rounded-xl py-2.5 font-bold"
+                        className="rounded-full py-2.5 font-bold"
                       >
                         {method.name}
                       </SelectItem>
@@ -340,7 +340,7 @@ export default function ReceivablesPage() {
             <Button
               variant="outline"
               onClick={handleCloseModal}
-              className="rounded-2xl h-12 font-bold border-border/40 bg-muted/30 hover:bg-muted/50 px-6"
+              className="h-12 font-bold border-border/40 bg-muted/30 hover:bg-muted/50 px-6"
               disabled={isProcessing}
             >
               Cancelar
@@ -348,7 +348,7 @@ export default function ReceivablesPage() {
             <Button
               onClick={handleConfirmPayment}
               disabled={isProcessing}
-              className="rounded-2xl h-12 font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-[0_4px_20px_rgb(16,185,129,0.3)] hover:shadow-[0_6px_25px_rgb(16,185,129,0.4)] transition-all px-6"
+              className="h-12 font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-[0_4px_20px_rgb(16,185,129,0.3)] hover:shadow-[0_6px_25px_rgb(16,185,129,0.4)] transition-all px-6"
             >
               {isProcessing ? (
                 <>

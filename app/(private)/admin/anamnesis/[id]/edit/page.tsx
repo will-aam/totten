@@ -231,7 +231,7 @@ export default function EditAnamnesisTemplatePage({
             asChild
             variant="outline"
             size="icon"
-            className="rounded-full h-10 w-10 shrink-0"
+            className="h-10 w-10 shrink-0"
           >
             <Link href="/admin/anamnesis">
               <ChevronLeft
@@ -260,7 +260,7 @@ export default function EditAnamnesisTemplatePage({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Ex: Ficha de Extensão de Cílios"
-            className="h-12 text-base bg-muted/30 border-border/60 focus:border-primary rounded-xl"
+            className="h-12 text-base bg-muted/30 border-border/60 focus:border-primary"
           />
         </div>
 
@@ -290,7 +290,7 @@ export default function EditAnamnesisTemplatePage({
               {fields.map((field, index) => (
                 <div
                   key={field.id}
-                  className="group flex flex-col gap-3 p-4 rounded-xl bg-muted/30 border border-border/50 hover:border-border transition-all relative"
+                  className="group flex flex-col gap-3 p-4 rounded-full bg-muted/30 border border-border/50 hover:border-border transition-all relative"
                 >
                   <div className="absolute -left-3 top-4 hidden md:flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold shadow z-10">
                     {index + 1}
@@ -313,11 +313,10 @@ export default function EditAnamnesisTemplatePage({
                             ? "Ex: Histórico Clínico"
                             : "Ex: Você está gestante?"
                         }
-                        className={`h-11 bg-background border-border/60 focus:border-primary rounded-lg ${
-                          field.type === "section_title"
+                        className={`h-11 bg-background border-border/60 focus:border-primary ${field.type ==="section_title"
                             ? "font-bold text-lg"
                             : ""
-                        }`}
+                          }`}
                       />
                     </div>
 
@@ -331,7 +330,7 @@ export default function EditAnamnesisTemplatePage({
                           updateField(field.id, "type", value)
                         }
                       >
-                        <SelectTrigger className="h-11 bg-background border-border/60 rounded-lg w-full">
+                        <SelectTrigger className="h-11 bg-background border-border/60 w-full">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -362,48 +361,47 @@ export default function EditAnamnesisTemplatePage({
 
                   {(field.type === "single_choice" ||
                     field.type === "multiple_choice") && (
-                    <div className="md:ml-4 mt-1 p-3 bg-background rounded-lg border border-border/40 space-y-2">
-                      <Label className="text-xs text-muted-foreground font-semibold">
-                        Alternativas:
-                      </Label>
-                      {field.options?.map((option, optIndex) => (
-                        <div key={optIndex} className="flex items-center gap-2">
-                          <div
-                            className={`w-4 h-4 border border-muted-foreground/50 shrink-0 ${
-                              field.type === "single_choice"
-                                ? "rounded-full"
-                                : "rounded-sm"
-                            }`}
-                          />
-                          <Input
-                            value={option}
-                            onChange={(e) =>
-                              updateOption(field.id, optIndex, e.target.value)
-                            }
-                            placeholder={`Opção ${optIndex + 1}`}
-                            className="h-9 text-sm"
-                          />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive active:scale-90 transition-transform"
-                            onClick={() => removeOption(field.id, optIndex)}
-                            disabled={(field.options?.length || 0) <= 2}
-                          >
-                            <X size="sm" />
-                          </Button>
-                        </div>
-                      ))}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => addOption(field.id)}
-                        className="text-xs text-primary mt-1"
-                      >
-                        <Plus className="w-3 h-3 mr-1" /> Adicionar alternativa
-                      </Button>
-                    </div>
-                  )}
+                      <div className="md:ml-4 mt-1 p-3 bg-background rounded-lg border border-border/40 space-y-2">
+                        <Label className="text-xs text-muted-foreground font-semibold">
+                          Alternativas:
+                        </Label>
+                        {field.options?.map((option, optIndex) => (
+                          <div key={optIndex} className="flex items-center gap-2">
+                            <div
+                              className={`w-4 h-4 border border-muted-foreground/50 shrink-0 ${field.type === "single_choice"
+                                  ? "rounded-full"
+                                  : "rounded-sm"
+                                }`}
+                            />
+                            <Input
+                              value={option}
+                              onChange={(e) =>
+                                updateOption(field.id, optIndex, e.target.value)
+                              }
+                              placeholder={`Opção ${optIndex + 1}`}
+                              className="h-9 text-sm"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive active:scale-90 transition-transform"
+                              onClick={() => removeOption(field.id, optIndex)}
+                              disabled={(field.options?.length || 0) <= 2}
+                            >
+                              <X size="sm" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => addOption(field.id)}
+                          className="text-xs text-primary mt-1"
+                        >
+                          <Plus className="w-3 h-3 mr-1" /> Adicionar alternativa
+                        </Button>
+                      </div>
+                    )}
                 </div>
               ))}
             </div>
@@ -413,7 +411,7 @@ export default function EditAnamnesisTemplatePage({
             <Button
               variant="outline"
               onClick={addField}
-              className="w-full h-12 border-dashed border-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors rounded-xl"
+              className="w-full h-12 border-dashed border-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
             >
               <PlusCircle size="sm" className="mr-2" /> Adicionar Nova Pergunta
             </Button>
@@ -425,14 +423,14 @@ export default function EditAnamnesisTemplatePage({
           <Button
             variant="outline"
             asChild
-            className="h-12 rounded-xl font-bold px-8"
+            className="h-12 font-bold px-8"
           >
             <Link href="/admin/clients">Cancelar</Link>
           </Button>
           <Button
             onClick={handleSave}
             disabled={isSaving}
-            className="px-8 h-12 rounded-xl font-bold shadow-lg"
+            className="px-8 h-12 font-bold shadow-lg"
           >
             {isSaving ? (
               <LoaderDots size="sm" className="animate-spin mr-2" />
@@ -446,13 +444,13 @@ export default function EditAnamnesisTemplatePage({
 
       {/* Footer Mobile */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-lg border-t md:hidden z-50 grid grid-cols-2 gap-3">
-        <Button variant="outline" asChild className="h-12 rounded-xl font-bold">
+        <Button variant="outline" asChild className="h-12 font-bold">
           <Link href="/admin/anamnesis">Cancelar</Link>
         </Button>
         <Button
           onClick={handleSave}
           disabled={isSaving}
-          className="h-12 rounded-xl font-bold shadow-lg"
+          className="h-12 font-bold shadow-lg"
         >
           {isSaving ? (
             <LoaderDots size="sm" className="animate-spin mr-2" />

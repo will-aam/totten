@@ -251,8 +251,7 @@ export function TransactionModal({
                     )
                   }
                   disabled={isPending}
-                  className={cn(
-                    "h-14 rounded-2xl pl-12 text-xl font-black bg-muted/20 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 transition-all shadow-inner",
+                  className={cn("h-14 rounded-2xl pl-12 text-xl font-black bg-muted/20 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 transition-all shadow-inner",
                     hideNumberArrows,
                   )}
                   placeholder="0.00"
@@ -272,7 +271,7 @@ export function TransactionModal({
                 placeholder={
                   isIncome ? "Ex: Venda de Produto" : "Ex: Conta de Luz"
                 }
-                className="h-12 rounded-2xl font-bold bg-muted/20 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 transition-all shadow-inner"
+                className="h-12 font-bold bg-muted/20 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 transition-all shadow-inner"
               />
             </div>
 
@@ -287,7 +286,7 @@ export function TransactionModal({
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   disabled={isPending}
-                  className="h-12 rounded-2xl font-bold bg-muted/20 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 transition-all shadow-inner"
+                  className="h-12 font-bold bg-muted/20 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 transition-all shadow-inner"
                 />
               </div>
 
@@ -300,19 +299,19 @@ export function TransactionModal({
                   onValueChange={(val) => setStatus(val as TransactionStatus)}
                   disabled={isPending}
                 >
-                  <SelectTrigger className="h-12 rounded-2xl font-bold bg-muted/20 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 transition-all shadow-inner">
+                  <SelectTrigger className="h-12 font-bold bg-muted/20 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 transition-all shadow-inner">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="rounded-2xl border-border/50 shadow-xl">
+                  <SelectContent className="border-border/50 shadow-xl rounded-2xl">
                     <SelectItem
                       value="PAGO"
-                      className="font-bold text-emerald-600 focus:text-emerald-700 focus:bg-emerald-500/10 rounded-xl my-0.5"
+                      className="font-bold text-emerald-600 focus:text-emerald-700 focus:bg-emerald-500/10 rounded-full my-0.5"
                     >
                       Pago
                     </SelectItem>
                     <SelectItem
                       value="PENDENTE"
-                      className="font-bold text-amber-600 focus:text-amber-700 focus:bg-amber-500/10 rounded-xl my-0.5"
+                      className="font-bold text-amber-600 focus:text-amber-700 focus:bg-amber-500/10 rounded-full my-0.5"
                     >
                       Pendente
                     </SelectItem>
@@ -331,13 +330,13 @@ export function TransactionModal({
                 onValueChange={setPaymentMethodId}
                 disabled={isPending}
               >
-                <SelectTrigger className="h-12 rounded-2xl font-bold bg-muted/20 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 transition-all shadow-inner">
+                <SelectTrigger className="h-12 font-bold bg-muted/20 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 transition-all shadow-inner">
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl border-border/50 shadow-xl">
+                <SelectContent className="border-border/50 shadow-xl rounded-2xl">
                   <SelectItem
                     value="none"
-                    className="font-medium text-muted-foreground rounded-xl"
+                    className="font-medium text-muted-foreground rounded-full"
                   >
                     Não especificado
                   </SelectItem>
@@ -347,7 +346,7 @@ export function TransactionModal({
                       <SelectItem
                         key={pm.id}
                         value={pm.id}
-                        className="font-bold rounded-xl my-0.5"
+                        className="font-bold rounded-full my-0.5"
                       >
                         {pm.name}
                       </SelectItem>
@@ -361,7 +360,7 @@ export function TransactionModal({
               <div className="pt-4 border-t border-border/30 mt-2">
                 <div className="flex items-center justify-between bg-linear-to-r from-muted/30 to-muted/10 p-5 rounded-3xl border border-border/40 shadow-sm transition-all hover:border-primary/20">
                   <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-primary/10 rounded-xl">
+                    <div className="p-2.5 bg-primary/10 rounded-full">
                       <Repeat className="h-5 w-5 text-primary" />
                     </div>
                     <div className="flex flex-col">
@@ -389,19 +388,19 @@ export function TransactionModal({
                         onValueChange={setFrequency}
                         disabled={isPending}
                       >
-                        <SelectTrigger className="h-12 rounded-2xl font-bold bg-background border-border/40 focus-visible:ring-primary/30 shadow-sm">
+                        <SelectTrigger className="h-12 font-bold bg-background border-border/40 focus-visible:ring-primary/30 shadow-sm">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="rounded-2xl border-border/50">
+                        <SelectContent className="border-border/50 rounded-2xl">
                           <SelectItem
                             value="MONTHLY"
-                            className="font-bold rounded-xl my-0.5"
+                            className="font-bold rounded-full my-0.5"
                           >
                             Mensal
                           </SelectItem>
                           <SelectItem
                             value="WEEKLY"
-                            className="font-bold rounded-xl my-0.5"
+                            className="font-bold rounded-full my-0.5"
                           >
                             Semanal
                           </SelectItem>
@@ -425,8 +424,7 @@ export function TransactionModal({
                         }
                         disabled={isPending}
                         placeholder="Ex: 12"
-                        className={cn(
-                          "h-12 rounded-2xl font-bold bg-background border-border/40 focus-visible:ring-primary/30 shadow-sm",
+                        className={cn("h-12 rounded-2xl font-bold bg-background border-border/40 focus-visible:ring-primary/30 shadow-sm",
                           hideNumberArrows,
                         )}
                       />
@@ -466,15 +464,14 @@ export function TransactionModal({
           <SheetFooter className="flex-row gap-3">
             <Button
               variant="outline"
-              className="flex-1 h-12 rounded-2xl font-bold border-border/50 hover:bg-muted/50 bg-background/50"
+              className="flex-1 h-12 font-bold border-border/50 hover:bg-muted/50 bg-background/50"
               onClick={onClose}
               disabled={isPending}
             >
               Cancelar
             </Button>
             <Button
-              className={cn(
-                "flex-1 h-12 rounded-2xl font-bold transition-all duration-300",
+              className={cn("flex-1 h-12 rounded-2xl font-bold transition-all duration-300",
                 isIncome
                   ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-[0_4px_20px_rgb(16,185,129,0.3)] hover:shadow-[0_6px_25px_rgb(16,185,129,0.4)]"
                   : "bg-rose-500 hover:bg-rose-600 text-white shadow-[0_4px_20px_rgb(244,63,94,0.3)] hover:shadow-[0_6px_25px_rgb(244,63,94,0.4)]",

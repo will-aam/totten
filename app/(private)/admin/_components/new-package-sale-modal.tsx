@@ -154,7 +154,7 @@ export function NewPackageSaleModal({
   return (
     <ResponsiveModal open={open} onOpenChange={onOpenChange} title="Vender Novo Pacote">
       <div className="flex flex-col gap-4 py-4 px-1">
-        
+
         {/* Selector de cliente se não fornecido via prop */}
         {!clientId && (
           <div className="space-y-1.5">
@@ -162,12 +162,12 @@ export function NewPackageSaleModal({
               Cliente
             </Label>
             <Select value={selectedClientId} onValueChange={setSelectedClientId} disabled={loadingClients || loading}>
-              <SelectTrigger className="bg-muted/40 border-none rounded-2xl h-12 transition-all">
+              <SelectTrigger className="bg-muted/40 border-none h-12 transition-all">
                 <SelectValue placeholder={loadingClients ? "Carregando..." : "Selecione o cliente..."} />
               </SelectTrigger>
-              <SelectContent className="rounded-2xl border border-border/50 bg-background shadow-xl">
+              <SelectContent className="border border-border/50 bg-background shadow-xl rounded-2xl">
                 {clients.map((c: any) => (
-                  <SelectItem key={c.id} value={c.id} className="rounded-xl py-2 font-medium">
+                  <SelectItem key={c.id} value={c.id} className="rounded-full py-2 font-medium">
                     {c.name}
                   </SelectItem>
                 ))}
@@ -189,20 +189,20 @@ export function NewPackageSaleModal({
             }}
             disabled={templates.length === 0 || loadingData || loading}
           >
-            <SelectTrigger className="bg-muted/40 border-none rounded-2xl h-12 transition-all">
+            <SelectTrigger className="bg-muted/40 border-none h-12 transition-all">
               <SelectValue
                 placeholder={
                   loadingData
                     ? "Carregando pacotes..."
                     : templates.length === 0
-                    ? "Nenhum pacote ativo"
-                    : "Selecione um Pacote"
+                      ? "Nenhum pacote ativo"
+                      : "Selecione um Pacote"
                 }
               />
             </SelectTrigger>
-            <SelectContent className="rounded-2xl border border-border/50 bg-background shadow-xl">
+            <SelectContent className="border border-border/50 bg-background shadow-xl rounded-2xl">
               {templates.map((tpl) => (
-                <SelectItem key={tpl.id} value={tpl.id} className="rounded-xl py-2 font-medium">
+                <SelectItem key={tpl.id} value={tpl.id} className="rounded-full py-2 font-medium">
                   {tpl.name}
                 </SelectItem>
               ))}
@@ -211,7 +211,7 @@ export function NewPackageSaleModal({
         </div>
 
         {currentTemplate && (
-          <div className="bg-muted/30 p-4 rounded-xl border border-border space-y-2 mt-2">
+          <div className="bg-muted/30 p-4 rounded-full border border-border space-y-2 mt-2">
             <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider">
               Resumo do Pacote
             </div>
@@ -236,7 +236,7 @@ export function NewPackageSaleModal({
         <div className="my-1 border-t border-border/50" />
 
         <div className="flex flex-col gap-4">
-          <div className="flex flex-row items-center justify-between rounded-xl border border-border/50 p-3 bg-muted/20">
+          <div className="flex flex-row items-center justify-between rounded-full border border-border/50 p-3 bg-muted/20">
             <div className="space-y-0.5 pr-4">
               <Label className="text-sm font-bold">Pagar Pacote à Vista?</Label>
               <p className="text-[11px] text-muted-foreground leading-tight">
@@ -260,14 +260,14 @@ export function NewPackageSaleModal({
                 Forma de Pagamento
               </Label>
               <Select value={selectedMethod} onValueChange={setSelectedMethod} disabled={loading}>
-                <SelectTrigger className="bg-muted/40 border-none rounded-2xl h-12 transition-all">
+                <SelectTrigger className="bg-muted/40 border-none h-12 transition-all">
                   <SelectValue placeholder="Como o cliente está pagando?" />
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl border border-border/50 bg-background shadow-xl">
+                <SelectContent className="border border-border/50 bg-background shadow-xl rounded-2xl">
                   {paymentMethods
                     .filter((pm) => pm.isActive)
                     .map((pm) => (
-                      <SelectItem key={pm.id} value={pm.type} className="rounded-xl py-2 font-medium">
+                      <SelectItem key={pm.id} value={pm.type} className="rounded-full py-2 font-medium">
                         {pm.name}
                       </SelectItem>
                     ))}
@@ -278,7 +278,7 @@ export function NewPackageSaleModal({
 
           {!payUpfront && (
             <div className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
-              <div className="flex flex-row items-center justify-between rounded-xl border border-border/50 p-3 bg-amber-500/10 dark:bg-amber-500/5">
+              <div className="flex flex-row items-center justify-between rounded-full border border-border/50 p-3 bg-amber-500/10 dark:bg-amber-500/5">
                 <div className="space-y-0.5 pr-4">
                   <Label className="text-sm font-bold text-amber-700 dark:text-amber-500">
                     Gerar Contas a Receber?
@@ -325,7 +325,7 @@ export function NewPackageSaleModal({
                       }
                     }}
                     disabled={loading}
-                    className="h-12 rounded-xl w-32 bg-muted/40 border-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="h-12 w-32 bg-muted/40 border-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   {currentTemplate && installmentsCount >= 2 && (
                     <p className="text-xs text-muted-foreground mt-1 font-medium">
@@ -347,14 +347,14 @@ export function NewPackageSaleModal({
             variant="secondary"
             onClick={() => onOpenChange(false)}
             disabled={loading}
-            className="rounded-2xl h-12 font-bold w-full sm:w-1/2"
+            className="h-12 font-bold w-full sm:w-1/2"
           >
             Cancelar
           </Button>
           <Button
             onClick={handleAddPackage}
             disabled={loading || templates.length === 0 || !templateId || (!clientId && !selectedClientId)}
-            className="rounded-2xl h-12 font-black bg-primary text-primary-foreground w-full sm:w-1/2 active:scale-[0.98] transition-all"
+            className="h-12 font-black bg-primary text-primary-foreground w-full sm:w-1/2 active:scale-[0.98] transition-all"
           >
             {loading ? (
               <>

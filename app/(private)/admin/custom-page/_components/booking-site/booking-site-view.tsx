@@ -102,7 +102,7 @@ export function BookingSiteView({ profile }: { profile?: any }) {
         <Button
           onClick={handleSave}
           disabled={isSaving}
-          className="rounded-full h-10 shadow-sm w-full md:w-36 shrink-0"
+          className="h-10 shadow-sm w-full md:w-36 shrink-0"
         >
           {isSaving ? "Salvando..." : "Salvar"}
         </Button>
@@ -122,7 +122,7 @@ export function BookingSiteView({ profile }: { profile?: any }) {
 
           {/* Política de Cancelamento */}
           <div className="flex flex-col gap-3 pt-0">
-            <div className="flex flex-col gap-3 p-4 rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800/40 border-l-4 border-l-red-500">
+            <div className="flex flex-col gap-3 p-4 rounded-full border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800/40 border-l-4 border-l-red-500">
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <Label className="text-foreground font-semibold">Política de Cancelamento</Label>
@@ -192,7 +192,7 @@ export function BookingSiteView({ profile }: { profile?: any }) {
           </div>
 
           <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between p-4 border rounded-xl bg-card shadow-sm">
+            <div className="flex items-center justify-between p-4 border rounded-full bg-card shadow-sm">
               <div className="flex flex-col">
                 <Label className="font-semibold">Mostrar &quot;Pacotes&quot;</Label>
                 <span className="text-xs text-muted-foreground mt-0.5">Exibe combos promocionais.</span>
@@ -203,7 +203,7 @@ export function BookingSiteView({ profile }: { profile?: any }) {
               />
             </div>
 
-            <div className="flex items-center justify-between p-4 border rounded-xl bg-card shadow-sm">
+            <div className="flex items-center justify-between p-4 border rounded-full bg-card shadow-sm">
               <div className="flex flex-col">
                 <Label className="font-semibold">Mostrar &quot;Mais Agendados&quot;</Label>
                 <span className="text-xs text-muted-foreground mt-0.5">Destaca os serviços populares.</span>
@@ -214,7 +214,7 @@ export function BookingSiteView({ profile }: { profile?: any }) {
               />
             </div>
 
-            <div className="flex items-center justify-between p-4 border rounded-xl bg-card shadow-sm">
+            <div className="flex items-center justify-between p-4 border rounded-full bg-card shadow-sm">
               <div className="flex flex-col">
                 <Label className="font-semibold">Mostrar &quot;Nossa Equipe&quot;</Label>
                 <span className="text-xs text-muted-foreground mt-0.5">Exibe fotos dos profissionais.</span>
@@ -226,7 +226,7 @@ export function BookingSiteView({ profile }: { profile?: any }) {
             </div>
 
             {features.showTeam && (
-              <div className="flex items-center justify-between p-4 border rounded-xl bg-muted/40 ml-5">
+              <div className="flex items-center justify-between p-4 border rounded-full bg-muted/40 ml-5">
                 <div className="flex flex-col">
                   <Label className="font-semibold">Mostrar Curtidas na Equipe</Label>
                   <span className="text-xs text-muted-foreground mt-0.5">Gera prova social para os profissionais.</span>

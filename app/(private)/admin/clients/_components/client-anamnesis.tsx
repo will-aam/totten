@@ -51,7 +51,7 @@ export function ClientAnamnesis({ clientId }: { clientId: string }) {
           size="sm"
           variant="outline"
           /* Botão Nova: Outline primary, sem hover, efeito click */
-          className="h-8 rounded-full border-primary/20 text-primary select-none transition-transform duration-100 ease-out hover:bg-transparent hover:text-primary active:scale-95 active:bg-primary/10 text-xs font-medium px-3"
+          className="h-8 border-primary/20 text-primary select-none transition-transform duration-100 ease-out hover:bg-transparent hover:text-primary active:scale-95 active:bg-primary/10 text-xs font-medium px-3"
         >
           <Link href={`/admin/clients/${clientId}/anamnesis/new`}>
             <Plus className="h-3.5 w-3.5 mr-1" strokeWidth={2} /> Nova
@@ -67,7 +67,7 @@ export function ClientAnamnesis({ clientId }: { clientId: string }) {
           </div>
         ) : responses.length === 0 ? (
           /* Estado Vazio: Limpo e integrado */
-          <div className="flex flex-col items-center justify-center py-8 text-center bg-muted/20 rounded-xl border border-dashed border-border">
+          <div className="flex flex-col items-center justify-center py-8 text-center bg-muted/20 rounded-full border border-dashed border-border">
             <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-3">
               <ClipboardCheck
                 className="h-5 w-5 text-muted-foreground/50"

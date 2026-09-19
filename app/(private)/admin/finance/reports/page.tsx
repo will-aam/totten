@@ -153,7 +153,7 @@ export default function ReportsPage() {
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-7xl mx-auto w-full min-w-0 pb-32 md:pb-12 relative animate-in fade-in duration-700 min-h-[calc(100vh-100px)]">
         <div className="flex flex-col gap-1.5 border-b border-border/40 pb-5">
           <h2 className="text-3xl font-black tracking-tight bg-linear-to-br from-foreground to-foreground/70 bg-clip-text text-transparent flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-xl text-primary">
+            <div className="p-2 bg-primary/10 rounded-full text-primary">
               <BarChartIcon size="sm" />
             </div>
             Desempenho
@@ -208,7 +208,7 @@ export default function ReportsPage() {
                   <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 blur-3xl rounded-full -z-10 pointer-events-none" />
                   <CardHeader className="px-6 pt-6 pb-2 border-b border-border/30">
                     <CardTitle className="flex items-center gap-3 text-xl font-black text-foreground">
-                      <div className="p-2 bg-indigo-500/10 rounded-xl text-indigo-500">
+                      <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-500">
                         <TrendingUp size="sm" />
                       </div>
                       Volume de Agendamentos
@@ -292,7 +292,7 @@ export default function ReportsPage() {
                   <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-3xl rounded-full -z-10 pointer-events-none" />
                   <CardHeader className="px-6 pt-6 pb-2 border-b border-border/30">
                     <CardTitle className="flex items-center gap-3 text-xl font-black text-foreground">
-                      <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-500">
+                      <div className="p-2 bg-emerald-500/10 rounded-full text-emerald-500">
                         <Dollar size="sm" />
                       </div>
                       Receitas x Despesas
@@ -365,7 +365,7 @@ export default function ReportsPage() {
                   <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 blur-3xl rounded-full -z-10 pointer-events-none" />
                   <CardHeader className="px-6 pt-6 pb-4 border-b border-border/30">
                     <CardTitle className="flex items-center gap-3 text-xl font-black text-foreground">
-                      <div className="p-2 bg-amber-500/10 rounded-xl text-amber-500">
+                      <div className="p-2 bg-amber-500/10 rounded-full text-amber-500">
                         <MedalStarAlt size="sm" />
                       </div>
                       Top Serviços
@@ -444,7 +444,7 @@ export default function ReportsPage() {
                   <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-3xl rounded-full -z-10 pointer-events-none" />
                   <CardHeader className="px-6 pt-6 pb-4 border-b border-border/30">
                     <CardTitle className="flex items-center gap-3 text-xl font-black text-foreground">
-                      <div className="p-2 bg-primary/10 rounded-xl text-primary">
+                      <div className="p-2 bg-primary/10 rounded-full text-primary">
                         <ArrowToBottom size="sm" />
                       </div>
                       Exportar Fechamento
@@ -464,15 +464,15 @@ export default function ReportsPage() {
                           value={selectedMonth.toString()}
                           onValueChange={(val) => setSelectedMonth(Number(val))}
                         >
-                          <SelectTrigger className="h-14 w-full sm:w-48 rounded-2xl bg-muted/20 border-border/40 hover:bg-muted/30 font-bold focus:ring-primary/30 transition-all shadow-inner">
+                          <SelectTrigger className="h-14 w-full sm:w-48 bg-muted/20 border-border/40 hover:bg-muted/30 font-bold focus:ring-primary/30 transition-all shadow-inner">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="rounded-2xl border-border/50 shadow-xl">
+                          <SelectContent className="border-border/50 shadow-xl rounded-2xl">
                             {MONTHS.map((m) => (
                               <SelectItem
                                 key={m.value}
                                 value={m.value.toString()}
-                                className="font-bold rounded-xl my-0.5"
+                                className="font-bold rounded-full my-0.5"
                               >
                                 {m.label}
                               </SelectItem>
@@ -484,15 +484,15 @@ export default function ReportsPage() {
                           value={selectedYear.toString()}
                           onValueChange={(val) => setSelectedYear(Number(val))}
                         >
-                          <SelectTrigger className="h-14 w-full sm:w-36 rounded-2xl bg-muted/20 border-border/40 hover:bg-muted/30 font-bold focus:ring-primary/30 transition-all shadow-inner">
+                          <SelectTrigger className="h-14 w-full sm:w-36 bg-muted/20 border-border/40 hover:bg-muted/30 font-bold focus:ring-primary/30 transition-all shadow-inner">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="rounded-2xl border-border/50 shadow-xl">
+                          <SelectContent className="border-border/50 shadow-xl rounded-2xl">
                             {YEARS.map((y) => (
                               <SelectItem
                                 key={y}
                                 value={y.toString()}
-                                className="font-bold rounded-xl my-0.5"
+                                className="font-bold rounded-full my-0.5"
                               >
                                 {y}
                               </SelectItem>
@@ -511,13 +511,13 @@ export default function ReportsPage() {
                         placeholder="contato@exemplo.com"
                         value={emailTo}
                         onChange={(e) => setEmailTo(e.target.value)}
-                        className="h-14 rounded-2xl bg-muted/20 border-border/40 hover:bg-muted/30 font-bold focus-visible:ring-primary/30 pl-4 transition-all shadow-inner text-base"
+                        className="h-14 bg-muted/20 border-border/40 hover:bg-muted/30 font-bold focus-visible:ring-primary/30 pl-4 transition-all shadow-inner text-base"
                       />
                     </div>
 
                     <div className="flex justify-start pt-2">
                       <Button
-                        className="rounded-2xl h-14 px-8 font-black active:scale-95 transition-all w-full md:w-auto shadow-[0_8px_25px_rgb(var(--primary)/0.3)] hover:shadow-[0_10px_30px_rgb(var(--primary)/0.4)] text-base"
+                        className="h-14 px-8 font-black active:scale-95 transition-all w-full md:w-auto shadow-[0_8px_25px_rgb(var(--primary)/0.3)] hover:shadow-[0_10px_30px_rgb(var(--primary)/0.4)] text-base"
                         onClick={handleSendReport}
                         disabled={isSendingEmail}
                       >

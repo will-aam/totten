@@ -275,14 +275,14 @@ export const NewAppointmentModal = memo(
                 value={selectedProfessionalId}
                 onValueChange={setSelectedProfessionalId}
               >
-                <SelectTrigger className="bg-muted/40 border-none rounded-2xl h-12 transition-all">
+                <SelectTrigger className="bg-muted/40 border-none h-12 transition-all">
                   <User className="mr-2 h-4 w-4 text-primary" />
                   <SelectValue placeholder="Quem vai atender?" />
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl border border-border/50 bg-background shadow-xl">
+                <SelectContent className="border border-border/50 bg-background shadow-xl rounded-2xl">
                   <SelectItem
                     value={session?.user?.id || ""}
-                    className="rounded-xl py-2 font-medium"
+                    className="rounded-full py-2 font-medium"
                   >
                     Admin
                   </SelectItem>
@@ -292,7 +292,7 @@ export const NewAppointmentModal = memo(
                       <SelectItem
                         key={member.id}
                         value={member.id}
-                        className="rounded-xl py-2 font-medium"
+                        className="rounded-full py-2 font-medium"
                       >
                         {member.display_name}
                       </SelectItem>
@@ -310,7 +310,7 @@ export const NewAppointmentModal = memo(
               value={selectedClientId}
               onValueChange={setSelectedClientId}
             >
-              <SelectTrigger className="bg-muted/40 border-none rounded-2xl h-12 transition-all">
+              <SelectTrigger className="bg-muted/40 border-none h-12 transition-all">
                 <SelectValue
                   placeholder={
                     loadingClients
@@ -319,12 +319,12 @@ export const NewAppointmentModal = memo(
                   }
                 />
               </SelectTrigger>
-              <SelectContent className="rounded-2xl border border-border/50 bg-background shadow-xl">
+              <SelectContent className="border border-border/50 bg-background shadow-xl rounded-2xl">
                 {clients.map((c: any) => (
                   <SelectItem
                     key={c.id}
                     value={c.id}
-                    className="rounded-xl py-2 font-medium"
+                    className="rounded-full py-2 font-medium"
                   >
                     {c.name}
                   </SelectItem>
@@ -345,7 +345,7 @@ export const NewAppointmentModal = memo(
               <div className="flex items-center gap-3">
                 <div
                   className={cn(
-                    "p-2.5 rounded-xl transition-colors",
+                    "p-2.5 rounded-full transition-colors",
                     usePackage
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted text-muted-foreground shadow-sm",
@@ -396,20 +396,19 @@ export const NewAppointmentModal = memo(
               onValueChange={setSelectedServiceId}
             >
               <SelectTrigger
-                className={cn(
-                  "rounded-2xl bg-muted/40 border-none h-12 transition-all",
+                className={cn("rounded-2xl bg-muted/40 border-none h-12 transition-all",
                   usePackage &&
                   "bg-primary/5 text-primary font-black opacity-100",
                 )}
               >
                 <SelectValue placeholder="O que será feito?" />
               </SelectTrigger>
-              <SelectContent className="rounded-2xl border border-border/50 bg-background shadow-xl">
+              <SelectContent className="border border-border/50 bg-background shadow-xl rounded-2xl">
                 {services.map((s: any) => (
                   <SelectItem
                     key={s.id}
                     value={s.id}
-                    className="rounded-xl py-2 font-medium"
+                    className="rounded-full py-2 font-medium"
                   >
                     {s.name}
                   </SelectItem>
@@ -427,7 +426,7 @@ export const NewAppointmentModal = memo(
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full rounded-2xl bg-muted/40 border-none justify-start h-12 transition-all font-medium"
+                    className="w-full bg-muted/40 border-none justify-start h-12 transition-all font-medium"
                   >
                     <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
                     {date ? format(date, "dd/MM/yy") : "Selecione"}
@@ -453,11 +452,11 @@ export const NewAppointmentModal = memo(
                 Horário
               </Label>
               <Select value={time} onValueChange={setTime}>
-                <SelectTrigger className="rounded-2xl bg-muted/40 border-none h-12 transition-all font-medium">
+                <SelectTrigger className="bg-muted/40 border-none h-12 transition-all font-medium">
                   <Clock className="mr-2 h-4 w-4 text-primary" />
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl border border-border/50 bg-background max-h-48 shadow-xl">
+                <SelectContent className="border border-border/50 bg-background max-h-48 shadow-xl rounded-2xl">
                   {TIME_SLOTS.map((slot) => (
                     <SelectItem
                       key={slot}
@@ -489,7 +488,7 @@ export const NewAppointmentModal = memo(
             <div className="flex items-center gap-3">
               <div
                 className={cn(
-                  "p-2 rounded-xl transition-colors shrink-0",
+                  "p-2 rounded-full transition-colors shrink-0",
                   isRecurring
                     ? "bg-primary text-primary-foreground shadow-md"
                     : "bg-muted text-muted-foreground",
@@ -518,7 +517,7 @@ export const NewAppointmentModal = memo(
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 rounded-lg bg-muted/50 hover:bg-muted"
+                      className="h-8 w-8 bg-muted/50 hover:bg-muted"
                       onClick={() =>
                         setRepeatCount(Math.max(2, repeatCount - 1))
                       }
@@ -532,7 +531,7 @@ export const NewAppointmentModal = memo(
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 rounded-lg bg-muted/50 hover:bg-muted"
+                      className="h-8 w-8 bg-muted/50 hover:bg-muted"
                       onClick={() => setRepeatCount(repeatCount + 1)}
                       disabled={usePackage && repeatCount >= saldoDisponivel}
                     >
@@ -550,14 +549,14 @@ export const NewAppointmentModal = memo(
             variant="secondary"
             onClick={() => onOpenChange(false)}
             disabled={saving}
-            className="rounded-2xl h-12 font-bold w-full sm:w-1/2"
+            className="h-12 font-bold w-full sm:w-1/2"
           >
             Cancelar
           </Button>
           <Button
             onClick={handleSave}
             disabled={saving}
-            className="rounded-2xl h-12 font-black bg-primary text-primary-foreground w-full sm:w-1/2 active:scale-[0.98] transition-all"
+            className="h-12 font-black bg-primary text-primary-foreground w-full sm:w-1/2 active:scale-[0.98] transition-all"
           >
             {saving ? (
               <LoaderDots className="mr-2 h-5 w-5 animate-spin" />

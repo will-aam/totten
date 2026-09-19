@@ -49,7 +49,7 @@ export default function PhoneMockup() {
               </div>
             ))}
           </div>
-          <div className="m-6 rounded-xl bg-zinc-400 py-3 text-center text-sm font-semibold text-black">
+          <div className="m-6 rounded-full bg-zinc-400 py-3 text-center text-sm font-semibold text-black">
             Confirmar
           </div>
         </div>

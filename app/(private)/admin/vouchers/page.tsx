@@ -137,7 +137,7 @@ function AdminVouchersPageContent() {
               placeholder="Buscar cliente (mín. 3 letras)..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 bg-card border-border/50 rounded-full h-11 md:h-12 shadow-sm font-medium focus-visible:ring-primary/20 text-sm"
+              className="pl-10 bg-card border-border/50 h-11 md:h-12 shadow-sm font-medium focus-visible:ring-primary/20 text-sm"
             />
           </div>
         </div>
@@ -164,7 +164,7 @@ function AdminVouchersPageContent() {
                     <Skeleton className="h-4 w-40 md:w-48 bg-muted/50" />
                     <Skeleton className="h-3 w-24 md:w-32 bg-muted/50" />
                   </div>
-                  <Skeleton className="h-9 w-28 md:h-10 md:w-32 rounded-xl shrink-0 bg-muted/50 hidden md:block" />
+                  <Skeleton className="h-9 w-28 md:h-10 md:w-32 rounded-full shrink-0 bg-muted/50 hidden md:block" />
                 </div>
               ))}
             </div>
@@ -227,7 +227,7 @@ function AdminVouchersPageContent() {
 
                       <Button
                         onClick={() => handleOpenVoucher(item)}
-                        className="rounded-xl md:rounded-2xl h-10 md:h-11 px-4 md:px-5 text-xs md:text-sm font-bold shadow-sm bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground active:scale-95 transition-all shrink-0"
+                        className="md: h-10 md:h-11 px-4 md:px-5 text-xs md:text-sm font-bold shadow-sm bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground active:scale-95 transition-all shrink-0"
                       >
                         {item.hasVoucher ? "Reenviar" : "Gerar Voucher"}
                       </Button>

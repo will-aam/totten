@@ -53,10 +53,9 @@ export default function AnamnesisListPage() {
 
     if (
       !confirm(
-        `Tem certeza que deseja ${actionText} este modelo? ${
-          currentStatus
-            ? "Ele não aparecerá mais para preenchimento de novas fichas."
-            : "Ele voltará a aparecer na lista de novas fichas."
+        `Tem certeza que deseja ${actionText} este modelo? ${currentStatus
+          ? "Ele não aparecerá mais para preenchimento de novas fichas."
+          : "Ele voltará a aparecer na lista de novas fichas."
         }`,
       )
     )
@@ -96,7 +95,7 @@ export default function AnamnesisListPage() {
           </div>
           <Button
             asChild
-            className="h-12 px-8 rounded-xl font-medium shadow-sm"
+            className="h-12 px-8 font-medium shadow-sm"
           >
             <Link href="/admin/anamnesis/new">
               <Plus className="w-5 h-5 mr-2" />
@@ -113,34 +112,25 @@ export default function AnamnesisListPage() {
           </div>
         ) : templates.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center bg-muted/20 rounded-2xl border-2 border-dashed border-border">
-            <FileDetail size="lg" className="text-muted-foreground/40 mb-4" />
-            <h3 className="text-lg font-bold text-foreground">
+            <img width="48" height="48" src="https://img.icons8.com/parakeet/48/question.png" alt="question" />
+            <h3 className="text-lg font-bold text-foreground mt-4">
               Nenhum modelo encontrado
             </h3>
-            <p className="text-sm text-muted-foreground mb-6 max-w-md">
+            <p className="text-sm text-muted-foreground mb-6 max-w-md mt-1">
               Você ainda não criou nenhum formulário de anamnese. Clique no
               botão abaixo para criar o seu primeiro.
             </p>
-            <Button
-              asChild
-              variant="outline"
-              className="rounded-xl h-11 shadow-sm"
-            >
-              <Link href="/admin/anamnesis/new">
-                <Plus className="w-4 h-4 mr-2" /> Criar Primeiro Modelo
-              </Link>
-            </Button>
+
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {templates.map((template) => (
               <Card
                 key={template.id}
-                className={`group overflow-hidden rounded-2xl border-border/50 transition-all ${
-                  template.active
-                    ? "bg-muted/10 hover:bg-muted/30 hover:border-primary/30"
-                    : "bg-muted/5 opacity-70 grayscale-[0.5]"
-                }`}
+                className={`group overflow-hidden rounded-2xl border-border/50 transition-all ${template.active
+                  ? "bg-muted/10 hover:bg-muted/30 hover:border-primary/30"
+                  : "bg-muted/5 opacity-70 grayscale-[0.5]"
+                  }`}
               >
                 <CardContent className="p-5 flex flex-col h-full relative">
                   <div className="absolute top-4 right-4">
@@ -163,11 +153,10 @@ export default function AnamnesisListPage() {
 
                   <div className="flex items-start justify-between mb-4 mt-2">
                     <div
-                      className={`p-2.5 rounded-lg ${
-                        template.active
-                          ? "bg-primary/10 text-primary"
-                          : "bg-muted text-muted-foreground"
-                      }`}
+                      className={`p-2.5 rounded-lg ${template.active
+                        ? "bg-primary/10 text-primary"
+                        : "bg-muted text-muted-foreground"
+                        }`}
                     >
                       <FileDetail size="md" />
                     </div>
@@ -185,7 +174,7 @@ export default function AnamnesisListPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1 rounded-lg h-9 text-base font-medium"
+                      className="flex-1 h-9 text-base font-medium"
                       asChild
                     >
                       <Link href={`/admin/anamnesis/${template.id}/edit`}>
@@ -197,7 +186,7 @@ export default function AnamnesisListPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1 rounded-lg h-9 text-base font-medium"
+                      className="flex-1 h-9 text-base font-medium"
                       onClick={() =>
                         handleToggleStatus(template.id, template.active)
                       }

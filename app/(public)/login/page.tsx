@@ -171,7 +171,7 @@ function LoginForm() {
               <Button
                 type="submit"
                 size="lg"
-                className="w-full h-14 sm:h-12 text-lg sm:text-base rounded-xl transition-all hover:scale-[1.02] shadow-md"
+                className="w-full h-14 sm:h-12 text-lg sm:text-base rounded-full transition-all hover:scale-[1.02] shadow-md"
                 disabled={loading}
               >
                 {loading ? "Entrando..." : "Entrar"}

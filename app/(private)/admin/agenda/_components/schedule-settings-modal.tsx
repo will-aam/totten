@@ -174,10 +174,10 @@ export const ScheduleSettingsModal = memo(
                 <Label className="font-bold text-foreground">Visualização padrão ao abrir a agenda</Label>
               </div>
               <Select value={defaultScheduleView} onValueChange={setDefaultScheduleView}>
-                <SelectTrigger className="rounded-xl bg-muted/40 border-none h-11 font-bold">
+                <SelectTrigger className="bg-muted/40 border-none h-11 font-bold">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl">
+                <SelectContent className=" rounded-2xl">
                   <SelectItem value="day" className="rounded-lg">Dia</SelectItem>
                   <SelectItem value="week" className="rounded-lg">Semana</SelectItem>
                   <SelectItem value="month" className="rounded-lg">Mês</SelectItem>
@@ -201,7 +201,7 @@ export const ScheduleSettingsModal = memo(
 
                 <AlertDialog open={isClearDialogOpen} onOpenChange={setIsClearDialogOpen}>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm" className="w-full rounded-xl h-11 font-bold">
+                    <Button variant="destructive" size="sm" className="w-full h-11 font-bold">
                       Limpar agendamentos
                     </Button>
                   </AlertDialogTrigger>
@@ -218,7 +218,7 @@ export const ScheduleSettingsModal = memo(
                         value={clearPassword}
                         onChange={(e) => setClearPassword(e.target.value)}
                         placeholder="Sua senha de acesso"
-                        className="rounded-2xl h-12 bg-muted/40 border-none"
+                        className="h-12 bg-muted/40 border-none"
                       />
                     </div>
                     <AlertDialogFooter>
@@ -237,14 +237,14 @@ export const ScheduleSettingsModal = memo(
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="flex-1 rounded-xl h-12 font-bold text-muted-foreground border-transparent hover:border-border"
+              className="flex-1 h-12 font-bold text-muted-foreground border-transparent hover:border-border"
             >
               Voltar
             </Button>
             <Button
               onClick={handleConfirm}
               disabled={isSaving}
-              className="flex-1 rounded-xl h-12 bg-primary font-black text-primary-foreground"
+              className="flex-1 h-12 bg-primary font-black text-primary-foreground"
             >
               {isSaving ? <LoaderDots className="animate-spin h-5 w-5" /> : "Salvar"}
             </Button>

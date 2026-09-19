@@ -86,7 +86,7 @@ export default function Features() {
             className="group relative overflow-hidden rounded-2xl border border-totten bg-card-totten p-6 transition-all hover:border-white/20 hover:bg-[#1c1c1f]"
           >
             <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/3 opacity-0 blur-2xl transition-opacity group-hover:opacity-100" />
-            <div className="grid h-10 w-10 place-items-center rounded-xl border border-totten bg-[#0c0c0e]">
+            <div className="grid h-10 w-10 place-items-center rounded-full border border-totten bg-[#0c0c0e]">
               <Icon className="h-5 w-5 text-white" />
             </div>
             <h3 className="mt-4 text-base font-semibold">{title}</h3>

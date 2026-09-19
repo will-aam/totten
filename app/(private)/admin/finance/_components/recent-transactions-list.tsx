@@ -145,7 +145,7 @@ function TransactionListItem({
       <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 pr-2">
         <div
           className={cn(
-            "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl font-bold shadow-sm transition-all duration-300 group-hover:scale-110",
+            "flex h-11 w-11 shrink-0 items-center justify-center rounded-full font-bold shadow-sm transition-all duration-300 group-hover:scale-110",
             isIncome
               ? "bg-emerald-500/10 text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white group-hover:shadow-[0_4px_15px_rgb(16,185,129,0.2)]"
               : "bg-rose-500/10 text-rose-600 group-hover:bg-rose-500 group-hover:text-white group-hover:shadow-[0_4px_15px_rgb(244,63,94,0.2)]",
@@ -228,7 +228,7 @@ export function RecentTransactionsList({ data }: RecentTransactionsListProps) {
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-3xl rounded-full -z-10 pointer-events-none" />
         <CardHeader className="px-0 pt-0 md:pt-6 md:px-6 z-10 relative">
           <CardTitle className="flex items-center gap-2 text-foreground font-black text-lg">
-            <div className="p-2 bg-primary/10 rounded-xl text-primary">
+            <div className="p-2 bg-primary/10 rounded-full text-primary">
               <Receipt className="h-5 w-5" />
             </div>
             Histórico Recente
@@ -269,7 +269,7 @@ export function RecentTransactionsList({ data }: RecentTransactionsListProps) {
         <DialogContent className="rounded-4xl sm:max-w-md border-border/40 shadow-2xl bg-background/80 backdrop-blur-2xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-black flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-xl text-primary">
+              <div className="p-2 bg-primary/10 rounded-full text-primary">
                 <InfoCircle className="h-5 w-5" />
               </div>
               Detalhes da Movimentação

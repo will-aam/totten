@@ -81,7 +81,7 @@ export function SecuritySettings() {
             <Button
               onClick={handleChangePassword}
               disabled={loading}
-              className="h-12 px-8 rounded-xl font-medium shadow-sm"
+              className="h-12 px-8 font-medium shadow-sm"
             >
               {loading ? (
                 <>
@@ -163,11 +163,10 @@ export function SecuritySettings() {
       <button
         onClick={handleChangePassword}
         disabled={loading}
-        className={`${
-          !isMobile
+        className={`${!isMobile
             ? "hidden"
             : "fixed bottom-0 right-4 md:bottom-8 md:right-8 h-14 w-14 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 z-50 translate-y-16 opacity-100 hover:scale-110"
-        }`}
+          }`}
       >
         <Save size="sm" />
       </button>

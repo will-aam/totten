@@ -115,7 +115,7 @@ export default async function PublicLinkBioPage({
     let roundingClass = "rounded-full";
     if (rounding === "none") roundingClass = "rounded-none";
     if (rounding === "sm") roundingClass = "rounded-md";
-    if (rounding === "md") roundingClass = "rounded-xl";
+    if (rounding === "md") roundingClass = "rounded-full";
     if (rounding === "lg") roundingClass = "rounded-2xl";
 
     const style = theme.buttonStyle || "solid";
@@ -329,7 +329,7 @@ export default async function PublicLinkBioPage({
                   {links.map((link: any) => {
                     const isSystemSite = link.id === "system-site" || link.type === "system-site";
                     const isSystemBooking = link.id === "system-booking" || link.type === "system-booking";
-                    
+
                     let finalUrl = link.url;
                     if (isSystemSite) {
                       finalUrl = `/${org.slug}/site`;

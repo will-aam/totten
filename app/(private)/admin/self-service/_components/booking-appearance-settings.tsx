@@ -62,7 +62,7 @@ export function BookingAppearanceSettings({
                 key={theme.id}
                 onClick={() => handleThemeChange(theme)}
                 className={cn(
-                  "relative flex flex-col items-center gap-2 rounded-xl border-2 p-2 transition-all outline-none",
+                  "relative flex flex-col items-center gap-2 rounded-full border-2 p-2 transition-all outline-none",
                   bookingTheme === theme.id
                     ? "border-primary bg-primary/5"
                     : "border-border/50 bg-card hover:border-primary/50",

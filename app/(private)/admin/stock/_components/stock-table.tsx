@@ -68,7 +68,7 @@ export function StockTable({
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="hover:bg-muted font-semibold rounded-full px-2"
+          className="hover:bg-muted font-semibold px-2"
         >
           Insumo <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
@@ -111,7 +111,7 @@ export function StockTable({
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="hover:bg-muted font-semibold rounded-full px-2"
+          className="hover:bg-muted font-semibold px-2"
         >
           Custo Unitário <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
@@ -156,7 +156,7 @@ export function StockTable({
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="hover:bg-muted font-semibold rounded-full px-2 w-full justify-center"
+          className="hover:bg-muted font-semibold px-2 w-full justify-center"
         >
           Quantidade <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
@@ -198,7 +198,7 @@ export function StockTable({
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="hover:bg-muted font-semibold rounded-full px-2"
+          className="hover:bg-muted font-semibold px-2"
         >
           Total <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
@@ -249,7 +249,7 @@ export function StockTable({
   if (data.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/30 rounded-lg border border-dashed border-border">
-        <Package className="h-10 w-10 text-muted-foreground/40" />
+        <img width="48" height="48" src="https://img.icons8.com/parakeet/48/question.png" alt="question"/> 
         <p className="mt-4 text-sm font-medium text-muted-foreground">
           Nenhum insumo encontrado.
         </p>

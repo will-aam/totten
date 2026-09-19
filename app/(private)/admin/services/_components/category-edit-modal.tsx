@@ -154,7 +154,7 @@ export function CategoryEditModal({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Ex: Massagens, Estética, Terapias..."
-                className="rounded-xl"
+                className=""
               />
             </div>
           </div>
@@ -165,10 +165,8 @@ export function CategoryEditModal({
                 <Button
                   type="button"
                   variant="outline"
-                  className={
-                    category.active
-                      ? "text-destructive hover:bg-destructive/10 border-destructive/20 rounded-xl flex-1"
-                      : "text-emerald-600 hover:bg-emerald-50 border-emerald-200 rounded-xl flex-1"
+                  className={category.active ?"text-destructive hover:bg-destructive/10 border-destructive/20 rounded-full flex-1"
+                      : "text-emerald-600 hover:bg-emerald-50 border-emerald-200 rounded-full flex-1"
                   }
                   onClick={() => handleToggleStatus(false)}
                   disabled={loading}
@@ -194,7 +192,7 @@ export function CategoryEditModal({
               <Button
                 type="button"
                 variant="outline"
-                className="text-destructive hover:bg-destructive/10 border-destructive/20 rounded-xl px-3 shrink-0"
+                className="text-destructive hover:bg-destructive/10 border-destructive/20 px-3 shrink-0"
                 onClick={() => setConfirmDelete(true)}
                 disabled={loading}
               >
@@ -204,7 +202,7 @@ export function CategoryEditModal({
               <Button
                 onClick={handleSave}
                 disabled={loading}
-                className="rounded-xl bg-primary hover:bg-primary/90 font-bold flex-1 sm:flex-none"
+                className="bg-primary hover:bg-primary/90 font-bold flex-1 sm:flex-none"
               >
                 {loading ? (
                   <LoaderDots size="sm" className="animate-spin" />

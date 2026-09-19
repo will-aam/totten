@@ -350,356 +350,355 @@ export function ServiceEditModal({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="grid gap-2">
             <Label htmlFor="name">Nome do Serviço *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className="bg-muted/50 h-10"
-                />
-              </div>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+              className="bg-muted/50 h-10"
+            />
+          </div>
 
-              <div className="grid gap-2">
-                <Label htmlFor="category">Categoria *</Label>
-                <CategorySelect
-                  value={formData.category_id}
-                  onValueChange={(val) =>
-                    setFormData({ ...formData, category_id: val })
-                  }
-                />
-              </div>
-            </div>
+          <div className="grid gap-2">
+            <Label htmlFor="category">Categoria *</Label>
+            <CategorySelect
+              value={formData.category_id}
+              onValueChange={(val) =>
+                setFormData({ ...formData, category_id: val })
+              }
+            />
+          </div>
+        </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="description">Descrição</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                className="h-20 resize-none bg-muted/50"
-                placeholder="Descreva os detalhes do serviço..."
-              />
-            </div>
+        <div className="grid gap-2">
+          <Label htmlFor="description">Descrição</Label>
+          <Textarea
+            id="description"
+            value={formData.description}
+            onChange={(e) =>
+              setFormData({ ...formData, description: e.target.value })
+            }
+            className="h-20 resize-none bg-muted/50"
+            placeholder="Descreva os detalhes do serviço..."
+          />
+        </div>
 
-            <div className="flex flex-col gap-2 justify-end pb-1">
-              <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/50 bg-background hover:bg-muted/30 transition-colors">
-                <div className="flex flex-col">
-                  <Label className="flex items-center gap-1.5 text-foreground font-medium text-sm cursor-pointer" onClick={() => setFormData({ ...formData, available_online: !formData.available_online })}>
-                    Agendamento Online
-                  </Label>
-                  <span className="text-[11px] text-muted-foreground mt-0.5">
-                    Mostrar este serviço no site
-                  </span>
-                </div>
-                <Switch checked={formData.available_online} onCheckedChange={(checked) => setFormData({ ...formData, available_online: checked })} />
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3 p-4 border border-border/50 rounded-xl bg-muted/10">
-              <Label className="text-foreground font-medium flex items-center gap-2">
-                <Image className="h-4 w-4 text-muted-foreground" />
-                Imagem do Serviço (Opcional)
+        <div className="flex flex-col gap-2 justify-end pb-1">
+          <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/50 bg-background hover:bg-muted/30 transition-colors">
+            <div className="flex flex-col">
+              <Label className="flex items-center gap-1.5 text-foreground font-medium text-sm cursor-pointer" onClick={() => setFormData({ ...formData, available_online: !formData.available_online })}>
+                Agendamento Online
               </Label>
-              <p className="text-xs text-muted-foreground -mt-1">Adicione uma imagem representativa para exibir no site.</p>
-
-              <div className="flex flex-col gap-4 mt-2">
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="svcImageUrl" className="text-xs text-muted-foreground">URL da Imagem (Opção 1)</Label>
-                  <div className="relative">
-                    <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="svcImageUrl"
-                      value={formData.image_url}
-                      onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                      className="bg-background border-border/50 h-10 pl-9 focus-visible:ring-1"
-                      placeholder="Cole o link da imagem aqui..."
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="svcImageUpload" className="text-xs text-muted-foreground">Fazer Upload (Opção 2)</Label>
-                  <div className="relative">
-                    <Input
-                      id="svcImageUpload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      disabled={isUploading}
-                      className="sr-only"
-                    />
-                    <Label
-                      htmlFor="svcImageUpload"
-                      className="flex items-center justify-center gap-2 w-full h-10 px-4 rounded-md border border-border/50 bg-background hover:bg-muted/50 cursor-pointer transition-colors text-sm font-medium"
-                    >
-                      {isUploading ? <LoaderLines className="h-4 w-4 animate-spin text-muted-foreground" /> : <ArrowInUpSquareHalf className="h-4 w-4 text-muted-foreground" />}
-                      {isUploading ? "Enviando..." : "Escolher arquivo"}
-                    </Label>
-                  </div>
-                </div>
-
-                {formData.image_url && (
-                  <div className="mt-2 w-32 aspect-video rounded-lg overflow-hidden border border-border/50 relative shrink-0">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={formData.image_url} alt="Preview" className="w-full h-full object-cover" />
-                  </div>
-                )}
-              </div>
+              <span className="text-[11px] text-muted-foreground mt-0.5">
+                Mostrar este serviço no site
+              </span>
             </div>
+            <Switch checked={formData.available_online} onCheckedChange={(checked) => setFormData({ ...formData, available_online: checked })} />
+          </div>
+        </div>
 
-            {/* Agenda e Preço */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="price">Preço de Venda (R$) *</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
-                    R$
-                  </span>
-                  <Input
-                    id="price"
-                    type="number"
-                    step="0.01"
-                    value={formData.price}
-                    onChange={(e) =>
-                      setFormData({ ...formData, price: e.target.value })
-                    }
-                    className="bg-muted/50 h-10 pl-9 font-bold text-primary [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
-                  />
-                </div>
-              </div>
+        <div className="flex flex-col gap-3 p-4 border border-border/50 rounded-2xl bg-muted/10">
+          <Label className="text-foreground font-medium flex items-center gap-2">
+            <Image className="h-4 w-4 text-muted-foreground" />
+            Imagem do Serviço (Opcional)
+          </Label>
+          <p className="text-xs text-muted-foreground -mt-1">Adicione uma imagem representativa para exibir no site.</p>
 
-              <div className="grid gap-2">
-                <Label htmlFor="duration">Duração Estimada *</Label>
-                <Select
-                  value={formData.duration}
-                  onValueChange={(val) =>
-                    setFormData({ ...formData, duration: val })
-                  }
-                >
-                  <SelectTrigger className="bg-muted/50 h-10">
-                    <SelectValue placeholder="Selecione o tempo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {durations.length === 0 ? (
-                      <SelectItem value="none" disabled>
-                        Nenhuma duração cadastrada
-                      </SelectItem>
-                    ) : (
-                      durations.map((d) => (
-                        <SelectItem key={d.id} value={d.minutes.toString()}>
-                          {d.label}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="h-px w-full bg-border/50 my-2" />
-
-            {/* Custo Financeiro Híbrido */}
-            <div className="flex flex-col gap-4 bg-muted/10 p-4 rounded-xl border border-border/50">
-              <div className="flex items-center justify-between border-b border-border/50 pb-3">
-                <div className="flex flex-col gap-1 pr-4">
-                  <Label className="flex items-center gap-2 text-foreground font-medium cursor-pointer">
-                    <Box
-                      size="sm"
-                      className={cn(
-                        formData.trackStock
-                          ? "text-blue-600"
-                          : "text-muted-foreground",
-                      )}
-                    />
-                    Baixa Inteligente (Estoque)
-                  </Label>
-                  <p className="text-[11px] text-muted-foreground leading-tight">
-                    Calcular custo automático usando itens reais do estoque.
-                  </p>
-                </div>
-                <Switch
-                  checked={formData.trackStock}
-                  onCheckedChange={(checked) =>
-                    setFormData({ ...formData, trackStock: checked })
-                  }
+          <div className="flex flex-col gap-4 mt-2">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="svcImageUrl" className="text-xs text-muted-foreground">URL da Imagem (Opção 1)</Label>
+              <div className="relative">
+                <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="svcImageUrl"
+                  value={formData.image_url}
+                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                  className="bg-background border-border/50 h-10 pl-9 focus-visible:ring-1"
+                  placeholder="Cole o link da imagem aqui..."
                 />
               </div>
+            </div>
 
-              {formData.trackStock ? (
-                <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 pt-1">
-                  <Select onValueChange={handleAddStockItem} value="">
-                    <SelectTrigger className="bg-muted/50 border-border/50 h-10 text-sm">
-                      <SelectValue placeholder="Buscar insumo do estoque..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableStockItems.map((item) => (
-                        <SelectItem
-                          key={item.id}
-                          value={item.id}
-                          disabled={selectedStockItems.some(
-                            (i) => i.stock_item_id === item.id,
-                          )}
-                        >
-                          {item.name} - R$ {item.unit_cost.toFixed(2)} / un
-                        </SelectItem>
-                      ))}
-                      {availableStockItems.length === 0 && (
-                        <div className="p-2 text-xs text-muted-foreground text-center">
-                          Nenhum insumo cadastrado no estoque geral.
-                        </div>
-                      )}
-                    </SelectContent>
-                  </Select>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="svcImageUpload" className="text-xs text-muted-foreground">Fazer Upload (Opção 2)</Label>
+              <div className="relative">
+                <Input
+                  id="svcImageUpload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  disabled={isUploading}
+                  className="sr-only"
+                />
+                <Label
+                  htmlFor="svcImageUpload"
+                  className="flex items-center justify-center gap-2 w-full h-10 px-4 rounded-md border border-border/50 bg-background hover:bg-muted/50 cursor-pointer transition-colors text-sm font-medium"
+                >
+                  {isUploading ? <LoaderLines className="h-4 w-4 animate-spin text-muted-foreground" /> : <ArrowInUpSquareHalf className="h-4 w-4 text-muted-foreground" />}
+                  {isUploading ? "Enviando..." : "Escolher arquivo"}
+                </Label>
+              </div>
+            </div>
 
-                  {selectedStockItems.length > 0 && (
-                    <div className="flex flex-col gap-2 mt-1">
-                      {selectedStockItems.map((item) => (
-                        <div
-                          key={item.stock_item_id}
-                          className="flex items-center gap-2 bg-card p-2 rounded-md border border-border shadow-sm"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-semibold text-foreground truncate">
-                              {item.name}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground">
-                              R$ {item.unit_cost.toFixed(2)} un.
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <Input
-                              type="text"
-                              inputMode="numeric"
-                              className="h-8 w-16 text-center text-xs p-1"
-                              value={item.quantity_used}
-                              onChange={(e) =>
-                                handleUpdateStockQty(
-                                  item.stock_item_id,
-                                  e.target.value,
-                                )
-                              }
-                              onBlur={(e) => {
-                                if (
-                                  !e.target.value ||
-                                  Number(e.target.value) <= 0
-                                ) {
-                                  handleUpdateStockQty(item.stock_item_id, "1");
-                                }
-                              }}
-                            />
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              type="button"
-                              className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                              onClick={() =>
-                                handleRemoveStockItem(item.stock_item_id)
-                              }
-                            >
-                              <Trash size="sm" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+            {formData.image_url && (
+              <div className="mt-2 w-32 aspect-video rounded-lg overflow-hidden border border-border/50 relative shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={formData.image_url} alt="Preview" className="w-full h-full object-cover" />
+              </div>
+            )}
+          </div>
+        </div>
 
-                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-border border-dashed">
-                        <span className="text-xs font-medium text-muted-foreground">
-                          Custo Total Calculado:
-                        </span>
-                        <span className="text-sm font-bold text-blue-600">
-                          {new Intl.NumberFormat("pt-BR", {
-                            style: "currency",
-                            currency: "BRL",
-                          }).format(calculatedMaterialCost)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="grid gap-2 animate-in fade-in pt-1">
-                  <Label htmlFor="cost" className="flex items-center gap-2">
-                    <TrendingDown size="sm" className="text-destructive" />
-                    Custo de Material (R$)
-                  </Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
-                      R$
-                    </span>
-                    <Input
-                      id="cost"
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={formData.cost}
-                      onChange={(e) =>
-                        setFormData({ ...formData, cost: e.target.value })
-                      }
-                      className="bg-muted/50 h-10 pl-9 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
-                    />
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    Gasto fixo médio com descartáveis, cremes, etc.
-                  </p>
-                </div>
-              )}
+        {/* Agenda e Preço */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="price">Preço de Venda (R$) *</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                R$
+              </span>
+              <Input
+                id="price"
+                type="number"
+                step="0.01"
+                value={formData.price}
+                onChange={(e) =>
+                  setFormData({ ...formData, price: e.target.value })
+                }
+                className="bg-muted/50 h-10 pl-9 font-bold text-primary [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+              />
             </div>
           </div>
 
-          <div className="px-6 py-4 border-t border-border/50 shrink-0 flex flex-col sm:flex-row gap-2 bg-card">
-            <div className="flex gap-2 w-full sm:w-auto">
-              <Button
-                type="button"
-                variant="outline"
-                className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 shrink-0 px-3"
-                onClick={() => setConfirmDelete(true)}
-                disabled={loading}
-              >
-                <Trash size="sm" />
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                className={cn(
-                  "flex-1 sm:flex-none",
-                  service.active
-                    ? "text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20"
-                    : "text-emerald-600 hover:bg-emerald-600/10 hover:text-emerald-700 border-emerald-600/20"
-                )}
-                // Chamamos a função passando falso primeiro (sem forçar a cascata)
-                onClick={() => handleToggleStatus(false)}
-                disabled={loading}
-              >
-                {loading ? (
-                  <LoaderDots size="sm" className="animate-spin" />
-                ) : service.active ? (
-                  <>
-                    <Power size="sm" className="mr-2" /> Desativar
-                  </>
-                ) : (
-                  <>
-                    <Power size="sm" className="mr-2" /> Ativar
-                  </>
-                )}
-              </Button>
-            </div>
-
-            <div className="flex-1 hidden sm:block" />
-
-            <Button
-              onClick={handleSave}
-              disabled={loading}
-              className="w-full sm:w-auto"
+          <div className="grid gap-2">
+            <Label htmlFor="duration">Duração Estimada *</Label>
+            <Select
+              value={formData.duration}
+              onValueChange={(val) =>
+                setFormData({ ...formData, duration: val })
+              }
             >
-              {loading ? (
-                <LoaderDots size="sm" className="animate-spin mr-2" />
-              ) : (
-                <Save size="sm" className="mr-2" />
+              <SelectTrigger className="bg-muted/50 h-10">
+                <SelectValue placeholder="Selecione o tempo" />
+              </SelectTrigger>
+              <SelectContent>
+                {durations.length === 0 ? (
+                  <SelectItem value="none" disabled>
+                    Nenhuma duração cadastrada
+                  </SelectItem>
+                ) : (
+                  durations.map((d) => (
+                    <SelectItem key={d.id} value={d.minutes.toString()}>
+                      {d.label}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="h-px w-full bg-border/50 my-2" />
+
+        {/* Custo Financeiro Híbrido */}
+        <div className="flex flex-col gap-4 bg-muted/10 p-4 rounded-2xl border border-border/50">
+          <div className="flex items-center justify-between border-b border-border/50 pb-3">
+            <div className="flex flex-col gap-1 pr-4">
+              <Label className="flex items-center gap-2 text-foreground font-medium cursor-pointer">
+                <Box
+                  size="sm"
+                  className={cn(
+                    formData.trackStock
+                      ? "text-blue-600"
+                      : "text-muted-foreground",
+                  )}
+                />
+                Baixa Inteligente (Estoque)
+              </Label>
+              <p className="text-[11px] text-muted-foreground leading-tight">
+                Calcular custo automático usando itens reais do estoque.
+              </p>
+            </div>
+            <Switch
+              checked={formData.trackStock}
+              onCheckedChange={(checked) =>
+                setFormData({ ...formData, trackStock: checked })
+              }
+            />
+          </div>
+
+          {formData.trackStock ? (
+            <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 pt-1">
+              <Select onValueChange={handleAddStockItem} value="">
+                <SelectTrigger className="bg-muted/50 border-border/50 h-10 text-sm">
+                  <SelectValue placeholder="Buscar insumo do estoque..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableStockItems.map((item) => (
+                    <SelectItem
+                      key={item.id}
+                      value={item.id}
+                      disabled={selectedStockItems.some(
+                        (i) => i.stock_item_id === item.id,
+                      )}
+                    >
+                      {item.name} - R$ {item.unit_cost.toFixed(2)} / un
+                    </SelectItem>
+                  ))}
+                  {availableStockItems.length === 0 && (
+                    <div className="p-2 text-xs text-muted-foreground text-center">
+                      Nenhum insumo cadastrado no estoque geral.
+                    </div>
+                  )}
+                </SelectContent>
+              </Select>
+
+              {selectedStockItems.length > 0 && (
+                <div className="flex flex-col gap-2 mt-1">
+                  {selectedStockItems.map((item) => (
+                    <div
+                      key={item.stock_item_id}
+                      className="flex items-center gap-2 bg-card p-2 rounded-md border border-border shadow-sm"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-foreground truncate">
+                          {item.name}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          R$ {item.unit_cost.toFixed(2)} un.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          className="h-8 w-16 text-center text-xs p-1"
+                          value={item.quantity_used}
+                          onChange={(e) =>
+                            handleUpdateStockQty(
+                              item.stock_item_id,
+                              e.target.value,
+                            )
+                          }
+                          onBlur={(e) => {
+                            if (
+                              !e.target.value ||
+                              Number(e.target.value) <= 0
+                            ) {
+                              handleUpdateStockQty(item.stock_item_id, "1");
+                            }
+                          }}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          type="button"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                          onClick={() =>
+                            handleRemoveStockItem(item.stock_item_id)
+                          }
+                        >
+                          <Trash size="sm" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-border border-dashed">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Custo Total Calculado:
+                    </span>
+                    <span className="text-sm font-bold text-blue-600">
+                      {new Intl.NumberFormat("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                      }).format(calculatedMaterialCost)}
+                    </span>
+                  </div>
+                </div>
               )}
+            </div>
+          ) : (
+            <div className="grid gap-2 animate-in fade-in pt-1">
+              <Label htmlFor="cost" className="flex items-center gap-2">
+                <TrendingDown size="sm" className="text-destructive" />
+                Custo de Material (R$)
+              </Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                  R$
+                </span>
+                <Input
+                  id="cost"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={formData.cost}
+                  onChange={(e) =>
+                    setFormData({ ...formData, cost: e.target.value })
+                  }
+                  className="bg-muted/50 h-10 pl-9 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Gasto fixo médio com descartáveis, cremes, etc.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="px-6 py-4 border-t border-border/50 shrink-0 flex flex-col sm:flex-row gap-2 bg-card">
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button
+            type="button"
+            variant="outline"
+            className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 shrink-0 px-3"
+            onClick={() => setConfirmDelete(true)}
+            disabled={loading}
+          >
+            <Trash size="sm" />
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            className={cn("flex-1 sm:flex-none",
+              service.active
+                ? "text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20"
+                : "text-emerald-600 hover:bg-emerald-600/10 hover:text-emerald-700 border-emerald-600/20"
+            )}
+            // Chamamos a função passando falso primeiro (sem forçar a cascata)
+            onClick={() => handleToggleStatus(false)}
+            disabled={loading}
+          >
+            {loading ? (
+              <LoaderDots size="sm" className="animate-spin" />
+            ) : service.active ? (
+              <>
+                <Power size="sm" className="mr-2" /> Desativar
+              </>
+            ) : (
+              <>
+                <Power size="sm" className="mr-2" /> Ativar
+              </>
+            )}
+          </Button>
+        </div>
+
+        <div className="flex-1 hidden sm:block" />
+
+        <Button
+          onClick={handleSave}
+          disabled={loading}
+          className="w-full sm:w-auto"
+        >
+          {loading ? (
+            <LoaderDots size="sm" className="animate-spin mr-2" />
+          ) : (
+            <Save size="sm" className="mr-2" />
+          )}
           {loading ? "Salvando..." : "Salvar"}
         </Button>
       </div>

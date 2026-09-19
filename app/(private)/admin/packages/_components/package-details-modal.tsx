@@ -273,7 +273,7 @@ export function PackageDetailsModal({
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-7 text-[10px] px-2 rounded-lg font-bold border-primary/20 text-primary hover:bg-primary/10"
+                      className="h-7 text-[10px] px-2 font-bold border-primary/20 text-primary hover:bg-primary/10"
                     >
                       <RefreshCwAlt className="h-3 w-3 mr-1" /> Sincronizar
                     </Button>
@@ -370,7 +370,7 @@ export function PackageDetailsModal({
                               size="icon"
                               onClick={() => prepareDeleteItem(item.id)}
                               disabled={isDeletingId === item.id}
-                              className="h-5 w-5 rounded bg-destructive/10 text-destructive hover:bg-destructive hover:text-white"
+                              className="h-5 w-5 bg-destructive/10 text-destructive hover:bg-destructive hover:text-white"
                             >
                               {isDeletingId === item.id ? (
                                 <LoaderDots className="animate-spin h-3 w-3" />
@@ -439,8 +439,7 @@ export function PackageDetailsModal({
           >
             <Button
               variant={packageData.active ? "outline" : "default"}
-              className={cn(
-                "rounded-2xl h-14 font-black text-xs uppercase tracking-tighter transition-all",
+              className={cn("rounded-2xl h-14 font-black text-xs uppercase tracking-tighter transition-all",
                 packageData.active && "border-2 active:scale-95",
               )}
               onClick={handleRenew}
@@ -449,7 +448,7 @@ export function PackageDetailsModal({
             </Button>
             {packageData.active && (
               <Button
-                className="rounded-2xl h-14 font-black text-xs uppercase tracking-tighter"
+                className="h-14 font-black text-xs uppercase tracking-tighter"
                 onClick={handleSchedule}
               >
                 <CalendarPlus className="mr-2 h-4 w-4" /> Agendar Sessão

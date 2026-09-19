@@ -312,7 +312,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
         {history.showHistory !== false && (history.historyTitle || (history.useGlobalBio !== false ? profile?.bio : history.historyText)) && (
           <div className="px-6 py-10 bg-foreground/5">
             {history.historyImage && (
-              <div className="w-full h-48 rounded-xl overflow-hidden mb-6 shadow-sm">
+              <div className="w-full h-48 rounded-full overflow-hidden mb-6 shadow-sm">
                 <img src={history.historyImage} alt="Nossa História" className="w-full h-full object-cover" />
               </div>
             )}
@@ -514,7 +514,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
 
             {(contact.whatsapp || contact.phone) && (
               <div className="flex items-center gap-3">
-                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-background")}>
+                <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-background")}>
                   <Phone className="h-5 w-5" style={{ color: theme.primaryColor }} />
                 </div>
                 <div>
@@ -526,7 +526,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
 
             {contact.email && (
               <div className="flex items-center gap-3">
-                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-background")}>
+                <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-background")}>
                   <Envelope className="h-5 w-5" style={{ color: theme.primaryColor }} />
                 </div>
                 <div>
@@ -538,7 +538,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
 
             {contact.address && (
               <div className="flex items-center gap-3">
-                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-background")}>
+                <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-background")}>
                   <Pin className="h-5 w-5" style={{ color: theme.primaryColor }} />
                 </div>
                 <div>
@@ -658,14 +658,14 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
             <Button
               variant="outline"
               onClick={() => setShowMobilePreview(true)}
-              className="flex-1 lg:hidden md:flex-none rounded-full h-10 w-full md:w-32"
+              className="flex-1 lg:hidden md:flex-none h-10 w-full md:w-32"
             >
               Ver Preview
             </Button>
             <Button
               onClick={handleSave}
               disabled={isSaving}
-              className="flex-1 md:flex-none rounded-full h-10 shadow-sm w-full md:w-32"
+              className="flex-1 md:flex-none h-10 shadow-sm w-full md:w-32"
             >
               {isSaving ? "Salvando..." : "Salvar"}
             </Button>
@@ -676,141 +676,141 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
         {/* Menu de Etapas ou Etapa Ativa */}
         <div className="mt-2 lg:h-[calc(100vh-360px)] lg:overflow-y-auto custom-scrollbar lg:pr-4 pb-20">
           {activeStepId === null ? (
-          <div className="flex flex-col gap-3 animate-in fade-in duration-300">
-            {STEPS.map((step) => {
-              const done = isStepDone(step.id);
-              return (
-                <div
-                  key={step.id}
-                  onClick={() => setActiveStepId(step.id)}
-                  className="flex items-center justify-between p-4 bg-card border border-border/50 rounded-xl cursor-pointer hover:bg-muted/50 hover:border-primary/50 transition-colors shadow-sm"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={cn(
-                      "h-10 w-10 rounded-full flex items-center justify-center shrink-0",
-                      done ? "bg-emerald-500/10 text-emerald-500" : "bg-muted text-muted-foreground"
-                    )}>
-                      {done ? <Check className="h-5 w-5" /> : <div className="h-3 w-3 rounded-full bg-current opacity-20" />}
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-foreground text-sm">{step.title}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {done ? "Configurado" : "Não configurado"}
-                      </span>
-                    </div>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </div>
-              );
-            })}
-
-            {/* Caixinha de Sugestão */}
-            <div className="mt-4 p-5 bg-primary/5 border border-primary/20 rounded-2xl flex flex-col gap-3 animate-in fade-in duration-500">
-              <div className="flex items-center gap-2 text-primary font-bold">
-                <Envelope className="w-5 h-5" />
-                <span>Sugestão de Melhoria</span>
-              </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Sentiu falta de alguma funcionalidade no seu site? (ex: "gostaria de ter a opção de ocultar os preços"). Mande sua ideia para nós e ajudaremos a melhorar a plataforma!
-              </p>
-              <div className="relative">
-                <textarea 
-                  value={suggestionText}
-                  onChange={(e) => setSuggestionText(e.target.value)}
-                  disabled={isSendingSuggestion}
-                  maxLength={1000}
-                  className="w-full h-24 rounded-xl border border-border/50 bg-background p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm disabled:opacity-50 pb-6"
-                  placeholder="Descreva sua sugestão de melhoria..."
-                />
-                <span className="absolute bottom-2 right-3 text-[10px] text-muted-foreground">
-                  {suggestionText.length}/1000
-                </span>
-              </div>
-              
-              <div className="flex flex-col gap-2">
-                <label className="cursor-pointer text-xs font-semibold text-primary/80 hover:text-primary flex items-center gap-1 transition-colors w-fit">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                  Anexar Imagem (Até 2)
-                  <input type="file" accept="image/*" className="hidden" disabled={isSendingSuggestion} onChange={(e) => {
-                    if (e.target.files) {
-                      const newFiles = Array.from(e.target.files);
-                      if (suggestionImages.length + newFiles.length > 2) {
-                        toast.error("Você pode anexar no máximo 2 imagens.");
-                        return;
-                      }
-                      const validFiles = newFiles.filter(f => {
-                        if (f.size > 2 * 1024 * 1024) {
-                          toast.error(`A imagem ${f.name} excede o limite de 2MB.`);
-                          return false;
-                        }
-                        return true;
-                      });
-                      setSuggestionImages(prev => [...prev, ...validFiles].slice(0, 2));
-                      e.target.value = '';
-                    }
-                  }} multiple />
-                </label>
-                
-                {suggestionImages.length > 0 && (
-                  <div className="flex gap-2 flex-wrap">
-                    {suggestionImages.map((img, i) => (
-                      <div key={i} className="flex items-center gap-1 bg-background border rounded-lg px-2 py-1 text-[10px] text-muted-foreground relative pr-6 shadow-sm">
-                        <span className="truncate max-w-[120px] font-medium">{img.name}</span>
-                        <button disabled={isSendingSuggestion} className="absolute right-1 hover:text-red-500 transition-colors" onClick={() => setSuggestionImages(prev => prev.filter((_, index) => index !== i))}>
-                          <X className="w-3 h-3" />
-                        </button>
+            <div className="flex flex-col gap-3 animate-in fade-in duration-300">
+              {STEPS.map((step) => {
+                const done = isStepDone(step.id);
+                return (
+                  <div
+                    key={step.id}
+                    onClick={() => setActiveStepId(step.id)}
+                    className="flex items-center justify-between p-4 bg-card border border-border/50 rounded-full cursor-pointer hover:bg-muted/50 hover:border-primary/50 transition-colors shadow-sm"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        "h-10 w-10 rounded-full flex items-center justify-center shrink-0",
+                        done ? "bg-emerald-500/10 text-emerald-500" : "bg-muted text-muted-foreground"
+                      )}>
+                        {done ? <Check className="h-5 w-5" /> : <div className="h-3 w-3 rounded-full bg-current opacity-20" />}
                       </div>
-                    ))}
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-foreground text-sm">{step.title}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {done ? "Configurado" : "Não configurado"}
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
                   </div>
-                )}
-              </div>
+                );
+              })}
 
-              <Button 
-                disabled={isSendingSuggestion}
-                className="w-full sm:w-auto self-start rounded-full shadow-sm mt-1"
-                onClick={async () => {
-                  if (!suggestionText.trim()) {
-                     toast.error("Por favor, digite uma sugestão antes de enviar.");
-                     return;
-                  }
-                  setIsSendingSuggestion(true);
-                  try {
-                    const formData = new FormData();
-                    formData.append("suggestionText", suggestionText);
-                    suggestionImages.forEach(img => formData.append("images", img));
-                    
-                    const res = await sendSuggestionAction(formData);
-                    if (res.success) {
-                      toast.success("Sugestão enviada com sucesso! Muito obrigado.");
-                      setSuggestionText("");
-                      setSuggestionImages([]);
-                    } else {
-                      toast.error(res.error || "Erro ao enviar sugestão.");
+              {/* Caixinha de Sugestão */}
+              <div className="mt-4 p-5 bg-primary/5 border border-primary/20 rounded-2xl flex flex-col gap-3 animate-in fade-in duration-500">
+                <div className="flex items-center gap-2 text-primary font-bold">
+                  <Envelope className="w-5 h-5" />
+                  <span>Sugestão de Melhoria</span>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Sentiu falta de alguma funcionalidade no seu site? (ex: "gostaria de ter a opção de ocultar os preços"). Mande sua ideia para nós e ajudaremos a melhorar a plataforma!
+                </p>
+                <div className="relative">
+                  <textarea
+                    value={suggestionText}
+                    onChange={(e) => setSuggestionText(e.target.value)}
+                    disabled={isSendingSuggestion}
+                    maxLength={1000}
+                    className="w-full h-24 rounded-full border border-border/50 bg-background p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm disabled:opacity-50 pb-6"
+                    placeholder="Descreva sua sugestão de melhoria..."
+                  />
+                  <span className="absolute bottom-2 right-3 text-[10px] text-muted-foreground">
+                    {suggestionText.length}/1000
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="cursor-pointer text-xs font-semibold text-primary/80 hover:text-primary flex items-center gap-1 transition-colors w-fit">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg>
+                    Anexar Imagem (Até 2)
+                    <input type="file" accept="image/*" className="hidden" disabled={isSendingSuggestion} onChange={(e) => {
+                      if (e.target.files) {
+                        const newFiles = Array.from(e.target.files);
+                        if (suggestionImages.length + newFiles.length > 2) {
+                          toast.error("Você pode anexar no máximo 2 imagens.");
+                          return;
+                        }
+                        const validFiles = newFiles.filter(f => {
+                          if (f.size > 2 * 1024 * 1024) {
+                            toast.error(`A imagem ${f.name} excede o limite de 2MB.`);
+                            return false;
+                          }
+                          return true;
+                        });
+                        setSuggestionImages(prev => [...prev, ...validFiles].slice(0, 2));
+                        e.target.value = '';
+                      }
+                    }} multiple />
+                  </label>
+
+                  {suggestionImages.length > 0 && (
+                    <div className="flex gap-2 flex-wrap">
+                      {suggestionImages.map((img, i) => (
+                        <div key={i} className="flex items-center gap-1 bg-background border rounded-lg px-2 py-1 text-[10px] text-muted-foreground relative pr-6 shadow-sm">
+                          <span className="truncate max-w-[120px] font-medium">{img.name}</span>
+                          <button disabled={isSendingSuggestion} className="absolute right-1 hover:text-red-500 transition-colors" onClick={() => setSuggestionImages(prev => prev.filter((_, index) => index !== i))}>
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <Button
+                  disabled={isSendingSuggestion}
+                  className="w-full sm:w-auto self-start shadow-sm mt-1"
+                  onClick={async () => {
+                    if (!suggestionText.trim()) {
+                      toast.error("Por favor, digite uma sugestão antes de enviar.");
+                      return;
                     }
-                  } catch (error) {
-                    toast.error("Ocorreu um erro ao tentar enviar sua sugestão.");
-                  } finally {
-                    setIsSendingSuggestion(false);
-                  }
-                }}
-              >
-                {isSendingSuggestion ? "Enviando..." : "Enviar Sugestão"}
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="w-full animate-in fade-in slide-in-from-right-4 duration-300">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveStepId(null)}
-              className="mb-6 -ml-2 text-muted-foreground hover:text-foreground"
-            >
-              <ChevronLeft className="h-5 w-5 mr-1" /> Voltar para o menu
-            </Button>
+                    setIsSendingSuggestion(true);
+                    try {
+                      const formData = new FormData();
+                      formData.append("suggestionText", suggestionText);
+                      suggestionImages.forEach(img => formData.append("images", img));
 
-            {STEPS.find(s => s.id === activeStepId)?.component}
-          </div>
-        )}
+                      const res = await sendSuggestionAction(formData);
+                      if (res.success) {
+                        toast.success("Sugestão enviada com sucesso! Muito obrigado.");
+                        setSuggestionText("");
+                        setSuggestionImages([]);
+                      } else {
+                        toast.error(res.error || "Erro ao enviar sugestão.");
+                      }
+                    } catch (error) {
+                      toast.error("Ocorreu um erro ao tentar enviar sua sugestão.");
+                    } finally {
+                      setIsSendingSuggestion(false);
+                    }
+                  }}
+                >
+                  {isSendingSuggestion ? "Enviando..." : "Enviar Sugestão"}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="w-full animate-in fade-in slide-in-from-right-4 duration-300">
+              <Button
+                variant="ghost"
+                onClick={() => setActiveStepId(null)}
+                className="mb-6 -ml-2 text-muted-foreground hover:text-foreground"
+              >
+                <ChevronLeft className="h-5 w-5 mr-1" /> Voltar para o menu
+              </Button>
+
+              {STEPS.find(s => s.id === activeStepId)?.component}
+            </div>
+          )}
         </div>
       </div>
 
@@ -833,7 +833,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
             variant="ghost"
             size="icon"
             onClick={() => setShowMobilePreview(false)}
-            className="absolute top-4 right-4 z-[999] rounded-full bg-black/40 text-white hover:bg-black/60 backdrop-blur-md"
+            className="absolute top-4 right-4 z-[999] bg-black/40 text-white hover:bg-black/60 backdrop-blur-md"
           >
             <X className="h-6 w-6" />
           </Button>

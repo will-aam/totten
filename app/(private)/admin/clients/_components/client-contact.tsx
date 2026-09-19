@@ -271,7 +271,7 @@ export function ClientContact({ client }: ClientContactProps) {
                   onClick={handleCancel}
                   variant="ghost"
                   size="sm"
-                  className="h-8 rounded-lg text-muted-foreground hover:bg-muted"
+                  className="h-8 text-muted-foreground hover:bg-muted"
                 >
                   Cancelar
                 </Button>
@@ -279,7 +279,7 @@ export function ClientContact({ client }: ClientContactProps) {
                   onClick={handleSave}
                   disabled={saving}
                   size="sm"
-                  className="h-8 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4"
+                  className="h-8 bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4"
                 >
                   {saving ? <LoaderDots className="animate-spin" /> : "Salvar"}
                 </Button>
@@ -443,7 +443,7 @@ export function ClientContact({ client }: ClientContactProps) {
                     onClick={() => setIsEditing(true)}
                     size="icon"
                     variant="ghost"
-                    className="text-muted-foreground bg-muted/30 rounded-full h-10 w-10 hover:bg-muted/60 hover:text-foreground transition-colors shrink-0"
+                    className="text-muted-foreground bg-muted/30 h-10 w-10 hover:bg-muted/60 hover:text-foreground transition-colors shrink-0"
                     title="Editar Ficha"
                   >
                     <Pencil className="h-5 w-5" />
@@ -456,14 +456,14 @@ export function ClientContact({ client }: ClientContactProps) {
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="outline"
-                        className="w-full sm:w-auto rounded-xl h-10 border-[#25D366]/30 bg-[#25D366]/5 text-[#25D366] hover:bg-[#25D366]/10 transition-colors font-semibold"
+                        className="w-full sm:w-auto h-10 border-[#25D366]/30 bg-[#25D366]/5 text-[#25D366] hover:bg-[#25D366]/10 transition-colors font-semibold"
                       >
                         <Whatsapp className="mr-2 h-4 w-4" /> Enviar Mensagem
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
                       align="start"
-                      className="w-64 rounded-xl"
+                      className="w-64 rounded-full"
                     >
                       <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider">
                         Modelos Rápidos

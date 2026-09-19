@@ -1,15 +1,14 @@
-// /app/(private)/admin/team/page.tsx
+// app/(private)/admin/team/page.tsx
 
 
 "use client";
 
-import { useEffect, useState, useCallback, memo } from "react";
+import { useEffect, useState, useCallback, memo, useMemo } from "react";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -47,13 +46,24 @@ import {
   ClipboardDetail, //  Importado para o Histórico
   Camera,
   Image as ImageIcon,
-  ChevronDown
+  ChevronDown,
+  Search
 } from "@boxicons/react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { uploadImageAction } from "@/app/actions/upload-image";
 import { compressImage } from "@/lib/image-utils";
+import { useDebounce } from "@/hooks/use-debounce";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 //  Importando todas as suas actions
 import {
@@ -119,6 +129,33 @@ export default function TeamPage() {
     package_template_ids: [] as string[],
     schedule_rule_id: "",
   });
+
+  // Estado e lógicas de busca e paginação
+  const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 8;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchTerm]);
+
+  const filteredTeam = useMemo(() => {
+    if (!debouncedSearchTerm) return team;
+    const lower = debouncedSearchTerm.toLowerCase();
+    return team.filter(
+      (m) =>
+        m.display_name?.toLowerCase().includes(lower) ||
+        m.email.toLowerCase().includes(lower) ||
+        m.profession?.toLowerCase().includes(lower)
+    );
+  }, [team, debouncedSearchTerm]);
+
+  const totalPages = Math.ceil(filteredTeam.length / ITEMS_PER_PAGE) || 1;
+  const paginatedTeam = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredTeam.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredTeam, currentPage]);
 
   useEffect(() => {
     if (session?.user?.role === "COLLABORATOR") {
@@ -293,29 +330,110 @@ export default function TeamPage() {
           </div>
           <Button
             onClick={openCreate}
-            className="h-12 px-8 rounded-xl font-medium shadow-sm"
+            className="h-12 px-8 font-medium shadow-sm"
           >
             <UserPlus size="sm" className="mr-2" />
             Novo Acesso
           </Button>
         </div>
 
+        <div className="relative w-full md:max-w-md">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nome, email ou especialidade..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 h-11 bg-card shadow-sm border-border"
+          />
+        </div>
+
         {loading ? (
           <div className="flex items-center justify-center p-12">
             <LoaderDots className="h-8 w-8 text-primary animate-spin" />
           </div>
-        ) : (
-          <div className="grid gap-4">
-            {team.map((member) => (
-              <TeamMemberCard
-                key={member.id}
-                member={member}
-                onEdit={openEdit}
-                onToggle={openToggle}
-                onDelete={openDelete}
-              />
-            ))}
+        ) : filteredTeam.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/20 border border-dashed rounded-full">
+            <img width="48" height="48" src="https://img.icons8.com/parakeet/48/question.png" alt="question" />
+            <p className="mt-4 text-sm font-medium text-muted-foreground">
+              {searchTerm.length > 0 ? "Nenhum profissional encontrado para essa busca." : "Nenhum profissional cadastrado."}
+            </p>
           </div>
+        ) : (
+          <>
+            <div className="grid gap-4">
+              {paginatedTeam.map((member) => (
+                <TeamMemberCard
+                  key={member.id}
+                  member={member}
+                  onEdit={openEdit}
+                  onToggle={openToggle}
+                  onDelete={openDelete}
+                />
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="mt-4">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (currentPage > 1) setCurrentPage(currentPage - 1);
+                        }}
+                        className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
+                      if (
+                        p === 1 ||
+                        p === totalPages ||
+                        (p >= currentPage - 1 && p <= currentPage + 1)
+                      ) {
+                        return (
+                          <PaginationItem key={p}>
+                            <PaginationLink
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setCurrentPage(p);
+                              }}
+                              isActive={currentPage === p}
+                            >
+                              {p}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      }
+
+                      if (p === currentPage - 2 || p === currentPage + 2) {
+                        return (
+                          <PaginationItem key={p}>
+                            <PaginationEllipsis />
+                          </PaginationItem>
+                        );
+                      }
+                      return null;
+                    })}
+
+                    <PaginationItem>
+                      <PaginationNext
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+                        }}
+                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -843,7 +961,7 @@ const TeamMemberCard = memo(
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 bg-muted/50 rounded-xl border border-border/50"
+                className="h-8 w-8 bg-muted/50 border border-border/50"
                 onClick={() => onEdit(member)}
                 title="Editar Perfil"
               >
@@ -851,7 +969,7 @@ const TeamMemberCard = memo(
               </Button>
             </div>
           ) : (
-            <div className="flex items-center gap-1 bg-muted/50 rounded-xl p-1 border border-border/50">
+            <div className="flex items-center gap-1 bg-muted/50 rounded-full p-1 border border-border/50">
               <Button
                 variant="ghost"
                 size="icon"
@@ -864,7 +982,7 @@ const TeamMemberCard = memo(
               <Button
                 variant="ghost"
                 size="icon"
-                className={`h-8 w-8 ${member.active ? "text-amber-600 hover:text-amber-700 hover:bg-amber-100" : "text-green-600 hover:text-green-700 hover:bg-green-100"}`}
+                className={`h-8 w-8 ${member.active ?"text-amber-600 hover:text-amber-700 hover:bg-amber-100" : "text-green-600 hover:text-green-700 hover:bg-green-100"}`}
                 onClick={() => onToggle(member)}
                 title={member.active ? "Desativar" : "Ativar"}
               >

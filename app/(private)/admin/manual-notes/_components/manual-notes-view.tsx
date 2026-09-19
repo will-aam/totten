@@ -235,7 +235,7 @@ export function ManualNotesView({
             type="submit"
             size="icon"
             disabled={isSending || !inputText.trim()}
-            className="rounded-full h-10 w-10 shrink-0 shadow-sm"
+            className="h-10 w-10 shrink-0 shadow-sm"
           >
             {isSending ? (
               <LoaderDots className="h-4 w-4 animate-spin" />

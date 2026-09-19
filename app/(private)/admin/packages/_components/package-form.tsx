@@ -153,14 +153,14 @@ export function PackageForm({ onSuccess, onCancel }: PackageFormProps) {
             value={form.service_id}
             onValueChange={(val) => setForm({ ...form, service_id: val })}
           >
-            <SelectTrigger className="bg-muted/30 h-12 rounded-xl border-border/50">
+            <SelectTrigger className="bg-muted/30 h-12 border-border/50">
               <SelectValue
                 placeholder={
                   loadingServices ? "Carregando..." : "Selecione o serviço..."
                 }
               />
             </SelectTrigger>
-            <SelectContent className="rounded-xl">
+            <SelectContent className=" rounded-2xl">
               {services.map((s) => (
                 <SelectItem key={s.id} value={s.id} className="rounded-lg">
                   {s.name}
@@ -184,7 +184,7 @@ export function PackageForm({ onSuccess, onCancel }: PackageFormProps) {
               placeholder="Ex: Combo Fidelidade (10 sessões)"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="bg-muted/30 h-12 rounded-xl border-border/50"
+              className="bg-muted/30 h-12 border-border/50"
             />
             {errors.name && (
               <p className="text-xs text-destructive">{errors.name}</p>
@@ -214,7 +214,7 @@ export function PackageForm({ onSuccess, onCancel }: PackageFormProps) {
                   cleanDigit = MAX_SESSIONS.toString();
                 setForm({ ...form, total_sessions: cleanDigit });
               }}
-              className="bg-muted/30 h-12 rounded-xl border-border/50 font-bold"
+              className="bg-muted/30 h-12 border-border/50 font-bold"
             />
             {errors.total_sessions && (
               <p className="text-xs text-destructive">
@@ -231,7 +231,7 @@ export function PackageForm({ onSuccess, onCancel }: PackageFormProps) {
             placeholder="Detalhes sobre o que o pacote inclui..."
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
-            className="bg-muted/30 min-h-24 rounded-xl border-border/50 resize-none"
+            className="bg-muted/30 min-h-24 border-border/50 resize-none"
           />
         </div>
       </div>
@@ -262,7 +262,7 @@ export function PackageForm({ onSuccess, onCancel }: PackageFormProps) {
                 }
               }}
               placeholder="0,00"
-              className="bg-muted/30 h-12 rounded-xl border-border/50 pl-11 font-bold text-lg text-foreground"
+              className="bg-muted/30 h-12 border-border/50 pl-11 font-bold text-lg text-foreground"
             />
           </div>
           {errors.price && (
@@ -294,7 +294,7 @@ export function PackageForm({ onSuccess, onCancel }: PackageFormProps) {
 
                 setForm({ ...form, validity_days: cleanDigit });
               }}
-              className="bg-muted/30 h-12 rounded-xl border-border/50 pr-14"
+              className="bg-muted/30 h-12 border-border/50 pr-14"
             />
             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">
               dias
@@ -326,7 +326,7 @@ export function PackageForm({ onSuccess, onCancel }: PackageFormProps) {
           <Button
             variant="ghost"
             type="button"
-            className="hidden sm:flex text-muted-foreground rounded-full md:rounded-xl px-6"
+            className="hidden sm:flex text-muted-foreground md: px-6"
             onClick={onCancel}
           >
             Cancelar
@@ -336,7 +336,7 @@ export function PackageForm({ onSuccess, onCancel }: PackageFormProps) {
             asChild
             variant="ghost"
             type="button"
-            className="hidden sm:flex text-muted-foreground rounded-full md:rounded-xl px-6"
+            className="hidden sm:flex text-muted-foreground md: px-6"
           >
             <Link href="/admin/services?tab=packages">Cancelar</Link>
           </Button>
@@ -344,7 +344,7 @@ export function PackageForm({ onSuccess, onCancel }: PackageFormProps) {
         <Button
           type="submit"
           disabled={loading}
-          className="w-full sm:w-auto h-12 px-8 rounded-xl font-bold shadow-md transition-all hover:scale-[1.02] active:scale-95"
+          className="w-full sm:w-auto h-12 px-8 font-bold shadow-md transition-all hover:scale-[1.02] active:scale-95"
         >
           {loading ? (
             <LoaderDots className="mr-2 h-5 w-5 animate-spin" />

@@ -69,7 +69,7 @@ export function IdentificationKeypad({
   return (
     <div className="flex w-full flex-col items-center gap-6 md:gap-8 lg:gap-10">
       {" "}
-      <div className="flex w-full rounded-xl border border-border bg-muted/30 p-1">
+      <div className="flex w-full rounded-full border border-border bg-muted/30 p-1">
         <button
           type="button"
           onClick={() => handleModeSwitch("CPF")}
@@ -103,7 +103,7 @@ export function IdentificationKeypad({
           Digite seu {mode === "CPF" ? "CPF" : "telefone"} para iniciar.
         </p>
       </div>
-      <div className="flex h-20 w-full items-center justify-center rounded-xl border-2 border-border bg-card px-4">
+      <div className="flex h-20 w-full items-center justify-center rounded-full border-2 border-border bg-card px-4">
         <span className="font-mono text-3xl tracking-widest text-foreground md:text-4xl">
           {digits.length > 0 ? (
             displayValue

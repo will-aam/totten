@@ -115,25 +115,25 @@ export function ClientAreaView({
       </div>
 
       <div className="flex-1 w-full max-w-3xl mx-auto flex flex-col md:flex-row gap-6 p-4 md:p-8">
-        
+
         {/* Navegação Desktop */}
         <div className="hidden md:flex flex-col w-64 gap-2 shrink-0">
-          <Button 
-            variant={activeTab === "upcoming" ? "default" : "ghost"} 
+          <Button
+            variant={activeTab === "upcoming" ? "default" : "ghost"}
             className={cn("justify-start h-12 font-bold", activeTab === "upcoming" && "bg-primary text-primary-foreground")}
             onClick={() => setActiveTab("upcoming")}
           >
             <Calendar className="mr-2 h-5 w-5" /> Próximos
           </Button>
-          <Button 
-            variant={activeTab === "history" ? "default" : "ghost"} 
+          <Button
+            variant={activeTab === "history" ? "default" : "ghost"}
             className={cn("justify-start h-12 font-bold", activeTab === "history" && "bg-primary text-primary-foreground")}
             onClick={() => setActiveTab("history")}
           >
             <History className="mr-2 h-5 w-5" /> Histórico
           </Button>
-          <Button 
-            variant={activeTab === "profile" ? "default" : "ghost"} 
+          <Button
+            variant={activeTab === "profile" ? "default" : "ghost"}
             className={cn("justify-start h-12 font-bold", activeTab === "profile" && "bg-primary text-primary-foreground")}
             onClick={() => setActiveTab("profile")}
           >
@@ -148,7 +148,7 @@ export function ClientAreaView({
           </div>
 
           {error && (
-            <div className="p-4 rounded-xl bg-red-500/10 text-red-600 text-sm font-medium text-center">
+            <div className="p-4 rounded-full bg-red-500/10 text-red-600 text-sm font-medium text-center">
               {error}
             </div>
           )}
@@ -175,7 +175,7 @@ export function ClientAreaView({
                     const month = new Intl.DateTimeFormat("pt-BR", { month: "short" }).format(dateObj).toUpperCase();
                     const weekday = new Intl.DateTimeFormat("pt-BR", { weekday: "long" }).format(dateObj).split('-')[0];
                     const time = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(dateObj);
-                    
+
                     return (
                       <div key={appt.id} className="flex flex-col sm:flex-row overflow-hidden rounded-3xl bg-white border shadow-sm transition-all hover:shadow-md">
                         {/* Data Card (Left on Desktop, Top on Mobile) */}
@@ -184,7 +184,7 @@ export function ClientAreaView({
                           <span className="text-sm font-bold tracking-widest mt-1">{month}</span>
                           <span className="text-xs font-medium capitalize opacity-90 mt-2 text-center">{weekday}</span>
                         </div>
-                        
+
                         {/* Details */}
                         <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between">
                           <div className="flex justify-between items-start gap-4">
@@ -204,13 +204,13 @@ export function ClientAreaView({
                                 </p>
                               )}
                               <div className="flex items-center gap-4 text-sm text-slate-500 mt-3 font-medium">
-                                <span className="flex items-center gap-1.5"><Calendar className="h-4 w-4"/> {time}</span>
+                                <span className="flex items-center gap-1.5"><Calendar className="h-4 w-4" /> {time}</span>
                                 {appt.professional?.display_name && (
-                                  <span className="flex items-center gap-1.5"><User className="h-4 w-4"/> {appt.professional.display_name.split(" ")[0]}</span>
+                                  <span className="flex items-center gap-1.5"><User className="h-4 w-4" /> {appt.professional.display_name.split(" ")[0]}</span>
                                 )}
                               </div>
                             </div>
-                            
+
                             <div className="hidden sm:flex flex-col items-end gap-2 shrink-0">
                               <button className="text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors">
                                 Ver detalhes &gt;
@@ -218,8 +218,8 @@ export function ClientAreaView({
                               <button onClick={() => handleReschedule(appt)} className="text-sm font-bold text-slate-600 flex items-center gap-1.5 hover:text-slate-800 transition-colors mt-2">
                                 Remarcar
                               </button>
-                              <button 
-                                onClick={() => handleCancel(appt)} 
+                              <button
+                                onClick={() => handleCancel(appt)}
                                 disabled={isCancelling === appt.id}
                                 className="text-sm font-bold text-red-500 flex items-center gap-1.5 hover:text-red-600 transition-colors"
                               >
@@ -233,8 +233,8 @@ export function ClientAreaView({
                             <button className="text-xs font-bold text-blue-600">Detalhes</button>
                             <div className="flex items-center gap-4">
                               <button onClick={() => handleReschedule(appt)} className="text-xs font-bold text-slate-600">Remarcar</button>
-                              <button 
-                                onClick={() => handleCancel(appt)} 
+                              <button
+                                onClick={() => handleCancel(appt)}
                                 disabled={isCancelling === appt.id}
                                 className="text-xs font-bold text-red-500"
                               >
@@ -270,7 +270,7 @@ export function ClientAreaView({
                       <div key={pkg.id} className={cn("bg-white border p-6 rounded-3xl shadow-sm", !pkg.active && "opacity-70 grayscale")}>
                         <div className="mb-4">
                           <h4 className="font-black text-lg uppercase">{pkg.name}</h4>
-                          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1"><Store className="h-3 w-3"/> Pacote de Sessões</p>
+                          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1"><Store className="h-3 w-3" /> Pacote de Sessões</p>
                         </div>
                         <div className="bg-slate-50 p-4 rounded-2xl border mb-4">
                           <div className="flex justify-between items-end mb-2">
@@ -287,9 +287,9 @@ export function ClientAreaView({
                               const isRealizado = item.status === "REALIZADO";
                               const isCancelado = item.status === "CANCELADO";
                               const isFalta = isCancelado && item.observations?.includes("Falta");
-                              
+
                               return (
-                                <div key={item.id} className="flex items-center justify-between text-sm p-3 rounded-xl bg-slate-50 border">
+                                <div key={item.id} className="flex items-center justify-between text-sm p-3 rounded-full bg-slate-50 border">
                                   <div className="flex items-center gap-3">
                                     <div className={cn("w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white", isRealizado ? "bg-emerald-500" : isFalta ? "bg-red-500" : "bg-slate-400")}>
                                       {isRealizado ? <CheckCircle className="h-3 w-3" /> : index + 1}
@@ -351,7 +351,7 @@ export function ClientAreaView({
                   <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Nome Completo</p>
                   <p className="font-medium text-lg">{client.name}</p>
                 </div>
-                
+
                 <div className="space-y-1">
                   <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">CPF</p>
                   <p className="font-medium text-lg">{client.cpf}</p>
@@ -368,7 +368,7 @@ export function ClientAreaView({
                   Para alterar seus dados cadastrais, por favor entre em contato com o atendimento da clínica.
                 </p>
                 {whatsappLink && (
-                  <Button asChild className="w-full bg-[#25D366] hover:bg-[#1DA851] text-white font-bold rounded-xl h-12">
+                  <Button asChild className="w-full bg-[#25D366] hover:bg-[#1DA851] text-white font-bold rounded-full h-12">
                     <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
                       <Whatsapp className="mr-2 h-5 w-5" /> Falar no WhatsApp
                     </a>
@@ -383,21 +383,21 @@ export function ClientAreaView({
       {/* Bottom Navigation Mobile */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 pb-safe z-40">
         <div className="flex items-center justify-around h-16 px-2">
-          <button 
+          <button
             onClick={() => setActiveTab("upcoming")}
             className={cn("flex flex-col items-center justify-center w-full h-full gap-1 text-[10px] font-bold transition-colors", activeTab === "upcoming" ? "text-blue-600" : "text-slate-400")}
           >
             <Calendar className="h-5 w-5" />
             Próximos
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab("history")}
             className={cn("flex flex-col items-center justify-center w-full h-full gap-1 text-[10px] font-bold transition-colors", activeTab === "history" ? "text-blue-600" : "text-slate-400")}
           >
             <History className="h-5 w-5" />
             Histórico
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab("profile")}
             className={cn("flex flex-col items-center justify-center w-full h-full gap-1 text-[10px] font-bold transition-colors", activeTab === "profile" ? "text-blue-600" : "text-slate-400")}
           >

@@ -96,7 +96,7 @@ export function InstallPrompt() {
     <div className="fixed top-0 left-0 right-0 z-50 bg-zinc-900 text-white p-4 shadow-xl border-b border-zinc-800 animate-in slide-in-from-top-full duration-500">
       <div className="flex items-center justify-between max-w-md mx-auto">
         <div className="flex items-center gap-3">
-          <div className="bg-zinc-800 p-2 rounded-xl text-white">
+          <div className="bg-zinc-800 p-2 rounded-full text-white">
             <ArrowToBottom />{" "}
           </div>
           <div className="flex flex-col">

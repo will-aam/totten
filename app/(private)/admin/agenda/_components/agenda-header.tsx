@@ -201,7 +201,7 @@ export function AgendaHeader({
           variant="outline"
           size="icon"
           onClick={onOpenSettings}
-          className=" h-9 w-9 bg-none border border-none hover:bg-muted"
+          className="h-9 w-9 bg-none border border-none hover:bg-muted"
         >
           <Slider size="sm" />
         </Button>
@@ -210,7 +210,7 @@ export function AgendaHeader({
           asChild
           variant="secondary"
           size="sm"
-          className="group h-8 sm:h-9 gap-2 rounded-full font-medium text-xs sm:text-sm shadow-sm border border-border/50 bg-primary/5 hover:bg-primary/10 text-primary transition-all"
+          className="group h-8 sm:h-9 gap-2 font-medium text-xs sm:text-sm shadow-sm border border-border/50 bg-primary/5 hover:bg-primary/10 text-primary transition-all"
         >
           <Link href={slug ? `/totem/idle?slug=${slug}` : "/totem/idle"}>
             <span className="relative flex items-center justify-center w-4 h-4">

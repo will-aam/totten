@@ -98,12 +98,12 @@ export function NewWalkInModal({ open, onOpenChange, onCreated }: NewWalkInModal
             Paciente Presente
           </Label>
           <Select value={selectedClientId} onValueChange={setSelectedClientId}>
-            <SelectTrigger className="bg-muted/40 border-none rounded-2xl h-12 transition-all">
+            <SelectTrigger className="bg-muted/40 border-none h-12 transition-all">
               <SelectValue placeholder={loadingClients ? "Carregando..." : "Selecione a paciente..."} />
             </SelectTrigger>
-            <SelectContent className="rounded-2xl border border-border/50 bg-background shadow-xl">
+            <SelectContent className="border border-border/50 bg-background shadow-xl rounded-2xl">
               {clients.map((c: any) => (
-                <SelectItem key={c.id} value={c.id} className="rounded-xl py-2 font-medium">
+                <SelectItem key={c.id} value={c.id} className="rounded-full py-2 font-medium">
                   {c.name}
                 </SelectItem>
               ))}
@@ -116,12 +116,12 @@ export function NewWalkInModal({ open, onOpenChange, onCreated }: NewWalkInModal
             Serviço Desejado
           </Label>
           <Select disabled={loadingServices} value={selectedServiceId} onValueChange={setSelectedServiceId}>
-            <SelectTrigger className="rounded-2xl bg-muted/40 border-none h-12 transition-all">
+            <SelectTrigger className="bg-muted/40 border-none h-12 transition-all">
               <SelectValue placeholder="O que será feito agora?" />
             </SelectTrigger>
-            <SelectContent className="rounded-2xl border border-border/50 bg-background shadow-xl">
+            <SelectContent className="border border-border/50 bg-background shadow-xl rounded-2xl">
               {services.map((s: any) => (
-                <SelectItem key={s.id} value={s.id} className="rounded-xl py-2 font-medium">
+                <SelectItem key={s.id} value={s.id} className="rounded-full py-2 font-medium">
                   {s.name}
                 </SelectItem>
               ))}
@@ -135,16 +135,16 @@ export function NewWalkInModal({ open, onOpenChange, onCreated }: NewWalkInModal
               Profissional Designado
             </Label>
             <Select value={selectedProfessionalId} onValueChange={setSelectedProfessionalId}>
-              <SelectTrigger className="bg-muted/40 border-none rounded-2xl h-12 transition-all">
+              <SelectTrigger className="bg-muted/40 border-none h-12 transition-all">
                 <User className="mr-2 h-4 w-4 text-primary" />
                 <SelectValue placeholder="Quem fará o encaixe?" />
               </SelectTrigger>
-              <SelectContent className="rounded-2xl border border-border/50 bg-background shadow-xl">
-                <SelectItem value={session?.user?.id || ""} className="rounded-xl py-2 font-medium">
+              <SelectContent className="border border-border/50 bg-background shadow-xl rounded-2xl">
+                <SelectItem value={session?.user?.id || ""} className="rounded-full py-2 font-medium">
                   Admin
                 </SelectItem>
                 {team.filter((m) => m.id !== session?.user?.id).map((member) => (
-                  <SelectItem key={member.id} value={member.id} className="rounded-xl py-2 font-medium">
+                  <SelectItem key={member.id} value={member.id} className="rounded-full py-2 font-medium">
                     {member.display_name}
                   </SelectItem>
                 ))}
@@ -153,7 +153,7 @@ export function NewWalkInModal({ open, onOpenChange, onCreated }: NewWalkInModal
           </div>
         )}
         <div className="bg-primary/5 border border-primary/20 rounded-2xl p-3.5 flex items-center gap-3">
-          <div className="bg-primary/10 p-2 rounded-xl text-primary shrink-0">
+          <div className="bg-primary/10 p-2 rounded-full text-primary shrink-0">
             <CalendarIcon className="h-5 w-5" />
           </div>
           <div>
@@ -167,14 +167,14 @@ export function NewWalkInModal({ open, onOpenChange, onCreated }: NewWalkInModal
           variant="secondary"
           onClick={() => onOpenChange(false)}
           disabled={saving}
-          className="rounded-2xl h-12 font-bold w-full sm:w-1/2"
+          className="h-12 font-bold w-full sm:w-1/2"
         >
           Cancelar
         </Button>
         <Button
           onClick={handleSave}
           disabled={saving}
-          className="rounded-2xl h-12 font-black bg-primary text-primary-foreground w-full sm:w-1/2 active:scale-[0.98] transition-all"
+          className="h-12 font-black bg-primary text-primary-foreground w-full sm:w-1/2 active:scale-[0.98] transition-all"
         >
           {saving ? <LoaderDots className="mr-2 h-5 w-5 animate-spin" /> : "Fazer Check-in"}
         </Button>

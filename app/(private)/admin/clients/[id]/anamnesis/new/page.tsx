@@ -170,7 +170,7 @@ export default function NewClientAnamnesisPage({
     return (
       <div
         key={field.id}
-        className="space-y-3 p-4 bg-muted/20 rounded-xl border border-border/50"
+        className="space-y-3 p-4 bg-muted/20 rounded-full border border-border/50"
       >
         <Label className="text-base font-semibold text-foreground">
           {index + 1}. {field.label}
@@ -280,7 +280,7 @@ export default function NewClientAnamnesisPage({
               asChild
               variant="outline"
               size="icon"
-              className="rounded-full h-10 w-10 shrink-0"
+              className="h-10 w-10 shrink-0"
             >
               <Link href={`/admin/clients/${clientId}`}>
                 <ChevronLeft
@@ -304,7 +304,7 @@ export default function NewClientAnamnesisPage({
             <div className="hidden md:flex items-center gap-3">
               <Button
                 variant="outline"
-                className="h-10 rounded-xl font-bold"
+                className="h-10 font-bold"
                 onClick={() => handleSave(false)}
                 disabled={isSaving || isSavingDraft}
               >
@@ -317,7 +317,7 @@ export default function NewClientAnamnesisPage({
               </Button>
 
               <Button
-                className="h-10 rounded-xl font-bold shadow-md bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="h-10 font-bold shadow-md bg-primary hover:bg-primary/90 text-primary-foreground"
                 onClick={() => handleSave(true)}
                 disabled={isSaving || isSavingDraft || !signature}
               >
@@ -333,7 +333,7 @@ export default function NewClientAnamnesisPage({
         </div>
 
         {/* Escolha do Template */}
-        <div className="space-y-3 bg-primary/5 p-5 rounded-xl border border-primary/20">
+        <div className="space-y-3 bg-primary/5 p-5 rounded-full border border-primary/20">
           <Label className="text-primary font-bold">
             Qual modelo de ficha deseja preencher?
           </Label>
@@ -390,7 +390,7 @@ export default function NewClientAnamnesisPage({
           <Button
             variant="secondary"
             size="icon"
-            className="h-12 w-12 rounded-full shadow-lg border border-border bg-background"
+            className="h-12 w-12 shadow-lg border border-border bg-background"
             onClick={() => handleSave(false)}
             disabled={isSaving || isSavingDraft}
           >
@@ -406,8 +406,7 @@ export default function NewClientAnamnesisPage({
 
           <Button
             size="icon"
-            className={cn(
-              "h-14 w-14 rounded-full shadow-xl transition-all duration-300",
+            className={cn("h-14 w-14 rounded-full shadow-xl transition-all duration-300",
               !signature ? "opacity-50 grayscale" : "hover:scale-105",
             )}
             onClick={() => handleSave(true)}

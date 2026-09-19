@@ -37,7 +37,7 @@ export function ProfileSettings({ data, onChange }: any) {
                   key={option.id}
                   onClick={() => onChange({ ...data, layout: option.id })}
                   className={cn(
-                    "cursor-pointer border rounded-xl p-4 flex items-center gap-4 transition-all",
+                    "cursor-pointer border rounded-full p-4 flex items-center gap-4 transition-all",
                     isSelected
                       ? "border-primary bg-primary/5"
                       : "border-border/50 bg-card hover:bg-muted/50"

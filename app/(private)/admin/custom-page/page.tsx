@@ -91,8 +91,7 @@ export default function CustomPage() {
             onChange={(e) => handleSlugChange(e.target.value)}
             maxLength={30}
             disabled={isLocked}
-            className={cn(
-              "rounded-none bg-background border-border/50 h-11 focus-visible:ring-1 max-w-[140px]",
+            className={cn("rounded-none bg-background border-border/50 h-11 focus-visible:ring-1 max-w-[140px]",
               tab !== "link-bio" ? "border-r-0" : ""
             )}
             placeholder="seunome"
@@ -447,7 +446,7 @@ export default function CustomPage() {
       <div className="flex flex-col gap-6 p-6 md:p-8 relative pb-32 md:pb-8">
 
         <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)} className="w-full">
-          <TabsList className="hidden md:grid w-full lg:w-[750px] grid-cols-4 h-auto gap-1 bg-muted p-1 rounded-xl mb-8">
+          <TabsList className="hidden md:grid w-full lg:w-[750px] grid-cols-4 h-auto gap-1 bg-muted p-1 rounded-full mb-8">
             <TabsTrigger
               value="global"
               className="flex items-center gap-2 py-2 rounded-lg"
@@ -523,14 +522,14 @@ export default function CustomPage() {
                     <Button
                       variant="outline"
                       onClick={() => setShowMobilePreview(true)}
-                      className="flex-1 lg:hidden md:flex-none rounded-full h-10 w-full md:w-32 shrink-0"
+                      className="flex-1 lg:hidden md:flex-none h-10 w-full md:w-32 shrink-0"
                     >
                       Ver Preview
                     </Button>
                     <Button
                       onClick={handleSave}
                       disabled={isLoading || isSaving}
-                      className="flex-1 md:flex-none rounded-full h-10 shadow-sm w-full md:w-32 shrink-0"
+                      className="flex-1 md:flex-none h-10 shadow-sm w-full md:w-32 shrink-0"
                     >
                       {isSaving ? "Salvando..." : "Salvar"}
                     </Button>
@@ -539,7 +538,7 @@ export default function CustomPage() {
 
                 <div className="flex flex-col gap-10 mt-2 lg:h-[calc(100vh-360px)] lg:overflow-y-auto custom-scrollbar lg:pr-4 pb-20">
                   {STEPS.map((step, index) => (
-                    <div key={step.id} id={`step-${step.id}`} className="flex flex-col gap-2 scroll-m-20 p-5 border border-border/50 rounded-xl bg-card shadow-sm">
+                    <div key={step.id} id={`step-${step.id}`} className="flex flex-col gap-2 scroll-m-20 p-5 border border-border/50 rounded-full bg-card shadow-sm">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-sm">
                           {index + 1}
@@ -598,7 +597,7 @@ export default function CustomPage() {
             variant="ghost"
             size="icon"
             onClick={() => setShowMobilePreview(false)}
-            className="absolute top-4 right-4 z-[999] rounded-full bg-black/40 text-white hover:bg-black/60 backdrop-blur-md"
+            className="absolute top-4 right-4 z-[999] bg-black/40 text-white hover:bg-black/60 backdrop-blur-md"
           >
             <X className="h-6 w-6" />
           </Button>

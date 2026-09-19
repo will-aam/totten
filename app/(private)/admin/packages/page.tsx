@@ -133,7 +133,7 @@ function PackageListItem({ pkg, onOpenDetails, onManualCheckIn }: any) {
   return (
     <div
       className={cn(
-        "grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 py-4 border-b border-border/50 last:border-0 active:bg-muted/50 transition-colors px-2 -mx-2 rounded-xl cursor-pointer hover:bg-muted/30",
+        "grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 py-4 border-b border-border/50 last:border-0 active:bg-muted/50 transition-colors px-2 -mx-2 rounded-full cursor-pointer hover:bg-muted/30",
         !pkg.active && "opacity-60",
       )}
     >
@@ -197,7 +197,7 @@ function PackageListItem({ pkg, onOpenDetails, onManualCheckIn }: any) {
           <Button
             variant="ghost"
             size="icon"
-            className="h-10 w-10 text-muted-foreground hover:text-primary hover:bg-primary/10 active:text-primary active:bg-primary/10 rounded-full shrink-0"
+            className="h-10 w-10 text-muted-foreground hover:text-primary hover:bg-primary/10 active:text-primary active:bg-primary/10 shrink-0"
             onClick={(e) => {
               e.stopPropagation();
               onManualCheckIn(pkg);
@@ -400,14 +400,14 @@ function PackagesPageContent() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar por cliente (mín. 3 letras)..."
-              className="pl-9 h-12 bg-background rounded-full border-none shadow-sm focus-visible:ring-primary/20"
+              className="pl-9 h-12 bg-background border-none shadow-sm focus-visible:ring-primary/20"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
           <Button
             onClick={() => router.push("/admin/clients")}
-            className="h-12 px-8 rounded-xl font-medium shadow-sm"
+            className="h-12 px-8 font-medium shadow-sm"
           >
             <Plus className="h-5 w-5 md:mr-2" />
             <span className="hidden md:inline">Nova Venda</span>
@@ -465,7 +465,7 @@ function PackagesPageContent() {
                     className={page === 1 ? "pointer-events-none opacity-50" : ""}
                   />
                 </PaginationItem>
-                
+
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
                   if (
                     p === 1 ||
@@ -483,7 +483,7 @@ function PackagesPageContent() {
                       </PaginationItem>
                     );
                   }
-                  
+
                   if (p === page - 2 || p === page + 2) {
                     return (
                       <PaginationItem key={p}>
@@ -536,7 +536,7 @@ function PackagesPageContent() {
                 value={checkInDate}
                 onChange={(e) => setCheckInDate(e.target.value)}
                 disabled={isCheckingIn}
-                className="h-11 rounded-xl bg-muted/30"
+                className="h-11 bg-muted/30"
               />
             </div>
             <div className="flex flex-col gap-2 flex-1">
@@ -572,7 +572,7 @@ function PackagesPageContent() {
                   setCheckInTime(val);
                 }}
                 disabled={isCheckingIn}
-                className="h-11 rounded-xl bg-muted/30"
+                className="h-11 bg-muted/30"
               />
             </div>
           </div>
@@ -583,7 +583,7 @@ function PackagesPageContent() {
               variant="outline"
               onClick={() => setIsCheckInDialogOpen(false)}
               disabled={isCheckingIn}
-              className="w-full sm:w-auto h-12 rounded-xl font-bold"
+              className="w-full sm:w-auto h-12 font-bold"
             >
               Cancelar
             </Button>
@@ -591,7 +591,7 @@ function PackagesPageContent() {
               type="button"
               onClick={confirmManualCheckIn}
               disabled={isCheckingIn}
-              className="w-full sm:w-auto h-12 rounded-xl font-bold"
+              className="w-full sm:w-auto h-12 font-bold"
             >
               {isCheckingIn ? (
                 <>

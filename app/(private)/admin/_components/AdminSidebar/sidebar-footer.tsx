@@ -42,7 +42,7 @@ export function SidebarUserFooter({
         <SidebarMenuButton
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           tooltip="Alternar Tema"
-          className="flex-1 h-10 justify-center rounded-xl bg-transparent hover:bg-background hover:text-primary transition-all hover:shadow-sm"
+          className="flex-1 h-10 justify-center rounded-full bg-transparent hover:bg-background hover:text-primary transition-all hover:shadow-sm"
         >
           {mounted ? (theme === "dark" ? <Sun size="sm" /> : <Moon size="sm" />) : <span className="w-5 h-5" />}
         </SidebarMenuButton>
@@ -51,7 +51,7 @@ export function SidebarUserFooter({
           asChild
           tooltip="Suporte"
           className={cn(
-            "flex-1 h-10 justify-center rounded-xl bg-transparent hover:bg-background hover:text-primary transition-all hover:shadow-sm",
+            "flex-1 h-10 justify-center rounded-full bg-transparent hover:bg-background hover:text-primary transition-all hover:shadow-sm",
             !isOwner && "hidden", // Esconde suporte para colaborador
           )}
         >
@@ -64,7 +64,7 @@ export function SidebarUserFooter({
           <SidebarMenuButton
             asChild
             tooltip="Configurações"
-            className="flex-1 h-10 justify-center rounded-xl bg-transparent hover:bg-background hover:text-primary transition-all hover:shadow-sm"
+            className="flex-1 h-10 justify-center rounded-full bg-transparent hover:bg-background hover:text-primary transition-all hover:shadow-sm"
           >
             <Link href="/admin/settings" onClick={onNavigate}>
               <Cog size="sm" />
@@ -76,7 +76,7 @@ export function SidebarUserFooter({
           onClick={onLogout}
           disabled={loggingOut}
           tooltip="Sair"
-          className="flex-1 h-10 justify-center rounded-xl bg-transparent hover:bg-destructive/10 text-destructive hover:text-destructive transition-all"
+          className="flex-1 h-10 justify-center rounded-full bg-transparent hover:bg-destructive/10 text-destructive hover:text-destructive transition-all"
         >
           {loggingOut ? (
             <LoaderDots size="sm" className="animate-spin" />

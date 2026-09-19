@@ -51,7 +51,7 @@ export function AdditionalLinks({ data, onChange }: any) {
 
       <div className="flex flex-col gap-4">
         {data.length === 0 ? (
-          <div className="text-center py-6 border-2 border-dashed border-border/50 rounded-xl bg-muted/20">
+          <div className="text-center py-6 border-2 border-dashed border-border/50 rounded-full bg-muted/20">
             <p className="text-sm text-muted-foreground">
               Nenhum link configurado. Adicione atalhos abaixo!
             </p>
@@ -65,7 +65,7 @@ export function AdditionalLinks({ data, onChange }: any) {
             return (
               <div
                 key={link.id}
-                className="p-4 border border-border/50 bg-muted/10 rounded-xl relative group transition-all hover:border-primary/30"
+                className="p-4 border border-border/50 bg-muted/10 rounded-full relative group transition-all hover:border-primary/30"
               >
                 <button
                   onClick={() => handleRemoveLink(link.id)}
@@ -78,9 +78,9 @@ export function AdditionalLinks({ data, onChange }: any) {
                     {index + 1}
                   </div>
                   <h4 className="font-medium text-sm text-foreground flex items-center gap-2">
-                    {isSystemSite ? <><Globe className="h-4 w-4" /> Botão do Site</> : 
-                     isSystemBooking ? <><Calendar className="h-4 w-4" /> Botão da Agenda</> : 
-                     <><LinkIcon className="h-4 w-4" /> Botão Personalizado</>}
+                    {isSystemSite ? <><Globe className="h-4 w-4" /> Botão do Site</> :
+                      isSystemBooking ? <><Calendar className="h-4 w-4" /> Botão da Agenda</> :
+                        <><LinkIcon className="h-4 w-4" /> Botão Personalizado</>}
                   </h4>
                 </div>
                 <div className="flex flex-col gap-4">
@@ -117,7 +117,7 @@ export function AdditionalLinks({ data, onChange }: any) {
                             onChange={(e) =>
                               handleChange(link.id, "url", e.target.value)
                             }
-                            className="rounded-l-none bg-background focus-visible:ring-1"
+                            className="-l-none bg-background focus-visible:ring-1"
                           />
                         </>
                       )}
@@ -128,14 +128,14 @@ export function AdditionalLinks({ data, onChange }: any) {
             );
           })
         )}
-        
+
         {data.length < maxLinks && (
           <div className="flex flex-col gap-2 mt-2">
             {!hasSystemSite && (
               <Button
                 variant="outline"
                 onClick={() => handleAddSystemLink("system-site")}
-                className="w-full border-primary/20 hover:bg-primary/5 hover:border-primary/50 text-foreground transition-colors h-11 rounded-xl justify-start"
+                className="w-full border-primary/20 hover:bg-primary/5 hover:border-primary/50 text-foreground transition-colors h-11 justify-start"
               >
                 <Globe className="mr-2 h-4 w-4 text-primary" /> Adicionar Botão do Site
               </Button>
@@ -144,7 +144,7 @@ export function AdditionalLinks({ data, onChange }: any) {
               <Button
                 variant="outline"
                 onClick={() => handleAddSystemLink("system-booking")}
-                className="w-full border-primary/20 hover:bg-primary/5 hover:border-primary/50 text-foreground transition-colors h-11 rounded-xl justify-start"
+                className="w-full border-primary/20 hover:bg-primary/5 hover:border-primary/50 text-foreground transition-colors h-11 justify-start"
               >
                 <Calendar className="mr-2 h-4 w-4 text-primary" /> Adicionar Botão da Agenda
               </Button>
@@ -152,7 +152,7 @@ export function AdditionalLinks({ data, onChange }: any) {
             <Button
               variant="outline"
               onClick={handleAddCustomLink}
-              className="w-full border-dashed border-2 hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors h-11 rounded-xl justify-start"
+              className="w-full border-dashed border-2 hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors h-11 justify-start"
             >
               <Plus className="mr-2 h-4 w-4" /> Adicionar Link Personalizado
             </Button>

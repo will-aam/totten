@@ -46,7 +46,7 @@ export function ProHistory({ data, onChange, profile }: { data: any, onChange: (
         </p>
       </div>
 
-      <div className="flex items-center gap-3 bg-muted/20 p-4 rounded-xl border border-border/50">
+      <div className="flex items-center gap-3 bg-muted/20 p-4 rounded-full border border-border/50">
         <Switch
           checked={data.showHistory !== false}
           onCheckedChange={(checked) => onChange({ ...data, showHistory: checked })}
@@ -89,9 +89,9 @@ export function ProHistory({ data, onChange, profile }: { data: any, onChange: (
             <Label className="text-foreground font-medium">
               3. Descrição / Texto
             </Label>
-            
-            <RadioGroup 
-              value={data.useGlobalBio !== false ? "global" : "custom"} 
+
+            <RadioGroup
+              value={data.useGlobalBio !== false ? "global" : "custom"}
               onValueChange={(val) => onChange({ ...data, useGlobalBio: val === "global" })}
               className="flex gap-6 mb-1"
             >
@@ -130,7 +130,7 @@ export function ProHistory({ data, onChange, profile }: { data: any, onChange: (
                 <BookOpen className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
               )}
               {isUploading && (
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-xl z-20">
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-full z-20">
                   <LoaderLines className="w-6 h-6 text-white animate-spin" />
                 </div>
               )}
@@ -175,7 +175,7 @@ export function ProHistory({ data, onChange, profile }: { data: any, onChange: (
           </div>
 
           {/* Métricas / Estatísticas */}
-          <div className="flex flex-col gap-4 p-4 border border-border/50 rounded-xl bg-muted/10">
+          <div className="flex flex-col gap-4 p-4 border border-border/50 rounded-full bg-muted/10">
             <Label className="text-foreground font-medium">5. Métricas / Estatísticas (Opcional)</Label>
             <p className="text-xs text-muted-foreground -mt-2">Números que trazem autoridade para sua história.</p>
 

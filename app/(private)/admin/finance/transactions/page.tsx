@@ -293,13 +293,13 @@ export default function TransactionsPage() {
             className="min-w-30 rounded-2xl border border-border/40 shadow-xl p-1.5 bg-background/95 backdrop-blur-md"
           >
             <DropdownMenuItem
-              className="text-xs font-bold justify-center cursor-pointer rounded-xl text-emerald-600 focus:bg-emerald-500/10 focus:text-emerald-700 dark:focus:bg-emerald-900/20 dark:text-emerald-400 py-2.5"
+              className="text-xs font-bold justify-center cursor-pointer rounded-full text-emerald-600 focus:bg-emerald-500/10 focus:text-emerald-700 dark:focus:bg-emerald-900/20 dark:text-emerald-400 py-2.5"
               onClick={() => handleStatusChange(transaction.originalId, "PAGO")}
             >
               Marcar como Pago
             </DropdownMenuItem>
             <DropdownMenuItem
-              className="text-xs font-bold justify-center cursor-pointer rounded-xl text-amber-600 focus:bg-amber-500/10 focus:text-amber-700 dark:focus:bg-amber-900/20 dark:text-amber-400 mt-1 py-2.5"
+              className="text-xs font-bold justify-center cursor-pointer rounded-full text-amber-600 focus:bg-amber-500/10 focus:text-amber-700 dark:focus:bg-amber-900/20 dark:text-amber-400 mt-1 py-2.5"
               onClick={() =>
                 handleStatusChange(transaction.originalId, "PENDENTE")
               }
@@ -323,22 +323,22 @@ export default function TransactionsPage() {
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl rounded-full -z-10 pointer-events-none" />
 
             <div className="flex items-center gap-2 w-full md:w-auto relative z-10">
-              <div className="p-2 bg-primary/10 rounded-xl text-primary hidden sm:block">
+              <div className="p-2 bg-primary/10 rounded-full text-primary hidden sm:block">
                 <Calendar className="h-5 w-5" />
               </div>
               <Select
                 value={selectedMonth.toString()}
                 onValueChange={(val) => setSelectedMonth(Number(val))}
               >
-                <SelectTrigger className="h-12 w-full sm:w-36 rounded-2xl font-bold bg-muted/20 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 transition-all shadow-inner">
+                <SelectTrigger className="h-12 w-full sm:w-36 font-bold bg-muted/20 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 transition-all shadow-inner">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl border-border/50 shadow-xl">
+                <SelectContent className="border-border/50 shadow-xl rounded-2xl">
                   {MONTHS.map((m) => (
                     <SelectItem
                       key={m.value}
                       value={m.value.toString()}
-                      className="rounded-xl font-medium"
+                      className="rounded-full font-medium"
                     >
                       {m.label}
                     </SelectItem>
@@ -349,15 +349,15 @@ export default function TransactionsPage() {
                 value={selectedYear.toString()}
                 onValueChange={(val) => setSelectedYear(Number(val))}
               >
-                <SelectTrigger className="h-12 w-full sm:w-28 rounded-2xl font-bold bg-muted/20 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 transition-all shadow-inner">
+                <SelectTrigger className="h-12 w-full sm:w-28 font-bold bg-muted/20 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 transition-all shadow-inner">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl border-border/50 shadow-xl">
+                <SelectContent className="border-border/50 shadow-xl rounded-2xl">
                   {YEARS.map((y) => (
                     <SelectItem
                       key={y}
                       value={y.toString()}
-                      className="rounded-xl font-medium"
+                      className="rounded-full font-medium"
                     >
                       {y}
                     </SelectItem>
@@ -374,34 +374,34 @@ export default function TransactionsPage() {
                   placeholder="Buscar transação..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-11 h-12 rounded-full bg-muted/20 border-border/40 hover:bg-muted/30 font-bold w-full focus-visible:ring-primary/30 transition-all shadow-inner"
+                  className="pl-11 h-12 bg-muted/20 border-border/40 hover:bg-muted/30 font-bold w-full focus-visible:ring-primary/30 transition-all shadow-inner"
                 />
               </div>
 
               <div className="flex items-center gap-2 w-full sm:w-auto">
-                <div className="p-2 bg-muted/30 rounded-xl text-muted-foreground hidden sm:block border border-border/40">
+                <div className="p-2 bg-muted/30 rounded-full text-muted-foreground hidden sm:block border border-border/40">
                   <Filter className="h-5 w-5" />
                 </div>
                 <Select
                   value={filterType}
                   onValueChange={(val: any) => setFilterType(val)}
                 >
-                  <SelectTrigger className="h-12 w-full sm:w-40 rounded-2xl font-bold bg-muted/20 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 transition-all shadow-inner">
+                  <SelectTrigger className="h-12 w-full sm:w-40 font-bold bg-muted/20 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 transition-all shadow-inner">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="rounded-2xl border-border/50 shadow-xl">
-                    <SelectItem value="ALL" className="rounded-xl font-medium">
+                  <SelectContent className="border-border/50 shadow-xl rounded-2xl">
+                    <SelectItem value="ALL" className="rounded-full font-medium">
                       Todas
                     </SelectItem>
                     <SelectItem
                       value="RECEITA"
-                      className="rounded-xl font-bold text-emerald-600 focus:text-emerald-700"
+                      className="rounded-full font-bold text-emerald-600 focus:text-emerald-700"
                     >
                       Receitas
                     </SelectItem>
                     <SelectItem
                       value="DESPESA"
-                      className="rounded-xl font-bold text-rose-600 focus:text-rose-700"
+                      className="rounded-full font-bold text-rose-600 focus:text-rose-700"
                     >
                       Despesas
                     </SelectItem>
@@ -448,7 +448,7 @@ export default function TransactionsPage() {
                     <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 pr-2">
                       <div
                         className={cn(
-                          "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl font-bold shadow-sm transition-all duration-300 group-hover:scale-110",
+                          "flex h-11 w-11 shrink-0 items-center justify-center rounded-full font-bold shadow-sm transition-all duration-300 group-hover:scale-110",
                           isIncome
                             ? "bg-emerald-500/10 text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white group-hover:shadow-[0_4px_15px_rgb(16,185,129,0.2)]"
                             : "bg-rose-500/10 text-rose-600 group-hover:bg-rose-500 group-hover:text-white group-hover:shadow-[0_4px_15px_rgb(244,63,94,0.2)]",
@@ -528,7 +528,7 @@ export default function TransactionsPage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-9 w-9 text-muted-foreground hover:bg-muted hover:text-foreground rounded-full border-none focus-visible:ring-0 focus-visible:ring-offset-0 transition-colors shadow-sm"
+                                className="h-9 w-9 text-muted-foreground hover:bg-muted hover:text-foreground border-none focus-visible:ring-0 focus-visible:ring-offset-0 transition-colors shadow-sm"
                               >
                                 <ChevronDown className="h-5 w-5" />
                               </Button>
@@ -538,7 +538,7 @@ export default function TransactionsPage() {
                               className="w-40 rounded-2xl border border-border/40 shadow-xl p-1.5 bg-background/95 backdrop-blur-md"
                             >
                               <DropdownMenuItem
-                                className="gap-2 cursor-pointer rounded-xl text-foreground focus:bg-primary/10 focus:text-primary font-bold transition-colors py-2.5"
+                                className="gap-2 cursor-pointer rounded-full text-foreground focus:bg-primary/10 focus:text-primary font-bold transition-colors py-2.5"
                                 onClick={() =>
                                   setEditingTransaction(transaction)
                                 }
@@ -546,7 +546,7 @@ export default function TransactionsPage() {
                                 <Pencil className="h-4 w-4" /> Editar
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                className="gap-2 cursor-pointer rounded-xl text-rose-500 focus:bg-rose-500/10 focus:text-rose-600 dark:focus:bg-rose-900/20 dark:focus:text-rose-400 font-bold transition-colors mt-1 py-2.5"
+                                className="gap-2 cursor-pointer rounded-full text-rose-500 focus:bg-rose-500/10 focus:text-rose-600 dark:focus:bg-rose-900/20 dark:focus:text-rose-400 font-bold transition-colors mt-1 py-2.5"
                                 onClick={() => setDeletingTx(transaction)}
                               >
                                 <Trash className="h-4 w-4" /> Excluir
@@ -577,7 +577,7 @@ export default function TransactionsPage() {
                 variant="outline"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1 || isLoading}
-                className="rounded-2xl h-12 font-bold bg-muted/20 border-border/40 hover:bg-muted/40 transition-all shadow-sm px-5"
+                className="h-12 font-bold bg-muted/20 border-border/40 hover:bg-muted/40 transition-all shadow-sm px-5"
               >
                 <ChevronLeft removePadding className="h-5 w-5 mr-1" /> Anterior
               </Button>
@@ -585,7 +585,7 @@ export default function TransactionsPage() {
                 variant="outline"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages || isLoading}
-                className="rounded-2xl h-12 font-bold bg-muted/20 border-border/40 hover:bg-muted/40 transition-all shadow-sm px-5"
+                className="h-12 font-bold bg-muted/20 border-border/40 hover:bg-muted/40 transition-all shadow-sm px-5"
               >
                 Próxima <ChevronRight removePadding className="h-5 w-5 ml-1" />
               </Button>
@@ -602,7 +602,7 @@ export default function TransactionsPage() {
         <DialogContent className="rounded-4xl sm:max-w-md border-border/40 shadow-2xl bg-background/80 backdrop-blur-2xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-black flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-xl text-primary">
+              <div className="p-2 bg-primary/10 rounded-full text-primary">
                 <InfoCircle className="h-5 w-5" />
               </div>
               Detalhes da Movimentação

@@ -214,7 +214,7 @@ export default function NewAnamnesisTemplatePage() {
             asChild
             variant="outline"
             size="icon"
-            className="rounded-full h-10 w-10 shrink-0"
+            className="h-10 w-10 shrink-0"
           >
             <Link href="/admin/anamnesis">
               <ChevronLeft size="sm" className="text-muted-foreground" />
@@ -240,7 +240,7 @@ export default function NewAnamnesisTemplatePage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Ex: Ficha de Extensão de Cílios"
-            className="h-12 text-base bg-muted/30 border-border/60 focus:border-primary rounded-xl"
+            className="h-12 text-base bg-muted/30 border-border/60 focus:border-primary"
           />
         </div>
 
@@ -271,7 +271,7 @@ export default function NewAnamnesisTemplatePage() {
               {fields.map((field, index) => (
                 <div
                   key={field.id}
-                  className="group flex flex-col gap-3 p-4 rounded-xl bg-muted/30 border border-border/50 hover:border-border transition-all relative"
+                  className="group flex flex-col gap-3 p-4 rounded-full bg-muted/30 border border-border/50 hover:border-border transition-all relative"
                 >
                   <div className="absolute -left-3 top-4 hidden md:flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold shadow z-10">
                     {index + 1}
@@ -294,7 +294,7 @@ export default function NewAnamnesisTemplatePage() {
                             ? "Ex: Histórico Clínico"
                             : "Ex: Você está gestante?"
                         }
-                        className={`h-11 bg-background border-border/60 focus:border-primary rounded-lg ${field.type === "section_title"
+                        className={`h-11 bg-background border-border/60 focus:border-primary ${field.type ==="section_title"
                           ? "font-bold text-lg"
                           : ""
                           }`}
@@ -311,7 +311,7 @@ export default function NewAnamnesisTemplatePage() {
                           updateField(field.id, "type", value)
                         }
                       >
-                        <SelectTrigger className="h-11 bg-background border-border/60 rounded-lg w-full">
+                        <SelectTrigger className="h-11 bg-background border-border/60 w-full">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -392,7 +392,7 @@ export default function NewAnamnesisTemplatePage() {
             <Button
               variant="outline"
               onClick={addField}
-              className="w-full h-12 border-dashed border-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors rounded-xl mt-4"
+              className="w-full h-12 border-dashed border-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors mt-4"
             >
               <PlusCircle size="sm" className="mr-2" /> Adicionar Nova Pergunta
             </Button>
@@ -404,14 +404,14 @@ export default function NewAnamnesisTemplatePage() {
           <Button
             variant="outline"
             asChild
-            className="h-12 rounded-xl font-bold px-8"
+            className="h-12 font-bold px-8"
           >
             <Link href="/admin/anamnesis">Cancelar</Link>
           </Button>
           <Button
             onClick={handleSave}
             disabled={isSaving}
-            className="px-8 h-12 rounded-xl font-bold shadow-lg"
+            className="px-8 h-12 font-bold shadow-lg"
           >
             {isSaving ? (
               <LoaderDots size="sm" className="animate-spin mr-2" />
@@ -425,13 +425,13 @@ export default function NewAnamnesisTemplatePage() {
 
       {/* Footer Mobile */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-lg border-t md:hidden z-50 grid grid-cols-2 gap-3">
-        <Button variant="outline" asChild className="h-12 rounded-xl font-bold">
+        <Button variant="outline" asChild className="h-12 font-bold">
           <Link href="/admin/anamnesis">Cancelar</Link>
         </Button>
         <Button
           onClick={handleSave}
           disabled={isSaving}
-          className="h-12 rounded-xl font-bold shadow-lg"
+          className="h-12 font-bold shadow-lg"
         >
           {isSaving ? (
             <LoaderDots size="sm" className="animate-spin mr-2" />

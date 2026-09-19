@@ -26,7 +26,7 @@ export function FinanceSummaryCards({ data }: FinanceSummaryCardsProps) {
           <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">
             Recebido no Mês
           </h3>
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 group-hover:scale-110 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300">
+          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-500 group-hover:scale-110 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300">
             <ArrowUpCircle size="md" />
           </div>
         </div>
@@ -47,7 +47,7 @@ export function FinanceSummaryCards({ data }: FinanceSummaryCardsProps) {
           <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">
             Pendente no Mês
           </h3>
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 group-hover:scale-110 group-hover:bg-amber-500 group-hover:text-white transition-all duration-300">
+          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-amber-500/10 text-amber-500 group-hover:scale-110 group-hover:bg-amber-500 group-hover:text-white transition-all duration-300">
             <Clock size="md" />
           </div>
         </div>
@@ -68,7 +68,7 @@ export function FinanceSummaryCards({ data }: FinanceSummaryCardsProps) {
           <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">
             Despesas do Mês
           </h3>
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-rose-500/10 text-rose-500 group-hover:scale-110 group-hover:bg-rose-500 group-hover:text-white transition-all duration-300">
+          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-rose-500/10 text-rose-500 group-hover:scale-110 group-hover:bg-rose-500 group-hover:text-white transition-all duration-300">
             <ArrowDownCircle size="md" />
           </div>
         </div>
@@ -89,7 +89,7 @@ export function FinanceSummaryCards({ data }: FinanceSummaryCardsProps) {
           <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">
             Saldo do Mês
           </h3>
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 group-hover:scale-110 group-hover:bg-blue-500 group-hover:text-white transition-all duration-300">
+          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500/10 text-blue-500 group-hover:scale-110 group-hover:bg-blue-500 group-hover:text-white transition-all duration-300">
             <Wallet size="md" />
           </div>
         </div>

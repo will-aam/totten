@@ -2,7 +2,6 @@
 "use client";
 
 import { Suspense, useState, useEffect } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { cn } from "@/lib/utils";
@@ -200,28 +199,28 @@ function ServicesTabs() {
     <>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <TabsList className="hidden md:grid w-full lg:w-150 grid-cols-4 h-auto gap-1 bg-muted p-1 rounded-xl">
+          <TabsList className="hidden md:grid w-full lg:w-150 grid-cols-4 h-auto gap-1 bg-muted p-1 rounded-full">
             <TabsTrigger
               value="services"
-              className="flex items-center gap-2 py-2 rounded-lg"
+              className="flex items-center gap-2 py-2 rounded-full"
             >
               <Cog size="sm" /> Serviços
             </TabsTrigger>
             <TabsTrigger
               value="packages"
-              className="flex items-center gap-2 py-2 rounded-lg"
+              className="flex items-center gap-2 py-2 rounded-full"
             >
               <Package size="sm" /> Pacotes
             </TabsTrigger>
             <TabsTrigger
               value="categories"
-              className="flex items-center gap-2 py-2 rounded-lg"
+              className="flex items-center gap-2 py-2 rounded-full"
             >
               <Tag size="sm" /> Categorias
             </TabsTrigger>
             <TabsTrigger
               value="schedules"
-              className="flex items-center gap-2 py-2 rounded-lg"
+              className="flex items-center gap-2 py-2 rounded-full"
             >
               <Clock size="sm" /> Horários
             </TabsTrigger>
@@ -231,7 +230,7 @@ function ServicesTabs() {
             <Button
               variant="outline"
               onClick={() => setShowInactive(!showInactive)}
-              className="h-11 rounded-full text-muted-foreground border-border/60 hover:bg-muted/50 transition-all w-full md:w-auto shadow-sm"
+              className="h-11 text-muted-foreground border-border/60 hover:bg-muted/50 transition-all w-full md:w-auto shadow-sm"
             >
               {showInactive ? (
                 <>
@@ -261,7 +260,7 @@ function ServicesTabs() {
               </p>
             </div>
             <Button
-              className="h-12 px-8 rounded-full font-medium shadow-sm"
+              className="h-12 px-8 font-medium shadow-sm"
               onClick={() => setIsNewServiceSheetOpen(true)}
             >
               <Plus className="mr-2 h-4 w-4" /> Novo Serviço
@@ -275,7 +274,7 @@ function ServicesTabs() {
           ) : services &&
             services.length > 0 &&
             visibleServices.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground bg-muted/20 border border-dashed rounded-xl">
+            <div className="text-center py-12 text-muted-foreground bg-muted/20 border border-dashed rounded-full">
               <p>Todos os seus serviços estão inativos.</p>
               <button
                 onClick={() => setShowInactive(true)}
@@ -285,8 +284,11 @@ function ServicesTabs() {
               </button>
             </div>
           ) : visibleServices.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground bg-muted/20 border border-dashed rounded-xl">
-              Nenhum serviço cadastrado ainda.
+            <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/20 border border-dashed rounded-full">
+              <img width="48" height="48" src="https://img.icons8.com/parakeet/48/question.png" alt="question" />
+              <p className="mt-4 text-sm font-medium text-muted-foreground">
+                Nenhum serviço cadastrado ainda.
+              </p>
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -387,7 +389,7 @@ function ServicesTabs() {
               </p>
             </div>
             <Button
-              className="h-12 px-8 rounded-full font-medium shadow-sm"
+              className="h-12 px-8 font-medium shadow-sm"
               onClick={() => setIsNewPackageSheetOpen(true)}
             >
               <Plus className="mr-2 h-4 w-4" /> Novo Pacote
@@ -401,7 +403,7 @@ function ServicesTabs() {
           ) : packages &&
             packages.length > 0 &&
             visiblePackages.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground bg-muted/20 border border-dashed rounded-xl">
+            <div className="text-center py-12 text-muted-foreground bg-muted/20 border border-dashed rounded-full">
               <p>Todos os seus pacotes estão inativos.</p>
               <button
                 onClick={() => setShowInactive(true)}
@@ -411,8 +413,11 @@ function ServicesTabs() {
               </button>
             </div>
           ) : visiblePackages.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground bg-muted/20 border border-dashed rounded-xl">
-              Nenhum pacote cadastrado.
+            <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/20 border border-dashed rounded-full">
+              <img width="48" height="48" src="https://img.icons8.com/parakeet/48/question.png" alt="question" />
+              <p className="mt-4 text-sm font-medium text-muted-foreground">
+                Nenhum pacote cadastrado.
+              </p>
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -494,7 +499,7 @@ function ServicesTabs() {
               </p>
             </div>
             <Button
-              className="h-12 px-8 rounded-full font-medium shadow-sm"
+              className="h-12 px-8 font-medium shadow-sm"
               onClick={() => setCreateCategoryOpen(true)}
             >
               <Plus className="mr-2 h-4 w-4" /> Nova Categoria
@@ -508,7 +513,7 @@ function ServicesTabs() {
           ) : categories &&
             categories.length > 0 &&
             visibleCategories.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground bg-muted/20 border border-dashed rounded-xl">
+            <div className="text-center py-12 text-muted-foreground bg-muted/20 border border-dashed rounded-full">
               <p>Todas as categorias estão inativas.</p>
               <button
                 onClick={() => setShowInactive(true)}
@@ -518,8 +523,11 @@ function ServicesTabs() {
               </button>
             </div>
           ) : visibleCategories.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground bg-muted/20 border border-dashed rounded-xl">
-              Nenhuma categoria cadastrada.
+            <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/20 border border-dashed rounded-full">
+              <img width="48" height="48" src="https://img.icons8.com/parakeet/48/question.png" alt="question" />
+              <p className="mt-4 text-sm font-medium text-muted-foreground">
+                Nenhuma categoria cadastrada.
+              </p>
             </div>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -528,7 +536,7 @@ function ServicesTabs() {
                   key={category.id}
                   onClick={() => setSelectedCategory(category)}
                   className={cn(
-                    "flex items-center p-4 rounded-xl border cursor-pointer transition-all hover:scale-[1.02]",
+                    "flex items-center p-4 rounded-full border cursor-pointer transition-all hover:scale-[1.02]",
                     !category.active
                       ? "bg-muted/30 border-dashed opacity-60"
                       : "bg-card hover:border-primary/40 shadow-sm",
@@ -592,7 +600,7 @@ function ServicesTabs() {
         }}
       />
 
-      <NewServiceSheet 
+      <NewServiceSheet
         isOpen={isNewServiceSheetOpen}
         onClose={() => setIsNewServiceSheetOpen(false)}
         onSuccess={() => {
@@ -601,7 +609,7 @@ function ServicesTabs() {
         }}
       />
 
-      <NewPackageSheet 
+      <NewPackageSheet
         isOpen={isNewPackageSheetOpen}
         onClose={() => setIsNewPackageSheetOpen(false)}
         onSuccess={() => {
@@ -641,7 +649,7 @@ function ServicesTabs() {
                 onChange={(e) => setNewCategoryName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleCreateCategory()}
                 placeholder="Ex: Massagens, Estética, Terapias..."
-                className="rounded-xl"
+                className=""
               />
             </div>
           </div>
@@ -652,7 +660,7 @@ function ServicesTabs() {
                 setCreateCategoryOpen(false);
                 setNewCategoryName("");
               }}
-              className="rounded-xl"
+              className=""
             >
               Cancelar
             </Button>
@@ -660,7 +668,7 @@ function ServicesTabs() {
             <Button
               onClick={handleCreateCategory}
               disabled={creatingCategory || !newCategoryName.trim()}
-              className="rounded-xl bg-primary hover:bg-primary/90 font-bold"
+              className="bg-primary hover:bg-primary/90 font-bold"
             >
               {creatingCategory ? (
                 <LoaderDots size="sm" className="animate-spin" />

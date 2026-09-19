@@ -430,7 +430,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                             R$ {Number(pkg.price).toFixed(2)}
                           </span>
                           <Button
-                            className={cn("rounded-xl px-6 h-10 shadow-sm font-bold transition-transform active:scale-95 whitespace-nowrap", isDark ? "bg-white text-slate-900 hover:bg-slate-200" : "bg-slate-900 text-white hover:bg-slate-800")}
+                            className={cn("rounded-full px-6 h-10 shadow-sm font-bold transition-transform active:scale-95 whitespace-nowrap", isDark ? "bg-white text-slate-900 hover:bg-slate-200" : "bg-slate-900 text-white hover:bg-slate-800")}
                             onClick={(e) => { e.stopPropagation(); handleOpenBooking(pkg); }}
                           >
                             Agendar
@@ -504,7 +504,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                             </div>
 
                             <Button
-                              className={cn("rounded-xl px-6 h-10 w-full md:w-auto shadow-sm font-bold transition-transform active:scale-95 whitespace-nowrap shrink-0", isDark ? "bg-white text-slate-900 hover:bg-slate-200" : "bg-slate-900 text-white hover:bg-slate-800")}
+                              className={cn("rounded-full px-6 h-10 w-full md:w-auto shadow-sm font-bold transition-transform active:scale-95 whitespace-nowrap shrink-0", isDark ? "bg-white text-slate-900 hover:bg-slate-200" : "bg-slate-900 text-white hover:bg-slate-800")}
                               onClick={(e) => { e.stopPropagation(); handleOpenBooking(srv); }}
                             >
                               Agendar
@@ -535,7 +535,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                     ) : (
                       <div className="space-y-4">
                         {reviews.map((rev) => (
-                          <div key={rev.id} className="p-4 rounded-xl bg-black/5 dark:bg-white/5 space-y-3">
+                          <div key={rev.id} className="p-4 rounded-full bg-black/5 dark:bg-white/5 space-y-3">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden">
@@ -650,7 +650,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                       </div>
                     )}
                     {!isLoggedIn && !isAdmin && (
-                      <div className="mt-4 p-4 rounded-xl bg-black/5 dark:bg-white/5 text-center">
+                      <div className="mt-4 p-4 rounded-full bg-black/5 dark:bg-white/5 text-center">
                         <p className={cn("text-sm", mutedTextClass)}>Faça login na área do cliente para deixar uma avaliação.</p>
                       </div>
                     )}
@@ -782,7 +782,7 @@ export function ClientAgendarView({ org }: { org: any }) {
             {/* STEP 1: Date & Time */}
             {bookingStep === 1 && (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
-                <div className="bg-muted/50 p-4 rounded-xl flex items-center gap-3 border" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
+                <div className="bg-muted/50 p-4 rounded-full flex items-center gap-3 border" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
                   <Calendar className="w-6 h-6 opacity-50" />
                   <div>
                     <p className="font-bold text-sm">Serviço Selecionado</p>
@@ -861,7 +861,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                     {isLoadingAvailability ? (
                       <div className="flex justify-center p-6"><div className="w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin opacity-50"></div></div>
                     ) : Object.keys(availableSlots).length === 0 ? (
-                      <div className="p-4 bg-muted/50 rounded-xl text-center text-sm opacity-70 border" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>Nenhum horário disponível para esta data.</div>
+                      <div className="p-4 bg-muted/50 rounded-full text-center text-sm opacity-70 border" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>Nenhum horário disponível para esta data.</div>
                     ) : (
                       <div className="grid grid-cols-3 gap-2">
                         {Object.keys(availableSlots).sort().map(time => {
@@ -876,7 +876,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                                 setBookingData({ ...bookingData, time, professionalId: nextProfId, professionalName: nextProfName, professionalImage: nextProfImage });
                               }}
                               className={cn(
-                                "relative py-3 rounded-xl text-sm font-bold border text-center transition-all overflow-hidden",
+                                "relative py-3 rounded-full text-sm font-bold border text-center transition-all overflow-hidden",
                                 isSelected ? "shadow-md scale-[1.02]" : "bg-transparent hover:bg-black/5 dark:hover:bg-white/5"
                               )}
                               style={isSelected ? { backgroundColor: theme.primaryColor, color: theme.btnTxt, borderColor: theme.primaryColor } : { borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' }}
@@ -904,7 +904,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                       <button
                         onClick={() => setBookingData({ ...bookingData, professionalId: "ANY", professionalName: "Qualquer Profissional", professionalImage: null })}
                         className={cn(
-                          "relative p-3 rounded-xl flex items-center gap-3 border text-left transition-all overflow-hidden",
+                          "relative p-3 rounded-full flex items-center gap-3 border text-left transition-all overflow-hidden",
                           bookingData.professionalId === "ANY" ? "shadow-md scale-[1.02] ring-2 ring-offset-2" : "bg-transparent hover:bg-black/5 dark:hover:bg-white/5"
                         )}
                         style={(bookingData.professionalId === "ANY" ? { borderColor: theme.primaryColor, "--tw-ring-color": theme.primaryColor, "--tw-ring-offset-color": isDark ? '#0f172a' : '#ffffff' } : { borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' }) as React.CSSProperties}
@@ -926,7 +926,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                             key={pro.id}
                             onClick={() => setBookingData({ ...bookingData, professionalId: pro.id, professionalName: pro.name, professionalImage: pro.image_url })}
                             className={cn(
-                              "relative p-3 rounded-xl flex items-center gap-3 border text-left transition-all overflow-hidden",
+                              "relative p-3 rounded-full flex items-center gap-3 border text-left transition-all overflow-hidden",
                               isSelected ? "shadow-md scale-[1.02] ring-2 ring-offset-2" : "bg-transparent hover:bg-black/5 dark:hover:bg-white/5"
                             )}
                             style={(isSelected ? { borderColor: theme.primaryColor, "--tw-ring-color": theme.primaryColor, "--tw-ring-offset-color": isDark ? '#0f172a' : '#ffffff' } : { borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' }) as React.CSSProperties}
@@ -1050,7 +1050,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                   {/* Política de Cancelamento */}
                   <div className="space-y-3 pt-4 border-t" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
                     <Label className="text-xs font-bold uppercase tracking-wider opacity-80">Política de Cancelamento</Label>
-                    <div className="text-xs p-4 rounded-xl border bg-muted/30 overflow-y-auto max-h-32 whitespace-pre-wrap leading-relaxed">
+                    <div className="text-xs p-4 rounded-full border bg-muted/30 overflow-y-auto max-h-32 whitespace-pre-wrap leading-relaxed">
                       {activeGeneral.termsText || `Política de Cancelamento\n\n• Cancelamentos ou remarcações devem ser feitos com no mínimo 24 horas de antecedência.\n• Em caso de atraso, o atendimento poderá ser reduzido ou cancelado, respeitando o tempo da agenda.\n• Em situações excepcionais, cada caso será avaliado com carinho.`}
                       {activeGeneral.requirePrepayment !== false && (
                         <span className="font-bold block mt-3">
@@ -1059,7 +1059,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                       )}
                     </div>
 
-                    <label className="flex items-start gap-3 p-4 cursor-pointer hover:bg-muted/60 hover:bg- rounded-xl transition-colors mt-2">
+                    <label className="flex items-start gap-3 p-4 cursor-pointer hover:bg-muted/60 hover:bg- rounded-full transition-colors mt-2">
                       <div className="mt-0.5">
                         <input
                           type="checkbox"
@@ -1128,7 +1128,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                     href={`https://wa.me/${adminWhatsApp}?text=${encodeURIComponent(`Olá! Fiz um agendamento e aqui estão os detalhes:\n\n*Data:* ${bookingData.date ? format(bookingData.date, "dd/MM/yyyy") : ""}\n*Horário:* ${bookingData.time}\n${bookingData.professionalName ? `*Profissional:* ${bookingData.professionalName}\n` : ""}${selectedItem?.name ? `*Serviço:* ${selectedItem.name}\n` : ""}*Valor Total:* R$ ${Number(selectedItem?.price || 0).toFixed(2).replace('.', ',')}\n${activeGeneral.requirePrepayment !== false ? `*Sinal (50%):* R$ ${(Number(selectedItem?.price || 0) / 2).toFixed(2).replace('.', ',')}\n` : ""}\nAqui está meu comprovante:`)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex w-full items-center justify-center rounded-xl h-14 font-bold mb-6 bg-[#25D366] hover:bg-[#25D366]/90 text-white transition-colors shadow-lg shadow-[#25D366]/20"
+                    className="flex w-full items-center justify-center rounded-full h-14 font-bold mb-6 bg-[#25D366] hover:bg-[#25D366]/90 text-white transition-colors shadow-lg shadow-[#25D366]/20"
                   >
                     Enviar comprovante via WhatsApp
                   </a>
@@ -1137,7 +1137,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                 {/* Re-exibir Política no finalzinho */}
                 <div className="px-4 text-left">
                   <p className="text-xs font-bold uppercase tracking-wider opacity-60 mb-2">Lembrete</p>
-                  <div className="text-xs p-4 rounded-xl border bg-muted/30 overflow-y-auto max-h-32 whitespace-pre-wrap leading-relaxed opacity-80">
+                  <div className="text-xs p-4 rounded-full border bg-muted/30 overflow-y-auto max-h-32 whitespace-pre-wrap leading-relaxed opacity-80">
                     {activeGeneral.termsText || `Política de Cancelamento\n\n• Cancelamentos ou remarcações devem ser feitos com no mínimo 24 horas de antecedência.\n• A taxa de sinal não é reembolsável em casos de cancelamento fora do prazo ou não comparecimento.\n• Em caso de atraso, o atendimento poderá ser reduzido ou cancelado, respeitando o tempo da agenda.\n• O não comparecimento sem aviso implica na perda do sinal.\n• Em situações excepcionais, cada caso será avaliado com carinho.`}
                   </div>
                 </div>
@@ -1161,7 +1161,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setBookingWizardOpen(false)}
-                    className="flex w-full items-center justify-center rounded-xl h-14 font-bold bg-[#25D366] hover:bg-[#25D366]/90 text-white transition-colors shadow-lg shadow-[#25D366]/20"
+                    className="flex w-full items-center justify-center rounded-full h-14 font-bold bg-[#25D366] hover:bg-[#25D366]/90 text-white transition-colors shadow-lg shadow-[#25D366]/20"
                   >
                     Falar via WhatsApp
                   </a>
@@ -1185,7 +1185,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setBookingWizardOpen(false)}
-                    className="flex w-full items-center justify-center rounded-xl h-14 font-bold bg-[#25D366] hover:bg-[#25D366]/90 text-white transition-colors shadow-lg shadow-[#25D366]/20"
+                    className="flex w-full items-center justify-center rounded-full h-14 font-bold bg-[#25D366] hover:bg-[#25D366]/90 text-white transition-colors shadow-lg shadow-[#25D366]/20"
                   >
                     Confirmar via WhatsApp
                   </a>
@@ -1201,7 +1201,7 @@ export function ClientAgendarView({ org }: { org: any }) {
               <Button
                 onClick={() => setBookingStep(2)}
                 disabled={!bookingData.date || !bookingData.time || !bookingData.professionalId}
-                className="w-full h-12 rounded-xl font-bold"
+                className="w-full h-12 rounded-full font-bold"
                 style={(!bookingData.date || !bookingData.time || !bookingData.professionalId) ? {} : { backgroundColor: theme.primaryColor, color: theme.btnTxt }}
               >
                 Próximo <ArrowRight className="ml-2 w-4 h-4" />
@@ -1212,7 +1212,7 @@ export function ClientAgendarView({ org }: { org: any }) {
               <Button
                 onClick={() => setBookingStep(3)}
                 disabled={!bookingData.firstName || !bookingData.phone || !bookingData.email}
-                className="w-full h-12 rounded-xl font-bold"
+                className="w-full h-12 rounded-full font-bold"
                 style={(!bookingData.firstName || !bookingData.phone || !bookingData.email) ? {} : { backgroundColor: theme.primaryColor, color: theme.btnTxt }}
               >
                 Próximo <ArrowRight className="ml-2 w-4 h-4" />
@@ -1260,7 +1260,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                   }
                 }}
                 disabled={!policyAccepted || isBooking}
-                className="w-full h-12 rounded-xl font-bold text-base"
+                className="w-full h-12 rounded-full font-bold text-base"
                 style={(!policyAccepted || isBooking) ? {} : { backgroundColor: theme.primaryColor, color: theme.btnTxt }}
               >
                 {isBooking ? (
@@ -1275,7 +1275,7 @@ export function ClientAgendarView({ org }: { org: any }) {
               <Button
                 onClick={() => { setBookingWizardOpen(false); }}
                 variant="outline"
-                className="w-full h-12 rounded-xl font-bold"
+                className="w-full h-12 rounded-full font-bold"
               >
                 Fechar
               </Button>
@@ -1285,7 +1285,7 @@ export function ClientAgendarView({ org }: { org: any }) {
               <Button
                 onClick={() => { setBookingWizardOpen(false); }}
                 variant="outline"
-                className="w-full h-12 rounded-xl font-bold"
+                className="w-full h-12 rounded-full font-bold"
               >
                 Voltar
               </Button>

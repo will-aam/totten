@@ -131,8 +131,7 @@ export function CategorySelect({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className={cn(
-              "w-full justify-between bg-muted/50 border-border/50 h-11",
+            className={cn("w-full justify-between bg-muted/50 border-border/50 h-11 rounded-lg",
               error && "border-destructive",
             )}
           >

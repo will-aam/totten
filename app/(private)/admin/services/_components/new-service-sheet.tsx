@@ -25,7 +25,7 @@ export function NewServiceSheet({ isOpen, onClose, onSuccess }: NewServiceSheetP
             Configure as informações do seu novo serviço.
           </SheetDescription>
         </SheetHeader>
-        
+
         <div className="p-4 sm:p-8">
           <ServiceForm onSuccess={onSuccess} onCancel={onClose} />
         </div>

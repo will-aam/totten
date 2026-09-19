@@ -97,7 +97,7 @@ function MobileHistoryItem({
         variant="ghost"
         size="icon"
         onClick={() => onDelete(checkIn)}
-        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full shrink-0"
+        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
       >
         <Trash className="h-4 w-4" />
       </Button>
@@ -146,7 +146,7 @@ export function HistoryTable({
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="px-2 hover:bg-muted hover:text-foreground text-muted-foreground font-semibold transition-colors rounded-full"
+          className="px-2 hover:bg-muted hover:text-foreground text-muted-foreground font-semibold transition-colors"
         >
           Cliente <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
@@ -187,7 +187,7 @@ export function HistoryTable({
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="px-2 hover:bg-muted hover:text-foreground text-muted-foreground font-semibold transition-colors rounded-full"
+          className="px-2 hover:bg-muted hover:text-foreground text-muted-foreground font-semibold transition-colors"
         >
           Data e Hora <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
@@ -239,7 +239,7 @@ export function HistoryTable({
             variant="ghost"
             size="icon"
             onClick={() => setCiToDelete(row.original)}
-            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-colors"
+            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
           >
             <Trash className="h-4 w-4" />
           </Button>

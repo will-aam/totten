@@ -201,7 +201,7 @@ export function PaymentMethodModal({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 rounded-2xl shrink-0"
+                  className="text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 shrink-0"
                   onClick={handleDelete}
                   disabled={isPending}
                 >
@@ -243,8 +243,7 @@ export function PaymentMethodModal({
                       variant="outline"
                       role="combobox"
                       disabled={isPending}
-                      className={cn(
-                        "flex-1 justify-between h-12 rounded-2xl text-left font-bold border-border/50 bg-card hover:bg-muted/50",
+                      className={cn("flex-1 justify-between h-12 rounded-lg text-left font-bold border-border/50 bg-card hover:bg-muted/50",
                         !selectedName && "text-muted-foreground font-medium",
                       )}
                     >
@@ -317,7 +316,7 @@ export function PaymentMethodModal({
                     size="icon"
                     disabled={!selectedName || isPending}
                     onClick={handleClearSelection}
-                    className="h-12 w-12 shrink-0 rounded-2xl border-border/50 text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 bg-card"
+                    className="h-12 w-12 shrink-0 border-border/50 text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 bg-card"
                   >
                     <Trash className="h-5 w-5" />
                   </Button>
@@ -340,8 +339,7 @@ export function PaymentMethodModal({
                       )
                     }
                     disabled={isPending}
-                    className={cn(
-                      "h-12 rounded-2xl pr-8 bg-card border-border/50 font-bold focus-visible:ring-primary/20",
+                    className={cn("h-12 rounded-2xl pr-8 bg-card border-border/50 font-bold focus-visible:ring-primary/20",
                       hideNumberArrows,
                     )}
                     placeholder="0.00"
@@ -368,8 +366,7 @@ export function PaymentMethodModal({
                       )
                     }
                     disabled={isPending}
-                    className={cn(
-                      "h-12 rounded-2xl pl-10 bg-card border-border/50 font-bold focus-visible:ring-primary/20",
+                    className={cn("h-12 rounded-2xl pl-10 bg-card border-border/50 font-bold focus-visible:ring-primary/20",
                       hideNumberArrows,
                     )}
                     placeholder="0.00"
@@ -391,8 +388,7 @@ export function PaymentMethodModal({
                   )
                 }
                 disabled={isPending}
-                className={cn(
-                  "h-12 rounded-2xl bg-card border-border/50 font-bold focus-visible:ring-primary/20",
+                className={cn("h-12 rounded-2xl bg-card border-border/50 font-bold focus-visible:ring-primary/20",
                   hideNumberArrows,
                 )}
                 placeholder="0"
@@ -405,14 +401,14 @@ export function PaymentMethodModal({
           <SheetFooter className="flex-row gap-3">
             <Button
               variant="outline"
-              className="flex-1 h-12 rounded-2xl font-bold border-border/50 hover:bg-muted/50"
+              className="flex-1 h-12 font-bold border-border/50 hover:bg-muted/50"
               onClick={onClose}
               disabled={isPending}
             >
               Cancelar
             </Button>
             <Button
-              className="flex-1 h-12 rounded-2xl font-bold shadow-md shadow-primary/20"
+              className="flex-1 h-12 font-bold shadow-md shadow-primary/20"
               onClick={handleSave}
               disabled={isSaveDisabled}
             >

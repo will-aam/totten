@@ -17,7 +17,7 @@ export default function NewServicePage() {
             asChild
             variant="outline"
             size="icon"
-            className="rounded-full h-10 w-10 shrink-0"
+            className="h-10 w-10 shrink-0"
           >
             <Link href="/admin/services">
               <ChevronLeft

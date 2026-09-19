@@ -67,7 +67,7 @@ export default function TotemIdleContent() {
 
           <div className="space-y-1 text-center min-h-15 flex items-center justify-center w-full">
             {status === "loading" ? (
-              <div className="h-12 w-48 md:h-15 md:w-64 rounded-xl bg-muted animate-pulse mx-auto" />
+              <div className="h-12 w-48 md:h-15 md:w-64 rounded-full bg-muted animate-pulse mx-auto" />
             ) : (
               <h1 className="text-5xl font-bold tracking-tight text-foreground md:text-6xl animate-in fade-in duration-700">
                 Totten

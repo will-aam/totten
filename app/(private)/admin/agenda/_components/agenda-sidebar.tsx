@@ -72,7 +72,7 @@ export function AgendaSidebar({
       <div className="px-2 pt-2 whitespace-nowrap">
         {/* <Button
           onClick={onCreateClick}
-          className="rounded-full shadow-sm hover:shadow-md transition-shadow flex items-center gap-2 px-6 py-7 font-medium text-base bg-background border border-border/50 text-foreground hover:bg-accent hover:text-accent-foreground dark:shadow-none"
+          className="shadow-sm hover:shadow-md transition-shadow flex items-center gap-2 px-6 py-7 font-medium text-base bg-background border border-border/50 text-foreground hover:bg-accent hover:text-accent-foreground dark:shadow-none"
         >
           <div className="flex items-center gap-3">
             <Plus size={32} className="text-foreground" strokeWidth={2.5} />
@@ -87,10 +87,10 @@ export function AgendaSidebar({
             {format(month, "MMMM 'de' yyyy", { locale: ptBR })}
           </span>
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={prevMonth}>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={prevMonth}>
               <ChevronLeft size={16} />
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={nextMonth}>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={nextMonth}>
               <ChevronRight size={16} />
             </Button>
           </div>

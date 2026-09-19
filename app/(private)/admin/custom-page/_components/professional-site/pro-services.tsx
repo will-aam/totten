@@ -24,7 +24,7 @@ export function ProServices({ data, onChange }: any) {
         </p>
       </div>
 
-      <div className="flex flex-col gap-4 p-5 border border-border/50 rounded-xl bg-muted/10">
+      <div className="flex flex-col gap-4 p-5 border border-border/50 rounded-full bg-muted/10">
         <Label className="text-foreground font-medium text-base mb-1">Configuração de Exibição</Label>
         <p className="text-sm text-muted-foreground mb-2">Escolha quais módulos mostrar e o seu formato visual.</p>
 

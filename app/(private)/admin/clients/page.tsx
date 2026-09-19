@@ -343,28 +343,27 @@ function AdminClientsPageContent() {
           <div className="flex items-center gap-2 w-full lg:max-w-md">
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nome, CPF ou telefone..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className={cn(
-                "bg-card pl-10 text-foreground rounded-full shadow-sm border-border transition-all duration-300",
-                search.includes("**") && "pr-32 border-primary/50 bg-primary/5",
-                search.includes("++") && "pr-32 border-blue-500/50 bg-blue-500/5",
-              )}
-            />
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 pointer-events-none">
-              {search.includes("**") && (
-                <span className="text-[10px] font-bold bg-primary text-primary-foreground px-2 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 animate-in zoom-in duration-300">
-                  <Layers size="xs" /> Mais de 1 Pacote
-                </span>
-              )}
-              {search.includes("++") && (
-                <span className="text-[10px] font-bold bg-blue-500 text-white px-2 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 animate-in zoom-in duration-300">
-                  <Mobile size="xs" /> Autoagendamento
-                </span>
-              )}
-            </div>
+              <Input
+                placeholder="Buscar por nome, CPF ou telefone..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className={cn("bg-card pl-10 text-foreground rounded-full shadow-sm border-border transition-all duration-300",
+                  search.includes("**") && "pr-32 border-primary/50 bg-primary/5",
+                  search.includes("++") && "pr-32 border-blue-500/50 bg-blue-500/5",
+                )}
+              />
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 pointer-events-none">
+                {search.includes("**") && (
+                  <span className="text-[10px] font-bold bg-primary text-primary-foreground px-2 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 animate-in zoom-in duration-300">
+                    <Layers size="xs" /> Mais de 1 Pacote
+                  </span>
+                )}
+                {search.includes("++") && (
+                  <span className="text-[10px] font-bold bg-blue-500 text-white px-2 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 animate-in zoom-in duration-300">
+                    <Mobile size="xs" /> Autoagendamento
+                  </span>
+                )}
+              </div>
             </div>
 
             <Popover>
@@ -399,7 +398,7 @@ function AdminClientsPageContent() {
             <Button
               variant="outline"
               onClick={() => setIsImportModalOpen(true)}
-              className="h-12 w-full sm:w-auto px-6 rounded-full font-medium shadow-sm border-border/60 hover:bg-muted/50 transition-colors"
+              className="h-12 w-full sm:w-auto px-6 font-medium shadow-sm border-border/60 hover:bg-muted/50 transition-colors"
             >
               <ArrowOutDownSquareHalf
                 size="sm"
@@ -411,7 +410,7 @@ function AdminClientsPageContent() {
             <Button
               variant="outline"
               onClick={() => setIsExportModalOpen(true)}
-              className="h-12 w-full sm:w-auto px-6 rounded-full font-medium shadow-sm border-border/60 hover:bg-muted/50 transition-colors"
+              className="h-12 w-full sm:w-auto px-6 font-medium shadow-sm border-border/60 hover:bg-muted/50 transition-colors"
             >
               <Download
                 size="sm"
@@ -423,7 +422,7 @@ function AdminClientsPageContent() {
             <Button
               variant="outline"
               onClick={handleCopyLink}
-              className="h-12 w-full sm:w-auto px-6 rounded-full font-medium shadow-sm transition-all border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+              className="h-12 w-full sm:w-auto px-6 font-medium shadow-sm transition-all border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
             >
               <Share className="mr-2 h-4 w-4" />
               Área do Cliente
@@ -431,7 +430,7 @@ function AdminClientsPageContent() {
 
             <Button
               onClick={() => setIsNewClientSheetOpen(true)}
-              className="h-12 w-full sm:w-auto px-8 rounded-full font-medium shadow-sm transition-all"
+              className="h-12 w-full sm:w-auto px-8 font-medium shadow-sm transition-all"
             >
               <Plus className="mr-2 h-4 w-4" />
               Novo Cliente
@@ -461,11 +460,7 @@ function AdminClientsPageContent() {
             </div>
           ) : clients.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/30 rounded-lg border border-dashed border-border">
-              {search.includes("**") ? (
-                <Layers size="lg" className="text-muted-foreground/40" />
-              ) : (
-                <Group size="lg" className="text-muted-foreground/40" />
-              )}
+              <img width="48" height="48" src="https://img.icons8.com/parakeet/48/question.png" alt="question" />
               <p className="mt-4 text-sm font-medium text-muted-foreground">
                 {search.includes("**")
                   ? "Nenhum cliente com mais de um pacote ativo."
@@ -476,7 +471,7 @@ function AdminClientsPageContent() {
               {cleanSearch.length < 3 && !hasMultiplePackagesFilter && (
                 <Button
                   asChild
-                  className="mt-4 rounded-full md:rounded-md"
+                  className="mt-4 md:"
                   size="sm"
                 >
                   <Link href="/admin/clients/new">

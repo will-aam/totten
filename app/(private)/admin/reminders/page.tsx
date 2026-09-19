@@ -200,8 +200,7 @@ export default function RemindersPage() {
                       <Button
                         onClick={() => handleSendWhatsApp(appt)}
                         variant={hasMessaged ? "secondary" : "default"}
-                        className={cn(
-                          "w-full md:w-auto rounded-2xl h-11 px-5 shrink-0 transition-all font-bold text-sm over:bg-transparent active:scale-90 active:brightness-90",
+                        className={cn("w-full md:w-auto rounded-2xl h-11 px-5 shrink-0 transition-all font-bold text-sm over:bg-transparent active:scale-90 active:brightness-90",
                         )}
                       >
                         <Whatsapp removePadding className="h-5 w-5" />

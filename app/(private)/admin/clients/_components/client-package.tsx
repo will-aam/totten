@@ -146,7 +146,7 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
         <div className="flex flex-col gap-2 mt-1">
           <Button
             variant="destructive"
-            className="w-full rounded-xl h-10 flex items-center justify-center"
+            className="w-full h-10 flex items-center justify-center"
             onClick={() => {
               setPkgToArchive(pkg);
               setIsArchiveDialogOpen(true);
@@ -176,7 +176,7 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
               ? "Encerre o Pacote atual para vender outro"
               : ""
           }
-          className="h-8 rounded-full border-primary/20 text-primary select-none transition-transform duration-100 ease-out hover:bg-transparent hover:text-primary active:scale-95 active:bg-primary/10 text-xs font-medium px-3 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="h-8 border-primary/20 text-primary select-none transition-transform duration-100 ease-out hover:bg-transparent hover:text-primary active:scale-95 active:bg-primary/10 text-xs font-medium px-3 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Plus className="h-3.5 w-3.5 mr-1" strokeWidth={2} />
           {activePackages.length >= 1 ? "Limite Atingido" : "Nova venda"}
@@ -188,7 +188,7 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
       <CardContent className="px-0 pb-4 md:pb-6 md:px-6 flex flex-col">
         {isLoadingPackages ? (
           <div className="space-y-4 px-4 md:px-0">
-            <Skeleton className="h-12 w-full rounded-xl" />
+            <Skeleton className="h-12 w-full rounded-full" />
             <Skeleton className="h-2.5 w-full rounded-full" />
           </div>
         ) : activePackages.length > 0 ? (
@@ -234,7 +234,7 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
             )}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center text-center bg-muted/20 rounded-xl border border-dashed border-border p-6 py-10 md:border-dashed md:bg-transparent mx-4 md:mx-0">
+          <div className="flex flex-col items-center justify-center text-center bg-muted/20 rounded-full border border-dashed border-border p-6 py-10 md:border-dashed md:bg-transparent mx-4 md:mx-0">
             <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
               <Package
                 className="h-6 w-6 text-muted-foreground/50"

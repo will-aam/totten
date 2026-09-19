@@ -180,7 +180,7 @@ export default function PaymentMethodsPage() {
 
           <div className="flex flex-col gap-1.5 relative z-10">
             <h1 className="text-3xl font-black tracking-tight bg-linear-to-br from-foreground to-foreground/70 bg-clip-text text-transparent flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-xl text-primary hidden sm:flex">
+              <div className="p-2 bg-primary/10 rounded-full text-primary hidden sm:flex">
                 <Landmark size="sm" />
               </div>
               Meios de Pagamento
@@ -192,7 +192,7 @@ export default function PaymentMethodsPage() {
           </div>
 
           <Button
-            className="h-12 px-6 rounded-2xl font-black shadow-[0_8px_25px_rgb(var(--primary)/0.3)] hover:shadow-[0_10px_30px_rgb(var(--primary)/0.4)] active:scale-95 transition-all relative z-10 w-full sm:w-auto"
+            className="h-12 px-6 font-black shadow-[0_8px_25px_rgb(var(--primary)/0.3)] hover:shadow-[0_10px_30px_rgb(var(--primary)/0.4)] active:scale-95 transition-all relative z-10 w-full sm:w-auto"
             onClick={handleNewPaymentMethod}
           >
             <PlusCircle size="sm" className="mr-2" />
@@ -205,7 +205,7 @@ export default function PaymentMethodsPage() {
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-3xl rounded-full -z-10 pointer-events-none" />
           <CardHeader className="px-6 pt-6 pb-4 border-b border-border/30 relative z-10">
             <CardTitle className="flex items-center gap-3 text-xl font-black text-foreground">
-              <div className="p-2 bg-primary/10 rounded-xl text-primary">
+              <div className="p-2 bg-primary/10 rounded-full text-primary">
                 <Slider size="sm" />
               </div>
               Configurações Atuais

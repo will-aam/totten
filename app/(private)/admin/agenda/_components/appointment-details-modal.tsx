@@ -323,8 +323,8 @@ export const AppointmentDetailsModal = memo(
     );
 
     return (
-      <ResponsiveModal 
-        open={open} 
+      <ResponsiveModal
+        open={open}
         onOpenChange={onOpenChange}
         title={customTitle}
         className={cn(
@@ -340,294 +340,314 @@ export const AppointmentDetailsModal = memo(
           isLocked && "opacity-95",
         )}
       >
-          <ThermalReceipt
-            ref={componentRef}
-            appointment={{
-              ...appointment,
-              observations: obs,
-              service: serviceName,
-            }}
-            settings={settings}
-          />
+        <ThermalReceipt
+          ref={componentRef}
+          appointment={{
+            ...appointment,
+            observations: obs,
+            service: serviceName,
+          }}
+          settings={settings}
+        />
 
-          <div className="flex flex-col gap-5 overflow-y-auto py-2 pr-1 custom-scrollbar">
-            {/*  BANNER INTELIGENTE DE FALTAS */}
-            {isAnyNoShow && (
-              <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl flex flex-col gap-3 animate-in fade-in zoom-in-95">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-                  <div className="flex flex-col">
-                    <span className="text-sm font-black text-amber-700 dark:text-amber-500 uppercase tracking-tight">
-                      {isAutoNoShow ? "Falta Automática" : "Falta Registrada"}
-                    </span>
-                    <span className="text-xs font-medium text-amber-700/80 dark:text-amber-500/80 mt-1">
-                      {isAutoNoShow
-                        ? "O sistema registrou falta pois não houve check-in no totem. Se a cliente compareceu, estorne a falta abaixo."
-                        : "Esta falta foi registrada manualmente e a sessão foi descontada. Se foi um erro, estorne abaixo."}
-                    </span>
-                  </div>
-                </div>
-                <Button
-                  onClick={handleUndoNoShow}
-                  disabled={isUndoing}
-                  variant="outline"
-                  className="bg-background border-amber-500/30 text-amber-700 hover:bg-amber-500/10 self-end rounded-xl h-9 text-xs font-bold"
-                >
-                  {isUndoing ? (
-                    <LoaderDots className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <>
-                      <Undo className="mr-2 h-4 w-4" /> Estornar Falta
-                    </>
-                  )}
-                </Button>
-              </div>
-            )}
-
-            {isAlreadyCanceled && !isAnyNoShow && (
-              <div className="bg-muted/50 border border-border p-4 rounded-2xl flex items-start gap-3 animate-in fade-in zoom-in-95">
-                <Lock className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+        <div className="flex flex-col gap-5 overflow-y-auto py-2 pr-1 custom-scrollbar">
+          {/*  BANNER INTELIGENTE DE FALTAS */}
+          {isAnyNoShow && (
+            <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl flex flex-col gap-3 animate-in fade-in zoom-in-95">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
                 <div className="flex flex-col">
-                  <span className="text-sm font-black text-foreground uppercase tracking-tight">
-                    Registro Cancelado
+                  <span className="text-sm font-black text-amber-700 dark:text-amber-500 uppercase tracking-tight">
+                    {isAutoNoShow ? "Falta Automática" : "Falta Registrada"}
                   </span>
-                  <span className="text-xs font-medium text-muted-foreground mt-1">
-                    Esta consulta foi cancelada amigavelmente e nenhuma sessão
-                    foi descontada. Por motivos de segurança ela não pode ser
-                    alterada.
+                  <span className="text-xs font-medium text-amber-700/80 dark:text-amber-500/80 mt-1">
+                    {isAutoNoShow
+                      ? "O sistema registrou falta pois não houve check-in no totem. Se a cliente compareceu, estorne a falta abaixo."
+                      : "Esta falta foi registrada manualmente e a sessão foi descontada. Se foi um erro, estorne abaixo."}
                   </span>
                 </div>
               </div>
-            )}
+              <Button
+                onClick={handleUndoNoShow}
+                disabled={isUndoing}
+                variant="outline"
+                className="bg-background border-amber-500/30 text-amber-700 hover:bg-amber-500/10 self-end h-9 text-xs font-bold"
+              >
+                {isUndoing ? (
+                  <LoaderDots className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <Undo className="mr-2 h-4 w-4" /> Estornar Falta
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
 
-            {isPackageArchived &&
-              !isAlreadyCanceled &&
-              status !== "cancelado" &&
-              status !== "realizado" && (
-                <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-2xl flex items-start gap-3 animate-in fade-in zoom-in-95">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-black text-destructive uppercase tracking-tight">
-                      Atenção: Pacote Encerrado
-                    </span>
-                    <span className="text-xs font-medium text-destructive/80 mt-1">
-                      O pacote atrelado a este agendamento foi arquivado antes
-                      da hora. Esta sessão tornou-se inválida. Por favor,
-                      cancele ou exclua.
-                    </span>
-                  </div>
-                </div>
-              )}
-
-            <div
-              className={cn(
-                "bg-muted/30 p-4 rounded-2xl flex flex-col gap-3 border border-border/40",
-                (isPackageArchived || isLocked) && "opacity-70 grayscale",
-              )}
-            >
-              <div className="flex justify-between items-center text-sm font-bold uppercase tracking-tighter text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <CalendarAlt className="h-4 w-4" /> Atendimento
-                </div>
-                <Badge
-                  variant={
-                    status === "cancelado" || isPackageArchived
-                      ? "destructive"
-                      : "outline"
-                  }
-                  className={cn(
-                    "rounded-lg border-none px-2.5 py-0.5",
-                    status !== "cancelado" &&
-                    !isPackageArchived &&
-                    "bg-background",
-                  )}
-                >
-                  {status === "cancelado"
-                    ? "Cancelado"
-                    : isPackageArchived && !isAlreadyCanceled
-                      ? "Pacote Inativo"
-                      : appointment.sessionInfo || "Avulso"}
-                </Badge>
-              </div>
-              <div className="text-2xl font-black text-primary flex items-baseline gap-1">
-                {appointment.time}
-                <span className="text-xs font-bold text-muted-foreground uppercase">
-                  até
+          {isAlreadyCanceled && !isAnyNoShow && (
+            <div className="bg-muted/50 border border-border p-4 rounded-2xl flex items-start gap-3 animate-in fade-in zoom-in-95">
+              <Lock className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+              <div className="flex flex-col">
+                <span className="text-sm font-black text-foreground uppercase tracking-tight">
+                  Registro Cancelado
                 </span>
-                {endTime}
+                <span className="text-xs font-medium text-muted-foreground mt-1">
+                  Esta consulta foi cancelada amigavelmente e nenhuma sessão
+                  foi descontada. Por motivos de segurança ela não pode ser
+                  alterada.
+                </span>
               </div>
             </div>
+          )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">
-                  Status
-                </Label>
-                <Select
-                  value={status}
-                  onValueChange={handleStatusChange}
-                  disabled={isLocked || isPackageArchived}
-                >
-                  <SelectTrigger className="rounded-2xl h-12 bg-muted/20 border-none font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl border-border/50 bg-background">
-                    <SelectItem value="a_confirmar">A Confirmar</SelectItem>
-                    <SelectItem value="realizado">Realizado</SelectItem>
-                    <SelectItem value="cancelado">
-                      Cancelado (Sem Cobrar)
-                    </SelectItem>
-                    {/*  NOVA OPÇÃO DE FALTA MANUAL AQUI */}
-                    <SelectItem
-                      value="nao_compareceu"
-                      className="text-amber-600 font-bold focus:text-amber-700"
-                    >
-                      Faltou (Desconta Sessão)
-                    </SelectItem>
-                    <SelectItem
-                      value="nao_compareceu_abonado"
-                      className="text-emerald-600 font-bold focus:text-emerald-700"
-                    >
-                      Faltou (Abonar/Não Desconta)
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+          {isPackageArchived &&
+            !isAlreadyCanceled &&
+            status !== "cancelado" &&
+            status !== "realizado" && (
+              <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-2xl flex items-start gap-3 animate-in fade-in zoom-in-95">
+                <div className="flex flex-col">
+                  <span className="text-sm font-black text-destructive uppercase tracking-tight">
+                    Atenção: Pacote Encerrado
+                  </span>
+                  <span className="text-xs font-medium text-destructive/80 mt-1">
+                    O pacote atrelado a este agendamento foi arquivado antes
+                    da hora. Esta sessão tornou-se inválida. Por favor,
+                    cancele ou exclua.
+                  </span>
+                </div>
               </div>
+            )}
 
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">
-                  Pagamento
-                </Label>
-                <Select
-                  value={payment}
-                  onValueChange={setPayment}
-                  disabled={
-                    isLocked ||
-                    isPackageArchived ||
-                    status === "cancelado" ||
-                    status === "nao_compareceu" ||
-                    status === "nao_compareceu_abonado"
-                  }
-                >
-                  <SelectTrigger className="rounded-2xl h-12 bg-muted/20 border-none font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl border-border/50 bg-background">
-                    <SelectItem value="nenhum">Aguardando...</SelectItem>
-                    {paymentMethods
-                      .filter((pm) => pm.isActive)
-                      .map((pm) => (
-                        <SelectItem key={pm.id} value={pm.type}>
-                          {pm.name}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+          <div
+            className={cn(
+              "bg-muted/30 p-4 rounded-2xl flex flex-col gap-3 border border-border/40",
+              (isPackageArchived || isLocked) && "opacity-70 grayscale",
+            )}
+          >
+            <div className="flex justify-between items-center text-sm font-bold uppercase tracking-tighter text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <CalendarAlt className="h-4 w-4" /> Atendimento
               </div>
+              <Badge
+                variant={
+                  status === "cancelado" || isPackageArchived
+                    ? "destructive"
+                    : "outline"
+                }
+                className={cn(
+                  "rounded-lg border-none px-2.5 py-0.5",
+                  status !== "cancelado" &&
+                  !isPackageArchived &&
+                  "bg-background",
+                )}
+              >
+                {status === "cancelado"
+                  ? "Cancelado"
+                  : isPackageArchived && !isAlreadyCanceled
+                    ? "Pacote Inativo"
+                    : appointment.sessionInfo || "Avulso"}
+              </Badge>
+            </div>
+            <div className="text-2xl font-black text-primary flex items-baseline gap-1">
+              {appointment.time}
+              <span className="text-xs font-bold text-muted-foreground uppercase">
+                até
+              </span>
+              {endTime}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">
+                Status
+              </Label>
+              <Select
+                value={status}
+                onValueChange={handleStatusChange}
+                disabled={isLocked || isPackageArchived}
+              >
+                <SelectTrigger className="h-12 bg-muted/20 border-none font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="border-border/50 bg-background rounded-2xl">
+                  <SelectItem value="a_confirmar">A Confirmar</SelectItem>
+                  <SelectItem value="realizado">Realizado</SelectItem>
+                  <SelectItem value="cancelado">
+                    Cancelado (Sem Cobrar)
+                  </SelectItem>
+                  {/*  NOVA OPÇÃO DE FALTA MANUAL AQUI */}
+                  <SelectItem
+                    value="nao_compareceu"
+                    className="text-amber-600 font-bold focus:text-amber-700"
+                  >
+                    Faltou (Desconta Sessão)
+                  </SelectItem>
+                  <SelectItem
+                    value="nao_compareceu_abonado"
+                    className="text-emerald-600 font-bold focus:text-emerald-700"
+                  >
+                    Faltou (Abonar/Não Desconta)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-primary">
-                Observações do Recibo
+              <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">
+                Pagamento
               </Label>
-              <Textarea
-                value={obs}
-                onChange={(e) => setObs(e.target.value)}
-                disabled={isLocked}
-                placeholder={
-                  isLocked
-                    ? "Indisponível para agendamentos cancelados"
-                    : "Digite detalhes..."
-                }
-                className="bg-muted/20 border-none resize-none h-24 rounded-2xl p-4 disabled:opacity-50 disabled:cursor-not-allowed"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <Button
-                variant={hasCharge ? "destructive" : "outline"}
-                className={cn(
-                  "rounded-2xl h-12 font-bold transition-all",
-                  !hasCharge && "bg-muted/20 border-none",
-                )}
-                onClick={() => setHasCharge(!hasCharge)}
+              <Select
+                value={payment}
+                onValueChange={setPayment}
                 disabled={
                   isLocked ||
-                  status === "realizado" ||
                   isPackageArchived ||
                   status === "cancelado" ||
                   status === "nao_compareceu" ||
                   status === "nao_compareceu_abonado"
                 }
               >
-                {hasCharge ? "Cobrança Ativa" : "Tudo Pago"}
-              </Button>
-
-              <Button
-                variant="secondary"
-                className="bg-primary/10 text-primary font-black rounded-2xl h-12"
-                onClick={() => {
-                  handlePrint();
-                  toast.success("Gerando recibo...");
-                }}
-              >
-                <Printer className="mr-2 h-5 w-5" /> Recibo
-              </Button>
+                <SelectTrigger className="h-12 bg-muted/20 border-none font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="border-border/50 bg-background rounded-2xl">
+                  <SelectItem value="nenhum">Aguardando...</SelectItem>
+                  {paymentMethods
+                    .filter((pm) => pm.isActive)
+                    .map((pm) => (
+                      <SelectItem key={pm.id} value={pm.type}>
+                        {pm.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          {!isLocked && (
-            <DialogFooter className="flex flex-col-reverse sm:flex-row gap-3 pt-6 border-t border-border/40 mt-auto">
-              {status !== "realizado" && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="text-destructive hover:bg-destructive/5 font-bold w-full sm:w-auto rounded-2xl h-12"
-                    >
-                      <Trash className="mr-2 h-5 w-5" /> Excluir Sessão
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent className="rounded-3xl border border-border/50 p-6 bg-background">
-                    <AlertDialogHeader>
-                      <AlertDialogTitle className="text-xl font-bold">
-                        Excluir Agendamento?
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        {isRecurrent
-                          ? "Este agendamento faz parte de uma série. Como deseja proceder?"
-                          : "Isso apagará este agendamento permanentemente."}
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
-                      <AlertDialogCancel className="rounded-2xl border-none bg-muted">
-                        Voltar
-                      </AlertDialogCancel>
-                      {isRecurrent && (
-                        <AlertDialogAction
-                          onClick={() => handleDelete(true)}
-                          className="bg-destructive/10 text-destructive rounded-2xl border-none font-bold hover:bg-destructive/20"
-                        >
-                          Excluir Toda a Série
-                        </AlertDialogAction>
-                      )}
-                      <AlertDialogAction
-                        onClick={() => handleDelete(false)}
-                        className="rounded-xl bg-destructive text-white hover:bg-destructive/90"
-                      >
-                        Sim, excluir
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+          <div className="space-y-2">
+            <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-primary">
+              Observações do Recibo
+            </Label>
+            <Textarea
+              value={obs}
+              onChange={(e) => setObs(e.target.value)}
+              disabled={isLocked}
+              placeholder={
+                isLocked
+                  ? "Indisponível para agendamentos cancelados"
+                  : "Digite detalhes..."
+              }
+              className="bg-muted/20 border-none resize-none h-24 p-4 disabled:opacity-50 disabled:cursor-not-allowed"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            <Button
+              variant={hasCharge ? "destructive" : "outline"}
+              className={cn("rounded-2xl h-12 font-bold transition-all",
+                !hasCharge && "bg-muted/20 border-none",
               )}
+              onClick={() => setHasCharge(!hasCharge)}
+              disabled={
+                isLocked ||
+                status === "realizado" ||
+                isPackageArchived ||
+                status === "cancelado" ||
+                status === "nao_compareceu" ||
+                status === "nao_compareceu_abonado"
+              }
+            >
+              {hasCharge ? "Cobrança Ativa" : "Tudo Pago"}
+            </Button>
 
-              <div className="flex-1" />
+            <Button
+              variant="secondary"
+              className="bg-primary/10 text-primary font-black h-12"
+              onClick={() => {
+                handlePrint();
+                toast.success("Gerando recibo...");
+              }}
+            >
+              <Printer className="mr-2 h-5 w-5" /> Recibo
+            </Button>
+          </div>
+        </div>
 
-              {!showSaveOptions ? (
+        {!isLocked && (
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-3 pt-6 border-t border-border/40 mt-auto">
+            {status !== "realizado" && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="text-destructive hover:bg-destructive/5 font-bold w-full sm:w-auto h-12"
+                  >
+                    <Trash className="mr-2 h-5 w-5" /> Excluir Sessão
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="rounded-3xl border border-border/50 p-6 bg-background">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="text-xl font-bold">
+                      Excluir Agendamento?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {isRecurrent
+                        ? "Este agendamento faz parte de uma série. Como deseja proceder?"
+                        : "Isso apagará este agendamento permanentemente."}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
+                    <AlertDialogCancel className="rounded-2xl border-none bg-muted">
+                      Voltar
+                    </AlertDialogCancel>
+                    {isRecurrent && (
+                      <AlertDialogAction
+                        onClick={() => handleDelete(true)}
+                        className="bg-destructive/10 text-destructive rounded-2xl border-none font-bold hover:bg-destructive/20"
+                      >
+                        Excluir Toda a Série
+                      </AlertDialogAction>
+                    )}
+                    <AlertDialogAction
+                      onClick={() => handleDelete(false)}
+                      className="rounded-full bg-destructive text-white hover:bg-destructive/90"
+                    >
+                      Sim, excluir
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+
+            <div className="flex-1" />
+
+            {!showSaveOptions ? (
+              <Button
+                onClick={() =>
+                  isRecurrent ? setShowSaveOptions(true) : handleSave()
+                }
+                disabled={
+                  isSaving ||
+                  (isPackageArchived &&
+                    status !== "cancelado" &&
+                    status !== "nao_compareceu" &&
+                    status !== "nao_compareceu_abonado")
+                }
+                className="bg-primary text-primary-foreground h-12 px-8 font-bold w-full sm:w-auto"
+              >
+                {isSaving ? (
+                  <LoaderDots className="h-5 w-5 animate-spin" />
+                ) : (
+                  <>
+                    <Save className="mr-2 h-5 w-5" /> Salvar
+                  </>
+                )}
+              </Button>
+            ) : (
+              <div className="flex gap-2 w-full sm:w-auto animate-in slide-in-from-right-2">
                 <Button
-                  onClick={() =>
-                    isRecurrent ? setShowSaveOptions(true) : handleSave()
-                  }
+                  onClick={() => handleSave(status, true)}
                   disabled={
                     isSaving ||
                     (isPackageArchived &&
@@ -635,48 +655,27 @@ export const AppointmentDetailsModal = memo(
                       status !== "nao_compareceu" &&
                       status !== "nao_compareceu_abonado")
                   }
-                  className="rounded-2xl bg-primary text-primary-foreground h-12 px-8 font-bold w-full sm:w-auto"
+                  className="h-12 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs uppercase"
                 >
-                  {isSaving ? (
-                    <LoaderDots className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-5 w-5" /> Salvar
-                    </>
-                  )}
+                  Toda a Série
                 </Button>
-              ) : (
-                <div className="flex gap-2 w-full sm:w-auto animate-in slide-in-from-right-2">
-                  <Button
-                    onClick={() => handleSave(status, true)}
-                    disabled={
-                      isSaving ||
-                      (isPackageArchived &&
-                        status !== "cancelado" &&
-                        status !== "nao_compareceu" &&
-                        status !== "nao_compareceu_abonado")
-                    }
-                    className="rounded-2xl h-12 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs uppercase"
-                  >
-                    Toda a Série
-                  </Button>
-                  <Button
-                    onClick={() => handleSave(status, false)}
-                    disabled={
-                      isSaving ||
-                      (isPackageArchived &&
-                        status !== "cancelado" &&
-                        status !== "nao_compareceu" &&
-                        status !== "nao_compareceu_abonado")
-                    }
-                    className="rounded-2xl h-12 bg-primary text-white font-bold text-xs uppercase"
-                  >
-                    Só Este
-                  </Button>
-                </div>
-              )}
-            </DialogFooter>
-          )}
+                <Button
+                  onClick={() => handleSave(status, false)}
+                  disabled={
+                    isSaving ||
+                    (isPackageArchived &&
+                      status !== "cancelado" &&
+                      status !== "nao_compareceu" &&
+                      status !== "nao_compareceu_abonado")
+                  }
+                  className="h-12 bg-primary text-white font-bold text-xs uppercase"
+                >
+                  Só Este
+                </Button>
+              </div>
+            )}
+          </DialogFooter>
+        )}
       </ResponsiveModal>
     );
   },

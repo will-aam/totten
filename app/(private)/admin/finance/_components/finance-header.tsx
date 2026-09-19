@@ -91,15 +91,15 @@ export function FinanceHeader({
               value={selectedMonth.toString()}
               onValueChange={(val) => onMonthChange(Number(val))}
             >
-              <SelectTrigger className="h-10 w-28 sm:w-32 border-none bg-transparent shadow-none focus:ring-0 font-bold text-sm sm:text-base px-3 hover:bg-background/60 rounded-xl transition-all">
+              <SelectTrigger className="h-10 w-28 sm:w-32 border-none bg-transparent shadow-none focus:ring-0 font-bold text-sm sm:text-base px-3 hover:bg-background/60 transition-all">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="rounded-2xl border-border/50 shadow-xl">
+              <SelectContent className="border-border/50 shadow-xl rounded-2xl">
                 {MONTHS.map((m) => (
                   <SelectItem
                     key={m.value}
                     value={m.value.toString()}
-                    className="rounded-xl font-medium focus:bg-primary/10 focus:text-primary"
+                    className="rounded-full font-medium focus:bg-primary/10 focus:text-primary"
                   >
                     {m.label}
                   </SelectItem>
@@ -113,15 +113,15 @@ export function FinanceHeader({
               value={selectedYear.toString()}
               onValueChange={(val) => onYearChange(Number(val))}
             >
-              <SelectTrigger className="h-10 w-20 sm:w-24 border-none bg-transparent shadow-none focus:ring-0 font-bold text-sm sm:text-base px-3 hover:bg-background/60 rounded-xl transition-all">
+              <SelectTrigger className="h-10 w-20 sm:w-24 border-none bg-transparent shadow-none focus:ring-0 font-bold text-sm sm:text-base px-3 hover:bg-background/60 transition-all">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="rounded-2xl border-border/50 shadow-xl">
+              <SelectContent className="border-border/50 shadow-xl rounded-2xl">
                 {YEARS.map((y) => (
                   <SelectItem
                     key={y}
                     value={y.toString()}
-                    className="rounded-xl font-medium focus:bg-primary/10 focus:text-primary"
+                    className="rounded-full font-medium focus:bg-primary/10 focus:text-primary"
                   >
                     {y}
                   </SelectItem>
@@ -138,7 +138,7 @@ export function FinanceHeader({
                   <Button
                     variant="outline"
                     size="icon"
-                    className="hidden md:flex bg-rose-500/10 text-rose-600 hover:text-rose-700 hover:bg-rose-500/20 border-rose-500/20 dark:text-rose-400 dark:hover:bg-rose-500/20 h-12 w-12 rounded-2xl shrink-0 transition-all duration-300 active:scale-95 shadow-sm"
+                    className="hidden md:flex bg-rose-500/10 text-rose-600 hover:text-rose-700 hover:bg-rose-500/20 border-rose-500/20 dark:text-rose-400 dark:hover:bg-rose-500/20 h-12 w-12 shrink-0 transition-all duration-300 active:scale-95 shadow-sm"
                     onClick={handleNewExpense}
                   >
                     <MinusCircle className="h-6 w-6" />
@@ -146,7 +146,7 @@ export function FinanceHeader({
                 </TooltipTrigger>
                 <TooltipContent
                   side="bottom"
-                  className="text-xs font-semibold rounded-xl"
+                  className="text-xs font-semibold rounded-full"
                 >
                   <p>Adicionar Despesa</p>
                 </TooltipContent>
@@ -156,7 +156,7 @@ export function FinanceHeader({
                 <TooltipTrigger asChild>
                   <Button
                     size="icon"
-                    className="hidden md:flex bg-emerald-500 hover:bg-emerald-600 text-white h-12 w-12 rounded-2xl shrink-0 transition-all duration-300 active:scale-95 shadow-[0_4px_20px_rgb(16,185,129,0.3)] hover:shadow-[0_4px_25px_rgb(16,185,129,0.5)] border-none"
+                    className="hidden md:flex bg-emerald-500 hover:bg-emerald-600 text-white h-12 w-12 shrink-0 transition-all duration-300 active:scale-95 shadow-[0_4px_20px_rgb(16,185,129,0.3)] hover:shadow-[0_4px_25px_rgb(16,185,129,0.5)] border-none"
                     onClick={handleNewIncome}
                   >
                     <PlusCircle className="h-6 w-6" />
@@ -164,7 +164,7 @@ export function FinanceHeader({
                 </TooltipTrigger>
                 <TooltipContent
                   side="bottom"
-                  className="text-xs font-semibold rounded-xl"
+                  className="text-xs font-semibold rounded-full"
                 >
                   <p>Adicionar Receita</p>
                 </TooltipContent>
@@ -173,7 +173,7 @@ export function FinanceHeader({
               <Button
                 variant="outline"
                 asChild
-                className="h-12 px-4 rounded-2xl shrink-0 border-border/60 bg-background/50 backdrop-blur-sm text-foreground hover:bg-muted shadow-sm transition-all duration-300 active:scale-95 flex items-center gap-2"
+                className="h-12 px-4 shrink-0 border-border/60 bg-background/50 backdrop-blur-sm text-foreground hover:bg-muted shadow-sm transition-all duration-300 active:scale-95 flex items-center gap-2"
               >
                 <Link href="/admin/finance/reports">
                   <FileDetail className="h-5 w-5 text-muted-foreground" />
