@@ -356,16 +356,27 @@ export const PackageEditModal = memo(
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="validity">Validade (dias)</Label>
+            <Label htmlFor="validity" className="flex items-center justify-between">
+              <span>Validade (dias)</span>
+              <span className="text-[10px] text-muted-foreground">
+                Máx: 365 dias
+              </span>
+            </Label>
             <Input
               id="validity"
-              type="number"
+              type="text"
+              inputMode="numeric"
               placeholder="Deixe em branco para vitalício..."
               value={formData.validity_days}
-              onChange={(e) =>
-                setFormData({ ...formData, validity_days: e.target.value })
-              }
-              className="bg-muted/50 h-10 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+              onChange={(e) => {
+                let cleanDigit = e.target.value.replace(/\D/g, "");
+                // Impede zero (se não digitou nada, deixa vazio)
+                if (cleanDigit && Number(cleanDigit) === 0) cleanDigit = "";
+                // Trava no limite
+                if (Number(cleanDigit) > 365) cleanDigit = "365";
+                setFormData({ ...formData, validity_days: cleanDigit });
+              }}
+              className="bg-muted/50 h-10"
             />
           </div>
         </div>

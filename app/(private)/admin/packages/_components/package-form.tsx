@@ -283,6 +283,7 @@ export function PackageForm({ onSuccess, onCancel }: PackageFormProps) {
             <Input
               type="text"
               inputMode="numeric"
+              placeholder="Deixe em branco para vitalício..."
               value={form.validity_days}
               onChange={(e) => {
                 let cleanDigit = e.target.value.replace(/\D/g, "");
