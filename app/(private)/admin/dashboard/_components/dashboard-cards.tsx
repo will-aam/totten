@@ -93,10 +93,10 @@ export function DashboardCards() {
   if (isLoading) {
     return (
       <div className="flex overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scroll-smooth md:grid md:grid-cols-4 md:overflow-visible md:pb-0 md:px-0 md:mx-0 gap-4 [&::-webkit-scrollbar]:hidden">
-        <Skeleton className="h-32 min-w-[85vw] md:min-w-0 snap-center rounded-full shrink-0" />
-        <Skeleton className="h-32 min-w-[85vw] md:min-w-0 snap-center rounded-full shrink-0" />
-        <Skeleton className="h-32 min-w-[85vw] md:min-w-0 snap-center rounded-full shrink-0" />
-        <Skeleton className="h-32 min-w-[85vw] md:min-w-0 snap-center rounded-full shrink-0" />
+        <Skeleton className="h-32 min-w-[85vw] md:min-w-0 snap-center rounded-2xl shrink-0" />
+        <Skeleton className="h-32 min-w-[85vw] md:min-w-0 snap-center rounded-2xl shrink-0" />
+        <Skeleton className="h-32 min-w-[85vw] md:min-w-0 snap-center rounded-2xl shrink-0" />
+        <Skeleton className="h-32 min-w-[85vw] md:min-w-0 snap-center rounded-2xl shrink-0" />
       </div>
     );
   }

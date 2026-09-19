@@ -36,6 +36,10 @@ import {
   Rename,
   Cog,
   Trash,
+  Image,
+  LoaderLines,
+  Link,
+  ArrowInUpSquareHalf
 } from "@boxicons/react";
 import {
   updatePackageTemplate,
@@ -205,146 +209,173 @@ export const PackageEditModal = memo(
 
     const ModalContent = (
       <>
-        {/* HEADER */}
-        <div className="p-6 pb-4 border-b border-border/40 shrink-0">
-          <div className="text-xl font-black flex items-center gap-2 mb-1">
-            <Package size="sm" className="text-primary" />
-            Editar Pacote
-            {isMobile ? (
-              <SheetTitle className="sr-only">Editar Pacote</SheetTitle>
-            ) : (
-              <DialogTitle className="sr-only">Editar Pacote</DialogTitle>
-            )}
-          </div>
-          <p className="font-medium text-sm text-muted-foreground">
-            Altere as configurações do pacote{" "}
-            <span className="font-bold text-foreground">
-              {packageTemplate.name}
-            </span>
-            .
-          </p>
+        <div className={cn("px-6 py-4 border-b border-border/50 shrink-0", isMobile ? "" : "")}>
+          {isMobile ? (
+            <SheetTitle className="text-lg font-semibold">Editar Pacote</SheetTitle>
+          ) : (
+            <DialogTitle className="text-lg font-semibold">Editar Pacote</DialogTitle>
+          )}
         </div>
 
-        {/* BODY */}
-        <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-border/80 [&::-webkit-scrollbar-thumb]:rounded-full">
-          <div className="p-6 space-y-5">
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 ml-1">
-                <Rename size="xs" /> Nome do Pacote
-              </Label>
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-border/80 [&::-webkit-scrollbar-thumb]:rounded-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Nome do Pacote *</Label>
               <Input
+                id="name"
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                placeholder="Ex: Pacote Verão"
-                className="h-12 bg-muted/40 border-none font-bold focus-visible:ring-primary/20"
+                className="bg-muted/50 h-10"
               />
             </div>
 
-            {/* Exibição do Serviço Base (Somente Leitura) */}
-            <div className="space-y-1.5 opacity-70 pointer-events-none select-none">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 ml-1">
-                <Cog size="xs" /> Serviço Base Vinculado
-              </Label>
+            <div className="grid gap-2 opacity-70 pointer-events-none select-none">
+              <Label htmlFor="service">Serviço Base Vinculado</Label>
               <Input
+                id="service"
                 value={serviceName}
                 disabled
-                className="h-12 bg-muted/40 border-none font-bold text-muted-foreground"
+                className="bg-muted/50 h-10 text-muted-foreground"
               />
             </div>
+          </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 ml-1">
-                  <Layers size="xs" /> Sessões
+          <div className="grid gap-2">
+            <Label htmlFor="description">Descrição</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+              className="h-20 resize-none bg-muted/50"
+              placeholder="Descreva os detalhes do pacote..."
+            />
+          </div>
+
+          <div className="flex flex-col gap-2 justify-end pb-1">
+            <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/50 bg-background hover:bg-muted/30 transition-colors">
+              <div className="flex flex-col">
+                <Label className="flex items-center gap-1.5 text-foreground font-medium text-sm cursor-pointer" onClick={() => setFormData({ ...formData, available_online: !formData.available_online })}>
+                  Agendamento Online
                 </Label>
-                <Input
-                  type="number"
-                  value={formData.total_sessions}
-                  onChange={(e) =>
-                    setFormData({ ...formData, total_sessions: e.target.value })
-                  }
-                  className={cn("rounded-2xl h-12 bg-muted/40 border-none font-bold focus-visible:ring-primary/20",
-                    noSpinClass,
-                  )}
-                  placeholder="Ex: 10"
-                />
+                <span className="text-[11px] text-muted-foreground mt-0.5">
+                  Mostrar este pacote no site
+                </span>
+              </div>
+              <Switch checked={formData.available_online} onCheckedChange={(checked) => setFormData({ ...formData, available_online: checked })} />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 p-4 border border-border/50 rounded-2xl bg-muted/10">
+            <Label className="text-foreground font-medium flex items-center gap-2">
+              <Image className="h-4 w-4 text-muted-foreground" />
+              Imagem do Pacote (Opcional)
+            </Label>
+            <p className="text-xs text-muted-foreground -mt-1">Adicione uma imagem representativa para exibir no site.</p>
+
+            <div className="flex flex-col gap-4 mt-2">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="pkgImageUrl" className="text-xs text-muted-foreground">URL da Imagem (Opção 1)</Label>
+                <div className="relative">
+                  <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="pkgImageUrl"
+                    value={formData.image_url}
+                    onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                    className="bg-background border-border/50 h-10 pl-9 focus-visible:ring-1"
+                    placeholder="Cole o link da imagem aqui..."
+                  />
+                </div>
               </div>
 
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 ml-1">
-                  <Dollar size="xs" /> Preço (R$)
-                </Label>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="pkgImageUpload" className="text-xs text-muted-foreground">Fazer Upload (Opção 2)</Label>
+                <div className="relative">
+                  <Input
+                    id="pkgImageUpload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={isUploading}
+                    className="sr-only"
+                  />
+                  <Label
+                    htmlFor="pkgImageUpload"
+                    className="flex items-center justify-center gap-2 w-full h-10 px-4 rounded-md border border-border/50 bg-background hover:bg-muted/50 cursor-pointer transition-colors text-sm font-medium"
+                  >
+                    {isUploading ? <LoaderLines className="h-4 w-4 animate-spin text-muted-foreground" /> : <ArrowInUpSquareHalf className="h-4 w-4 text-muted-foreground" />}
+                    {isUploading ? "Enviando..." : "Escolher arquivo"}
+                  </Label>
+                </div>
+              </div>
+
+              {formData.image_url && (
+                <div className="mt-2 w-32 aspect-video rounded-lg overflow-hidden border border-border/50 relative shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={formData.image_url} alt="Preview" className="w-full h-full object-cover" />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="price">Preço do Pacote (R$) *</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                  R$
+                </span>
                 <Input
+                  id="price"
                   type="number"
                   step="0.01"
                   value={formData.price}
                   onChange={(e) =>
                     setFormData({ ...formData, price: e.target.value })
                   }
-                  className={cn("rounded-2xl h-12 bg-muted/40 border-none font-bold focus-visible:ring-primary/20",
-                    noSpinClass,
-                  )}
-                  placeholder="Ex: 150.00"
+                  className="bg-muted/50 h-10 pl-9 font-bold text-primary [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
                 />
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 ml-1">
-                <CalendarDetail size="xs" /> Validade (dias)
-              </Label>
+            <div className="grid gap-2">
+              <Label htmlFor="sessions">Sessões *</Label>
               <Input
+                id="sessions"
                 type="number"
-                placeholder="Deixe em branco para vitalício..."
-                value={formData.validity_days}
+                value={formData.total_sessions}
                 onChange={(e) =>
-                  setFormData({ ...formData, validity_days: e.target.value })
+                  setFormData({ ...formData, total_sessions: e.target.value })
                 }
-                className={cn("rounded-2xl h-12 bg-muted/40 border-none font-bold focus-visible:ring-primary/20",
-                  noSpinClass,
-                )}
+                className="bg-muted/50 h-10 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
               />
             </div>
+          </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                Descrição Interna
-              </Label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                className="h-20 resize-none bg-muted/40 border-none font-medium p-4 focus-visible:ring-primary/20"
-                placeholder="Anotações sobre este pacote..."
-              />
-            </div>
-
-            <div className="flex flex-col gap-2 justify-end pb-1">
-              <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/50 bg-background hover:bg-muted/30 transition-colors">
-                <div className="flex flex-col">
-                  <Label className="flex items-center gap-1.5 text-foreground font-medium text-sm cursor-pointer" onClick={() => setFormData({ ...formData, available_online: !formData.available_online })}>
-                    Agendamento Online
-                  </Label>
-                  <span className="text-[11px] text-muted-foreground mt-0.5">
-                    Mostrar este pacote no site
-                  </span>
-                </div>
-                <Switch checked={formData.available_online} onCheckedChange={(checked) => setFormData({ ...formData, available_online: checked })} />
-              </div>
-            </div>
+          <div className="grid gap-2">
+            <Label htmlFor="validity">Validade (dias)</Label>
+            <Input
+              id="validity"
+              type="number"
+              placeholder="Deixe em branco para vitalício..."
+              value={formData.validity_days}
+              onChange={(e) =>
+                setFormData({ ...formData, validity_days: e.target.value })
+              }
+              className="bg-muted/50 h-10 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+            />
           </div>
         </div>
 
-        {/* FOOTER */}
-        <div className="p-6 border-t border-border/40 flex flex-col-reverse sm:flex-row gap-3 bg-muted/10 shrink-0 mt-auto">
+        <div className="px-6 py-4 border-t border-border/50 shrink-0 flex flex-col sm:flex-row gap-2 bg-card">
           <div className="flex gap-2 w-full sm:w-auto">
             <Button
               type="button"
               variant="outline"
-              className="text-destructive hover:bg-destructive/10 border-destructive/20 h-12 w-12 flex items-center justify-center shrink-0"
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 shrink-0 px-3"
               onClick={() => setConfirmDelete(true)}
               disabled={loading}
             >
@@ -353,11 +384,11 @@ export const PackageEditModal = memo(
 
             <Button
               type="button"
-              variant={isPackageActive ? "outline" : "secondary"}
-              className={cn("rounded-2xl h-12 px-6 font-bold flex-1 sm:flex-none",
+              variant="outline"
+              className={cn("flex-1 sm:flex-none",
                 isPackageActive
-                  ? "text-destructive hover:bg-destructive/10 border-destructive/20"
-                  : "text-emerald-600 bg-emerald-500/10 hover:bg-emerald-500/20",
+                  ? "text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20"
+                  : "text-emerald-600 hover:bg-emerald-600/10 hover:text-emerald-700 border-emerald-600/20",
                 !isPackageActive &&
                 !isServiceActive &&
                 "opacity-50 cursor-not-allowed",
@@ -379,19 +410,19 @@ export const PackageEditModal = memo(
             </Button>
           </div>
 
-          <div className="flex-1" />
+          <div className="flex-1 hidden sm:block" />
 
           <Button
             onClick={handleSave}
             disabled={loading}
-            className="h-12 px-8 font-black bg-primary text-primary-foreground w-full sm:w-auto"
+            className="w-full sm:w-auto"
           >
             {loading ? (
               <LoaderDots size="sm" className="animate-spin mr-2" />
             ) : (
               <Save size="sm" className="mr-2" />
             )}
-            Salvar
+            {loading ? "Salvando..." : "Salvar"}
           </Button>
         </div>
       </>
@@ -407,7 +438,7 @@ export const PackageEditModal = memo(
           </Sheet>
         ) : (
           <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md rounded-4xl border-none shadow-2xl bg-background p-0 flex flex-col max-h-[90vh] overflow-hidden gap-0">
+            <DialogContent className="sm:max-w-175 p-0 flex flex-col max-h-[90vh] overflow-hidden gap-0">
               {ModalContent}
             </DialogContent>
           </Dialog>
