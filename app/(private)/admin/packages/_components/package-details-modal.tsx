@@ -469,7 +469,7 @@ export function PackageDetailsModal({
                                   : "bg-muted text-muted-foreground",
                             )}
                           >
-                            {!packageData.active && item.status !== "REALIZADO"
+                            {!packageData.active && item.status !== "REALIZADO" && item.status !== "VENCIDO"
                               ? "INVALIDADA"
                               : item.status}
                           </Badge>
