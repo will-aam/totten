@@ -101,7 +101,7 @@ export function SignaturePad({ onSignatureChange }: SignaturePadProps) {
 
   return (
     <div className="flex flex-col gap-2 w-full">
-      <div className="relative border-2 border-dashed border-border bg-background rounded-full overflow-hidden touch-none">
+      <div className="relative border-2 border-dashed border-border bg-background rounded-2xl overflow-hidden touch-none">
         <canvas
           ref={canvasRef}
           onMouseDown={startDrawing}
@@ -111,7 +111,7 @@ export function SignaturePad({ onSignatureChange }: SignaturePadProps) {
           onTouchStart={startDrawing}
           onTouchMove={draw}
           onTouchEnd={stopDrawing}
-          className="w-full cursor-crosshair bg-muted/10"
+          className="w-full cursor-crosshair bg-muted/10 dark:invert dark:mix-blend-lighten"
         />
 
         {isEmpty && (

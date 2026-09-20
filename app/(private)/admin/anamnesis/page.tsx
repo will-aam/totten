@@ -11,7 +11,9 @@ import {
   LoaderDots,
   Archive,
   ArchiveArrowUp,
+  Printer,
 } from "@boxicons/react";
+import { createRoot } from "react-dom/client";
 
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { Button } from "@/components/ui/button";
@@ -30,6 +32,7 @@ export default function AnamnesisListPage() {
 
   const [templates, setTemplates] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState<string | null>(null);
 
   const organizationId = session?.user?.organizationId;
 
@@ -74,6 +77,151 @@ export default function AnamnesisListPage() {
         description: result.error,
         variant: "destructive",
       });
+    }
+  };
+
+  const handleDownloadPdf = async (template: any) => {
+    setIsGeneratingPdf(template.id);
+    try {
+      const container = document.createElement("div");
+      
+      const fields = (template.fields as any[]) || [];
+      const content = (
+        <div style={{ padding: "40px", fontFamily: "sans-serif", color: "#000", backgroundColor: "#fff" }}>
+          <div style={{ textAlign: "center", marginBottom: "30px", paddingBottom: "20px", borderBottom: "2px solid #ddd" }}>
+            <h1 style={{ fontSize: "24px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "2px", margin: "0 0 10px 0" }}>
+              {template.name}
+            </h1>
+            <p style={{ fontSize: "14px", color: "#555", margin: 0 }}>Ficha de Anamnese</p>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", backgroundColor: "#f9f9f9", padding: "20px", borderRadius: "16px", border: "1px solid #eee", marginBottom: "30px" }}>
+            {["Nome da Cliente", "Data de Nascimento / Idade", "Telefone / WhatsApp", "Data"].map(label => (
+              <div key={label} style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                <p style={{ fontSize: "10px", color: "#777", textTransform: "uppercase", fontWeight: "900", letterSpacing: "1px", margin: 0 }}>{label}</p>
+                <div style={{ borderBottom: "1px solid #999", height: "20px", width: "100%" }}></div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+            {fields.map((item, index) => {
+              if (item.type === "section_title") {
+                return (
+                  <div key={index} style={{ paddingTop: "20px", paddingBottom: "10px", borderBottom: "1px solid #ddd" }}>
+                    <h3 style={{ fontSize: "18px", fontWeight: "900", margin: 0 }}>{item.label}</h3>
+                  </div>
+                );
+              }
+              if (item.type === "text") {
+                return (
+                  <div key={index} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <p style={{ fontSize: "14px", fontWeight: "600", margin: 0 }}>{item.label}</p>
+                    <div style={{ borderBottom: "1px solid #ccc", height: "20px", width: "100%", marginTop: "4px" }}></div>
+                    <div style={{ borderBottom: "1px solid #ccc", height: "20px", width: "100%", marginTop: "4px" }}></div>
+                  </div>
+                );
+              }
+              if (item.type === "boolean") {
+                return (
+                  <div key={index} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <p style={{ fontSize: "14px", fontWeight: "600", margin: 0 }}>{item.label}</p>
+                    <div style={{ display: "flex", gap: "24px", alignItems: "center", marginTop: "4px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <div style={{ width: "16px", height: "16px", border: "2px solid #999", borderRadius: "2px" }}></div>
+                        <span style={{ fontSize: "14px" }}>Sim</span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <div style={{ width: "16px", height: "16px", border: "2px solid #999", borderRadius: "2px" }}></div>
+                        <span style={{ fontSize: "14px" }}>Não</span>
+                      </div>
+                    </div>
+                    {item.requireSpecificationWhenYes && (
+                      <div style={{ marginTop: "16px", display: "flex", alignItems: "flex-end", gap: "8px", width: "100%" }}>
+                        <span style={{ fontSize: "12px", color: "#555", whiteSpace: "nowrap" }}>Se sim, especifique:</span>
+                        <div style={{ borderBottom: "1px solid #999", width: "100%" }}></div>
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              if (item.type === "single_choice" || item.type === "multiple_choice") {
+                const options = [...(item.options || [])];
+                if (item.hasOtherOption) options.push("Outros");
+                const isMultiple = item.type === "multiple_choice";
+                return (
+                  <div key={index} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <p style={{ fontSize: "14px", fontWeight: "600", margin: 0 }}>{item.label}</p>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", rowGap: "12px", columnGap: "16px", marginTop: "8px" }}>
+                      {options.map((opt, idx) => (
+                        <div key={idx} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <div style={{ width: "16px", height: "16px", border: "2px solid #999", borderRadius: isMultiple ? "2px" : "50%" }}></div>
+                          <span style={{ fontSize: "14px" }}>{opt}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {item.hasOtherOption && (
+                      <div style={{ marginTop: "16px", display: "flex", alignItems: "flex-end", gap: "8px", width: "100%" }}>
+                        <span style={{ fontSize: "12px", color: "#555", whiteSpace: "nowrap" }}>Se outros, especifique:</span>
+                        <div style={{ borderBottom: "1px solid #999", width: "100%" }}></div>
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              if (item.type === "consent_term") {
+                return (
+                  <div key={index} style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "32px" }}>
+                    <p style={{ fontSize: "14px", fontWeight: "600", margin: 0, textAlign: "justify" }}>{item.label}</p>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "16px" }}>
+                      <div style={{ width: "20px", height: "20px", border: "2px solid #999", borderRadius: "2px" }}></div>
+                      <span style={{ fontSize: "14px", fontWeight: "bold" }}>Li e concordo com o termo acima.</span>
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })}
+          </div>
+
+          <div style={{ marginTop: "80px", paddingTop: "32px", display: "flex", flexDirection: "column", alignItems: "center", pageBreakInside: "avoid" }}>
+            <div style={{ width: "100%", maxWidth: "300px", borderTop: "1px solid #000", textAlign: "center", paddingTop: "8px" }}>
+              <p style={{ fontWeight: "bold", color: "#000", textTransform: "uppercase", fontSize: "12px", margin: 0 }}>
+                Assinatura da Cliente
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+
+      const root = createRoot(container);
+      root.render(content);
+
+      // Wait a bit for React to render
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const html2pdf = (await import("html2pdf.js")).default;
+
+      const opt = {
+        margin: 10,
+        filename: `Anamnese_${template.name.replace(/[^a-z0-9]/gi, '_')}.pdf`,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
+      };
+
+      await html2pdf().set(opt).from(container).save();
+      
+      root.unmount();
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: "Erro",
+        description: "Falha ao gerar o PDF.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingPdf(null);
     }
   };
 
@@ -170,15 +318,29 @@ export default function AnamnesisListPage() {
                   </p>
 
                   {/* Ações */}
-                  <div className="mt-auto flex items-center gap-2 pt-4 border-t border-border/50">
+                  <div className="mt-auto grid grid-cols-3 gap-2 pt-4 border-t border-border/50">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1 h-9 text-base font-medium"
+                      className="h-9 text-base font-medium px-0"
+                      disabled={isGeneratingPdf === template.id}
+                      onClick={() => handleDownloadPdf(template)}
+                    >
+                      {isGeneratingPdf === template.id ? (
+                        <LoaderDots size="sm" className="mr-1.5 animate-spin" />
+                      ) : (
+                        <Printer size="sm" className="mr-1.5" />
+                      )}
+                      PDF
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-9 text-base font-medium px-0"
                       asChild
                     >
                       <Link href={`/admin/anamnesis/${template.id}/edit`}>
-                        <Edit size="base" className="mr-2" />
+                        <Edit size="sm" className="mr-1.5" />
                         Editar
                       </Link>
                     </Button>
@@ -186,19 +348,19 @@ export default function AnamnesisListPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1 h-9 text-base font-medium"
+                      className="h-9 text-base font-medium px-0"
                       onClick={() =>
                         handleToggleStatus(template.id, template.active)
                       }
                     >
                       {template.active ? (
                         <>
-                          <Archive size="base" className="mr-2" />
+                          <Archive size="sm" className="mr-1.5" />
                           Arquivar
                         </>
                       ) : (
                         <>
-                          <ArchiveArrowUp size="base" className="mr-2" />
+                          <ArchiveArrowUp size="sm" className="mr-1.5" />
                           Reativar
                         </>
                       )}

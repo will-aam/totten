@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 
 import {
@@ -38,13 +39,16 @@ type FieldType =
   | "boolean"
   | "single_choice"
   | "multiple_choice"
-  | "section_title";
+  | "section_title"
+  | "consent_term";
 
 interface FormField {
   id: string;
   label: string;
   type: FieldType;
   options?: string[];
+  requireSpecificationWhenYes?: boolean;
+  hasOtherOption?: boolean;
 }
 
 export default function EditAnamnesisTemplatePage({
@@ -345,6 +349,9 @@ export default function EditAnamnesisTemplatePage({
                           <SelectItem value="multiple_choice">
                             Caixa de Seleção (Várias)
                           </SelectItem>
+                          <SelectItem value="consent_term">
+                            Termo de Consentimento
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -400,8 +407,49 @@ export default function EditAnamnesisTemplatePage({
                         >
                           <Plus className="w-3 h-3 mr-1" /> Adicionar alternativa
                         </Button>
+                        <div className="flex items-center gap-2 mt-4 pt-2 border-t border-border/50">
+                          <Checkbox
+                            id={`other-${field.id}`}
+                            checked={field.hasOtherOption || false}
+                            onCheckedChange={(checked) =>
+                              updateField(field.id, "hasOtherOption", checked)
+                            }
+                          />
+                          <Label
+                            htmlFor={`other-${field.id}`}
+                            className="text-xs text-muted-foreground font-medium cursor-pointer"
+                          >
+                            Incluir opção "Outros" (com campo de texto livre)
+                          </Label>
+                        </div>
                       </div>
                     )}
+
+                  {field.type === "boolean" && (
+                    <div className="md:col-span-3 flex items-center gap-2 px-1">
+                      <Checkbox
+                        id={`req-spec-${field.id}`}
+                        checked={field.requireSpecificationWhenYes || false}
+                        onCheckedChange={(checked) =>
+                          updateField(field.id, "requireSpecificationWhenYes", checked)
+                        }
+                      />
+                      <Label
+                        htmlFor={`req-spec-${field.id}`}
+                        className="text-xs text-muted-foreground font-medium cursor-pointer"
+                      >
+                        Exigir especificação (campo de texto) caso a resposta seja "Sim"
+                      </Label>
+                    </div>
+                  )}
+
+                  {field.type === "consent_term" && (
+                    <div className="md:col-span-3 px-1">
+                      <p className="text-xs text-muted-foreground">
+                        No preenchimento da ficha, este campo será um checkbox obrigatório. O texto acima será a declaração que o cliente deve concordar.
+                      </p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

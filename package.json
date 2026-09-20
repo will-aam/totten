@@ -62,6 +62,7 @@
     "framer-motion": "^12.42.2",
     "fullcalendar": "^6.1.21",
     "html-to-image": "^1.11.13",
+    "html2pdf.js": "^0.14.0",
     "input-otp": "1.4.2",
     "jose": "^6.2.9",
     "lucide-react": "^0.577.0",

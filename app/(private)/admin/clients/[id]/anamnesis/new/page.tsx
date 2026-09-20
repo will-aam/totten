@@ -101,11 +101,27 @@ export default function NewClientAnamnesisPage({
       setIsSavingDraft(true);
     }
 
+    // Validate consent terms
+    const missingConsents = selectedTemplate.fields.filter(
+      (f: any) => f.type === "consent_term" && answers[f.id] !== true
+    );
+    if (missingConsents.length > 0) {
+      toast({
+        title: "Aviso",
+        description: "Você deve aceitar todos os termos de consentimento.",
+        variant: "destructive",
+      });
+      setIsSaving(false);
+      setIsSavingDraft(false);
+      return;
+    }
+
     const formattedContent = selectedTemplate.fields.map((field: any) => ({
       fieldId: field.id,
       label: field.label,
       type: field.type,
       value: answers[field.id] !== undefined ? answers[field.id] : null,
+      specification: answers[`${field.id}_spec`] !== undefined ? answers[`${field.id}_spec`] : null,
     }));
 
     const saveResult = await saveAnamnesisResponse({
@@ -170,7 +186,7 @@ export default function NewClientAnamnesisPage({
     return (
       <div
         key={field.id}
-        className="space-y-3 p-4 bg-muted/20 rounded-full border border-border/50"
+        className="space-y-3 p-4 bg-muted/20 rounded-2xl border border-border/50"
       >
         <Label className="text-base font-semibold text-foreground">
           {index + 1}. {field.label}
@@ -186,73 +202,52 @@ export default function NewClientAnamnesisPage({
         )}
 
         {field.type === "boolean" && (
-          <RadioGroup
-            value={
-              answers[field.id] !== undefined
-                ? String(answers[field.id])
-                : undefined
-            }
-            onValueChange={(val) =>
-              handleAnswerChange(field.id, val === "true")
-            }
-            className="flex gap-6 mt-2"
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="true" id={`${field.id}-sim`} />
-              <Label htmlFor={`${field.id}-sim`} className="cursor-pointer">
-                Sim
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="false" id={`${field.id}-nao`} />
-              <Label htmlFor={`${field.id}-nao`} className="cursor-pointer">
-                Não
-              </Label>
-            </div>
-          </RadioGroup>
+          <div className="flex flex-col gap-2 mt-2">
+            <RadioGroup
+              value={
+                answers[field.id] !== undefined
+                  ? String(answers[field.id])
+                  : undefined
+              }
+              onValueChange={(val) =>
+                handleAnswerChange(field.id, val === "true")
+              }
+              className="flex gap-6"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="true" id={`${field.id}-sim`} />
+                <Label htmlFor={`${field.id}-sim`} className="cursor-pointer">
+                  Sim
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="false" id={`${field.id}-nao`} />
+                <Label htmlFor={`${field.id}-nao`} className="cursor-pointer">
+                  Não
+                </Label>
+              </div>
+            </RadioGroup>
+            {field.requireSpecificationWhenYes && answers[field.id] === true && (
+              <Input
+                placeholder="Por favor, especifique..."
+                className="mt-2 bg-background border-primary/40 focus:border-primary"
+                value={answers[`${field.id}_spec`] || ""}
+                onChange={(e) => handleAnswerChange(`${field.id}_spec`, e.target.value)}
+              />
+            )}
+          </div>
         )}
 
         {field.type === "single_choice" && (
-          <RadioGroup
-            value={answers[field.id] || ""}
-            onValueChange={(val) => handleAnswerChange(field.id, val)}
-            className="flex flex-col gap-3 mt-2"
-          >
-            {field.options?.map((opt: string) => (
-              <div key={opt} className="flex items-center space-x-2">
-                <RadioGroupItem value={opt} id={`${field.id}-${opt}`} />
-                <Label
-                  htmlFor={`${field.id}-${opt}`}
-                  className="cursor-pointer"
-                >
-                  {opt}
-                </Label>
-              </div>
-            ))}
-          </RadioGroup>
-        )}
-
-        {field.type === "multiple_choice" && (
-          <div className="flex flex-col gap-3 mt-2">
-            {field.options?.map((opt: string) => {
-              const currentAnswers: string[] = answers[field.id] || [];
-              const isChecked = currentAnswers.includes(opt);
-              return (
-                <div key={opt} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`${field.id}-${opt}`}
-                    checked={isChecked}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        handleAnswerChange(field.id, [...currentAnswers, opt]);
-                      } else {
-                        handleAnswerChange(
-                          field.id,
-                          currentAnswers.filter((x) => x !== opt),
-                        );
-                      }
-                    }}
-                  />
+          <div className="flex flex-col gap-2 mt-2">
+            <RadioGroup
+              value={answers[field.id] || ""}
+              onValueChange={(val) => handleAnswerChange(field.id, val)}
+              className="flex flex-col gap-3"
+            >
+              {[...(field.options || []), ...(field.hasOtherOption ? ["Outros"] : [])].map((opt: string, idx: number) => (
+                <div key={`${opt}-${idx}`} className="flex items-center space-x-2">
+                  <RadioGroupItem value={opt} id={`${field.id}-${opt}`} />
                   <Label
                     htmlFor={`${field.id}-${opt}`}
                     className="cursor-pointer"
@@ -260,8 +255,76 @@ export default function NewClientAnamnesisPage({
                     {opt}
                   </Label>
                 </div>
-              );
-            })}
+              ))}
+            </RadioGroup>
+            {answers[field.id] === "Outros" && (
+              <Input
+                placeholder="Por favor, especifique..."
+                className="mt-2 bg-background border-primary/40 focus:border-primary"
+                value={answers[`${field.id}_spec`] || ""}
+                onChange={(e) => handleAnswerChange(`${field.id}_spec`, e.target.value)}
+              />
+            )}
+          </div>
+        )}
+
+        {field.type === "multiple_choice" && (
+          <div className="flex flex-col gap-2 mt-2">
+            <div className="flex flex-col gap-3">
+              {[...(field.options || []), ...(field.hasOtherOption ? ["Outros"] : [])].map((opt: string, idx: number) => {
+                const currentAnswers: string[] = answers[field.id] || [];
+                const isChecked = currentAnswers.includes(opt);
+                return (
+                  <div key={`${opt}-${idx}`} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`${field.id}-${opt}`}
+                      checked={isChecked}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          handleAnswerChange(field.id, [...currentAnswers, opt]);
+                        } else {
+                          handleAnswerChange(
+                            field.id,
+                            currentAnswers.filter((x) => x !== opt),
+                          );
+                        }
+                      }}
+                    />
+                    <Label
+                      htmlFor={`${field.id}-${opt}`}
+                      className="cursor-pointer"
+                    >
+                      {opt}
+                    </Label>
+                  </div>
+                );
+              })}
+            </div>
+            {(answers[field.id] || []).includes("Outros") && (
+              <Input
+                placeholder="Por favor, especifique..."
+                className="mt-2 bg-background border-primary/40 focus:border-primary"
+                value={answers[`${field.id}_spec`] || ""}
+                onChange={(e) => handleAnswerChange(`${field.id}_spec`, e.target.value)}
+              />
+            )}
+          </div>
+        )}
+
+        {field.type === "consent_term" && (
+          <div className="flex items-start space-x-3 mt-4 bg-primary/5 p-4 rounded-xl border border-primary/20">
+            <Checkbox
+              id={`${field.id}-consent`}
+              checked={answers[field.id] === true}
+              onCheckedChange={(checked) => handleAnswerChange(field.id, checked === true)}
+              className="mt-1"
+            />
+            <div className="space-y-1 leading-none">
+              <Label htmlFor={`${field.id}-consent`} className="cursor-pointer text-sm font-medium leading-tight">
+                Estou ciente e concordo com a declaração.
+              </Label>
+              <p className="text-xs text-muted-foreground mt-1">Este termo é obrigatório.</p>
+            </div>
           </div>
         )}
       </div>
@@ -333,7 +396,7 @@ export default function NewClientAnamnesisPage({
         </div>
 
         {/* Escolha do Template */}
-        <div className="space-y-3 bg-primary/5 p-5 rounded-full border border-primary/20">
+        <div className="space-y-3 bg-primary/5 p-5 rounded-2xl border border-primary/20">
           <Label className="text-primary font-bold">
             Qual modelo de ficha deseja preencher?
           </Label>
@@ -406,7 +469,7 @@ export default function NewClientAnamnesisPage({
 
           <Button
             size="icon"
-            className={cn("h-14 w-14 rounded-full shadow-xl transition-all duration-300",
+            className={cn("h-14 w-14 rounded-2xl shadow-xl transition-all duration-300",
               !signature ? "opacity-50 grayscale" : "hover:scale-105",
             )}
             onClick={() => handleSave(true)}

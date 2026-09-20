@@ -94,7 +94,7 @@ export default function AnamnesisDocumentPage({
     }
   };
 
-  const renderValue = (type: string, value: any) => {
+  const renderValue = (type: string, value: any, specification?: string) => {
     if (value === null || value === undefined || value === "") {
       return (
         <span className="text-muted-foreground italic print:text-gray-500">
@@ -102,11 +102,42 @@ export default function AnamnesisDocumentPage({
         </span>
       );
     }
-    if (type === "boolean") {
+
+    if (type === "consent_term") {
       return (
-        <span className="font-semibold">{value === true ? "Sim" : "Não"}</span>
+        <div className="flex items-center gap-2 mt-1">
+          <CheckCircle size="sm" className="text-emerald-500 shrink-0" />
+          <span className="font-bold text-emerald-600">Aceito e Concordado</span>
+        </div>
       );
     }
+
+    if (type === "boolean") {
+      return (
+        <div className="flex flex-col gap-1">
+          <span className="font-semibold">{value === true ? "Sim" : "Não"}</span>
+          {specification && (
+            <span className="text-sm italic text-muted-foreground">
+              Especificação: <span className="font-medium text-foreground">{specification}</span>
+            </span>
+          )}
+        </div>
+      );
+    }
+
+    if (type === "single_choice") {
+      return (
+        <div className="flex flex-col gap-1">
+          <span className="font-semibold">{value}</span>
+          {specification && (
+            <span className="text-sm italic text-muted-foreground">
+              Especificação: <span className="font-medium text-foreground">{specification}</span>
+            </span>
+          )}
+        </div>
+      );
+    }
+
     if (type === "multiple_choice" && Array.isArray(value)) {
       if (value.length === 0)
         return (
@@ -115,13 +146,20 @@ export default function AnamnesisDocumentPage({
           </span>
         );
       return (
-        <ul className="list-disc list-inside">
-          {value.map((item, idx) => (
-            <li key={idx} className="font-semibold">
-              {item}
-            </li>
-          ))}
-        </ul>
+        <div className="flex flex-col gap-1">
+          <ul className="list-disc list-inside">
+            {value.map((item, idx) => (
+              <li key={idx} className="font-semibold">
+                {item}
+              </li>
+            ))}
+          </ul>
+          {specification && (
+            <span className="text-sm italic text-muted-foreground mt-1">
+              Especificação: <span className="font-medium text-foreground">{specification}</span>
+            </span>
+          )}
+        </div>
       );
     }
     return <span className="font-semibold whitespace-pre-wrap">{value}</span>;
@@ -221,12 +259,12 @@ export default function AnamnesisDocumentPage({
 
             <div className="mt-4 inline-flex items-center gap-2 print-hidden">
               {response.signed_at ? (
-                <Badge className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20 px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full">
+                <Badge className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20 px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-2xl">
                   <CheckCircle size="xs" className="mr-1.5" /> Assinado
                   Legalmente
                 </Badge>
               ) : (
-                <Badge className="bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/20 px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full">
+                <Badge className="bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/20 px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-2xl">
                   <Clock size="xs" className="mr-1.5" /> Rascunho Pendente
                 </Badge>
               )}
@@ -299,7 +337,7 @@ export default function AnamnesisDocumentPage({
                     {item.label}
                   </p>
                   <div className="text-base text-foreground print:text-black">
-                    {renderValue(item.type, item.value)}
+                    {renderValue(item.type, item.value, item.specification)}
                   </div>
                 </div>
               );
