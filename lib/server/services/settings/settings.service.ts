@@ -123,6 +123,7 @@ export class SettingsService {
           show_most_booked: true,
           show_team: true,
           show_team_likes: true,
+          package_validity_mode: true,
         },
       }),
       prisma.scheduleRule.findMany({
@@ -141,6 +142,7 @@ export class SettingsService {
       openingTime: settings?.opening_time || "08:00",
       closingTime: settings?.closing_time || "19:00",
       scheduleGenerationType: settings?.schedule_generation_type || "fixed_30",
+      packageValidityMode: settings?.package_validity_mode || "ACQUISITION",
       bookingTheme: settings?.booking_theme || "light",
       bookingPrimaryColor: settings?.booking_primary_color || "#0f172a",
       allowOverLimitAppointments: settings?.allow_over_limit_appointments ?? false,
@@ -200,7 +202,8 @@ export class SettingsService {
         data.showPackages !== undefined ||
         data.showMostBooked !== undefined ||
         data.showTeam !== undefined ||
-        data.showTeamLikes !== undefined
+        data.showTeamLikes !== undefined ||
+        data.packageValidityMode !== undefined
       ) {
         const updateData: any = {};
         if (data.termsOfUse !== undefined) updateData.terms_of_use = data.termsOfUse;
@@ -208,6 +211,7 @@ export class SettingsService {
         if (data.openingTime !== undefined) updateData.opening_time = data.openingTime;
         if (data.closingTime !== undefined) updateData.closing_time = data.closingTime;
         if (data.scheduleGenerationType !== undefined) updateData.schedule_generation_type = data.scheduleGenerationType;
+        if (data.packageValidityMode !== undefined) updateData.package_validity_mode = data.packageValidityMode;
         
         if (data.bookingTheme !== undefined) updateData.booking_theme = data.bookingTheme;
         if (data.bookingPrimaryColor !== undefined) updateData.booking_primary_color = data.bookingPrimaryColor;

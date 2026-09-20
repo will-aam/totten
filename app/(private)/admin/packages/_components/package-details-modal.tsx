@@ -49,6 +49,7 @@ import {
   getPackageHistory,
   archivePackage,
   syncPackageBalance,
+  extendPackageAction,
 } from "@/app/actions/packages";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -197,16 +198,23 @@ export function PackageDetailsModal({
     }
   };
 
-  const handleProrrogar = () => {
+  const handleProrrogar = async () => {
     if (!newExpirationDate) {
       toast({ title: "Selecione uma data", variant: "destructive" });
       return;
     }
-    toast({
-      title: "Data Prorrogada (Visual)",
-      description: `O pacote foi estendido até ${format(newExpirationDate, "dd/MM/yyyy")}.`,
-    });
-    setIsProrrogarDialogOpen(false);
+
+    const res = await extendPackageAction(packageData.id, newExpirationDate.toISOString());
+    if (res.success) {
+      toast({
+        title: "Data Prorrogada",
+        description: `O pacote foi estendido até ${format(newExpirationDate, "dd/MM/yyyy")}.`,
+      });
+      setIsProrrogarDialogOpen(false);
+      onOpenChange(false);
+    } else {
+      toast({ title: "Erro", description: res.error, variant: "destructive" });
+    }
   };
 
   return (

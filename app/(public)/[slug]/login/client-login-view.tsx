@@ -200,7 +200,7 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
             <button
               type="submit"
               disabled={isLoading || !isCpfPhoneValid}
-              className="w-full h-12 rounded-2xl font-bold flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 mt-2 bg-slate-900 text-white"
+              className="w-full h-12 rounded-2xl font-bold flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 mt-2 bg-primary text-primary-foreground"
             >
               {isLoading ? "Entrando..." : "Entrar na sua conta"} <ArrowRight className="h-5 w-5" />
             </button>
@@ -228,7 +228,7 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
                 <button
                   type="submit"
                   disabled={isLoading || !email.includes("@")}
-                  className="w-full h-12 rounded-2xl font-bold flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 mt-2 bg-slate-900 text-white"
+                  className="w-full h-12 rounded-2xl font-bold flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 mt-2 bg-primary text-primary-foreground"
                 >
                   {isLoading ? "Enviando..." : "Receber Código"} <ArrowRight className="h-5 w-5" />
                 </button>
@@ -252,7 +252,7 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
                 <button
                   type="submit"
                   disabled={isLoading || code.length < 6}
-                  className="w-full h-12 rounded-2xl font-bold flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 mt-2 bg-slate-900 text-white"
+                  className="w-full h-12 rounded-2xl font-bold flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 mt-2 bg-primary text-primary-foreground"
                 >
                   {isLoading ? "Verificando..." : "Entrar"} <ArrowRight className="h-5 w-5" />
                 </button>

@@ -24,6 +24,9 @@ export async function getPackagesDashboardData(params?: {
 
     const baseWhere: any = { organization_id: admin.organizationId };
 
+    // Sincroniza pacotes expirados criando agendamentos fantasmas "VENCIDO"
+    await PackageService.processExpiredPackages(admin.organizationId);
+
     const isEndingSoonFilter = params?.search === "...";
     const isExpiringFilter = params?.search === "expiring";
 
@@ -59,10 +62,8 @@ export async function getPackagesDashboardData(params?: {
       in7Days.setDate(now.getDate() + 7);
       
       filteredPackages = allActivePackages.filter((p) => {
-        if (!p.package_template?.validity_days) return false;
-        const expirationDate = new Date(p.created_at);
-        expirationDate.setDate(expirationDate.getDate() + p.package_template.validity_days);
-        return expirationDate > now && expirationDate <= in7Days;
+        if (!p.expires_at) return false;
+        return p.expires_at > now && p.expires_at <= in7Days;
       });
     } else if (params?.search) {
       const searchLower = params.search.toLowerCase();
@@ -82,11 +83,9 @@ export async function getPackagesDashboardData(params?: {
         let expiresAt = null;
         let isExpired = false;
 
-        if (p.package_template?.validity_days) {
-          const expirationDate = new Date(p.created_at);
-          expirationDate.setDate(expirationDate.getDate() + p.package_template.validity_days);
-          expiresAt = expirationDate.toISOString();
-          isExpired = new Date() > expirationDate;
+        if (p.expires_at) {
+          expiresAt = p.expires_at.toISOString();
+          isExpired = new Date() > p.expires_at;
         }
 
         return {
@@ -245,6 +244,12 @@ export async function createManualPackageCheckIn(
       return {
         success: false,
         error: "Este pacote foi encerrado e não permite novos check-ins.",
+      };
+    }
+    if (pkg.expires_at && new Date() > new Date(pkg.expires_at)) {
+      return {
+        success: false,
+        error: "Este pacote já está vencido e não permite novos check-ins.",
       };
     }
     if (pkg.used_sessions >= pkg.total_sessions) {
@@ -595,5 +600,81 @@ export async function createPackageAction(data: any) {
       success: false,
       error: "Erro interno do servidor ao criar pacote.",
     };
+  }
+}
+
+export async function extendPackageAction(packageId: string, newDate: string | null) {
+  try {
+    const admin = await requireAuth();
+
+    if (!packageId) {
+      return { success: false, error: "ID do pacote é obrigatório." };
+    }
+
+    const pkg = await prisma.package.findUnique({
+      where: { id: packageId, organization_id: admin.organizationId },
+    });
+
+    if (!pkg) {
+      return { success: false, error: "Pacote não encontrado." };
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      let dataToUpdate: any = { expires_at: newDate ? new Date(newDate) : null };
+
+      // Se a nova data é no futuro ou sem validade, precisamos limpar as sessões VENCIDAS
+      const isFutureOrNoLimit = !newDate || new Date(newDate) > new Date();
+      let ghostSessionsRemoved = 0;
+
+      if (isFutureOrNoLimit) {
+        // Encontra as sessões VENCIDAS
+        const vencidoAppointments = await tx.appointment.findMany({
+          where: { package_id: packageId, status: "VENCIDO" as any }
+        });
+
+        if (vencidoAppointments.length > 0) {
+          ghostSessionsRemoved = vencidoAppointments.length;
+          await tx.appointment.deleteMany({
+            where: { package_id: packageId, status: "VENCIDO" as any }
+          });
+          
+          dataToUpdate.used_sessions = pkg.used_sessions - ghostSessionsRemoved;
+          dataToUpdate.active = true; // Reativa o pacote
+        }
+      }
+
+      const p = await tx.package.update({
+        where: { id: packageId },
+        data: dataToUpdate,
+      });
+
+      const oldDateStr = pkg.expires_at ? new Date(pkg.expires_at).toLocaleDateString("pt-BR") : "Sem validade";
+      const newDateStr = newDate ? new Date(newDate).toLocaleDateString("pt-BR") : "Sem validade";
+      
+      let noteText = `A validade do pacote "${pkg.name}" foi alterada de ${oldDateStr} para ${newDateStr} pelo usuário ${admin.name}.`;
+      if (ghostSessionsRemoved > 0) {
+        noteText += ` ${ghostSessionsRemoved} sessões expiradas foram restauradas.`;
+      }
+
+      await tx.clientNote.create({
+        data: {
+          client_id: pkg.client_id,
+          organization_id: admin.organizationId,
+          text: noteText,
+          date: new Date(),
+        }
+      });
+      
+      return p;
+    });
+
+    revalidatePath("/admin/packages");
+    revalidatePath("/admin/dashboard");
+    revalidatePath(`/admin/clients/${pkg.client_id}`);
+
+    return { success: true, package: updated };
+  } catch (error) {
+    console.error("Erro ao prorrogar pacote:", error);
+    return { success: false, error: "Falha ao prorrogar o pacote." };
   }
 }

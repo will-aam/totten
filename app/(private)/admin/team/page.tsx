@@ -982,7 +982,7 @@ const TeamMemberCard = memo(
               <Button
                 variant="ghost"
                 size="icon"
-                className={`h-8 w-8 ${member.active ?"text-amber-600 hover:text-amber-700 hover:bg-amber-100" : "text-green-600 hover:text-green-700 hover:bg-green-100"}`}
+                className={`h-8 w-8 ${member.active ? "text-amber-600 hover:text-amber-700 hover:bg-amber-100" : "text-green-600 hover:text-green-700 hover:bg-green-100"}`}
                 onClick={() => onToggle(member)}
                 title={member.active ? "Desativar" : "Ativar"}
               >

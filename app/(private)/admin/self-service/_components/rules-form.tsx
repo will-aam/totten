@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Popover,
   PopoverContent,
@@ -77,6 +78,7 @@ const settingsSchema = z.object({
   scheduleGenerationType: z.string().optional(),
   allowOverLimitAppointments: z.boolean().default(false),
   termsOfUse: z.string().optional(),
+  packageValidityMode: z.string().optional(),
 });
 
 const scheduleRuleSchema = z.object({
@@ -429,6 +431,24 @@ function MobileWeeklySchedule({ form }: { form: any }) {
                   />
                 </div>
               </div>
+              <div className="flex flex-wrap items-center gap-4 pt-2">
+                <div className="flex-1 min-w-[150px] max-w-xs space-y-2">
+                  <span className="text-xs text-muted-foreground">Motivo (ex: Almoço)</span>
+                  <Input
+                    placeholder="Motivo da pausa"
+                    className="h-9 text-sm"
+                    value={referenceValues?.breakReason || ""}
+                    onChange={(e) => handleBatchChange("breakReason", e.target.value)}
+                  />
+                </div>
+                <div className="flex items-center space-x-2 pt-6">
+                  <Switch
+                    checked={referenceValues?.breakVisibleToClient || false}
+                    onCheckedChange={(v) => handleBatchChange("breakVisibleToClient", v)}
+                  />
+                  <span className="text-sm text-muted-foreground">Cliente vê o motivo?</span>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -668,6 +688,7 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
       scheduleGenerationType: initialData?.scheduleGenerationType || "fixed_30",
       allowOverLimitAppointments: initialData?.allowOverLimitAppointments ?? false,
       termsOfUse: initialData?.termsOfUse || DEFAULT_TERMS_OF_USE,
+      packageValidityMode: initialData?.packageValidityMode || "ACQUISITION",
     },
   });
 
@@ -681,6 +702,7 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
         scheduleGenerationType: data.scheduleGenerationType,
         allowOverLimitAppointments: data.allowOverLimitAppointments,
         termsOfUse: data.termsOfUse,
+        packageValidityMode: data.packageValidityMode,
       } as any);
 
       if (!response.success) {
@@ -833,6 +855,45 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
                         <SelectItem value="fixed_60">A cada 60 minutos</SelectItem>
                       </SelectContent>
                     </Select>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="packageValidityMode"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <div>
+                      <FormLabel className="font-bold">Validade dos Pacotes (Início da Contagem)</FormLabel>
+                      <CardDescription>
+                        A partir de que momento a data de expiração de um pacote deve começar a contar?
+                      </CardDescription>
+                    </div>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex flex-col space-y-1"
+                      >
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="ACQUISITION" />
+                          </FormControl>
+                          <FormLabel className="font-normal">
+                            A partir da data da compra do pacote
+                          </FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="FIRST_BOOKING" />
+                          </FormControl>
+                          <FormLabel className="font-normal">
+                            A partir do primeiro agendamento marcado (ou consumido)
+                          </FormLabel>
+                        </FormItem>
+                      </RadioGroup>
+                    </FormControl>
                   </FormItem>
                 )}
               />

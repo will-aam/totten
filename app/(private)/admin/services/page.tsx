@@ -40,6 +40,17 @@ import { NewServiceSheet } from "./_components/new-service-sheet";
 import { NewPackageSheet } from "../packages/_components/new-package-sheet";
 import { apiClient } from "@/lib/api-client";
 
+import { getSelfServiceSettingsAction, updateSelfServiceSettingsAction } from "@/app/actions/settings";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
 const STORAGE_KEY = "totem_catalog_show_inactive";
 
 type ServiceStockItem = {
@@ -144,6 +155,30 @@ function ServicesTabs() {
 
   const [isNewServiceSheetOpen, setIsNewServiceSheetOpen] = useState(false);
   const [isNewPackageSheetOpen, setIsNewPackageSheetOpen] = useState(false);
+
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [validityMode, setValidityMode] = useState("ACQUISITION");
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  const openSettings = async () => {
+    setIsSettingsOpen(true);
+    const res = await getSelfServiceSettingsAction();
+    if (res.success && res.data) {
+      setValidityMode(res.data.packageValidityMode || "ACQUISITION");
+    }
+  };
+
+  const saveSettings = async () => {
+    setSavingSettings(true);
+    const res = await updateSelfServiceSettingsAction({ packageValidityMode: validityMode } as any);
+    if (res.success) {
+      toast.success("Regra de validade atualizada!");
+      setIsSettingsOpen(false);
+    } else {
+      toast.error("Erro ao salvar regra.");
+    }
+    setSavingSettings(false);
+  };
 
   const {
     data: services,
@@ -388,13 +423,52 @@ function ServicesTabs() {
                 Modelos para vender múltiplas sessões.
               </p>
             </div>
-            <Button
-              className="h-12 px-8 font-medium shadow-sm"
-              onClick={() => setIsNewPackageSheetOpen(true)}
-            >
-              <Plus className="mr-2 h-4 w-4" /> Novo Pacote
-            </Button>
+            <div className="flex gap-2 items-center">
+              <Button
+                variant="ghost"
+                className="h-12 w-12 rounded-full shrink-0 p-0 flex items-center justify-center hover:bg-muted/50"
+                onClick={openSettings}
+              >
+                <Cog className="w-6 h-6 text-muted-foreground" />
+              </Button>
+              <Button
+                className="h-12 px-8 font-medium shadow-sm"
+                onClick={() => setIsNewPackageSheetOpen(true)}
+              >
+                <Plus className="mr-2 h-4 w-4" /> Novo Pacote
+              </Button>
+            </div>
           </div>
+
+          <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+            <DialogContent className="rounded-2xl">
+              <DialogHeader>
+                <DialogTitle>Configurações de Pacote</DialogTitle>
+                <DialogDescription>
+                  A partir de que momento a data de expiração de um pacote deve começar a contar?
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4">
+                <RadioGroup value={validityMode} onValueChange={setValidityMode} className="flex flex-col space-y-2">
+                  <div className="flex items-center space-x-3 space-y-0 rounded-xl border p-4 cursor-pointer hover:bg-muted/50" onClick={() => setValidityMode("ACQUISITION")}>
+                    <RadioGroupItem value="ACQUISITION" id="r1" />
+                    <Label htmlFor="r1" className="cursor-pointer font-normal flex-1">A partir da data da compra do pacote</Label>
+                  </div>
+                  <div className="flex items-center space-x-3 space-y-0 rounded-xl border p-4 cursor-pointer hover:bg-muted/50" onClick={() => setValidityMode("FIRST_BOOKING")}>
+                    <RadioGroupItem value="FIRST_BOOKING" id="r2" />
+                    <Label htmlFor="r2" className="cursor-pointer font-normal flex-1">A partir do primeiro agendamento marcado (ou consumido)</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsSettingsOpen(false)}>Cancelar</Button>
+                <Button onClick={saveSettings} disabled={savingSettings}>
+                  {savingSettings && <LoaderDots className="mr-2 w-4 h-4 animate-spin" />}
+                  Salvar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           {loadingPackages ? (
             <div className="flex justify-center py-12">

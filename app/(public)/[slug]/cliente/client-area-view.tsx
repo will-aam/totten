@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { TermsOfUseBox } from "@/components/terms-of-use-box";
 import { cn } from "@/lib/utils";
 import { ArrowLeft, LogOut, Calendar, History, User, CheckCircle, Store, FileText } from "lucide-react";
 import { Whatsapp } from "@boxicons/react";
@@ -272,11 +275,23 @@ export function ClientAreaView({
                     {/* Pacotes */}
                     {historyPackages.map((pkg: any) => {
                       const progress = Math.min(100, Math.round((pkg.used_sessions / pkg.total_sessions) * 100));
+                      const isExpired = pkg.expires_at ? new Date() > new Date(pkg.expires_at) : false;
+                      const validUntil = pkg.expires_at ? new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo" }).format(new Date(pkg.expires_at)) : null;
+
                       return (
-                        <div key={pkg.id} className={cn("bg-white border p-6 rounded-3xl shadow-sm", !pkg.active && "opacity-70 grayscale")}>
-                          <div className="mb-4">
-                            <h4 className="font-black text-lg uppercase">{pkg.name}</h4>
-                            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1"><Store className="h-3 w-3" /> Pacote de Sessões</p>
+                        <div key={pkg.id} className={cn("bg-white border p-6 rounded-3xl shadow-sm", (!pkg.active || isExpired) && "opacity-70 grayscale")}>
+                          <div className="mb-4 flex justify-between items-start">
+                            <div>
+                              <h4 className="font-black text-lg uppercase">{pkg.name}</h4>
+                              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1"><Store className="h-3 w-3" /> Pacote de Sessões</p>
+                            </div>
+                            {pkg.expires_at && (
+                              <div className="text-right">
+                                <span className={cn("text-[10px] font-bold uppercase px-2 py-1 rounded-full", isExpired ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700")}>
+                                  {isExpired ? "Expirado" : `Válido até: ${validUntil}`}
+                                </span>
+                              </div>
+                            )}
                           </div>
                           <div className="bg-slate-50 p-4 rounded-2xl border mb-4">
                             <div className="flex justify-between items-end mb-2">
@@ -391,9 +406,7 @@ export function ClientAreaView({
                 </h3>
 
                 <div className="bg-white border rounded-3xl p-6 shadow-sm">
-                  <div className="whitespace-pre-wrap text-sm text-muted-foreground leading-relaxed">
-                    {termsText}
-                  </div>
+                  <TermsOfUseBox text={termsText} requirePrepayment={false} className="border-none p-0 bg-transparent text-sm text-muted-foreground" />
                 </div>
               </div>
             )}
@@ -403,7 +416,7 @@ export function ClientAreaView({
 
       {/* Bottom Navigation Mobile */}
       <div className="md:hidden fixed bottom-6 left-4 right-4 z-50">
-        <div className="flex h-[72px] bg-white border border-slate-200 rounded-[24px] shadow-2xl relative overflow-hidden">
+        <div className="flex h-[72px] bg-card border border-border/50 rounded-[24px] shadow-2xl relative overflow-hidden">
 
           {/* Indicador Deslizante */}
           <div
@@ -417,7 +430,7 @@ export function ClientAreaView({
               left: 0,
             }}
           >
-            <div className="mx-auto w-1/2 h-full rounded-b-md shadow-sm bg-slate-900" />
+            <div className="mx-auto w-1/2 h-full rounded-b-md shadow-[0_2px_12px_hsl(var(--primary))] bg-primary" />
           </div>
 
           {[
@@ -434,7 +447,7 @@ export function ClientAreaView({
                 onClick={() => setActiveTab(item.id as TabType)}
                 className={cn(
                   "relative flex-1 flex flex-col items-center justify-center h-full space-y-1 transition-all duration-300 active:scale-95 z-10",
-                  isActive ? "text-slate-900" : "text-slate-400 hover:text-slate-900"
+                  isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 <div className="relative z-10 p-1">

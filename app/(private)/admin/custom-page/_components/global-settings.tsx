@@ -433,8 +433,8 @@ export function GlobalSettings({
                   <Label className="text-foreground font-medium flex items-center gap-2 text-sm">
                     <Whatsapp className="h-4 w-4 text-muted-foreground" /> WhatsApp
                   </Label>
-                  <div className="flex items-center">
-                    <span className="bg-muted text-muted-foreground px-3 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
+                  <div className="flex items-center border border-border/50 rounded-2xl overflow-hidden focus-within:ring-1 focus-within:ring-ring">
+                    <span className="bg-muted text-muted-foreground px-3 border-r border-border/50 text-sm h-11 flex items-center shrink-0">
                       +55
                     </span>
                     <Input
@@ -444,7 +444,7 @@ export function GlobalSettings({
                           setGlobalContact({ ...globalContact, whatsapp: e.target.value });
                         }
                       }}
-                      className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
+                      className="border-0 rounded-none bg-background h-11 focus-visible:ring-0 shadow-none"
                       placeholder="DDD + Número"
                     />
                   </div>
@@ -455,14 +455,14 @@ export function GlobalSettings({
                   <Label className="text-foreground font-medium flex items-center gap-2 text-sm">
                     <Instagram className="h-4 w-4 text-muted-foreground" /> Instagram
                   </Label>
-                  <div className="flex items-center">
-                    <span className="bg-muted text-muted-foreground px-3 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
+                  <div className="flex items-center border border-border/50 rounded-2xl overflow-hidden focus-within:ring-1 focus-within:ring-ring">
+                    <span className="bg-muted text-muted-foreground px-3 border-r border-border/50 text-sm h-11 flex items-center shrink-0">
                       @
                     </span>
                     <Input
                       value={socials.values.instagram || ""}
                       onChange={(e) => handleValueChange("instagram", e.target.value)}
-                      className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
+                      className="border-0 rounded-none bg-background h-11 focus-visible:ring-0 shadow-none"
                       placeholder="seuusuario"
                     />
                   </div>
@@ -473,14 +473,14 @@ export function GlobalSettings({
                   <Label className="text-foreground font-medium flex items-center gap-2 text-sm">
                     <Facebook className="h-4 w-4 text-muted-foreground" /> Facebook
                   </Label>
-                  <div className="flex items-center">
-                    <span className="bg-muted text-muted-foreground px-3 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
+                  <div className="flex items-center border border-border/50 rounded-2xl overflow-hidden focus-within:ring-1 focus-within:ring-ring">
+                    <span className="bg-muted text-muted-foreground px-3 border-r border-border/50 text-sm h-11 flex items-center shrink-0">
                       facebook.com/
                     </span>
                     <Input
                       value={socials.values.facebook || ""}
                       onChange={(e) => handleValueChange("facebook", e.target.value)}
-                      className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
+                      className="border-0 rounded-none bg-background h-11 focus-visible:ring-0 shadow-none"
                       placeholder="suapagina"
                     />
                   </div>
@@ -491,14 +491,14 @@ export function GlobalSettings({
                   <Label className="text-foreground font-medium flex items-center gap-2 text-sm">
                     <Youtube className="h-4 w-4 text-muted-foreground" /> YouTube
                   </Label>
-                  <div className="flex items-center">
-                    <span className="bg-muted text-muted-foreground px-3 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
+                  <div className="flex items-center border border-border/50 rounded-2xl overflow-hidden focus-within:ring-1 focus-within:ring-ring">
+                    <span className="bg-muted text-muted-foreground px-3 border-r border-border/50 text-sm h-11 flex items-center shrink-0">
                       youtube.com/@
                     </span>
                     <Input
                       value={socials.values.youtube || ""}
                       onChange={(e) => handleValueChange("youtube", e.target.value)}
-                      className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
+                      className="border-0 rounded-none bg-background h-11 focus-visible:ring-0 shadow-none"
                       placeholder="seucanal"
                     />
                   </div>
@@ -509,14 +509,14 @@ export function GlobalSettings({
                   <Label className="text-foreground font-medium flex items-center gap-2 text-sm">
                     <Globe className="h-4 w-4 text-muted-foreground" /> Meu Site
                   </Label>
-                  <div className="flex items-center">
-                    <span className="bg-muted text-muted-foreground px-3 border border-border/50 border-r-0 rounded-l-md text-sm h-11 flex items-center shrink-0">
+                  <div className="flex items-center border border-border/50 rounded-2xl overflow-hidden focus-within:ring-1 focus-within:ring-ring">
+                    <span className="bg-muted text-muted-foreground px-3 border-r border-border/50 text-sm h-11 flex items-center shrink-0">
                       https://
                     </span>
                     <Input
                       value={socials.values.website || ""}
                       onChange={(e) => handleValueChange("website", e.target.value)}
-                      className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
+                      className="border-0 rounded-none bg-background h-11 focus-visible:ring-0 shadow-none"
                       placeholder="www.seusite.com.br"
                     />
                   </div>

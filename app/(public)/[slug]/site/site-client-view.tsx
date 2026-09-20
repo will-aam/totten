@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import { cn, sanitizeUrl } from "@/lib/utils";
+import { Star, MapPin, Search, Calendar, ChevronRight, User, ArrowLeft, ArrowRight, X, Phone, UserRound, ArrowUpRight, Copy } from "lucide-react";
+import { TermsOfUseBox } from "@/components/terms-of-use-box";
 import {
-  Star, Briefcase, Youtube, Pin, Globe, Menu, X, Envelope, User, Phone,
+  Briefcase, Youtube, Pin, Globe, Menu, Envelope,
   CheckCircle, Whatsapp, Instagram, Facebook, Twitter, Tiktok, Clock,
-  ArrowRight, Package
+  Package
 } from "@boxicons/react";
 import { Dialog, DialogContent, DialogTitle, DialogHeader } from "@/components/ui/dialog";
 import {
@@ -1001,22 +1003,12 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
           <DialogHeader>
             <DialogTitle>Termos de Uso</DialogTitle>
           </DialogHeader>
-          <div className="py-4 text-sm opacity-80 leading-relaxed whitespace-pre-wrap">
-            {org.settings?.terms_of_use || `Termos de Uso e Privacidade
-
-1. Coleta de Dados
-Coletamos apenas as informações essenciais (como nome e telefone) necessárias para a prestação do serviço e identificação do cliente.
-
-2. Uso das Informações
-Seus dados são utilizados exclusivamente para gerenciar seus agendamentos, enviar confirmações e contatar você sobre o serviço contratado.
-
-3. Compartilhamento
-Garantimos que suas informações pessoais não serão vendidas, alugadas ou compartilhadas com terceiros.
-
-4. Segurança
-Adotamos medidas de segurança para proteger seus dados contra acessos não autorizados e manter a privacidade de suas informações.
-
-Ao utilizar nosso sistema, você concorda com a coleta e o uso de suas informações conforme descrito nestes termos.`}
+          <div className="py-4">
+            <TermsOfUseBox 
+              text={org.settings?.terms_of_use} 
+              requirePrepayment={false} 
+              className="rounded-xl border-none p-0 bg-transparent opacity-80" 
+            />
           </div>
         </DialogContent>
       </Dialog>

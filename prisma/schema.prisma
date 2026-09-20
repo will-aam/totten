@@ -112,6 +112,7 @@ model Settings {
   show_most_booked     Boolean  @default(true)
   show_team            Boolean  @default(true)
   show_team_likes      Boolean  @default(true)
+  package_validity_mode String  @default("ACQUISITION")
 
   organization     Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
@@ -314,6 +315,7 @@ model Package {
   organization_id           String
   created_at                DateTime      @default(now())
   updated_at                DateTime      @updatedAt
+  expires_at                DateTime?
   package_template_id       String?
 
   // SNAPSHOT
@@ -570,6 +572,7 @@ enum AppointmentStatus {
   CONFIRMADO
   REALIZADO
   CANCELADO
+  VENCIDO
 }
 
 enum PaymentMethod {

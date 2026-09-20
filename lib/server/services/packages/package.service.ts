@@ -102,19 +102,33 @@ export class PackageService {
     let finalPrice = Number(price);
     let finalTotalSessions = Number(total_sessions);
 
+    let expiresAt: Date | null = null;
+
     if (package_template_id) {
       const template = await prisma.packageTemplate.findUnique({
         where: {
           id: package_template_id,
           organization_id: organizationId,
         },
-        select: { name: true, price: true, total_sessions: true },
+        select: { name: true, price: true, total_sessions: true, validity_days: true },
       });
       if (template) {
         finalPackageName = template.name;
         // BLOQUEIO DE SEGURANÇA: Sobrescreve valores do frontend com a regra do banco de dados
         finalPrice = Number(template.price);
         finalTotalSessions = template.total_sessions;
+        
+        if (template.validity_days) {
+          const settings = await prisma.settings.findUnique({
+            where: { organization_id: organizationId },
+            select: { package_validity_mode: true },
+          });
+          
+          if (!settings || settings.package_validity_mode === "ACQUISITION") {
+            expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + template.validity_days);
+          }
+        }
       }
     }
 
@@ -131,6 +145,7 @@ export class PackageService {
           organization_id: organizationId,
           active: true,
           package_template_id: package_template_id || null,
+          expires_at: expiresAt,
           snapshot_service_name: service.name,
           snapshot_service_price: service.price,
           snapshot_service_duration: service.duration,
@@ -212,5 +227,71 @@ export class PackageService {
     });
 
     return result;
+  }
+
+  /**
+   * Processa pacotes expirados criando agendamentos "VENCIDO"
+   * para consumir o saldo remanescente.
+   */
+  static async processExpiredPackages(organizationId: string) {
+    const prisma = getTenantPrisma(organizationId);
+    
+    // Buscar pacotes ativos, com data de expiração no passado, e que tenham sessões sobrando
+    const expiredPackagesRaw = await prisma.package.findMany({
+      where: {
+        organization_id: organizationId,
+        active: true,
+        expires_at: { lt: new Date() },
+      },
+    });
+
+    const expiredPackages = expiredPackagesRaw.filter(p => p.used_sessions < p.total_sessions);
+
+    for (const pkg of expiredPackages) {
+      const remaining = pkg.total_sessions - pkg.used_sessions;
+      if (remaining > 0) {
+        await prisma.$transaction(async (tx) => {
+          // Criar N agendamentos fantasmas com status VENCIDO
+          const newAppointments = [];
+          for (let i = 0; i < remaining; i++) {
+            newAppointments.push({
+              date_time: new Date(),
+              status: "VENCIDO" as any,
+              has_charge: false,
+              session_number: pkg.used_sessions + i + 1,
+              observations: "Sessão expirada automaticamente (Valid. Pacote)",
+              client_id: pkg.client_id,
+              service_id: pkg.service_id,
+              package_id: pkg.id,
+              organization_id: organizationId,
+              snapshot_service_name: pkg.snapshot_service_name,
+              snapshot_service_price: pkg.snapshot_service_price,
+              snapshot_service_duration: pkg.snapshot_service_duration,
+            });
+          }
+          
+          await tx.appointment.createMany({ data: newAppointments });
+
+          // Atualizar o pacote para consumir as sessões e arquivá-lo (pois acabou)
+          await tx.package.update({
+            where: { id: pkg.id },
+            data: {
+              used_sessions: pkg.total_sessions,
+              active: false, // Arquiva automaticamente ao consumir tudo
+            },
+          });
+          
+          // Registrar log
+          await tx.clientNote.create({
+            data: {
+              client_id: pkg.client_id,
+              organization_id: organizationId,
+              text: `O pacote "${pkg.name}" expirou. Foram geradas ${remaining} sessões vencidas automaticamente.`,
+              date: new Date(),
+            }
+          });
+        });
+      }
+    }
   }
 }

@@ -128,6 +128,47 @@ export async function createAppointment(
         };
       }
 
+      // NOVO: Lógica FIRST_BOOKING e Verificação de Validade do Pacote
+      let packageExpiryDate = pkg.expires_at ? new Date(pkg.expires_at) : null;
+      
+      if (!packageExpiryDate && pkg.package_template_id) {
+        const settings = await prisma.settings.findUnique({
+          where: { organization_id: admin.organizationId },
+          select: { package_validity_mode: true },
+        });
+
+        if (settings?.package_validity_mode === "FIRST_BOOKING") {
+          const template = await prisma.packageTemplate.findUnique({
+            where: { id: pkg.package_template_id },
+            select: { validity_days: true },
+          });
+
+          if (template?.validity_days) {
+            // Conta a partir da primeira data de agendamento sendo criada
+            packageExpiryDate = new Date(appointmentDates[0]);
+            packageExpiryDate.setDate(packageExpiryDate.getDate() + template.validity_days);
+
+            // Atualiza o pacote no banco para já salvar a data de expiração
+            await prisma.package.update({
+              where: { id: pkg.id },
+              data: { expires_at: packageExpiryDate },
+            });
+          }
+        }
+      }
+
+      if (packageExpiryDate) {
+        // As sessões não podem ser agendadas para DEPOIS do vencimento do pacote.
+        for (const appointmentDate of appointmentDates) {
+          if (appointmentDate > packageExpiryDate) {
+            return {
+              success: false,
+              error: `O pacote expira em ${packageExpiryDate.toLocaleDateString("pt-BR")}. Não é possível agendar sessões para datas posteriores.`,
+            };
+          }
+        }
+      }
+
       const sessionsAvailable = pkg.total_sessions - pkg.used_sessions;
       if (sessionsAvailable < totalSessionsToCreate) {
         return {

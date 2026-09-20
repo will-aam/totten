@@ -92,6 +92,7 @@ export async function updateSelfServiceSettingsAction(data: {
   showMostBooked?: boolean;
   showTeam?: boolean;
   showTeamLikes?: boolean;
+  packageValidityMode?: string;
 }) {
   try {
     const admin = await requireAuth();

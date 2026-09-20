@@ -32,6 +32,7 @@ import { toggleProfessionalLike, getProfessionalInteractions, createProfessional
 import { PRO_THEMES } from "@/app/(private)/admin/self-service/_components/booking-appearance-settings";
 import { toast } from "sonner";
 import { DEFAULT_TERMS_OF_USE } from "@/lib/constants";
+import { TermsOfUseBox } from "@/components/terms-of-use-box";
 
 export function ClientAgendarView({ org }: { org: any }) {
   const router = useRouter();
@@ -1051,15 +1052,11 @@ export function ClientAgendarView({ org }: { org: any }) {
                   {/* Política de Cancelamento */}
                   <div className="space-y-3 pt-4 border-t" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
                     <Label className="text-xs font-bold uppercase tracking-wider opacity-80">Política de Cancelamento</Label>
-                    <div className="text-xs p-4 rounded-full border bg-muted/30 overflow-y-auto max-h-32 whitespace-pre-wrap leading-relaxed">
-                      {activeGeneral.termsText || DEFAULT_TERMS_OF_USE}
-                      {activeGeneral.requirePrepayment !== false && (
-                        <span className="font-bold block mt-3">
-                          • A taxa de sinal não é reembolsável em casos de cancelamento fora do prazo ou não comparecimento.
-                          <br />• O não comparecimento sem aviso implica na perda do sinal.
-                        </span>
-                      )}
-                    </div>
+                    <TermsOfUseBox 
+                      text={activeGeneral.termsText} 
+                      requirePrepayment={activeGeneral.requirePrepayment} 
+                      className="rounded-full" 
+                    />
 
                     <label className="flex items-start gap-3 p-4 cursor-pointer hover:bg-muted/60 hover:bg- rounded-full transition-colors mt-2">
                       <div className="mt-0.5">
@@ -1139,15 +1136,11 @@ export function ClientAgendarView({ org }: { org: any }) {
                 {/* Re-exibir Política no finalzinho */}
                 <div className="px-4 text-left">
                   <p className="text-xs font-bold uppercase tracking-wider opacity-60 mb-2">Lembrete</p>
-                  <div className="text-xs p-4 rounded-full border bg-muted/30 overflow-y-auto max-h-32 whitespace-pre-wrap leading-relaxed opacity-80">
-                    {activeGeneral.termsText || DEFAULT_TERMS_OF_USE}
-                    {activeGeneral.requirePrepayment !== false && (
-                      <span className="font-bold block mt-3">
-                        • A taxa de sinal não é reembolsável em casos de cancelamento fora do prazo ou não comparecimento.
-                        <br />• O não comparecimento sem aviso implica na perda do sinal.
-                      </span>
-                    )}
-                  </div>
+                  <TermsOfUseBox 
+                    text={activeGeneral.termsText} 
+                    requirePrepayment={activeGeneral.requirePrepayment} 
+                    className="rounded-full opacity-80" 
+                  />
                 </div>
 
               </div>

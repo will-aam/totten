@@ -26,6 +26,7 @@ import {
   Search,
   Plus,
   Calendar,
+  Cog,
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { PackageDetailsModal } from "./_components/package-details-modal";
@@ -33,8 +34,10 @@ import {
   getPackagesDashboardData,
   createManualPackageCheckIn,
 } from "@/app/actions/packages";
+import { getSelfServiceSettingsAction, updateSelfServiceSettingsAction } from "@/app/actions/settings";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/use-debounce";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Dialog,
   DialogContent,
@@ -276,6 +279,30 @@ function PackagesPageContent() {
   const [checkInDate, setCheckInDate] = useState("");
   const [checkInTime, setCheckInTime] = useState("");
 
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [validityMode, setValidityMode] = useState("ACQUISITION");
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  const openSettings = async () => {
+    setIsSettingsOpen(true);
+    const res = await getSelfServiceSettingsAction();
+    if (res.success && res.data) {
+      setValidityMode(res.data.packageValidityMode || "ACQUISITION");
+    }
+  };
+
+  const saveSettings = async () => {
+    setSavingSettings(true);
+    const res = await updateSelfServiceSettingsAction({ packageValidityMode: validityMode } as any);
+    if (res.success) {
+      toast.success("Regra de validade atualizada!");
+      setIsSettingsOpen(false);
+    } else {
+      toast.error("Erro ao salvar regra.");
+    }
+    setSavingSettings(false);
+  };
+
   const [packages, setPackages] = useState<any[]>([]);
   const [kpis, setKpis] = useState({
     active: 0,
@@ -451,8 +478,44 @@ function PackagesPageContent() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-
+          <Button
+            variant="outline"
+            onClick={openSettings}
+            className="h-12 w-12 rounded-full shrink-0 border border-border shadow-sm"
+          >
+            <Cog className="w-5 h-5 text-muted-foreground" />
+          </Button>
         </div>
+
+        <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+          <DialogContent className="rounded-2xl">
+            <DialogHeader>
+              <DialogTitle>Configurações de Pacote</DialogTitle>
+              <DialogDescription>
+                A partir de que momento a data de expiração de um pacote deve começar a contar?
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <RadioGroup value={validityMode} onValueChange={setValidityMode} className="flex flex-col space-y-2">
+                <div className="flex items-center space-x-3 space-y-0 rounded-xl border p-4 cursor-pointer hover:bg-muted/50" onClick={() => setValidityMode("ACQUISITION")}>
+                  <RadioGroupItem value="ACQUISITION" id="r1" />
+                  <Label htmlFor="r1" className="cursor-pointer font-normal flex-1">A partir da data da compra do pacote</Label>
+                </div>
+                <div className="flex items-center space-x-3 space-y-0 rounded-xl border p-4 cursor-pointer hover:bg-muted/50" onClick={() => setValidityMode("FIRST_BOOKING")}>
+                  <RadioGroupItem value="FIRST_BOOKING" id="r2" />
+                  <Label htmlFor="r2" className="cursor-pointer font-normal flex-1">A partir do primeiro agendamento marcado (ou consumido)</Label>
+                </div>
+              </RadioGroup>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsSettingsOpen(false)}>Cancelar</Button>
+              <Button onClick={saveSettings} disabled={savingSettings}>
+                {savingSettings && <LoaderDots className="mr-2 w-4 h-4 animate-spin" />}
+                Salvar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <Card className="border-none shadow-none bg-transparent md:bg-card md:border md:shadow-sm rounded-4xl overflow-hidden">
           <CardHeader className="px-0 pt-0 md:pt-6 md:px-6">
