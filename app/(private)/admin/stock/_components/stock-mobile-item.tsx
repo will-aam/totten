@@ -80,7 +80,7 @@ export function StockMobileItem({
             <Input
               type="number"
               step="0.01"
-              className={cn("h-10 pl-9 bg-muted/40 border-none text-sm font-semibold",
+              className={cn("h-10 pl-9 bg-background border border-border/60 text-sm font-semibold shadow-sm focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20",
                 hideArrowsClass,
               )}
               defaultValue={item.unit_cost}
@@ -101,7 +101,7 @@ export function StockMobileItem({
           <Input
             type="number"
             step="0.1"
-            className={cn("h-10 text-center font-bold bg-muted/40 border-none text-base",
+            className={cn("h-10 text-center font-bold bg-background border border-border/60 text-base shadow-sm focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20",
               hideArrowsClass,
             )}
             defaultValue={item.quantity}

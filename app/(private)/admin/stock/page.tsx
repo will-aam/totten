@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { NewStockItemModal } from "./_components/new-item-modal";
 import { StockTable, StockItem } from "./_components/stock-table";
 import { StockMobileItem } from "./_components/stock-mobile-item";
+import { StockSpeedDial } from "./_components/stock-speed-dial";
 import { toast } from "sonner";
 import {
   Pagination,
@@ -59,6 +60,7 @@ import {
   createStockItem,
   updateStockItem,
   deleteStockItem,
+  checkStockItemUsage,
 } from "@/app/actions/stock";
 
 export default function StockPage() {
@@ -86,6 +88,8 @@ function StockPageContent() {
   const [isLoading, setIsLoading] = useState(true);
 
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [linkedServices, setLinkedServices] = useState<string[]>([]);
+  const [isCheckingUsage, setIsCheckingUsage] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
 
@@ -138,6 +142,18 @@ function StockPageContent() {
     } else {
       toast.error(res.error || "Erro ao cadastrar insumo.");
     }
+  };
+
+  const handleOpenDelete = async (id: string) => {
+    setItemToDelete(id);
+    setIsCheckingUsage(true);
+    setLinkedServices([]);
+    
+    const res = await checkStockItemUsage(id);
+    if (res.success && res.data) {
+      setLinkedServices(res.data);
+    }
+    setIsCheckingUsage(false);
   };
 
   const confirmDelete = async () => {
@@ -235,16 +251,7 @@ function StockPageContent() {
             />
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Button
-              variant="outline"
-              size="icon"
-              className="md:hidden shrink-0 border-border"
-              onClick={() => setIsFilterOpen(true)}
-            >
-              <Filter className="h-4 w-4" />
-            </Button>
-
+          <div className="hidden md:flex items-center gap-2">
             {/* Novo Botão de Exportar com o seu ícone */}
             <Button
               onClick={handleExportExcel}
@@ -317,7 +324,7 @@ function StockPageContent() {
               <StockTable
                 data={paginatedItems}
                 onUpdateItem={handleUpdateItem}
-                onDeleteItem={(id) => setItemToDelete(id)}
+                onDeleteItem={handleOpenDelete}
               />
             </div>
 
@@ -327,7 +334,7 @@ function StockPageContent() {
                   key={item.id}
                   item={item}
                   onUpdate={handleUpdateItem}
-                  onDelete={(id) => setItemToDelete(id)}
+                  onDelete={handleOpenDelete}
                 />
               ))}
               {paginatedItems.length === 0 && (
@@ -428,24 +435,44 @@ function StockPageContent() {
 
       <AlertDialog
         open={!!itemToDelete}
-        onOpenChange={(open) => !open && setItemToDelete(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setItemToDelete(null);
+            setLinkedServices([]);
+          }
+        }}
       >
         <AlertDialogContent className="rounded-3xl border border-border/50 p-6 bg-background sm:max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-xl font-bold">
-              Excluir Insumo?
+              {linkedServices.length > 0 ? "Atenção: Insumo em uso!" : "Excluir Insumo?"}
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir este insumo do seu estoque? Essa
-              ação não poderá ser desfeita.
+            <AlertDialogDescription asChild>
+              <div>
+                {isCheckingUsage ? (
+                  <span className="flex items-center gap-2">
+                    <LoaderDots className="animate-spin h-4 w-4" /> Verificando uso do insumo...
+                  </span>
+                ) : linkedServices.length > 0 ? (
+                  <span className="block">
+                    Este insumo está sendo utilizado no(s) seguinte(s) serviço(s): <br/>
+                    <strong className="block mt-2 mb-2 text-foreground">{linkedServices.join(", ")}</strong>
+                    Se você excluir, ele deixará de ser atrelado a este(s) serviço(s) e sua baixa automática não será mais registrada. <br/><br/>
+                    Tem certeza que deseja continuar?
+                  </span>
+                ) : (
+                  <span>Tem certeza que deseja excluir este insumo do seu estoque? Essa ação não poderá ser desfeita.</span>
+                )}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex flex-col sm:flex-row gap-2 mt-4">
-            <AlertDialogCancel className="rounded-2xl border-none bg-muted m-0">
+            <AlertDialogCancel className="rounded-2xl border-none bg-muted m-0" disabled={isCheckingUsage}>
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
+              disabled={isCheckingUsage}
               className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 font-bold m-0"
             >
               Sim, excluir
@@ -453,6 +480,13 @@ function StockPageContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <StockSpeedDial
+        onFilter={() => setIsFilterOpen(true)}
+        onExport={handleExportExcel}
+        onNewItem={() => setIsModalOpen(true)}
+        showScrollTop={showScrollTop}
+      />
     </>
   );
 }

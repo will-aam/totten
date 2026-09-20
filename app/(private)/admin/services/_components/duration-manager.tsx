@@ -143,21 +143,6 @@ export function DurationManager() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold text-muted-foreground">
-              Nome Exibido
-            </Label>
-            <Input
-              placeholder="Ex: 1h 30min"
-              value={form.label}
-              onChange={(e) => {
-                setForm({ ...form, label: e.target.value });
-                setIsCustomLabel(true);
-              }}
-              className="h-11 bg-muted/30 border-0 focus-visible:ring-1 focus-visible:ring-primary shadow-none"
-            />
-          </div>
-
           <div className="grid grid-cols-2 gap-3 md:col-span-2">
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-muted-foreground">
@@ -197,6 +182,21 @@ export function DurationManager() {
                 />
               </div>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold text-muted-foreground">
+              Nome Exibido
+            </Label>
+            <Input
+              placeholder="Ex: 1h 30min"
+              value={form.label}
+              onChange={(e) => {
+                setForm({ ...form, label: e.target.value });
+                setIsCustomLabel(true);
+              }}
+              className="h-11 bg-muted/30 border-0 focus-visible:ring-1 focus-visible:ring-primary shadow-none"
+            />
           </div>
         </div>
 

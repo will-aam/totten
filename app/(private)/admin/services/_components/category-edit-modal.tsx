@@ -138,12 +138,12 @@ export function CategoryEditModal({
 
   return (
     <>
-      <ResponsiveModal
-        open={open}
-        onOpenChange={onOpenChange}
-        title="Editar Categoria"
-      >
-        <div className="px-1">
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md rounded-2xl w-[95vw]">
+          <DialogHeader>
+            <DialogTitle>Editar Categoria</DialogTitle>
+          </DialogHeader>
+          <div className="px-1">
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="cat-name" className="text-sm font-medium">
@@ -214,8 +214,9 @@ export function CategoryEditModal({
               </Button>
             </div>
           </div>
-        </div>
-      </ResponsiveModal>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Modal de Confirmação para Cascata */}
       <Dialog

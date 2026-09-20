@@ -270,7 +270,7 @@ export default function EditAnamnesisTemplatePage({
               <FileDetail size="sm" className="text-primary" />
               <h2 className="font-semibold text-foreground">Perguntas</h2>
             </div>
-            <span className="text-xs font-medium text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
+            <span className="text-xs font-medium text-muted-foreground bg-muted px-2.5 py-1 rounded-2xl">
               {fields.length}
             </span>
           </div>
@@ -290,9 +290,9 @@ export default function EditAnamnesisTemplatePage({
               {fields.map((field, index) => (
                 <div
                   key={field.id}
-                  className="group flex flex-col gap-3 p-4 rounded-full bg-muted/30 border border-border/50 hover:border-border transition-all relative"
+                  className="group flex flex-col gap-3 p-4 rounded-2xl bg-muted/30 border border-border/50 hover:border-border transition-all relative"
                 >
-                  <div className="absolute -left-3 top-4 hidden md:flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold shadow z-10">
+                  <div className="absolute -left-3 top-4 hidden md:flex h-6 w-6 items-center justify-center rounded-2xl bg-primary text-primary-foreground text-xs font-bold shadow z-10">
                     {index + 1}
                   </div>
 
@@ -313,9 +313,9 @@ export default function EditAnamnesisTemplatePage({
                             ? "Ex: Histórico Clínico"
                             : "Ex: Você está gestante?"
                         }
-                        className={`h-11 bg-background border-border/60 focus:border-primary ${field.type ==="section_title"
-                            ? "font-bold text-lg"
-                            : ""
+                        className={`h-11 bg-background border-border/60 focus:border-primary ${field.type === "section_title"
+                          ? "font-bold text-lg"
+                          : ""
                           }`}
                       />
                     </div>
@@ -369,8 +369,8 @@ export default function EditAnamnesisTemplatePage({
                           <div key={optIndex} className="flex items-center gap-2">
                             <div
                               className={`w-4 h-4 border border-muted-foreground/50 shrink-0 ${field.type === "single_choice"
-                                  ? "rounded-full"
-                                  : "rounded-sm"
+                                ? "rounded-2xl"
+                                : "rounded-sm"
                                 }`}
                             />
                             <Input

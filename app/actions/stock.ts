@@ -198,3 +198,33 @@ export async function deleteStockItem(id: string) {
     };
   }
 }
+
+export async function checkStockItemUsage(id: string) {
+  try {
+    const orgId = await getOrgId();
+    const prisma = getTenantPrisma(orgId);
+
+    const item = await prisma.stockItem.findUnique({
+      where: { id, organization_id: orgId },
+      include: {
+        services: {
+          include: {
+            service: {
+              select: { name: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!item) return { success: false, error: "Insumo não encontrado." };
+
+    return {
+      success: true,
+      data: item.services.map((s) => s.service.name),
+    };
+  } catch (error) {
+    console.error("Erro ao verificar uso do insumo:", error);
+    return { success: false, error: "Erro interno ao verificar uso." };
+  }
+}

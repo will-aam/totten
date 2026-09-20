@@ -28,13 +28,13 @@ interface StockTableProps {
   onDeleteItem: (id: string) => void;
 }
 
-//  NOVO: estado visual “editando/focado”
+//  NOVO: estado visual “editando/focado” - Adicionada borda leve e fundo para melhor visibilidade
 const editableInputClass =
-  "border-transparent bg-transparent shadow-none " +
-  "hover:border-border/70 hover:bg-muted/20 " +
-  "focus-visible:border-sky-400/70 focus-visible:bg-background " +
-  "focus-visible:ring-2 focus-visible:ring-sky-400/25 focus-visible:ring-offset-0 " +
-  "transition-colors";
+  "border-border/50 bg-muted/20 shadow-sm " +
+  "hover:border-border hover:bg-muted/40 " +
+  "focus-visible:border-primary focus-visible:bg-background " +
+  "focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-0 " +
+  "transition-colors font-medium";
 
 export function StockTable({
   data,

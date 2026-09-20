@@ -274,7 +274,7 @@ export function ImportClientsModal({
               </div>
             </div>
           ) : step === 1 ? (
-            <div className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-full p-10 bg-muted/5 transition-all hover:bg-muted/20">
+            <div className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-2xl p-10 bg-muted/5 transition-all hover:bg-muted/20">
               <input
                 type="file"
                 accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, text/plain"
@@ -282,7 +282,7 @@ export function ImportClientsModal({
                 ref={fileInputRef}
                 onChange={handleFileUpload}
               />
-              <div className="h-16 w-16  text-primary rounded-full flex items-center justify-center mb-4">
+              <div className="h-16 w-16  text-primary rounded-2xl flex items-center justify-center mb-4">
                 {loading ? (
                   <LoaderDots size="md" className="animate-spin" />
                 ) : (

@@ -703,15 +703,18 @@ function ServicesTabs() {
       />
 
       {/* Modal: Nova Categoria */}
-      <ResponsiveModal
+      <Dialog
         open={createCategoryOpen}
         onOpenChange={(open: boolean) => {
           setCreateCategoryOpen(open);
           if (!open) setNewCategoryName("");
         }}
-        title="Nova Categoria"
       >
-        <div className="px-1">
+        <DialogContent className="sm:max-w-md rounded-2xl w-[95vw]">
+          <DialogHeader>
+            <DialogTitle>Nova Categoria</DialogTitle>
+          </DialogHeader>
+          <div className="px-1">
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="new-cat-name" className="text-sm font-medium">
@@ -753,8 +756,9 @@ function ServicesTabs() {
               )}
             </Button>
           </div>
-        </div>
-      </ResponsiveModal>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <MobileBottomNav
         items={mobileNavItems}
