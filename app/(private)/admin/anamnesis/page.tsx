@@ -83,66 +83,98 @@ export default function AnamnesisListPage() {
   const handleDownloadPdf = async (template: any) => {
     setIsGeneratingPdf(template.id);
     try {
-      const container = document.createElement("div");
-      
+      const ReactPdf = await import('@react-pdf/renderer');
+      const { Document, Page, Text, View, StyleSheet, pdf } = ReactPdf;
+
+      const styles = StyleSheet.create({
+        page: { padding: 30, fontFamily: 'Helvetica', color: '#000' },
+        header: { textAlign: 'center', marginBottom: 20, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#ddd' },
+        title: { fontSize: 20, fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 5 },
+        subtitle: { fontSize: 12, color: '#555' },
+        grid: { flexDirection: 'row', flexWrap: 'wrap', backgroundColor: '#f9f9f9', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#eee', marginBottom: 20 },
+        gridItem: { width: '50%', marginBottom: 12 },
+        gridLabel: { fontSize: 9, color: '#777', textTransform: 'uppercase', fontWeight: 'bold', marginBottom: 2 },
+        line: { borderBottomWidth: 1, borderBottomColor: '#999', marginTop: 12, width: '90%' },
+        sectionTitle: { paddingTop: 12, paddingBottom: 4, borderBottomWidth: 1, borderBottomColor: '#ddd', marginBottom: 12, marginTop: 12 },
+        sectionTitleText: { fontSize: 16, fontWeight: 'bold' },
+        fieldBlock: { marginBottom: 16 },
+        fieldLabel: { fontSize: 13, fontWeight: 'bold', marginBottom: 6 },
+        textInputLine: { borderBottomWidth: 1, borderBottomColor: '#ccc', marginTop: 16 },
+        booleanRow: { flexDirection: 'row', alignItems: 'flex-start', marginTop: 6 },
+        checkboxWrapper: { flexDirection: 'row', alignItems: 'flex-start', marginRight: 24, flex: 1 },
+        checkbox: { width: 14, height: 14, borderWidth: 1.5, borderColor: '#999', marginRight: 6, flexShrink: 0 },
+        checkboxLabel: { fontSize: 11, flex: 1, paddingTop: 1 },
+        specWrapper: { flexDirection: 'row', alignItems: 'flex-end', marginTop: 16 },
+        specLabel: { fontSize: 11, color: '#555', marginRight: 6 },
+        specLine: { borderBottomWidth: 1, borderBottomColor: '#999', flex: 1 },
+        choiceGrid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 6 },
+        choiceItem: { width: '33.33%', flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10, paddingRight: 8 },
+        choiceCheckbox: { width: 14, height: 14, borderWidth: 1.5, borderColor: '#999', marginRight: 6, flexShrink: 0 },
+        choiceCircle: { width: 14, height: 14, borderWidth: 1.5, borderColor: '#999', marginRight: 6, borderRadius: 7, flexShrink: 0 },
+        consentBlock: { marginTop: 24 },
+        consentText: { fontSize: 11, textAlign: 'justify', marginBottom: 12 },
+        signatureBlock: { marginTop: 60, alignItems: 'center' },
+        signatureLineWrapper: { width: 250, borderTopWidth: 1, borderTopColor: '#000', paddingTop: 6, alignItems: 'center' },
+        signatureLabel: { fontSize: 11, textTransform: 'uppercase', fontWeight: 'bold' }
+      });
+
       const fields = (template.fields as any[]) || [];
-      const content = (
-        <div style={{ padding: "40px", fontFamily: "sans-serif", color: "#000", backgroundColor: "#fff" }}>
-          <div style={{ textAlign: "center", marginBottom: "30px", paddingBottom: "20px", borderBottom: "2px solid #ddd" }}>
-            <h1 style={{ fontSize: "24px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "2px", margin: "0 0 10px 0" }}>
-              {template.name}
-            </h1>
-            <p style={{ fontSize: "14px", color: "#555", margin: 0 }}>Ficha de Anamnese</p>
-          </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", backgroundColor: "#f9f9f9", padding: "20px", borderRadius: "16px", border: "1px solid #eee", marginBottom: "30px" }}>
-            {["Nome da Cliente", "Data de Nascimento / Idade", "Telefone / WhatsApp", "Data"].map(label => (
-              <div key={label} style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-                <p style={{ fontSize: "10px", color: "#777", textTransform: "uppercase", fontWeight: "900", letterSpacing: "1px", margin: 0 }}>{label}</p>
-                <div style={{ borderBottom: "1px solid #999", height: "20px", width: "100%" }}></div>
-              </div>
-            ))}
-          </div>
+      const MyDoc = (
+        <Document>
+          <Page size="A4" style={styles.page}>
+            <View style={styles.header} wrap={false}>
+              <Text style={styles.title}>{template.name}</Text>
+              <Text style={styles.subtitle}>Ficha de Anamnese</Text>
+            </View>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+            <View style={styles.grid} wrap={false}>
+              {["Nome da Cliente", "Data de Nascimento / Idade", "Telefone / WhatsApp", "Data"].map(label => (
+                <View key={label} style={styles.gridItem}>
+                  <Text style={styles.gridLabel}>{label}</Text>
+                  <View style={styles.line} />
+                </View>
+              ))}
+            </View>
+
             {fields.map((item, index) => {
               if (item.type === "section_title") {
                 return (
-                  <div key={index} style={{ paddingTop: "20px", paddingBottom: "10px", borderBottom: "1px solid #ddd" }}>
-                    <h3 style={{ fontSize: "18px", fontWeight: "900", margin: 0 }}>{item.label}</h3>
-                  </div>
+                  <View key={index} style={styles.sectionTitle} wrap={false}>
+                    <Text style={styles.sectionTitleText}>{item.label}</Text>
+                  </View>
                 );
               }
               if (item.type === "text") {
                 return (
-                  <div key={index} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <p style={{ fontSize: "14px", fontWeight: "600", margin: 0 }}>{item.label}</p>
-                    <div style={{ borderBottom: "1px solid #ccc", height: "20px", width: "100%", marginTop: "4px" }}></div>
-                    <div style={{ borderBottom: "1px solid #ccc", height: "20px", width: "100%", marginTop: "4px" }}></div>
-                  </div>
+                  <View key={index} style={styles.fieldBlock} wrap={false}>
+                    <Text style={styles.fieldLabel}>{item.label}</Text>
+                    <View style={styles.textInputLine} />
+                    <View style={styles.textInputLine} />
+                  </View>
                 );
               }
               if (item.type === "boolean") {
                 return (
-                  <div key={index} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <p style={{ fontSize: "14px", fontWeight: "600", margin: 0 }}>{item.label}</p>
-                    <div style={{ display: "flex", gap: "24px", alignItems: "center", marginTop: "4px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <div style={{ width: "16px", height: "16px", border: "2px solid #999", borderRadius: "2px" }}></div>
-                        <span style={{ fontSize: "14px" }}>Sim</span>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <div style={{ width: "16px", height: "16px", border: "2px solid #999", borderRadius: "2px" }}></div>
-                        <span style={{ fontSize: "14px" }}>Não</span>
-                      </div>
-                    </div>
+                  <View key={index} style={styles.fieldBlock} wrap={false}>
+                    <Text style={styles.fieldLabel}>{item.label}</Text>
+                    <View style={styles.booleanRow}>
+                      <View style={styles.checkboxWrapper}>
+                        <View style={styles.checkbox} />
+                        <Text style={styles.checkboxLabel}>Sim</Text>
+                      </View>
+                      <View style={styles.checkboxWrapper}>
+                        <View style={styles.checkbox} />
+                        <Text style={styles.checkboxLabel}>Não</Text>
+                      </View>
+                    </View>
                     {item.requireSpecificationWhenYes && (
-                      <div style={{ marginTop: "16px", display: "flex", alignItems: "flex-end", gap: "8px", width: "100%" }}>
-                        <span style={{ fontSize: "12px", color: "#555", whiteSpace: "nowrap" }}>Se sim, especifique:</span>
-                        <div style={{ borderBottom: "1px solid #999", width: "100%" }}></div>
-                      </div>
+                      <View style={styles.specWrapper}>
+                        <Text style={styles.specLabel}>Se sim, especifique:</Text>
+                        <View style={styles.specLine} />
+                      </View>
                     )}
-                  </div>
+                  </View>
                 );
               }
               if (item.type === "single_choice" || item.type === "multiple_choice") {
@@ -150,69 +182,55 @@ export default function AnamnesisListPage() {
                 if (item.hasOtherOption) options.push("Outros");
                 const isMultiple = item.type === "multiple_choice";
                 return (
-                  <div key={index} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <p style={{ fontSize: "14px", fontWeight: "600", margin: 0 }}>{item.label}</p>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", rowGap: "12px", columnGap: "16px", marginTop: "8px" }}>
+                  <View key={index} style={styles.fieldBlock}>
+                    <Text style={styles.fieldLabel}>{item.label}</Text>
+                    <View style={styles.choiceGrid}>
                       {options.map((opt, idx) => (
-                        <div key={idx} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <div style={{ width: "16px", height: "16px", border: "2px solid #999", borderRadius: isMultiple ? "2px" : "50%" }}></div>
-                          <span style={{ fontSize: "14px" }}>{opt}</span>
-                        </div>
+                        <View key={idx} style={styles.choiceItem}>
+                          <View style={isMultiple ? styles.choiceCheckbox : styles.choiceCircle} />
+                          <Text style={styles.checkboxLabel}>{opt}</Text>
+                        </View>
                       ))}
-                    </div>
+                    </View>
                     {item.hasOtherOption && (
-                      <div style={{ marginTop: "16px", display: "flex", alignItems: "flex-end", gap: "8px", width: "100%" }}>
-                        <span style={{ fontSize: "12px", color: "#555", whiteSpace: "nowrap" }}>Se outros, especifique:</span>
-                        <div style={{ borderBottom: "1px solid #999", width: "100%" }}></div>
-                      </div>
+                      <View style={styles.specWrapper}>
+                        <Text style={styles.specLabel}>Se outros, especifique:</Text>
+                        <View style={styles.specLine} />
+                      </View>
                     )}
-                  </div>
+                  </View>
                 );
               }
               if (item.type === "consent_term") {
                 return (
-                  <div key={index} style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "32px" }}>
-                    <p style={{ fontSize: "14px", fontWeight: "600", margin: 0, textAlign: "justify" }}>{item.label}</p>
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "16px" }}>
-                      <div style={{ width: "20px", height: "20px", border: "2px solid #999", borderRadius: "2px" }}></div>
-                      <span style={{ fontSize: "14px", fontWeight: "bold" }}>Li e concordo com o termo acima.</span>
-                    </div>
-                  </div>
+                  <View key={index} style={styles.consentBlock} wrap={false}>
+                    <Text style={styles.consentText}>{item.label}</Text>
+                    <View style={styles.booleanRow}>
+                      <View style={styles.checkbox} />
+                      <Text style={{ fontSize: 13, fontWeight: 'bold' }}>Li e concordo com o termo acima.</Text>
+                    </View>
+                  </View>
                 );
               }
               return null;
             })}
-          </div>
 
-          <div style={{ marginTop: "80px", paddingTop: "32px", display: "flex", flexDirection: "column", alignItems: "center", pageBreakInside: "avoid" }}>
-            <div style={{ width: "100%", maxWidth: "300px", borderTop: "1px solid #000", textAlign: "center", paddingTop: "8px" }}>
-              <p style={{ fontWeight: "bold", color: "#000", textTransform: "uppercase", fontSize: "12px", margin: 0 }}>
-                Assinatura da Cliente
-              </p>
-            </div>
-          </div>
-        </div>
+            <View style={styles.signatureBlock} wrap={false}>
+              <View style={styles.signatureLineWrapper}>
+                <Text style={styles.signatureLabel}>Assinatura da Cliente</Text>
+              </View>
+            </View>
+          </Page>
+        </Document>
       );
 
-      const root = createRoot(container);
-      root.render(content);
-
-      // Wait a bit for React to render
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      const html2pdf = (await import("html2pdf.js")).default;
-
-      const opt = {
-        margin: 10,
-        filename: `Anamnese_${template.name.replace(/[^a-z0-9]/gi, '_')}.pdf`,
-        image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
-      };
-
-      await html2pdf().set(opt).from(container).save();
-      
-      root.unmount();
+      const blob = await pdf(MyDoc).toBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Anamnese_${template.name.replace(/[^a-z0-9]/gi, '_')}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
     } catch (err) {
       console.error(err);
       toast({
