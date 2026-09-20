@@ -31,6 +31,7 @@ import { createClientAppointmentAction } from "@/app/actions/appointments";
 import { toggleProfessionalLike, getProfessionalInteractions, createProfessionalReview, replyProfessionalReview, deleteProfessionalReview } from "@/app/actions/reviews";
 import { PRO_THEMES } from "@/app/(private)/admin/self-service/_components/booking-appearance-settings";
 import { toast } from "sonner";
+import { DEFAULT_TERMS_OF_USE } from "@/lib/constants";
 
 export function ClientAgendarView({ org }: { org: any }) {
   const router = useRouter();
@@ -1051,10 +1052,11 @@ export function ClientAgendarView({ org }: { org: any }) {
                   <div className="space-y-3 pt-4 border-t" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
                     <Label className="text-xs font-bold uppercase tracking-wider opacity-80">Política de Cancelamento</Label>
                     <div className="text-xs p-4 rounded-full border bg-muted/30 overflow-y-auto max-h-32 whitespace-pre-wrap leading-relaxed">
-                      {activeGeneral.termsText || `Política de Cancelamento\n\n• Cancelamentos ou remarcações devem ser feitos com no mínimo 24 horas de antecedência.\n• Em caso de atraso, o atendimento poderá ser reduzido ou cancelado, respeitando o tempo da agenda.\n• Em situações excepcionais, cada caso será avaliado com carinho.`}
+                      {activeGeneral.termsText || DEFAULT_TERMS_OF_USE}
                       {activeGeneral.requirePrepayment !== false && (
                         <span className="font-bold block mt-3">
                           • A taxa de sinal não é reembolsável em casos de cancelamento fora do prazo ou não comparecimento.
+                          <br />• O não comparecimento sem aviso implica na perda do sinal.
                         </span>
                       )}
                     </div>
@@ -1138,7 +1140,13 @@ export function ClientAgendarView({ org }: { org: any }) {
                 <div className="px-4 text-left">
                   <p className="text-xs font-bold uppercase tracking-wider opacity-60 mb-2">Lembrete</p>
                   <div className="text-xs p-4 rounded-full border bg-muted/30 overflow-y-auto max-h-32 whitespace-pre-wrap leading-relaxed opacity-80">
-                    {activeGeneral.termsText || `Política de Cancelamento\n\n• Cancelamentos ou remarcações devem ser feitos com no mínimo 24 horas de antecedência.\n• A taxa de sinal não é reembolsável em casos de cancelamento fora do prazo ou não comparecimento.\n• Em caso de atraso, o atendimento poderá ser reduzido ou cancelado, respeitando o tempo da agenda.\n• O não comparecimento sem aviso implica na perda do sinal.\n• Em situações excepcionais, cada caso será avaliado com carinho.`}
+                    {activeGeneral.termsText || DEFAULT_TERMS_OF_USE}
+                    {activeGeneral.requirePrepayment !== false && (
+                      <span className="font-bold block mt-3">
+                        • A taxa de sinal não é reembolsável em casos de cancelamento fora do prazo ou não comparecimento.
+                        <br />• O não comparecimento sem aviso implica na perda do sinal.
+                      </span>
+                    )}
                   </div>
                 </div>
 

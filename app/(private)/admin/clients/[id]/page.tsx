@@ -62,10 +62,10 @@ export default function ClientDetailPage({
       <>
         <AdminHeader title="Perfil do Cliente" />
         <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full">
-          <Skeleton className="h-10 w-32 rounded-full" />
+          <Skeleton className="h-10 w-32 rounded-2xl" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Skeleton className="h-100 md:col-span-2 rounded-full" />
-            <Skeleton className="h-100 md:col-span-1 rounded-full" />
+            <Skeleton className="h-100 md:col-span-2 rounded-2xl" />
+            <Skeleton className="h-100 md:col-span-1 rounded-2xl" />
           </div>
         </div>
       </>
@@ -112,7 +112,7 @@ export default function ClientDetailPage({
       <button
         onClick={scrollToTop}
         className={cn(
-          "fixed bottom-24 md:bottom-8 right-4 md:right-8 p-3.5 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 z-50",
+          "fixed bottom-24 md:bottom-8 right-4 md:right-8 p-3.5 rounded-2xl bg-primary text-primary-foreground shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 z-50",
           showScrollTop
             ? "translate-y-0 opacity-100"
             : "translate-y-10 opacity-0 pointer-events-none",

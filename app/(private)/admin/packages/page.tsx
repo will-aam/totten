@@ -25,6 +25,7 @@ import {
   ChevronRight,
   Search,
   Plus,
+  Calendar,
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { PackageDetailsModal } from "./_components/package-details-modal";
@@ -59,23 +60,40 @@ function KpiCard({
   icon: Icon,
   className,
   loading,
+  onClick,
 }: any) {
   return (
     <Card
+      onClick={onClick}
       className={cn(
-        "border-border shadow-sm flex flex-col justify-between active:scale-95 transition-transform duration-200",
+        "relative overflow-hidden border border-border/50 shadow-md bg-card flex flex-col justify-between transition-all rounded-2xl dark:border-white/10 dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]",
+        onClick ? "cursor-pointer active:scale-95" : "",
         className,
       )}
     >
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
+      <Icon
+        aria-hidden="true"
+        pack="filled"
+        width={70}
+        height={70}
+        rotate={-10}
+        className="pointer-events-none absolute -right-1 top-1/2 -translate-y-1/2 text-foreground/5"
+      />
+      <Icon
+        aria-hidden="true"
+        pack="filled"
+        width={34}
+        height={34}
+        rotate={20}
+        className="pointer-events-none absolute right-9 -bottom-3 text-foreground/5"
+      />
+
+      <CardHeader className="relative z-10 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
         </CardTitle>
-        <div className="p-2 bg-primary/10 rounded-full">
-          <Icon size="sm" className="text-primary" />
-        </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="relative z-10">
         {loading ? (
           <LoaderDots size="sm" className="text-primary/20" />
         ) : (
@@ -167,9 +185,25 @@ function PackageListItem({ pkg, onOpenDetails, onManualCheckIn }: any) {
               </span>
             )}
           </span>
-          <span className="text-[11px] text-muted-foreground truncate uppercase font-medium">
-            {pkg.packageName}
-          </span>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 mt-0.5 gap-1">
+            <span className="text-[11px] text-muted-foreground truncate uppercase font-medium">
+              {pkg.packageName}
+            </span>
+            {pkg.expiresAt && (
+              <span
+                className={cn(
+                  "text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm flex items-center gap-1 shrink-0",
+                  pkg.isExpired
+                    ? "bg-destructive/10 text-destructive font-bold"
+                    : "bg-muted text-muted-foreground",
+                )}
+              >
+                {pkg.isExpired
+                  ? "Vencido"
+                  : `Vence em ${new Date(pkg.expiresAt).toLocaleDateString("pt-BR")}`}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -246,6 +280,7 @@ function PackagesPageContent() {
   const [kpis, setKpis] = useState({
     active: 0,
     endingSoon: 0,
+    expiringSoon: 0,
     totalPending: 0,
   });
   const [loading, setLoading] = useState(true);
@@ -280,7 +315,7 @@ function PackagesPageContent() {
 
     if (result.success) {
       setPackages(result.packages || []);
-      setKpis(result.kpis || { active: 0, endingSoon: 0, totalPending: 0 });
+      setKpis(result.kpis || { active: 0, endingSoon: 0, expiringSoon: 0, totalPending: 0 });
       setTotalPages(result.totalPages || 1);
     }
     setLoading(false);
@@ -368,22 +403,33 @@ function PackagesPageContent() {
       <AdminHeader title="Pacotes" />
 
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
-        <div className="flex overflow-x-auto pb-4 -mx-4 px-4 gap-4 md:grid md:grid-cols-3 scrollbar-hide">
+        <div className="flex overflow-x-auto pb-4 -mx-4 px-4 gap-4 md:grid md:grid-cols-4 scrollbar-hide">
           <KpiCard
             title="Pacotes Ativos"
             value={kpis.active}
             description="Em andamento"
             icon={Group}
             loading={loading}
-            className="min-w-[85vw] md:min-w-0"
+            onClick={() => setSearch("")}
+            className="min-w-[80vw] md:min-w-0"
           />
           <KpiCard
-            title="Próximos do Fim"
+            title="Sessões no Fim"
             value={kpis.endingSoon}
             description="Saldo crítico"
             icon={AlertTriangle}
             loading={loading}
-            className="min-w-[85vw] md:min-w-0"
+            onClick={() => setSearch("...")}
+            className="min-w-[80vw] md:min-w-0"
+          />
+          <KpiCard
+            title="Prazo no Fim"
+            value={kpis.expiringSoon}
+            description="Vence em < 7 dias"
+            icon={Calendar}
+            loading={loading}
+            onClick={() => setSearch("expiring")}
+            className="min-w-[80vw] md:min-w-0"
           />
           <KpiCard
             title="Total Pendente"
@@ -391,7 +437,7 @@ function PackagesPageContent() {
             description="Sessões a realizar"
             icon={CalendarDetail}
             loading={loading}
-            className="min-w-[85vw] md:min-w-0"
+            className="min-w-[80vw] md:min-w-0"
           />
         </div>
 
@@ -399,19 +445,13 @@ function PackagesPageContent() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por cliente (mín. 3 letras)..."
-              className="pl-9 h-12 bg-background border-none shadow-sm focus-visible:ring-primary/20"
+              placeholder="Buscar por cliente..."
+              className="pl-9 h-12 bg-background border-none shadow-sm focus-visible:ring-primary/20 rounded-full"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Button
-            onClick={() => router.push("/admin/clients")}
-            className="h-12 px-8 font-medium shadow-sm"
-          >
-            <Plus className="h-5 w-5 md:mr-2" />
-            <span className="hidden md:inline">Nova Venda</span>
-          </Button>
+
         </div>
 
         <Card className="border-none shadow-none bg-transparent md:bg-card md:border md:shadow-sm rounded-4xl overflow-hidden">

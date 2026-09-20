@@ -6,6 +6,7 @@ import { useFieldArray, useForm } from "react-hook-form";
 import * as z from "zod";
 import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { DEFAULT_TERMS_OF_USE } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -75,6 +76,7 @@ const settingsSchema = z.object({
   closingTime: z.string().optional(),
   scheduleGenerationType: z.string().optional(),
   allowOverLimitAppointments: z.boolean().default(false),
+  termsOfUse: z.string().optional(),
 });
 
 const scheduleRuleSchema = z.object({
@@ -337,7 +339,7 @@ function MobileWeeklySchedule({ form }: { form: any }) {
                 type="button"
                 onClick={() => toggleDay(day.id)}
                 className={cn(
-                  "flex h-12 flex-1 items-center justify-center rounded-full border text-sm font-medium transition-all min-w-[3.5rem] px-2",
+                  "flex h-12 flex-1 items-center justify-center rounded-2xl border text-sm font-medium transition-all min-w-[3.5rem] px-2",
                   isSelected
                     ? "bg-primary text-primary-foreground border-primary shadow-sm"
                     : "bg-background text-muted-foreground border-border hover:bg-muted"
@@ -588,7 +590,7 @@ function ScheduleRuleEditor({
                   {exceptionFields.map((field, index) => {
                     const isOpen = form.watch(`exceptions.${index}.isOpen`);
                     return (
-                      <div key={field.id} className="p-4 rounded-full border bg-card">
+                      <div key={field.id} className="p-4 rounded-2xl border bg-card">
                         <div className="flex items-center justify-between gap-4">
                           <div className="flex flex-wrap items-center gap-4">
                             <FormField
@@ -665,6 +667,7 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
       closingTime: initialData?.closingTime || "19:00",
       scheduleGenerationType: initialData?.scheduleGenerationType || "fixed_30",
       allowOverLimitAppointments: initialData?.allowOverLimitAppointments ?? false,
+      termsOfUse: initialData?.termsOfUse || DEFAULT_TERMS_OF_USE,
     },
   });
 
@@ -677,6 +680,7 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
         closingTime: data.closingTime,
         scheduleGenerationType: data.scheduleGenerationType,
         allowOverLimitAppointments: data.allowOverLimitAppointments,
+        termsOfUse: data.termsOfUse,
       } as any);
 
       if (!response.success) {
@@ -728,7 +732,7 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
           {scheduleRules.map((rule: any) => (
             <div
               key={rule.id}
-              className="flex items-center justify-between p-4 rounded-full border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
+              className="flex items-center justify-between p-4 rounded-2xl border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
               onClick={() => {
                 setSelectedRule(rule);
                 setIsEditorOpen(true);
@@ -742,7 +746,7 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
                   <h4 className="font-semibold flex items-center gap-2">
                     {rule.name}
                     {rule.isDefault && (
-                      <span className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-500 px-2 py-0.5 rounded-full">
+                      <span className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-500 px-2 py-0.5 rounded-2xl">
                         <Star className="w-3 h-3" /> Padrão
                       </span>
                     )}
@@ -878,7 +882,7 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
                 control={form.control}
                 name="allowOverLimitAppointments"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-full border p-4 shadow-sm bg-card">
+                  <FormItem className="flex flex-row items-center justify-between rounded-2xl border p-4 shadow-sm bg-card">
                     <div className="space-y-0.5">
                       <FormLabel className="text-base font-bold">
                         Permitir agendamentos além do horário de fechamento
@@ -891,6 +895,42 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
                       <Switch
                         checked={field.value}
                         onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="termsOfUse"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col gap-3 p-4 rounded-2xl border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800/40 border-l-4 border-l-red-500">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <FormLabel className="text-foreground font-semibold">Termos de Uso e Política de Cancelamento</FormLabel>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/40 px-2 py-0.5 rounded-2xl">Obrigatório</span>
+                      </div>
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                        <CardDescription className="text-xs text-muted-foreground">
+                          Texto que aparece na área do cliente e é exigido aceite para usar o site.
+                        </CardDescription>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => form.setValue("termsOfUse", DEFAULT_TERMS_OF_USE)}
+                          className="h-7 text-[10px] font-bold bg-muted/50 hover:bg-muted"
+                        >
+                          Restaurar Padrão
+                        </Button>
+                      </div>
+                    </div>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        className="resize-none h-48 bg-white dark:bg-black/20"
+                        placeholder="Insira os termos de uso e políticas de cancelamento..."
                       />
                     </FormControl>
                   </FormItem>

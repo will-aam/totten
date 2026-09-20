@@ -37,17 +37,17 @@ export function ProfileSettings({ data, onChange }: any) {
                   key={option.id}
                   onClick={() => onChange({ ...data, layout: option.id })}
                   className={cn(
-                    "cursor-pointer border rounded-full p-4 flex items-center gap-4 transition-all",
+                    "cursor-pointer border rounded-2xl p-4 flex items-center gap-4 transition-all",
                     isSelected
                       ? "border-primary bg-primary/5"
                       : "border-border/50 bg-card hover:bg-muted/50"
                   )}
                 >
                   <div className={cn(
-                    "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
+                    "w-5 h-5 rounded-2xl border-2 flex items-center justify-center shrink-0 transition-all",
                     isSelected ? "border-primary" : "border-muted-foreground/30"
                   )}>
-                    {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                    {isSelected && <div className="w-2.5 h-2.5 rounded-2xl bg-primary" />}
                   </div>
                   <div className="flex flex-col">
                     <span className={cn("text-sm font-medium", isSelected ? "text-primary" : "text-foreground")}>

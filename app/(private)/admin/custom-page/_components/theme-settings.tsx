@@ -132,7 +132,7 @@ export function ThemeSettings({ data, onChange }: any) {
                 key={theme.id}
                 onClick={() => handleThemeChange(theme)}
                 className={cn(
-                  "relative flex flex-col items-center gap-2 rounded-full border-2 p-2 transition-all outline-none shrink-0 w-[120px] sm:w-auto",
+                  "relative flex flex-col items-center gap-2 rounded-2xl border-2 p-2 transition-all outline-none shrink-0 w-[120px] sm:w-auto",
                   data.id === theme.id
                     ? "border-primary bg-primary/5"
                     : "border-border/50 bg-card hover:border-primary/50",
@@ -153,7 +153,7 @@ export function ThemeSettings({ data, onChange }: any) {
                 >
                   {data.id === theme.id && (
                     <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
-                      <div className="bg-background/80 backdrop-blur-sm rounded-full p-1 shadow-sm">
+                      <div className="bg-background/80 backdrop-blur-sm rounded-2xl p-1 shadow-sm">
                         <Check className="h-4 w-4 text-foreground" />
                       </div>
                     </div>
@@ -169,7 +169,7 @@ export function ThemeSettings({ data, onChange }: any) {
             <button
               onClick={setCustomTheme}
               className={cn(
-                "relative flex flex-col items-center gap-2 rounded-full border-2 p-2 transition-all outline-none shrink-0 w-[120px] sm:w-auto",
+                "relative flex flex-col items-center gap-2 rounded-2xl border-2 p-2 transition-all outline-none shrink-0 w-[120px] sm:w-auto",
                 data.id === "custom"
                   ? "border-primary bg-primary/5"
                   : "border-border/50 bg-card hover:border-primary/50",
@@ -189,7 +189,7 @@ export function ThemeSettings({ data, onChange }: any) {
                 )}
                 {data.id === "custom" && (
                   <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                    <div className="bg-background/80 backdrop-blur-sm rounded-full p-1 shadow-sm">
+                    <div className="bg-background/80 backdrop-blur-sm rounded-2xl p-1 shadow-sm">
                       <Check className="h-4 w-4 text-foreground" />
                     </div>
                   </div>
@@ -244,22 +244,22 @@ export function ThemeSettings({ data, onChange }: any) {
                 <div
                   onClick={() => onChange({ ...data, bgNoise: !data.bgNoise })}
                   className={cn(
-                    "flex items-center gap-3 bg-card hover:bg-muted/50 p-4 rounded-full border transition-all cursor-pointer shadow-sm",
+                    "flex items-center gap-3 bg-card hover:bg-muted/50 p-4 rounded-2xl border transition-all cursor-pointer shadow-sm",
                     data.bgNoise ? "border-primary bg-primary/5" : "border-border/50"
                   )}
                 >
                   <div className={cn(
-                    "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
+                    "w-5 h-5 rounded-2xl border-2 flex items-center justify-center shrink-0 transition-all",
                     data.bgNoise ? "border-primary" : "border-muted-foreground/30"
                   )}>
-                    {data.bgNoise && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                    {data.bgNoise && <div className="w-2.5 h-2.5 rounded-2xl bg-primary" />}
                   </div>
                   <Label className="text-sm font-medium cursor-pointer pointer-events-none">
                     Textura Granulada
                   </Label>
                 </div>
 
-                <div className="flex flex-col gap-3 bg-card p-4 rounded-full border border-border/50 shadow-sm">
+                <div className="flex flex-col gap-3 bg-card p-4 rounded-2xl border border-border/50 shadow-sm">
                   <Label className="text-sm font-medium">Intensidade do Borrão (Blur)</Label>
                   <Select
                     value={data.bgBlur === true ? "3xl" : (data.bgBlur || "none")}
@@ -330,7 +330,7 @@ export function ThemeSettings({ data, onChange }: any) {
               <Label className="text-xs text-muted-foreground">Cores</Label>
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <div className="relative h-10 w-10 rounded-full overflow-hidden border-2 border-border/50 shadow-sm cursor-pointer hover:scale-110 transition-transform">
+                  <div className="relative h-10 w-10 rounded-2xl overflow-hidden border-2 border-border/50 shadow-sm cursor-pointer hover:scale-110 transition-transform">
                     <input
                       type="color"
                       value={data.color || "#ffffff"}
@@ -343,7 +343,7 @@ export function ThemeSettings({ data, onChange }: any) {
 
                 {(data.bgStyle || "solid") === "gradient" && (
                   <div className="flex items-center gap-2">
-                    <div className="relative h-10 w-10 rounded-full overflow-hidden border-2 border-border/50 shadow-sm cursor-pointer hover:scale-110 transition-transform">
+                    <div className="relative h-10 w-10 rounded-2xl overflow-hidden border-2 border-border/50 shadow-sm cursor-pointer hover:scale-110 transition-transform">
                       <input
                         type="color"
                         value={data.bgGradientColor2 || "#000000"}
@@ -365,22 +365,22 @@ export function ThemeSettings({ data, onChange }: any) {
                 <div
                   onClick={() => onChange({ ...data, bgNoise: !data.bgNoise })}
                   className={cn(
-                    "flex items-center gap-3 bg-card hover:bg-muted/50 p-4 rounded-full border transition-all cursor-pointer shadow-sm",
+                    "flex items-center gap-3 bg-card hover:bg-muted/50 p-4 rounded-2xl border transition-all cursor-pointer shadow-sm",
                     data.bgNoise ? "border-primary bg-primary/5" : "border-border/50"
                   )}
                 >
                   <div className={cn(
-                    "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
+                    "w-5 h-5 rounded-2xl border-2 flex items-center justify-center shrink-0 transition-all",
                     data.bgNoise ? "border-primary" : "border-muted-foreground/30"
                   )}>
-                    {data.bgNoise && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                    {data.bgNoise && <div className="w-2.5 h-2.5 rounded-2xl bg-primary" />}
                   </div>
                   <Label className="text-sm font-medium cursor-pointer pointer-events-none">
                     Textura Granulada
                   </Label>
                 </div>
 
-                <div className="flex flex-col gap-3 bg-card p-4 rounded-full border border-border/50 shadow-sm">
+                <div className="flex flex-col gap-3 bg-card p-4 rounded-2xl border border-border/50 shadow-sm">
                   <Label className="text-sm font-medium">Intensidade do Borrão (Blur)</Label>
                   <Select
                     value={data.bgBlur === true ? "3xl" : (data.bgBlur || "none")}
@@ -413,7 +413,7 @@ export function ThemeSettings({ data, onChange }: any) {
                 2.4 Cor do Texto Geral
               </Label>
               <div className="flex items-center gap-2">
-                <div className="relative h-8 w-8 rounded-full overflow-hidden border border-border/50 shadow-sm cursor-pointer">
+                <div className="relative h-8 w-8 rounded-2xl overflow-hidden border border-border/50 shadow-sm cursor-pointer">
                   <input
                     type="color"
                     value={data.textColor}
@@ -506,7 +506,7 @@ export function ThemeSettings({ data, onChange }: any) {
                   {(data.buttonStyle || "solid") === "outline" ? "Cor do Contorno" : "Cor do Botão"}
                 </Label>
                 <div className="flex items-center gap-2">
-                  <div className="relative h-8 w-8 rounded-full overflow-hidden border border-border/50 shadow-sm cursor-pointer">
+                  <div className="relative h-8 w-8 rounded-2xl overflow-hidden border border-border/50 shadow-sm cursor-pointer">
                     <input
                       type="color"
                       value={data.buttonBg || "#ffffff"}
@@ -525,7 +525,7 @@ export function ThemeSettings({ data, onChange }: any) {
             <div className="flex flex-col gap-2">
               <Label className="text-xs text-muted-foreground">Cor do Texto</Label>
               <div className="flex items-center gap-2">
-                <div className="relative h-8 w-8 rounded-full overflow-hidden border border-border/50 shadow-sm cursor-pointer">
+                <div className="relative h-8 w-8 rounded-2xl overflow-hidden border border-border/50 shadow-sm cursor-pointer">
                   <input
                     type="color"
                     value={data.buttonText || "#000000"}
@@ -544,7 +544,7 @@ export function ThemeSettings({ data, onChange }: any) {
               <div className="flex flex-col gap-2">
                 <Label className="text-xs text-muted-foreground">Cor da Sombra</Label>
                 <div className="flex items-center gap-2">
-                  <div className="relative h-8 w-8 rounded-full overflow-hidden border border-border/50 shadow-sm cursor-pointer">
+                  <div className="relative h-8 w-8 rounded-2xl overflow-hidden border border-border/50 shadow-sm cursor-pointer">
                     <input
                       type="color"
                       value={data.buttonShadowColor || "#000000"}

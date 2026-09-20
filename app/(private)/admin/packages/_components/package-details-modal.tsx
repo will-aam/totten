@@ -13,6 +13,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Calendar as CalendarUI } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,7 +31,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-  Calendar,
+  Calendar as CalendarIcon,
   CheckCircle,
   History,
   RotateCcw,
@@ -35,6 +41,7 @@ import {
   AlertTriangle,
   RefreshCwAlt,
   Trash,
+  CalendarDetail,
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 // Importamos a nova Server Action aqui:
@@ -72,6 +79,10 @@ export function PackageDetailsModal({
   // Estados para o Dialog de Exclusão customizado
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [apptToDelete, setApptToDelete] = useState<string | null>(null);
+
+  // Estados para o Dialog de Prorrogação (VISUAL)
+  const [isProrrogarDialogOpen, setIsProrrogarDialogOpen] = useState(false);
+  const [newExpirationDate, setNewExpirationDate] = useState<Date | undefined>(undefined);
 
   const loadHistory = async () => {
     if (!packageData?.id) return;
@@ -186,6 +197,18 @@ export function PackageDetailsModal({
     }
   };
 
+  const handleProrrogar = () => {
+    if (!newExpirationDate) {
+      toast({ title: "Selecione uma data", variant: "destructive" });
+      return;
+    }
+    toast({
+      title: "Data Prorrogada (Visual)",
+      description: `O pacote foi estendido até ${format(newExpirationDate, "dd/MM/yyyy")}.`,
+    });
+    setIsProrrogarDialogOpen(false);
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-md flex flex-col p-0 gap-0 border-none shadow-2xl bg-background">
@@ -207,9 +230,88 @@ export function PackageDetailsModal({
               </Badge>
             )}
           </SheetTitle>
-          <SheetDescription className="text-sm font-bold text-muted-foreground uppercase tracking-tight">
-            {packageData.packageName}
-          </SheetDescription>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mt-1">
+            <SheetDescription className="text-sm font-bold text-muted-foreground uppercase tracking-tight">
+              {packageData.packageName}
+            </SheetDescription>
+            {packageData.expiresAt && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span
+                  className={cn(
+                    "text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md",
+                    packageData.isExpired
+                      ? "bg-destructive/10 text-destructive"
+                      : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {packageData.isExpired
+                    ? "Vencido"
+                    : `Válido até ${new Date(packageData.expiresAt).toLocaleDateString("pt-BR")}`}
+                </span>
+                {packageData.active && (
+                  <AlertDialog
+                    open={isProrrogarDialogOpen}
+                    onOpenChange={setIsProrrogarDialogOpen}
+                  >
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-6 text-[9px] px-2 font-bold uppercase tracking-wider border-primary/20 text-primary hover:bg-primary/10"
+                      >
+                        Prorrogar
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="rounded-4xl">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Prorrogar Validade</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Selecione a nova data limite para o uso deste pacote. Essa ação ficará registrada no histórico.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <div className="py-4">
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 block">
+                          Nova Data Limite
+                        </label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-medium bg-card border-border/50 h-12 rounded-2xl shadow-sm hover:bg-muted/50 transition-colors",
+                                !newExpirationDate && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarDetail className="mr-2 h-4 w-4 text-primary" />
+                              {newExpirationDate ? format(newExpirationDate, "dd/MM/yy") : "Selecione a data"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            className="w-auto p-0 rounded-3xl border-none shadow-2xl"
+                            align="start"
+                          >
+                            <CalendarUI
+                              mode="single"
+                              selected={newExpirationDate}
+                              onSelect={setNewExpirationDate}
+                              initialFocus
+                              locale={ptBR}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleProrrogar}>
+                          Salvar Alteração
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
+            )}
+          </div>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-8 space-y-8 scrollbar-hide">
@@ -261,7 +363,7 @@ export function PackageDetailsModal({
           >
             <div className="flex items-center justify-between ml-1">
               <h3 className="font-black text-xs uppercase tracking-widest flex items-center gap-2 text-muted-foreground">
-                <Calendar className="h-4 w-4" /> Cronograma
+                <CalendarIcon className="h-4 w-4" /> Cronograma
               </h3>
 
               {packageData.active && (

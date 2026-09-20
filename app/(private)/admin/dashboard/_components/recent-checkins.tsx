@@ -130,7 +130,7 @@ export function RecentCheckIns() {
             </div>
           ) : isEmpty ? (
             <div className="flex flex-col items-center justify-center py-12 text-center opacity-60">
-              <img width="48" height="48" src="https://img.icons8.com/parakeet/48/question.png" alt="question"/> 
+              <img width="48" height="48" src="https://img.icons8.com/parakeet/48/question.png" alt="question" />
               <p className="mt-4 text-xs font-medium">
                 Nenhum check-in registrado hoje.
               </p>

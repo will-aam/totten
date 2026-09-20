@@ -31,9 +31,17 @@ import {
   CarouselContent,
   CarouselItem,
 } from "@/components/ui/carousel";
-import { Package, Plus, LoaderDots, Archive, Calendar } from "@boxicons/react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar as CalendarUI } from "@/components/ui/calendar";
+import { Package, Plus, LoaderDots, Archive, Calendar as CalendarIcon, CalendarDetail } from "@boxicons/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 //  CORREÇÃO: Importando exatamente o nome exportado na Action
 import { archivePackage, createPackageAction } from "@/app/actions/packages";
@@ -49,6 +57,8 @@ export type PackageType = {
   active: boolean;
   sessionDates?: string[];
   created_at?: string;
+  expiresAt?: string;
+  isExpired?: boolean;
 };
 
 interface ClientPackageProps {
@@ -72,6 +82,11 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
 
   const [api, setApi] = useState<any>();
   const [current, setCurrent] = useState(0);
+
+  // Estados para o Dialog de Prorrogação (VISUAL)
+  const [isProrrogarDialogOpen, setIsProrrogarDialogOpen] = useState(false);
+  const [pkgToProrrogar, setPkgToProrrogar] = useState<PackageType | null>(null);
+  const [newExpirationDate, setNewExpirationDate] = useState<Date | undefined>(undefined);
 
   useEffect(() => {
     if (!api) return;
@@ -102,6 +117,17 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
     }
   };
 
+  const handleProrrogar = () => {
+    if (!newExpirationDate) {
+      toast.error("Selecione uma data limite");
+      return;
+    }
+    toast.success(`O pacote foi estendido até ${format(newExpirationDate, "dd/MM/yyyy")}.`);
+    setIsProrrogarDialogOpen(false);
+    setPkgToProrrogar(null);
+    setNewExpirationDate(undefined);
+  };
+
   const renderPackageInfo = (pkg: PackageType) => {
     const progress = Math.round((pkg.used_sessions / pkg.total_sessions) * 100);
     return (
@@ -111,12 +137,41 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
             {pkg.name}
           </span>
           <span className="text-[11px] text-muted-foreground font-medium flex items-center gap-1.5 mt-0.5">
-            <Calendar className="h-3.5 w-3.5" />
+            <CalendarIcon className="h-3.5 w-3.5" />
             Início do ciclo:{" "}
             {pkg.created_at
               ? new Date(pkg.created_at).toLocaleDateString("pt-BR")
               : "--/--/----"}
           </span>
+          {pkg.expiresAt && (
+            <div className="flex items-center gap-2 mt-2">
+              <span
+                className={cn(
+                  "text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md",
+                  pkg.isExpired
+                    ? "bg-destructive/10 text-destructive"
+                    : "bg-muted text-muted-foreground"
+                )}
+              >
+                {pkg.isExpired
+                  ? "Vencido"
+                  : `Válido até ${new Date(pkg.expiresAt).toLocaleDateString("pt-BR")}`}
+              </span>
+              {pkg.active && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-6 text-[9px] px-2 font-bold uppercase tracking-wider border-primary/20 text-primary hover:bg-primary/10"
+                  onClick={() => {
+                    setPkgToProrrogar(pkg);
+                    setIsProrrogarDialogOpen(true);
+                  }}
+                >
+                  Prorrogar
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-1">
@@ -296,6 +351,57 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
         clientId={clientId}
         onCreated={() => mutate(packageCacheKey)}
       />
+
+      {/* Dialog de Prorrogação (VISUAL) */}
+      <Dialog open={isProrrogarDialogOpen} onOpenChange={setIsProrrogarDialogOpen}>
+        <DialogContent className="sm:max-w-[425px] rounded-4xl">
+          <DialogHeader>
+            <DialogTitle>Prorrogar Validade</DialogTitle>
+            <DialogDescription>
+              Selecione a nova data limite para o uso deste pacote. Essa ação ficará registrada no histórico.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 block">
+              Nova Data Limite
+            </Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-medium bg-card border-border/50 h-12 rounded-2xl shadow-sm hover:bg-muted/50 transition-colors",
+                    !newExpirationDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarDetail className="mr-2 h-4 w-4 text-primary" />
+                  {newExpirationDate ? format(newExpirationDate, "dd/MM/yy") : "Selecione a data"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-auto p-0 rounded-3xl border-none shadow-2xl"
+                align="start"
+              >
+                <CalendarUI
+                  mode="single"
+                  selected={newExpirationDate}
+                  onSelect={setNewExpirationDate}
+                  initialFocus
+                  locale={ptBR}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsProrrogarDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleProrrogar}>
+              Salvar Alteração
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

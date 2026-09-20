@@ -1,6 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
+import { DEFAULT_TERMS_OF_USE } from "@/lib/constants";
 
 import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -26,7 +27,7 @@ export function BookingSiteView({ profile }: { profile?: any }) {
 
         setGeneral({
           requirePrepayment: res.data.requirePrepayment ?? true,
-          termsText: res.data.termsOfUse || "Política de Cancelamento\n\n• Cancelamentos ou remarcações devem ser feitos com no mínimo 24 horas de antecedência.\n• Em caso de atraso, o atendimento poderá ser reduzido ou cancelado, respeitando o tempo da agenda.\n• Em situações excepcionais, cada caso será avaliado com carinho.",
+          termsText: res.data.termsOfUse || DEFAULT_TERMS_OF_USE,
           pixKey: res.data.pixKey || "",
           paymentInstructions: res.data.paymentInstructions || "Agendamento confirmado com sucesso!\n\nRecebi seu pagamento e seu horário está oficialmente reservado.\n\nPeço, por gentileza, que chegue no horário agendado. Para manter a organização da agenda e não prejudicar os atendimentos seguintes, não tolero atrasos.\n\nEm caso de atraso, o atendimento poderá ser reduzido, remarcado ou cancelado, conforme a disponibilidade do dia.\n\nAgradeço pela compreensão e estou ansiosa para atender você!",
         });
@@ -43,7 +44,7 @@ export function BookingSiteView({ profile }: { profile?: any }) {
 
   const [general, setGeneral] = useState({
     requirePrepayment: true,
-    termsText: "Política de Cancelamento\n\n• Cancelamentos ou remarcações devem ser feitos com no mínimo 24 horas de antecedência.\n• Em caso de atraso, o atendimento poderá ser reduzido ou cancelado, respeitando o tempo da agenda.\n• Em situações excepcionais, cada caso será avaliado com carinho.",
+    termsText: DEFAULT_TERMS_OF_USE,
     pixKey: "",
     paymentInstructions:
       "Agendamento confirmado com sucesso!\n\nRecebi seu pagamento e seu horário está oficialmente reservado.\n\nPeço, por gentileza, que chegue no horário agendado. Para manter a organização da agenda e não prejudicar os atendimentos seguintes, não tolero atrasos.\n\nEm caso de atraso, o atendimento poderá ser reduzido, remarcado ou cancelado, conforme a disponibilidade do dia.\n\nAgradeço pela compreensão e estou ansiosa para atender você!",
@@ -122,21 +123,31 @@ export function BookingSiteView({ profile }: { profile?: any }) {
 
           {/* Política de Cancelamento */}
           <div className="flex flex-col gap-3 pt-0">
-            <div className="flex flex-col gap-3 p-4 rounded-full border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800/40 border-l-4 border-l-red-500">
+            <div className="flex flex-col gap-3 p-4 rounded-2xl border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800/40 border-l-4 border-l-red-500">
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <Label className="text-foreground font-semibold">Política de Cancelamento</Label>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/40 px-2 py-0.5 rounded-full">Obrigatório</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/40 px-2 py-0.5 rounded-2xl">Obrigatório</span>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Texto que aparece acima do botão final de confirmar agendamento.
-                </p>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                  <p className="text-xs text-muted-foreground">
+                    Texto que aparece acima do botão final de confirmar agendamento.
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setGeneral({ ...general, termsText: DEFAULT_TERMS_OF_USE })}
+                    className="h-7 text-[10px] font-bold bg-muted/50 hover:bg-muted"
+                  >
+                    Restaurar Padrão
+                  </Button>
+                </div>
               </div>
               <Textarea
                 value={general.termsText}
                 onChange={(e) => setGeneral({ ...general, termsText: e.target.value })}
                 className="resize-none h-48 bg-white dark:bg-black/20"
-                placeholder={`Política de Cancelamento\n\n• Cancelamentos ou remarcações devem ser feitos com no mínimo 24 horas de antecedência.\n• A taxa de sinal não é reembolsável em casos de cancelamento fora do prazo ou não comparecimento.\n• Em caso de atraso, o atendimento poderá ser reduzido ou cancelado, respeitando o tempo da agenda.\n• O não comparecimento sem aviso implica na perda do sinal.\n• Em situações excepcionais, cada caso será avaliado com carinho.`}
+                placeholder={DEFAULT_TERMS_OF_USE}
               />
             </div>
           </div>
@@ -192,7 +203,7 @@ export function BookingSiteView({ profile }: { profile?: any }) {
           </div>
 
           <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between p-4 border rounded-full bg-card shadow-sm">
+            <div className="flex items-center justify-between p-4 border rounded-2xl bg-card shadow-sm">
               <div className="flex flex-col">
                 <Label className="font-semibold">Mostrar &quot;Pacotes&quot;</Label>
                 <span className="text-xs text-muted-foreground mt-0.5">Exibe combos promocionais.</span>
@@ -203,7 +214,7 @@ export function BookingSiteView({ profile }: { profile?: any }) {
               />
             </div>
 
-            <div className="flex items-center justify-between p-4 border rounded-full bg-card shadow-sm">
+            <div className="flex items-center justify-between p-4 border rounded-2xl bg-card shadow-sm">
               <div className="flex flex-col">
                 <Label className="font-semibold">Mostrar &quot;Mais Agendados&quot;</Label>
                 <span className="text-xs text-muted-foreground mt-0.5">Destaca os serviços populares.</span>
@@ -214,7 +225,7 @@ export function BookingSiteView({ profile }: { profile?: any }) {
               />
             </div>
 
-            <div className="flex items-center justify-between p-4 border rounded-full bg-card shadow-sm">
+            <div className="flex items-center justify-between p-4 border rounded-2xl bg-card shadow-sm">
               <div className="flex flex-col">
                 <Label className="font-semibold">Mostrar &quot;Nossa Equipe&quot;</Label>
                 <span className="text-xs text-muted-foreground mt-0.5">Exibe fotos dos profissionais.</span>
@@ -226,7 +237,7 @@ export function BookingSiteView({ profile }: { profile?: any }) {
             </div>
 
             {features.showTeam && (
-              <div className="flex items-center justify-between p-4 border rounded-full bg-muted/40 ml-5">
+              <div className="flex items-center justify-between p-4 border rounded-2xl bg-muted/40 ml-5">
                 <div className="flex flex-col">
                   <Label className="font-semibold">Mostrar Curtidas na Equipe</Label>
                   <span className="text-xs text-muted-foreground mt-0.5">Gera prova social para os profissionais.</span>

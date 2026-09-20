@@ -20,13 +20,13 @@ import { ChevronRight, ChevronLeft } from "lucide-react";
 
 const StepBadge = ({ step, required }: { step: number; required?: boolean }) => (
   <div className="flex items-center gap-2 mb-2">
-    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-sm">
+    <span className="flex items-center justify-center w-6 h-6 rounded-2xl bg-primary text-primary-foreground text-xs font-bold shadow-sm">
       {step}
     </span>
     {required ? (
-      <span className="text-[10px] uppercase font-bold text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">Obrigatório</span>
+      <span className="text-[10px] uppercase font-bold text-destructive bg-destructive/10 px-2 py-0.5 rounded-2xl">Obrigatório</span>
     ) : (
-      <span className="text-[10px] uppercase font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Opcional</span>
+      <span className="text-[10px] uppercase font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-2xl">Opcional</span>
     )}
   </div>
 );
@@ -294,7 +294,7 @@ export function GlobalSettings({
 
         <div className="flex flex-col gap-10 mt-2">
           {/* STEP 1 */}
-          <div id="step-1" className="flex flex-col gap-2 scroll-m-20 p-5 border border-border/50 rounded-full bg-card shadow-sm">
+          <div id="step-1" className="flex flex-col gap-2 scroll-m-20 p-5 border border-border/50 rounded-2xl bg-card shadow-sm">
             <StepBadge step={1} required />
             <Label htmlFor="name" className="text-foreground font-semibold text-base mb-2">
               Nome da Empresa
@@ -320,7 +320,7 @@ export function GlobalSettings({
 
           {/* STEP 3 - TIPOGRAFIA */}
           {theme && setTheme && (
-            <div id="step-3" className="flex flex-col scroll-m-20 p-5 border border-border/50 rounded-full bg-card shadow-sm">
+            <div id="step-3" className="flex flex-col scroll-m-20 p-5 border border-border/50 rounded-2xl bg-card shadow-sm">
               <StepBadge step={3} />
               <h4 className="text-base font-semibold text-foreground mb-4">Tipografia</h4>
               <div className="flex flex-col gap-3 max-w-md">
@@ -348,7 +348,7 @@ export function GlobalSettings({
 
           {/* STEP 4 - LOCALIZAÇÃO */}
           {globalLocation && setGlobalLocation && (
-            <div id="step-4" className="flex flex-col scroll-m-20 p-5 border border-border/50 rounded-full bg-card shadow-sm">
+            <div id="step-4" className="flex flex-col scroll-m-20 p-5 border border-border/50 rounded-2xl bg-card shadow-sm">
               <StepBadge step={4} />
               <h4 className="text-base font-semibold flex items-center gap-2 text-foreground mb-4">
                 Localização
@@ -369,7 +369,7 @@ export function GlobalSettings({
                 </div>
 
                 {!globalLocation.address?.trim() ? (
-                  <div className="flex flex-col gap-2 p-4 mt-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-full">
+                  <div className="flex flex-col gap-2 p-4 mt-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-2xl">
                     <p className="text-sm text-amber-800 dark:text-amber-400/90 font-medium">
                       Você ainda não definiu um endereço.
                     </p>
@@ -378,7 +378,7 @@ export function GlobalSettings({
                     </Link>
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-1 p-4 mt-2 bg-muted/20 border border-border/50 rounded-full">
+                  <div className="flex flex-col gap-1 p-4 mt-2 bg-muted/20 border border-border/50 rounded-2xl">
                     <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Endereço atual</p>
                     <p className="text-sm text-foreground mb-1">{globalLocation.address}</p>
                     <Link href="/admin/settings" className="text-[11px] font-semibold text-primary hover:underline">
@@ -393,7 +393,7 @@ export function GlobalSettings({
 
           {/* STEP 5 - HORÁRIO DE FUNCIONAMENTO */}
           {globalLocation && setGlobalLocation && (
-            <div id="step-5" className="flex flex-col scroll-m-20 p-5 border border-border/50 rounded-full bg-card shadow-sm">
+            <div id="step-5" className="flex flex-col scroll-m-20 p-5 border border-border/50 rounded-2xl bg-card shadow-sm">
               <StepBadge step={5} />
               <h4 className="text-base font-semibold flex items-center gap-2 text-foreground mb-4">
                 Horário de Funcionamento
@@ -424,12 +424,12 @@ export function GlobalSettings({
 
           {/* STEP 6 - REDES SOCIAIS */}
           {socials && setSocials && (
-            <div id="step-6" className="flex flex-col scroll-m-20 p-5 border border-border/50 rounded-full bg-card shadow-sm">
+            <div id="step-6" className="flex flex-col scroll-m-20 p-5 border border-border/50 rounded-2xl bg-card shadow-sm">
               <StepBadge step={6} />
               <h4 className="text-base font-semibold text-foreground mb-4">Redes Sociais</h4>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
-                <div className="flex flex-col gap-1.5 p-4 rounded-full border border-border/50 bg-muted/10">
+                <div className="flex flex-col gap-1.5 p-4 rounded-2xl border border-border/50 bg-muted/10">
                   <Label className="text-foreground font-medium flex items-center gap-2 text-sm">
                     <Whatsapp className="h-4 w-4 text-muted-foreground" /> WhatsApp
                   </Label>
@@ -444,14 +444,14 @@ export function GlobalSettings({
                           setGlobalContact({ ...globalContact, whatsapp: e.target.value });
                         }
                       }}
-                      className="-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
+                      className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
                       placeholder="DDD + Número"
                     />
                   </div>
                   <SocialVisibilityToggles platformId="whatsapp" socials={socials} setSocials={setSocials} hasValue={!!globalContact?.whatsapp} />
                 </div>
 
-                <div className="flex flex-col gap-1.5 p-4 rounded-full border border-border/50 bg-muted/10">
+                <div className="flex flex-col gap-1.5 p-4 rounded-2xl border border-border/50 bg-muted/10">
                   <Label className="text-foreground font-medium flex items-center gap-2 text-sm">
                     <Instagram className="h-4 w-4 text-muted-foreground" /> Instagram
                   </Label>
@@ -462,14 +462,14 @@ export function GlobalSettings({
                     <Input
                       value={socials.values.instagram || ""}
                       onChange={(e) => handleValueChange("instagram", e.target.value)}
-                      className="-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
+                      className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
                       placeholder="seuusuario"
                     />
                   </div>
                   <SocialVisibilityToggles platformId="instagram" socials={socials} setSocials={setSocials} hasValue={!!socials.values.instagram} />
                 </div>
 
-                <div className="flex flex-col gap-1.5 p-4 rounded-full border border-border/50 bg-muted/10">
+                <div className="flex flex-col gap-1.5 p-4 rounded-2xl border border-border/50 bg-muted/10">
                   <Label className="text-foreground font-medium flex items-center gap-2 text-sm">
                     <Facebook className="h-4 w-4 text-muted-foreground" /> Facebook
                   </Label>
@@ -480,14 +480,14 @@ export function GlobalSettings({
                     <Input
                       value={socials.values.facebook || ""}
                       onChange={(e) => handleValueChange("facebook", e.target.value)}
-                      className="-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
+                      className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
                       placeholder="suapagina"
                     />
                   </div>
                   <SocialVisibilityToggles platformId="facebook" socials={socials} setSocials={setSocials} hasValue={!!socials.values.facebook} />
                 </div>
 
-                <div className="flex flex-col gap-1.5 p-4 rounded-full border border-border/50 bg-muted/10">
+                <div className="flex flex-col gap-1.5 p-4 rounded-2xl border border-border/50 bg-muted/10">
                   <Label className="text-foreground font-medium flex items-center gap-2 text-sm">
                     <Youtube className="h-4 w-4 text-muted-foreground" /> YouTube
                   </Label>
@@ -498,14 +498,14 @@ export function GlobalSettings({
                     <Input
                       value={socials.values.youtube || ""}
                       onChange={(e) => handleValueChange("youtube", e.target.value)}
-                      className="-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
+                      className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
                       placeholder="seucanal"
                     />
                   </div>
                   <SocialVisibilityToggles platformId="youtube" socials={socials} setSocials={setSocials} hasValue={!!socials.values.youtube} />
                 </div>
 
-                <div className="flex flex-col gap-1.5 md:col-span-2 p-4 rounded-full border border-border/50 bg-muted/10">
+                <div className="flex flex-col gap-1.5 md:col-span-2 p-4 rounded-2xl border border-border/50 bg-muted/10">
                   <Label className="text-foreground font-medium flex items-center gap-2 text-sm">
                     <Globe className="h-4 w-4 text-muted-foreground" /> Meu Site
                   </Label>
@@ -516,7 +516,7 @@ export function GlobalSettings({
                     <Input
                       value={socials.values.website || ""}
                       onChange={(e) => handleValueChange("website", e.target.value)}
-                      className="-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
+                      className="rounded-l-none bg-background border-border/50 h-11 focus-visible:ring-1"
                       placeholder="www.seusite.com.br"
                     />
                   </div>

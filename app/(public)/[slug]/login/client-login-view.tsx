@@ -140,20 +140,20 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
             router.back();
           }
         }}
-        className="absolute top-6 left-6 p-2 rounded-full hover:bg-black/5 transition-colors"
+        className="absolute top-6 left-6 p-2 rounded-2xl hover:bg-black/5 transition-colors"
       >
         <ArrowLeft className="h-6 w-6" />
       </button>
 
-      <div className="w-full max-w-md p-8 rounded-3xl shadow-xl flex flex-col items-center text-center bg-white border border-black/5">
+      <div className="w-full max-w-md p-8 rounded-2xl shadow-xl flex flex-col items-center text-center bg-white border border-black/5">
 
-        <div className="h-16 w-16 rounded-2xl bg-black/5 flex items-center justify-center mb-6">
+        <div className="h-16 w-16  flex items-center justify-center mb-6">
           {loginMethod === "CPF_PHONE" ? (
-            <User className="h-8 w-8 opacity-70" />
+            <img width="48" height="48" src="https://img.icons8.com/parakeet/48/user-male-circle.png" alt="user-male-circle" />
           ) : step === "INPUT_EMAIL" ? (
-            <Mail className="h-8 w-8 opacity-70" />
+            <img width="48" height="48" src="https://img.icons8.com/parakeet/48/secured-letter.png" alt="secured-letter" />
           ) : (
-            <Lock className="h-8 w-8 opacity-70" />
+            <img width="48" height="48" src="https://img.icons8.com/parakeet/48/lock-2.png" alt="lock-2" />
           )}
         </div>
 
@@ -177,7 +177,7 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
                 placeholder="000.000.000-00"
                 value={cpf}
                 onChange={e => handleCpfChange(e.target.value)}
-                className="h-12 text-base rounded-full focus-visible:ring-1 bg-black/5 border-black/10"
+                className="h-12 text-base rounded-2xl focus-visible:ring-1 bg-black/5 border-black/10"
                 required
                 disabled={isLoading}
               />
@@ -191,7 +191,7 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
                 placeholder="(00) 00000-0000"
                 value={phone}
                 onChange={e => handlePhoneChange(e.target.value)}
-                className="h-12 text-base rounded-full focus-visible:ring-1 bg-black/5 border-black/10"
+                className="h-12 text-base rounded-2xl focus-visible:ring-1 bg-black/5 border-black/10"
                 required
                 disabled={isLoading}
               />
@@ -200,8 +200,7 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
             <button
               type="submit"
               disabled={isLoading || !isCpfPhoneValid}
-              className="w-full h-12 rounded-full font-bold flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 mt-2"
-              style={{ backgroundColor: theme?.primaryColor || "#0f172a", color: "#fff" }}
+              className="w-full h-12 rounded-2xl font-bold flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 mt-2 bg-slate-900 text-white"
             >
               {isLoading ? "Entrando..." : "Entrar na sua conta"} <ArrowRight className="h-5 w-5" />
             </button>
@@ -221,7 +220,7 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
                     placeholder="seu.email@exemplo.com"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
-                    className="h-12 text-base rounded-full focus-visible:ring-1 bg-black/5 border-black/10"
+                    className="h-12 text-base rounded-2xl focus-visible:ring-1 bg-black/5 border-black/10"
                     required
                     disabled={isLoading}
                   />
@@ -229,8 +228,7 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
                 <button
                   type="submit"
                   disabled={isLoading || !email.includes("@")}
-                  className="w-full h-12 rounded-full font-bold flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 mt-2"
-                  style={{ backgroundColor: theme?.primaryColor || "#0f172a", color: "#fff" }}
+                  className="w-full h-12 rounded-2xl font-bold flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 mt-2 bg-slate-900 text-white"
                 >
                   {isLoading ? "Enviando..." : "Receber Código"} <ArrowRight className="h-5 w-5" />
                 </button>
@@ -246,7 +244,7 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
                     maxLength={6}
                     value={code}
                     onChange={e => setCode(e.target.value.replace(/\D/g, ""))}
-                    className="h-12 text-center tracking-widest text-2xl font-bold rounded-full focus-visible:ring-1 bg-black/5 border-black/10"
+                    className="h-12 text-center tracking-widest text-2xl font-bold rounded-2xl focus-visible:ring-1 bg-black/5 border-black/10"
                     required
                     disabled={isLoading}
                   />
@@ -254,8 +252,7 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
                 <button
                   type="submit"
                   disabled={isLoading || code.length < 6}
-                  className="w-full h-12 rounded-full font-bold flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 mt-2"
-                  style={{ backgroundColor: theme?.primaryColor || "#0f172a", color: "#fff" }}
+                  className="w-full h-12 rounded-2xl font-bold flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 mt-2 bg-slate-900 text-white"
                 >
                   {isLoading ? "Verificando..." : "Entrar"} <ArrowRight className="h-5 w-5" />
                 </button>

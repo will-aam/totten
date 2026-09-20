@@ -62,7 +62,7 @@ export function BookingAppearanceSettings({
                 key={theme.id}
                 onClick={() => handleThemeChange(theme)}
                 className={cn(
-                  "relative flex flex-col items-center gap-2 rounded-full border-2 p-2 transition-all outline-none",
+                  "relative flex flex-col items-center gap-2 rounded-2xl border-2 p-2 transition-all outline-none",
                   bookingTheme === theme.id
                     ? "border-primary bg-primary/5"
                     : "border-border/50 bg-card hover:border-primary/50",
@@ -74,13 +74,13 @@ export function BookingAppearanceSettings({
                     theme.css,
                   )}
                 >
-                  <div className="h-2 w-1/2 rounded-full" style={{ backgroundColor: theme.txt, opacity: 0.8 }} />
-                  <div className="h-2 w-3/4 rounded-full" style={{ backgroundColor: theme.txt, opacity: 0.5 }} />
+                  <div className="h-2 w-1/2 rounded-2xl" style={{ backgroundColor: theme.txt, opacity: 0.8 }} />
+                  <div className="h-2 w-3/4 rounded-2xl" style={{ backgroundColor: theme.txt, opacity: 0.5 }} />
                   <div className="h-4 w-1/3 rounded-md mt-auto" style={{ backgroundColor: theme.primary }} />
 
                   {bookingTheme === theme.id && (
                     <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
-                      <div className="bg-background/80 backdrop-blur-sm rounded-full p-1 shadow-sm">
+                      <div className="bg-background/80 backdrop-blur-sm rounded-2xl p-1 shadow-sm">
                         <Check className="h-4 w-4 text-foreground" />
                       </div>
                     </div>

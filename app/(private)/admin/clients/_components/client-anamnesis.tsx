@@ -67,8 +67,8 @@ export function ClientAnamnesis({ clientId }: { clientId: string }) {
           </div>
         ) : responses.length === 0 ? (
           /* Estado Vazio: Limpo e integrado */
-          <div className="flex flex-col items-center justify-center py-8 text-center bg-muted/20 rounded-full border border-dashed border-border">
-            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-3">
+          <div className="flex flex-col items-center justify-center py-8 text-center bg-muted/20 rounded-3xl border border-dashed border-border">
+            <div className="h-10 w-10 rounded-2xl bg-muted flex items-center justify-center mb-3">
               <ClipboardCheck
                 className="h-5 w-5 text-muted-foreground/50"
                 strokeWidth={1.5}
@@ -98,7 +98,7 @@ export function ClientAnamnesis({ clientId }: { clientId: string }) {
                     {/* Ícone de Status (Mantido semântico: Verde/Amarelo) */}
                     <div
                       className={cn(
-                        "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border",
+                        "flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border",
                         isSigned
                           ? "bg-blue-500/10 text-blue-600 border-blue-500/20"
                           : "bg-amber-500/10 text-amber-600 border-amber-500/20",

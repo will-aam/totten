@@ -82,7 +82,7 @@ export function GlobalImagesBlock({ profile, setProfile, children }: GlobalImage
   };
 
   return (
-    <div className="flex flex-col p-5 border border-border/50 bg-card rounded-full w-full max-w-[1600px] mx-auto shadow-sm">
+    <div className="flex flex-col p-5 border border-border/50 bg-card rounded-2xl w-full max-w-[1600px] mx-auto shadow-sm">
       {children}
       <div className="flex items-center gap-2 mb-4">
         <h3 className="font-semibold text-foreground text-sm">
@@ -98,7 +98,7 @@ export function GlobalImagesBlock({ profile, setProfile, children }: GlobalImage
           {/* Avatar */}
           <div className="flex flex-col gap-3 flex-1 border border-border/50 p-4 rounded-lg bg-muted/20">
             <div className="flex items-center gap-4">
-              <div className="h-16 w-16 rounded-full bg-muted border-2 border-dashed border-border flex items-center justify-center relative overflow-hidden group cursor-pointer hover:bg-muted/80 transition-colors shrink-0">
+              <div className="h-16 w-16 rounded-2xl bg-muted border-2 border-dashed border-border flex items-center justify-center relative overflow-hidden group cursor-pointer hover:bg-muted/80 transition-colors shrink-0">
                 {profile.image ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={profile.image} alt="Avatar" className="w-full h-full object-cover" />
@@ -106,7 +106,7 @@ export function GlobalImagesBlock({ profile, setProfile, children }: GlobalImage
                   <Camera className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
                 )}
                 {isUploadingAvatar && (
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-full z-20">
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-2xl z-20">
                     <LoaderLines className="w-6 h-6 text-white animate-spin" />
                   </div>
                 )}
@@ -148,7 +148,7 @@ export function GlobalImagesBlock({ profile, setProfile, children }: GlobalImage
                   <ImageIcon className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
                 )}
                 {isUploadingBanner && (
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-full z-20">
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-2xl z-20">
                     <LoaderLines className="w-6 h-6 text-white animate-spin" />
                   </div>
                 )}

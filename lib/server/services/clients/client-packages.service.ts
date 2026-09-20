@@ -38,6 +38,7 @@ export class ClientPackagesService {
         package_template: {
           select: {
             name: true,
+            validity_days: true,
           },
         },
         check_ins: {
@@ -55,6 +56,13 @@ export class ClientPackagesService {
     });
 
     const formattedPackages = packages.map((pkg) => {
+      // Cálculo visual da validade mockado (igual ao dashboard)
+      const validityDays = pkg.package_template?.validity_days || 365;
+      const createdDate = new Date(pkg.created_at);
+      const expiresAt = new Date(createdDate.getTime());
+      expiresAt.setDate(expiresAt.getDate() + validityDays);
+      const isExpired = new Date() > expiresAt;
+
       return {
         id: pkg.id,
         name: pkg.package_template?.name || pkg.name,
@@ -64,6 +72,8 @@ export class ClientPackagesService {
         active: pkg.active,
         service_id: pkg.service_id,
         created_at: pkg.created_at.toISOString(),
+        expiresAt: expiresAt.toISOString(),
+        isExpired: isExpired,
         sessionDates: pkg.check_ins.map((checkin) =>
           checkin.date_time.toISOString(),
         ),

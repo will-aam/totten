@@ -25,8 +25,9 @@ export async function getPackagesDashboardData(params?: {
     const baseWhere: any = { organization_id: admin.organizationId };
 
     const isEndingSoonFilter = params?.search === "...";
+    const isExpiringFilter = params?.search === "expiring";
 
-    if (params?.search && !isEndingSoonFilter) {
+    if (params?.search && !isEndingSoonFilter && !isExpiringFilter) {
       const searchLower = params.search.toLowerCase();
       baseWhere.OR = [
         { client: { name: { contains: searchLower, mode: "insensitive" } } },
@@ -39,7 +40,7 @@ export async function getPackagesDashboardData(params?: {
       include: {
         client: { select: { name: true } },
         service: { select: { name: true } },
-        package_template: { select: { name: true } }, // <--- ADICIONE ESTA LINHA
+        package_template: { select: { name: true, validity_days: true } }, // <--- ADICIONE ESTA LINHA
       },
       orderBy: { created_at: "desc" },
     });
@@ -52,6 +53,17 @@ export async function getPackagesDashboardData(params?: {
           p.used_sessions >= p.total_sessions - 2 &&
           p.used_sessions < p.total_sessions,
       );
+    } else if (isExpiringFilter) {
+      const now = new Date();
+      const in7Days = new Date();
+      in7Days.setDate(now.getDate() + 7);
+      
+      filteredPackages = allActivePackages.filter((p) => {
+        if (!p.package_template?.validity_days) return false;
+        const expirationDate = new Date(p.created_at);
+        expirationDate.setDate(expirationDate.getDate() + p.package_template.validity_days);
+        return expirationDate > now && expirationDate <= in7Days;
+      });
     } else if (params?.search) {
       const searchLower = params.search.toLowerCase();
       filteredPackages = allActivePackages.filter(
@@ -66,21 +78,45 @@ export async function getPackagesDashboardData(params?: {
 
     return {
       success: true,
-      packages: paginatedPackages.map((p) => ({
-        id: p.id,
-        clientId: p.client_id,
-        clientName: p.client.name,
-        // CORREÇÃO: Puxa do template primeiro, depois tenta do pacote
-        packageName: p.package_template?.name || p.name,
-        usedSessions: p.used_sessions,
-        totalSessions: p.total_sessions,
-        active: p.active,
-      })),
+      packages: paginatedPackages.map((p) => {
+        let expiresAt = null;
+        let isExpired = false;
+
+        if (p.package_template?.validity_days) {
+          const expirationDate = new Date(p.created_at);
+          expirationDate.setDate(expirationDate.getDate() + p.package_template.validity_days);
+          expiresAt = expirationDate.toISOString();
+          isExpired = new Date() > expirationDate;
+        }
+
+        return {
+          id: p.id,
+          clientId: p.client_id,
+          clientName: p.client.name,
+          // CORREÇÃO: Puxa do template primeiro, depois tenta do pacote
+          packageName: p.package_template?.name || p.name,
+          usedSessions: p.used_sessions,
+          totalSessions: p.total_sessions,
+          active: p.active,
+          createdAt: p.created_at.toISOString(),
+          expiresAt,
+          isExpired,
+        };
+      }),
       kpis: {
         active: allActivePackages.length,
         endingSoon: allActivePackages.filter(
           (p) => p.used_sessions >= p.total_sessions - 2,
         ).length,
+        expiringSoon: allActivePackages.filter((p) => {
+          if (!p.package_template?.validity_days) return false;
+          const now = new Date();
+          const in7Days = new Date();
+          in7Days.setDate(now.getDate() + 7);
+          const expirationDate = new Date(p.created_at);
+          expirationDate.setDate(expirationDate.getDate() + p.package_template.validity_days);
+          return expirationDate > now && expirationDate <= in7Days;
+        }).length,
         totalPending: allActivePackages.reduce(
           (acc, p) => acc + (p.total_sessions - p.used_sessions),
           0,
