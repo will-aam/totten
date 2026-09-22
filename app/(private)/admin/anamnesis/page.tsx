@@ -12,8 +12,9 @@ import {
   Archive,
   ArchiveArrowUp,
   Printer,
+  Trash,
+  DotsVerticalRounded
 } from "@boxicons/react";
-import { createRoot } from "react-dom/client";
 
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,29 @@ import { useToast } from "@/hooks/use-toast";
 import {
   getAllAnamnesisTemplates,
   toggleAnamnesisTemplateStatus,
+  deleteAnamnesisTemplate,
 } from "@/app/actions/anamnesis";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+type ActionDialogType = "archive" | "unarchive" | "delete" | null;
 
 export default function AnamnesisListPage() {
   const { data: session } = useSession();
@@ -33,6 +56,18 @@ export default function AnamnesisListPage() {
   const [templates, setTemplates] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState<string | null>(null);
+
+  const [dialogConfig, setDialogConfig] = useState<{
+    isOpen: boolean;
+    type: ActionDialogType;
+    templateId: string;
+    templateName: string;
+  }>({
+    isOpen: false,
+    type: null,
+    templateId: "",
+    templateName: "",
+  });
 
   const organizationId = session?.user?.organizationId;
 
@@ -51,32 +86,52 @@ export default function AnamnesisListPage() {
     loadTemplates();
   }, [loadTemplates]);
 
-  const handleToggleStatus = async (id: string, currentStatus: boolean) => {
-    const actionText = currentStatus ? "arquivar" : "reativar";
+  const handleActionConfirm = async () => {
+    if (!dialogConfig.type || !dialogConfig.templateId) return;
 
-    if (
-      !confirm(
-        `Tem certeza que deseja ${actionText} este modelo? ${currentStatus
-          ? "Ele não aparecerá mais para preenchimento de novas fichas."
-          : "Ele voltará a aparecer na lista de novas fichas."
-        }`,
-      )
-    )
-      return;
-
-    const result = await toggleAnamnesisTemplateStatus(id, currentStatus);
-    if (result.success) {
+    try {
+      if (dialogConfig.type === "delete") {
+        const result = await deleteAnamnesisTemplate(dialogConfig.templateId);
+        if (result.success) {
+          toast({
+            title: "Sucesso",
+            description: "Modelo excluído permanentemente.",
+          });
+          loadTemplates();
+        } else {
+          toast({
+            title: "Não foi possível excluir",
+            description: result.error,
+            variant: "destructive",
+          });
+        }
+      } else {
+        // Archive or Unarchive
+        const isArchiving = dialogConfig.type === "archive";
+        // toggle expects current status, which is true if we are archiving
+        const result = await toggleAnamnesisTemplateStatus(dialogConfig.templateId, isArchiving);
+        if (result.success) {
+          toast({
+            title: "Sucesso",
+            description: `Modelo ${isArchiving ? "arquivado" : "reativado"} com sucesso.`,
+          });
+          loadTemplates();
+        } else {
+          toast({
+            title: "Erro",
+            description: result.error,
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error) {
       toast({
-        title: "Sucesso",
-        description: `Modelo ${currentStatus ? "arquivado" : "reativado"} com sucesso.`,
-      });
-      loadTemplates();
-    } else {
-      toast({
-        title: "Erro",
-        description: result.error,
+        title: "Erro inesperado",
+        description: "Ocorreu um erro ao processar a ação.",
         variant: "destructive",
       });
+    } finally {
+      setDialogConfig({ ...dialogConfig, isOpen: false });
     }
   };
 
@@ -289,107 +344,160 @@ export default function AnamnesisListPage() {
 
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {templates.map((template) => (
-              <Card
+          <div className="flex flex-col rounded-xl border border-border/50 overflow-hidden divide-y divide-border/50">
+            {templates.map((template, index) => (
+              <div
                 key={template.id}
-                className={`group overflow-hidden rounded-2xl border-border/50 transition-all ${template.active
-                  ? "bg-muted/10 hover:bg-muted/30 hover:border-primary/30"
-                  : "bg-muted/5 opacity-70 grayscale-[0.5]"
-                  }`}
+                className={`flex items-center gap-4 px-5 py-4 transition-colors ${
+                  template.active
+                    ? "bg-card hover:bg-muted/20"
+                    : "bg-muted/10 opacity-60"
+                }`}
               >
-                <CardContent className="p-5 flex flex-col h-full relative">
-                  <div className="absolute top-4 right-4">
-                    {template.active ? (
-                      <Badge
-                        variant="default"
-                        className="bg-primary/10 text-primary hover:bg-primary/20 pointer-events-none"
-                      >
-                        Ativo
-                      </Badge>
-                    ) : (
-                      <Badge
-                        variant="secondary"
-                        className="pointer-events-none"
-                      >
-                        Arquivado
-                      </Badge>
-                    )}
-                  </div>
+                {/* Acento colorido */}
+                <div
+                  className={`w-1 self-stretch rounded-full flex-shrink-0 ${
+                    template.active ? "bg-primary" : "bg-border"
+                  }`}
+                />
 
-                  <div className="flex items-start justify-between mb-4 mt-2">
-                    <div
-                      className={`p-2.5 rounded-lg ${template.active
-                        ? "bg-primary/10 text-primary"
-                        : "bg-muted text-muted-foreground"
-                        }`}
-                    >
-                      <FileDetail size="md" />
-                    </div>
-                  </div>
+                {/* Ícone numerado */}
+                <div className="w-8 h-8 rounded-lg bg-muted/60 flex items-center justify-center text-xs font-bold text-muted-foreground flex-shrink-0 select-none">
+                  {index + 1}
+                </div>
 
-                  <h3 className="font-bold text-lg text-foreground line-clamp-1 mb-1 pr-16">
+                {/* Conteúdo */}
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm text-foreground truncate">
                     {template.name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-6">
-                    {template.fields ? template.fields.length : 0} perguntas
                   </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {template.fields?.length ?? 0} perguntas
+                  </p>
+                </div>
 
-                  {/* Ações */}
-                  <div className="mt-auto grid grid-cols-3 gap-2 pt-4 border-t border-border/50">
+                {/* Status */}
+                {!template.active && (
+                  <span className="hidden sm:inline-flex items-center text-[10px] font-semibold uppercase tracking-widest text-muted-foreground border border-border/60 rounded-full px-2 py-0.5 bg-muted/40 flex-shrink-0">
+                    Arquivado
+                  </span>
+                )}
+
+                {/* Menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
                     <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-9 text-base font-medium px-0"
-                      disabled={isGeneratingPdf === template.id}
-                      onClick={() => handleDownloadPdf(template)}
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 flex-shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted/50"
                     >
                       {isGeneratingPdf === template.id ? (
-                        <LoaderDots size="sm" className="mr-1.5 animate-spin" />
+                        <LoaderDots size="sm" className="animate-spin" />
                       ) : (
-                        <Printer size="sm" className="mr-1.5" />
+                        <DotsVerticalRounded size="sm" />
                       )}
-                      PDF
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-9 text-base font-medium px-0"
-                      asChild
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-lg">
+                    <DropdownMenuItem
+                      onClick={() => handleDownloadPdf(template)}
+                      disabled={isGeneratingPdf === template.id}
+                      className="cursor-pointer"
                     >
+                      <Printer size="sm" className="mr-2 text-muted-foreground" />
+                      Salvar PDF
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild className="cursor-pointer">
                       <Link href={`/admin/anamnesis/${template.id}/edit`}>
-                        <Edit size="sm" className="mr-1.5" />
+                        <Edit size="sm" className="mr-2 text-muted-foreground" />
                         Editar
                       </Link>
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-9 text-base font-medium px-0"
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="cursor-pointer"
                       onClick={() =>
-                        handleToggleStatus(template.id, template.active)
+                        setDialogConfig({
+                          isOpen: true,
+                          type: template.active ? "archive" : "unarchive",
+                          templateId: template.id,
+                          templateName: template.name,
+                        })
                       }
                     >
                       {template.active ? (
-                        <>
-                          <Archive size="sm" className="mr-1.5" />
-                          Arquivar
-                        </>
+                        <Archive size="sm" className="mr-2 text-muted-foreground" />
                       ) : (
-                        <>
-                          <ArchiveArrowUp size="sm" className="mr-1.5" />
-                          Reativar
-                        </>
+                        <ArchiveArrowUp size="sm" className="mr-2 text-muted-foreground" />
                       )}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                      {template.active ? "Arquivar modelo" : "Reativar modelo"}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
+                      onClick={() =>
+                        setDialogConfig({
+                          isOpen: true,
+                          type: "delete",
+                          templateId: template.id,
+                          templateName: template.name,
+                        })
+                      }
+                    >
+                      <Trash size="sm" className="mr-2" />
+                      Excluir permanente
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             ))}
           </div>
         )}
       </div>
+
+      <AlertDialog
+        open={dialogConfig.isOpen}
+        onOpenChange={(open) => setDialogConfig({ ...dialogConfig, isOpen: open })}
+      >
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {dialogConfig.type === "archive" && "Arquivar modelo"}
+              {dialogConfig.type === "unarchive" && "Reativar modelo"}
+              {dialogConfig.type === "delete" && "Excluir permanentemente"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {dialogConfig.type === "archive" && (
+                <>
+                  Tem certeza que deseja arquivar <strong>{dialogConfig.templateName}</strong>? 
+                  Ele não aparecerá mais para preenchimento de novas fichas, mas as fichas antigas continuarão salvas.
+                </>
+              )}
+              {dialogConfig.type === "unarchive" && (
+                <>
+                  Deseja reativar o modelo <strong>{dialogConfig.templateName}</strong>? 
+                  Ele voltará a estar disponível para preenchimento de novas fichas.
+                </>
+              )}
+              {dialogConfig.type === "delete" && (
+                <>
+                  Você está prestes a excluir <strong>{dialogConfig.templateName}</strong>. 
+                  Esta ação é <strong className="text-destructive">irreversível</strong> e só poderá ser feita se o modelo não tiver nenhuma ficha preenchida usando ele.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleActionConfirm}
+              className={dialogConfig.type === "delete" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+            >
+              {dialogConfig.type === "delete" ? "Sim, excluir" : "Confirmar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

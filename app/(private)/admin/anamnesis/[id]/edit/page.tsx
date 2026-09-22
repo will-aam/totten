@@ -230,12 +230,12 @@ export default function EditAnamnesisTemplatePage({
       <AdminHeader title="Editar Fichário" />
 
       <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 max-w-5xl mx-auto w-full pb-24 md:pb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4 border-b border-border/50 pb-4 md:pb-6">
+        <div className="flex flex-row items-center gap-4 border-b border-border/50 pb-4 md:pb-6">
           <Button
             asChild
             variant="outline"
             size="icon"
-            className="h-10 w-10 shrink-0"
+            className="h-9 w-9 shrink-0"
           >
             <Link href="/admin/anamnesis">
               <ChevronLeft
@@ -246,10 +246,10 @@ export default function EditAnamnesisTemplatePage({
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground leading-tight">
               Editar Modelo de Anamnese
             </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            <p className="text-sm text-muted-foreground mt-0.5 hidden sm:block">
               Altere o nome ou adicione/remova perguntas do seu fichário.
             </p>
           </div>

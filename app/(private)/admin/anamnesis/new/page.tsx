@@ -213,22 +213,22 @@ export default function NewAnamnesisTemplatePage() {
 
       <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-32 md:pb-6 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4 border-b border-border/50 pb-4 md:pb-6">
+        <div className="flex flex-row items-center gap-4 border-b border-border/50 pb-4 md:pb-6">
           <Button
             asChild
             variant="outline"
             size="icon"
-            className="h-10 w-10 shrink-0"
+            className="h-9 w-9 shrink-0"
           >
             <Link href="/admin/anamnesis">
               <ChevronLeft size="sm" className="text-muted-foreground" />
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground leading-tight">
               Criar Modelo de Anamnese
             </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            <p className="text-sm text-muted-foreground mt-0.5 hidden sm:block">
               Defina o nome e as perguntas que farão parte do fichário.
             </p>
           </div>

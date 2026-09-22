@@ -115,6 +115,32 @@ export async function toggleAnamnesisTemplateStatus(
   }
 }
 
+//  NOVA: Exclui permanentemente um template
+export async function deleteAnamnesisTemplate(templateId: string) {
+  try {
+    // Verifica se existem respostas usando este template
+    const responsesCount = await prisma.anamnesisResponse.count({
+      where: { template_id: templateId }
+    });
+
+    if (responsesCount > 0) {
+      return { 
+        success: false, 
+        error: "Este modelo não pode ser excluído pois já existem fichas preenchidas usando ele. Considere arquivá-lo em vez disso." 
+      };
+    }
+
+    await prisma.anamnesisTemplate.delete({
+      where: { id: templateId },
+    });
+    revalidatePath("/admin/anamnesis");
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao excluir modelo:", error);
+    return { success: false, error: "Erro ao excluir o modelo permanentemente." };
+  }
+}
+
 // ==========================================
 // RESPOSTAS (Fichas Preenchidas das Clientes)
 // ==========================================

@@ -12,12 +12,12 @@ export default function NewPackagePage() {
 
       {/*  OTIMIZAÇÃO ESTRUTURAL: max-w-400, altura mínima e animação padronizados */}
       <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4 border-b border-border/50 pb-4 md:pb-6">
+        <div className="flex flex-row items-center gap-4 border-b border-border/50 pb-4 md:pb-6">
           <Button
             asChild
             variant="outline"
             size="icon"
-            className="h-10 w-10 shrink-0"
+            className="h-9 w-9 shrink-0"
           >
             <Link href="/admin/services?tab=packages">
               <ChevronLeft
@@ -27,10 +27,10 @@ export default function NewPackagePage() {
             </Link>
           </Button>
           <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground leading-tight">
               Cadastrar Pacote
             </h1>
-            <p className="text-sm text-muted-foreground font-medium">
+            <p className="text-sm text-muted-foreground font-medium hidden sm:block">
               Monte um Pacote com múltiplas sessões para vender.
             </p>
           </div>
