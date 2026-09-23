@@ -18,10 +18,13 @@ export class PackageService {
     }
 
     await prisma.$transaction(async (tx) => {
-      if (appointment.status === "REALIZADO" && appointment.package_id) {
+      if (appointment.status === "REALIZADO" && appointment.package_id && appointment.package) {
+        const isManuallyArchived = !appointment.package.active && (appointment.package.used_sessions < appointment.package.total_sessions);
+        const finalActive = isManuallyArchived ? false : true;
+
         await tx.package.update({
           where: { id: appointment.package_id },
-          data: { used_sessions: { decrement: 1 }, active: true },
+          data: { used_sessions: { decrement: 1 }, active: finalActive },
         });
       }
 

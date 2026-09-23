@@ -326,16 +326,18 @@ export async function updateAppointment(
           const newUsedSessions =
             currentAppt.package.used_sessions + updateResult;
           const stillActive = newUsedSessions < currentAppt.package.total_sessions;
+          const isManuallyArchived = !currentAppt.package.active && (currentAppt.package.used_sessions < currentAppt.package.total_sessions);
+          const finalActive = isManuallyArchived ? false : stillActive;
 
           await tx.package.update({
             where: { id: currentAppt.package_id },
             data: {
               used_sessions: { increment: updateResult },
-              active: stillActive,
+              active: finalActive,
             },
           });
 
-          if (!stillActive) {
+          if (!finalActive) {
             await tx.appointment.deleteMany({
               where: {
                 package_id: currentAppt.package_id,
@@ -359,16 +361,18 @@ export async function updateAppointment(
         if (isMarkingAsDone && currentAppt.package_id && currentAppt.package) {
           const newUsedSessions = currentAppt.package.used_sessions + 1;
           const stillActive = newUsedSessions < currentAppt.package.total_sessions;
+          const isManuallyArchived = !currentAppt.package.active && (currentAppt.package.used_sessions < currentAppt.package.total_sessions);
+          const finalActive = isManuallyArchived ? false : stillActive;
 
           await tx.package.update({
             where: { id: currentAppt.package_id },
             data: {
               used_sessions: { increment: 1 },
-              active: stillActive,
+              active: finalActive,
             },
           });
 
-          if (!stillActive) {
+          if (!finalActive) {
             await tx.appointment.deleteMany({
               where: {
                 package_id: currentAppt.package_id,
@@ -650,11 +654,14 @@ export async function undoNoShow(appointmentId: string) {
       });
 
       if (appt.package_id && appt.package) {
+        const isManuallyArchived = !appt.package.active && (appt.package.used_sessions < appt.package.total_sessions);
+        const finalActive = isManuallyArchived ? false : true;
+
         await tx.package.update({
           where: { id: appt.package_id },
           data: {
             used_sessions: { decrement: 1 },
-            active: true, // Garante que o pacote volta a ficar ativo caso tenha sido encerrado por essa falta
+            active: finalActive,
           },
         });
       }
@@ -725,16 +732,18 @@ export async function registerManualNoShow(
       if (deductSession && appt.package_id && appt.package) {
         const newUsedSessions = appt.package.used_sessions + 1;
         const stillActive = newUsedSessions < appt.package.total_sessions;
+        const isManuallyArchived = !appt.package.active && (appt.package.used_sessions < appt.package.total_sessions);
+        const finalActive = isManuallyArchived ? false : stillActive;
 
         await tx.package.update({
           where: { id: appt.package_id },
           data: {
             used_sessions: newUsedSessions,
-            active: stillActive,
+            active: finalActive,
           },
         });
 
-        if (!stillActive) {
+        if (!finalActive) {
           await tx.appointment.deleteMany({
             where: {
               package_id: appt.package_id,
