@@ -111,6 +111,14 @@ export default function RegisterPage() {
 
   return (
     <div className="relative flex min-h-svh flex-col items-center justify-center bg-background px-4 py-12 sm:px-6">
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        @import url('https://fonts.googleapis.com/css2?family=Philosopher:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+        .font-philosopher { font-family: 'Philosopher', sans-serif; }
+      `,
+        }}
+      />
       <Link
         href="/login"
         className="absolute top-4 left-4 sm:top-8 sm:left-8 flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group z-10"
@@ -123,7 +131,7 @@ export default function RegisterPage() {
 
       <div className="w-full max-w-xl mt-8 sm:mt-0">
         <div className="text-center mb-10">
-          <h1 className="font-serif text-3xl sm:text-4xl text-foreground mb-3">
+          <h1 className="font-philosopher text-3xl sm:text-4xl text-foreground mb-3">
             Totten
           </h1>
           <p className="text-base sm:text-lg text-muted-foreground">

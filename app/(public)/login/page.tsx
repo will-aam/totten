@@ -71,6 +71,14 @@ function LoginForm() {
 
   return (
     <div className="flex min-h-svh flex-col bg-background p-4 sm:p-8 overflow-hidden">
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        @import url('https://fonts.googleapis.com/css2?family=Philosopher:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+        .font-philosopher { font-family: 'Philosopher', sans-serif; }
+      `,
+        }}
+      />
       <Link
         href="/totem/idle"
         className="absolute top-4 left-4 sm:static sm:self-start flex w-fit items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group z-10"
@@ -104,7 +112,7 @@ function LoginForm() {
                 priority
               />
             </div>
-            <h1 className="font-serif text-3xl sm:text-4xl text-foreground mb-3">
+            <h1 className="font-philosopher text-3xl sm:text-4xl text-foreground mb-3">
               Totten
             </h1>
             <p className="text-base sm:text-lg text-muted-foreground">
