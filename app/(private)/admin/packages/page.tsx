@@ -34,6 +34,15 @@ import {
   getPackagesDashboardData,
   createManualPackageCheckIn,
 } from "@/app/actions/packages";
+import { getTeam } from "@/app/actions/team";
+import useSWR from "swr";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { getSelfServiceSettingsAction, updateSelfServiceSettingsAction } from "@/app/actions/settings";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -278,6 +287,9 @@ function PackagesPageContent() {
   //  NOVO: Estados de Data e Hora para o Check-in
   const [checkInDate, setCheckInDate] = useState("");
   const [checkInTime, setCheckInTime] = useState("");
+  const [checkInProfessionalId, setCheckInProfessionalId] = useState<string | undefined>(undefined);
+
+  const { data: teamMembers, isLoading: loadingTeam } = useSWR("team", getTeam);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [validityMode, setValidityMode] = useState("ACQUISITION");
@@ -404,6 +416,7 @@ function PackagesPageContent() {
       const res = await createManualPackageCheckIn(
         pkgToCheckIn.id,
         dateTimeString,
+        checkInProfessionalId === "none" ? undefined : checkInProfessionalId,
       );
 
       if (res.success) {
@@ -678,6 +691,29 @@ function PackagesPageContent() {
                 className="h-11 bg-muted/30"
               />
             </div>
+          </div>
+
+          <div className="flex flex-col gap-2 py-2">
+            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              Profissional (opcional)
+            </Label>
+            <Select
+              value={checkInProfessionalId}
+              onValueChange={setCheckInProfessionalId}
+              disabled={isCheckingIn || loadingTeam}
+            >
+              <SelectTrigger className="w-full h-11 bg-muted/30">
+                <SelectValue placeholder="Selecione o profissional..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sem profissional</SelectItem>
+                {teamMembers?.data?.map((member: any) => (
+                  <SelectItem key={member.id} value={member.id}>
+                    {member.display_name || "Sem Nome"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-end gap-2 mt-4">

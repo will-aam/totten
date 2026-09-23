@@ -243,8 +243,8 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
       <CardContent className="px-0 pb-4 md:pb-6 md:px-6 flex flex-col">
         {isLoadingPackages ? (
           <div className="space-y-4 px-4 md:px-0">
-            <Skeleton className="h-12 w-full rounded-full" />
-            <Skeleton className="h-2.5 w-full rounded-full" />
+            <Skeleton className="h-12 w-full rounded-2xl" />
+            <Skeleton className="h-2.5 w-full rounded-2xl" />
           </div>
         ) : activePackages.length > 0 ? (
           <div className="relative">
@@ -276,7 +276,7 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
                       key={i}
                       onClick={() => api?.scrollTo(i)}
                       className={cn(
-                        "h-2 rounded-full transition-all duration-500 ease-in-out",
+                        "h-2 rounded-2xl transition-all duration-500 ease-in-out",
                         current === i
                           ? "bg-primary w-6"
                           : "bg-muted-foreground/30 w-2 hover:bg-primary/50",
@@ -289,8 +289,8 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
             )}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center text-center bg-muted/20 rounded-full border border-dashed border-border p-6 py-10 md:border-dashed md:bg-transparent mx-4 md:mx-0">
-            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
+          <div className="flex flex-col items-center justify-center text-center bg-muted/20 rounded-2xl border border-dashed border-border p-6 py-10 md:border-dashed md:bg-transparent mx-4 md:mx-0">
+            <div className="h-12 w-12 rounded-2xl bg-muted flex items-center justify-center mb-3">
               <Package
                 className="h-6 w-6 text-muted-foreground/50"
                 strokeWidth={1.5}

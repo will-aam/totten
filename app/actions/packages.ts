@@ -225,6 +225,7 @@ export async function getPackageHistory(packageId: string) {
 export async function createManualPackageCheckIn(
   packageId: string,
   dateTimeString?: string,
+  professionalId?: string,
 ) {
   try {
     const admin = await requireAuth();
@@ -266,6 +267,7 @@ export async function createManualPackageCheckIn(
           client_id: pkg.client_id,
           service_id: pkg.service_id,
           package_id: pkg.id,
+          professional_id: professionalId || null,
           organization_id: admin.organizationId,
           observations: "Baixa manual realizada via Gestão de Pacotes.",
           session_number: pkg.used_sessions + 1,
@@ -570,7 +572,7 @@ export async function createPackageAction(data: any) {
       data,
     );
 
-    return { success: true, data: result };
+    return { success: true, data: JSON.parse(JSON.stringify(result)) };
   } catch (error: any) {
     if (error.name === "AuthError" || error.message === "Não autorizado") {
       return {

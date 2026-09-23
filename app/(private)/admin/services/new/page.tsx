@@ -26,8 +26,8 @@ export default function NewServicePage() {
               />
             </Link>
           </Button>
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground leading-tight">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground leading-tight truncate">
               Cadastrar Serviço
             </h1>
           </div>
@@ -39,3 +39,4 @@ export default function NewServicePage() {
     </>
   );
 }
+
