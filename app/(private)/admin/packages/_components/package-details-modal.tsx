@@ -42,6 +42,7 @@ import {
   RefreshCwAlt,
   Trash,
   CalendarDetail,
+  HelpCircle,
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 // Importamos a nova Server Action aqui:
@@ -339,7 +340,7 @@ export function PackageDetailsModal({
 
           <div
             className={cn(
-              "bg-muted/30 border border-border/50 p-6 rounded-4xl shadow-inner",
+              "bg-muted/30 border border-border/50 p-6 rounded-2xl shadow-inner",
               !packageData.active && "opacity-60 grayscale",
             )}
           >
@@ -375,19 +376,31 @@ export function PackageDetailsModal({
               </h3>
 
               {packageData.active && (
-                <AlertDialog
-                  open={isSyncDialogOpen}
-                  onOpenChange={setIsSyncDialogOpen}
-                >
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 text-[10px] px-2 font-bold border-primary/20 text-primary hover:bg-primary/10"
-                    >
-                      <RefreshCwAlt className="h-3 w-3 mr-1" /> Sincronizar
-                    </Button>
-                  </AlertDialogTrigger>
+                <div className="flex items-center gap-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button type="button" className="text-muted-foreground hover:text-foreground transition-colors outline-none cursor-help">
+                        <HelpCircle className="h-4 w-4" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent side="top" className="w-[220px] text-xs leading-relaxed bg-foreground text-background border-none rounded-xl p-3 shadow-xl">
+                      <p>Força a recontagem das sessões caso o saldo do pacote não esteja batendo com o histórico abaixo.</p>
+                    </PopoverContent>
+                  </Popover>
+
+                  <AlertDialog
+                    open={isSyncDialogOpen}
+                    onOpenChange={setIsSyncDialogOpen}
+                  >
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-[10px] px-2 font-bold border-primary/20 text-primary hover:bg-primary/10"
+                      >
+                        <RefreshCwAlt className="h-3 w-3 mr-1" /> Sincronizar
+                      </Button>
+                    </AlertDialogTrigger>
                   <AlertDialogContent className="rounded-4xl">
                     <AlertDialogHeader>
                       <AlertDialogTitle>
@@ -409,6 +422,7 @@ export function PackageDetailsModal({
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+                </div>
               )}
             </div>
 
@@ -448,8 +462,8 @@ export function PackageDetailsModal({
                           className={cn(
                             "font-black text-sm uppercase tracking-tight text-foreground",
                             !packageData.active &&
-                              item.status !== "REALIZADO" &&
-                              "line-through text-muted-foreground",
+                            item.status !== "REALIZADO" &&
+                            "line-through text-muted-foreground",
                           )}
                         >
                           Sessão {item.session || index + 1}
@@ -494,10 +508,10 @@ export function PackageDetailsModal({
                       <p className="text-xs text-muted-foreground font-medium">
                         {item.date
                           ? format(
-                              new Date(item.date),
-                              "dd/MM/yyyy 'às' HH:mm",
-                              { locale: ptBR },
-                            )
+                            new Date(item.date),
+                            "dd/MM/yyyy 'às' HH:mm",
+                            { locale: ptBR },
+                          )
                           : "Data não definida"}
                       </p>
                     </div>
@@ -549,7 +563,7 @@ export function PackageDetailsModal({
           >
             <Button
               variant={packageData.active ? "outline" : "default"}
-              className={cn("rounded-2xl h-14 font-black text-xs uppercase tracking-tighter transition-all",
+              className={cn("rounded-full h-14 font-black text-xs uppercase tracking-tighter transition-all",
                 packageData.active && "border-2 active:scale-95",
               )}
               onClick={handleRenew}

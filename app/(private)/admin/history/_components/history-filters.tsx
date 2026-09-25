@@ -94,7 +94,7 @@ export function HistoryFilters({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Nome ou CPF (mín. 3 letras)..."
-              className="pl-10 bg-card border-border/50 h-12 shadow-sm font-medium focus-visible:ring-primary/20"
+              className="pl-10 rounded-full bg-card border-border/50 h-12 shadow-sm font-medium focus-visible:ring-primary/20"
             />
           </div>
         </div>

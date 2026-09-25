@@ -45,3 +45,8 @@ export default function MinhaNovaPagina() {
   );
 }
 ```
+
+## Padrão de Carregamento (Loading States)
+Para indicar carregamento de dados, o sistema **deve sempre utilizar o componente `Skeleton`** (`import { Skeleton } from "@/components/ui/skeleton"`). 
+- Evite usar spinners tradicionais ou textos como "Carregando...".
+- **Carregamento Progressivo (Streaming/Suspense):** Não espere a página inteira carregar para exibir algo. Quebre o carregamento com `Suspense`. Exiba partes rápidas (como KPIs e cabeçalhos) primeiro, enquanto partes mais pesadas (como tabelas e histórico) mantêm um `Skeleton` individual até estarem prontas.

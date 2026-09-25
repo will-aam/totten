@@ -478,7 +478,6 @@ export default function AgendaPage() {
           defaultScheduleView: settings?.defaultScheduleView,
         }}
         onSave={handleSaveSettings}
-        onClearToday={mutateAll}
       />
     </>
   );

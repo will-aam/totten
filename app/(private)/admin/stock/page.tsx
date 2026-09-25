@@ -41,8 +41,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-
 import { ResponsiveModal } from "../agenda/_components/responsive-modal";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import {
   AlertDialog,
@@ -65,7 +65,7 @@ import {
 
 export default function StockPage() {
   return (
-    <Suspense fallback={<div className="p-8 flex justify-center"><LoaderDots className="animate-spin h-8 w-8 text-primary" /></div>}>
+    <Suspense fallback={<div className="flex flex-col gap-4 p-4 md:p-6 w-full max-w-400 mx-auto mt-10"><Skeleton className="h-10 w-full rounded-2xl" /><Skeleton className="h-[400px] w-full rounded-2xl" /></div>}>
       <StockPageContent />
     </Suspense>
   );
@@ -314,9 +314,11 @@ function StockPageContent() {
         </ResponsiveModal>
 
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-            <LoaderDots className="h-8 w-8 animate-spin mb-4 text-primary" />
-            <p>Carregando estoque...</p>
+          <div className="flex flex-col gap-4">
+            <Skeleton className="h-12 w-full rounded-2xl" />
+            <Skeleton className="h-16 w-full rounded-2xl" />
+            <Skeleton className="h-16 w-full rounded-2xl" />
+            <Skeleton className="h-16 w-full rounded-2xl" />
           </div>
         ) : (
           <>

@@ -27,7 +27,7 @@ export default function AdminManualNotesPage() {
   const shouldSearch = debouncedSearch.trim().length >= 2;
 
   // 1. Busca a lista de clientes via API Route (SWR)
-  const { data: clientsResponse } = useSWR<{
+  const { data: clientsResponse, isLoading: isLoadingClients } = useSWR<{
     data: Client[];
   }>(
     shouldSearch
@@ -61,6 +61,7 @@ export default function AdminManualNotesPage() {
             setPage(1); // Reset page on new client
           }
         }}
+        isLoading={isLoadingClients}
       />
     );
   }

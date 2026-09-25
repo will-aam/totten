@@ -34,7 +34,6 @@ import {
   AlertDialogAction,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { clearTodayAgenda } from "@/app/actions/appointments";
 
 export type ScheduleSettings = {
   autoConfirmAppointments?: boolean;
@@ -47,7 +46,6 @@ interface ScheduleSettingsModalProps {
   onOpenChange: (open: boolean) => void;
   initialSettings: ScheduleSettings;
   onSave: (settings: ScheduleSettings) => Promise<void>;
-  onClearToday?: (deletedCount: number) => void;
 }
 
 const HOUR_SLOTS = Array.from(
@@ -61,16 +59,12 @@ export const ScheduleSettingsModal = memo(
     onOpenChange,
     initialSettings,
     onSave,
-    onClearToday,
   }: ScheduleSettingsModalProps) => {
     const [autoConfirmAppointments, setAutoConfirmAppointments] = useState(initialSettings.autoConfirmAppointments ?? false);
     const [allowOverLimitAppointments, setAllowOverLimitAppointments] = useState(initialSettings.allowOverLimitAppointments ?? false);
     const [defaultScheduleView, setDefaultScheduleView] = useState(initialSettings.defaultScheduleView || "day");
 
     const [isSaving, setIsSaving] = useState(false);
-    const [clearPassword, setClearPassword] = useState("");
-    const [isClearing, setIsClearing] = useState(false);
-    const [isClearDialogOpen, setIsClearDialogOpen] = useState(false);
 
     // Sincroniza quando o modal abre (caso o initialSettings mude no banco)
     useEffect(() => {
@@ -96,34 +90,6 @@ export const ScheduleSettingsModal = memo(
         setIsSaving(false);
       }
     };
-
-    const handleClearToday = async () => {
-      if (!clearPassword) {
-        toast.error("Digite sua senha.");
-        return;
-      }
-
-      setIsClearing(true);
-      try {
-        const result = await clearTodayAgenda(clearPassword);
-        if (result.error) {
-          toast.error(result.error);
-          return;
-        }
-
-        toast.success(`Agenda limpa! ${result.deleted ?? 0} removidos.`);
-        setClearPassword("");
-        setIsClearDialogOpen(false);
-        onClearToday?.(result.deleted ?? 0);
-      } catch (error) {
-        toast.error("Erro ao conectar com o servidor.");
-      } finally {
-        setIsClearing(false);
-      }
-    };
-
-
-
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent className="w-full sm:w-[450px] sm:max-w-md p-0 flex flex-col border-none shadow-2xl overflow-hidden bg-background">
@@ -185,53 +151,7 @@ export const ScheduleSettingsModal = memo(
               </Select>
             </div>
 
-
-
-            {/* ÁREA DE PERIGO (LIMPEZA) */}
-            <div className="rounded-2xl border-2 border-destructive/10 bg-destructive/5 p-4 mt-8">
-              <div className="flex flex-col gap-3">
-                <div className="space-y-1">
-                  <p className="text-sm font-black text-destructive flex items-center gap-1.5">
-                    Limpar hoje
-                  </p>
-                  <p className="text-xs font-medium text-muted-foreground leading-relaxed">
-                    Remove todos os agendamentos desta data. Esta ação é irreversível.
-                  </p>
-                </div>
-
-                <AlertDialog open={isClearDialogOpen} onOpenChange={setIsClearDialogOpen}>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm" className="w-full h-11 font-bold">
-                      Limpar agendamentos
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent className="rounded-3xl border-none">
-                    <AlertDialogHeader>
-                      <AlertDialogTitle className="font-black text-xl">Confirmar Limpeza</AlertDialogTitle>
-                      <AlertDialogDescription className="font-medium">
-                        Esta ação é irreversível. Digite sua senha de admin para prosseguir.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <div className="my-2">
-                      <Input
-                        type="password"
-                        value={clearPassword}
-                        onChange={(e) => setClearPassword(e.target.value)}
-                        placeholder="Sua senha de acesso"
-                        className="h-12 bg-muted/40 border-none"
-                      />
-                    </div>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel className="rounded-2xl h-12 font-bold">Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleClearToday} disabled={isClearing} className="rounded-2xl h-12 bg-destructive text-white font-black">
-                        {isClearing ? <LoaderDots className="animate-spin" /> : "Sim, apagar tudo"}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
             </div>
-          </div>
 
           <div className="p-4 border-t bg-background flex items-center gap-3">
             <Button

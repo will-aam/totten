@@ -7,6 +7,7 @@ import { useEffect, useState, useCallback, memo, useMemo } from "react";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -343,13 +344,15 @@ export default function TeamPage() {
             placeholder="Buscar por nome, email ou especialidade..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 h-11 bg-card shadow-sm border-border"
+            className="pl-10 h-11 bg-card shadow-sm border-border rounded-full"
           />
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center p-12">
-            <LoaderDots className="h-8 w-8 text-primary animate-spin" />
+          <div className="flex flex-col gap-4 py-8">
+            <Skeleton className="h-20 w-full rounded-2xl" />
+            <Skeleton className="h-20 w-full rounded-2xl" />
+            <Skeleton className="h-20 w-full rounded-2xl" />
           </div>
         ) : filteredTeam.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/20 border border-dashed rounded-full">

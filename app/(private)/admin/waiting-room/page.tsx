@@ -7,6 +7,7 @@ import { getWaitingRoomData, completeCheckIn } from "@/app/actions/waiting-room"
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function WaitingRoomPage() {
   const [data, setData] = useState<any[]>([]);
@@ -52,8 +53,10 @@ export default function WaitingRoomPage() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-20">
-            <LoaderDots className="animate-spin h-8 w-8 text-primary" />
+          <div className="flex flex-col gap-4">
+            <Skeleton className="h-[120px] w-full rounded-2xl" />
+            <Skeleton className="h-[120px] w-full rounded-2xl" />
+            <Skeleton className="h-[120px] w-full rounded-2xl" />
           </div>
         ) : data.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center bg-card rounded-4xl border border-dashed border-border/60 shadow-sm">

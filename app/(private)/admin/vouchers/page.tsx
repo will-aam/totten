@@ -29,7 +29,6 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-
 type CompletedPackage = {
   id: string;
   clientId: string;
@@ -54,8 +53,9 @@ export default function AdminVouchersPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex justify-center p-8">
-          <LoaderDots className="h-8 w-8 animate-spin text-primary" />
+        <div className="flex flex-col gap-4 p-4 md:p-6 w-full max-w-400 mx-auto mt-10">
+          <Skeleton className="h-10 w-full rounded-2xl" />
+          <Skeleton className="h-[400px] w-full rounded-2xl" />
         </div>
       }
     >
@@ -137,7 +137,7 @@ function AdminVouchersPageContent() {
               placeholder="Buscar cliente (mín. 3 letras)..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 bg-card border-border/50 h-11 md:h-12 shadow-sm font-medium focus-visible:ring-primary/20 text-sm"
+              className="pl-10 rounded-full bg-card border-border/50 h-11 md:h-12 shadow-sm font-medium focus-visible:ring-primary/20 text-sm"
             />
           </div>
         </div>

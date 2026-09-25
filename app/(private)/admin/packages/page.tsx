@@ -43,6 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getSelfServiceSettingsAction, updateSelfServiceSettingsAction } from "@/app/actions/settings";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -107,7 +108,7 @@ function KpiCard({
       </CardHeader>
       <CardContent className="relative z-10">
         {loading ? (
-          <LoaderDots size="sm" className="text-primary/20" />
+          <Skeleton className="h-9 w-16 rounded-xl" />
         ) : (
           <div className="text-3xl font-bold text-foreground tracking-tight">
             {value}
@@ -262,7 +263,7 @@ function PackageListItem({ pkg, onOpenDetails, onManualCheckIn }: any) {
 
 export default function PackagesPage() {
   return (
-    <Suspense fallback={<div className="p-8 flex justify-center"><LoaderDots className="animate-spin h-8 w-8 text-primary" /></div>}>
+    <Suspense fallback={<div className="p-8 flex justify-center"><Skeleton className="h-10 w-full rounded-2xl" /><Skeleton className="h-[400px] w-full rounded-2xl" /></div>}>
       <PackagesPageContent />
     </Suspense>
   );
@@ -542,11 +543,11 @@ function PackagesPageContent() {
           </CardHeader>
           <CardContent className="px-0 pb-0 md:pb-6 md:px-6">
             {loading ? (
-              <div className="flex flex-col items-center py-20 gap-3">
-                <LoaderDots size="lg" className="text-primary" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                  Buscando pacotes...
-                </span>
+              <div className="flex flex-col gap-4 py-8 px-4 w-full">
+                <Skeleton className="h-20 w-full rounded-2xl" />
+                <Skeleton className="h-20 w-full rounded-2xl" />
+                <Skeleton className="h-20 w-full rounded-2xl" />
+                <Skeleton className="h-20 w-full rounded-2xl" />
               </div>
             ) : packages.length > 0 ? (
               <div className="flex flex-col">

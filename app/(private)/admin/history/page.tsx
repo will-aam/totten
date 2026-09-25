@@ -33,7 +33,6 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-
 type HistoryResponse = {
   data: EnrichedCheckIn[];
   total: number;
@@ -43,7 +42,7 @@ type HistoryResponse = {
 
 export default function AdminHistoryPage() {
   return (
-    <Suspense fallback={<div className="p-8 flex justify-center"><LoaderDots className="animate-spin h-8 w-8 text-primary" /></div>}>
+    <Suspense fallback={<div className="flex flex-col gap-4 p-4 md:p-6 w-full max-w-400 mx-auto mt-10"><Skeleton className="h-10 w-full rounded-2xl" /><Skeleton className="h-[400px] w-full rounded-2xl" /></div>}>
       <AdminHistoryPageContent />
     </Suspense>
   );

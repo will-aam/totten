@@ -23,6 +23,26 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
+  Drawer,
+  DrawerContent,
+  DrawerTrigger,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -95,6 +115,7 @@ export function ServiceEditModal({
   const [selectedStockItems, setSelectedStockItems] = useState<
     SelectedStockItem[]
   >([]);
+  const [isStockDrawerOpen, setIsStockDrawerOpen] = useState(false);
 
   // Estado para controlar o modal de confirmação de cascata
   const [confirmCascade, setConfirmCascade] = useState<{
@@ -530,30 +551,96 @@ export function ServiceEditModal({
 
           {formData.trackStock ? (
             <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 pt-1">
-              <Select onValueChange={handleAddStockItem} value="">
-                <SelectTrigger className="bg-muted/50 border-border/50 h-11 text-sm rounded-2xl">
-                  <SelectValue placeholder="Buscar insumo do estoque..." />
-                </SelectTrigger>
-                <SelectContent className="rounded-2xl shadow-xl">
-                  {availableStockItems.map((item) => (
-                    <SelectItem
-                      key={item.id}
-                      value={item.id}
-                      className="rounded-xl py-2.5 font-medium"
-                      disabled={selectedStockItems.some(
-                        (i) => i.stock_item_id === item.id,
-                      )}
-                    >
-                      {item.name} - R$ {item.unit_cost.toFixed(2)} / un
-                    </SelectItem>
-                  ))}
-                  {availableStockItems.length === 0 && (
-                    <div className="p-2 text-xs text-muted-foreground text-center">
-                      Nenhum insumo cadastrado no estoque geral.
+              {isMobile ? (
+                <Drawer open={isStockDrawerOpen} onOpenChange={setIsStockDrawerOpen}>
+                  <DrawerTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start text-muted-foreground font-normal bg-muted/50 border-border/50 h-11 text-sm rounded-2xl">
+                      Buscar insumo do estoque...
+                    </Button>
+                  </DrawerTrigger>
+                  <DrawerContent>
+                    <DrawerHeader>
+                      <DrawerTitle>Selecionar Insumo</DrawerTitle>
+                    </DrawerHeader>
+                    <div className="p-4 pt-0">
+                      <Command>
+                        <CommandInput placeholder="Buscar insumo..." className="rounded-xl" />
+                        <CommandList>
+                          <CommandEmpty>Nenhum insumo encontrado.</CommandEmpty>
+                          <CommandGroup>
+                            {availableStockItems.map((item) => {
+                              const isDisabled = selectedStockItems.some((i) => i.stock_item_id === item.id);
+                              return (
+                                <CommandItem
+                                  key={item.id}
+                                  value={item.name}
+                                  disabled={isDisabled}
+                                  onSelect={() => {
+                                    if (!isDisabled) {
+                                      handleAddStockItem(item.id);
+                                      setIsStockDrawerOpen(false);
+                                    }
+                                  }}
+                                  className="py-3 cursor-pointer rounded-xl"
+                                >
+                                  {item.name} - R$ {item.unit_cost.toFixed(2)} / un
+                                </CommandItem>
+                              );
+                            })}
+                            {availableStockItems.length === 0 && (
+                              <div className="p-4 text-sm text-muted-foreground text-center">
+                                Nenhum insumo cadastrado no estoque geral.
+                              </div>
+                            )}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
                     </div>
-                  )}
-                </SelectContent>
-              </Select>
+                  </DrawerContent>
+                </Drawer>
+              ) : (
+                <Popover open={isStockDrawerOpen} onOpenChange={setIsStockDrawerOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start text-muted-foreground font-normal bg-muted/50 border-border/50 h-11 text-sm rounded-2xl">
+                      Buscar insumo do estoque...
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-2xl" align="start">
+                    <Command>
+                      <CommandInput placeholder="Buscar insumo..." className="rounded-xl" />
+                      <CommandList>
+                        <CommandEmpty>Nenhum insumo encontrado.</CommandEmpty>
+                        <CommandGroup>
+                          {availableStockItems.map((item) => {
+                            const isDisabled = selectedStockItems.some((i) => i.stock_item_id === item.id);
+                            return (
+                              <CommandItem
+                                key={item.id}
+                                value={item.name}
+                                disabled={isDisabled}
+                                onSelect={() => {
+                                  if (!isDisabled) {
+                                    handleAddStockItem(item.id);
+                                    setIsStockDrawerOpen(false);
+                                  }
+                                }}
+                                className="cursor-pointer rounded-xl"
+                              >
+                                {item.name} - R$ {item.unit_cost.toFixed(2)} / un
+                              </CommandItem>
+                            );
+                          })}
+                          {availableStockItems.length === 0 && (
+                            <div className="p-4 text-sm text-muted-foreground text-center">
+                              Nenhum insumo cadastrado no estoque geral.
+                            </div>
+                          )}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              )}
 
               {selectedStockItems.length > 0 && (
                 <div className="flex flex-col gap-2 mt-1">
