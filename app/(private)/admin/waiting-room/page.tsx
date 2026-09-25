@@ -43,7 +43,7 @@ export default function WaitingRoomPage() {
   return (
     <>
       <AdminHeader title="Sala de Espera (Live)" />
-      <div className="p-4 md:p-6 max-w-5xl mx-auto w-full min-h-[calc(100vh-100px)] animate-in fade-in duration-500">
+      <div className="p-4 md:p-6 max-w-400 mx-auto w-full min-h-[calc(100vh-100px)] animate-in fade-in duration-500">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-black text-foreground">Aguardando Atendimento</h2>
           <span className="text-sm font-bold bg-primary/10 text-primary px-4 py-1.5 rounded-full">

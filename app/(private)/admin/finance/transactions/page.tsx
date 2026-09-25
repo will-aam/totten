@@ -316,7 +316,7 @@ export default function TransactionsPage() {
     <>
       <AdminHeader title="Extrato de Movimentações" />
 
-      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-7xl mx-auto w-full pb-24 md:pb-6 animate-in fade-in duration-700 min-h-[calc(100vh-100px)]">
+      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 animate-in fade-in duration-700 min-h-[calc(100vh-100px)]">
         {/* BARRA DE FILTROS - PREMIUM GLASSMORPHISM */}
         <div className="flex flex-col gap-4">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-background/50 backdrop-blur-md p-4 rounded-3xl border border-border/40 shadow-sm relative overflow-hidden">

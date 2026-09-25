@@ -165,7 +165,7 @@ export default function ReceivablesPage() {
     <>
       <AdminHeader title="Contas a Receber" />
 
-      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-7xl mx-auto w-full pb-24 md:pb-6 animate-in fade-in duration-700 min-h-[calc(100vh-100px)]">
+      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 animate-in fade-in duration-700 min-h-[calc(100vh-100px)]">
         {/* RESUMO PREMIUM GLASSMORPHISM */}
         {!isLoading && receivables.length > 0 && (
           <div className="relative overflow-hidden bg-background/50 backdrop-blur-md border border-emerald-500/20 rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 shadow-sm">

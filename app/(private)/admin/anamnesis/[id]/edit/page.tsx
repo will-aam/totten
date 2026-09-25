@@ -229,7 +229,7 @@ export default function EditAnamnesisTemplatePage({
     <>
       <AdminHeader title="Editar Fichário" />
 
-      <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 max-w-5xl mx-auto w-full pb-24 md:pb-6">
+      <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6">
         <div className="flex flex-row items-center gap-4 border-b border-border/50 pb-4 md:pb-6">
           <Button
             asChild

@@ -173,7 +173,7 @@ export default function PaymentMethodsPage() {
     <>
       <AdminHeader title="Meios de Pagamento" />
 
-      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-7xl mx-auto w-full pb-24 md:pb-6 relative animate-in fade-in duration-700 min-h-[calc(100vh-100px)]">
+      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative animate-in fade-in duration-700 min-h-[calc(100vh-100px)]">
         {/* CABEÇALHO PREMIUM GLASSMORPHISM */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 bg-background/50 backdrop-blur-md p-5 sm:p-6 rounded-3xl border border-border/40 shadow-sm relative overflow-hidden">
           <div className="absolute top-0 left-0 -mt-8 -ml-8 w-40 h-40 bg-primary/10 blur-3xl rounded-full -z-10 pointer-events-none" />

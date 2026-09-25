@@ -531,14 +531,15 @@ export function ServiceEditModal({
           {formData.trackStock ? (
             <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 pt-1">
               <Select onValueChange={handleAddStockItem} value="">
-                <SelectTrigger className="bg-muted/50 border-border/50 h-10 text-sm">
+                <SelectTrigger className="bg-muted/50 border-border/50 h-11 text-sm rounded-2xl">
                   <SelectValue placeholder="Buscar insumo do estoque..." />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-2xl shadow-xl">
                   {availableStockItems.map((item) => (
                     <SelectItem
                       key={item.id}
                       value={item.id}
+                      className="rounded-xl py-2.5 font-medium"
                       disabled={selectedStockItems.some(
                         (i) => i.stock_item_id === item.id,
                       )}

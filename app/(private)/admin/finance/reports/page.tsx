@@ -150,7 +150,7 @@ export default function ReportsPage() {
     <>
       <AdminHeader title="Relatórios Financeiros" />
 
-      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-7xl mx-auto w-full min-w-0 pb-32 md:pb-12 relative animate-in fade-in duration-700 min-h-[calc(100vh-100px)]">
+      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full min-w-0 pb-32 md:pb-12 relative animate-in fade-in duration-700 min-h-[calc(100vh-100px)]">
         <div className="flex flex-col gap-1.5 border-b border-border/40 pb-5">
           <h2 className="text-3xl font-black tracking-tight bg-linear-to-br from-foreground to-foreground/70 bg-clip-text text-transparent flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-full text-primary">
