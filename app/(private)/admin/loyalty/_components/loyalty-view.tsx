@@ -3,116 +3,22 @@
 import { useState } from "react";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import { Download, ExternalLink } from "lucide-react";
-import {
-  Trophy,
-  UserCircle,
-  Cog,
-  Plus,
-  Search,
-  Gift,
-  Star,
-  InfoCircle,
-} from "@boxicons/react";
+import { UserCircle, Cog } from "@boxicons/react";
 
 import { LoyaltyVoucher } from "./loyalty-voucher";
-import { toast } from "sonner";
-
-// Dados estáticos de exemplo
-const MOCK_CLIENTS = [
-  { id: 1, name: "Maria Silva", points: 150, lastCheckIn: "24/09/2026", tier: "Ouro" },
-  { id: 2, name: "João Pedro", points: 85, lastCheckIn: "20/09/2026", tier: "Prata" },
-  { id: 3, name: "Ana Beatriz", points: 45, lastCheckIn: "15/09/2026", tier: "Bronze" },
-  { id: 4, name: "Carlos Souza", points: 12, lastCheckIn: "01/09/2026", tier: "Bronze" },
-];
-
-const MOCK_REWARDS = [
-  { id: 1, title: "Desconto de 10% no pacote", pointsCost: 50 },
-  { id: 2, title: "1 Sessão Extra Grátis", pointsCost: 100 },
-  { id: 3, title: "Cesta de Produtos", pointsCost: 300 },
-];
+import { LoyaltyOverviewTab } from "./loyalty-overview-tab";
+import { LoyaltySettingsTab } from "./loyalty-settings-tab";
+import { MOCK_CLIENTS, MOCK_REWARDS } from "./mock-data";
 
 export function LoyaltyView() {
   const [activeTab, setActiveTab] = useState("overview");
   const [programScope, setProgramScope] = useState<"global" | "specific">("global");
-  const [pendingScope, setPendingScope] = useState<"global" | "specific" | null>(null);
-  const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [isProgramActive, setIsProgramActive] = useState(false);
+  
+  // States that would typically come from a DB or API
+  const [clients, setClients] = useState(MOCK_CLIENTS);
+  const [rewards, setRewards] = useState(MOCK_REWARDS);
   const [selectedClientForVoucher, setSelectedClientForVoucher] = useState<(typeof MOCK_CLIENTS)[0] | null>(null);
-
-  const [checkInActive, setCheckInActive] = useState(true);
-  const [scheduleActive, setScheduleActive] = useState(true);
-
-  const handleCheckInToggle = (checked: boolean) => {
-    if (!checked && !scheduleActive) {
-      toast.error("Ao menos uma regra de ganho deve ficar ativa!");
-      return;
-    }
-    setCheckInActive(checked);
-  };
-
-  const handleScheduleToggle = (checked: boolean) => {
-    if (!checked && !checkInActive) {
-      toast.error("Ao menos uma regra de ganho deve ficar ativa!");
-      return;
-    }
-    setScheduleActive(checked);
-  };
-
-  const handleScopeChange = (value: "global" | "specific") => {
-    if (value !== programScope) {
-      setPendingScope(value);
-      setIsAlertOpen(true);
-    }
-  };
-
-  const confirmScopeChange = () => {
-    if (pendingScope) {
-      setProgramScope(pendingScope);
-    }
-    setIsAlertOpen(false);
-  };
 
   return (
     <>
@@ -133,292 +39,26 @@ export function LoyaltyView() {
 
           {/* TAB 1: VISÃO GERAL */}
           <TabsContent value="overview" className="space-y-6">
-            {!isProgramActive ? (
-              <div className="bg-primary/10 border border-primary/20 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-bold flex items-center gap-2 text-primary">
-                    <Trophy size="md" />
-                    Fidelize seus clientes
-                  </h2>
-                  <p className="text-muted-foreground text-sm mt-1">
-                    Configure regras de pontos para cada check-in realizado e ofereça
-                    recompensas incríveis para quem mais frequenta o seu espaço.
-                  </p>
-                </div>
-                <Button variant="default" className="rounded-full shrink-0" onClick={() => setIsProgramActive(true)}>
-                  Ativar Programa
-                </Button>
-              </div>
-            ) : (
-              <>
-                <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
-                  <div className="relative w-full sm:w-96">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size="sm" />
-                <Input
-                  placeholder="Buscar cliente por nome..."
-                  className="pl-10 rounded-full bg-card"
-                />
-              </div>
-
-              {programScope === "specific" && (
-                <Button className="rounded-full w-full sm:w-auto flex items-center gap-2">
-                  <Plus size="xs" />
-                  Incluir Cliente
-                </Button>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {MOCK_CLIENTS.map((client) => (
-                <Card key={client.id} className="rounded-2xl shadow-sm border-border/50 relative overflow-hidden">
-                  {/* Ícones de fundo (design do dashboard) */}
-                  <Star
-                    aria-hidden="true"
-                    type="solid"
-                    width={100}
-                    height={100}
-                    rotate={-15}
-                    className="pointer-events-none absolute -right-6 top-1/2 -translate-y-1/2 text-foreground/5"
-                  />
-                  <Star
-                    aria-hidden="true"
-                    type="solid"
-                    width={40}
-                    height={40}
-                    rotate={20}
-                    className="pointer-events-none absolute right-12 -bottom-4 text-foreground/5"
-                  />
-
-                  <CardContent className="relative z-10 p-5 flex flex-col items-center text-center gap-2">
-                    <div className="space-y-1 mt-2">
-                      <h3 className="font-semibold text-lg">{client.name}</h3>
-                      <p className="text-xs text-muted-foreground">
-                        Último Check-in: {client.lastCheckIn}
-                      </p>
-                    </div>
-                    <div className="mt-2 inline-flex items-center gap-1.5 bg-secondary/50 px-3 py-1 rounded-full text-sm font-medium">
-                      <span className="text-primary font-bold">{client.points}</span> 
-                      <span>pts</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 mt-4 w-full pt-4 border-t border-border/50">
-                      <Button 
-                        variant="outline" 
-                        className="rounded-xl flex-1 flex flex-col gap-1 h-auto py-2 text-xs text-muted-foreground hover:text-foreground"
-                        onClick={() => setSelectedClientForVoucher(client)}
-                      >
-                        <Download size={16} />
-                        Baixar
-                      </Button>
-                      <Button variant="outline" className="rounded-xl flex-1 flex flex-col gap-1 h-auto py-2 text-xs text-muted-foreground hover:text-foreground">
-                        <ExternalLink size={16} />
-                        Perfil
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            <Pagination className="mt-8">
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious href="#" className="pointer-events-none opacity-50 rounded-full" />
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink href="#" isActive className="rounded-full">1</PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink href="#" className="rounded-full">2</PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationNext href="#" className="rounded-full" />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          </>
-        )}
-      </TabsContent>
+            <LoyaltyOverviewTab 
+              isProgramActive={isProgramActive}
+              setIsProgramActive={setIsProgramActive}
+              programScope={programScope}
+              clients={clients}
+              onOpenVoucher={setSelectedClientForVoucher}
+            />
+          </TabsContent>
 
           {/* TAB 2: CONFIGURAÇÕES */}
-          <TabsContent value="settings" className="flex flex-col gap-8 md:gap-10 pt-4">
-            
-            {/* Seção 1: Abrangência */}
-            <div className="flex flex-col gap-4">
-              <div>
-                <h3 className="text-lg font-semibold">Abrangência do Programa</h3>
-                <p className="text-sm text-muted-foreground">
-                  Defina se o sistema de pontos será aplicado a todos os clientes ou apenas a clientes selecionados.
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <Select value={programScope} onValueChange={handleScopeChange}>
-                    <SelectTrigger className="w-full sm:w-80 rounded-2xl bg-card">
-                      <SelectValue placeholder="Selecione a abrangência" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl">
-                      <SelectItem value="global" className="rounded-xl">Global (Todos os clientes participam)</SelectItem>
-                      <SelectItem value="specific" className="rounded-xl">Específico (Apenas clientes adicionados)</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <button className="text-primary hover:bg-primary/10 p-2 rounded-full transition-colors shrink-0">
-                        <InfoCircle size="sm" />
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80 rounded-2xl text-sm leading-relaxed shadow-xl">
-                      <div className="space-y-2">
-                        <p><strong>Global:</strong> Todos os clientes começam a acumular pontos automaticamente a partir do momento em que o programa é ativado.</p>
-                        <p><strong>Específico:</strong> Apenas os clientes que você adicionar manualmente irão acumular pontos.</p>
-                        <p className="text-xs text-muted-foreground mt-2 border-t pt-2 border-border/50">
-                          Nota: Pontos não são retroativos. Eles só passam a contar a partir da data de ativação ou adição do cliente no programa.
-                        </p>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-            </div>
-
-            <div className="h-px bg-border/50 w-full" />
-
-            {/* Seção 2: Limites */}
-            <div className="flex flex-col gap-4">
-              <div>
-                <h3 className="text-lg font-semibold">Limites de Pontuação</h3>
-                <p className="text-sm text-muted-foreground">
-                  Defina o limite máximo de pontos que um cliente pode acumular. Isso ajuda a controlar o resgate de recompensas.
-                </p>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-base font-medium">Limite Máximo de Pontos</Label>
-                  <p className="text-sm text-muted-foreground max-w-[200px] sm:max-w-none">
-                    O saldo do cliente não ultrapassará este valor.
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Input type="number" defaultValue={500} className="w-20 text-center rounded-2xl bg-card" />
-                </div>
-              </div>
-            </div>
-
-            <div className="h-px bg-border/50 w-full" />
-
-            {/* Seção 3: Regras de Ganho */}
-            <div className="flex flex-col gap-4">
-              <div>
-                <h3 className="text-lg font-semibold">Regras de Ganho</h3>
-                <p className="text-sm text-muted-foreground">
-                  Defina quantos pontos o cliente ganha ao realizar ações no sistema. Atenção: estes valores não podem ultrapassar o limite máximo.
-                </p>
-              </div>
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-base font-medium">Pontos por Check-in</Label>
-                    <p className="text-sm text-muted-foreground max-w-[200px] sm:max-w-none">
-                      Quantidade recebida cada vez que o status mudar para "Atendido".
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Input 
-                      type="number" 
-                      defaultValue={10} 
-                      disabled={!checkInActive}
-                      className="w-16 sm:w-20 text-center rounded-2xl bg-card disabled:opacity-50" 
-                    />
-                    <Switch 
-                      checked={checkInActive} 
-                      onCheckedChange={handleCheckInToggle} 
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-base font-medium">Pontos por Agendamento</Label>
-                    <p className="text-sm text-muted-foreground max-w-[200px] sm:max-w-none">
-                      Bônus extra para clientes que agendam pelo link.
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Input 
-                      type="number" 
-                      defaultValue={5} 
-                      disabled={!scheduleActive}
-                      className="w-16 sm:w-20 text-center rounded-2xl bg-card disabled:opacity-50" 
-                    />
-                    <Switch 
-                      checked={scheduleActive} 
-                      onCheckedChange={handleScheduleToggle} 
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="h-px bg-border/50 w-full" />
-
-            {/* Seção 4: Recompensas */}
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-lg font-semibold">Recompensas e Resgates</h3>
-                  <p className="text-sm text-muted-foreground">
-                    O que o cliente pode fazer com os pontos.
-                  </p>
-                </div>
-                <Button size="sm" className="rounded-full flex items-center gap-1 w-fit">
-                  <Plus size="xs" />
-                  <span>Nova Recompensa</span>
-                </Button>
-              </div>
-              <div className="space-y-3">
-                {MOCK_REWARDS.map((reward) => (
-                  <div key={reward.id} className="flex items-center justify-between p-4 rounded-2xl border border-border bg-card">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-primary/10 rounded-full text-primary">
-                        <Gift size="sm" />
-                      </div>
-                      <span className="font-medium text-sm sm:text-base">{reward.title}</span>
-                    </div>
-                    <div className="font-bold text-primary whitespace-nowrap ml-2">
-                      {reward.pointsCost} pts
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-              <AlertDialogContent className="rounded-2xl">
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Tem certeza que deseja mudar a abrangência?</AlertDialogTitle>
-                  <AlertDialogDescription className="space-y-2" asChild>
-                    <div>
-                      <div>
-                        Mudar de <strong>{programScope === "global" ? "Global" : "Específico"}</strong> para <strong>{pendingScope === "global" ? "Global" : "Específico"}</strong> pode alterar quem recebe pontos.
-                      </div>
-                      <div className="text-destructive font-medium">
-                        Atenção: Os pontos começam a ser contabilizados apenas a partir de agora. Se você estiver restringindo o programa, clientes removidos poderão perder o acesso aos pontos atuais.
-                      </div>
-                    </div>
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel className="rounded-full">Cancelar</AlertDialogCancel>
-                  <AlertDialogAction className="rounded-full" onClick={confirmScopeChange}>
-                    Confirmar Mudança
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+          <TabsContent value="settings" className="flex flex-col gap-8 md:gap-6">
+            <LoyaltySettingsTab 
+              rewards={rewards}
+              setRewards={setRewards}
+              programScope={programScope}
+              setProgramScope={setProgramScope}
+            />
           </TabsContent>
         </Tabs>
+
         {/* Modal do Voucher */}
         {selectedClientForVoucher && (
           <LoyaltyVoucher
@@ -426,7 +66,7 @@ export function LoyaltyView() {
             onOpenChange={(open) => !open && setSelectedClientForVoucher(null)}
             clientName={selectedClientForVoucher.name}
             points={selectedClientForVoucher.points}
-            rewards={MOCK_REWARDS}
+            rewards={rewards}
           />
         )}
       </div>
