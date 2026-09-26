@@ -1,8 +1,8 @@
 import {
   Note,
   ClipboardDetail,
-  Tickets,
   History,
+  PrintDollar,
   Gift,
   CalendarDetail,
   LinkAlt,
@@ -31,6 +31,7 @@ export type SubNavItem = {
 
 export type OpenModule =
   | "cadastros"
+  | "registros"
   | "autoatendimento"
   | "finance"
   | null;
@@ -56,27 +57,7 @@ export const navItems: NavItem[] = [
     permission: "FINANCE", // mantém a mesma regra de acesso de antes (owner ou permissão FINANCE) — remova essa linha se quiser liberar geral
   },
 
-  {
-    title: "Histórico Check-in",
-    href: "/admin/history",
-    icon: ClipboardDetail as BoxIcon,
-    active: true,
-    permission: "HISTORY", //  Depende dessa permissão específica
-  },
-  {
-    title: "Vouchers",
-    href: "/admin/vouchers",
-    icon: Tickets as BoxIcon,
-    active: true,
-    ownerOnly: true,
-  },
-  {
-    title: "Histórico de Ações",
-    href: "/admin/notes",
-    icon: History as BoxIcon,
-    active: true,
-    ownerOnly: true,
-  },
+
   {
     title: "Notas",
     href: "/admin/manual-notes",
@@ -89,12 +70,7 @@ export const navItems: NavItem[] = [
     icon: Gift as BoxIcon,
     active: true,
   },
-  {
-    title: "Programa de Fidelidade",
-    href: "/admin/loyalty",
-    icon: Trophy as BoxIcon,
-    active: true,
-  },
+
 ];
 
 export const cadastrosSubItems: SubNavItem[] = [
@@ -105,6 +81,27 @@ export const cadastrosSubItems: SubNavItem[] = [
   {
     title: "Profissionais",
     href: "/admin/team",
+    active: true,
+    ownerOnly: true,
+  },
+];
+
+export const registrosSubItems: SubNavItem[] = [
+  {
+    title: "Histórico Check-in",
+    href: "/admin/history",
+    active: true,
+    permission: "HISTORY",
+  } as any, // casting to SubNavItem with permission
+  {
+    title: "Comprovantes",
+    href: "/admin/vouchers",
+    active: true,
+    ownerOnly: true,
+  },
+  {
+    title: "Histórico de Ações",
+    href: "/admin/notes",
     active: true,
     ownerOnly: true,
   },

@@ -13,11 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PackageVoucher } from "@/app/(private)/admin/clients/_components/package-voucher";
 import {
   Search,
-  Sticker,
   CheckCircle,
-  ChevronLeft,
-  ChevronRight,
-  LoaderDots,
 } from "@boxicons/react";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
@@ -29,6 +25,14 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 type CompletedPackage = {
   id: string;
   clientId: string;
@@ -95,7 +99,7 @@ function AdminVouchersPageContent() {
 
   const query = new URLSearchParams({
     page: page.toString(),
-    limit: "15",
+    limit: "10",
   });
 
   if (debouncedSearch && debouncedSearch.trim().length >= 3) {
@@ -124,7 +128,7 @@ function AdminVouchersPageContent() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border/40 pb-6">
           <div className="flex flex-col">
             <h1 className="text-xl md:text-2xl font-black tracking-tight text-foreground">
-              Vouchers Emitidos
+              Comprovantes Emitidos
             </h1>
             <p className="text-xs md:text-sm font-medium text-muted-foreground mt-0.5">
               Gere e compartilhe os comprovantes de pacotes concluídos.
@@ -144,7 +148,6 @@ function AdminVouchersPageContent() {
 
         <div className="flex items-center justify-between pt-1 pb-1">
           <h2 className="text-lg md:text-xl font-black text-foreground flex items-center gap-1.5 whitespace-nowrap">
-            <Sticker className="h-5 w-5 md:h-6 md:w-6 text-primary" />
             Prontos para Envio
           </h2>
           {!isLoading && (
@@ -171,69 +174,120 @@ function AdminVouchersPageContent() {
           ) : vouchers.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center bg-card rounded-4xl border border-dashed border-border/60 shadow-sm mt-1 p-5">
               <div className="h-14 w-14 bg-muted rounded-full flex items-center justify-center mb-3.5">
-                <Sticker className="h-7 w-7 text-muted-foreground/50" />
               </div>
               <h3 className="text-lg font-bold text-foreground">
                 {search.length >= 3
-                  ? "Nenhum voucher encontrado"
+                  ? "Nenhum comprovante encontrado"
                   : "Nenhum pacote concluído"}
               </h3>
               <p className="mt-1 text-sm font-medium text-muted-foreground max-w-sm px-4">
                 {search.length >= 3
                   ? "Tente buscar por outro nome de cliente ou nome de pacote."
-                  : "Quando um cliente concluir todas as sessões do pacote, o voucher aparecerá aqui."}
+                  : "Quando um cliente concluir todas as sessões do pacote, o comprovante aparecerá aqui."}
               </p>
             </div>
           ) : (
             <div className="grid gap-2.5">
-              <div className="grid gap-2.5 md:gap-0 md:divide-y md:divide-border/30">
+              {/* MOBILE LAYOUT (Cards) */}
+              <div className="grid gap-3 md:hidden">
                 {vouchers.map((item, index) => (
                   <div
                     key={item.id}
-                    className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 md:px-0 md:py-5 bg-card md:bg-transparent rounded-2xl md:rounded-none border border-border/50 md:border-0 shadow-sm md:shadow-none gap-3 md:gap-6 animate-in slide-in-from-bottom-2"
+                    className="group flex flex-col justify-between p-4 bg-card rounded-2xl border border-border/50 shadow-sm gap-3 animate-in slide-in-from-bottom-2"
                     style={{ animationDelay: `${index * 40}ms` }}
                   >
-                    <div className="flex items-start gap-3.5 w-full sm:w-auto">
-                      <div className="flex flex-col w-full">
-                        <span className="font-black text-foreground text-sm md:text-base leading-tight">
-                          {item.clientName}
-                        </span>
-                        <span className="text-xs md:text-sm font-medium text-muted-foreground mt-0.5 leading-tight">
-                          {item.packageName} • {item.totalSessions} Sessões
-                        </span>
+                    <div className="flex flex-col w-full">
+                      <span className="font-black text-foreground text-sm leading-tight">
+                        {item.clientName}
+                      </span>
+                      <span className="text-xs font-medium text-muted-foreground mt-0.5 leading-tight">
+                        {item.packageName} • {item.totalSessions} Sessões
+                      </span>
 
-                        {item.hasVoucher && (
-                          <>
-                            <Badge
-                              variant="outline"
-                              className="md:hidden mt-1.5 w-fit text-[9px] font-bold uppercase tracking-wide bg-emerald-500/10 text-emerald-600 border-emerald-500/20 px-2.5 py-1 whitespace-nowrap"
-                            >
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              Voucher já emitido
-                            </Badge>
-                            <span className="hidden md:inline-flex items-center gap-1 mt-1.5 text-xs font-semibold text-emerald-600 w-fit">
-                              <CheckCircle className="h-3.5 w-3.5" />
-                              Voucher já emitido
-                            </span>
-                          </>
-                        )}
-                      </div>
+                      {item.hasVoucher && (
+                        <Badge
+                          variant="outline"
+                          className="mt-2 w-fit text-[9px] font-bold uppercase tracking-wide bg-emerald-500/10 text-emerald-600 border-emerald-500/20 px-2.5 py-1 whitespace-nowrap"
+                        >
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Comprovante já emitido
+                        </Badge>
+                      )}
                     </div>
 
-                    <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto mt-1 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-0 border-border/40 shrink-0">
-                      <span className="text-[10px] md:text-xs font-bold md:font-semibold uppercase tracking-wide text-muted-foreground px-3 py-1.5 md:px-0 md:py-0 bg-muted/50 md:bg-transparent rounded-full md:rounded-none whitespace-nowrap leading-none shrink-0">
+                    <div className="flex items-center justify-between w-full mt-2 pt-3 border-t border-border/40 shrink-0">
+                      <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground px-3 py-1.5 bg-muted/50 rounded-full whitespace-nowrap leading-none shrink-0">
                         {item.completionDate}
                       </span>
 
                       <Button
                         onClick={() => handleOpenVoucher(item)}
-                        className="md: h-10 md:h-11 px-4 md:px-5 text-xs md:text-sm font-bold shadow-sm bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground active:scale-95 transition-all shrink-0"
+                        className="h-10 px-4 text-xs font-bold shadow-sm bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground active:scale-95 transition-all shrink-0 rounded-full"
                       >
-                        {item.hasVoucher ? "Reenviar" : "Gerar Voucher"}
+                        {item.hasVoucher ? "Reenviar" : "Gerar Comprovante"}
                       </Button>
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* DESKTOP LAYOUT (Tabela) */}
+              <div className="hidden md:block border border-border/50 rounded-2xl bg-card overflow-hidden shadow-sm">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30 hover:bg-muted/30 border-b-border/50">
+                      <TableHead className="font-semibold text-foreground h-12 w-12 text-center">#</TableHead>
+                      <TableHead className="font-semibold text-foreground h-12">Cliente</TableHead>
+                      <TableHead className="font-semibold text-foreground h-12">Pacote</TableHead>
+                      <TableHead className="font-semibold text-foreground h-12">Data de Conclusão</TableHead>
+                      <TableHead className="font-semibold text-foreground h-12">Status</TableHead>
+                      <TableHead className="text-right font-semibold text-foreground h-12">Ação</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {vouchers.map((item, index) => (
+                      <TableRow
+                        key={item.id}
+                        className="group hover:bg-muted/20 transition-colors border-b-border/50 animate-in slide-in-from-bottom-2"
+                        style={{ animationDelay: `${index * 40}ms` }}
+                      >
+                        <TableCell className="text-center font-medium text-muted-foreground align-middle">
+                          {(page - 1) * 10 + index + 1}
+                        </TableCell>
+                        <TableCell className="font-bold text-foreground align-middle">
+                          {item.clientName}
+                        </TableCell>
+                        <TableCell className="align-middle">
+                          <span className="font-medium text-foreground">{item.packageName}</span>
+                          <span className="text-muted-foreground text-xs block mt-0.5">{item.totalSessions} Sessões</span>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground font-medium text-sm align-middle">
+                          {item.completionDate}
+                        </TableCell>
+                        <TableCell className="align-middle">
+                          {item.hasVoucher ? (
+                            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 gap-1 rounded-full whitespace-nowrap font-bold">
+                              <CheckCircle className="h-3.5 w-3.5" />
+                              Emitido
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20 rounded-full whitespace-nowrap font-bold">
+                              Disponível
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right align-middle">
+                          <Button
+                            onClick={() => handleOpenVoucher(item)}
+                            className="h-9 px-5 text-xs font-bold shadow-sm bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground active:scale-95 transition-all shrink-0 rounded-full"
+                          >
+                            {item.hasVoucher ? "Reenviar" : "Gerar Comprovante"}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
 
               {totalPages > 1 && (

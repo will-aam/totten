@@ -171,15 +171,15 @@ export async function loginWithCpfPhone(cpf: string, phone: string, orgSlug: str
     const last2Cpf = rawCpf.slice(-2);
 
     const potentialClients = await db.client.findMany({
-      where: { 
+      where: {
         organization_id: org.id,
         cpf: { contains: last2Cpf },
         phone_whatsapp: { contains: last4Phone }
       },
     });
 
-    const client = potentialClients.find(c => 
-      c.cpf?.replace(/\D/g, "") === rawCpf && 
+    const client = potentialClients.find(c =>
+      c.cpf?.replace(/\D/g, "") === rawCpf &&
       c.phone_whatsapp?.replace(/\D/g, "") === rawPhone
     );
 

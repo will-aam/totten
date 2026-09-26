@@ -39,7 +39,7 @@ export function ClientListView({
   isLoading = false,
 }: ClientListViewProps) {
   const [page, setPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 10;
 
   const handleSearchChange = (val: string) => {
     onSearchChange(val);
@@ -67,12 +67,10 @@ export function ClientListView({
         </div>
 
         <div className="flex flex-col gap-2">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider px-2">
-            Selecione um cliente
-          </h2>
+
           <div className="flex flex-col gap-2">
             {isLoading ? (
-              Array.from({ length: 5 }).map((_, i) => (
+              Array.from({ length: 10 }).map((_, i) => (
                 <Skeleton key={i} className="h-[66px] w-full rounded-full md:rounded-md" />
               ))
             ) : displayedClients.length > 0 ? (
@@ -101,7 +99,7 @@ export function ClientListView({
               </div>
             )}
           </div>
-          
+
           {/* Paginação */}
           {!isLoading && totalPages > 1 && (
             <div className="pt-4 mt-2">

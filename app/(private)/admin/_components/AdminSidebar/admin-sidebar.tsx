@@ -11,6 +11,8 @@ import {
   Wallet,
   Mobile,
   ListPlus,
+  Archive,
+  Trophy,
 } from "@boxicons/react";
 import {
   Sidebar,
@@ -32,6 +34,7 @@ import { SidebarUserFooter } from "./sidebar-footer";
 import {
   navItems,
   cadastrosSubItems,
+  registrosSubItems,
   autoatendimentoSubItems,
   financeSubItems,
   type OpenModule,
@@ -58,6 +61,8 @@ export function AdminSidebar() {
   useEffect(() => {
     if (cadastrosSubItems.some((i) => pathname.startsWith(i.href))) {
       setOpenModule("cadastros");
+    } else if (registrosSubItems.some((i) => pathname.startsWith(i.href))) {
+      setOpenModule("registros");
     } else if (
       autoatendimentoSubItems.some(
         (i) => pathname.startsWith(i.href) && i.href !== "#",
@@ -77,6 +82,9 @@ export function AdminSidebar() {
   const closeMobile = () => setOpenMobile(false);
 
   const isCadastrosActive = cadastrosSubItems.some((i) =>
+    pathname.startsWith(i.href),
+  );
+  const isRegistrosActive = registrosSubItems.some((i) =>
     pathname.startsWith(i.href),
   );
   const isAutoActive = autoatendimentoSubItems.some((i) =>
@@ -160,6 +168,33 @@ export function AdminSidebar() {
                 />
               )}
 
+              {/* Registros */}
+              {(() => {
+                const filteredRegistrosItems = registrosSubItems.filter((item) => {
+                  if (item.ownerOnly && !isOwner) return false;
+                  const permission = (item as any).permission;
+                  if (permission && !isOwner && !session?.user?.permissions?.includes(permission)) return false;
+                  return true;
+                });
+
+                if (filteredRegistrosItems.length === 0) return null;
+
+                return (
+                  <NavCollapsibleGroup
+                    label="Registros"
+                    icon={Archive}
+                    isOpen={openModule === "registros"}
+                    onOpenChange={(open) =>
+                      setOpenModule(open ? "registros" : null)
+                    }
+                    isActive={isRegistrosActive}
+                    items={filteredRegistrosItems}
+                    pathname={pathname}
+                    onNavigate={closeMobile}
+                  />
+                );
+              })()}
+
               {/* Demais itens do menu principal */}
               {navItems.map((item) => {
                 //  Bloqueia se for exclusivo da dona
@@ -216,6 +251,24 @@ export function AdminSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              {/* Módulo: Programa de Fidelidade - Apenas Owner */}
+              {isOwner && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith("/admin/loyalty")}
+                    className="hover:bg-muted/50"
+                  >
+                    <Link href="/admin/loyalty" onClick={closeMobile}>
+                      <div className="flex items-center gap-2">
+                        <NavIcon icon={Trophy} isActive={pathname.startsWith("/admin/loyalty")} />
+                        <span>Programa de Fidelidade</span>
+                      </div>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+
               {/* Módulo: Autoatendimento - Apenas Owner */}
               {isOwner && (
                 <NavCollapsibleGroup
@@ -252,6 +305,8 @@ export function AdminSidebar() {
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
+
+
                 ) : (
                   <NavCollapsibleGroup
                     label="Financeiro"

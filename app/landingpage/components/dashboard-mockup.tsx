@@ -50,7 +50,7 @@ export default function DashboardMockup() {
                     <aside className="border-r border-totten bg-[#0c0c0e] p-3 text-xs">
                         <div className="mb-4 flex items-center gap-2 px-2 py-1">
                             <Bird className="h-4 w-4" />{" "}
-                            <span className="font-semibold">Totten</span>
+                            <span className="font-philosopher font-bold text-primary">Totten</span>
                         </div>
                         <div className="mb-1 px-2 text-[10px] uppercase tracking-wider text-zinc-500">
                             Menu

@@ -122,11 +122,9 @@ export function PackageVoucher({
             </div>
 
             {/* Conteúdo */}
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground mb-3 z-10 shrink-0">
-              <BadgeCheck className="h-6 w-6" />
-            </div>
 
-            <h2 className="font-serif text-2xl font-bold text-foreground mb-1 z-10 leading-tight">
+
+            <h2 className="font-philosopher text-2xl font-bold text-foreground mb-1 z-10 leading-tight">
               Parabéns!
             </h2>
             <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold mb-4 z-10">
@@ -175,10 +173,10 @@ export function PackageVoucher({
                       <span className="text-foreground font-medium truncate">
                         {date
                           ? new Date(date).toLocaleDateString("pt-BR", {
-                              day: "2-digit",
-                              month: "2-digit",
-                              year: "2-digit",
-                            })
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "2-digit",
+                          })
                           : "--/--/--"}{" "}
                         {/* Caso não tenha registro, mostra os traços para não quebrar a UI */}
                       </span>
@@ -190,7 +188,7 @@ export function PackageVoucher({
 
             {/* Footer */}
             <div className="mt-6 pt-3 w-full border-t border-dashed border-border z-10 flex justify-between items-center px-1">
-              <span className="font-serif font-bold text-foreground text-sm">
+              <span className="font-philosopher font-bold text-foreground text-sm">
                 Totten
               </span>
               <span className="text-[10px] text-muted-foreground font-medium">

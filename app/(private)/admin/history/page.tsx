@@ -52,7 +52,7 @@ function AdminHistoryPageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  
+
   const pageParam = searchParams.get("page");
   const page = pageParam ? parseInt(pageParam, 10) : 1;
 
@@ -93,7 +93,7 @@ function AdminHistoryPageContent() {
     setPage(1);
   };
 
-  const query = new URLSearchParams({ page: page.toString(), limit: "15" });
+  const query = new URLSearchParams({ page: page.toString(), limit: "10" });
   if (debouncedSearch) query.append("q", debouncedSearch);
   if (dateFrom) query.append("from", dateFrom.toISOString());
   if (dateTo) query.append("to", dateTo.toISOString());
@@ -138,7 +138,7 @@ function AdminHistoryPageContent() {
         <div>
           {isLoading ? (
             <div className="flex flex-col gap-4 bg-card p-6 rounded-3xl border border-border/50">
-              {Array.from({ length: 5 }).map((_, i) => (
+              {Array.from({ length: 10 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-4">
                   <Skeleton className="h-12 w-12 rounded-2xl shrink-0 bg-muted/50" />
                   <div className="flex flex-col gap-2 w-full">
@@ -175,7 +175,7 @@ function AdminHistoryPageContent() {
                           className={page === 1 ? "pointer-events-none opacity-50" : ""}
                         />
                       </PaginationItem>
-                      
+
                       {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
                         // Lógica simples para mostrar poucas páginas (ex: 1, 2, 3, ..., ultima)
                         if (
@@ -194,7 +194,7 @@ function AdminHistoryPageContent() {
                             </PaginationItem>
                           );
                         }
-                        
+
                         if (p === page - 2 || p === page + 2) {
                           return (
                             <PaginationItem key={p}>

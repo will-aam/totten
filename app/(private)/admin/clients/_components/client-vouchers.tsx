@@ -48,7 +48,7 @@ export function ClientVouchers({ clientId, clientName }: ClientVouchersProps) {
         <CardHeader className="px-0 pt-0 md:pt-6 md:px-6 pb-4">
           <CardTitle className="text-lg flex items-center gap-2 text-foreground">
             <MedalStarAlt className="h-5 w-5 text-primary" /> Histórico de
-            Vouchers
+            Comprovantes
           </CardTitle>
         </CardHeader>
         <CardContent className="px-0 pb-0 md:pb-6 md:px-6">
@@ -97,7 +97,7 @@ export function ClientVouchers({ clientId, clientName }: ClientVouchersProps) {
                     onClick={() => setVisibleCount((prev) => prev + 3)}
                     className="text-xs px-6 border-border/50 bg-background/50 hover:bg-muted"
                   >
-                    Ver mais vouchers
+                    Ver mais comprovantes
                   </Button>
                 </div>
               )}
@@ -108,7 +108,7 @@ export function ClientVouchers({ clientId, clientName }: ClientVouchersProps) {
                 <MedalStarAlt className="h-5 w-5 text-muted-foreground/50" />
               </div>
               <p className="text-sm text-muted-foreground font-medium">
-                Nenhum voucher ainda
+                Nenhum comprovante ainda
               </p>
             </div>
           )}

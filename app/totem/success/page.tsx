@@ -128,9 +128,8 @@ function SuccessContent() {
         </div>
 
         <p className="text-sm font-medium text-muted-foreground animate-pulse mt-2">
-          {`Retornando em ${countdown} ${
-            countdown === 1 ? "segundo" : "segundos"
-          }...`}
+          {`Retornando em ${countdown} ${countdown === 1 ? "segundo" : "segundos"
+            }...`}
         </p>
       </div>
     </div>

@@ -405,7 +405,7 @@ export function ClientAreaView({
                   <FileText className="h-5 w-5 opacity-70" /> Termos de Uso e Políticas
                 </h3>
 
-                <div className="bg-white border rounded-3xl p-6 shadow-sm">
+                <div className="bg-white border rounded-2xl p-6 shadow-sm">
                   <TermsOfUseBox text={termsText} requirePrepayment={false} className="border-none p-0 bg-transparent text-sm text-muted-foreground" />
                 </div>
               </div>
