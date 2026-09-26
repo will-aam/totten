@@ -52,6 +52,12 @@ export default async function AgendarPage({
     return notFound();
   }
 
+  // @ts-ignore
+  if (org.link_bio && !org.link_bio.is_active) {
+    const { PageNotAvailable } = await import("@/components/page-not-available");
+    return <PageNotAvailable />;
+  }
+
   // Serialize via JSON to convert all Decimal/Date objects to plain values
   const plainOrg = JSON.parse(JSON.stringify(org, (_, v) =>
     v !== null && typeof v === "object" && v.constructor?.name === "Decimal"

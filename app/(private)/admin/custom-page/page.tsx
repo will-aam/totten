@@ -45,6 +45,7 @@ let cachedCustomPageData: any = null;
 
 export default function CustomPage() {
   const [activeTab, setActiveTab] = useState<"global" | "link-bio" | "professional-site" | "booking-site">("global");
+  const [isActive, setIsActive] = useState<boolean>(false);
 
   const [showMobilePreview, setShowMobilePreview] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -216,6 +217,10 @@ export default function CustomPage() {
 
         if (response.success && response.data) {
           const data = response.data;
+          
+          if (data.is_active !== undefined) {
+            setIsActive(data.is_active);
+          }
 
           if (data.organization_name !== undefined || data.profile_image_url !== undefined) {
             setProfile(prev => ({
@@ -343,6 +348,7 @@ export default function CustomPage() {
     setIsSaving(true);
     try {
       const response = await updateCustomPageAction({
+        is_active: isActive,
         slug: profile.slug,
         name: profile.name,
         profileImageUrl: profile.image,
@@ -402,6 +408,30 @@ export default function CustomPage() {
     }
   };
 
+  const handleActivate = async () => {
+    setIsActive(true);
+    setIsSaving(true);
+    try {
+      const response = await updateCustomPageAction({
+        is_active: true,
+        slug: profile.slug,
+      });
+      if (response.success) {
+        cachedCustomPageData = null;
+        toast.success("Página Personalizada ativada!");
+      } else {
+        toast.error("Erro ao ativar página.");
+        setIsActive(false);
+      }
+    } catch {
+      toast.error("Erro ao ativar página.");
+      setIsActive(false);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+
   const STEPS = [
     {
       id: "profile",
@@ -444,8 +474,29 @@ export default function CustomPage() {
       <AdminHeader title="Página Personalizada" />
 
       <div className="flex flex-col gap-6 p-6 md:p-8 relative pb-32 md:pb-8">
-
-        <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)} className="w-full">
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <span className="animate-spin h-8 w-8 border-4 border-slate-300 border-t-black rounded-full block"></span>
+          </div>
+        ) : !isActive ? (
+          <div className="max-w-xl mx-auto mt-12 bg-white border rounded-3xl p-10 text-center shadow-sm">
+            <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <GlobeAmericas className="h-8 w-8" />
+            </div>
+            <h2 className="text-2xl font-black mb-3">Ativar Página Personalizada</h2>
+            <p className="text-muted-foreground mb-8">
+              A Página Personalizada centraliza todos os seus links (site profissional, agenda online, link da bio, etc.) em um único lugar. Deseja ativar esta funcionalidade agora?
+            </p>
+            <Button
+              onClick={handleActivate}
+              disabled={isSaving}
+              className="w-full h-12 rounded-full font-bold text-base"
+            >
+              {isSaving ? "Ativando..." : "Sim, ativar Página Personalizada"}
+            </Button>
+          </div>
+        ) : (
+          <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)} className="w-full">
           <TabsList className="hidden md:grid w-full lg:w-[750px] grid-cols-4 h-auto gap-1 bg-muted p-1 rounded-full mb-8">
             <TabsTrigger
               value="global"
@@ -582,6 +633,7 @@ export default function CustomPage() {
             <BookingSiteView profile={profile} />
           </TabsContent>
         </Tabs>
+        )}
       </div>
 
 

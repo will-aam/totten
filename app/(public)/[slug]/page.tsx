@@ -29,6 +29,13 @@ export default async function PublicLinkBioPage({
   }
 
   const linkBio = org.link_bio;
+
+  // @ts-ignore
+  if (!linkBio.is_active) {
+    const { PageNotAvailable } = await import("@/components/page-not-available");
+    return <PageNotAvailable />;
+  }
+
   const socials = linkBio.social_links as any || { activePlatforms: [], values: {}, position: "top", style: "circle", size: "medium" };
   const links = socials.links || [];
 

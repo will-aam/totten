@@ -1,5 +1,6 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { cookies } from "next/headers";
 import { ClientLoginView } from "./client-login-view";
 
 export default async function ClientLoginPage({
@@ -10,6 +11,12 @@ export default async function ClientLoginPage({
   const { slug } = await params;
 
   if (!slug) return notFound();
+
+  // Se já estiver logado, redireciona para a área do cliente
+  const cookieStore = await cookies();
+  if (cookieStore.get(`totten_client_session_${slug}`)) {
+    return redirect(`/${slug}/cliente`);
+  }
 
   // Busca a organização
   const org = await prisma.organization.findUnique({

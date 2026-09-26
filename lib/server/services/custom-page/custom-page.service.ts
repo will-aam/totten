@@ -29,6 +29,7 @@ export class CustomPageService {
     if (linkBio) {
       return {
         id: linkBio.id,
+        is_active: linkBio.is_active,
         profile_image_url: linkBio.profile_image_url,
         logo_url: linkBio.logo_url,
         bio_text: linkBio.bio_text,
@@ -53,6 +54,7 @@ export class CustomPageService {
     const newLinkBio = await prisma.linkBio.create({
       data: {
         organization_id: organizationId,
+        is_active: false,
         theme_color_light: "#ffffff",
         theme_color_dark: "#000000",
         font_family: "Inter",
@@ -87,6 +89,7 @@ export class CustomPageService {
 
     return {
       id: newLinkBio.id,
+      is_active: newLinkBio.is_active,
       profile_image_url: newLinkBio.profile_image_url,
       logo_url: newLinkBio.logo_url,
       bio_text: newLinkBio.bio_text,
@@ -114,6 +117,7 @@ export class CustomPageService {
     const prisma = getTenantPrisma(organizationId);
 
     const updateData: any = {};
+    if (data.is_active !== undefined) updateData.is_active = data.is_active;
     if (data.profileImageUrl !== undefined) updateData.profile_image_url = data.profileImageUrl;
     if (data.logoUrl !== undefined) updateData.logo_url = data.logoUrl;
     if (data.bioText !== undefined) updateData.bio_text = data.bioText;
@@ -161,6 +165,7 @@ export class CustomPageService {
       update: updateData,
       create: {
         organization_id: organizationId,
+        is_active: data.is_active || false,
         profile_image_url: data.profileImageUrl || "",
         bio_text: data.bioText || "",
         theme_color_light: data.themeColorLight || "#ffffff",

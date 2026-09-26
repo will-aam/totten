@@ -136,12 +136,16 @@ export function ClientAreaView({
     <div className="min-h-screen flex flex-col font-sans bg-slate-50 text-slate-900 pb-20 md:pb-0">
       {/* Navbar Desktop / Cabeçalho */}
       <div className="shrink-0 z-50 px-4 py-4 flex items-center justify-between border-b backdrop-blur-md bg-white/80 border-black/10">
-        <button
-          onClick={() => router.push(`/${org.slug}/agendar`)}
-          className="w-10 h-10 rounded-full flex items-center justify-center transition-colors bg-black/5 hover:bg-black/10"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
+        {data.customPageActive ? (
+          <button
+            onClick={() => router.push(`/${org.slug}`)}
+            className="w-10 h-10 rounded-full flex items-center justify-center transition-colors bg-black/5 hover:bg-black/10"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+        ) : (
+          <div className="w-10 h-10" />
+        )}
         <div className="text-center">
           <h1 className="font-bold text-base leading-tight">{org.name}</h1>
           <p className="text-xs text-muted-foreground">Área do Cliente</p>

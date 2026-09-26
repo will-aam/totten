@@ -20,6 +20,7 @@ export async function getCustomPageAction() {
 }
 
 export async function updateCustomPageAction(data: {
+  is_active?: boolean;
   slug?: string;
   name?: string;
   profileImageUrl?: string;

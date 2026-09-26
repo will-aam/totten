@@ -85,7 +85,7 @@ export async function getClientDashboardData(slug: string, clientId: string) {
   try {
     const org = await prisma.organization.findUnique({
       where: { slug },
-      include: { settings: true }
+      include: { settings: true, link_bio: true }
     });
 
     if (!org) {
@@ -174,7 +174,9 @@ export async function getClientDashboardData(slug: string, clientId: string) {
       historyStandalone,
       clinicName: org.name,
       clinicPhone,
-      loyaltyInfo
+      loyaltyInfo,
+      // @ts-ignore
+      customPageActive: org.link_bio?.is_active ?? false
     };
 
     return JSON.parse(JSON.stringify(payload));

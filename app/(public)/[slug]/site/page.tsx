@@ -43,6 +43,12 @@ export default async function ProfessionalSitePage({
   }
 
   const linkBio = org.link_bio;
+
+  // @ts-ignore
+  if (!linkBio.is_active) {
+    const { PageNotAvailable } = await import("@/components/page-not-available");
+    return <PageNotAvailable />;
+  }
   const proSiteData = (linkBio.professional_site_config as any) || {};
   const profileConfig = (linkBio.profile_config as any) || {};
   const socialLinks = (linkBio.social_links as any) || [];
