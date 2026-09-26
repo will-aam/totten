@@ -8,6 +8,7 @@ import {
   LinkAlt,
   Layers,
   ClipboardCheck,
+  Trophy,
 } from "@boxicons/react";
 import type { BoxIcon } from "./nav-icon";
 
@@ -86,6 +87,12 @@ export const navItems: NavItem[] = [
     title: "Aniversariantes",
     href: "/admin/birthdays",
     icon: Gift as BoxIcon,
+    active: true,
+  },
+  {
+    title: "Programa de Fidelidade",
+    href: "/admin/loyalty",
+    icon: Trophy as BoxIcon,
     active: true,
   },
 ];
