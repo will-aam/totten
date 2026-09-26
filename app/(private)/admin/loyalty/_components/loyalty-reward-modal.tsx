@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { useIsMobile } from "@/components/ui/use-mobile";
 
 interface Reward {
   id: number | string;
@@ -24,6 +26,7 @@ interface LoyaltyRewardModalProps {
 }
 
 export function LoyaltyRewardModal({ open, onOpenChange, onSave, initialData }: LoyaltyRewardModalProps) {
+  const isMobile = useIsMobile();
   const [title, setTitle] = useState(initialData?.title || "");
   const [pointsCost, setPointsCost] = useState(initialData?.pointsCost?.toString() || "");
   const [conditions, setConditions] = useState(initialData?.conditions || "");
@@ -61,6 +64,73 @@ export function LoyaltyRewardModal({ open, onOpenChange, onSave, initialData }: 
     onOpenChange(false);
   };
 
+  const formContent = (
+    <div className="space-y-4 py-4 px-4 sm:px-0">
+      <div className="space-y-2">
+        <Label htmlFor="reward-title">Título da Recompensa</Label>
+        <Input 
+          id="reward-title" 
+          placeholder="Ex: Desconto de 10%, Sessão Grátis..." 
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="rounded-xl"
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="reward-cost">Custo (em Pontos)</Label>
+        <Input 
+          id="reward-cost" 
+          type="number"
+          placeholder="Ex: 50" 
+          value={pointsCost}
+          onChange={(e) => setPointsCost(e.target.value)}
+          className="rounded-xl"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="reward-conditions">Regras e Condições (Opcional)</Label>
+        <Textarea 
+          id="reward-conditions" 
+          placeholder="Ex: Válido apenas de terça a quinta. Não cumulativo." 
+          value={conditions}
+          onChange={(e) => setConditions(e.target.value)}
+          className="rounded-xl resize-none h-20"
+        />
+        <p className="text-xs text-muted-foreground">
+          Deixe claro para o cliente como ele pode utilizar essa recompensa.
+        </p>
+      </div>
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={handleOpenChange}>
+        <DrawerContent className="rounded-t-3xl">
+          <DrawerHeader className="text-left">
+            <DrawerTitle>{initialData ? "Editar Recompensa" : "Nova Recompensa"}</DrawerTitle>
+            <DrawerDescription>
+              Defina o que o cliente ganhará e quantos pontos precisará resgatar.
+            </DrawerDescription>
+          </DrawerHeader>
+          
+          {formContent}
+
+          <DrawerFooter className="pt-2">
+            <Button onClick={handleSave} className="rounded-xl w-full">
+              Salvar Recompensa
+            </Button>
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl w-full">
+              Cancelar
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md rounded-3xl">
@@ -71,44 +141,7 @@ export function LoyaltyRewardModal({ open, onOpenChange, onSave, initialData }: 
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="reward-title">Título da Recompensa</Label>
-            <Input 
-              id="reward-title" 
-              placeholder="Ex: Desconto de 10%, Sessão Grátis..." 
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="rounded-xl"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="reward-cost">Custo (em Pontos)</Label>
-            <Input 
-              id="reward-cost" 
-              type="number"
-              placeholder="Ex: 50" 
-              value={pointsCost}
-              onChange={(e) => setPointsCost(e.target.value)}
-              className="rounded-xl"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="reward-conditions">Regras e Condições (Opcional)</Label>
-            <Textarea 
-              id="reward-conditions" 
-              placeholder="Ex: Válido apenas de terça a quinta. Não cumulativo." 
-              value={conditions}
-              onChange={(e) => setConditions(e.target.value)}
-              className="rounded-xl resize-none h-20"
-            />
-            <p className="text-xs text-muted-foreground">
-              Deixe claro para o cliente como ele pode utilizar essa recompensa.
-            </p>
-          </div>
-        </div>
+        {formContent}
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl">

@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { TotemService } from "@/lib/server/services/totem/totem.service";
+import { getClientLoyaltyInfo } from "./loyalty";
 
 export async function getClientHistoryByPhone(slug: string, phone: string) {
   try {
@@ -158,6 +159,8 @@ export async function getClientDashboardData(slug: string, clientId: string) {
       clinicPhone = orgSettings.phone_whatsapp || orgSettings.phone_landline || null;
     }
 
+    const loyaltyInfo = await getClientLoyaltyInfo(client.id);
+
     const payload = { 
       success: true, 
       client: {
@@ -170,7 +173,8 @@ export async function getClientDashboardData(slug: string, clientId: string) {
       historyPackages,
       historyStandalone,
       clinicName: org.name,
-      clinicPhone
+      clinicPhone,
+      loyaltyInfo
     };
 
     return JSON.parse(JSON.stringify(payload));

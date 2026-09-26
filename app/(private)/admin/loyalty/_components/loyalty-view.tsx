@@ -8,17 +8,47 @@ import { UserCircle, Cog } from "@boxicons/react";
 import { LoyaltyVoucher } from "./loyalty-voucher";
 import { LoyaltyOverviewTab } from "./loyalty-overview-tab";
 import { LoyaltySettingsTab } from "./loyalty-settings-tab";
-import { MOCK_CLIENTS, MOCK_REWARDS } from "./mock-data";
+import { updateLoyaltySettings } from "@/app/actions/loyalty";
+import { toast } from "sonner";
 
-export function LoyaltyView() {
+interface ClientData {
+  id: string;
+  name: string;
+  points: number;
+  tier: string;
+  lastCheckIn: string;
+  enrolledAt: Date | null;
+}
+
+export function LoyaltyView({ organizationId, initialSettings, clients }: { organizationId: string, initialSettings: any, clients: ClientData[] }) {
   const [activeTab, setActiveTab] = useState("overview");
-  const [programScope, setProgramScope] = useState<"global" | "specific">("global");
-  const [isProgramActive, setIsProgramActive] = useState(false);
   
-  // States that would typically come from a DB or API
-  const [clients, setClients] = useState(MOCK_CLIENTS);
-  const [rewards, setRewards] = useState(MOCK_REWARDS);
-  const [selectedClientForVoucher, setSelectedClientForVoucher] = useState<(typeof MOCK_CLIENTS)[0] | null>(null);
+  const [settings, setSettings] = useState(initialSettings);
+  const initialRewards = (initialSettings.rewards || []).map((r: any) => ({
+    id: r.id,
+    title: r.title,
+    pointsCost: r.points_cost,
+    conditions: r.conditions
+  }));
+  const [rewards, setRewards] = useState(initialRewards);
+  const [isProgramActive, setIsProgramActive] = useState(initialSettings.is_active || false);
+  const [programScope, setProgramScope] = useState<"global" | "specific">(initialSettings.scope || "specific");
+  
+  const [selectedClientForVoucher, setSelectedClientForVoucher] = useState<ClientData | null>(null);
+
+  const handleActivateProgram = async (active: boolean) => {
+    try {
+      const res = await updateLoyaltySettings(organizationId, { is_active: active });
+      if (res.success) {
+        setIsProgramActive(active);
+        toast.success(active ? "Programa ativado!" : "Programa desativado.");
+      } else {
+        toast.error("Erro ao alterar o status do programa.");
+      }
+    } catch (e) {
+      toast.error("Erro na comunicação com o servidor.");
+    }
+  };
 
   return (
     <>
@@ -41,9 +71,10 @@ export function LoyaltyView() {
           <TabsContent value="overview" className="space-y-6">
             <LoyaltyOverviewTab 
               isProgramActive={isProgramActive}
-              setIsProgramActive={setIsProgramActive}
+              setIsProgramActive={handleActivateProgram}
               programScope={programScope}
               clients={clients}
+              rewards={rewards}
               onOpenVoucher={setSelectedClientForVoucher}
             />
           </TabsContent>
@@ -51,10 +82,14 @@ export function LoyaltyView() {
           {/* TAB 2: CONFIGURAÇÕES */}
           <TabsContent value="settings" className="flex flex-col gap-8 md:gap-6">
             <LoyaltySettingsTab 
+              organizationId={organizationId}
+              settings={settings}
               rewards={rewards}
               setRewards={setRewards}
               programScope={programScope}
               setProgramScope={setProgramScope}
+              isProgramActive={isProgramActive}
+              setIsProgramActive={handleActivateProgram}
             />
           </TabsContent>
         </Tabs>

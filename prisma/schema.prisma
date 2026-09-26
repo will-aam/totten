@@ -32,6 +32,7 @@ model Organization {
   stock_items         StockItem[]
   transactions        Transaction[]
   admins              Admin[]                     @relation("AdminToOrganization")
+  loyalty_settings    LoyaltySettings?
 
   working_hours       WorkingHour[]
   schedule_exceptions ScheduleException[]
@@ -196,6 +197,10 @@ model Client {
   // Autenticação da Área do Cliente
   auth_code           String?
   auth_code_expires_at DateTime?
+  
+  // Fidelidade
+  loyalty_points      Int                 @default(0)
+  loyalty_enrolled_at DateTime?
 
   anamnesis_responses AnamnesisResponse[]
   appointments        Appointment[]
@@ -637,4 +642,42 @@ model ScheduleBlock {
 
   @@index([organization_id, start_time])
   @@map("schedule_blocks")
+}
+
+model LoyaltySettings {
+  id              String       @id @default(cuid())
+  organization_id String       @unique
+  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  
+  is_active       Boolean      @default(false)
+  scope           String       @default("specific")
+  max_points      Int          @default(500)
+  
+  check_in_active Boolean      @default(true)
+  check_in_points Int          @default(10)
+  
+  schedule_active Boolean      @default(true)
+  schedule_points Int          @default(5)
+
+  rewards         LoyaltyReward[]
+
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @updatedAt
+
+  @@map("loyalty_settings")
+}
+
+model LoyaltyReward {
+  id              String          @id @default(cuid())
+  settings_id     String
+  settings        LoyaltySettings @relation(fields: [settings_id], references: [id], onDelete: Cascade)
+  
+  title           String
+  points_cost     Int
+  conditions      String?         @db.Text
+
+  created_at      DateTime        @default(now())
+  updated_at      DateTime        @updatedAt
+
+  @@map("loyalty_rewards")
 }

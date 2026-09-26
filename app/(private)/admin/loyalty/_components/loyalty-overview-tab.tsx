@@ -1,10 +1,25 @@
 "use client";
 
+import { useState } from "react";
 import { Search, Trophy, Plus, Star } from "@boxicons/react";
 import { Download, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
+import { enrollClientInLoyalty } from "@/app/actions/loyalty";
+import { Progress } from "@/components/ui/progress";
 import {
   Pagination,
   PaginationContent,
@@ -15,11 +30,19 @@ import {
 } from "@/components/ui/pagination";
 
 interface Client {
-  id: number | string;
+  id: string;
   name: string;
   points: number;
   lastCheckIn: string;
   tier: string;
+  enrolledAt: Date | null;
+}
+
+interface Reward {
+  id: string | number;
+  title: string;
+  pointsCost: number;
+  conditions: string;
 }
 
 interface LoyaltyOverviewTabProps {
@@ -27,6 +50,7 @@ interface LoyaltyOverviewTabProps {
   setIsProgramActive: (active: boolean) => void;
   programScope: "global" | "specific";
   clients: Client[];
+  rewards: Reward[];
   onOpenVoucher: (client: Client) => void;
 }
 
@@ -35,8 +59,40 @@ export function LoyaltyOverviewTab({
   setIsProgramActive,
   programScope,
   clients,
+  rewards,
   onOpenVoucher,
 }: LoyaltyOverviewTabProps) {
+  const [isAddClientOpen, setIsAddClientOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [addingClient, setAddingClient] = useState<string | null>(null);
+  const [clientToRemove, setClientToRemove] = useState<string | null>(null);
+
+  const displayedClients = programScope === "global" ? clients : clients.filter(c => c.enrolledAt !== null);
+  const unenrolledClients = clients.filter(c => c.enrolledAt === null && c.name.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  const handleEnroll = async (clientId: string) => {
+    setAddingClient(clientId);
+    const res = await enrollClientInLoyalty(clientId, true);
+    setAddingClient(null);
+    if (res.success) {
+      toast.success("Cliente adicionado ao programa com sucesso!");
+    } else {
+      toast.error(res.error || "Erro ao adicionar cliente.");
+    }
+  };
+
+  const confirmRemove = async () => {
+    if (!clientToRemove) return;
+    const clientId = clientToRemove;
+    setClientToRemove(null);
+    const res = await enrollClientInLoyalty(clientId, false);
+    if (res.success) {
+      toast.success("Cliente removido do programa.");
+    } else {
+      toast.error(res.error || "Erro ao remover cliente.");
+    }
+  };
+
   if (!isProgramActive) {
     return (
       <div className="bg-primary/10 border border-primary/20 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4">
@@ -69,7 +125,10 @@ export function LoyaltyOverviewTab({
         </div>
 
         {programScope === "specific" && (
-          <Button className="rounded-full w-full sm:w-auto flex items-center gap-2">
+          <Button 
+            className="rounded-full w-full sm:w-auto flex items-center gap-2"
+            onClick={() => setIsAddClientOpen(true)}
+          >
             <Plus size="xs" />
             Incluir Cliente
           </Button>
@@ -77,7 +136,7 @@ export function LoyaltyOverviewTab({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {clients.map((client) => (
+        {displayedClients.map((client) => (
           <Card key={client.id} className="rounded-2xl shadow-sm border-border/50 relative overflow-hidden">
             <Star
               aria-hidden="true"
@@ -97,6 +156,18 @@ export function LoyaltyOverviewTab({
             />
 
             <CardContent className="relative z-10 p-5 flex flex-col items-center text-center gap-2">
+              {programScope === "specific" && (
+                <div className="absolute top-2 right-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                    onClick={() => setClientToRemove(client.id)}
+                  >
+                    &times;
+                  </Button>
+                </div>
+              )}
               <div className="space-y-1 mt-2">
                 <h3 className="font-semibold text-lg">{client.name}</h3>
                 <p className="text-xs text-muted-foreground">
@@ -108,41 +179,138 @@ export function LoyaltyOverviewTab({
                 <span>pts</span>
               </div>
 
+              {/* Progress bar to next reward */}
+              {(() => {
+                const currentPoints = client.points || 0;
+                const nextReward = rewards.slice().sort((a,b) => a.pointsCost - b.pointsCost).find(r => currentPoints < r.pointsCost);
+                const percentage = nextReward ? Math.min(100, Math.round((currentPoints / nextReward.pointsCost) * 100)) : (rewards.length > 0 ? 100 : 0);
+                
+                if (rewards.length === 0) return null;
+                
+                return (
+                  <div className="w-full mt-3 px-2">
+                    {nextReward ? (
+                      <div className="flex justify-between items-center mb-1 text-[10px] text-muted-foreground">
+                        <span>Faltam {nextReward.pointsCost - currentPoints} pts para {nextReward.title}</span>
+                        <span className="font-bold">{percentage}%</span>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between items-center mb-1 text-[10px] text-primary">
+                        <span className="font-bold">Todas as recompensas alcançadas!</span>
+                        <span className="font-bold">100%</span>
+                      </div>
+                    )}
+                    <Progress value={percentage} className="h-1.5 bg-secondary" indicatorColor="bg-primary" />
+                  </div>
+                );
+              })()}
+
               <div className="flex items-center gap-2 mt-4 w-full pt-4 border-t border-border/50">
                 <Button 
                   variant="outline" 
-                  className="rounded-xl flex-1 flex flex-col gap-1 h-auto py-2 text-xs text-muted-foreground hover:text-foreground"
+                  className="rounded-xl flex-1 flex flex-col gap-1 h-auto py-2 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
                   onClick={() => onOpenVoucher(client)}
+                  disabled={!client.points}
                 >
                   <Download size={16} />
                   Baixar
-                </Button>
-                <Button variant="outline" className="rounded-xl flex-1 flex flex-col gap-1 h-auto py-2 text-xs text-muted-foreground hover:text-foreground">
-                  <ExternalLink size={16} />
-                  Perfil
                 </Button>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
+      {displayedClients.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-12 text-center border border-dashed rounded-2xl bg-card">
+          <div className="bg-primary/10 p-4 rounded-full text-primary mb-4">
+            <Trophy size="md" />
+          </div>
+          <h3 className="text-lg font-semibold">Nenhum cliente no programa</h3>
+          <p className="text-muted-foreground max-w-sm mt-1 text-sm">
+            {programScope === "specific" 
+              ? "Clique em 'Incluir Cliente' para adicionar clientes a este programa."
+              : "Não há clientes elegíveis ou cadastrados no momento."}
+          </p>
+        </div>
+      )}
 
-      <Pagination className="mt-8">
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious href="#" className="pointer-events-none opacity-50 rounded-full" />
-          </PaginationItem>
-          <PaginationItem>
-            <PaginationLink href="#" isActive className="rounded-full">1</PaginationLink>
-          </PaginationItem>
-          <PaginationItem>
-            <PaginationLink href="#" className="rounded-full">2</PaginationLink>
-          </PaginationItem>
-          <PaginationItem>
-            <PaginationNext href="#" className="rounded-full" />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
+      {displayedClients.length > 0 && (
+        <Pagination className="mt-8">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious href="#" className="pointer-events-none opacity-50 rounded-full" />
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationLink href="#" isActive className="rounded-full">1</PaginationLink>
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationLink href="#" className="rounded-full">2</PaginationLink>
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationNext href="#" className="rounded-full" />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
+      <Dialog open={isAddClientOpen} onOpenChange={setIsAddClientOpen}>
+        <DialogContent className="rounded-2xl max-w-md">
+          <DialogHeader>
+            <DialogTitle>Incluir Cliente</DialogTitle>
+            <DialogDescription>
+              Selecione o cliente que deseja adicionar ao programa de fidelidade.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <Input 
+              placeholder="Buscar cliente..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="rounded-full"
+            />
+            <div className="max-h-64 overflow-y-auto space-y-2 pr-2">
+              {unenrolledClients.length === 0 ? (
+                <div className="text-center text-muted-foreground text-sm py-4">
+                  Nenhum cliente encontrado.
+                </div>
+              ) : (
+                unenrolledClients.map(client => (
+                  <div key={client.id} className="flex items-center justify-between p-3 border rounded-xl">
+                    <span className="font-medium text-sm">{client.name}</span>
+                    <Button 
+                      size="sm" 
+                      className="rounded-full"
+                      onClick={() => handleEnroll(client.id)}
+                      disabled={addingClient === client.id}
+                    >
+                      {addingClient === client.id ? "Adicionando..." : "Adicionar"}
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!clientToRemove} onOpenChange={(open) => !open && setClientToRemove(null)}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover do programa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja remover este cliente do programa de fidelidade? Ele parará de acumular pontos a partir de agora.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-full">Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmRemove}
+              className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Sim, Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

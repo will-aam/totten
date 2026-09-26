@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { TermsOfUseBox } from "@/components/terms-of-use-box";
 import { cn } from "@/lib/utils";
 import { ArrowLeft, LogOut, Calendar, History, User, CheckCircle, Store, FileText } from "lucide-react";
@@ -15,6 +13,7 @@ import { DEFAULT_TERMS_OF_USE } from "@/lib/constants";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ClientLoyalty } from "./_components/client-loyalty";
 
 type TabType = "upcoming" | "history" | "profile" | "terms";
 
@@ -367,6 +366,10 @@ export function ClientAreaView({
                   <User className="h-5 w-5 opacity-70" /> Meus Dados
                 </h3>
 
+                {data.loyaltyInfo && (
+                  <ClientLoyalty loyaltyInfo={data.loyaltyInfo} clientName={client.name} />
+                )}
+
                 <div className="bg-white border rounded-3xl p-6 space-y-6 shadow-sm">
                   <div className="space-y-1">
                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Nome Completo</p>
@@ -406,7 +409,7 @@ export function ClientAreaView({
                 </h3>
 
                 <div className="bg-white border rounded-2xl p-6 shadow-sm">
-                  <TermsOfUseBox text={termsText} requirePrepayment={false} className="border-none p-0 bg-transparent text-sm text-muted-foreground" />
+                  <TermsOfUseBox text={termsText} requirePrepayment={false} className="border-none p-0 bg-transparent text-sm text-muted-foreground max-h-none overflow-visible" />
                 </div>
               </div>
             )}
