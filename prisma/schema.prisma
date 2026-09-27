@@ -240,6 +240,7 @@ model LinkBio {
   social_links      Json?
   professional_site_config Json?
   profile_config    Json?
+  is_active         Boolean      @default(false)
 
   organization_id   String       @unique
   organization      Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)

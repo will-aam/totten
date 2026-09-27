@@ -217,7 +217,7 @@ export default function CustomPage() {
 
         if (response.success && response.data) {
           const data = response.data;
-          
+
           if (data.is_active !== undefined) {
             setIsActive(data.is_active);
           }
@@ -479,10 +479,8 @@ export default function CustomPage() {
             <span className="animate-spin h-8 w-8 border-4 border-slate-300 border-t-black rounded-full block"></span>
           </div>
         ) : !isActive ? (
-          <div className="max-w-xl mx-auto mt-12 bg-white border rounded-3xl p-10 text-center shadow-sm">
-            <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <GlobeAmericas className="h-8 w-8" />
-            </div>
+          <div className="max-w-xl mx-auto mt-12 bg-card text-card-foreground border rounded-3xl p-10 text-center shadow-sm">
+
             <h2 className="text-2xl font-black mb-3">Ativar Página Personalizada</h2>
             <p className="text-muted-foreground mb-8">
               A Página Personalizada centraliza todos os seus links (site profissional, agenda online, link da bio, etc.) em um único lugar. Deseja ativar esta funcionalidade agora?
@@ -492,147 +490,147 @@ export default function CustomPage() {
               disabled={isSaving}
               className="w-full h-12 rounded-full font-bold text-base"
             >
-              {isSaving ? "Ativando..." : "Sim, ativar Página Personalizada"}
+              {isSaving ? "Ativando..." : "Ativar"}
             </Button>
           </div>
         ) : (
           <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)} className="w-full">
-          <TabsList className="hidden md:grid w-full lg:w-[750px] grid-cols-4 h-auto gap-1 bg-muted p-1 rounded-full mb-8">
-            <TabsTrigger
-              value="global"
-              className="flex items-center gap-2 py-2 rounded-lg"
-            >
-              <Cog size="sm" /> Global
-            </TabsTrigger>
-            <TabsTrigger
-              value="link-bio"
-              disabled={!globalValid}
-              className="flex items-center gap-2 py-2 rounded-lg disabled:opacity-50"
-            >
-              <Link size="sm" /> Link na Bio
-            </TabsTrigger>
-            <TabsTrigger
-              value="professional-site"
-              disabled={!globalValid}
-              className="flex items-center gap-2 py-2 rounded-lg disabled:opacity-50"
-            >
-              <GlobeAmericas size="sm" /> Site
-            </TabsTrigger>
-            <TabsTrigger
-              value="booking-site"
-              disabled={!globalValid}
-              className="flex items-center gap-2 py-2 rounded-lg disabled:opacity-50"
-            >
-              <Calendar size="sm" /> Agenda
-            </TabsTrigger>
-          </TabsList>
+            <TabsList className="hidden md:grid w-full lg:w-[750px] grid-cols-4 h-auto gap-1 bg-muted p-1 rounded-full mb-8">
+              <TabsTrigger
+                value="global"
+                className="flex items-center gap-2 py-2 rounded-lg"
+              >
+                <Cog size="sm" /> Global
+              </TabsTrigger>
+              <TabsTrigger
+                value="link-bio"
+                disabled={!globalValid}
+                className="flex items-center gap-2 py-2 rounded-lg disabled:opacity-50"
+              >
+                <Link size="sm" /> Link na Bio
+              </TabsTrigger>
+              <TabsTrigger
+                value="professional-site"
+                disabled={!globalValid}
+                className="flex items-center gap-2 py-2 rounded-lg disabled:opacity-50"
+              >
+                <GlobeAmericas size="sm" /> Site
+              </TabsTrigger>
+              <TabsTrigger
+                value="booking-site"
+                disabled={!globalValid}
+                className="flex items-center gap-2 py-2 rounded-lg disabled:opacity-50"
+              >
+                <Calendar size="sm" /> Agenda
+              </TabsTrigger>
+            </TabsList>
 
-          <MobileBottomNav
-            items={[
-              { id: "global", label: "Global", icon: MobileGlobe },
-              { id: "link-bio", label: "Link na Bio", icon: MobileLink },
-              { id: "professional-site", label: "Site", icon: MobileSite },
-              { id: "booking-site", label: "Agenda", icon: MobileCalendar },
-            ]}
-            activeId={activeTab}
-            onChange={(id) => {
-              if (id !== "global" && !globalValid) {
-                toast.error("Preencha as configurações globais obrigatórias (Nome e Imagens) primeiro.");
-                return;
-              }
-              setActiveTab(id as any);
-            }}
-          />
-
-          <TabsContent value="global" className="mt-0">
-            <GlobalSettings
-              profile={profile} setProfile={setProfile}
-              socials={socials} setSocials={setSocials}
-              globalContact={globalContact} setGlobalContact={setGlobalContact}
-              theme={theme} setTheme={setTheme}
-              globalLocation={globalLocation} setGlobalLocation={setGlobalLocation}
-              proSiteConfig={proSiteConfig} setProSiteConfig={setProSiteConfig}
-              onSave={handleSave}
-              isSaving={isSaving}
+            <MobileBottomNav
+              items={[
+                { id: "global", label: "Global", icon: MobileGlobe },
+                { id: "link-bio", label: "Link na Bio", icon: MobileLink },
+                { id: "professional-site", label: "Site", icon: MobileSite },
+                { id: "booking-site", label: "Agenda", icon: MobileCalendar },
+              ]}
+              activeId={activeTab}
+              onChange={(id) => {
+                if (id !== "global" && !globalValid) {
+                  toast.error("Preencha as configurações globais obrigatórias (Nome e Imagens) primeiro.");
+                  return;
+                }
+                setActiveTab(id as any);
+              }}
             />
-          </TabsContent>
 
-          <TabsContent value="link-bio" className="mt-0">
-            {renderCopyLinkBox("link-bio")}
-            <div className="flex flex-col lg:flex-row gap-8 w-full max-w-[1600px] mx-auto">
-              {/* COLUNA ESQUERDA: Carrossel Limpo e Arrastável */}
-              <div className="flex-1 flex flex-col gap-6 w-full max-w-full overflow-hidden">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border/50 pb-6">
-                  <div>
+            <TabsContent value="global" className="mt-0">
+              <GlobalSettings
+                profile={profile} setProfile={setProfile}
+                socials={socials} setSocials={setSocials}
+                globalContact={globalContact} setGlobalContact={setGlobalContact}
+                theme={theme} setTheme={setTheme}
+                globalLocation={globalLocation} setGlobalLocation={setGlobalLocation}
+                proSiteConfig={proSiteConfig} setProSiteConfig={setProSiteConfig}
+                onSave={handleSave}
+                isSaving={isSaving}
+              />
+            </TabsContent>
 
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      Crie seu link para o Instagram e direcione seus clientes.
-                    </p>
-                  </div>
-                  <div className="flex gap-2 w-full md:w-auto">
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowMobilePreview(true)}
-                      className="flex-1 lg:hidden md:flex-none h-10 w-full md:w-32 shrink-0"
-                    >
-                      Ver Preview
-                    </Button>
-                    <Button
-                      onClick={handleSave}
-                      disabled={isLoading || isSaving}
-                      className="flex-1 md:flex-none h-10 shadow-sm w-full md:w-32 shrink-0"
-                    >
-                      {isSaving ? "Salvando..." : "Salvar"}
-                    </Button>
-                  </div>
-                </div>
+            <TabsContent value="link-bio" className="mt-0">
+              {renderCopyLinkBox("link-bio")}
+              <div className="flex flex-col lg:flex-row gap-8 w-full max-w-[1600px] mx-auto">
+                {/* COLUNA ESQUERDA: Carrossel Limpo e Arrastável */}
+                <div className="flex-1 flex flex-col gap-6 w-full max-w-full overflow-hidden">
+                  <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border/50 pb-6">
+                    <div>
 
-                <div className="flex flex-col gap-10 mt-2 lg:h-[calc(100vh-360px)] lg:overflow-y-auto custom-scrollbar lg:pr-4 pb-20">
-                  {STEPS.map((step, index) => (
-                    <div key={step.id} id={`step-${step.id}`} className="flex flex-col gap-2 scroll-m-20 p-5 border border-border/50 rounded-full bg-card shadow-sm">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-sm">
-                          {index + 1}
-                        </span>
-                        {step.id === 'profile' || step.id === 'theme' ? (
-                          <span className="text-[10px] uppercase font-bold text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">Obrigatório</span>
-                        ) : (
-                          <span className="text-[10px] uppercase font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Opcional</span>
-                        )}
-                      </div>
-                      {step.component}
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        Crie seu link para o Instagram e direcione seus clientes.
+                      </p>
                     </div>
-                  ))}
+                    <div className="flex gap-2 w-full md:w-auto">
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowMobilePreview(true)}
+                        className="flex-1 lg:hidden md:flex-none h-10 w-full md:w-32 shrink-0"
+                      >
+                        Ver Preview
+                      </Button>
+                      <Button
+                        onClick={handleSave}
+                        disabled={isLoading || isSaving}
+                        className="flex-1 md:flex-none h-10 shadow-sm w-full md:w-32 shrink-0"
+                      >
+                        {isSaving ? "Salvando..." : "Salvar"}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-10 mt-2 lg:h-[calc(100vh-360px)] lg:overflow-y-auto custom-scrollbar lg:pr-4 pb-20">
+                    {STEPS.map((step, index) => (
+                      <div key={step.id} id={`step-${step.id}`} className="flex flex-col gap-2 scroll-m-20 p-5 border border-border/50 rounded-full bg-card shadow-sm">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-sm">
+                            {index + 1}
+                          </span>
+                          {step.id === 'profile' || step.id === 'theme' ? (
+                            <span className="text-[10px] uppercase font-bold text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">Obrigatório</span>
+                          ) : (
+                            <span className="text-[10px] uppercase font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Opcional</span>
+                          )}
+                        </div>
+                        {step.component}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* COLUNA DIREITA: Preview do Celular (Desktop) */}
+                <div className="hidden lg:flex w-85 shrink-0 flex-col items-center">
+                  <div className="sticky top-24">
+                    <PhoneMockup
+                      profile={profile}
+                      theme={theme}
+                      socials={socials}
+                      links={links}
+                      activeTab={activeTab}
+                      proSiteConfig={proSiteConfig}
+                      previewKey={previewKey}
+                    />
+                  </div>
                 </div>
               </div>
+            </TabsContent>
 
-              {/* COLUNA DIREITA: Preview do Celular (Desktop) */}
-              <div className="hidden lg:flex w-85 shrink-0 flex-col items-center">
-                <div className="sticky top-24">
-                  <PhoneMockup
-                    profile={profile}
-                    theme={theme}
-                    socials={socials}
-                    links={links}
-                    activeTab={activeTab}
-                    proSiteConfig={proSiteConfig}
-                    previewKey={previewKey}
-                  />
-                </div>
-              </div>
-            </div>
-          </TabsContent>
+            <TabsContent value="professional-site" className="mt-0">
+              {renderCopyLinkBox("professional-site")}
+              <ProfessionalSiteView profile={profile} initialData={proSiteConfig} globalContact={globalContact} />
+            </TabsContent>
 
-          <TabsContent value="professional-site" className="mt-0">
-            {renderCopyLinkBox("professional-site")}
-            <ProfessionalSiteView profile={profile} initialData={proSiteConfig} globalContact={globalContact} />
-          </TabsContent>
-
-          <TabsContent value="booking-site" className="mt-0">
-            {renderCopyLinkBox("booking-site")}
-            <BookingSiteView profile={profile} />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="booking-site" className="mt-0">
+              {renderCopyLinkBox("booking-site")}
+              <BookingSiteView profile={profile} />
+            </TabsContent>
+          </Tabs>
         )}
       </div>
 
