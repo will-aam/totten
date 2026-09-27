@@ -15,6 +15,7 @@ interface Reward {
   title: string;
   pointsCost: number;
   conditions?: string;
+  validityDays?: number | null;
 }
 
 interface LoyaltyRewardModalProps {
@@ -30,6 +31,7 @@ export function LoyaltyRewardModal({ open, onOpenChange, onSave, initialData }: 
   const [title, setTitle] = useState(initialData?.title || "");
   const [pointsCost, setPointsCost] = useState(initialData?.pointsCost?.toString() || "");
   const [conditions, setConditions] = useState(initialData?.conditions || "");
+  const [validityDays, setValidityDays] = useState(initialData?.validityDays?.toString() || "30");
 
   // Reset form when modal opens
   const handleOpenChange = (isOpen: boolean) => {
@@ -37,6 +39,7 @@ export function LoyaltyRewardModal({ open, onOpenChange, onSave, initialData }: 
       setTitle(initialData?.title || "");
       setPointsCost(initialData?.pointsCost?.toString() || "");
       setConditions(initialData?.conditions || "");
+      setValidityDays(initialData?.validityDays?.toString() || "30");
     }
     onOpenChange(isOpen);
   };
@@ -58,6 +61,7 @@ export function LoyaltyRewardModal({ open, onOpenChange, onSave, initialData }: 
       title: title.trim(),
       pointsCost: cost,
       conditions: conditions.trim(),
+      validityDays: validityDays ? parseInt(validityDays, 10) : null,
     });
 
     toast.success(initialData ? "Recompensa atualizada!" : "Recompensa criada com sucesso!");
@@ -101,6 +105,19 @@ export function LoyaltyRewardModal({ open, onOpenChange, onSave, initialData }: 
         <p className="text-xs text-muted-foreground">
           Deixe claro para o cliente como ele pode utilizar essa recompensa.
         </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="reward-validity">Validade (em Dias)</Label>
+        <Input 
+          id="reward-validity" 
+          type="number"
+          placeholder="Ex: 30" 
+          value={validityDays}
+          onChange={(e) => setValidityDays(e.target.value)}
+          className="rounded-xl"
+        />
+        <p className="text-xs text-muted-foreground">Deixe em branco para não expirar.</p>
       </div>
     </div>
   );

@@ -38,6 +38,7 @@ export function ClientAreaView({
 }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>("upcoming");
+  const [historySubTab, setHistorySubTab] = useState<"avulsas" | "pacotes" | "vouchers">("avulsas");
   const [isCancelling, setIsCancelling] = useState<string | null>(null);
   const [historyPage, setHistoryPage] = useState(1);
   const [finishedPackagesPage, setFinishedPackagesPage] = useState(1);
@@ -58,6 +59,7 @@ export function ClientAreaView({
   const upcoming = data.upcoming || [];
   const historyPackages = data.historyPackages || [];
   const historyStandalone = data.historyStandalone || [];
+  const historyVouchers = data.historyVouchers || [];
   const clinicPhone = data.clinicPhone;
   const termsText = org?.settings?.terms_of_use || DEFAULT_TERMS_OF_USE;
 
@@ -366,20 +368,63 @@ export function ClientAreaView({
             )}
 
             {!error && activeTab === "history" && (
-              <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
                 <h3 className="font-bold text-lg flex items-center gap-2">
                   <History className="h-5 w-5 opacity-70" /> Seu Histórico
                 </h3>
 
-                {finishedPackages.length === 0 && historyStandalone.length === 0 ? (
-                  <div className="p-8 rounded-3xl border-2 border-dashed flex flex-col items-center justify-center text-center space-y-4 bg-white/50">
-                    <p className="font-medium text-muted-foreground">Você não possui histórico na clínica.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-8">
-                    {/* Pacotes Finalizados */}
-                    {finishedPackages.length > 0 && (
-                      <div className="space-y-4">
+                <Tabs value={historySubTab} onValueChange={(val: any) => setHistorySubTab(val)} className="w-full">
+                  <TabsList className="grid w-full grid-cols-3 mb-6 bg-slate-100/80 p-1 rounded-2xl h-auto">
+                    <TabsTrigger value="avulsas" className="rounded-xl py-2 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm text-xs font-bold whitespace-normal h-auto">
+                      Sessões Avulsas
+                    </TabsTrigger>
+                    <TabsTrigger value="pacotes" className="rounded-xl py-2 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm text-xs font-bold whitespace-normal h-auto">
+                      Pacotes
+                    </TabsTrigger>
+                    <TabsTrigger value="vouchers" className="rounded-xl py-2 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm text-xs font-bold whitespace-normal h-auto">
+                      Vouchers
+                    </TabsTrigger>
+                  </TabsList>
+
+                  {/* VOUCHERS */}
+                  {historySubTab === "vouchers" && (
+                    <div className="space-y-4">
+                      {historyVouchers.length === 0 ? (
+                        <div className="p-8 rounded-3xl border-2 border-dashed flex flex-col items-center justify-center text-center space-y-4 bg-white/50">
+                          <p className="font-medium text-muted-foreground">Você ainda não possui nenhum voucher.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {historyVouchers.map((voucher: any) => {
+                            const isUsed = voucher.status === "UTILIZADO";
+                            return (
+                              <div key={voucher.id} className={cn("p-4 border rounded-2xl flex items-center justify-between", isUsed ? "bg-slate-50 opacity-70" : "bg-white border-blue-200")}>
+                                <div>
+                                  <h4 className="font-bold text-slate-800">{voucher.title}</h4>
+                                  <p className="text-xs text-muted-foreground mt-1">Custo: {voucher.points_spent} pontos</p>
+                                </div>
+                                <div>
+                                  <span className={cn("text-[10px] font-bold uppercase px-2 py-1 rounded-full", isUsed ? "bg-slate-200 text-slate-600" : "bg-blue-100 text-blue-700")}>
+                                    {isUsed ? "Utilizado" : "Disponível"}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* PACOTES */}
+                  {historySubTab === "pacotes" && (
+                    <div className="space-y-4">
+                      {finishedPackages.length === 0 ? (
+                        <div className="p-8 rounded-3xl border-2 border-dashed flex flex-col items-center justify-center text-center space-y-4 bg-white/50">
+                          <p className="font-medium text-muted-foreground">Você não possui pacotes utilizados.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-6">
                         <span className="text-xs font-bold uppercase text-slate-400 pl-2">Pacotes Finalizados/Expirados:</span>
                         <div className="space-y-6">
                           {paginatedFinishedPackages.map((pkg: any) => {
@@ -492,9 +537,16 @@ export function ClientAreaView({
                         </div>
                       </div>
                     )}
-
-                    {/* Avulsos */}
-                    {historyStandalone.length > 0 && (
+                  </div>
+                )}
+                  {/* AVULSAS */}
+                  {historySubTab === "avulsas" && (
+                    <div className="space-y-4">
+                      {historyStandalone.length === 0 ? (
+                        <div className="p-8 rounded-3xl border-2 border-dashed flex flex-col items-center justify-center text-center space-y-4 bg-white/50">
+                          <p className="font-medium text-muted-foreground">Você não possui sessões avulsas no histórico.</p>
+                        </div>
+                      ) : (
                       <div className="space-y-3">
                         <span className="text-xs font-bold uppercase text-slate-400 pl-2">Sessões Avulsas:</span>
                         {paginatedHistoryStandalone.map((item: any) => {
@@ -570,6 +622,7 @@ export function ClientAreaView({
                     )}
                   </div>
                 )}
+                </Tabs>
               </div>
             )}
 
@@ -580,7 +633,7 @@ export function ClientAreaView({
                 </h3>
 
                 {data.loyaltyInfo && (
-                  <ClientLoyalty loyaltyInfo={data.loyaltyInfo} clientName={client.name} />
+                  <ClientLoyalty loyaltyInfo={data.loyaltyInfo} clientName={client.name} clientId={client.id} />
                 )}
 
                 <div className="bg-white border rounded-3xl p-6 space-y-6 shadow-sm">

@@ -199,13 +199,63 @@ export async function getClientLoyaltyInfo(clientId: string) {
     }
 
     const enrolled = settings.scope === "global" || client.loyalty_enrolled_at !== null;
-    const dynamicPoints = await calculateClientPoints(clientId, client.loyalty_enrolled_at, settings);
+    const totalEarnedPoints = await calculateClientPoints(clientId, client.loyalty_enrolled_at, settings);
 
-    // Opcionalmente atualizar o cache no banco (sincronização)
-    if (dynamicPoints !== client.loyalty_points) {
+    // Fetch spent points
+    let vouchers = await prisma.clientVoucher.findMany({
+      where: { client_id: clientId },
+      orderBy: { created_at: "desc" }
+    });
+    const totalSpentPoints = vouchers.reduce((acc: any, v: any) => acc + v.points_spent, 0);
+
+    let currentPoints = totalEarnedPoints - totalSpentPoints;
+
+    // Auto-generate voucher if we have enough points
+    let newlyGenerated = false;
+    if (settings.rewards && settings.rewards.length > 0) {
+      const sortedRewards = [...settings.rewards].sort((a, b) => a.points_cost - b.points_cost);
+      let canAfford = true;
+      while (canAfford) {
+        const affordable = sortedRewards.find(r => currentPoints >= r.points_cost);
+        if (affordable) {
+          let expires_at = null;
+          // @ts-ignore
+          if (affordable.validity_days) {
+            const date = new Date();
+            // @ts-ignore
+            date.setDate(date.getDate() + affordable.validity_days);
+            expires_at = date;
+          }
+
+          await prisma.clientVoucher.create({
+            data: {
+              client_id: clientId,
+              reward_id: affordable.id,
+              points_spent: affordable.points_cost,
+              title: affordable.title,
+              // @ts-ignore
+              expires_at: expires_at
+            }
+          });
+          currentPoints -= affordable.points_cost;
+          newlyGenerated = true;
+        } else {
+          canAfford = false;
+        }
+      }
+    }
+
+    if (currentPoints !== client.loyalty_points || newlyGenerated) {
       await prisma.client.update({
         where: { id: clientId },
-        data: { loyalty_points: dynamicPoints }
+        data: { loyalty_points: currentPoints }
+      });
+    }
+
+    if (newlyGenerated) {
+      vouchers = await prisma.clientVoucher.findMany({
+        where: { client_id: clientId },
+        orderBy: { created_at: "desc" }
       });
     }
 
@@ -213,9 +263,10 @@ export async function getClientLoyaltyInfo(clientId: string) {
       success: true,
       active: true,
       enrolled,
-      points: dynamicPoints,
+      points: currentPoints,
       rewards: settings.rewards,
-      maxPoints: settings.max_points
+      maxPoints: settings.max_points,
+      vouchers
     };
   } catch (error) {
     console.error("Erro ao buscar informações de fidelidade do cliente:", error);
@@ -315,9 +366,27 @@ export async function getClientLoyaltyHistory(clientId: string) {
     // Ordena por data (mais recente primeiro)
     history.sort((a, b) => b.date.getTime() - a.date.getTime());
 
-    return { success: true, history };
+    const vouchers = await prisma.clientVoucher.findMany({
+      where: { client_id: client.id },
+      orderBy: { created_at: 'desc' }
+    });
+
+    return { success: true, history, vouchers };
   } catch (error) {
     console.error("Erro ao buscar histórico do cliente:", error);
     return { success: false, error: "Erro ao buscar histórico." };
+  }
+}
+
+export async function markVoucherAsUsed(voucherId: string) {
+  try {
+    const voucher = await prisma.clientVoucher.update({
+      where: { id: voucherId },
+      data: { status: "UTILIZADO", used_at: new Date() }
+    });
+    return { success: true, voucher };
+  } catch (error) {
+    console.error("Erro ao utilizar voucher:", error);
+    return { success: false, error: "Erro ao utilizar voucher" };
   }
 }

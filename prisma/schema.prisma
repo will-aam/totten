@@ -43,107 +43,107 @@ model Organization {
 }
 
 model Admin {
-  id                 String         @id @default(cuid())
-  display_name       String?
-  email              String         @unique
-  password           String
-  created_at         DateTime       @default(now())
-  updated_at         DateTime       @updatedAt
-  email_verified     Boolean        @default(false)
-  reset_token        String?        @unique
-  verification_token String?        @unique
-  role               String         @default("OWNER")
-  active             Boolean        @default(true)
-  permissions        String[]       @default([])
-  profession         String?
-  bio                String?        @db.Text
-  profile_image_url  String?
-  instagram_url      String?
-  show_instagram     Boolean        @default(true)
-  show_on_site       Boolean        @default(true)
-  appointments       Appointment[]  @relation("ProfessionalToAppointment")
-  check_ins          CheckIn[]      @relation("AdminToCheckIn")
-  transactions       Transaction[]  @relation("AdminToTransaction")
-  organizations      Organization[] @relation("AdminToOrganization")
-  services           Service[]      @relation("AdminToService")
-  package_templates  PackageTemplate[] @relation("AdminToPackageTemplate")
-  professional_likes    ProfessionalLike[]
-  professional_reviews  ProfessionalReview[]
+  id                   String               @id @default(cuid())
+  display_name         String?
+  email                String               @unique
+  password             String
+  created_at           DateTime             @default(now())
+  updated_at           DateTime             @updatedAt
+  email_verified       Boolean              @default(false)
+  reset_token          String?              @unique
+  verification_token   String?              @unique
+  role                 String               @default("OWNER")
+  active               Boolean              @default(true)
+  permissions          String[]             @default([])
+  profession           String?
+  bio                  String?              @db.Text
+  profile_image_url    String?
+  instagram_url        String?
+  show_instagram       Boolean              @default(true)
+  show_on_site         Boolean              @default(true)
+  appointments         Appointment[]        @relation("ProfessionalToAppointment")
+  check_ins            CheckIn[]            @relation("AdminToCheckIn")
+  transactions         Transaction[]        @relation("AdminToTransaction")
+  organizations        Organization[]       @relation("AdminToOrganization")
+  services             Service[]            @relation("AdminToService")
+  package_templates    PackageTemplate[]    @relation("AdminToPackageTemplate")
+  professional_likes   ProfessionalLike[]
+  professional_reviews ProfessionalReview[]
 
-  schedule_rule_id   String?
-  schedule_rule      ScheduleRule? @relation(fields: [schedule_rule_id], references: [id], onDelete: SetNull)
+  schedule_rule_id String?
+  schedule_rule    ScheduleRule? @relation(fields: [schedule_rule_id], references: [id], onDelete: SetNull)
 
-  schedule_blocks    ScheduleBlock[] @relation("AdminToScheduleBlock")
+  schedule_blocks ScheduleBlock[] @relation("AdminToScheduleBlock")
 
   @@map("admins")
 }
+
 model Settings {
-  id               String       @id @default(cuid())
+  id               String   @id @default(cuid())
   company_name     String
   document         String?
   responsible_name String?
   phone_landline   String?
   phone_whatsapp   String
   email_admin      String?
-  opening_time     String       @default("08:00")
-  closing_time     String       @default("19:00")
-  organization_id  String       @unique
-  updated_at       DateTime     @updatedAt
+  opening_time     String   @default("08:00")
+  closing_time     String   @default("19:00")
+  organization_id  String   @unique
+  updated_at       DateTime @updatedAt
   trade_name       String?
   address          String?
-  
+
   auto_confirm_appointments     Boolean @default(true)
   schedule_generation_type      String  @default("automatic")
   allow_over_limit_appointments Boolean @default(false)
   default_schedule_view         String  @default("day")
-  
-  booking_theme             String  @default("light")
-  booking_primary_color     String  @default("#0f172a")
 
-  future_booking_limit_days     Int     @default(30)
+  booking_theme         String @default("light")
+  booking_primary_color String @default("#0f172a")
 
-  
-  require_cpf      Boolean      @default(true)
-  terms_of_use     String?      @db.Text
+  future_booking_limit_days Int @default(30)
 
-  require_prepayment   Boolean  @default(true)
-  pix_key              String?
-  payment_instructions String?  @db.Text
-  show_packages        Boolean  @default(true)
-  show_most_booked     Boolean  @default(true)
-  show_team            Boolean  @default(true)
-  show_team_likes      Boolean  @default(true)
+  require_cpf  Boolean @default(true)
+  terms_of_use String? @db.Text
+
+  require_prepayment    Boolean @default(true)
+  pix_key               String?
+  payment_instructions  String? @db.Text
+  show_packages         Boolean @default(true)
+  show_most_booked      Boolean @default(true)
+  show_team             Boolean @default(true)
+  show_team_likes       Boolean @default(true)
   package_validity_mode String  @default("ACQUISITION")
 
-  organization     Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@map("settings")
 }
 
 model ScheduleRule {
-  id              String       @id @default(cuid())
-  name            String
-  is_default      Boolean      @default(false)
-  organization_id String
-  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  working_hours   WorkingHour[]
+  id                  String              @id @default(cuid())
+  name                String
+  is_default          Boolean             @default(false)
+  organization_id     String
+  organization        Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  working_hours       WorkingHour[]
   schedule_exceptions ScheduleException[]
-  admins          Admin[]
+  admins              Admin[]
 
   @@map("schedule_rules")
 }
 
 model WorkingHour {
-  id              String       @id @default(cuid())
-  day_of_week     Int          // 0 = Domingo, 1 = Segunda, etc.
-  is_open         Boolean      @default(true)
-  open_time       String?
-  close_time      String?
-  break_start              String?
-  break_end                String?
-  break_reason             String?
-  break_visible_to_client  Boolean      @default(false)
-  
+  id                      String  @id @default(cuid())
+  day_of_week             Int // 0 = Domingo, 1 = Segunda, etc.
+  is_open                 Boolean @default(true)
+  open_time               String?
+  close_time              String?
+  break_start             String?
+  break_end               String?
+  break_reason            String?
+  break_visible_to_client Boolean @default(false)
+
   schedule_rule_id String
   schedule_rule    ScheduleRule @relation(fields: [schedule_rule_id], references: [id], onDelete: Cascade)
 
@@ -155,16 +155,16 @@ model WorkingHour {
 }
 
 model ScheduleException {
-  id              String       @id @default(cuid())
-  date            String       // Formato "YYYY-MM-DD" para evitar bugs de fuso horário
-  is_open         Boolean      @default(false)
-  open_time       String?
-  close_time      String?
-  break_start              String?
-  break_end                String?
-  break_reason             String?
-  break_visible_to_client  Boolean      @default(false)
-  
+  id                      String  @id @default(cuid())
+  date                    String // Formato "YYYY-MM-DD" para evitar bugs de fuso horário
+  is_open                 Boolean @default(false)
+  open_time               String?
+  close_time              String?
+  break_start             String?
+  break_end               String?
+  break_reason            String?
+  break_visible_to_client Boolean @default(false)
+
   schedule_rule_id String
   schedule_rule    ScheduleRule @relation(fields: [schedule_rule_id], references: [id], onDelete: Cascade)
 
@@ -176,42 +176,43 @@ model ScheduleException {
 }
 
 model Client {
-  id                  String              @id @default(cuid())
-  name                String
-  
-  cpf                 String?
-  
-  phone_whatsapp      String
-  email               String?
-  birth_date          DateTime?
-  zip_code            String?
-  city                String?
-  street              String?
-  number              String?
-  organization_id     String
-  created_at          DateTime            @default(now())
-  updated_at          DateTime            @updatedAt
-  active              Boolean             @default(true)
-  source              String              @default("MANUAL")
-  
+  id   String @id @default(cuid())
+  name String
+
+  cpf String?
+
+  phone_whatsapp  String
+  email           String?
+  birth_date      DateTime?
+  zip_code        String?
+  city            String?
+  street          String?
+  number          String?
+  organization_id String
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+  active          Boolean   @default(true)
+  source          String    @default("MANUAL")
+
   // Autenticação da Área do Cliente
-  auth_code           String?
+  auth_code            String?
   auth_code_expires_at DateTime?
-  
+
   // Fidelidade
-  loyalty_points      Int                 @default(0)
+  loyalty_points      Int       @default(0)
   loyalty_enrolled_at DateTime?
 
-  anamnesis_responses AnamnesisResponse[]
-  appointments        Appointment[]
-  check_ins           CheckIn[]
-  notes               ClientNote[]
-  manual_notes        ClientManualNote[]
-  organization        Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  packages            Package[]
-  transactions        Transaction[]
-  professional_likes    ProfessionalLike[]
-  professional_reviews  ProfessionalReview[]
+  anamnesis_responses  AnamnesisResponse[]
+  appointments         Appointment[]
+  check_ins            CheckIn[]
+  notes                ClientNote[]
+  manual_notes         ClientManualNote[]
+  organization         Organization         @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  packages             Package[]
+  transactions         Transaction[]
+  professional_likes   ProfessionalLike[]
+  professional_reviews ProfessionalReview[]
+  ClientVoucher        ClientVoucher[]
 
   @@unique([cpf, organization_id])
   @@map("clients")
@@ -229,21 +230,21 @@ model MessageTemplate {
 }
 
 model LinkBio {
-  id                String       @id @default(cuid())
-  profile_image_url String?
-  logo_url          String?
-  bio_text          String?
-  theme_color_light String       @default("#ffffff")
-  theme_color_dark  String       @default("#000000")
-  font_family       String       @default("Inter")
-  theme_config      Json?
-  social_links      Json?
+  id                       String  @id @default(cuid())
+  profile_image_url        String?
+  logo_url                 String?
+  bio_text                 String?
+  theme_color_light        String  @default("#ffffff")
+  theme_color_dark         String  @default("#000000")
+  font_family              String  @default("Inter")
+  theme_config             Json?
+  social_links             Json?
   professional_site_config Json?
-  profile_config    Json?
-  is_active         Boolean      @default(false)
+  profile_config           Json?
+  is_active                Boolean @default(false)
 
-  organization_id   String       @unique
-  organization      Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  organization_id String       @unique
+  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@map("link_bio")
 }
@@ -287,56 +288,56 @@ model Service {
 }
 
 model PackageTemplate {
-  id              String       @id @default(cuid())
-  name            String
-  description     String?
-  total_sessions  Int
-  price           Decimal
-  active          Boolean      @default(true)
-  available_online Boolean     @default(true)
-  image_url       String?
-  organization_id String
-  created_at      DateTime     @default(now())
-  updated_at      DateTime     @updatedAt
-  service_id      String
-  validity_days   Int?
-  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  service         Service      @relation(fields: [service_id], references: [id])
-  packages        Package[]    // Pacotes vendidos baseados neste template
-  admins          Admin[]      @relation("AdminToPackageTemplate")
+  id               String       @id @default(cuid())
+  name             String
+  description      String?
+  total_sessions   Int
+  price            Decimal
+  active           Boolean      @default(true)
+  available_online Boolean      @default(true)
+  image_url        String?
+  organization_id  String
+  created_at       DateTime     @default(now())
+  updated_at       DateTime     @updatedAt
+  service_id       String
+  validity_days    Int?
+  organization     Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  service          Service      @relation(fields: [service_id], references: [id])
+  packages         Package[] // Pacotes vendidos baseados neste template
+  admins           Admin[]      @relation("AdminToPackageTemplate")
 
   @@index([organization_id])
   @@map("package_templates")
 }
 
 model Package {
-  id                        String        @id @default(cuid())
-  name                      String
-  total_sessions            Int
-  used_sessions             Int           @default(0)
-  price                     Decimal
-  active                    Boolean       @default(true)
-  client_id                 String
-  service_id                String
-  organization_id           String
-  created_at                DateTime      @default(now())
-  updated_at                DateTime      @updatedAt
-  expires_at                DateTime?
-  package_template_id       String?
+  id                  String    @id @default(cuid())
+  name                String
+  total_sessions      Int
+  used_sessions       Int       @default(0)
+  price               Decimal
+  active              Boolean   @default(true)
+  client_id           String
+  service_id          String
+  organization_id     String
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+  expires_at          DateTime?
+  package_template_id String?
 
   // SNAPSHOT
   snapshot_service_name     String?
-  snapshot_service_price    Decimal?      @db.Decimal(10, 2)
+  snapshot_service_price    Decimal? @db.Decimal(10, 2)
   snapshot_service_duration Int?
 
-  appointments              Appointment[]
-  check_ins                 CheckIn[]
-  client                    Client        @relation(fields: [client_id], references: [id], onDelete: Cascade)
-  organization              Organization  @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  service                   Service       @relation(fields: [service_id], references: [id])
-  package_template          PackageTemplate? @relation(fields: [package_template_id], references: [id])
-  transactions              Transaction[]
-  vouchers                  Voucher[]
+  appointments     Appointment[]
+  check_ins        CheckIn[]
+  client           Client           @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  organization     Organization     @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  service          Service          @relation(fields: [service_id], references: [id])
+  package_template PackageTemplate? @relation(fields: [package_template_id], references: [id])
+  transactions     Transaction[]
+  vouchers         Voucher[]
 
   @@index([organization_id])
   @@index([client_id])
@@ -354,34 +355,34 @@ model Voucher {
 }
 
 model Appointment {
-  id                        String            @id @default(cuid())
-  date_time                 DateTime
-  status                    AppointmentStatus @default(PENDENTE)
-  payment_method            PaymentMethod?
-  has_charge                Boolean           @default(false)
-  session_number            Int?
-  observations              String?
-  client_id                 String
-  service_id                String
-  package_id                String?
-  organization_id           String
-  created_at                DateTime          @default(now())
-  updated_at                DateTime          @updatedAt
-  recurrence_id             String?
-  professional_id           String?
+  id              String            @id @default(cuid())
+  date_time       DateTime
+  status          AppointmentStatus @default(PENDENTE)
+  payment_method  PaymentMethod?
+  has_charge      Boolean           @default(false)
+  session_number  Int?
+  observations    String?
+  client_id       String
+  service_id      String
+  package_id      String?
+  organization_id String
+  created_at      DateTime          @default(now())
+  updated_at      DateTime          @updatedAt
+  recurrence_id   String?
+  professional_id String?
 
   // SNAPSHOT
   snapshot_service_name     String?
-  snapshot_service_price    Decimal?          @db.Decimal(10, 2)
+  snapshot_service_price    Decimal? @db.Decimal(10, 2)
   snapshot_service_duration Int?
 
-  client                    Client            @relation(fields: [client_id], references: [id], onDelete: Cascade)
-  organization              Organization      @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  package                   Package?          @relation(fields: [package_id], references: [id])
-  professional              Admin?            @relation("ProfessionalToAppointment", fields: [professional_id], references: [id])
-  service                   Service           @relation(fields: [service_id], references: [id])
-  check_in                  CheckIn?
-  transaction               Transaction?
+  client       Client       @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  package      Package?     @relation(fields: [package_id], references: [id])
+  professional Admin?       @relation("ProfessionalToAppointment", fields: [professional_id], references: [id])
+  service      Service      @relation(fields: [service_id], references: [id])
+  check_in     CheckIn?
+  transaction  Transaction?
 
   @@index([organization_id, date_time])
   @@index([client_id, date_time])
@@ -606,8 +607,8 @@ model ProfessionalLike {
   admin_id  String
   createdAt DateTime @default(now())
 
-  client    Client   @relation(fields: [client_id], references: [id], onDelete: Cascade)
-  admin     Admin    @relation(fields: [admin_id], references: [id], onDelete: Cascade)
+  client Client @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  admin  Admin  @relation(fields: [admin_id], references: [id], onDelete: Cascade)
 
   @@unique([client_id, admin_id])
   @@map("professional_likes")
@@ -622,24 +623,24 @@ model ProfessionalReview {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  client    Client   @relation(fields: [client_id], references: [id], onDelete: Cascade)
-  admin     Admin    @relation(fields: [admin_id], references: [id], onDelete: Cascade)
+  client Client @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  admin  Admin  @relation(fields: [admin_id], references: [id], onDelete: Cascade)
 
   @@map("professional_reviews")
 }
 
 model ScheduleBlock {
-  id              String       @id @default(cuid())
+  id              String   @id @default(cuid())
   title           String
   start_time      DateTime
   end_time        DateTime
   professional_id String?
   organization_id String
-  created_at      DateTime     @default(now())
-  updated_at      DateTime     @updatedAt
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
 
-  professional    Admin?       @relation("AdminToScheduleBlock", fields: [professional_id], references: [id])
-  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  professional Admin?       @relation("AdminToScheduleBlock", fields: [professional_id], references: [id])
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@index([organization_id, start_time])
   @@map("schedule_blocks")
@@ -649,36 +650,56 @@ model LoyaltySettings {
   id              String       @id @default(cuid())
   organization_id String       @unique
   organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  
-  is_active       Boolean      @default(false)
-  scope           String       @default("specific")
-  max_points      Int          @default(500)
-  
-  check_in_active Boolean      @default(true)
-  check_in_points Int          @default(10)
-  
-  schedule_active Boolean      @default(true)
-  schedule_points Int          @default(5)
 
-  rewards         LoyaltyReward[]
+  is_active  Boolean @default(false)
+  scope      String  @default("specific")
+  max_points Int     @default(500)
 
-  created_at      DateTime     @default(now())
-  updated_at      DateTime     @updatedAt
+  check_in_active Boolean @default(true)
+  check_in_points Int     @default(10)
+
+  schedule_active Boolean @default(true)
+  schedule_points Int     @default(5)
+
+  rewards LoyaltyReward[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   @@map("loyalty_settings")
 }
 
 model LoyaltyReward {
-  id              String          @id @default(cuid())
-  settings_id     String
-  settings        LoyaltySettings @relation(fields: [settings_id], references: [id], onDelete: Cascade)
-  
-  title           String
-  points_cost     Int
-  conditions      String?         @db.Text
+  id          String          @id @default(cuid())
+  settings_id String
+  settings    LoyaltySettings @relation(fields: [settings_id], references: [id], onDelete: Cascade)
 
-  created_at      DateTime        @default(now())
-  updated_at      DateTime        @updatedAt
+  title       String
+  points_cost Int
+  conditions  String? @db.Text
+  validity_days Int?  @default(30)
+
+  created_at    DateTime        @default(now())
+  updated_at    DateTime        @updatedAt
+  ClientVoucher ClientVoucher[]
 
   @@map("loyalty_rewards")
+}
+
+model ClientVoucher {
+  id           String @id @default(cuid())
+  client_id    String
+  reward_id    String
+  points_spent Int
+  title        String
+  status       String @default("DISPONIVEL")
+
+  created_at DateTime  @default(now())
+  expires_at DateTime?
+  used_at    DateTime?
+
+  client Client        @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  reward LoyaltyReward @relation(fields: [reward_id], references: [id], onDelete: Cascade)
+
+  @@map("client_vouchers")
 }

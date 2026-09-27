@@ -28,7 +28,8 @@ export function LoyaltyView({ organizationId, initialSettings, clients }: { orga
     id: r.id,
     title: r.title,
     pointsCost: r.points_cost,
-    conditions: r.conditions
+    conditions: r.conditions,
+    validityDays: r.validity_days
   }));
   const [rewards, setRewards] = useState(initialRewards);
   const [isProgramActive, setIsProgramActive] = useState(initialSettings.is_active || false);

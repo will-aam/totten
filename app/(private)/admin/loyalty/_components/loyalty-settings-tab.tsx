@@ -38,6 +38,7 @@ interface Reward {
   title: string;
   pointsCost: number;
   conditions?: string;
+  validityDays?: number;
 }
 
 interface LoyaltySettingsTabProps {
@@ -147,7 +148,8 @@ export function LoyaltySettingsTab({
         rewards: newRewards.map(r => ({
           title: r.title,
           points_cost: r.pointsCost,
-          conditions: r.conditions
+          conditions: r.conditions,
+          validity_days: r.validityDays
         }))
       };
       await updateLoyaltySettings(organizationId, data);
@@ -167,7 +169,8 @@ export function LoyaltySettingsTab({
         rewards: rewards.map(r => ({
           title: r.title,
           points_cost: r.pointsCost,
-          conditions: r.conditions
+          conditions: r.conditions,
+          validity_days: r.validityDays
         }))
       };
 

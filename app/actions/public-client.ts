@@ -98,6 +98,7 @@ export async function getClientDashboardData(slug: string, clientId: string) {
         organization_id: org.id
       },
       include: {
+        ClientVoucher: { orderBy: { created_at: "desc" } },
         appointments: {
           include: {
             service: { select: { name: true } },
@@ -172,6 +173,7 @@ export async function getClientDashboardData(slug: string, clientId: string) {
       upcoming, 
       historyPackages,
       historyStandalone,
+      historyVouchers: client.ClientVoucher || [],
       clinicName: org.name,
       clinicPhone,
       loyaltyInfo,
