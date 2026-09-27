@@ -18,8 +18,10 @@ import {
   AlertDialogTitle 
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { enrollClientInLoyalty } from "@/app/actions/loyalty";
+import { cn } from "@/lib/utils";
+import { enrollClientInLoyalty, getClientLoyaltyHistory } from "@/app/actions/loyalty";
 import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Pagination,
   PaginationContent,
@@ -66,8 +68,22 @@ export function LoyaltyOverviewTab({
   const [searchQuery, setSearchQuery] = useState("");
   const [addingClient, setAddingClient] = useState<string | null>(null);
   const [clientToRemove, setClientToRemove] = useState<string | null>(null);
+  const [selectedClientForHistory, setSelectedClientForHistory] = useState<Client | null>(null);
+  const [clientHistory, setClientHistory] = useState<any[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
 
-  const displayedClients = programScope === "global" ? clients : clients.filter(c => c.enrolledAt !== null);
+  const filteredClients = programScope === "global" ? clients : clients.filter(c => c.enrolledAt !== null);
+  
+  // Filter by search query
+  const searchedClients = filteredClients.filter(c => 
+    c.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const totalPages = Math.max(1, Math.ceil(searchedClients.length / itemsPerPage));
+  const displayedClients = searchedClients.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   const unenrolledClients = clients.filter(c => c.enrolledAt === null && c.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
   const handleEnroll = async (clientId: string) => {
@@ -91,6 +107,19 @@ export function LoyaltyOverviewTab({
     } else {
       toast.error(res.error || "Erro ao remover cliente.");
     }
+  };
+
+  const openHistory = async (client: Client) => {
+    setSelectedClientForHistory(client);
+    setIsLoadingHistory(true);
+    const res = await getClientLoyaltyHistory(client.id);
+    if (res.success && res.history) {
+      setClientHistory(res.history);
+    } else {
+      toast.error(res.error || "Erro ao carregar histórico.");
+      setClientHistory([]);
+    }
+    setIsLoadingHistory(false);
   };
 
   if (!isProgramActive) {
@@ -121,6 +150,11 @@ export function LoyaltyOverviewTab({
           <Input
             placeholder="Buscar cliente por nome..."
             className="pl-10 rounded-full bg-card"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
           />
         </div>
 
@@ -137,7 +171,11 @@ export function LoyaltyOverviewTab({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {displayedClients.map((client) => (
-          <Card key={client.id} className="rounded-2xl shadow-sm border-border/50 relative overflow-hidden">
+          <Card 
+            key={client.id} 
+            className="rounded-2xl shadow-sm border-border/50 relative overflow-hidden cursor-pointer hover:border-primary/50 transition-colors group"
+            onClick={() => openHistory(client)}
+          >
             <Star
               aria-hidden="true"
               type="solid"
@@ -157,24 +195,27 @@ export function LoyaltyOverviewTab({
 
             <CardContent className="relative z-10 p-5 flex flex-col items-center text-center gap-2">
               {programScope === "specific" && (
-                <div className="absolute top-2 right-2">
+                <div className="absolute top-2 right-2 z-20">
                   <Button 
                     variant="ghost" 
                     size="sm" 
                     className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-                    onClick={() => setClientToRemove(client.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setClientToRemove(client.id);
+                    }}
                   >
                     &times;
                   </Button>
                 </div>
               )}
-              <div className="space-y-1 mt-2">
-                <h3 className="font-semibold text-lg">{client.name}</h3>
+              <div className="space-y-1 mt-2 pointer-events-none">
+                <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">{client.name}</h3>
                 <p className="text-xs text-muted-foreground">
                   Último Check-in: {client.lastCheckIn}
                 </p>
               </div>
-              <div className="mt-2 inline-flex items-center gap-1.5 bg-secondary/50 px-3 py-1 rounded-full text-sm font-medium">
+              <div className="mt-2 inline-flex items-center gap-1.5 bg-secondary/50 px-3 py-1 rounded-full text-sm font-medium pointer-events-none">
                 <span className="text-primary font-bold">{client.points}</span> 
                 <span>pts</span>
               </div>
@@ -208,8 +249,11 @@ export function LoyaltyOverviewTab({
               <div className="flex items-center gap-2 mt-4 w-full pt-4 border-t border-border/50">
                 <Button 
                   variant="outline" 
-                  className="rounded-xl flex-1 flex flex-col gap-1 h-auto py-2 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
-                  onClick={() => onOpenVoucher(client)}
+                  className="rounded-xl flex-1 flex flex-col gap-1 h-auto py-2 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50 z-20 relative"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenVoucher(client);
+                  }}
                   disabled={!client.points}
                 >
                   <Download size={16} />
@@ -234,20 +278,45 @@ export function LoyaltyOverviewTab({
         </div>
       )}
 
-      {displayedClients.length > 0 && (
+      {totalPages > 1 && (
         <Pagination className="mt-8">
           <PaginationContent>
             <PaginationItem>
-              <PaginationPrevious href="#" className="pointer-events-none opacity-50 rounded-full" />
+              <PaginationPrevious 
+                href="#" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (currentPage > 1) setCurrentPage(p => p - 1);
+                }}
+                className={cn("rounded-full", currentPage === 1 && "pointer-events-none opacity-50")} 
+              />
             </PaginationItem>
+            
+            {Array.from({ length: totalPages }).map((_, i) => (
+              <PaginationItem key={i}>
+                <PaginationLink 
+                  href="#" 
+                  isActive={currentPage === i + 1}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setCurrentPage(i + 1);
+                  }}
+                  className="rounded-full"
+                >
+                  {i + 1}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+
             <PaginationItem>
-              <PaginationLink href="#" isActive className="rounded-full">1</PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink href="#" className="rounded-full">2</PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationNext href="#" className="rounded-full" />
+              <PaginationNext 
+                href="#" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (currentPage < totalPages) setCurrentPage(p => p + 1);
+                }}
+                className={cn("rounded-full", currentPage === totalPages && "pointer-events-none opacity-50")}
+              />
             </PaginationItem>
           </PaginationContent>
         </Pagination>
@@ -311,6 +380,55 @@ export function LoyaltyOverviewTab({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!selectedClientForHistory} onOpenChange={(open) => {
+        if (!open) {
+          setSelectedClientForHistory(null);
+          setClientHistory([]);
+        }
+      }}>
+        <DialogContent className="rounded-2xl max-w-md bg-card">
+          <DialogHeader>
+            <DialogTitle>Histórico de Pontos</DialogTitle>
+            <DialogDescription>
+              {selectedClientForHistory?.name}
+            </DialogDescription>
+          </DialogHeader>
+
+          {isLoadingHistory ? (
+            <div className="flex justify-center p-8">
+              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : clientHistory.length === 0 ? (
+            <div className="text-center p-8 text-muted-foreground bg-muted/30 rounded-xl">
+              Nenhuma pontuação registrada para este cliente.
+            </div>
+          ) : (
+            <ScrollArea className="h-[350px] pr-4 mt-2">
+              <div className="space-y-4">
+                {clientHistory.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-3 rounded-xl border border-border/50 bg-background">
+                    <div className="flex flex-col gap-1">
+                      <span className="font-medium text-sm">{item.description}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(item.date).toLocaleDateString('pt-BR')} às {new Date(item.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 text-primary font-bold bg-primary/10 px-2 py-1 rounded-full text-xs shrink-0">
+                      +{item.points} pts
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          )}
+
+          <div className="flex justify-between items-center mt-4 pt-4 border-t border-border/50 text-sm">
+            <span className="text-muted-foreground">Saldo Total:</span>
+            <span className="font-bold text-lg text-primary">{selectedClientForHistory?.points} pts</span>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

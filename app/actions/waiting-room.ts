@@ -124,6 +124,26 @@ export async function createManualCheckIn(data: {
       }
     });
 
+    // 4. Adicionar pontos de fidelidade
+    const loyaltySettings = await db.loyaltySettings.findUnique({
+      where: { organization_id: organizationId }
+    });
+
+    if (loyaltySettings?.is_active && loyaltySettings?.check_in_active) {
+      const clientCurrent = await db.client.findUnique({
+        where: { id: data.clientId },
+        select: { loyalty_points: true }
+      });
+      const newPoints = Math.min(
+        (clientCurrent?.loyalty_points || 0) + loyaltySettings.check_in_points,
+        loyaltySettings.max_points
+      );
+      await db.client.update({
+        where: { id: data.clientId },
+        data: { loyalty_points: newPoints }
+      });
+    }
+
     return { success: true, data: checkIn };
   } catch (error: any) {
     console.error("Erro no check-in manual:", error);

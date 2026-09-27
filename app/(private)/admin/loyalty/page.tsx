@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { LoyaltyView } from "./_components/loyalty-view";
 import { redirect } from "next/navigation";
-import { getLoyaltySettings } from "@/app/actions/loyalty";
+import { getLoyaltySettings, calculateClientPoints } from "@/app/actions/loyalty";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 
@@ -40,13 +40,26 @@ export default async function LoyaltyPage() {
     orderBy: { name: 'asc' }
   });
 
-  const formattedClients = clients.map(c => ({
-    id: c.id,
-    name: c.name,
-    points: c.loyalty_points,
-    tier: c.loyalty_points >= 500 ? "Ouro" : c.loyalty_points >= 200 ? "Prata" : "Bronze",
-    lastCheckIn: c.check_ins[0] ? new Date(c.check_ins[0].date_time).toLocaleDateString('pt-BR') : 'Nunca',
-    enrolledAt: c.loyalty_enrolled_at,
+  const formattedClients = await Promise.all(clients.map(async (c) => {
+    // Calcula pontos de forma dinâmica baseada na tabela de checkins/agendamentos!
+    const dynamicPoints = await calculateClientPoints(c.id, c.loyalty_enrolled_at, settings);
+    
+    // Sincroniza o cache do banco se necessário
+    if (dynamicPoints !== c.loyalty_points) {
+      await prisma.client.update({
+        where: { id: c.id },
+        data: { loyalty_points: dynamicPoints }
+      });
+    }
+
+    return {
+      id: c.id,
+      name: c.name,
+      points: dynamicPoints,
+      tier: dynamicPoints >= 500 ? "Ouro" : dynamicPoints >= 200 ? "Prata" : "Bronze",
+      lastCheckIn: c.check_ins[0] ? new Date(c.check_ins[0].date_time).toLocaleDateString('pt-BR') : 'Nunca',
+      enrolledAt: c.loyalty_enrolled_at,
+    };
   }));
 
   return (

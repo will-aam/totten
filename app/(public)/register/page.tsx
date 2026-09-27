@@ -123,7 +123,7 @@ export default function RegisterPage() {
         href="/login"
         className="absolute top-4 left-4 sm:top-8 sm:left-8 flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group z-10"
       >
-        <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-transparent sm:bg-muted/50 hover:bg-muted transition-colors">
+        <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-transparent sm:bg-muted/50 hover:bg-muted transition-colors">
           <ChevronLeft removePadding className="h-5 w-5" />
         </div>
         <span className="hidden sm:inline font-medium">Voltar ao Login</span>
@@ -320,7 +320,7 @@ export default function RegisterPage() {
 
           {/* Erros Gerais */}
           {(state.error || passwordMatchError) && (
-            <div className="p-4 rounded-full bg-destructive/10 text-destructive text-sm font-medium text-center border border-destructive/20">
+            <div className="p-4 rounded-2xl bg-destructive/10 text-destructive text-sm font-medium text-center border border-destructive/20">
               {passwordMatchError || state.error}
             </div>
           )}
@@ -329,7 +329,7 @@ export default function RegisterPage() {
             <Button
               type="submit"
               size="lg"
-              className="w-full h-14 sm:h-12 text-lg sm:text-base rounded-full transition-all hover:scale-[1.02] shadow-md"
+              className="w-full h-14 sm:h-12 text-lg sm:text-base rounded-2xl transition-all hover:scale-[1.02] shadow-md"
               disabled={
                 isPending || password !== confirmPassword || strength < 50
               }

@@ -352,6 +352,25 @@ export async function createManualPackageCheckIn(
         },
       });
 
+      const loyaltySettings = await tx.loyaltySettings.findUnique({
+        where: { organization_id: admin.organizationId }
+      });
+
+      if (loyaltySettings?.is_active && loyaltySettings?.check_in_active) {
+        const clientCurrent = await tx.client.findUnique({
+          where: { id: pkg.client_id },
+          select: { loyalty_points: true }
+        });
+        const newPoints = Math.min(
+          (clientCurrent?.loyalty_points || 0) + loyaltySettings.check_in_points,
+          loyaltySettings.max_points
+        );
+        await tx.client.update({
+          where: { id: pkg.client_id },
+          data: { loyalty_points: newPoints }
+        });
+      }
+
       const newUsedSessions = pkg.used_sessions + 1;
       const willRemainActive = newUsedSessions < pkg.total_sessions;
 
@@ -474,6 +493,26 @@ export async function deleteCheckIn(checkInId: string) {
         });
       }
 
+      // Reverter pontos de fidelidade
+      const loyaltySettings = await tx.loyaltySettings.findUnique({
+        where: { organization_id: admin.organizationId }
+      });
+
+      if (loyaltySettings?.is_active && loyaltySettings?.check_in_active && checkIn.client_id) {
+        const clientCurrent = await tx.client.findUnique({
+          where: { id: checkIn.client_id },
+          select: { loyalty_points: true }
+        });
+        const newPoints = Math.max(
+          (clientCurrent?.loyalty_points || 0) - loyaltySettings.check_in_points,
+          0
+        );
+        await tx.client.update({
+          where: { id: checkIn.client_id },
+          data: { loyalty_points: newPoints }
+        });
+      }
+
       // E. Soft delete do check-in
       await tx.checkIn.update({
         where: { id: checkInId },
@@ -489,6 +528,7 @@ export async function deleteCheckIn(checkInId: string) {
     revalidatePath("/admin/packages");
     revalidatePath("/admin/dashboard");
     revalidatePath("/admin/stock");
+    revalidatePath("/admin/agenda");
     revalidatePath(`/admin/clients/${checkIn.client_id}`);
 
     return { success: true };

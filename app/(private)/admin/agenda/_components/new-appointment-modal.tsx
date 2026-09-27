@@ -282,7 +282,7 @@ export const NewAppointmentModal = memo(
                 <SelectContent className="border border-border/50 bg-background shadow-xl rounded-2xl">
                   <SelectItem
                     value={session?.user?.id || ""}
-                    className="rounded-full py-2 font-medium"
+                    className="rounded-2xl py-2 font-medium"
                   >
                     Admin
                   </SelectItem>
@@ -292,7 +292,7 @@ export const NewAppointmentModal = memo(
                       <SelectItem
                         key={member.id}
                         value={member.id}
-                        className="rounded-full py-2 font-medium"
+                        className="rounded-2xl py-2 font-medium"
                       >
                         {member.display_name}
                       </SelectItem>
@@ -324,7 +324,7 @@ export const NewAppointmentModal = memo(
                   <SelectItem
                     key={c.id}
                     value={c.id}
-                    className="rounded-full py-2 font-medium"
+                    className="rounded-2xl py-2 font-medium"
                   >
                     {c.name}
                   </SelectItem>
@@ -345,7 +345,7 @@ export const NewAppointmentModal = memo(
               <div className="flex items-center gap-3">
                 <div
                   className={cn(
-                    "p-2.5 rounded-full transition-colors",
+                    "p-2.5 rounded-2xl transition-colors",
                     usePackage
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted text-muted-foreground shadow-sm",
@@ -408,7 +408,7 @@ export const NewAppointmentModal = memo(
                   <SelectItem
                     key={s.id}
                     value={s.id}
-                    className="rounded-full py-2 font-medium"
+                    className="rounded-2xl py-2 font-medium"
                   >
                     {s.name}
                   </SelectItem>
@@ -488,7 +488,7 @@ export const NewAppointmentModal = memo(
             <div className="flex items-center gap-3">
               <div
                 className={cn(
-                  "p-2 rounded-full transition-colors shrink-0",
+                  "p-2 rounded-2xl transition-colors shrink-0",
                   isRecurring
                     ? "bg-primary text-primary-foreground shadow-md"
                     : "bg-muted text-muted-foreground",

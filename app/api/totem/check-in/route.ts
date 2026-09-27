@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth, AuthError } from "@/lib/auth";
 import { TotemCheckInService } from "@/lib/server/services/totem/checkin.service";
+import { revalidatePath } from "next/cache";
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,6 +24,11 @@ export async function POST(request: NextRequest) {
       appointment_id,
       admin.organizationId,
     );
+
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/history");
+    revalidatePath("/admin/agenda");
+    revalidatePath("/admin/clients");
 
     return NextResponse.json({
       success: true,

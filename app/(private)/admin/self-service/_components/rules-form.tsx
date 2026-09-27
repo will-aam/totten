@@ -1001,7 +1001,7 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
               <div className="flex justify-end pt-4">
                 <Button type="submit" size="lg" disabled={isPending} className="w-full sm:w-auto h-12">
                   {isPending && <LoaderLines className="mr-2 h-4 w-4 animate-spin" />}
-                  Salvar Regras Globais
+                  Salvar Regras
                 </Button>
               </div>
             </CardContent>

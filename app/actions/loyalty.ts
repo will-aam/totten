@@ -129,6 +129,45 @@ export async function saveLoyaltyReward(settingsId: string, data: { id?: string;
   }
 }
 
+export async function calculateClientPoints(
+  clientId: string,
+  enrolledAt: Date | null,
+  settings: any
+) {
+  if (!settings || !settings.is_active) return 0;
+  
+  const enrolled = settings.scope === "global" || enrolledAt !== null;
+  if (!enrolled) return 0;
+
+  const startDate = enrolledAt || new Date(0);
+
+  let checkInPoints = 0;
+  if (settings.check_in_active && settings.check_in_points > 0) {
+    const checkInsCount = await prisma.checkIn.count({
+      where: {
+        client_id: clientId,
+        date_time: { gte: startDate },
+        deleted_at: null,
+      }
+    });
+    checkInPoints = checkInsCount * settings.check_in_points;
+  }
+
+  let schedulePoints = 0;
+  if (settings.schedule_active && settings.schedule_points > 0) {
+    const appointmentsCount = await prisma.appointment.count({
+      where: {
+        client_id: clientId,
+        date_time: { gte: startDate },
+        status: { in: ["REALIZADO", "CONFIRMADO"] },
+      }
+    });
+    schedulePoints = appointmentsCount * settings.schedule_points;
+  }
+
+  return Math.min(checkInPoints + schedulePoints, settings.max_points);
+}
+
 export async function getClientLoyaltyInfo(clientId: string) {
   try {
     const client = await prisma.client.findUnique({
@@ -160,12 +199,21 @@ export async function getClientLoyaltyInfo(clientId: string) {
     }
 
     const enrolled = settings.scope === "global" || client.loyalty_enrolled_at !== null;
+    const dynamicPoints = await calculateClientPoints(clientId, client.loyalty_enrolled_at, settings);
+
+    // Opcionalmente atualizar o cache no banco (sincronização)
+    if (dynamicPoints !== client.loyalty_points) {
+      await prisma.client.update({
+        where: { id: clientId },
+        data: { loyalty_points: dynamicPoints }
+      });
+    }
 
     return {
       success: true,
       active: true,
       enrolled,
-      points: client.loyalty_points,
+      points: dynamicPoints,
       rewards: settings.rewards,
       maxPoints: settings.max_points
     };
@@ -186,5 +234,90 @@ export async function enrollClientInLoyalty(clientId: string, enroll: boolean) {
   } catch (error) {
     console.error("Erro ao alterar matricula do cliente:", error);
     return { success: false, error: "Erro ao alterar matrícula do cliente" };
+  }
+}
+
+export async function getClientLoyaltyHistory(clientId: string) {
+  try {
+    const client = await prisma.client.findUnique({
+      where: { id: clientId },
+      select: {
+        id: true,
+        loyalty_enrolled_at: true,
+        organization: {
+          select: {
+            loyalty_settings: true
+          }
+        }
+      }
+    });
+
+    if (!client || !client.organization.loyalty_settings) {
+      return { success: false, error: "Cliente ou configurações não encontradas." };
+    }
+
+    const settings = client.organization.loyalty_settings;
+    if (!settings.is_active) {
+      return { success: false, error: "Programa de fidelidade inativo." };
+    }
+
+    const enrolled = settings.scope === "global" || client.loyalty_enrolled_at !== null;
+    if (!enrolled) {
+      return { success: true, history: [] };
+    }
+
+    const startDate = client.loyalty_enrolled_at || new Date(0);
+    const history = [];
+
+    // Busca check-ins
+    if (settings.check_in_active && settings.check_in_points > 0) {
+      const checkIns = await prisma.checkIn.findMany({
+        where: {
+          client_id: client.id,
+          date_time: { gte: startDate },
+          deleted_at: null,
+        },
+        orderBy: { date_time: 'desc' }
+      });
+
+      history.push(...checkIns.map(c => ({
+        id: c.id,
+        type: 'check-in',
+        date: c.date_time,
+        points: settings.check_in_points,
+        description: 'Check-in realizado'
+      })));
+    }
+
+    // Busca agendamentos
+    if (settings.schedule_active && settings.schedule_points > 0) {
+      const appointments = await prisma.appointment.findMany({
+        where: {
+          client_id: client.id,
+          date_time: { gte: startDate },
+          status: { in: ["REALIZADO", "CONFIRMADO"] },
+        },
+        include: {
+          service: { select: { name: true } }
+        },
+        orderBy: { date_time: 'desc' }
+      });
+
+      history.push(...appointments.map(a => ({
+        id: a.id,
+        type: 'appointment',
+        date: a.date_time,
+        points: settings.schedule_points,
+        description: `Agendamento: ${a.service.name}`
+      })));
+    }
+
+    // Ordena por data (mais recente primeiro)
+    history.sort((a, b) => b.date.getTime() - a.date.getTime());
+
+    return { success: true, history };
+  } catch (error) {
+    console.error("Erro ao buscar histórico do cliente:", error);
+    return { success: false, error: "Erro ao buscar histórico." };
   }
 }

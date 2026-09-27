@@ -12,11 +12,11 @@ export default function PhoneMockup() {
               HARMONIA
             </div>
           </div>
-          <div className="mx-6 mt-6 grid grid-cols-2 rounded-full border border-totten bg-card-totten p-1 text-xs">
-            <button className="rounded-full bg-[#0c0c0e] py-1.5 font-medium">
+          <div className="mx-6 mt-6 grid grid-cols-2 rounded-2xl border border-totten bg-card-totten p-1 text-xs">
+            <button className="rounded-2xl bg-[#0c0c0e] py-1.5 font-medium">
               CPF
             </button>
-            <button className="rounded-full py-1.5 text-zinc-soft">
+            <button className="rounded-2xl py-1.5 text-zinc-soft">
               Telefone
             </button>
           </div>
@@ -49,7 +49,7 @@ export default function PhoneMockup() {
               </div>
             ))}
           </div>
-          <div className="m-6 rounded-full bg-zinc-400 py-3 text-center text-sm font-semibold text-black">
+          <div className="m-6 rounded-2xl bg-zinc-400 py-3 text-center text-sm font-semibold text-black">
             Confirmar
           </div>
         </div>

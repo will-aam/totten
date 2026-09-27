@@ -54,6 +54,10 @@ export class TotemCheckInService {
 
     let packageInfo = null;
 
+    const loyaltySettings = await prisma.loyaltySettings.findUnique({
+      where: { organization_id: organizationId }
+    });
+
     // A GRANDE TRANSAÇÃO DO TOTEM
     const result = await prisma.$transaction(async (tx) => {
       // 1. Cria o registro de Check-in
@@ -152,6 +156,22 @@ export class TotemCheckInService {
         });
       }
 
+      // 3. Adicionar pontos de fidelidade
+      if (loyaltySettings?.is_active && loyaltySettings?.check_in_active) {
+        const clientCurrent = await tx.client.findUnique({
+          where: { id: appt.client_id },
+          select: { loyalty_points: true }
+        });
+        const newPoints = Math.min(
+          (clientCurrent?.loyalty_points || 0) + loyaltySettings.check_in_points,
+          loyaltySettings.max_points
+        );
+        await tx.client.update({
+          where: { id: appt.client_id },
+          data: { loyalty_points: newPoints }
+        });
+      }
+
       return checkIn;
     });
 
@@ -210,6 +230,10 @@ export class TotemCheckInService {
     const newUsedSessions = activePackage.used_sessions + 1;
     const willRemainActive = newUsedSessions < activePackage.total_sessions;
 
+    const loyaltySettings = await prisma.loyaltySettings.findUnique({
+      where: { organization_id: organizationId }
+    });
+
     // Registra o check-in e atualiza o pacote de forma atômica
     const result = await prisma.$transaction(async (tx) => {
       const checkIn = await tx.checkIn.create({
@@ -227,6 +251,22 @@ export class TotemCheckInService {
           active: willRemainActive,
         },
       });
+
+      // Adicionar pontos de fidelidade
+      if (loyaltySettings?.is_active && loyaltySettings?.check_in_active) {
+        const clientCurrent = await tx.client.findUnique({
+          where: { id: client.id },
+          select: { loyalty_points: true }
+        });
+        const newPoints = Math.min(
+          (clientCurrent?.loyalty_points || 0) + loyaltySettings.check_in_points,
+          loyaltySettings.max_points
+        );
+        await tx.client.update({
+          where: { id: client.id },
+          data: { loyalty_points: newPoints }
+        });
+      }
 
       return checkIn;
     });
