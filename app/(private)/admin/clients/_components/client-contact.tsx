@@ -482,7 +482,7 @@ export function ClientContact({ client }: ClientContactProps) {
                         className="cursor-pointer py-2.5"
                       >
                         <span className="font-medium text-sm">
-                          Boas-vindas (Novo)
+                          Boas-vindas
                         </span>
                       </DropdownMenuItem>
                       <DropdownMenuItem

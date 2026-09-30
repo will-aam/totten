@@ -13,6 +13,7 @@ import {
   ListPlus,
   Archive,
   Trophy,
+  PrintDollar,
 } from "@boxicons/react";
 import {
   Sidebar,
@@ -299,14 +300,15 @@ export function AdminSidebar() {
                         onClick={closeMobile}
                       >
                         <div className="flex items-center gap-2">
-                          <NavIcon icon={Wallet} isActive={isFinanceActive} />
+                          <NavIcon
+                            icon={Wallet}
+                            isActive={isFinanceActive}
+                          />
                           <span>Financeiro</span>
                         </div>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-
-
                 ) : (
                   <NavCollapsibleGroup
                     label="Financeiro"
@@ -321,6 +323,24 @@ export function AdminSidebar() {
                     onNavigate={closeMobile}
                   />
                 ))}
+
+              {/* Módulo: Fluxo de Caixa (Demo Estático) */}
+              {isOwner && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith("/admin/cashflow-demo")}
+                    className="hover:bg-muted/50"
+                  >
+                    <Link href="/admin/cashflow-demo" onClick={closeMobile}>
+                      <div className="flex items-center gap-2">
+                        <NavIcon icon={PrintDollar} isActive={pathname.startsWith("/admin/cashflow-demo")} />
+                        <span className="text-blue-600 dark:text-blue-400 font-semibold">Fluxo de Caixa </span>
+                      </div>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
