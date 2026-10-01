@@ -29,6 +29,7 @@ export class SettingsService {
       scheduleGenerationType: settings.schedule_generation_type,
       allowOverLimitAppointments: settings.allow_over_limit_appointments,
       defaultScheduleView: settings.default_schedule_view,
+      autoNoShowMode: settings.auto_no_show_mode,
     };
   }
 
@@ -70,6 +71,8 @@ export class SettingsService {
       updateData.allow_over_limit_appointments = data.allowOverLimitAppointments;
     if (data.defaultScheduleView !== undefined)
       updateData.default_schedule_view = data.defaultScheduleView;
+    if (data.autoNoShowMode !== undefined)
+      updateData.auto_no_show_mode = data.autoNoShowMode;
 
     return await prisma.settings.upsert({
       where: { organization_id: organizationId },
@@ -90,6 +93,7 @@ export class SettingsService {
         schedule_generation_type: data.scheduleGenerationType || "automatic",
         allow_over_limit_appointments: data.allowOverLimitAppointments ?? false,
         default_schedule_view: data.defaultScheduleView || "day",
+        auto_no_show_mode: data.autoNoShowMode || "off",
       },
     });
   }

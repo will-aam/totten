@@ -43,6 +43,7 @@ export type ScheduleSettings = {
   defaultScheduleView?: string;
   openingTime?: string;
   closingTime?: string;
+  autoNoShowMode?: "off" | "auto_deduct" | "auto_no_deduct";
 };
 
 interface ScheduleSettingsModalProps {
@@ -67,6 +68,7 @@ export const ScheduleSettingsModal = memo(
     const [autoConfirmAppointments, setAutoConfirmAppointments] = useState(initialSettings.autoConfirmAppointments ?? false);
     const [allowOverLimitAppointments, setAllowOverLimitAppointments] = useState(initialSettings.allowOverLimitAppointments ?? false);
     const [defaultScheduleView, setDefaultScheduleView] = useState(initialSettings.defaultScheduleView || "day");
+    const [autoNoShowMode, setAutoNoShowMode] = useState<"off" | "auto_deduct" | "auto_no_deduct">(initialSettings.autoNoShowMode || "off");
     const [openingTime, setOpeningTime] = useState(initialSettings.openingTime || "08:00");
     const [closingTime, setClosingTime] = useState(initialSettings.closingTime || "18:00");
 
@@ -79,6 +81,7 @@ export const ScheduleSettingsModal = memo(
         setAutoConfirmAppointments(initialSettings.autoConfirmAppointments ?? false);
         setAllowOverLimitAppointments(initialSettings.allowOverLimitAppointments ?? false);
         setDefaultScheduleView(initialSettings.defaultScheduleView || "day");
+        setAutoNoShowMode(initialSettings.autoNoShowMode || "off");
         setOpeningTime(initialSettings.openingTime || "08:00");
         setClosingTime(initialSettings.closingTime || "18:00");
       }
@@ -91,6 +94,7 @@ export const ScheduleSettingsModal = memo(
           autoConfirmAppointments,
           allowOverLimitAppointments,
           defaultScheduleView,
+          autoNoShowMode,
           openingTime,
           closingTime
         });
@@ -145,6 +149,49 @@ export const ScheduleSettingsModal = memo(
               />
             </div>
 
+            {/* Falta Automática */}
+            <div className="p-4 rounded-xl border bg-muted/20 space-y-6">
+              <div className="space-y-1 text-sm">
+                <Label className="font-bold text-foreground">Ação Automática para Atrasos</Label>
+                <p className="text-muted-foreground leading-relaxed text-xs">
+                  Escolha o que o sistema deve fazer quando o agendamento passar do horário sem check-in.
+                  Se deixar ambas desativadas, o agendamento continuará pendente (cor laranja).
+                </p>
+              </div>
+              
+              <div className="space-y-4 pt-4 border-t border-border">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-1 text-sm">
+                    <Label className="font-bold text-foreground">Descontar sessão do pacote</Label>
+                    <p className="text-muted-foreground leading-relaxed text-xs">
+                      Registra a falta e desconta a sessão do pacote do cliente automaticamente.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={autoNoShowMode === "auto_deduct"}
+                    onCheckedChange={(checked) => {
+                      setAutoNoShowMode(checked ? "auto_deduct" : "off");
+                    }}
+                  />
+                </div>
+
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-1 text-sm">
+                    <Label className="font-bold text-foreground">Abonar falta (Não descontar)</Label>
+                    <p className="text-muted-foreground leading-relaxed text-xs">
+                      Registra a falta, mas não desconta a sessão do pacote do cliente.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={autoNoShowMode === "auto_no_deduct"}
+                    onCheckedChange={(checked) => {
+                      setAutoNoShowMode(checked ? "auto_no_deduct" : "off");
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Visualização Padrão */}
             <div className="space-y-3">
               <div className="space-y-1 text-sm">
@@ -195,11 +242,11 @@ export const ScheduleSettingsModal = memo(
                 </Select>
               </div>
             </div>
-            
+
             {/* Atalho para Grade de Horários */}
             <div className="pt-4 border-t border-border">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full h-12 flex justify-between items-center bg-muted/20 border-border hover:bg-muted/50 rounded-xl"
                 onClick={() => {
                   onOpenChange(false);

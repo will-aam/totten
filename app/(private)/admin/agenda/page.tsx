@@ -57,6 +57,7 @@ interface AgendaSettings {
   scheduleGenerationType?: string;
   allowOverLimitAppointments?: boolean;
   defaultScheduleView?: string;
+  autoNoShowMode?: "off" | "auto_deduct" | "auto_no_deduct";
 }
 
 export default function AgendaPage() {
@@ -509,6 +510,7 @@ export default function AgendaPage() {
           autoConfirmAppointments: settings?.autoConfirmAppointments,
           allowOverLimitAppointments: settings?.allowOverLimitAppointments,
           defaultScheduleView: settings?.defaultScheduleView,
+          autoNoShowMode: settings?.autoNoShowMode,
           openingTime: settings?.openingTime,
           closingTime: settings?.closingTime,
         }}
