@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useMemo, useRef } from "react";
 import useSWR from "swr";
+import { useRouter } from "next/navigation";
 import {
   format,
   startOfWeek,
@@ -20,6 +21,8 @@ import {
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { getSelfServiceSettingsAction } from "@/app/actions/settings";
 
 import {
   ChevronLeft,
@@ -71,6 +74,31 @@ export default function AgendaPage() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] =
     useState<Appointment | null>(null);
+  const [isClosedDayModalOpen, setIsClosedDayModalOpen] = useState(false);
+  const router = useRouter();
+
+  const { data: selfServiceRes } = useSWR(
+    "self-service-settings",
+    getSelfServiceSettingsAction
+  );
+
+  const scheduleRules = selfServiceRes?.data?.scheduleRules || [];
+  const defaultRule = scheduleRules.find((r: any) => r.isDefault) || scheduleRules[0];
+  const schedule = defaultRule?.schedule || [];
+  const exceptions = defaultRule?.exceptions || [];
+
+  const isDateClosed = (date: Date) => {
+    if (!defaultRule) return false;
+    const dateStr = format(date, "yyyy-MM-dd");
+    const exception = exceptions.find((e: any) => e.date === dateStr);
+    if (exception) return !exception.isOpen;
+    
+    const dayOfWeek = date.getDay();
+    const regular = schedule.find((s: any) => s.dayOfWeek === dayOfWeek);
+    if (regular) return !regular.isOpen;
+    
+    return false;
+  };
 
   const { state, setOpen } = useSidebar();
   const isMainSidebarOpen = state === "expanded";
@@ -359,13 +387,16 @@ export default function AgendaPage() {
               ) : (
                 <>
                   <div className={cn("absolute inset-0", viewMode === "month" ? "hidden md:block" : "block")}>
-                    <FullCalendarAgenda
+                      <FullCalendarAgenda
                       appointments={currentViewAppointments}
                       scheduleBlocks={scheduleBlocks}
                       viewMode={viewMode}
                       currentDate={selectedDate}
                       startHour={openingHourNumber}
                       endHour={closingHourNumber}
+                      schedule={schedule}
+                      isDateClosed={isDateClosed}
+                      onClosedDayClick={() => setIsClosedDayModalOpen(true)}
                       onAppointmentClick={(appt) => {
                         setSelectedAppointment(appt);
                       }}
@@ -388,6 +419,8 @@ export default function AgendaPage() {
                       <MobileMonthAgenda
                         appointments={currentViewAppointments}
                         selectedDate={selectedDate}
+                        isDateClosed={isDateClosed}
+                        onClosedDayClick={() => setIsClosedDayModalOpen(true)}
                         onSelectDate={(date) => {
                           setSelectedDate(date);
                           setWeekStart(startOfWeek(date, { weekStartsOn: 0 }));
@@ -476,9 +509,26 @@ export default function AgendaPage() {
           autoConfirmAppointments: settings?.autoConfirmAppointments,
           allowOverLimitAppointments: settings?.allowOverLimitAppointments,
           defaultScheduleView: settings?.defaultScheduleView,
+          openingTime: settings?.openingTime,
+          closingTime: settings?.closingTime,
         }}
         onSave={handleSaveSettings}
       />
+      <Dialog open={isClosedDayModalOpen} onOpenChange={setIsClosedDayModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Fora do horário de funcionamento</DialogTitle>
+            <DialogDescription>
+              Esse dia está marcado como fora do horário de funcionamento. 
+              Você pode editar os horários na página de configurações.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsClosedDayModalOpen(false)}>Fechar</Button>
+            <Button onClick={() => router.push("/admin/self-service")}>Editar horários</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

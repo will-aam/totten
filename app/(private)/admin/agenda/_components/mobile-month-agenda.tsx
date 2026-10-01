@@ -13,6 +13,8 @@ interface MobileMonthAgendaProps {
   selectedDate: Date;
   onSelectDate: (date: Date) => void;
   onAppointmentClick: (appt: Appointment) => void;
+  isDateClosed?: (date: Date) => boolean;
+  onClosedDayClick?: () => void;
 }
 
 export function MobileMonthAgenda({
@@ -20,6 +22,8 @@ export function MobileMonthAgenda({
   selectedDate,
   onSelectDate,
   onAppointmentClick,
+  isDateClosed,
+  onClosedDayClick,
 }: MobileMonthAgendaProps) {
   // Get appointments for the currently selected day
   const dailyAppointments = useMemo(() => {
@@ -76,11 +80,22 @@ export function MobileMonthAgenda({
               else if (count > 6) ringClass = "border-2 border-primary"; // 100%
 
               // Remove the default background from buttonProps to avoid the gray square
-              const { className: _bgClass, ...restProps } = buttonProps as any;
+              const { className: _bgClass, onClick, ...restProps } = buttonProps as any;
+              
+              const closed = isDateClosed ? isDateClosed(day.date) : false;
 
               return (
                 <button
                   {...restProps}
+                  onClick={(e) => {
+                    if (closed) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onClosedDayClick?.();
+                    } else {
+                      onClick?.(e);
+                    }
+                  }}
                   className={cn(
                     "relative flex items-center justify-center rounded-full transition-all m-1 size-10 text-sm",
                     modifiers.selected
@@ -88,7 +103,8 @@ export function MobileMonthAgenda({
                       : "hover:bg-muted text-foreground",
                     !modifiers.selected && ringClass,
                     modifiers.outside ? "opacity-40" : "",
-                    modifiers.today && !modifiers.selected ? "text-primary font-bold" : ""
+                    modifiers.today && !modifiers.selected ? "text-primary font-bold" : "",
+                    closed && "opacity-50 text-muted-foreground bg-muted/40 cursor-not-allowed line-through hover:bg-muted/40"
                   )}
                 >
                   <span className="z-10">{format(day.date, "d")}</span>

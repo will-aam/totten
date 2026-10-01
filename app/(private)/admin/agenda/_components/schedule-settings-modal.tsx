@@ -2,6 +2,8 @@
 "use client";
 
 import React, { useState, useEffect, memo } from "react";
+import { useRouter } from "next/navigation";
+import { ExternalLink } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -39,6 +41,8 @@ export type ScheduleSettings = {
   autoConfirmAppointments?: boolean;
   allowOverLimitAppointments?: boolean;
   defaultScheduleView?: string;
+  openingTime?: string;
+  closingTime?: string;
 };
 
 interface ScheduleSettingsModalProps {
@@ -63,8 +67,11 @@ export const ScheduleSettingsModal = memo(
     const [autoConfirmAppointments, setAutoConfirmAppointments] = useState(initialSettings.autoConfirmAppointments ?? false);
     const [allowOverLimitAppointments, setAllowOverLimitAppointments] = useState(initialSettings.allowOverLimitAppointments ?? false);
     const [defaultScheduleView, setDefaultScheduleView] = useState(initialSettings.defaultScheduleView || "day");
+    const [openingTime, setOpeningTime] = useState(initialSettings.openingTime || "08:00");
+    const [closingTime, setClosingTime] = useState(initialSettings.closingTime || "18:00");
 
     const [isSaving, setIsSaving] = useState(false);
+    const router = useRouter();
 
     // Sincroniza quando o modal abre (caso o initialSettings mude no banco)
     useEffect(() => {
@@ -72,6 +79,8 @@ export const ScheduleSettingsModal = memo(
         setAutoConfirmAppointments(initialSettings.autoConfirmAppointments ?? false);
         setAllowOverLimitAppointments(initialSettings.allowOverLimitAppointments ?? false);
         setDefaultScheduleView(initialSettings.defaultScheduleView || "day");
+        setOpeningTime(initialSettings.openingTime || "08:00");
+        setClosingTime(initialSettings.closingTime || "18:00");
       }
     }, [open, initialSettings]);
 
@@ -81,7 +90,9 @@ export const ScheduleSettingsModal = memo(
         await onSave({
           autoConfirmAppointments,
           allowOverLimitAppointments,
-          defaultScheduleView
+          defaultScheduleView,
+          openingTime,
+          closingTime
         });
         onOpenChange(false);
       } catch (error) {
@@ -151,7 +162,59 @@ export const ScheduleSettingsModal = memo(
               </Select>
             </div>
 
+            {/* Início e Fim da Grade */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <Label className="font-bold text-foreground">Início da grade</Label>
+                <Select value={openingTime} onValueChange={setOpeningTime}>
+                  <SelectTrigger className="bg-muted/40 border-none h-11 font-bold">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="h-64 rounded-2xl">
+                    {HOUR_SLOTS.map((hour) => (
+                      <SelectItem key={hour} value={hour} className="rounded-lg">
+                        {hour}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-3">
+                <Label className="font-bold text-foreground">Fim da grade</Label>
+                <Select value={closingTime} onValueChange={setClosingTime}>
+                  <SelectTrigger className="bg-muted/40 border-none h-11 font-bold">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="h-64 rounded-2xl">
+                    {HOUR_SLOTS.map((hour) => (
+                      <SelectItem key={hour} value={hour} className="rounded-lg">
+                        {hour}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+            
+            {/* Atalho para Grade de Horários */}
+            <div className="pt-4 border-t border-border">
+              <Button 
+                variant="outline" 
+                className="w-full h-12 flex justify-between items-center bg-muted/20 border-border hover:bg-muted/50 rounded-xl"
+                onClick={() => {
+                  onOpenChange(false);
+                  router.push("/admin/self-service");
+                }}
+              >
+                <span className="font-bold text-foreground">Configurar Grade de Horários</span>
+                <ExternalLink className="w-4 h-4 text-muted-foreground" />
+              </Button>
+              <p className="text-muted-foreground text-xs mt-2 text-center">
+                Defina seus dias de folga, horário de almoço e exceções.
+              </p>
+            </div>
+
+          </div>
 
           <div className="p-4 border-t bg-background flex items-center gap-3">
             <Button

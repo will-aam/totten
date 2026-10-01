@@ -119,18 +119,23 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
 }
+
 /* =========================================
    OCULTAR SCROLLBAR GLOBALMENTE
    ========================================= */
 * {
-  scrollbar-width: none; /* Oculta no Firefox */
-  -ms-overflow-style: none; /* Oculta no IE e Edge */
+  scrollbar-width: none;
+  /* Oculta no Firefox */
+  -ms-overflow-style: none;
+  /* Oculta no IE e Edge */
 }
 
 *::-webkit-scrollbar {
-  display: none; /* Oculta no Chrome, Safari e Opera */
+  display: none;
+  /* Oculta no Chrome, Safari e Opera */
 }

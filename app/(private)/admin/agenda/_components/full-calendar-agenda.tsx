@@ -28,6 +28,9 @@ interface FullCalendarAgendaProps {
    onEmptySlotClick?: (time: string) => void;
    onDayClick?: (day: Date) => void;
    onQuickConfirm?: (appt: Appointment) => void;
+   schedule?: any[];
+   isDateClosed?: (date: Date) => boolean;
+   onClosedDayClick?: () => void;
 }
 
 export function FullCalendarAgenda({
@@ -42,6 +45,9 @@ export function FullCalendarAgenda({
    onEmptySlotClick,
    onDayClick,
    onQuickConfirm,
+   schedule = [],
+   isDateClosed,
+   onClosedDayClick,
 }: FullCalendarAgendaProps) {
    const calendarRef = useRef<any>(null);
    const [blockToDelete, setBlockToDelete] = useState<any>(null);
@@ -116,6 +122,12 @@ export function FullCalendarAgenda({
    const handleEventDrop = async (info: any) => {
       const { event, oldEvent, revert } = info;
       const appt = event.extendedProps.appt as Appointment;
+
+      if (isDateClosed && isDateClosed(event.start)) {
+         toast.error("Não é possível agendar em um dia fora do horário de funcionamento.");
+         revert();
+         return;
+      }
 
       if (appt.package && appt.package.active === false) {
          toast.error("Não é possível reagendar. Este pacote foi arquivado.");
@@ -208,6 +220,12 @@ export function FullCalendarAgenda({
          </div>
       );
    };
+
+   const businessHours = schedule.filter(s => s.isOpen).map(s => ({
+      daysOfWeek: [s.dayOfWeek],
+      startTime: s.openTime || "00:00",
+      endTime: s.closeTime || "24:00"
+   }));
 
    return (
       <div className="bg-card md:rounded-2xl overflow-hidden h-full flex flex-col flex-1 min-h-0 relative select-none w-full fc-custom-theme border-t md:border-none">
@@ -407,6 +425,25 @@ export function FullCalendarAgenda({
                   dayMaxEvents={3}
                   eventDrop={handleEventDrop}
                   eventResize={handleEventResize}
+                  businessHours={businessHours.length > 0 ? businessHours : undefined}
+                  selectConstraint="businessHours"
+                  dayCellClassNames={(arg) => {
+                     if (isDateClosed && isDateClosed(arg.date)) {
+                        return "bg-muted/40 opacity-70 cursor-not-allowed";
+                     }
+                     return "";
+                  }}
+                  dateClick={(info) => {
+                     if (isDateClosed && isDateClosed(info.date)) {
+                        onClosedDayClick?.();
+                        return;
+                     }
+                     if (info.view.type === "dayGridMonth") {
+                        onDayClick?.(info.date);
+                     } else {
+                        onEmptySlotClick?.(info.dateStr);
+                     }
+                  }}
                   dayHeaders={viewMode !== "day"} // Esconde o cabeçalho no modo Dia
                   dayHeaderContent={(args) => {
                      const dayName = new Intl.DateTimeFormat('pt-BR', { weekday: 'short' }).format(args.date).replace('.', '');
