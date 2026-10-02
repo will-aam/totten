@@ -162,9 +162,9 @@ export const ScheduleSettingsModal = memo(
               <div className="space-y-4 pt-4 border-t border-border">
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-1 text-sm">
-                    <Label className="font-bold text-foreground">Descontar sessão do pacote</Label>
+                    <Label className="font-bold text-foreground">Marcar Falta (Descontando de Pacotes)</Label>
                     <p className="text-muted-foreground leading-relaxed text-xs">
-                      Registra a falta e desconta a sessão do pacote do cliente automaticamente.
+                      Registra a falta. Se for agendamento de pacote, desconta a sessão. Se for avulso, apenas marca a falta.
                     </p>
                   </div>
                   <Switch
@@ -177,9 +177,9 @@ export const ScheduleSettingsModal = memo(
 
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-1 text-sm">
-                    <Label className="font-bold text-foreground">Abonar falta (Não descontar)</Label>
+                    <Label className="font-bold text-foreground">Marcar Falta (Abonando Pacotes)</Label>
                     <p className="text-muted-foreground leading-relaxed text-xs">
-                      Registra a falta, mas não desconta a sessão do pacote do cliente.
+                      Registra a falta. Se for agendamento de pacote, não desconta a sessão. Se for avulso, apenas marca a falta.
                     </p>
                   </div>
                   <Switch

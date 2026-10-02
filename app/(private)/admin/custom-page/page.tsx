@@ -476,7 +476,7 @@ export default function CustomPage() {
       <div className="flex flex-col gap-6 p-6 md:p-8 relative pb-32 md:pb-8">
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
-            <span className="animate-spin h-8 w-8 border-4 border-slate-300 border-t-black rounded-full block"></span>
+            <span className="animate-spin h-8 w-8 border-4 border-slate-300 border-t-black rounded-2xl block"></span>
           </div>
         ) : !isActive ? (
           <div className="max-w-xl mx-auto mt-12 bg-card text-card-foreground border rounded-3xl p-10 text-center shadow-sm">
@@ -488,14 +488,14 @@ export default function CustomPage() {
             <Button
               onClick={handleActivate}
               disabled={isSaving}
-              className="w-full h-12 rounded-full font-bold text-base"
+              className="w-full h-12 rounded-2xl font-bold text-base"
             >
               {isSaving ? "Ativando..." : "Ativar"}
             </Button>
           </div>
         ) : (
           <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)} className="w-full">
-            <TabsList className="hidden md:grid w-full lg:w-[750px] grid-cols-4 h-auto gap-1 bg-muted p-1 rounded-full mb-8">
+            <TabsList className="hidden md:grid w-full lg:w-[750px] grid-cols-4 h-auto gap-1 bg-muted p-1 rounded-2xl mb-8">
               <TabsTrigger
                 value="global"
                 className="flex items-center gap-2 py-2 rounded-lg"
@@ -587,15 +587,15 @@ export default function CustomPage() {
 
                   <div className="flex flex-col gap-10 mt-2 lg:h-[calc(100vh-360px)] lg:overflow-y-auto custom-scrollbar lg:pr-4 pb-20">
                     {STEPS.map((step, index) => (
-                      <div key={step.id} id={`step-${step.id}`} className="flex flex-col gap-2 scroll-m-20 p-5 border border-border/50 rounded-full bg-card shadow-sm">
+                      <div key={step.id} id={`step-${step.id}`} className="flex flex-col gap-2 scroll-m-20 p-5 border border-border/50 rounded-2xl bg-card shadow-sm">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-sm">
+                          <span className="flex items-center justify-center w-6 h-6 rounded-2xl bg-primary text-primary-foreground text-xs font-bold shadow-sm">
                             {index + 1}
                           </span>
                           {step.id === 'profile' || step.id === 'theme' ? (
-                            <span className="text-[10px] uppercase font-bold text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">Obrigatório</span>
+                            <span className="text-[10px] uppercase font-bold text-destructive bg-destructive/10 px-2 py-0.5 rounded-2xl">Obrigatório</span>
                           ) : (
-                            <span className="text-[10px] uppercase font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Opcional</span>
+                            <span className="text-[10px] uppercase font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-2xl">Opcional</span>
                           )}
                         </div>
                         {step.component}

@@ -604,16 +604,9 @@ export async function updateAppointmentDateTime(
   }
 }
 
-// --- 5. PROCESSAMENTO AUTOMÁTICO DE FALTAS (NEUTRALIZADO) ---
-export async function processDailyNoShows(secretKey?: string) {
-  //  Automação desativada a pedido da clínica.
-  // A falta agora deve ser tratada manualmente pela UI (Admin).
-  return {
-    success: true,
-    processed: 0,
-    message: "Automação de faltas desativada. O controle agora é 100% manual.",
-  };
-}
+// --- 5. PROCESSAMENTO AUTOMÁTICO DE FALTAS (AGORA 100% REATIVO NA AGENDA) ---
+// Removido o antigo cron job diário (processDailyNoShows) para evitar duplicação.
+// As faltas automáticas agora são processadas inteligentemente no momento em que a agenda é consultada.
 
 // --- 6. DESFAZER FALTA (MANUAL OU AUTOMÁTICA) ---
 export async function undoNoShow(appointmentId: string) {

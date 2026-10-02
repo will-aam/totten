@@ -193,7 +193,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
                   <div
                     key={idx}
                     className={cn(
-                      "h-1.5 rounded-full transition-all duration-300",
+                      "h-1.5 rounded-2xl transition-all duration-300",
                       currentSlide === idx ? "w-4 bg-white" : "w-1.5 bg-white/50"
                     )}
                   />
@@ -233,18 +233,18 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
             {/* AVATAR DO LINK NA BIO INTEGRADO */}
             {isAvatarLayout && (
               profile?.image ? (
-                <div className="w-24 h-24 rounded-full border-4 shadow-sm overflow-hidden mb-3 shrink-0" style={{ borderColor: theme.css.includes('slate-900') ? '#0f172a' : '#ffffff', backgroundColor: theme.css.includes('slate-900') ? '#0f172a' : '#ffffff' }}>
+                <div className="w-24 h-24 rounded-2xl border-4 shadow-sm overflow-hidden mb-3 shrink-0" style={{ borderColor: theme.css.includes('slate-900') ? '#0f172a' : '#ffffff', backgroundColor: theme.css.includes('slate-900') ? '#0f172a' : '#ffffff' }}>
                   <img src={profile.image} alt="Avatar" className="w-full h-full object-cover" />
                 </div>
               ) : (
-                <div className="w-24 h-24 rounded-full border-4 shadow-sm bg-muted/50 mb-3 shrink-0" style={{ borderColor: theme.css.includes('slate-900') ? '#0f172a' : '#ffffff' }} />
+                <div className="w-24 h-24 rounded-2xl border-4 shadow-sm bg-muted/50 mb-3 shrink-0" style={{ borderColor: theme.css.includes('slate-900') ? '#0f172a' : '#ffffff' }} />
               )
             )}
 
             {/* Badge Personalizável (Categoria / Destaque) */}
             {presentation.badgeText && (
               <div className={cn(
-                "inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider mb-3 border w-fit",
+                "inline-flex items-center px-3 py-1 rounded-2xl text-[10px] font-bold uppercase tracking-wider mb-3 border w-fit",
                 isDarkMock ? "bg-white/10 border-white/20 text-white/80" : "bg-black/5 border-black/10 text-black/80"
               )}>
                 {presentation.badgeText}
@@ -261,7 +261,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
             <div className="flex flex-col gap-2 mt-5 w-full">
               {presentation.ctaPrimaryText !== false && (
                 <div
-                  className="px-4 py-2.5 rounded-full text-xs font-bold text-white text-center w-full"
+                  className="px-4 py-2.5 rounded-2xl text-xs font-bold text-white text-center w-full"
                   style={{ backgroundColor: theme.primaryColor }}
                 >
                   Agendar Sessão
@@ -269,7 +269,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
               )}
               {presentation.ctaSecondaryText !== false && (
                 <div className={cn(
-                  "px-4 py-2.5 rounded-full text-xs font-bold border text-center w-full",
+                  "px-4 py-2.5 rounded-2xl text-xs font-bold border text-center w-full",
                   isDarkMock ? "border-white/20 text-white" : "border-black/15"
                 )}>
                   {{
@@ -289,7 +289,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
                   .filter(Boolean)
                   .map((highlight, i) => (
                     <div key={i} className="flex items-center gap-1.5 text-[10px] opacity-70">
-                      <div className="w-3 h-3 rounded-full flex items-center justify-center border border-current">
+                      <div className="w-3 h-3 rounded-2xl flex items-center justify-center border border-current">
                         <Check className="w-2 h-2" />
                       </div>
                       {highlight}
@@ -312,7 +312,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
         {history.showHistory !== false && (history.historyTitle || (history.useGlobalBio !== false ? profile?.bio : history.historyText)) && (
           <div className="px-6 py-10 bg-foreground/5">
             {history.historyImage && (
-              <div className="w-full h-48 rounded-full overflow-hidden mb-6 shadow-sm">
+              <div className="w-full h-48 rounded-2xl overflow-hidden mb-6 shadow-sm">
                 <img src={history.historyImage} alt="Nossa História" className="w-full h-full object-cover" />
               </div>
             )}
@@ -368,7 +368,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
               <div className="flex flex-wrap justify-center gap-1.5 mb-6 pb-4 border-b border-border/20">
                 <span className="text-[10px] font-semibold opacity-50 mr-1 flex items-center">Filtre por:</span>
                 {dbCategories.filter((cat: any) => dbServices.some((srv: any) => srv.category_id === cat.id)).map((cat: any) => (
-                  <div key={cat.id} className="px-3 py-1 rounded-full text-[10px] font-medium border shadow-sm bg-background" style={{ borderColor: theme.primaryColor + '30' }}>
+                  <div key={cat.id} className="px-3 py-1 rounded-2xl text-[10px] font-medium border shadow-sm bg-background" style={{ borderColor: theme.primaryColor + '30' }}>
                     {cat.name}
                   </div>
                 ))}
@@ -380,7 +380,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
               {services.servicesDisplay === "pills" ? (
                 <div className="flex flex-wrap justify-center gap-2">
                   {dbServices.map((srv: any) => (
-                    <div key={srv.id} className="px-3 py-2 rounded-full flex items-center gap-2 border shadow-sm bg-background">
+                    <div key={srv.id} className="px-3 py-2 rounded-2xl flex items-center gap-2 border shadow-sm bg-background">
                       <span className="font-bold text-[10px]">{srv.name}</span>
                       <span className="text-[9px] opacity-50 px-2 border-l border-border">{srv.duration}m</span>
                       <span className="font-bold whitespace-nowrap text-[10px]" style={{ color: theme.primaryColor }}>R$ {Number(srv.price).toFixed(2)}</span>
@@ -467,7 +467,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
                                 <h4 className="font-serif font-bold text-[15px] text-slate-900">{pkg.name}</h4>
                                 {isFeatured && (
                                   <div className="shrink-0">
-                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 flex items-center gap-1">
+                                    <span className="px-2 py-0.5 rounded-2xl text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 flex items-center gap-1">
                                       <Star className="h-2 w-2" type="solid" /> Popular
                                     </span>
                                   </div>
@@ -514,7 +514,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
 
             {(contact.whatsapp || contact.phone) && (
               <div className="flex items-center gap-3">
-                <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-background")}>
+                <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 bg-background")}>
                   <Phone className="h-5 w-5" style={{ color: theme.primaryColor }} />
                 </div>
                 <div>
@@ -526,7 +526,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
 
             {contact.email && (
               <div className="flex items-center gap-3">
-                <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-background")}>
+                <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 bg-background")}>
                   <Envelope className="h-5 w-5" style={{ color: theme.primaryColor }} />
                 </div>
                 <div>
@@ -538,7 +538,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
 
             {contact.address && (
               <div className="flex items-center gap-3">
-                <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-background")}>
+                <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 bg-background")}>
                   <Pin className="h-5 w-5" style={{ color: theme.primaryColor }} />
                 </div>
                 <div>
@@ -683,14 +683,14 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
                   <div
                     key={step.id}
                     onClick={() => setActiveStepId(step.id)}
-                    className="flex items-center justify-between p-4 bg-card border border-border/50 rounded-full cursor-pointer hover:bg-muted/50 hover:border-primary/50 transition-colors shadow-sm"
+                    className="flex items-center justify-between p-4 bg-card border border-border/50 rounded-2xl cursor-pointer hover:bg-muted/50 hover:border-primary/50 transition-colors shadow-sm"
                   >
                     <div className="flex items-center gap-3">
                       <div className={cn(
-                        "h-10 w-10 rounded-full flex items-center justify-center shrink-0",
+                        "h-10 w-10 rounded-2xl flex items-center justify-center shrink-0",
                         done ? "bg-emerald-500/10 text-emerald-500" : "bg-muted text-muted-foreground"
                       )}>
-                        {done ? <Check className="h-5 w-5" /> : <div className="h-3 w-3 rounded-full bg-current opacity-20" />}
+                        {done ? <Check className="h-5 w-5" /> : <div className="h-3 w-3 rounded-2xl bg-current opacity-20" />}
                       </div>
                       <div className="flex flex-col">
                         <span className="font-semibold text-foreground text-sm">{step.title}</span>
@@ -719,7 +719,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
                     onChange={(e) => setSuggestionText(e.target.value)}
                     disabled={isSendingSuggestion}
                     maxLength={1000}
-                    className="w-full h-24 rounded-full border border-border/50 bg-background p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm disabled:opacity-50 pb-6"
+                    className="w-full h-24 rounded-2xl border border-border/50 bg-background p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm disabled:opacity-50 pb-6"
                     placeholder="Descreva sua sugestão de melhoria..."
                   />
                   <span className="absolute bottom-2 right-3 text-[10px] text-muted-foreground">

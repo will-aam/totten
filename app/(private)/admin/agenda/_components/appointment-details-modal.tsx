@@ -106,8 +106,11 @@ export const AppointmentDetailsModal = memo(
           // 🔌 ATUALIZADO: Apontando para a nova rota pública
           const settingsData = await apiClient<PublicSettings>(
             "public/organization",
+            { safe: true }
           );
-          setSettings(settingsData);
+          if (!(settingsData instanceof Error)) {
+            setSettings(settingsData);
+          }
         } catch (e) {
           console.error(e);
         }
@@ -157,6 +160,7 @@ export const AppointmentDetailsModal = memo(
 
     // --- REGRAS DE NEGÓCIO DE ESTADO ---
     const isRecurrent = !!appointment.recurrence_id;
+    const isFromPackage = !!appointment.package || !!appointment.package_id || !!appointment.packageId;
     const isPackageArchived =
       appointment.package && appointment.package.active === false;
     const isAlreadyCanceled = appointment.status?.toLowerCase() === "cancelado";
@@ -476,19 +480,30 @@ export const AppointmentDetailsModal = memo(
                   <SelectItem value="cancelado">
                     Cancelado (Sem Cobrar)
                   </SelectItem>
-                  {/*  NOVA OPÇÃO DE FALTA MANUAL AQUI */}
-                  <SelectItem
-                    value="nao_compareceu"
-                    className="text-amber-600 font-bold focus:text-amber-700"
-                  >
-                    Faltou (Desconta Sessão)
-                  </SelectItem>
-                  <SelectItem
-                    value="nao_compareceu_abonado"
-                    className="text-emerald-600 font-bold focus:text-emerald-700"
-                  >
-                    Faltou (Abonar/Não Desconta)
-                  </SelectItem>
+                  {/* OPÇÕES DE FALTA DINÂMICAS */}
+                  {isFromPackage ? (
+                    <>
+                      <SelectItem
+                        value="nao_compareceu"
+                        className="text-amber-600 font-bold focus:text-amber-700"
+                      >
+                        Faltou (Descontar)
+                      </SelectItem>
+                      <SelectItem
+                        value="nao_compareceu_abonado"
+                        className="text-emerald-600 font-bold focus:text-emerald-700"
+                      >
+                        Faltou (Abonar)
+                      </SelectItem>
+                    </>
+                  ) : (
+                    <SelectItem
+                      value="nao_compareceu"
+                      className="text-amber-600 font-bold focus:text-amber-700"
+                    >
+                      Faltou
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>
