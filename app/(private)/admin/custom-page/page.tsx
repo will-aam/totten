@@ -521,7 +521,7 @@ export default function CustomPage() {
                 disabled={!globalValid}
                 className="flex items-center gap-2 py-2 rounded-lg disabled:opacity-50"
               >
-                <Calendar size="sm" /> Agenda
+                <Calendar size="sm" /> Agendamento
               </TabsTrigger>
             </TabsList>
 

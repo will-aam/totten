@@ -93,6 +93,9 @@ type TeamMember = {
   services?: { id: string; name: string }[];
   package_templates?: { id: string; name: string }[];
   schedule_rule_id?: string | null;
+  schedule_rule?: {
+    working_hours: { day_of_week: number; is_open: boolean }[];
+  } | null;
 };
 
 export default function TeamPage() {
@@ -363,7 +366,35 @@ export default function TeamPage() {
           </div>
         ) : (
           <>
-            <div className="grid gap-4">
+            {/* Desktop Table View */}
+            <div className="hidden md:block bg-card rounded-2xl border border-border/50 overflow-hidden shadow-sm">
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-muted/20 text-muted-foreground border-b border-border/50 text-xs font-semibold">
+                  <tr>
+                    <th className="px-6 py-4 w-[28%] font-bold">Profissional</th>
+                    <th className="px-6 py-4 font-bold">Dias de trabalho</th>
+                    <th className="px-6 py-4 font-bold">Nível de acesso</th>
+                    <th className="px-6 py-4 font-bold text-center">Aceitando agendamentos</th>
+                    <th className="px-6 py-4 font-bold">Serviços / Pacotes</th>
+                    <th className="px-6 py-4 text-right font-bold w-[120px]">Opções</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/40">
+                  {paginatedTeam.map((member) => (
+                    <DesktopTeamMemberRow
+                      key={member.id}
+                      member={member}
+                      onEdit={openEdit}
+                      onToggle={openToggle}
+                      onDelete={openDelete}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="grid gap-4 md:hidden">
               {paginatedTeam.map((member) => (
                 <TeamMemberCard
                   key={member.id}
@@ -445,7 +476,7 @@ export default function TeamPage() {
         open={modalView === "create" || modalView === "edit"}
         onOpenChange={closeModal}
       >
-        <DialogContent className="w-screen h-[100dvh] max-w-none max-h-none rounded-none p-6 sm:w-full sm:h-auto sm:max-w-2xl sm:max-h-[90vh] sm:rounded-3xl overflow-y-auto border-0 sm:border">
+        <DialogContent className="w-screen h-[100dvh] max-w-none max-h-none rounded-none p-6 sm:w-full sm:h-auto sm:max-w-2xl sm:max-h-[90vh] sm:rounded-2xl overflow-y-auto border-0 sm:border">
           <DialogHeader>
             <DialogTitle>
               {modalView === "create"
@@ -865,7 +896,197 @@ export default function TeamPage() {
 }
 
 // -----------------------------------------------------------------------------------
-// ⚡ COMPONENTE DE CARD OTIMIZADO
+// ⚡ DESKTOP TABLE ROW
+// -----------------------------------------------------------------------------------
+const DesktopTeamMemberRow = memo(
+  ({
+    member,
+    onEdit,
+    onToggle,
+    onDelete,
+  }: {
+    member: TeamMember;
+    onEdit: (m: TeamMember) => void;
+    onToggle: (m: TeamMember) => void;
+    onDelete: (m: TeamMember) => void;
+  }) => {
+    const isOwner = member.role === "OWNER";
+    const hasFinance = member.permissions.includes("FINANCE");
+    const hasHistory = member.permissions.includes("HISTORY");
+
+    // Dias da semana: 0 (Dom) a 6 (Sab)
+    const days = ["D", "S", "T", "Q", "Q", "S", "S"];
+
+    // Obter dias de trabalho da schedule rule do membro
+    const workingDays = new Set<number>();
+    if (member.schedule_rule && member.schedule_rule.working_hours) {
+      member.schedule_rule.working_hours.forEach(wh => {
+        if (wh.is_open) workingDays.add(wh.day_of_week);
+      });
+    }
+
+    // Determinar nível de acesso (texto para a coluna)
+    let accessLevelText = "Básico";
+    if (isOwner) {
+      accessLevelText = "Total";
+    } else if (hasFinance && hasHistory) {
+      accessLevelText = "Avançado";
+    } else if (hasFinance || hasHistory) {
+      accessLevelText = "Parcial";
+    }
+
+    return (
+      <tr className="hover:bg-muted/10 transition-colors group">
+        {/* Profissional */}
+        <td className="px-6 py-4 align-middle">
+          <div className="flex items-center gap-3">
+            <div
+              className={`h-14 w-14 rounded-full flex items-center justify-center shrink-0 overflow-hidden border ${member.active ? "bg-primary/10 text-primary border-primary/20" : "bg-muted text-muted-foreground border-transparent"}`}
+            >
+              {member.profile_image_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={member.profile_image_url} alt={member.display_name || "Foto"} className="w-full h-full object-cover" />
+              ) : (
+                <User size="sm" />
+              )}
+            </div>
+            <div className="flex flex-col items-start gap-0.5">
+              <div className="flex items-center gap-2">
+                <span className={`font-semibold text-sm ${!member.active && "opacity-60"}`}>
+                  {member.display_name || "Sem nome"}
+                </span>
+                {!isOwner && (
+                  <span
+                    className={`text-[9px] px-1.5 py-[1px] rounded-sm font-bold uppercase tracking-wider ${member.active ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"}`}
+                  >
+                    {member.active ? "Ativo" : "Inativo"}
+                  </span>
+                )}
+              </div>
+              <span className="text-xs text-muted-foreground">{member.email}</span>
+            </div>
+          </div>
+        </td>
+
+        {/* Dias de trabalho */}
+        <td className="px-6 py-4 align-middle">
+          <div className="flex items-center gap-1.5">
+            {days.map((d, i) => {
+              const isActive = workingDays.has(i);
+              return (
+                <div
+                  key={i}
+                  className={`flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold ${isActive
+                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                      : "text-muted-foreground font-medium"
+                    }`}
+                >
+                  {d}
+                </div>
+              );
+            })}
+          </div>
+        </td>
+
+        {/* Nível de acesso */}
+        <td className="px-6 py-4 align-middle">
+          <div className="flex items-center gap-2">
+            <Shield size="sm" className="text-muted-foreground opacity-70" />
+            <span className="text-sm font-medium">{accessLevelText}</span>
+          </div>
+        </td>
+
+        {/* Aceitando agendamentos */}
+        <td className="px-6 py-4 align-middle text-center">
+          <div className="flex flex-col gap-1 items-center justify-center">
+            <Switch
+              checked={member.active}
+              onCheckedChange={() => onToggle(member)}
+              disabled={isOwner}
+            />
+            <span className="text-[10px] text-muted-foreground uppercase font-medium">
+              {member.active ? "Ativo" : "Inativo"}
+            </span>
+          </div>
+        </td>
+
+        {/* Serviços / Pacotes */}
+        <td className="px-6 py-4 align-middle">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground font-medium bg-muted px-2 py-1 rounded-full border border-border/50">
+                {member.services?.length || 0} serviço{(member.services?.length !== 1) ? "s" : ""}
+              </span>
+              <span className="text-xs text-muted-foreground font-medium bg-muted px-2 py-1 rounded-full border border-border/50">
+                {member.package_templates?.length || 0} pacote{(member.package_templates?.length !== 1) ? "s" : ""}
+              </span>
+            </div>
+          </div>
+        </td>
+
+        {/* Opções */}
+        <td className="px-6 py-4 align-middle text-right">
+          {isOwner ? (
+            <div className="flex items-center justify-end gap-2">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
+                <Shield
+                  size="xs"
+                  className="text-amber-600 dark:text-amber-500"
+                />
+                <span className="text-xs font-bold text-amber-700 dark:text-amber-500">
+                  Admin
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 bg-muted/50 border border-border/50"
+                onClick={() => onEdit(member)}
+                title="Editar Perfil"
+              >
+                <Pencil size="xs" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-end gap-1 ml-auto w-fit bg-muted/50 rounded-full p-1 border border-border/50">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => onEdit(member)}
+                title="Editar"
+              >
+                <Pencil size="xs" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-8 w-8 ${member.active ? "text-amber-600 hover:text-amber-700 hover:bg-amber-100" : "text-green-600 hover:text-green-700 hover:bg-green-100"}`}
+                onClick={() => onToggle(member)}
+                title={member.active ? "Desativar" : "Ativar"}
+              >
+                <Block size="xs" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-100"
+                onClick={() => onDelete(member)}
+                title="Excluir"
+              >
+                <Trash size="xs" />
+              </Button>
+            </div>
+          )}
+        </td>
+      </tr>
+    );
+  }
+);
+DesktopTeamMemberRow.displayName = "DesktopTeamMemberRow";
+
+// -----------------------------------------------------------------------------------
+// ⚡ COMPONENTE DE CARD OTIMIZADO (Mobile)
 // -----------------------------------------------------------------------------------
 const TeamMemberCard = memo(
   ({

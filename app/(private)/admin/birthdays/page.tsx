@@ -167,7 +167,7 @@ export default function BirthdaysPage() {
               className="flex items-center justify-between py-3 md:py-4 border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors px-2 -mx-2 rounded-lg group"
             >
               <div className="flex items-center gap-3 md:gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold shadow-sm border border-primary/20 transition-transform group-hover:scale-105">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary font-bold shadow-sm border border-primary/20 transition-transform group-hover:scale-105">
                   {initial}
                 </div>
                 <div className="flex flex-col">
@@ -203,7 +203,7 @@ export default function BirthdaysPage() {
       <AdminHeader title="Aniversariantes" />
 
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6">
-        <div className="flex flex-col gap-2 bg-muted/10 p-4 rounded-full border border-border/50">
+        <div className="flex flex-col gap-2 bg-muted/10 p-4 rounded-2xl border border-border/50">
           <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Gift className="text-primary" />
             Mensagem Automática

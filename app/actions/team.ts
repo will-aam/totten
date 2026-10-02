@@ -31,6 +31,13 @@ export async function getTeam() {
         show_on_site: true,
         created_at: true,
         schedule_rule_id: true,
+        schedule_rule: {
+          select: {
+            working_hours: {
+              select: { day_of_week: true, is_open: true }
+            }
+          }
+        },
         services: { select: { id: true, name: true } },
         package_templates: { select: { id: true, name: true } },
       },
