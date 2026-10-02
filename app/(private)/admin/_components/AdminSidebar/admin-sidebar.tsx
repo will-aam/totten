@@ -14,6 +14,7 @@ import {
   Archive,
   Trophy,
   PrintDollar,
+  ChessQueen,
 } from "@boxicons/react";
 import {
   Sidebar,
@@ -131,8 +132,31 @@ export function AdminSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="overflow-y-auto [&::-webkit-scrollbar]:hidden">
+        {/* Meu Plano (Apenas Owner) */}
+        {isOwner && (
+          <SidebarGroup className="pb-0">
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith("/admin/plan")}
+                  className="hover:bg-muted/50"
+                >
+                  <Link href="/admin/plan" onClick={closeMobile}>
+                    <NavIcon
+                      icon={ChessQueen}
+                      isActive={pathname.startsWith("/admin/plan")}
+                    />
+                    <span>Meu Plano</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroup>
+        )}
+
         <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 px-2">
+          <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 px-2 mt-2">
             Menu Principal
           </SidebarGroupLabel>
           <SidebarGroupContent>
