@@ -63,6 +63,14 @@ export function NewPackageSaleModal({
   );
   const clients = clientsResponse?.data || [];
 
+  // Busca o cliente selecionado para saber quais pacotes ele já tem ativos
+  const { data: clientData } = useSWR<any>(
+    open && selectedClientId ? `clients/${selectedClientId}` : null,
+    apiClient
+  );
+  const activePackages = clientData?.activePackages || [];
+  const activeServiceIds = activePackages.map((p: any) => p.service_id);
+
   useEffect(() => {
     if (clientId) {
       setSelectedClientId(clientId);
@@ -81,7 +89,8 @@ export function NewPackageSaleModal({
         ]);
 
         setTemplates(templatesData);
-        if (templatesData.length > 0) setTemplateId(templatesData[0].id);
+        // Não pré-selecionar pacote (exigir que o usuário escolha)
+        setTemplateId("");
 
         setPaymentMethods(methodsData as OrganizationPaymentMethod[]);
       } catch (e) {
@@ -201,10 +210,16 @@ export function NewPackageSaleModal({
               />
             </SelectTrigger>
             <SelectContent className="border border-border/50 bg-background shadow-xl rounded-2xl">
-              {templates.map((tpl) => (
-                <SelectItem key={tpl.id} value={tpl.id} className="rounded-2xl py-2 font-medium">
-                  {tpl.name}
-                </SelectItem>
+              {templates
+                .filter((tpl) => !activeServiceIds.includes(tpl.service_id))
+                .map((tpl) => (
+                  <SelectItem 
+                    key={tpl.id} 
+                    value={tpl.id} 
+                    className="rounded-2xl py-2 font-medium"
+                  >
+                    {tpl.name}
+                  </SelectItem>
               ))}
             </SelectContent>
           </Select>

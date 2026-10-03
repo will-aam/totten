@@ -225,16 +225,16 @@ export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
           size="sm"
           variant="outline"
           onClick={() => setAddPkgOpen(true)}
-          disabled={!clientActive || activePackages.length >= 1}
+          disabled={!clientActive || activePackages.length >= 2}
           title={
-            activePackages.length >= 1
-              ? "Encerre o Pacote atual para vender outro"
+            activePackages.length >= 2
+              ? "Limite de 2 pacotes simultâneos atingido"
               : ""
           }
           className="h-8 border-primary/20 text-primary select-none transition-transform duration-100 ease-out hover:bg-transparent hover:text-primary active:scale-95 active:bg-primary/10 text-xs font-medium px-3 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Plus className="h-3.5 w-3.5 mr-1" strokeWidth={2} />
-          {activePackages.length >= 1 ? "Limite Atingido" : "Nova venda"}
+          {activePackages.length >= 2 ? "Limite Atingido" : "Nova venda"}
         </Button>
       </CardHeader>
 

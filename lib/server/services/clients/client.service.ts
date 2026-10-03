@@ -469,7 +469,7 @@ export class ClientService {
       throw new Error("CLIENT_NOT_FOUND");
     }
 
-    const activePkg = client.packages.find(
+    const activePkgs = client.packages.filter(
       (pkg) => pkg.used_sessions < pkg.total_sessions,
     );
 
@@ -488,15 +488,13 @@ export class ClientService {
         created_at: client.created_at,
         active: client.active,
       },
-      activePackage: activePkg
-        ? {
-            id: activePkg.id,
-            name: activePkg.name,
-            total_sessions: activePkg.total_sessions,
-            used_sessions: activePkg.used_sessions,
-            service_id: activePkg.service_id,
-          }
-        : null,
+      activePackages: activePkgs.map((pkg) => ({
+        id: pkg.id,
+        name: pkg.name,
+        total_sessions: pkg.total_sessions,
+        used_sessions: pkg.used_sessions,
+        service_id: pkg.service_id,
+      })),
     };
   }
 

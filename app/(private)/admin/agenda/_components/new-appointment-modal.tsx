@@ -110,6 +110,7 @@ export const NewAppointmentModal = memo(
     const [repeatCount, setRepeatCount] = useState(2);
     const [saving, setSaving] = useState(false);
 
+    const [availablePackages, setAvailablePackages] = useState<ActivePackage[]>([]);
     const [activePackage, setActivePackage] = useState<ActivePackage | null>(
       null,
     );
@@ -144,19 +145,26 @@ export const NewAppointmentModal = memo(
         try {
           const data = await apiClient<any>(`clients/${selectedClientId}`);
 
-          const pkg =
-            data.activePackage ||
-            data.client?.activePackage ||
-            data.data?.activePackage ||
-            null;
+          const pkgs = data.activePackages || data.client?.activePackages || data.data?.activePackages || [];
+          const legacyPkg = data.activePackage || data.client?.activePackage || data.data?.activePackage || null;
+          
+          let validPkgs: ActivePackage[] = [];
+          
+          if (pkgs && pkgs.length > 0) {
+            validPkgs = pkgs.filter((p: any) => p.active !== false && p.used_sessions < p.total_sessions);
+          } else if (legacyPkg && legacyPkg.active !== false && legacyPkg.used_sessions < legacyPkg.total_sessions) {
+            validPkgs = [legacyPkg];
+          }
 
-          if (
-            pkg &&
-            pkg.active !== false &&
-            pkg.used_sessions < pkg.total_sessions
-          ) {
-            setActivePackage(pkg);
+          if (validPkgs.length > 0) {
+            setAvailablePackages(validPkgs);
+            if (validPkgs.length === 1) {
+              setActivePackage(validPkgs[0]);
+            } else {
+              setActivePackage(null);
+            }
           } else {
+            setAvailablePackages([]);
             setActivePackage(null);
             setUsePackage(false);
           }
@@ -333,56 +341,111 @@ export const NewAppointmentModal = memo(
             </Select>
           </div>
 
-          {activePackage && (
-            <div
-              className={cn(
-                "flex items-center justify-between p-4 rounded-2xl border-2 transition-all duration-300",
-                usePackage
-                  ? "bg-primary/5 border-primary shadow-inner"
-                  : "bg-muted/20 border-transparent opacity-80",
-              )}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className={cn(
-                    "p-2.5 rounded-2xl transition-colors",
-                    usePackage
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground shadow-sm",
-                  )}
-                >
-                  <PackageIcon className="h-5 w-5" />
+          {availablePackages.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <div
+                className={cn(
+                  "flex items-center justify-between p-4 rounded-2xl border-2 transition-all duration-300",
+                  usePackage
+                    ? "bg-primary/5 border-primary shadow-inner"
+                    : "bg-muted/20 border-transparent opacity-80",
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={cn(
+                      "p-2.5 rounded-2xl transition-colors",
+                      usePackage
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground shadow-sm",
+                    )}
+                  >
+                    <PackageIcon className="h-5 w-5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-black leading-none">
+                      {activePackage ? activePackage.name : "Pacotes Disponíveis"}
+                    </span>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase mt-1">
+                      {activePackage ? `Saldo: ${saldoDisponivel} sessões` : `${availablePackages.length} pacotes ativos`}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-sm font-black leading-none">
-                    {activePackage.name}
-                  </span>
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase mt-1">
-                    Saldo: {saldoDisponivel} sessões
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <Label className="text-[10px] font-black uppercase opacity-60 cursor-pointer">
-                  Utilizar
-                </Label>
-                <Switch
-                  checked={usePackage}
-                  onCheckedChange={(checked) => {
-                    setUsePackage(checked);
-                    if (checked && activePackage) {
-                      setSelectedServiceId(activePackage.service_id);
-                      if (saldoDisponivel > 1) {
-                        setIsRecurring(true);
-                        setRepeatCount(saldoDisponivel);
-                      } else {
-                        setIsRecurring(false);
+                <div className="flex items-center gap-3">
+                  <Label className="text-[10px] font-black uppercase opacity-60 cursor-pointer">
+                    Utilizar
+                  </Label>
+                  <Switch
+                    checked={usePackage}
+                    onCheckedChange={(checked) => {
+                      setUsePackage(checked);
+                      if (checked) {
+                        if (activePackage) {
+                          setSelectedServiceId(activePackage.service_id);
+                          if (saldoDisponivel > 1) {
+                            setIsRecurring(true);
+                            setRepeatCount(saldoDisponivel);
+                          } else {
+                            setIsRecurring(false);
+                          }
+                        } else if (availablePackages.length > 0) {
+                          const firstPkg = availablePackages[0];
+                          setActivePackage(firstPkg);
+                          setSelectedServiceId(firstPkg.service_id);
+                          const saldo = firstPkg.total_sessions - firstPkg.used_sessions;
+                          if (saldo > 1) {
+                            setIsRecurring(true);
+                            setRepeatCount(saldo);
+                          } else {
+                            setIsRecurring(false);
+                          }
+                        }
                       }
-                    }
-                  }}
-                  className="data-[state=checked]:bg-primary"
-                />
+                    }}
+                    className="data-[state=checked]:bg-primary"
+                  />
+                </div>
               </div>
+
+              {usePackage && availablePackages.length > 1 && (
+                <div className="px-1 mt-1">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 mb-1.5 block">
+                    De qual pacote descontar?
+                  </Label>
+                  <Select
+                    value={activePackage?.id || ""}
+                    onValueChange={(val) => {
+                      const pkg = availablePackages.find(p => p.id === val);
+                      if (pkg) {
+                        setActivePackage(pkg);
+                        setSelectedServiceId(pkg.service_id);
+                        const saldo = pkg.total_sessions - pkg.used_sessions;
+                        if (saldo > 1) {
+                          setIsRecurring(true);
+                          setRepeatCount(saldo);
+                        } else {
+                          setIsRecurring(false);
+                        }
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-10 bg-muted/20 border-none font-semibold rounded-2xl">
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent className="border border-border/50 bg-background shadow-xl rounded-2xl">
+                      {availablePackages.map((pkg) => (
+                        <SelectItem
+                          key={pkg.id}
+                          value={pkg.id}
+                          className="rounded-2xl py-2 font-medium"
+                        >
+                          {pkg.name} (Saldo: {pkg.total_sessions - pkg.used_sessions})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           )}
 
