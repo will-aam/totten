@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
-export function AdminHeader({ title }: { title: string }) {
+export function AdminHeader({ title, action }: { title: string; action?: React.ReactNode }) {
   const { toggleSidebar } = useSidebar();
   const { data: session } = useSession();
 
@@ -29,12 +29,9 @@ export function AdminHeader({ title }: { title: string }) {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
-        {title === "Dashboard" && (
+        {title === "Dashboard" && action && (
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* <button className="relative flex items-center justify-center p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground rounded-full transition-all">
-              <Bell className="w-5 h-5" removePadding />
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
-            </button> */}
+            {action}
             <div className="w-px h-5 bg-border/50" />
           </div>
         )}

@@ -72,12 +72,7 @@ export default function PlanPage() {
     <div className="w-full min-h-full p-4 md:p-10 flex flex-col items-center">
       {/* Header */}
       <div className="flex flex-col items-center text-center space-y-3 mb-10 mt-4 max-w-2xl">
-        <Badge
-          variant="outline"
-          className="border-primary/30 text-primary bg-primary/5 px-4 py-1.5 rounded-full uppercase tracking-widest font-black text-[10px]"
-        >
-          Assinatura & Planos
-        </Badge>
+
         <h1 className="text-3xl md:text-4xl font-black tracking-tight">
           Escolha o plano{" "}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-indigo-500">

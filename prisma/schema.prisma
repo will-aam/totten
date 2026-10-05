@@ -75,6 +75,8 @@ model Admin {
 
   schedule_blocks ScheduleBlock[] @relation("AdminToScheduleBlock")
 
+  dashboard_layout Json?
+
   @@map("admins")
 }
 

@@ -13,8 +13,6 @@ import {
   ListPlus,
   Archive,
   Trophy,
-  PrintDollar,
-  ChessQueen,
 } from "@boxicons/react";
 import {
   Sidebar,
@@ -42,6 +40,8 @@ import {
   type OpenModule,
 } from "./nav-config";
 
+type Gated = { ownerOnly?: boolean; permission?: string };
+
 export function AdminSidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
@@ -55,10 +55,25 @@ export function AdminSidebar() {
   );
   const whatsappUrl = `https://wa.me/${supportPhone}?text=${supportMessage}`;
 
-  //  RECUPERANDO AS REGRAS DA SESSÃO
+  // Regras vindas da sessão
   const isOwner = session?.user?.role === "OWNER";
-  const hasFinancePermission = session?.user?.permissions?.includes("FINANCE");
-  const canViewFinance = isOwner || hasFinancePermission;
+  const permissions: string[] = session?.user?.permissions ?? [];
+  const canViewFinance = isOwner || permissions.includes("FINANCE");
+
+  // Uma única regra de acesso para todo item de menu
+  const canAccess = (item: Gated) => {
+    if (isOwner) return true;
+    if (item.ownerOnly) return false;
+    if (item.permission && !permissions.includes(item.permission)) return false;
+    return true;
+  };
+
+  const visibleCadastros = cadastrosSubItems.filter(canAccess);
+  const visibleRegistros = registrosSubItems.filter(canAccess);
+  const visibleAuto = autoatendimentoSubItems.filter(canAccess);
+  const visibleFinance = financeSubItems.filter(canAccess);
+
+  const hasModules = isOwner || canViewFinance;
 
   useEffect(() => {
     if (cadastrosSubItems.some((i) => pathname.startsWith(i.href))) {
@@ -96,13 +111,17 @@ export function AdminSidebar() {
     pathname.startsWith(i.href),
   );
 
-
   return (
-    <Sidebar>
-      <SidebarHeader className="p-4">
+    <Sidebar
+      collapsible="icon"
+      // `group-data-[side=left]:border-r-0` vence o border-r padrão do shadcn,
+      // que é o que desenha a linha vertical entre sidebar e conteúdo.
+      className="border-none group-data-[side=left]:border-r-0 group-data-[side=right]:border-l-0"
+    >
+      <SidebarHeader className="py-4 group-data-[collapsible=icon]:py-4 px-4 group-data-[collapsible=icon]:px-0 border-none">
         <Link
           href="/admin/dashboard"
-          className="flex items-center gap-3"
+          className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center"
           onClick={closeMobile}
         >
           <div className="flex items-center justify-center shrink-0">
@@ -125,36 +144,14 @@ export function AdminSidebar() {
               priority
             />
           </div>
-          <h2 className="font-philosopher text-xl font-bold text-sidebar-foreground tracking-tight truncate">
+          <h2 className="font-philosopher text-xl font-bold text-sidebar-foreground tracking-tight truncate group-data-[collapsible=icon]:hidden">
             Totten
           </h2>
         </Link>
       </SidebarHeader>
 
       <SidebarContent className="overflow-y-auto [&::-webkit-scrollbar]:hidden">
-        {/* Meu Plano (Apenas Owner) */}
-        {isOwner && (
-          <SidebarGroup className="pb-0">
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname.startsWith("/admin/plan")}
-                  className="hover:bg-muted/50"
-                >
-                  <Link href="/admin/plan" onClick={closeMobile}>
-                    <NavIcon
-                      icon={ChessQueen}
-                      isActive={pathname.startsWith("/admin/plan")}
-                    />
-                    <span>Meu Plano</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroup>
-        )}
-
+        {/* MENU PRINCIPAL: dia a dia → cadastros → registros */}
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 px-2 mt-2">
             Menu Principal
@@ -177,65 +174,9 @@ export function AdminSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              {/* Cadastros (Apenas Owner) */}
-              {isOwner && (
-                <NavCollapsibleGroup
-                  label="Cadastros"
-                  icon={ListPlus}
-                  isOpen={openModule === "cadastros"}
-                  onOpenChange={(open) =>
-                    setOpenModule(open ? "cadastros" : null)
-                  }
-                  isActive={isCadastrosActive}
-                  items={cadastrosSubItems}
-                  pathname={pathname}
-                  onNavigate={closeMobile}
-                />
-              )}
-
-              {/* Registros */}
-              {(() => {
-                const filteredRegistrosItems = registrosSubItems.filter((item) => {
-                  if (item.ownerOnly && !isOwner) return false;
-                  const permission = (item as any).permission;
-                  if (permission && !isOwner && !session?.user?.permissions?.includes(permission)) return false;
-                  return true;
-                });
-
-                if (filteredRegistrosItems.length === 0) return null;
-
-                return (
-                  <NavCollapsibleGroup
-                    label="Registros"
-                    icon={Archive}
-                    isOpen={openModule === "registros"}
-                    onOpenChange={(open) =>
-                      setOpenModule(open ? "registros" : null)
-                    }
-                    isActive={isRegistrosActive}
-                    items={filteredRegistrosItems}
-                    pathname={pathname}
-                    onNavigate={closeMobile}
-                  />
-                );
-              })()}
-
-              {/* Demais itens do menu principal */}
-              {navItems.map((item) => {
-                //  Bloqueia se for exclusivo da dona
-                if (item.ownerOnly && !isOwner) return null;
-
-                //  Bloqueia se exigir uma permissão que a colaboradora não tem
-                if (
-                  item.permission &&
-                  !isOwner &&
-                  !session?.user?.permissions?.includes(item.permission)
-                )
-                  return null;
-
+              {/* Itens do dia a dia (Agenda, Confirmações, Aniversariantes...) */}
+              {navItems.filter(canAccess).map((item) => {
                 const isActive = pathname.startsWith(item.href) && item.active;
-
-
 
                 return (
                   <SidebarMenuItem key={item.title}>
@@ -265,117 +206,136 @@ export function AdminSidebar() {
                   </SidebarMenuItem>
                 );
               })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
 
-        {/* MÓDULOS */}
-        <SidebarGroup className="mt-0.5">
-          <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 px-2">
-            Módulos
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {/* Módulo: Programa de Fidelidade - Apenas Owner */}
-              {isOwner && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith("/admin/loyalty")}
-                    className="hover:bg-muted/50"
-                  >
-                    <Link href="/admin/loyalty" onClick={closeMobile}>
-                      <div className="flex items-center gap-2">
-                        <NavIcon icon={Trophy} isActive={pathname.startsWith("/admin/loyalty")} />
-                        <span>Programa de Fidelidade</span>
-                      </div>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
-
-              {/* Módulo: Autoatendimento - Apenas Owner */}
-              {isOwner && (
+              {/* Cadastros */}
+              {isOwner && visibleCadastros.length > 0 && (
                 <NavCollapsibleGroup
-                  label="Autoatendimento"
-                  icon={Mobile}
-                  isOpen={openModule === "autoatendimento"}
+                  label="Cadastros"
+                  icon={ListPlus}
+                  isOpen={openModule === "cadastros"}
                   onOpenChange={(open) =>
-                    setOpenModule(open ? "autoatendimento" : null)
+                    setOpenModule(open ? "cadastros" : null)
                   }
-                  isActive={isAutoActive}
-                  items={autoatendimentoSubItems}
+                  isActive={isCadastrosActive}
+                  items={visibleCadastros}
                   pathname={pathname}
                   onNavigate={closeMobile}
                 />
               )}
 
-              {/* Módulo: Financeiro - Owner OU Colaborador com Permissão */}
-              {canViewFinance &&
-                (isMobile ? (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isFinanceActive}
-                      className="hover:bg-muted/50"
-                    >
-                      <Link
-                        href="/admin/finance/dashboard"
-                        onClick={closeMobile}
-                      >
-                        <div className="flex items-center gap-2">
-                          <NavIcon
-                            icon={Wallet}
-                            isActive={isFinanceActive}
-                          />
-                          <span>Financeiro</span>
-                        </div>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ) : (
-                  <NavCollapsibleGroup
-                    label="Financeiro"
-                    icon={Wallet}
-                    isOpen={openModule === "finance"}
-                    onOpenChange={(open) =>
-                      setOpenModule(open ? "finance" : null)
-                    }
-                    isActive={isFinanceActive}
-                    items={financeSubItems}
-                    pathname={pathname}
-                    onNavigate={closeMobile}
-                  />
-                ))}
-
-              {/* Módulo: Fluxo de Caixa (Demo Estático) */}
-              {isOwner && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith("/admin/cashflow-demo")}
-                    className="hover:bg-muted/50"
-                  >
-                    <Link href="/admin/cashflow-demo" onClick={closeMobile}>
-                      <div className="flex items-center gap-2">
-                        <NavIcon icon={PrintDollar} isActive={pathname.startsWith("/admin/cashflow-demo")} />
-                        <span className="text-blue-600 dark:text-blue-400 font-semibold">Fluxo de Caixa </span>
-                      </div>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+              {/* Registros */}
+              {visibleRegistros.length > 0 && (
+                <NavCollapsibleGroup
+                  label="Registros"
+                  icon={Archive}
+                  isOpen={openModule === "registros"}
+                  onOpenChange={(open) =>
+                    setOpenModule(open ? "registros" : null)
+                  }
+                  isActive={isRegistrosActive}
+                  items={visibleRegistros}
+                  pathname={pathname}
+                  onNavigate={closeMobile}
+                />
               )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* MÓDULOS: financeiro → autoatendimento → fidelidade */}
+        {hasModules && (
+          <SidebarGroup className="mt-0.5">
+            <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 px-2">
+              Módulos
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {/* Financeiro — Owner OU colaborador com permissão */}
+                {canViewFinance &&
+                  (isMobile ? (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isFinanceActive}
+                        className="hover:bg-muted/50"
+                      >
+                        <Link
+                          href="/admin/finance/dashboard"
+                          onClick={closeMobile}
+                        >
+                          <div className="flex items-center gap-2">
+                            <NavIcon icon={Wallet} isActive={isFinanceActive} />
+                            <span>Financeiro</span>
+                          </div>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ) : (
+                    <NavCollapsibleGroup
+                      label="Financeiro"
+                      icon={Wallet}
+                      isOpen={openModule === "finance"}
+                      onOpenChange={(open) =>
+                        setOpenModule(open ? "finance" : null)
+                      }
+                      isActive={isFinanceActive}
+                      items={visibleFinance}
+                      pathname={pathname}
+                      onNavigate={closeMobile}
+                    />
+                  ))}
+
+                {/* Autoatendimento — Apenas Owner */}
+                {isOwner && (
+                  <NavCollapsibleGroup
+                    label="Autoatendimento"
+                    icon={Mobile}
+                    isOpen={openModule === "autoatendimento"}
+                    onOpenChange={(open) =>
+                      setOpenModule(open ? "autoatendimento" : null)
+                    }
+                    isActive={isAutoActive}
+                    items={visibleAuto}
+                    pathname={pathname}
+                    onNavigate={closeMobile}
+                  />
+                )}
+
+                {/* Programa de Fidelidade — Apenas Owner */}
+                {isOwner && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname.startsWith("/admin/loyalty")}
+                      className="hover:bg-muted/50"
+                    >
+                      <Link href="/admin/loyalty" onClick={closeMobile}>
+                        <div className="flex items-center gap-2">
+                          <NavIcon
+                            icon={Trophy}
+                            isActive={pathname.startsWith("/admin/loyalty")}
+                          />
+                          <span>Programa de Fidelidade</span>
+                        </div>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
+      {/* "Meu Plano" agora mora no menu do usuário (rodapé) */}
       <SidebarUserFooter
         isOwner={isOwner}
         whatsappUrl={whatsappUrl}
         loggingOut={loggingOut}
         onLogout={handleLogout}
         onNavigate={closeMobile}
+        userImage={session?.user?.photoUrl}
+        userName={session?.user?.name}
       />
     </Sidebar>
   );
