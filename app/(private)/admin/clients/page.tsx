@@ -59,7 +59,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { cn } from "@/lib/utils";
+import { cn, formatName } from "@/lib/utils";
 import { apiClient } from "@/lib/api-client";
 import {
   Pagination,
@@ -102,7 +102,8 @@ function ClientMobileItem({
   onClick: () => void;
   onActionClick: (c: Client, e: React.MouseEvent) => void;
 }) {
-  const initial = client.name.charAt(0).toUpperCase();
+  const formattedName = formatName(client.name);
+  const initial = formattedName ? formattedName.charAt(0).toUpperCase() : "?";
 
   return (
     <div
@@ -140,7 +141,7 @@ function ClientMobileItem({
         </div>
         <div className="flex flex-col">
           <span className="text-sm font-semibold text-foreground leading-none mb-1.5 flex items-center gap-2">
-            {client.name}
+            {formattedName}
             {client.source === "SELF_SERVICE" && (
               <button
                 type="button"
@@ -528,7 +529,7 @@ function AdminClientsPageContent() {
                                     : "bg-muted-foreground/10 text-muted-foreground border-muted-foreground/20",
                                 )}
                               >
-                                {client.name.charAt(0).toUpperCase()}
+                                {formatName(client.name).charAt(0).toUpperCase()}
                               </div>
                               {client.active && client.hasAnamnesis && (
                                 <div
@@ -544,7 +545,7 @@ function AdminClientsPageContent() {
                             </div>
                             <div className="flex flex-col">
                               <span className="font-semibold flex items-center gap-2">
-                                {client.name}
+                                {formatName(client.name)}
                                 {client.source === "SELF_SERVICE" && (
                                   <button
                                     type="button"

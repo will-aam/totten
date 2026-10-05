@@ -39,7 +39,7 @@ import {
 } from "@boxicons/react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+import { cn, formatName } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 
 import { getPaymentMethods } from "@/app/actions/payment-methods";
@@ -231,7 +231,7 @@ export function ClientForm({ onSuccess, onCancel }: { onSuccess?: () => void, on
     try {
       // 1) Cria cliente utilizando a nova Server Action
       const clientResponse = await createClientAction({
-        name: form.name,
+        name: formatName(form.name),
         cpf: form.cpf.trim() !== "" ? form.cpf : undefined,
         phone_whatsapp: form.phone_whatsapp,
         email: form.email || undefined,

@@ -28,6 +28,7 @@ import {
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { apiClient } from "@/lib/api-client";
+import { formatName } from "@/lib/utils";
 //  IMPORTANTE: Importando a Action nativa de atualização de cliente
 import { updateClientAction } from "@/app/actions/clients";
 
@@ -107,7 +108,8 @@ export function ClientContact({ client }: ClientContactProps) {
   const [editStreet, setEditStreet] = useState(client.street || "");
   const [editNumber, setEditNumber] = useState(client.number || "");
 
-  const initial = client.name ? client.name.charAt(0).toUpperCase() : "?";
+  const formattedName = formatName(client.name);
+  const initial = formattedName ? formattedName.charAt(0).toUpperCase() : "?";
 
   const [templates, setTemplates] = useState({
     msgUpdate:
@@ -203,7 +205,7 @@ export function ClientContact({ client }: ClientContactProps) {
     try {
       // 🔌 SUBSTITUÍDO: Usando a Server Action nativa no lugar do apiClient PUT
       const result = await updateClientAction(client.id, {
-        name: editName.trim(),
+        name: formatName(editName),
         cpf: editCpf.trim() !== "" ? editCpf : null,
         phone_whatsapp: editPhone,
         email: editEmail || null,
@@ -239,7 +241,7 @@ export function ClientContact({ client }: ClientContactProps) {
         : `55${rawPhone}`;
     if (targetPhone.length < 12) return toast.error("WhatsApp inválido.");
 
-    const message = templateText.replace(/{nome}/g, client.name.split(" ")[0]);
+    const message = templateText.replace(/{nome}/g, formattedName.split(" ")[0]);
     window.open(
       `https://api.whatsapp.com/send?phone=${targetPhone}&text=${encodeURIComponent(message)}`,
       "_blank",
@@ -432,7 +434,7 @@ export function ClientContact({ client }: ClientContactProps) {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex flex-col min-w-0">
                     <h2 className="text-xl md:text-2xl font-black text-foreground tracking-tight leading-tight truncate">
-                      {client.name}
+                      {formattedName}
                     </h2>
                     <p className="text-sm font-medium text-muted-foreground mt-0.5">
                       CPF: {client.cpf || "Não informado"}

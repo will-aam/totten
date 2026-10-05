@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CalendarCheck, ChevronRight, RefreshCw, User } from "@boxicons/react";
+import { formatName } from "@/lib/utils";
 
 type CheckIn = {
   id: string;
@@ -33,8 +34,9 @@ function CheckInListItem({ checkIn }: { checkIn: CheckIn }) {
     minute: "2-digit",
   });
 
-  const initial = checkIn.client_name
-    ? checkIn.client_name.charAt(0).toUpperCase()
+  const formattedClientName = formatName(checkIn.client_name);
+  const initial = formattedClientName
+    ? formattedClientName.charAt(0).toUpperCase()
     : "?";
 
   return (
@@ -48,7 +50,7 @@ function CheckInListItem({ checkIn }: { checkIn: CheckIn }) {
         </div>
         <div className="flex flex-col">
           <span className="text-sm font-semibold text-foreground leading-none mb-1.5 group-hover:text-primary group-hover:underline transition-colors truncate max-w-37.5 sm:max-w-50">
-            {checkIn.client_name}
+            {formattedClientName}
           </span>
 
           <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground leading-none font-medium uppercase tracking-wider">
@@ -57,7 +59,7 @@ function CheckInListItem({ checkIn }: { checkIn: CheckIn }) {
               <>
                 <span>•</span>
                 <span className="flex items-center gap-1 font-bold text-emerald-600 dark:text-emerald-400">
-                  <User size="xs" /> {checkIn.professional_name.split(" ")[0]}
+                  <User size="xs" /> {formatName(checkIn.professional_name).split(" ")[0]}
                 </span>
               </>
             )}

@@ -1,4 +1,3 @@
-// utils.ts
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -32,4 +31,24 @@ export function sanitizeUrl(url: string | null | undefined): string | undefined 
   }
   
   return `https://${trimmed}`;
+}
+
+export function formatName(name: string | null | undefined): string {
+  if (!name) return "";
+
+  // Preposições que devem continuar minúsculas
+  const prepositions = ["de", "do", "da", "dos", "das", "e", "del", "von"];
+
+  return name
+    .toLowerCase()
+    .split(/\s+/) // Separa por espaços e remove espaços duplos
+    .map((word, index) => {
+      // Se for a primeira palavra, ou se não for uma preposição, capitaliza
+      if (index === 0 || !prepositions.includes(word)) {
+        return word.charAt(0).toUpperCase() + word.slice(1);
+      }
+      return word; // Preposições continuam minúsculas
+    })
+    .join(" ")
+    .trim();
 }

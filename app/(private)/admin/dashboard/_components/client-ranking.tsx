@@ -4,6 +4,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LaurelWreath } from "@boxicons/react";
 import Link from "next/link";
+import { formatName } from "@/lib/utils";
 
 
 
@@ -45,7 +46,7 @@ export function ClientRanking({ data: backendData }: { data?: { id: string, name
                     </div>
                     <div className="flex flex-col min-w-0">
                       <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-                        {client.name}
+                        {formatName(client.name)}
                       </span>
                       {client.visits !== undefined && (
                         <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
