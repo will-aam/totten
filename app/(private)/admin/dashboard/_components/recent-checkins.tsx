@@ -104,13 +104,11 @@ export function RecentCheckIns() {
       checkinsPages[checkinsPages.length - 1]?.data?.length < 5);
 
   return (
-    <Card className="border-border/50 shadow-md bg-card flex flex-col w-full h-full rounded-2xl dark:border-white/10 dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] transition-all">
+    <Card className="border-none shadow-none bg-transparent flex flex-col w-full h-full transition-all">
       <CardHeader className="py-3 px-4">
-        <div className="flex items-center gap-2">
-          <CardTitle className="text-base font-bold text-foreground">
-            Check-ins Recentes
-          </CardTitle>
-        </div>
+        <CardTitle className="text-base font-bold text-foreground">
+          Check-ins Recentes
+        </CardTitle>
       </CardHeader>
 
       {/* flex-1 + min-h-0: ocupa exatamente o espaço restante do card, com scroll interno */}

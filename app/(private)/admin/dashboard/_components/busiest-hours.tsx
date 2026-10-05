@@ -6,19 +6,6 @@ import { Clock } from "@boxicons/react";
 import { BarChart, Bar, XAxis, Cell } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 
-const data = [
-  { time: "08:00", appointments: 2 },
-  { time: "09:00", appointments: 5 },
-  { time: "10:00", appointments: 8 },
-  { time: "11:00", appointments: 4 },
-  { time: "12:00", appointments: 2 },
-  { time: "13:00", appointments: 6 },
-  { time: "14:00", appointments: 9 },
-  { time: "15:00", appointments: 12 },
-  { time: "16:00", appointments: 7 },
-  { time: "17:00", appointments: 5 },
-  { time: "18:00", appointments: 3 },
-];
 
 const chartConfig = {
   appointments: {
@@ -28,16 +15,13 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export function BusiestHours({ data: backendData }: { data?: { time: string, appointments: number }[] }) {
-  const chartData = backendData || data;
-  const maxAppointments = Math.max(...chartData.map(d => d.appointments));
+  const chartData = backendData || [];
+  const maxAppointments = chartData.length > 0 ? Math.max(...chartData.map(d => d.appointments)) : 0;
 
   return (
-    <Card className="border-border/50 shadow-md bg-card flex flex-col w-full h-full rounded-2xl dark:border-white/10 dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] transition-all">
+    <Card className="border-none shadow-none bg-transparent flex flex-col w-full h-full transition-all">
       <CardHeader className="py-3 px-4">
-        <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
-          <div className="bg-blue-500/10 p-1.5 rounded-lg text-blue-600 dark:text-blue-400">
-            <Clock size="sm" />
-          </div>
+        <CardTitle className="text-base font-bold text-foreground">
           Horários mais movimentados
         </CardTitle>
       </CardHeader>
@@ -48,7 +32,12 @@ export function BusiestHours({ data: backendData }: { data?: { time: string, app
         </p>
 
         <div className="flex-1 w-full min-h-0">
-          <ChartContainer config={chartConfig} className="h-full w-full">
+          {chartData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center opacity-60">
+              <p className="text-xs font-medium">Nenhum dado disponível.</p>
+            </div>
+          ) : (
+            <ChartContainer config={chartConfig} className="h-full w-full">
             <BarChart data={chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
@@ -80,7 +69,8 @@ export function BusiestHours({ data: backendData }: { data?: { time: string, app
                 ))}
               </Bar>
             </BarChart>
-          </ChartContainer>
+            </ChartContainer>
+          )}
         </div>
       </CardContent>
     </Card>

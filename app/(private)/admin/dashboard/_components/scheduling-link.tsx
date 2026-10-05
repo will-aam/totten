@@ -18,7 +18,7 @@ export function SchedulingLink() {
   };
 
   return (
-    <Card className="border-border/50 shadow-md bg-card flex flex-col w-full h-full rounded-2xl dark:border-white/10 dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] transition-all relative overflow-hidden">
+    <Card className="border-none shadow-none bg-transparent flex flex-col w-full h-full transition-all relative overflow-hidden">
       {/* Decoração de fundo */}
       <LinkIcon
         className="absolute -right-4 -bottom-4 text-primary/5 pointer-events-none"
@@ -28,8 +28,7 @@ export function SchedulingLink() {
       />
       
       <CardHeader className="py-3 px-4 relative z-10">
-        <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
-          <LinkIcon size="sm" className="text-primary" />
+        <CardTitle className="text-base font-bold text-foreground">
           Link de Agendamento
         </CardTitle>
       </CardHeader>

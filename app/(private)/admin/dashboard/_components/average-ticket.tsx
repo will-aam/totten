@@ -13,29 +13,17 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-const data = [
-  { day: "Seg", value: 120 },
-  { day: "Ter", value: 135 },
-  { day: "Qua", value: 125 },
-  { day: "Qui", value: 145 },
-  { day: "Sex", value: 160 },
-  { day: "Sáb", value: 180 },
-  { day: "Dom", value: 190 },
-];
 
 export function AverageTicket({ data: backendData }: { data?: { current: number, percentageChange: number, history: { day: string, value: number }[] } }) {
-  const chartData = backendData?.history || data;
-  const currentTicket = backendData?.current || 158.50;
-  const percentageChange = backendData?.percentageChange || 12.5;
+  const chartData = backendData?.history || [];
+  const currentTicket = backendData?.current || 0;
+  const percentageChange = backendData?.percentageChange || 0;
   const isPositive = percentageChange >= 0;
 
   return (
-    <Card className="border-border/50 shadow-md bg-card flex flex-col w-full h-full rounded-2xl dark:border-white/10 dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] transition-all">
+    <Card className="border-none shadow-none bg-transparent flex flex-col w-full h-full transition-all">
       <CardHeader className="py-3 px-4 pb-0">
-        <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
-          <div className="bg-emerald-500/10 p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400">
-            <Dollar size="sm" />
-          </div>
+        <CardTitle className="text-base font-bold text-foreground">
           Ticket Médio
         </CardTitle>
       </CardHeader>
@@ -54,7 +42,12 @@ export function AverageTicket({ data: backendData }: { data?: { current: number,
         </div>
 
         <div className="flex-1 w-full mt-4 min-h-0">
-          <ChartContainer config={chartConfig} className="h-full w-full">
+          {chartData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center opacity-60">
+              <p className="text-xs font-medium">Nenhum dado disponível.</p>
+            </div>
+          ) : (
+            <ChartContainer config={chartConfig} className="h-full w-full">
             <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
               <defs>
                 <linearGradient id="fillValue" x1="0" y1="0" x2="0" y2="1">
@@ -77,7 +70,8 @@ export function AverageTicket({ data: backendData }: { data?: { current: number,
                 fill="url(#fillValue)"
               />
             </AreaChart>
-          </ChartContainer>
+            </ChartContainer>
+          )}
         </div>
       </CardContent>
     </Card>
