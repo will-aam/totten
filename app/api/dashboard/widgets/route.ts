@@ -9,6 +9,13 @@ export async function GET() {
     const admin = await requireAuth();
     const prisma = getTenantPrisma(admin.organizationId);
 
+    // Pegar o slug da organização para o link de agendamento
+    const organization = await prisma.organization.findUnique({
+      where: { id: admin.organizationId },
+      select: { slug: true }
+    });
+    const organizationSlug = organization?.slug || "minha-clinica";
+
     // 1. Ranking de Clientes (Top 5 clientes com mais receitas pagas)
     const topClientsData = await prisma.transaction.groupBy({
       by: ['client_id'],
@@ -57,7 +64,7 @@ export async function GET() {
     const heatmapCount: Record<string, Record<string, number>> = {};
     const daysMap = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
     const timeSlots = ["08h", "10h", "12h", "14h", "16h", "18h"];
-    
+
     // Inicializar heatmap
     for (const day of daysMap) {
       heatmapCount[day] = {};
@@ -70,7 +77,7 @@ export async function GET() {
       // Ajustar fuso local (simplificado para exibição)
       const date = new Date(app.date_time.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
       const hour = date.getHours();
-      
+
       // Busiest hours (08:00 to 18:00)
       if (hour >= 8 && hour <= 18) {
         const hKey = `${hour.toString().padStart(2, '0')}:00`;
@@ -103,35 +110,85 @@ export async function GET() {
       }))
     }));
 
-    // 3. Ticket Médio (Mock da evolução e dado real do atual)
-    // Calcula ticket médio real global = total receita / num transações
-    const ticketReal = await prisma.transaction.aggregate({
+    // Calcula ticket médio real (Últimos 30 dias vs 30 dias anteriores)
+    const now = new Date();
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(now.getDate() - 60);
+
+    const currentTicketData = await prisma.transaction.aggregate({
       where: {
         organization_id: admin.organizationId,
         type: 'RECEITA',
-        status: 'PAGO'
+        status: 'PAGO',
+        date: { gte: thirtyDaysAgo }
       },
       _avg: { amount: true }
     });
 
-    const currentTicket = Number(ticketReal._avg.amount) || 0;
+    const previousTicketData = await prisma.transaction.aggregate({
+      where: {
+        organization_id: admin.organizationId,
+        type: 'RECEITA',
+        status: 'PAGO',
+        date: { gte: sixtyDaysAgo, lt: thirtyDaysAgo }
+      },
+      _avg: { amount: true }
+    });
+
+    const currentTicket = Number(currentTicketData._avg.amount) || 0;
+    const previousTicket = Number(previousTicketData._avg.amount) || 0;
+
+    let percentageChange = 0;
+    if (previousTicket > 0) {
+      percentageChange = ((currentTicket - previousTicket) / previousTicket) * 100;
+    } else if (currentTicket > 0) {
+      percentageChange = 100;
+    }
+
+    // Histórico para o gráfico (Últimos 7 dias)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(now.getDate() - 6); // 7 days including today
+
+    const recentTransactions = await prisma.transaction.findMany({
+      where: {
+        organization_id: admin.organizationId,
+        type: 'RECEITA',
+        status: 'PAGO',
+        date: { gte: sevenDaysAgo }
+      },
+      select: { date: true, amount: true }
+    });
+
+    const historyMap: Record<string, { total: number; count: number }> = {};
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(now.getDate() - i);
+      const dayStr = d.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit' });
+      historyMap[dayStr] = { total: 0, count: 0 };
+    }
+
+    recentTransactions.forEach(t => {
+      const dayStr = t.date.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit' });
+      if (historyMap[dayStr]) {
+        historyMap[dayStr].total += Number(t.amount);
+        historyMap[dayStr].count += 1;
+      }
+    });
+
+    const history = Object.keys(historyMap).map(dayStr => ({
+      day: dayStr.substring(0, 2), // Retorna apenas o dia ex: "05"
+      value: historyMap[dayStr].count > 0 ? historyMap[dayStr].total / historyMap[dayStr].count : 0
+    }));
 
     return NextResponse.json({
+      scheduling: organizationSlug,
       ranking,
       busiestHours: busiestHours.length > 0 ? busiestHours : null,
       heatmap,
       ticket: {
         current: currentTicket,
-        percentageChange: 12.5, // Fixo para fins visuais se não houver histórico complexo
-        history: [
-          { day: "01", value: currentTicket * 0.8 },
-          { day: "05", value: currentTicket * 0.9 },
-          { day: "10", value: currentTicket * 0.85 },
-          { day: "15", value: currentTicket * 1.1 },
-          { day: "20", value: currentTicket * 0.95 },
-          { day: "25", value: currentTicket },
-          { day: "30", value: currentTicket }
-        ]
+        percentageChange: percentageChange,
+        history: history.length > 0 ? history : null
       }
     });
 

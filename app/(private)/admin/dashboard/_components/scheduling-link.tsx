@@ -7,9 +7,9 @@ import { Copy, Link as LinkIcon, Cog, Check } from "@boxicons/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-export function SchedulingLink() {
+export function SchedulingLink({ data: organizationSlug }: { data?: string }) {
   const [copied, setCopied] = useState(false);
-  const schedulingUrl = "https://totten.app/agendar/minha-clinica";
+  const schedulingUrl = `https://totten.app/agendar/${organizationSlug || "minha-clinica"}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(schedulingUrl);
