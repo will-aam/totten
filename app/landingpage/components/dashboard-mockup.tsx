@@ -174,7 +174,7 @@ function FloatingChip({
 }) {
     return (
         <div
-            className={`absolute z-10 hidden animate-float-slow items-center gap-2.5 rounded-full border border-totten bg-card-totten/90 px-3 py-2 text-xs shadow-2xl backdrop-blur-md sm:flex ${className}`}
+            className={`absolute z-10 hidden animate-float-slow items-center gap-2.5 rounded-2xl border border-totten bg-card-totten/90 px-3 py-2 text-xs shadow-2xl backdrop-blur-md sm:flex ${className}`}
             style={{ animationDelay: delay }}
         >
             <div className="grid h-7 w-7 place-items-center rounded-lg bg-white/10 text-white">
@@ -190,12 +190,12 @@ function FloatingChip({
 
 function BrowserFrame({ children }: { children: React.ReactNode }) {
     return (
-        <div className="overflow-hidden rounded-full border border-totten bg-card-totten shadow-2xl shadow-black/40">
+        <div className="overflow-hidden rounded-2xl border border-totten bg-card-totten shadow-2xl shadow-black/40">
             <div className="flex items-center gap-2 border-b border-totten bg-[#0c0c0e] px-3 py-2">
                 <div className="flex gap-1.5">
-                    <span className="h-2.5 w-2.5 rounded-full bg-[#27272A]" />
-                    <span className="h-2.5 w-2.5 rounded-full bg-[#27272A]" />
-                    <span className="h-2.5 w-2.5 rounded-full bg-[#27272A]" />
+                    <span className="h-2.5 w-2.5 rounded-2xl bg-[#27272A]" />
+                    <span className="h-2.5 w-2.5 rounded-2xl bg-[#27272A]" />
+                    <span className="h-2.5 w-2.5 rounded-2xl bg-[#27272A]" />
                 </div>
                 <div className="mx-auto flex items-center gap-1.5 rounded-md border border-totten bg-card-totten px-3 py-0.5 text-[10px] text-zinc-soft">
                     <Search className="h-2.5 w-2.5" /> totten.com.br/admin/dashboard

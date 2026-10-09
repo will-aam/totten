@@ -327,7 +327,7 @@ export function GeneralSettings() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 mt-2 p-4 rounded-full border border-border/50 bg-muted/10">
+        <div className="flex flex-col gap-4 mt-2 p-4 rounded-2xl border border-border/50 bg-muted/10">
           <div className="grid gap-2">
             <Label htmlFor="cep">Buscar por CEP</Label>
             <div className="flex gap-2">
@@ -362,7 +362,7 @@ export function GeneralSettings() {
       <button
         onClick={handleSave}
         disabled={loading}
-        className={`${!isMobile ? "hidden" : "fixed bottom-0 right-4 md:bottom-8 md:right-8 h-14 w-14 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 z-50 translate-y-16 opacity-100 hover:scale-110"} `}
+        className={`${!isMobile ? "hidden" : "fixed bottom-0 right-4 md:bottom-8 md:right-8 h-14 w-14 flex items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg transition-all duration-300 z-50 translate-y-16 opacity-100 hover:scale-110"} `}
       >
         <Save className="h-6 w-6" strokeWidth={2.5} />
       </button>
