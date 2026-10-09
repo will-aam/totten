@@ -80,18 +80,22 @@ export class PackageService {
       throw new Error("CLIENT_NOT_FOUND");
     }
 
-    // TRAVA DE SEGURANÇA: Impede sobreposição de pacotes
-    const existingActivePackage = await prisma.package.findFirst({
-      where: {
-        client_id: client_id,
-        organization_id: organizationId,
-        active: true,
-      },
-    });
+    // TODO(Serrano): TRAVA DE SEGURANÇA TEMPORARIAMENTE DESATIVADA
+    // Essa validação impedia a sobreposição de pacotes para o mesmo cliente (vender mais de um pacote simultaneamente).
+    // Foi comentada para permitir testes. No futuro, reativar adicionando uma verificação de plano:
+    // Exemplo: se o plano for "Pro", ignora a trava; se não for, executa a trava e impede.
+    // Impede sobreposição de pacotes
+    // const existingActivePackage = await prisma.package.findFirst({
+    //   where: {
+    //     client_id: client_id,
+    //     organization_id: organizationId,
+    //     active: true,
+    //   },
+    // });
 
-    if (existingActivePackage) {
-      throw new Error("ACTIVE_PACKAGE_EXISTS");
-    }
+    // if (existingActivePackage) {
+    //   throw new Error("ACTIVE_PACKAGE_EXISTS");
+    // }
 
     const service = await prisma.service.findUnique({
       where: { id: service_id, organization_id: organizationId },
