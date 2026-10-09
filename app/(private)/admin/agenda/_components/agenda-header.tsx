@@ -135,7 +135,7 @@ export function AgendaHeader({
             </SheetHeader>
             <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 custom-scrollbar pb-10">
               <div className="flex items-start gap-3">
-                <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-blue-100 border border-blue-300 dark:bg-blue-900/50 dark:border-blue-700"></div>
+                <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-blue-500 shadow-sm"></div>
                 <div>
                   <h4 className="font-semibold text-sm text-foreground">Azul (Realizado)</h4>
                   <p className="text-xs text-muted-foreground mt-1">O atendimento foi finalizado. O cliente compareceu e o serviço foi concluído.</p>
@@ -143,39 +143,32 @@ export function AgendaHeader({
               </div>
 
               <div className="flex items-start gap-3">
-                <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-purple-100 border border-purple-300 dark:bg-purple-900/50 dark:border-purple-700"></div>
+                <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-purple-500 shadow-sm"></div>
                 <div>
                   <h4 className="font-semibold text-sm text-foreground">Roxo (Check-in Realizado)</h4>
                   <p className="text-xs text-muted-foreground mt-1">O paciente já está na clínica (fez check-in no totem) e aguarda atendimento.</p>
                 </div>
               </div>
 
+
               <div className="flex items-start gap-3">
-                <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-emerald-100 border border-emerald-300 dark:bg-emerald-900/50 dark:border-emerald-700"></div>
+                <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-amber-500 shadow-sm"></div>
                 <div>
-                  <h4 className="font-semibold text-sm text-foreground">Verde (Contenção)</h4>
-                  <p className="text-xs text-muted-foreground mt-1">Serviço que envolve procedimento de contenção.</p>
+                  <h4 className="font-semibold text-sm text-foreground">Amarelo (Avulso Pendente)</h4>
+                  <p className="text-xs text-muted-foreground mt-1">Agendamento comum (avulso) pendente. O paciente ainda não chegou / não fez check-in.</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3">
-                <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-teal-100 border border-teal-300 dark:bg-teal-900/50 dark:border-teal-700"></div>
+                <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-teal-500 shadow-sm"></div>
                 <div>
-                  <h4 className="font-semibold text-sm text-foreground">Verde Água (Pacote)</h4>
-                  <p className="text-xs text-muted-foreground mt-1">Agendamento futuro que faz parte de um pacote ativo ou retorno.</p>
+                  <h4 className="font-semibold text-sm text-foreground">Verde Água (Pacote Pendente)</h4>
+                  <p className="text-xs text-muted-foreground mt-1">Agendamento pendente que faz parte de um pacote ou retorno. O paciente ainda não chegou / não fez check-in.</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3">
-                <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-amber-100 border border-amber-300 dark:bg-amber-900/50 dark:border-amber-700"></div>
-                <div>
-                  <h4 className="font-semibold text-sm text-foreground">Amarelo (Pendente)</h4>
-                  <p className="text-xs text-muted-foreground mt-1">Agendamento avulso futuro. O paciente ainda não realizou o check-in.</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-slate-100 border border-slate-300 border-dashed opacity-70 dark:bg-slate-800 dark:border-slate-600"></div>
+                <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-slate-400 shadow-sm dark:bg-slate-500 opacity-80"></div>
                 <div>
                   <h4 className="font-semibold text-sm text-foreground">Cinza (Cancelado / Falta)</h4>
                   <p className="text-xs text-muted-foreground mt-1">O agendamento foi cancelado ou o paciente faltou sem justificativa.</p>
@@ -183,9 +176,9 @@ export function AgendaHeader({
               </div>
 
               <div className="flex items-start gap-3">
-                <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-red-100 border border-red-300 relative overflow-hidden dark:bg-red-950 dark:border-red-900">
+                <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-red-500 shadow-sm relative overflow-hidden">
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-full h-px bg-red-400 rotate-45"></div>
+                    <div className="w-full h-px bg-white/60 rotate-45"></div>
                   </div>
                 </div>
                 <div>

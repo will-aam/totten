@@ -100,6 +100,7 @@ model Settings {
   allow_over_limit_appointments Boolean @default(false)
   default_schedule_view         String  @default("day")
   auto_no_show_mode             String  @default("off")
+  auto_complete_on_checkin      Boolean @default(true)
 
   booking_theme         String @default("light")
   booking_primary_color String @default("#0f172a")

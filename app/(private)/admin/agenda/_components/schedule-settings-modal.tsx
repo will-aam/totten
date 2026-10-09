@@ -44,6 +44,7 @@ export type ScheduleSettings = {
   openingTime?: string;
   closingTime?: string;
   autoNoShowMode?: "off" | "auto_deduct" | "auto_no_deduct";
+  autoCompleteOnCheckin?: boolean;
 };
 
 interface ScheduleSettingsModalProps {
@@ -71,6 +72,7 @@ export const ScheduleSettingsModal = memo(
     const [autoNoShowMode, setAutoNoShowMode] = useState<"off" | "auto_deduct" | "auto_no_deduct">(initialSettings.autoNoShowMode || "off");
     const [openingTime, setOpeningTime] = useState(initialSettings.openingTime || "08:00");
     const [closingTime, setClosingTime] = useState(initialSettings.closingTime || "18:00");
+    const [autoCompleteOnCheckin, setAutoCompleteOnCheckin] = useState(initialSettings.autoCompleteOnCheckin ?? true);
 
     const [isSaving, setIsSaving] = useState(false);
     const router = useRouter();
@@ -84,6 +86,7 @@ export const ScheduleSettingsModal = memo(
         setAutoNoShowMode(initialSettings.autoNoShowMode || "off");
         setOpeningTime(initialSettings.openingTime || "08:00");
         setClosingTime(initialSettings.closingTime || "18:00");
+        setAutoCompleteOnCheckin(initialSettings.autoCompleteOnCheckin ?? true);
       }
     }, [open, initialSettings]);
 
@@ -96,7 +99,8 @@ export const ScheduleSettingsModal = memo(
           defaultScheduleView,
           autoNoShowMode,
           openingTime,
-          closingTime
+          closingTime,
+          autoCompleteOnCheckin
         });
         onOpenChange(false);
       } catch (error) {
@@ -133,7 +137,20 @@ export const ScheduleSettingsModal = memo(
               />
             </div>
 
-
+            {/* Check-in e Finalização Automática */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-1 text-sm">
+                <Label className="font-bold text-foreground">Finalizar automaticamente no check-in</Label>
+                <p className="text-muted-foreground leading-relaxed text-xs">
+                  Ao ativar, o check-in do totem muda o agendamento para &quot;Realizado&quot; e desconta estoque/pacote imediatamente.
+                  Caso desmarcado, o check-in será apenas registrado e exibido no modal do agendamento.
+                </p>
+              </div>
+              <Switch
+                checked={autoCompleteOnCheckin}
+                onCheckedChange={setAutoCompleteOnCheckin}
+              />
+            </div>
 
             {/* Permitir Ultrapassar */}
             <div className="flex items-start justify-between gap-4">

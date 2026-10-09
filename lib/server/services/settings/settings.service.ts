@@ -30,6 +30,7 @@ export class SettingsService {
       allowOverLimitAppointments: settings.allow_over_limit_appointments,
       defaultScheduleView: settings.default_schedule_view,
       autoNoShowMode: settings.auto_no_show_mode,
+      autoCompleteOnCheckin: settings.auto_complete_on_checkin,
     };
   }
 
@@ -73,6 +74,8 @@ export class SettingsService {
       updateData.default_schedule_view = data.defaultScheduleView;
     if (data.autoNoShowMode !== undefined)
       updateData.auto_no_show_mode = data.autoNoShowMode;
+    if (data.autoCompleteOnCheckin !== undefined)
+      updateData.auto_complete_on_checkin = data.autoCompleteOnCheckin;
 
     return await prisma.settings.upsert({
       where: { organization_id: organizationId },
@@ -94,6 +97,7 @@ export class SettingsService {
         allow_over_limit_appointments: data.allowOverLimitAppointments ?? false,
         default_schedule_view: data.defaultScheduleView || "day",
         auto_no_show_mode: data.autoNoShowMode || "off",
+        auto_complete_on_checkin: data.autoCompleteOnCheckin ?? true,
       },
     });
   }

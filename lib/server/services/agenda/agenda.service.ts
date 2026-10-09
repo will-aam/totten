@@ -204,9 +204,7 @@ export class AgendaService {
       } else if (appt.status === "REALIZADO") {
         color =
           "bg-blue-100 border-blue-300 text-blue-800 dark:bg-blue-900 dark:border-blue-800 dark:text-blue-300";
-      } else if (serviceNameLower.includes("contenção")) {
-        color =
-          "bg-emerald-100 border-emerald-300 text-emerald-800 dark:bg-emerald-900 dark:border-emerald-800 dark:text-emerald-300";
+
       } else if (
         appt.check_in &&
         (appt.status === "PENDENTE" || appt.status === "CONFIRMADO")

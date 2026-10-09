@@ -54,6 +54,12 @@ export class TotemCheckInService {
 
     let packageInfo = null;
 
+    const orgSettings = await prisma.settings.findUnique({
+      where: { organization_id: organizationId },
+      select: { auto_complete_on_checkin: true },
+    });
+    const autoComplete = orgSettings?.auto_complete_on_checkin ?? true;
+
     const loyaltySettings = await prisma.loyaltySettings.findUnique({
       where: { organization_id: organizationId }
     });
@@ -67,93 +73,95 @@ export class TotemCheckInService {
           client_id: appt.client_id,
           package_id: appt.package_id ?? null,
           organization_id: organizationId,
-          auto_processed: true, // dispara reversão de estoque/financeiro
+          auto_processed: autoComplete, // dispara reversão de estoque/financeiro se for true
         },
       });
 
-      // 2. Atualiza Pacote e Agendamento
-      if (appt.package) {
-        // Utilizamos updateMany para injetar a condição de saldo no banco
-        const pacoteUpdate = await tx.package.updateMany({
-          where: {
-            id: appt.package.id,
-            organization_id: organizationId,
-            used_sessions: { lt: appt.package.total_sessions },
-          },
-          data: { used_sessions: { increment: 1 } },
-        });
-
-        if (pacoteUpdate.count === 0) {
-          throw new Error("SALDO_ESGOTADO");
-        }
-
-        packageInfo = {
-          used: appt.package.used_sessions + 1,
-          total: appt.package.total_sessions,
-        };
-
-        await tx.appointment.update({
-          where: { id: appt.id, organization_id: organizationId },
-          data: { status: "REALIZADO" },
-        });
-      } else {
-        // Fluxo para agendamento avulso (sem pacote)
-        await tx.appointment.update({
-          where: { id: appt.id, organization_id: organizationId },
-          data: { status: "REALIZADO", has_charge: true },
-        });
-      }
-
-      // --- O CORAÇÃO DO SISTEMA FINANCEIRO E DE ESTOQUE ---
-      const service = appt.service;
-
-      if (service.track_stock && service.stock_items.length > 0) {
-        for (const item of service.stock_items) {
-          const stockData = item.stock_item;
-          const usedQty = item.quantity_used;
-
-          // a) Baixa a quantidade física da prateleira
-          await tx.stockItem.update({
-            where: { id: stockData.id, organization_id: organizationId },
-            data: { quantity: { decrement: usedQty } },
+      if (autoComplete) {
+        // 2. Atualiza Pacote e Agendamento
+        if (appt.package) {
+          // Utilizamos updateMany para injetar a condição de saldo no banco
+          const pacoteUpdate = await tx.package.updateMany({
+            where: {
+              id: appt.package.id,
+              organization_id: organizationId,
+              used_sessions: { lt: appt.package.total_sessions },
+            },
+            data: { used_sessions: { increment: 1 } },
           });
 
-          // b) Regra de Caixa
-          if (!stockData.was_expensed) {
-            const costOfUsedQty = Number(usedQty) * Number(stockData.unit_cost);
+          if (pacoteUpdate.count === 0) {
+            throw new Error("SALDO_ESGOTADO");
+          }
 
-            if (costOfUsedQty > 0) {
-              await tx.transaction.create({
-                data: {
-                  type: "DESPESA",
-                  description: `Custo de Insumo (Totem): ${stockData.name}`,
-                  amount: costOfUsedQty,
-                  date: new Date(),
-                  status: "PAGO",
-                  organization_id: organizationId,
-                  appointment_id: appt.id,
-                },
-              });
+          packageInfo = {
+            used: appt.package.used_sessions + 1,
+            total: appt.package.total_sessions,
+          };
+
+          await tx.appointment.update({
+            where: { id: appt.id, organization_id: organizationId },
+            data: { status: "REALIZADO" },
+          });
+        } else {
+          // Fluxo para agendamento avulso (sem pacote)
+          await tx.appointment.update({
+            where: { id: appt.id, organization_id: organizationId },
+            data: { status: "REALIZADO", has_charge: true },
+          });
+        }
+
+        // --- O CORAÇÃO DO SISTEMA FINANCEIRO E DE ESTOQUE ---
+        const service = appt.service;
+
+        if (service.track_stock && service.stock_items.length > 0) {
+          for (const item of service.stock_items) {
+            const stockData = item.stock_item;
+            const usedQty = item.quantity_used;
+
+            // a) Baixa a quantidade física da prateleira
+            await tx.stockItem.update({
+              where: { id: stockData.id, organization_id: organizationId },
+              data: { quantity: { decrement: usedQty } },
+            });
+
+            // b) Regra de Caixa
+            if (!stockData.was_expensed) {
+              const costOfUsedQty = Number(usedQty) * Number(stockData.unit_cost);
+
+              if (costOfUsedQty > 0) {
+                await tx.transaction.create({
+                  data: {
+                    type: "DESPESA",
+                    description: `Custo de Insumo (Totem): ${stockData.name}`,
+                    amount: costOfUsedQty,
+                    date: new Date(),
+                    status: "PAGO",
+                    organization_id: organizationId,
+                    appointment_id: appt.id,
+                  },
+                });
+              }
             }
           }
+        } else if (
+          !service.track_stock &&
+          service.material_cost &&
+          Number(service.material_cost) > 0
+        ) {
+          // Fluxo de Custo Fixo de Material
+          await tx.transaction.create({
+            data: {
+              type: "DESPESA",
+              description: `Custo Fixo de Material (Totem): ${service.name}`,
+              amount: service.material_cost,
+              date: new Date(),
+              status: "PAGO",
+              organization_id: organizationId,
+              appointment_id: appt.id,
+            },
+          });
         }
-      } else if (
-        !service.track_stock &&
-        service.material_cost &&
-        Number(service.material_cost) > 0
-      ) {
-        // Fluxo de Custo Fixo de Material
-        await tx.transaction.create({
-          data: {
-            type: "DESPESA",
-            description: `Custo Fixo de Material (Totem): ${service.name}`,
-            amount: service.material_cost,
-            date: new Date(),
-            status: "PAGO",
-            organization_id: organizationId,
-            appointment_id: appt.id,
-          },
-        });
       }
 
       // 3. Adicionar pontos de fidelidade

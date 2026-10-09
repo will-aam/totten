@@ -40,6 +40,7 @@ import {
   AlertTriangle,
   Lock,
   Undo,
+  CheckCircle,
 } from "@boxicons/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -421,6 +422,23 @@ export const AppointmentDetailsModal = memo(
                 </div>
               </div>
             )}
+          {appointment.checkInTime && status !== "cancelado" && (
+            <div className="bg-purple-500/10 border border-purple-500/20 p-4 rounded-2xl flex items-start gap-3 animate-in fade-in zoom-in-95">
+              <div className="flex flex-col">
+                <span className="text-sm font-black text-purple-700 dark:text-purple-400 uppercase tracking-tight flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4" /> Check-in Realizado
+                </span>
+                <span className="text-xs font-medium text-purple-700/80 dark:text-purple-400/80 mt-1">
+                  A cliente realizou o check-in no totem para este agendamento às{" "}
+                  {new Date(appointment.checkInTime).toLocaleTimeString("pt-BR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                  .
+                </span>
+              </div>
+            </div>
+          )}
 
           <div
             className={cn(
