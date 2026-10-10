@@ -119,7 +119,7 @@ export default function AgendaPage() {
 
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  const [filters, setFilters] = useState<AgendaFiltersState>({ type: "ALL" });
+  const [filters, setFilters] = useState<AgendaFiltersState>({});
 
   // Chave sem prefixo /api: o apiClient já resolve o base path sozinho
   const { data: settings, mutate: mutateSettings } = useSWR<AgendaSettings>(
@@ -193,35 +193,30 @@ export default function AgendaPage() {
   const currentViewAppointments = useMemo(() => {
     let list = mapAppointments(agendaData);
 
-    if (filters.professionalId) {
-      list = list.filter((a) => a.professionalId === filters.professionalId);
+    if (filters.professionalIds && filters.professionalIds.length > 0) {
+      list = list.filter((a) => a.professionalId != null && filters.professionalIds!.includes(a.professionalId));
     }
-    if (filters.patientId) {
-      list = list.filter((a) => a.clientId === filters.patientId);
+    if (filters.patientIds && filters.patientIds.length > 0) {
+      list = list.filter((a) => a.clientId != null && filters.patientIds!.includes(a.clientId));
     }
-    if (filters.serviceId) {
-      list = list.filter((a) => a.serviceId === filters.serviceId);
+    if (filters.serviceIds && filters.serviceIds.length > 0) {
+      list = list.filter((a) => a.serviceId != null && filters.serviceIds!.includes(a.serviceId));
     }
-    if (filters.status) {
-      if (filters.status === "FALTA") {
-        list = list.filter((a) => 
-          a.status === "CANCELADO" && 
-          (a.observations?.includes("(Falta Registrada)") || a.observations?.includes("Falta automática"))
-        );
-      } else if (filters.status === "CANCELADO") {
-        list = list.filter((a) => 
-          a.status === "CANCELADO" && 
-          !(a.observations?.includes("(Falta Registrada)") || a.observations?.includes("Falta automática"))
-        );
-      } else if (filters.status === "CHECKIN") {
-        list = list.filter((a) => 
-          a.checkInTime != null && 
-          a.status !== "REALIZADO" && 
-          a.status !== "CANCELADO"
-        );
-      } else {
-        list = list.filter((a) => a.status === filters.status);
-      }
+    if (filters.statuses && filters.statuses.length > 0) {
+      list = list.filter((a) => {
+        const isFalta = a.status === "CANCELADO" && (a.observations?.includes("(Falta Registrada)") || a.observations?.includes("Falta automática"));
+        const isCancelado = a.status === "CANCELADO" && !isFalta;
+        const isCheckin = a.checkInTime != null && a.status !== "REALIZADO" && a.status !== "CANCELADO";
+
+        if (filters.statuses!.includes("FALTA") && isFalta) return true;
+        if (filters.statuses!.includes("CANCELADO") && isCancelado) return true;
+        if (filters.statuses!.includes("CHECKIN") && isCheckin) return true;
+        if (filters.statuses!.includes("PENDENTE") && a.status === "PENDENTE") return true;
+        if (filters.statuses!.includes("CONFIRMADO") && a.status === "CONFIRMADO") return true;
+        if (filters.statuses!.includes("REALIZADO") && a.status === "REALIZADO") return true;
+
+        return false;
+      });
     }
     if (filters.type === "SINGLE") {
       list = list.filter((a) => !a.isRecurring);

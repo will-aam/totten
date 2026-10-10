@@ -37,14 +37,14 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { MultiSelectCombobox } from "./multi-select-combobox";
 
 export interface AgendaFiltersState {
-  professionalId?: string;
-  serviceId?: string;
-  type?: "ALL" | "SINGLE" | "PACKAGE";
-  status?: string;
-  patientId?: string;
-  roomId?: string;
+  professionalIds?: string[];
+  serviceIds?: string[];
+  type?: string;
+  statuses?: string[];
+  patientIds?: string[];
 }
 
 interface AgendaFiltersProps {
@@ -78,15 +78,14 @@ export function AgendaFilters({ filters, onFiltersChange }: AgendaFiltersProps) 
   }, [isOwner]);
 
   const hasActiveFilters =
-    !!filters.professionalId ||
-    !!filters.serviceId ||
-    !!filters.status ||
-    !!filters.patientId ||
-    !!filters.roomId ||
+    (filters.professionalIds && filters.professionalIds.length > 0) ||
+    (filters.serviceIds && filters.serviceIds.length > 0) ||
+    (filters.statuses && filters.statuses.length > 0) ||
+    (filters.patientIds && filters.patientIds.length > 0) ||
     (filters.type && filters.type !== "ALL");
 
   const clearFilters = () => {
-    onFiltersChange({ type: "ALL" });
+    onFiltersChange({});
   };
 
   return (
@@ -129,28 +128,57 @@ export function AgendaFilters({ filters, onFiltersChange }: AgendaFiltersProps) 
 }
 
 export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, services, session, clients, settings }: any) {
-  const [clientOpen, setClientOpen] = useState(false);
   const hasActiveFilters =
-    !!filters.professionalId ||
-    !!filters.serviceId ||
-    !!filters.status ||
-    !!filters.patientId ||
-    !!filters.roomId ||
+    (filters.professionalIds && filters.professionalIds.length > 0) ||
+    (filters.serviceIds && filters.serviceIds.length > 0) ||
+    (filters.statuses && filters.statuses.length > 0) ||
+    (filters.patientIds && filters.patientIds.length > 0) ||
     (filters.type && filters.type !== "ALL");
 
   const clearFilters = () => {
-    onFiltersChange({ type: "ALL" });
+    onFiltersChange({});
   };
 
-  // Custom wrapper for the trigger to match the design EXACTLY
   const CustomTrigger = ({ placeholder }: { placeholder: string }) => (
-    <SelectTrigger className="w-full bg-muted/20 border border-input -[10px] h-10 px-3 [&>svg]:hidden flex justify-between items-center shadow-none text-muted-foreground hover:bg-muted/40 transition-colors focus:ring-1 focus:ring-primary/20 font-medium">
+    <SelectTrigger className="w-full bg-muted/20 border border-input -[10px] h-10 px-3 [&>svg]:hidden flex justify-between items-center shadow-none text-muted-foreground hover:bg-muted/40 transition-colors focus:ring-1 focus:ring-primary/20 font-medium font-normal">
       <SelectValue placeholder={placeholder} />
-      <div className="bg-muted/60 rounded-md h-6 w-6 flex items-center justify-center text-muted-foreground">
+      <div className="bg-muted/60 rounded-md h-6 w-6 flex items-center justify-center text-muted-foreground shrink-0 self-start mt-0.5">
         <ChevronDown className="w-4 h-4" />
       </div>
     </SelectTrigger>
   );
+
+  const statusOptions = [
+    { value: "PENDENTE", label: "Pendente" },
+    { value: "CONFIRMADO", label: "Confirmado" },
+    { value: "REALIZADO", label: "Realizado" },
+    ...(settings?.autoCompleteOnCheckin === false ? [{ value: "CHECKIN", label: "Check-in Realizado" }] : []),
+    { value: "CANCELADO", label: "Cancelado" },
+    { value: "FALTA", label: "Falta" },
+  ];
+
+  const professionalOptions = [
+    ...(session?.user ? [{ value: session.user.id, label: session.user.name || "Admin" }] : []),
+    ...(team?.filter((m: any) => m.id !== session?.user?.id).map((member: any) => ({
+      value: member.id,
+      label: member.display_name,
+    })) || [])
+  ];
+
+  const clientOptions = clients?.map((c: any) => ({
+    value: c.id,
+    label: c.name,
+  })) || [];
+
+  const serviceOptions = services?.map((s: any) => ({
+    value: s.id,
+    label: s.name,
+  })) || [];
+
+  const typeOptions = [
+    { value: "SINGLE", label: "Avulso" },
+    { value: "PACKAGE", label: "Pacote" },
+  ];
 
   return (
     <div className="flex flex-col gap-4">
@@ -173,23 +201,13 @@ export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, serv
         <Label className="text-sm font-medium text-muted-foreground">
           Status
         </Label>
-        <Select
-          value={filters.status || "ALL"}
-          onValueChange={(val) => onFiltersChange({ ...filters, status: val === "ALL" ? undefined : val })}
-        >
-          <CustomTrigger placeholder="Todos" />
-          <SelectContent className="border border-border/50 shadow-lg z-[100] rounded-2xl">
-            <SelectItem value="ALL" className="font-medium text-muted-foreground">Todos</SelectItem>
-            <SelectItem value="PENDENTE" className="font-medium">Pendente</SelectItem>
-            <SelectItem value="CONFIRMADO" className="font-medium">Confirmado</SelectItem>
-            <SelectItem value="REALIZADO" className="font-medium">Realizado</SelectItem>
-            {settings?.autoCompleteOnCheckin === false && (
-              <SelectItem value="CHECKIN" className="font-medium">Check-in Realizado</SelectItem>
-            )}
-            <SelectItem value="CANCELADO" className="font-medium">Cancelado</SelectItem>
-            <SelectItem value="FALTA" className="font-medium">Falta</SelectItem>
-          </SelectContent>
-        </Select>
+        <MultiSelectCombobox
+          options={statusOptions}
+          selectedValues={filters.statuses || []}
+          onSelectedValuesChange={(val) => onFiltersChange({ ...filters, statuses: val })}
+          placeholder="Todos os status"
+          searchPlaceholder="Pesquisar status..."
+        />
       </div>
 
       {/* 2. Profissional */}
@@ -198,21 +216,13 @@ export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, serv
           <Label className="text-sm font-medium text-muted-foreground">
             Profissional
           </Label>
-          <Select
-            value={filters.professionalId || "ALL"}
-            onValueChange={(val) => onFiltersChange({ ...filters, professionalId: val === "ALL" ? undefined : val })}
-          >
-            <CustomTrigger placeholder="Todos" />
-            <SelectContent className="border border-border/50 shadow-lg z-[100] rounded-2xl">
-              <SelectItem value="ALL" className="font-medium text-muted-foreground">Todos</SelectItem>
-              <SelectItem value={session?.user?.id || ""} className="font-medium">{session?.user?.name || "Admin"}</SelectItem>
-              {team?.filter((m: any) => m.id !== session?.user?.id).map((member: any) => (
-                <SelectItem key={member.id} value={member.id} className="font-medium">
-                  {member.display_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <MultiSelectCombobox
+            options={professionalOptions}
+            selectedValues={filters.professionalIds || []}
+            onSelectedValuesChange={(val) => onFiltersChange({ ...filters, professionalIds: val })}
+            placeholder="Todos os profissionais"
+            searchPlaceholder="Pesquisar profissional..."
+          />
         </div>
       )}
 
@@ -221,68 +231,13 @@ export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, serv
         <Label className="text-sm font-medium text-muted-foreground">
           Cliente
         </Label>
-        <Popover open={clientOpen} onOpenChange={setClientOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={clientOpen}
-              className="w-full bg-muted/20 border border-input rounded-lg h-10 px-3 flex justify-between items-center shadow-none text-muted-foreground hover:bg-muted/40 transition-colors focus:ring-1 focus:ring-primary/20 font-medium font-normal"
-            >
-              <span className="truncate">
-                {filters.patientId
-                  ? clients?.find((c: any) => c.id === filters.patientId)?.name
-                  : "Todos"}
-              </span>
-              <div className="bg-muted/60 rounded-md h-6 w-6 flex items-center justify-center text-muted-foreground shrink-0">
-                <ChevronDown className="w-4 h-4" />
-              </div>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[300px] p-0 rounded-xl border border-border/50 shadow-lg z-[100]" align="start">
-            <Command>
-              <CommandInput placeholder="Pesquisar Cliente..." className="h-9" />
-              <CommandList>
-                <CommandEmpty>Nenhum Cliente encontrado.</CommandEmpty>
-                <CommandGroup>
-                  <CommandItem
-                    value="Todos"
-                    onSelect={() => {
-                      onFiltersChange({ ...filters, patientId: undefined });
-                      setClientOpen(false);
-                    }}
-                  >
-                    Todos
-                    <Check
-                      className={cn(
-                        "ml-auto h-4 w-4",
-                        !filters.patientId ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                  </CommandItem>
-                  {clients?.map((c: any) => (
-                    <CommandItem
-                      key={c.id}
-                      value={c.name}
-                      onSelect={() => {
-                        onFiltersChange({ ...filters, patientId: c.id });
-                        setClientOpen(false);
-                      }}
-                    >
-                      {c.name}
-                      <Check
-                        className={cn(
-                          "ml-auto h-4 w-4",
-                          filters.patientId === c.id ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+        <MultiSelectCombobox
+          options={clientOptions}
+          selectedValues={filters.patientIds || []}
+          onSelectedValuesChange={(val) => onFiltersChange({ ...filters, patientIds: val })}
+          placeholder="Todos os clientes"
+          searchPlaceholder="Pesquisar cliente..."
+        />
       </div>
 
       {/* 4. Procedimento */}
@@ -290,34 +245,31 @@ export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, serv
         <Label className="text-sm font-medium text-muted-foreground">
           Procedimento
         </Label>
-        <Select
-          value={filters.serviceId || "ALL"}
-          onValueChange={(val) => onFiltersChange({ ...filters, serviceId: val === "ALL" ? undefined : val })}
-        >
-          <CustomTrigger placeholder="Todos" />
-          <SelectContent className="border border-border/50 shadow-lg max-h-[200px] z-[100] rounded-2xl">
-            <SelectItem value="ALL" className="font-medium text-muted-foreground">Todos</SelectItem>
-            {services?.map((s: any) => (
-              <SelectItem key={s.id} value={s.id} className="font-medium">
-                {s.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <MultiSelectCombobox
+          options={serviceOptions}
+          selectedValues={filters.serviceIds || []}
+          onSelectedValuesChange={(val) => onFiltersChange({ ...filters, serviceIds: val })}
+          placeholder="Todos os procedimentos"
+          searchPlaceholder="Pesquisar procedimento..."
+        />
       </div>
+
+      {/* 5. Tipo */}
       <div className="space-y-1">
-        <Label className="text-sm font-medium text-[#666666]">Tipo</Label>
+        <Label className="text-sm font-medium text-muted-foreground">
+          Tipo
+        </Label>
         <Select value={filters.type || "ALL"} onValueChange={(val: any) => onFiltersChange({ ...filters, type: val })}>
           <CustomTrigger placeholder="Todos" />
-          <SelectContent className="border border-border/50 shadow-lg z-[100] rounded-2xl">
-            <SelectItem value="ALL" className="font-medium text-muted-foreground">Todos</SelectItem>
+          <SelectContent className="w-[var(--radix-select-trigger-width)] border border-border/50 shadow-lg z-[100] rounded-xl">
+            <SelectItem value="ALL" className="font-medium text-muted-foreground">Todos os tipos</SelectItem>
             <SelectItem value="SINGLE" className="font-medium">Avulso</SelectItem>
             <SelectItem value="PACKAGE" className="font-medium">Pacote</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-
     </div>
   );
 }
+
