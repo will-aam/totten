@@ -146,7 +146,12 @@ export function AgendaHeader({
                 <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-purple-500 shadow-sm"></div>
                 <div>
                   <h4 className="font-semibold text-sm text-foreground">Roxo (Check-in Realizado)</h4>
-                  <p className="text-xs text-muted-foreground mt-1">O paciente já está na clínica (fez check-in no totem) e aguarda atendimento.</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    O cliente já fez check-in no totem e aguarda atendimento.
+                    <span className="block mt-1 italic opacity-80">
+                      (Exibido apenas se a "Conclusão Automática" estiver desativada nas configurações da agenda).
+                    </span>
+                  </p>
                 </div>
               </div>
 
@@ -155,7 +160,7 @@ export function AgendaHeader({
                 <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-amber-500 shadow-sm"></div>
                 <div>
                   <h4 className="font-semibold text-sm text-foreground">Amarelo (Avulso Pendente)</h4>
-                  <p className="text-xs text-muted-foreground mt-1">Agendamento comum (avulso) pendente. O paciente ainda não chegou / não fez check-in.</p>
+                  <p className="text-xs text-muted-foreground mt-1">Agendamento sem vínculo com pacote. O Cliente ainda não fez check-in.</p>
                 </div>
               </div>
 
@@ -163,15 +168,28 @@ export function AgendaHeader({
                 <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-teal-500 shadow-sm"></div>
                 <div>
                   <h4 className="font-semibold text-sm text-foreground">Verde Água (Pacote Pendente)</h4>
-                  <p className="text-xs text-muted-foreground mt-1">Agendamento pendente que faz parte de um pacote ou retorno. O paciente ainda não chegou / não fez check-in.</p>
+                  <p className="text-xs text-muted-foreground mt-1">Agendamento que faz parte de um pacote ou retorno. O Cliente ainda não fez check-in.</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3">
                 <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-slate-400 shadow-sm dark:bg-slate-500 opacity-80"></div>
                 <div>
-                  <h4 className="font-semibold text-sm text-foreground">Cinza (Cancelado / Falta)</h4>
-                  <p className="text-xs text-muted-foreground mt-1">O agendamento foi cancelado ou o paciente faltou sem justificativa.</p>
+                  <h4 className="font-semibold text-sm text-foreground">Cinza (Cancelado)</h4>
+                  <p className="text-xs text-muted-foreground mt-1">O agendamento foi cancelado pelo Cliente ou pela Clínica.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-pink-500 shadow-sm"></div>
+                <div>
+                  <h4 className="font-semibold text-sm text-foreground">Rosa (Falta)</h4>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    O Cliente faltou ao atendimento.
+                    <span className="block mt-1 italic opacity-80">
+                      (Atenção: verifique nas configurações da agenda se as faltas descontam sessões de pacotes automaticamente).
+                    </span>
+                  </p>
                 </div>
               </div>
 

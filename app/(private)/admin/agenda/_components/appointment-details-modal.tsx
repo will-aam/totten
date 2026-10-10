@@ -128,9 +128,21 @@ export const AppointmentDetailsModal = memo(
 
     useEffect(() => {
       if (appointment) {
-        const dbStatus = appointment.status?.toLowerCase();
+        let initialStatusValue = appointment.status?.toLowerCase() || "pendente";
+        const isNoShow =
+          appointment.status === "CANCELADO" &&
+          (appointment.observations?.includes("Falta automática") ||
+            appointment.observations?.includes("Baixa automática"));
+        const isManualNoShow =
+          appointment.status === "CANCELADO" &&
+          appointment.observations?.includes("(Falta Registrada)");
+          
+        if (isNoShow || isManualNoShow) {
+          initialStatusValue = "nao_compareceu";
+        }
+        
         setStatus(
-          dbStatus === "pendente" ? "a_confirmar" : dbStatus || "a_confirmar",
+          initialStatusValue === "pendente" ? "a_confirmar" : initialStatusValue || "a_confirmar",
         );
         setPayment(
           appointment.paymentMethod || appointment.payment_method || "nenhum",
@@ -292,23 +304,14 @@ export const AppointmentDetailsModal = memo(
     };
 
     const customTitle = (
-      <div className="flex flex-col gap-1 w-full text-left">
-        <div className="text-xl font-black flex items-center justify-center sm:justify-start gap-2">
-          <User className="h-5 w-5 text-primary shrink-0" />
+      <div className="flex flex-col gap-2 w-full text-center sm:text-left mt-2 mb-2">
+        <div className="text-2xl font-black flex items-center justify-center">
           <span className="truncate">{appointment.clientName}</span>
         </div>
-        <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap mt-0.5">
-          <span className="text-muted-foreground text-sm font-medium">
+        <div className="flex items-center justify-center gap-2 flex-wrap">
+          <span className="text-muted-foreground text-sm font-bold">
             {serviceName}
           </span>
-          {isRecurrent && (
-            <Badge
-              variant="secondary"
-              className="bg-primary/10 text-primary border-none flex gap-1 items-center rounded-full px-2"
-            >
-              <Repeat className="h-3 w-3" /> Série
-            </Badge>
-          )}
           {appointment.professionalName && (
             <>
               <span className="text-muted-foreground/30 hidden sm:inline">
@@ -450,25 +453,35 @@ export const AppointmentDetailsModal = memo(
               <div className="flex items-center gap-2">
                 <CalendarAlt className="h-4 w-4" /> Atendimento
               </div>
-              <Badge
-                variant={
-                  status === "cancelado" || isPackageArchived
-                    ? "destructive"
-                    : "outline"
-                }
-                className={cn(
-                  "rounded-lg border-none px-2.5 py-0.5",
-                  status !== "cancelado" &&
-                  !isPackageArchived &&
-                  "bg-background",
+              <div className="flex items-center gap-2">
+                {isRecurrent && (
+                  <Badge
+                    variant="secondary"
+                    className="bg-primary/10 text-primary border-none flex gap-1 items-center rounded-lg px-2 py-0.5"
+                  >
+                    <Repeat className="h-3 w-3" /> Série
+                  </Badge>
                 )}
-              >
-                {status === "cancelado"
-                  ? "Cancelado"
-                  : isPackageArchived && !isAlreadyCanceled
-                    ? "Pacote Inativo"
-                    : appointment.sessionInfo || "Avulso"}
-              </Badge>
+                <Badge
+                  variant={
+                    status === "cancelado" || isPackageArchived
+                      ? "destructive"
+                      : "outline"
+                  }
+                  className={cn(
+                    "rounded-lg border-none px-2.5 py-0.5",
+                    status !== "cancelado" &&
+                    !isPackageArchived &&
+                    "bg-background",
+                  )}
+                >
+                  {status === "cancelado"
+                    ? "Cancelado"
+                    : isPackageArchived && !isAlreadyCanceled
+                      ? "Pacote Inativo"
+                      : appointment.sessionInfo || "Avulso"}
+                </Badge>
+              </div>
             </div>
             <div className="text-2xl font-black text-primary flex items-baseline gap-1">
               {appointment.time}
@@ -479,7 +492,7 @@ export const AppointmentDetailsModal = memo(
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col gap-4">
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">
                 Status
@@ -489,13 +502,13 @@ export const AppointmentDetailsModal = memo(
                 onValueChange={handleStatusChange}
                 disabled={isLocked || isPackageArchived}
               >
-                <SelectTrigger className="h-12 bg-muted/20 border-none font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
+                <SelectTrigger className="w-full h-12 bg-muted/20 border-none font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="border-border/50 bg-background rounded-2xl">
-                  <SelectItem value="a_confirmar">A Confirmar</SelectItem>
-                  <SelectItem value="realizado">Realizado</SelectItem>
-                  <SelectItem value="cancelado">
+                <SelectContent className="border-border/50 bg-background rounded-2xl !w-max min-w-[var(--radix-select-trigger-width)]">
+                  <SelectItem value="a_confirmar" className="whitespace-nowrap">A Confirmar</SelectItem>
+                  <SelectItem value="realizado" className="whitespace-nowrap">Realizado</SelectItem>
+                  <SelectItem value="cancelado" className="whitespace-nowrap">
                     Cancelado (Sem Cobrar)
                   </SelectItem>
                   {/* OPÇÕES DE FALTA DINÂMICAS */}
@@ -503,13 +516,13 @@ export const AppointmentDetailsModal = memo(
                     <>
                       <SelectItem
                         value="nao_compareceu"
-                        className="text-amber-600 font-bold focus:text-amber-700"
+                        className="text-amber-600 font-bold focus:text-amber-700 whitespace-nowrap"
                       >
                         Faltou (Descontar)
                       </SelectItem>
                       <SelectItem
                         value="nao_compareceu_abonado"
-                        className="text-emerald-600 font-bold focus:text-emerald-700"
+                        className="text-emerald-600 font-bold focus:text-emerald-700 whitespace-nowrap"
                       >
                         Faltou (Abonar)
                       </SelectItem>
@@ -517,7 +530,7 @@ export const AppointmentDetailsModal = memo(
                   ) : (
                     <SelectItem
                       value="nao_compareceu"
-                      className="text-amber-600 font-bold focus:text-amber-700"
+                      className="text-amber-600 font-bold focus:text-amber-700 whitespace-nowrap"
                     >
                       Faltou
                     </SelectItem>
@@ -541,15 +554,15 @@ export const AppointmentDetailsModal = memo(
                   status === "nao_compareceu_abonado"
                 }
               >
-                <SelectTrigger className="h-12 bg-muted/20 border-none font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
+                <SelectTrigger className="w-full h-12 bg-muted/20 border-none font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="border-border/50 bg-background rounded-2xl">
-                  <SelectItem value="nenhum">Aguardando...</SelectItem>
+                <SelectContent className="border-border/50 bg-background rounded-2xl !w-max min-w-[var(--radix-select-trigger-width)]">
+                  <SelectItem value="nenhum" className="whitespace-nowrap">Aguardando...</SelectItem>
                   {paymentMethods
                     .filter((pm) => pm.isActive)
                     .map((pm) => (
-                      <SelectItem key={pm.id} value={pm.type}>
+                      <SelectItem key={pm.id} value={pm.type} className="whitespace-nowrap">
                         {pm.name}
                       </SelectItem>
                     ))}

@@ -19,9 +19,11 @@ export interface Appointment {
   color: string;
   hasCharge?: boolean;
   status?: string;
+  observations?: string | null;
   payment_method?: string | null;
   paymentMethod?: string | null;
   date_time?: string;
+  checkInTime?: string | null;
   package_id?: string | null;
   session_number?: number | null;
   package?: {
@@ -63,22 +65,30 @@ export function AppointmentCardContent({
     appt.package.active === false &&
     appt.status?.toUpperCase() !== "REALIZADO";
   const isCompact = height <= 40;
+  
+  const isFalta =
+    appt.status?.toUpperCase() === "CANCELADO" &&
+    (appt.observations?.includes("(Falta Registrada)") ||
+      appt.observations?.includes("Falta automática"));
 
   const serviceName = appt.snapshot_service_name ?? appt.service;
 
   const cardColor = isPackageArchived
     ? "bg-red-100 border-red-300 text-red-900 dark:bg-red-950 dark:border-red-900 dark:text-red-300"
-    : isEmployee
-      ? "bg-purple-100 border-purple-300 text-purple-900 dark:bg-purple-900 dark:border-purple-800 dark:text-purple-300"
-      : appt.color;
+    : isFalta
+      ? "bg-pink-100 border-pink-300 text-pink-900 dark:bg-pink-950 dark:border-pink-800 dark:text-pink-300"
+      : isEmployee
+        ? "bg-purple-100 border-purple-300 text-purple-900 dark:bg-purple-900 dark:border-purple-800 dark:text-purple-300"
+        : appt.color;
 
-  if (isCancelled) {
+  if (isCancelled || isFalta) {
     return (
       <div
         className={cn(
           "h-full w-full rounded-sm border border-dashed flex items-center justify-between px-2 py-1 shadow-sm transition-all overflow-hidden",
           cardColor,
-          "opacity-50 grayscale-[0.8]",
+          isCancelled && !isFalta && "opacity-50 grayscale-[0.8]",
+          isFalta && "opacity-80",
           isOverlay && "shadow-2xl cursor-grabbing ring-1 ring-primary/50",
         )}
       >

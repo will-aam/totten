@@ -63,6 +63,8 @@ export function AgendaFilters({ filters, onFiltersChange }: AgendaFiltersProps) 
   const { data: clientsResponse } = useSWR<any>("clients?limit=1000&active=true", apiClient);
   const clients = Array.isArray(clientsResponse) ? clientsResponse : clientsResponse?.data || [];
 
+  const { data: settings } = useSWR<any>("settings", apiClient);
+
   useEffect(() => {
     async function fetchTeam() {
       if (isOwner) {
@@ -118,6 +120,7 @@ export function AgendaFilters({ filters, onFiltersChange }: AgendaFiltersProps) 
             services={services}
             session={session}
             clients={clients}
+            settings={settings}
           />
         </div>
       </SheetContent>
@@ -125,7 +128,7 @@ export function AgendaFilters({ filters, onFiltersChange }: AgendaFiltersProps) 
   );
 }
 
-export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, services, session, clients }: any) {
+export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, services, session, clients, settings }: any) {
   const [clientOpen, setClientOpen] = useState(false);
   const hasActiveFilters =
     !!filters.professionalId ||
@@ -180,7 +183,11 @@ export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, serv
             <SelectItem value="PENDENTE" className="font-medium">Pendente</SelectItem>
             <SelectItem value="CONFIRMADO" className="font-medium">Confirmado</SelectItem>
             <SelectItem value="REALIZADO" className="font-medium">Realizado</SelectItem>
+            {settings?.autoCompleteOnCheckin === false && (
+              <SelectItem value="CHECKIN" className="font-medium">Check-in Realizado</SelectItem>
+            )}
             <SelectItem value="CANCELADO" className="font-medium">Cancelado</SelectItem>
+            <SelectItem value="FALTA" className="font-medium">Falta</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -209,10 +216,10 @@ export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, serv
         </div>
       )}
 
-      {/* 3. Paciente */}
+      {/* 3. Cliente */}
       <div className="space-y-1">
         <Label className="text-sm font-medium text-muted-foreground">
-          Paciente
+          Cliente
         </Label>
         <Popover open={clientOpen} onOpenChange={setClientOpen}>
           <PopoverTrigger asChild>
@@ -234,9 +241,9 @@ export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, serv
           </PopoverTrigger>
           <PopoverContent className="w-[300px] p-0 rounded-xl border border-border/50 shadow-lg z-[100]" align="start">
             <Command>
-              <CommandInput placeholder="Pesquisar paciente..." className="h-9" />
+              <CommandInput placeholder="Pesquisar Cliente..." className="h-9" />
               <CommandList>
-                <CommandEmpty>Nenhum paciente encontrado.</CommandEmpty>
+                <CommandEmpty>Nenhum Cliente encontrado.</CommandEmpty>
                 <CommandGroup>
                   <CommandItem
                     value="Todos"

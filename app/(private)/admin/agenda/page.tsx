@@ -58,6 +58,7 @@ interface AgendaSettings {
   allowOverLimitAppointments?: boolean;
   defaultScheduleView?: string;
   autoNoShowMode?: "off" | "auto_deduct" | "auto_no_deduct";
+  autoCompleteOnCheckin?: boolean;
 }
 
 export default function AgendaPage() {
@@ -202,7 +203,25 @@ export default function AgendaPage() {
       list = list.filter((a) => a.serviceId === filters.serviceId);
     }
     if (filters.status) {
-      list = list.filter((a) => a.status === filters.status);
+      if (filters.status === "FALTA") {
+        list = list.filter((a) => 
+          a.status === "CANCELADO" && 
+          (a.observations?.includes("(Falta Registrada)") || a.observations?.includes("Falta automática"))
+        );
+      } else if (filters.status === "CANCELADO") {
+        list = list.filter((a) => 
+          a.status === "CANCELADO" && 
+          !(a.observations?.includes("(Falta Registrada)") || a.observations?.includes("Falta automática"))
+        );
+      } else if (filters.status === "CHECKIN") {
+        list = list.filter((a) => 
+          a.checkInTime != null && 
+          a.status !== "REALIZADO" && 
+          a.status !== "CANCELADO"
+        );
+      } else {
+        list = list.filter((a) => a.status === filters.status);
+      }
     }
     if (filters.type === "SINGLE") {
       list = list.filter((a) => !a.isRecurring);
@@ -262,9 +281,9 @@ export default function AgendaPage() {
         body: JSON.stringify(newSettings),
       });
       await mutateSettings();
-      toast.success("Horários de funcionamento atualizados!");
+      toast.success("Configurações atualizadas com sucesso!");
     } catch (error) {
-      toast.error("Não foi possível salvar os horários.");
+      toast.error("Não foi possível salvar as configurações.");
       throw error;
     }
   };
@@ -513,6 +532,7 @@ export default function AgendaPage() {
           autoNoShowMode: settings?.autoNoShowMode,
           openingTime: settings?.openingTime,
           closingTime: settings?.closingTime,
+          autoCompleteOnCheckin: settings?.autoCompleteOnCheckin,
         }}
         onSave={handleSaveSettings}
       />

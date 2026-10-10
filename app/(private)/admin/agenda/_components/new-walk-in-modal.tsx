@@ -80,7 +80,7 @@ export function NewWalkInModal({ open, onOpenChange, onCreated }: NewWalkInModal
 
       if (!result.success) throw new Error(result.error);
 
-      toast.success("Encaixe realizado! Paciente na Sala de Espera.");
+      toast.success("Encaixe realizado! Cliente na Sala de Espera.");
       onOpenChange(false);
       onCreated?.();
     } catch (err: any) {
@@ -95,11 +95,11 @@ export function NewWalkInModal({ open, onOpenChange, onCreated }: NewWalkInModal
       <div className="grid gap-5 py-4">
         <div className="space-y-1.5">
           <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-            Paciente Presente
+            Cliente Presente
           </Label>
           <Select value={selectedClientId} onValueChange={setSelectedClientId}>
             <SelectTrigger className="bg-muted/40 border-none h-12 transition-all">
-              <SelectValue placeholder={loadingClients ? "Carregando..." : "Selecione a paciente..."} />
+              <SelectValue placeholder={loadingClients ? "Carregando..." : "Selecione a Cliente..."} />
             </SelectTrigger>
             <SelectContent className="border border-border/50 bg-background shadow-xl rounded-2xl">
               {clients.map((c: any) => (

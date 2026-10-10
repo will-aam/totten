@@ -34,7 +34,7 @@ export default function WaitingRoomPage() {
     const toastId = toast.loading("Finalizando...");
     const res = await completeCheckIn(id);
     if (res.success) {
-      toast.success("Paciente atendido!", { id: toastId });
+      toast.success("Cliente atendido!", { id: toastId });
       fetchRoom();
     } else {
       toast.error(res.error || "Erro ao finalizar.", { id: toastId });
@@ -65,7 +65,7 @@ export default function WaitingRoomPage() {
             </div>
             <p className="text-xl font-bold text-foreground">Sala Vazia</p>
             <p className="text-sm font-medium text-muted-foreground mt-2 max-w-sm">
-              Não há nenhum paciente aguardando atendimento no momento.
+              Não há nenhum Cliente aguardando atendimento no momento.
             </p>
           </div>
         ) : (

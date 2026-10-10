@@ -39,6 +39,8 @@ export function AgendaSidebar({
   const { data: clientsResponse } = useSWR<any>("clients?limit=1000&active=true", apiClient);
   const clients = Array.isArray(clientsResponse) ? clientsResponse : clientsResponse?.data || [];
 
+  const { data: settings } = useSWR<any>("settings", apiClient);
+
   useEffect(() => {
     async function fetchTeam() {
       if (isOwner) {
@@ -138,6 +140,7 @@ export function AgendaSidebar({
           services={services}
           session={session}
           clients={clients}
+          settings={settings}
         />
       </div>
     </aside>
