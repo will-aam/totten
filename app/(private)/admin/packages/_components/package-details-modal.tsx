@@ -2,7 +2,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import {
   Sheet,
   SheetContent,
@@ -34,9 +33,7 @@ import {
   Calendar as CalendarIcon,
   CheckCircle,
   History,
-  RotateCcw,
   LoaderDots,
-  CalendarPlus,
   Archive,
   AlertTriangle,
   RefreshCwAlt,
@@ -69,7 +66,6 @@ export function PackageDetailsModal({
   onOpenChange,
   packageData,
 }: PackageDetailsModalProps) {
-  const router = useRouter();
   const { toast } = useToast();
   const { mutate } = useSWRConfig();
   const [history, setHistory] = useState<any[]>([]);
@@ -111,16 +107,6 @@ export function PackageDetailsModal({
   const progress = Math.round(
     (packageData.usedSessions / packageData.totalSessions) * 100,
   );
-
-  const handleSchedule = () => {
-    onOpenChange(false);
-    router.push("/admin/agenda");
-  };
-
-  const handleRenew = () => {
-    onOpenChange(false);
-    router.push("/admin/clients");
-  };
 
   const handleArchive = async () => {
     setIsArchiving(true);
@@ -220,6 +206,15 @@ export function PackageDetailsModal({
         title: "Data Prorrogada",
         description: `O pacote foi estendido até ${format(newExpirationDate, "dd/MM/yyyy")}.`,
       });
+      mutate(
+        (key: any) =>
+          typeof key === "string" &&
+          (key.includes("admin/agenda") ||
+            key.includes("admin/clients") ||
+            key.includes("admin/packages")),
+        undefined,
+        { revalidate: true }
+      );
       setIsProrrogarDialogOpen(false);
       onOpenChange(false);
     } else {
@@ -266,67 +261,6 @@ export function PackageDetailsModal({
                     ? "Vencido"
                     : `Válido até ${new Date(packageData.expiresAt).toLocaleDateString("pt-BR")}`}
                 </span>
-                {packageData.active && (
-                  <AlertDialog
-                    open={isProrrogarDialogOpen}
-                    onOpenChange={setIsProrrogarDialogOpen}
-                  >
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-6 text-[9px] px-2 font-bold uppercase tracking-wider border-primary/20 text-primary hover:bg-primary/10"
-                      >
-                        Prorrogar
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent className="rounded-4xl">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Prorrogar Validade</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Selecione a nova data limite para o uso deste pacote. Essa ação ficará registrada no histórico.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <div className="py-4">
-                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 block">
-                          Nova Data Limite
-                        </label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full justify-start text-left font-medium bg-card border-border/50 h-12 rounded-2xl shadow-sm hover:bg-muted/50 transition-colors",
-                                !newExpirationDate && "text-muted-foreground"
-                              )}
-                            >
-                              <CalendarDetail className="mr-2 h-4 w-4 text-primary" />
-                              {newExpirationDate ? format(newExpirationDate, "dd/MM/yy") : "Selecione a data"}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent
-                            className="w-auto p-0 rounded-3xl border-none shadow-2xl"
-                            align="start"
-                          >
-                            <CalendarUI
-                              mode="single"
-                              selected={newExpirationDate}
-                              onSelect={setNewExpirationDate}
-                              initialFocus
-                              locale={ptBR}
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleProrrogar}>
-                          Salvar Alteração
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                )}
               </div>
             )}
           </div>
@@ -563,30 +497,92 @@ export function PackageDetailsModal({
           </AlertDialogContent>
         </AlertDialog>
 
-        <div className="p-8 bg-background border-t border-border/40 space-y-4">
-          <div
-            className={cn(
-              "grid gap-4",
-              packageData.active ? "grid-cols-2" : "grid-cols-1",
-            )}
-          >
+        {/* DIALOG DE PRORROGAÇÃO */}
+        <AlertDialog
+          open={isProrrogarDialogOpen}
+          onOpenChange={setIsProrrogarDialogOpen}
+        >
+          <AlertDialogContent className="rounded-4xl">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Prorrogar Validade</AlertDialogTitle>
+              <AlertDialogDescription>
+                Selecione a nova data limite para o uso deste pacote. Se houver sessões expiradas, elas serão restauradas automaticamente.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="py-4">
+              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 block">
+                Nova Data Limite
+              </label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-medium bg-card border-border/50 h-12 rounded-2xl shadow-sm hover:bg-muted/50 transition-colors",
+                      !newExpirationDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarDetail className="mr-2 h-4 w-4 text-primary" />
+                    {newExpirationDate ? format(newExpirationDate, "dd/MM/yyyy") : "Selecione a data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-auto p-0 rounded-3xl border-none shadow-2xl"
+                  align="start"
+                >
+                  <CalendarUI
+                    mode="single"
+                    selected={newExpirationDate}
+                    onSelect={setNewExpirationDate}
+                    initialFocus
+                    locale={ptBR}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleProrrogar}>
+                Salvar Alteração
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <div className="p-6 bg-background border-t border-border/40">
+          <div className="flex items-center gap-3">
             <Button
-              variant={packageData.active ? "outline" : "default"}
-              className={cn("rounded-full h-14 font-black text-xs uppercase tracking-tighter transition-all",
-                packageData.active && "border-2 active:scale-95",
-              )}
-              onClick={handleRenew}
+              className="flex-1 rounded-full h-14 font-black text-xs uppercase tracking-tighter transition-all shadow-sm active:scale-[0.98]"
+              onClick={() => {
+                if (packageData.expiresAt) {
+                  setNewExpirationDate(new Date(packageData.expiresAt));
+                }
+                setIsProrrogarDialogOpen(true);
+              }}
             >
-              <RotateCcw className="mr-2 h-4 w-4" /> Criar Novo Pacote
+              Prorrogar
             </Button>
-            {packageData.active && (
-              <Button
-                className="h-14 font-black text-xs uppercase tracking-tighter"
-                onClick={handleSchedule}
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Informações sobre prorrogação"
+                  className="h-11 w-11 shrink-0 rounded-full border border-border/60 hover:border-foreground/30 hover:bg-muted/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors outline-none cursor-help"
+                >
+                  <HelpCircle className="h-4 w-4" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                side="top"
+                align="end"
+                className="w-[260px] text-xs leading-relaxed bg-foreground text-background border-none rounded-xl p-3 shadow-xl"
               >
-                <CalendarPlus className="mr-2 h-4 w-4" /> Agendar Sessão
-              </Button>
-            )}
+                <p>
+                  Permite estender ou redefinir a data de validade deste pacote. Caso o pacote possua sessões que já expiraram, elas serão reativadas automaticamente para uso.
+                </p>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
       </SheetContent>
