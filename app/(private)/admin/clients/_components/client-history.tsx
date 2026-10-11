@@ -102,7 +102,7 @@ export function ClientHistory({ clientId }: { clientId: string }) {
       case "CLIENT_CREATED":
         return (
           <p className="text-xs text-muted-foreground mt-1">
-            Ficha de cliente criada com sucesso na clínica.
+            Ficha de cliente criada com sucesso na empresa.
           </p>
         );
 

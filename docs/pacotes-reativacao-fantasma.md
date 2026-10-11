@@ -14,7 +14,7 @@ updatePackage({ active: aindaTemSaldo });
 ```
 
 **Consequências Práticas:**
-1. **Ressurreição de pacotes arquivados:** Se a clínica arquivava um pacote manualmente (por exemplo, cliente desistiu, pacote foi cancelado por inadimplência ou expirou) o `active` ia para `false`. No entanto, se houvesse sessões antigas ou futuras sendo manipuladas, qualquer ação (dar baixa, registrar falta, desfazer falta) reativava o pacote, ignorando que ele havia sido fechado manualmente pela gestão.
+1. **Ressurreição de pacotes arquivados:** Se a empresa arquivava um pacote manualmente (por exemplo, cliente desistiu, pacote foi cancelado por inadimplência ou expirou) o `active` ia para `false`. No entanto, se houvesse sessões antigas ou futuras sendo manipuladas, qualquer ação (dar baixa, registrar falta, desfazer falta) reativava o pacote, ignorando que ele havia sido fechado manualmente pela gestão.
 2. **`undoNoShow` Incondicional:** Ao reverter uma falta, o sistema forçava o pacote para `active: true` incondicionalmente, estragando o encerramento manual.
 3. **Restos de Agenda (Orphans):** No método `archivePackageAction`, havia um comentário dizendo que excluiria os agendamentos "pendentes", mas deixaria passar os status de "confirmado" (felizmente, no código isso já estava como `not: REALIZADO`, mas a confusão conceitual era um risco).
 

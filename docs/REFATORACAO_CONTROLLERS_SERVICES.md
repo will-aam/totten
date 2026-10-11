@@ -40,9 +40,9 @@ A lógica foi dividida em três camadas distintas:
 ## 3. Benefícios Arquiteturais (O que ganhamos)
 
 - **Reusabilidade Total:** Agora podemos reaproveitar regras complexas (como o Auto Check-in do Totem) em qualquer lugar do sistema chamando o Service, sem precisar disparar requisições HTTP locais.
-- **Segurança e Isolamento de Tenant:** O `organizationId` é injetado pelos _Controllers_ (Actions/API) diretamente nos Services, reduzindo a chance de vazar dados entre clínicas.
+- **Segurança e Isolamento de Tenant:** O `organizationId` é injetado pelos _Controllers_ (Actions/API) diretamente nos Services, reduzindo a chance de vazar dados entre empresas.
 - **Otimização de Frontend:** Ao trocar o `apiClient("route", { method: "PUT" })` por Server Actions nativas, o frontend ganha tipagem de ponta a ponta (Type Safety), elimina a necessidade de gerenciar estados complexos de loading de rede e aproveita a revalidação nativa do Next.js.
-- **Isolamento Público vs Privado:** Rotas que não exigem autenticação do cliente (como a busca do nome da clínica pelo Totem) saíram da pasta segura de `settings` e ganharam um domínio próprio (`/api/public/*`).
+- **Isolamento Público vs Privado:** Rotas que não exigem autenticação do cliente (como a busca do nome da empresa pelo Totem) saíram da pasta segura de `settings` e ganharam um domínio próprio (`/api/public/*`).
 
 ---
 
@@ -71,7 +71,7 @@ Abaixo está o registro de onde as regras moram agora:
 ### Domínio: Configurações Gerais e Mensagens (Settings)
 
 - **Services Criados:**
-- `lib/server/services/settings/settings.service.ts` (Upsert de dados da clínica).
+- `lib/server/services/settings/settings.service.ts` (Upsert de dados da empresa).
 - `lib/server/services/settings/messages.service.ts` (Upsert em massa via `prisma.$transaction` dos templates de mensagens).
 
 - **Controllers Refinados:**
@@ -102,5 +102,5 @@ Para acompanhar a nova arquitetura do backend, os componentes React sofreram as 
 
 Durante a refatoração, a rota `app/api/settings/hours/route.ts` foi deliberadamente ignorada e deixada para o final.
 
-- **Motivo:** As configurações de horários de funcionamento pertencem arquiteturalmente ao domínio de **Agendamento** e **Autoatendimento** (Link da Bio/Agenda Pública), e não nas configurações gerais administrativas da clínica.
+- **Motivo:** As configurações de horários de funcionamento pertencem arquiteturalmente ao domínio de **Agendamento** e **Autoatendimento** (Link da Bio/Agenda Pública), e não nas configurações gerais administrativas da empresa.
 - **Ação Futura:** Quando a funcionalidade de Autoatendimento for refatorada, esta rota deverá ser movida para um Service de Agenda Pública (`lib/server/services/scheduling/`) e seu respectivo endpoint HTTP/Server Action atualizado.

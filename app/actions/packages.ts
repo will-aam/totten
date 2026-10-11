@@ -226,6 +226,7 @@ export async function createManualPackageCheckIn(
   packageId: string,
   dateTimeString?: string,
   professionalId?: string,
+  markAsCompleted: boolean = true,
 ) {
   try {
     const admin = await requireAuth();
@@ -260,86 +261,130 @@ export async function createManualPackageCheckIn(
     const checkInDate = dateTimeString ? new Date(dateTimeString) : new Date();
 
     await prisma.$transaction(async (tx) => {
-      const appt = await tx.appointment.create({
-        data: {
-          date_time: checkInDate,
-          status: AppointmentStatus.REALIZADO,
-          client_id: pkg.client_id,
-          service_id: pkg.service_id,
-          package_id: pkg.id,
-          professional_id: professionalId || null,
+      // 1. Etapa 4: Detecção de agendamento existente pendente/confirmado do mesmo pacote no mesmo dia
+      const dayStart = new Date(checkInDate);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(checkInDate);
+      dayEnd.setHours(23, 59, 59, 999);
+
+      const existingAppointment = await tx.appointment.findFirst({
+        where: {
           organization_id: admin.organizationId,
-          observations: "Baixa manual realizada via Gestão de Pacotes.",
-          session_number: pkg.used_sessions + 1,
-          snapshot_service_name: pkg.snapshot_service_name ?? pkg.service.name,
-          snapshot_service_price:
-            pkg.snapshot_service_price ?? pkg.service.price,
-          snapshot_service_duration:
-            pkg.snapshot_service_duration ?? pkg.service.duration,
+          package_id: pkg.id,
+          date_time: {
+            gte: dayStart,
+            lte: dayEnd,
+          },
+          status: {
+            in: [AppointmentStatus.PENDENTE, AppointmentStatus.CONFIRMADO, AppointmentStatus.SOLICITADO],
+          },
+        },
+        orderBy: {
+          date_time: "asc",
         },
       });
 
-      //  NOVO: mesmo motor de estoque/financeiro do totem, aplicado no fluxo manual
+      let appt: any;
+      const targetStatus = markAsCompleted ? AppointmentStatus.REALIZADO : AppointmentStatus.CONFIRMADO;
+
+      if (existingAppointment) {
+        appt = await tx.appointment.update({
+          where: { id: existingAppointment.id },
+          data: {
+            date_time: checkInDate,
+            status: targetStatus,
+            professional_id: professionalId || existingAppointment.professional_id || null,
+            observations: existingAppointment.observations
+              ? `${existingAppointment.observations} | Baixa manual via Gestão de Pacotes.`
+              : "Baixa manual realizada via Gestão de Pacotes.",
+            session_number: pkg.used_sessions + 1,
+          },
+        });
+      } else {
+        appt = await tx.appointment.create({
+          data: {
+            date_time: checkInDate,
+            status: targetStatus,
+            client_id: pkg.client_id,
+            service_id: pkg.service_id,
+            package_id: pkg.id,
+            professional_id: professionalId || null,
+            organization_id: admin.organizationId,
+            observations: "Baixa manual realizada via Gestão de Pacotes.",
+            session_number: pkg.used_sessions + 1,
+            snapshot_service_name: pkg.snapshot_service_name ?? pkg.service.name,
+            snapshot_service_price:
+              pkg.snapshot_service_price ?? pkg.service.price,
+            snapshot_service_duration:
+              pkg.snapshot_service_duration ?? pkg.service.duration,
+          },
+        });
+      }
+
+      // 2. Processamento de estoque e financeiro (Apenas se for marcar como REALIZADO)
       let stockProcessed = false;
       const service = pkg.service;
 
-      if (service.track_stock && service.stock_items.length > 0) {
-        let totalCost = 0;
-        const detailsArray: string[] = [];
+      if (markAsCompleted) {
+        if (service.track_stock && service.stock_items.length > 0) {
+          let totalCost = 0;
+          const detailsArray: string[] = [];
 
-        for (const item of service.stock_items) {
-          const stockData = item.stock_item;
-          const usedQty = item.quantity_used;
+          for (const item of service.stock_items) {
+            const stockData = item.stock_item;
+            const usedQty = item.quantity_used;
 
-          await tx.stockItem.update({
-            where: { id: stockData.id },
-            data: { quantity: { decrement: usedQty } },
-          });
-          stockProcessed = true;
+            await tx.stockItem.update({
+              where: { id: stockData.id },
+              data: { quantity: { decrement: usedQty } },
+            });
+            stockProcessed = true;
 
-          if (!stockData.was_expensed) {
-            const itemCost = Number(usedQty) * Number(stockData.unit_cost);
-            if (itemCost > 0) {
-              totalCost += itemCost;
-              detailsArray.push(
-                `${usedQty}x ${stockData.name} (R$ ${itemCost.toFixed(2).replace(".", ",")})`,
-              );
+            if (!stockData.was_expensed) {
+              const itemCost = Number(usedQty) * Number(stockData.unit_cost);
+              if (itemCost > 0) {
+                totalCost += itemCost;
+                detailsArray.push(
+                  `${usedQty}x ${stockData.name} (R$ ${itemCost.toFixed(2).replace(".", ",")})`,
+                );
+              }
             }
           }
-        }
 
-        if (totalCost > 0) {
+          if (totalCost > 0) {
+            await tx.transaction.create({
+              data: {
+                type: "DESPESA",
+                description: `Custo Insumos (Baixa Manual) | Detalhes: ${detailsArray.join(" | ")}`,
+                amount: totalCost,
+                date: checkInDate,
+                status: "PAGO",
+                organization_id: admin.organizationId,
+                appointment_id: appt.id,
+              },
+            });
+          }
+        } else if (
+          !service.track_stock &&
+          service.material_cost &&
+          Number(service.material_cost) > 0
+        ) {
           await tx.transaction.create({
             data: {
               type: "DESPESA",
-              description: `Custo Insumos (Baixa Manual) | Detalhes: ${detailsArray.join(" | ")}`,
-              amount: totalCost,
-              date: new Date(),
+              description: `Custo Fixo de Material (Baixa Manual): ${service.name}`,
+              amount: service.material_cost,
+              date: checkInDate,
               status: "PAGO",
               organization_id: admin.organizationId,
               appointment_id: appt.id,
             },
           });
+          stockProcessed = true;
         }
-      } else if (
-        !service.track_stock &&
-        service.material_cost &&
-        Number(service.material_cost) > 0
-      ) {
-        await tx.transaction.create({
-          data: {
-            type: "DESPESA",
-            description: `Custo Fixo de Material (Baixa Manual): ${service.name}`,
-            amount: service.material_cost,
-            date: new Date(),
-            status: "PAGO",
-            organization_id: admin.organizationId,
-            appointment_id: appt.id,
-          },
-        });
-        stockProcessed = true;
       }
 
+      // 3. Registro do Check-in
       await tx.checkIn.create({
         data: {
           date_time: checkInDate,
@@ -348,46 +393,51 @@ export async function createManualPackageCheckIn(
           package_id: pkg.id,
           organization_id: admin.organizationId,
           admin_id: admin.id,
-          auto_processed: stockProcessed, //  reflete se de fato mexeu em estoque/financeiro
+          auto_processed: markAsCompleted ? stockProcessed : false,
         },
       });
 
+      // 4. Fidelidade
       const loyaltySettings = await tx.loyaltySettings.findUnique({
-        where: { organization_id: admin.organizationId }
+        where: { organization_id: admin.organizationId },
       });
 
       if (loyaltySettings?.is_active && loyaltySettings?.check_in_active) {
         const clientCurrent = await tx.client.findUnique({
           where: { id: pkg.client_id },
-          select: { loyalty_points: true }
+          select: { loyalty_points: true },
         });
         const newPoints = Math.min(
           (clientCurrent?.loyalty_points || 0) + loyaltySettings.check_in_points,
-          loyaltySettings.max_points
+          loyaltySettings.max_points,
         );
         await tx.client.update({
           where: { id: pkg.client_id },
-          data: { loyalty_points: newPoints }
+          data: { loyalty_points: newPoints },
         });
       }
 
-      const newUsedSessions = pkg.used_sessions + 1;
-      const willRemainActive = newUsedSessions < pkg.total_sessions;
+      // 5. Desconto de pacote (SOMENTE SE markAsCompleted for TRUE)
+      // Se for apenas check-in / em espera, o pacote NÃO é descontado agora para evitar duplo desconto!
+      if (markAsCompleted) {
+        const newUsedSessions = pkg.used_sessions + 1;
+        const willRemainActive = newUsedSessions < pkg.total_sessions;
 
-      await tx.package.update({
-        where: { id: pkg.id },
-        data: { used_sessions: { increment: 1 }, active: willRemainActive },
-      });
-
-      // Se esse check-in manual encerrou o pacote, limpamos as vagas futuras
-      if (!willRemainActive) {
-        await tx.appointment.deleteMany({
-          where: {
-            package_id: pkg.id,
-            organization_id: admin.organizationId,
-            status: { not: "REALIZADO" },
-          },
+        await tx.package.update({
+          where: { id: pkg.id },
+          data: { used_sessions: { increment: 1 }, active: willRemainActive },
         });
+
+        // Se encerrou o pacote, limpa agendamentos futuros não realizados
+        if (!willRemainActive) {
+          await tx.appointment.deleteMany({
+            where: {
+              package_id: pkg.id,
+              organization_id: admin.organizationId,
+              status: { not: "REALIZADO" },
+            },
+          });
+        }
       }
     });
 
@@ -435,22 +485,30 @@ export async function deleteCheckIn(checkInId: string) {
     await prisma.$transaction(async (tx) => {
       const adminName = admin.name || "Administrador";
 
-      // A. Auditoria
-      if (checkIn.client_id) {
-        const dateStr = new Intl.DateTimeFormat("pt-BR", {
-          dateStyle: "short",
-          timeStyle: "short",
-        }).format(checkIn.date_time);
+      const wasRealizado = checkIn.appointment?.status === "REALIZADO";
+      const serviceName =
+        checkIn.appointment?.snapshot_service_name ||
+        checkIn.package?.snapshot_service_name ||
+        checkIn.package?.service?.name ||
+        "Serviço";
 
-        const serviceName =
-          checkIn.appointment?.snapshot_service_name ||
-          checkIn.package?.snapshot_service_name ||
-          checkIn.package?.service?.name ||
-          "Serviço";
+      const dateStr = new Intl.DateTimeFormat("pt-BR", {
+        dateStyle: "short",
+        timeStyle: "short",
+      }).format(checkIn.date_time);
+
+      // A. Auditoria Detalhada (Histórico de Ações e Jornada do Cliente)
+      if (checkIn.client_id) {
+        const pacoteText = checkIn.package_id && wasRealizado
+          ? " (1 sessão estornada ao pacote)"
+          : "";
+        const agendaText = checkIn.appointment_id
+          ? " e o agendamento correspondente foi removido da agenda"
+          : "";
 
         await tx.clientNote.create({
           data: {
-            text: `Check-in de ${serviceName} do dia ${dateStr} foi removido por ${adminName}.`,
+            text: `Ação: Check-in de ${serviceName} do dia ${dateStr} foi removido por ${adminName}${pacoteText}${agendaText}.`,
             client_id: checkIn.client_id,
             organization_id: admin.organizationId,
             date: new Date(),
@@ -458,23 +516,19 @@ export async function deleteCheckIn(checkInId: string) {
         });
       }
 
-      // B. Estorno do pacote
-      if (checkIn.package_id) {
+      // B. Estorno do pacote (SOMENTE SE a sessão foi realmente consumida / REALIZADO)
+      // Se era apenas check-in / em espera, o pacote NÃO foi descontado, então não pode subtrair!
+      if (checkIn.package_id && wasRealizado) {
         await tx.package.update({
           where: { id: checkIn.package_id },
-          data: { used_sessions: { decrement: 1 }, active: true },
+          data: {
+            used_sessions: { decrement: 1 },
+            active: true,
+          },
         });
       }
 
-      // C. Agendamento volta ao estado anterior
-      if (checkIn.appointment_id) {
-        await tx.appointment.update({
-          where: { id: checkIn.appointment_id },
-          data: { status: "CONFIRMADO", has_charge: false },
-        });
-      }
-
-      // D. Desfaz estoque e financeiro SÓ se a automação do totem gerou isso
+      // C. Desfaz estoque e financeiro (SÓ se houve movimentação automática)
       if (checkIn.auto_processed && checkIn.appointment?.service) {
         const service = checkIn.appointment.service;
 
@@ -487,41 +541,56 @@ export async function deleteCheckIn(checkInId: string) {
           }
         }
 
-        // Remove a(s) despesa(s) automáticas geradas na criação
-        await tx.transaction.deleteMany({
-          where: { appointment_id: checkIn.appointment_id, type: "DESPESA" },
-        });
+        // Remove a(s) despesa(s) automáticas de insumos/materiais
+        if (checkIn.appointment_id) {
+          await tx.transaction.deleteMany({
+            where: { appointment_id: checkIn.appointment_id, type: "DESPESA" },
+          });
+        }
       }
 
-      // Reverter pontos de fidelidade
+      // D. Reverter pontos de fidelidade concedidos no check-in
       const loyaltySettings = await tx.loyaltySettings.findUnique({
-        where: { organization_id: admin.organizationId }
+        where: { organization_id: admin.organizationId },
       });
 
       if (loyaltySettings?.is_active && loyaltySettings?.check_in_active && checkIn.client_id) {
         const clientCurrent = await tx.client.findUnique({
           where: { id: checkIn.client_id },
-          select: { loyalty_points: true }
+          select: { loyalty_points: true },
         });
         const newPoints = Math.max(
           (clientCurrent?.loyalty_points || 0) - loyaltySettings.check_in_points,
-          0
+          0,
         );
         await tx.client.update({
           where: { id: checkIn.client_id },
-          data: { loyalty_points: newPoints }
+          data: { loyalty_points: newPoints },
         });
       }
 
-      // E. Soft delete do check-in
+      // E. Soft delete do check-in (desvincula appointment_id para evitar cascade hard delete do Postgres)
       await tx.checkIn.update({
         where: { id: checkInId },
         data: {
           deleted_at: new Date(),
           deleted_by_admin_id: admin.id,
           deleted_by_name: adminName,
+          appointment_id: null,
         },
       });
+
+      // F. Remoção completa do Agendamento da Agenda (Opção 2 - O cartão não aparece mais na agenda)
+      if (checkIn.appointment_id) {
+        // Remove quaisquer transações residuais vinculadas ao appointment antes de deletá-lo
+        await tx.transaction.deleteMany({
+          where: { appointment_id: checkIn.appointment_id },
+        });
+
+        await tx.appointment.delete({
+          where: { id: checkIn.appointment_id },
+        });
+      }
     });
 
     revalidatePath("/admin/history");

@@ -41,7 +41,7 @@ export default function Features() {
     // {
     //   icon: ClipboardList,
     //   title: "Ficha de anamnese",
-    //   desc: "Prontuários personalizados para clínicas.",
+    //   desc: "Prontuários personalizados para empresas.",
     // },
     // {
     //   icon: UserCog,

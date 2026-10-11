@@ -176,7 +176,7 @@ export function AgendaHeader({
                 <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-slate-400 shadow-sm dark:bg-slate-500 opacity-80"></div>
                 <div>
                   <h4 className="font-semibold text-sm text-foreground">Cinza (Cancelado)</h4>
-                  <p className="text-xs text-muted-foreground mt-1">O agendamento foi cancelado pelo Cliente ou pela Clínica.</p>
+                  <p className="text-xs text-muted-foreground mt-1">O agendamento foi cancelado pelo Cliente ou pelo estabelecimento.</p>
                 </div>
               </div>
 

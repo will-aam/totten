@@ -11,7 +11,7 @@
 
 ### 🖥️ Frontend (Admin - Área Privada)
 * **Nova Sessão de Autoatendimento (`app/(private)/admin/auto/`)**:
-  * Novos arquivos de página e visualização criados para gerenciar as "Solicitações" e fluxos automatizados da clínica.
+  * Novos arquivos de página e visualização criados para gerenciar as "Solicitações" e fluxos automatizados da empresa.
 * **Agenda (`app/(private)/admin/agenda/`)**:
   * `page.tsx`: Corrigidas tipagens da função `handleSaveSettings` para usar `Partial<AgendaSettings>` e integrar perfeitamente com o modal.
   * `_components/schedule-settings-modal.tsx`: Refatorado para o formato Sidebar/Sheet e atualizado os campos exportados (`autoConfirmAppointments`, `allowOverLimitAppointments`, `defaultScheduleView`).

@@ -26,7 +26,7 @@ export default function Hero() {
       <div className="mx-auto max-w-7xl px-4 pb-20 pt-16 sm:px-6 sm:pt-24 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-12 lg:px-8 lg:pb-32">
         <div className="animate-fade-up">
           <h1 className="mt-4 text-balance bg-linear-to-b from-white via-white to-zinc-500 bg-clip-text text-4xl font-semibold tracking-tight text-transparent sm:text-5xl md:text-6xl lg:text-[64px] lg:leading-[1.05] pb-1">
-            Gestão inteligente para clínicas, salões e negócios de agendamentos.
+            Gestão inteligente para empresas, salões e negócios de agendamentos.
           </h1>
           <p className="mt-6 max-w-xl text-pretty text-base leading-relaxed text-zinc-soft sm:text-lg">
             O Totten reúne agendamento, check-in, financeiro, estoque, pacotes,

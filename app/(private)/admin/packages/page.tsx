@@ -35,7 +35,7 @@ import {
   createManualPackageCheckIn,
 } from "@/app/actions/packages";
 import { getTeam } from "@/app/actions/team";
-import useSWR from "swr";
+import useSWR, { useSWRConfig } from "swr";
 import {
   Select,
   SelectContent,
@@ -47,6 +47,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getSelfServiceSettingsAction, updateSelfServiceSettingsAction } from "@/app/actions/settings";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/use-debounce";
+import { apiClient } from "@/lib/api-client";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Dialog,
@@ -285,12 +286,15 @@ function PackagesPageContent() {
   const [pkgToCheckIn, setPkgToCheckIn] = useState<any>(null);
   const [isCheckingIn, setIsCheckingIn] = useState(false);
 
-  //  NOVO: Estados de Data e Hora para o Check-in
+  //  Estados de Data, Hora, Profissional e Tipo de Ação para o Check-in
   const [checkInDate, setCheckInDate] = useState("");
   const [checkInTime, setCheckInTime] = useState("");
   const [checkInProfessionalId, setCheckInProfessionalId] = useState<string | undefined>(undefined);
+  const [checkInActionType, setCheckInActionType] = useState<"complete" | "waiting">("complete");
 
+  const { mutate } = useSWRConfig();
   const { data: teamMembers, isLoading: loadingTeam } = useSWR("team", getTeam);
+  const { data: orgSettings } = useSWR<any>("settings", apiClient);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [validityMode, setValidityMode] = useState("ACQUISITION");
@@ -380,7 +384,7 @@ function PackagesPageContent() {
     }
     setPkgToCheckIn(pkg);
 
-    //  NOVO: Injeta o dia e a hora atuais automaticamente
+    // Injeta o dia e a hora atuais automaticamente no horário local do navegador
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, "0");
@@ -390,6 +394,10 @@ function PackagesPageContent() {
     const hours = String(now.getHours()).padStart(2, "0");
     const minutes = String(now.getMinutes()).padStart(2, "0");
     setCheckInTime(`${hours}:${minutes}`);
+
+    // Limpa a seleção do profissional (campo obrigatório)
+    setCheckInProfessionalId(undefined);
+    setCheckInActionType("complete");
 
     setIsCheckInDialogOpen(true);
   };
@@ -403,27 +411,47 @@ function PackagesPageContent() {
     if (parseInt(hours) > 23 || parseInt(minutes) > 59) {
       return toast.error("Horário inválido.");
     }
+    if (!checkInProfessionalId || checkInProfessionalId === "none") {
+      return toast.error("Por favor, selecione o profissional responsável.");
+    }
 
     setIsCheckingIn(true);
     try {
       toast.loading("Registrando...", { id: "manual" });
 
-      //  NOVO: Monta a data ISO para mandar pro backend
-      const dateTimeString = new Date(
-        `${checkInDate}T${checkInTime}:00`,
-      ).toISOString();
+      // Garante fuso horário local correto
+      const localDate = new Date(
+        Number(checkInDate.split("-")[0]),
+        Number(checkInDate.split("-")[1]) - 1,
+        Number(checkInDate.split("-")[2]),
+        Number(hours),
+        Number(minutes),
+        0
+      );
+      const dateTimeString = localDate.toISOString();
 
-      // Passamos a data como segundo parâmetro da action!
+      const isAutoComplete = orgSettings?.autoCompleteOnCheckin ?? true;
+      const markAsCompleted = isAutoComplete ? true : checkInActionType === "complete";
+
       const res = await createManualPackageCheckIn(
         pkgToCheckIn.id,
         dateTimeString,
-        checkInProfessionalId === "none" ? undefined : checkInProfessionalId,
+        checkInProfessionalId,
+        markAsCompleted,
       );
 
       if (res.success) {
-        toast.success("Check-in registrado com sucesso!", { id: "manual" });
+        toast.success(
+          markAsCompleted
+            ? "Atendimento registrado e baixa realizada no pacote!"
+            : "Check-in registrado na agenda! O pacote será descontado ao finalizar o atendimento.",
+          { id: "manual" }
+        );
         setIsCheckInDialogOpen(false);
         loadData();
+
+        // Etapa 1: Invalidação de cache global do SWR para a Agenda refletir instantaneamente
+        mutate((key: any) => typeof key === "string" && key.includes("admin/agenda"));
       } else {
         toast.error(res.error || "Erro ao registrar.", { id: "manual" });
       }
@@ -695,19 +723,21 @@ function PackagesPageContent() {
           </div>
 
           <div className="flex flex-col gap-2 py-2">
-            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              Profissional (opcional)
+            <Label className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center justify-between">
+              <span>Profissional Responsável <span className="text-destructive">*</span></span>
+              {(!checkInProfessionalId || checkInProfessionalId === "none") && (
+                <span className="text-[10px] text-destructive font-normal lowercase">obrigatório</span>
+              )}
             </Label>
             <Select
-              value={checkInProfessionalId}
+              value={checkInProfessionalId || ""}
               onValueChange={setCheckInProfessionalId}
               disabled={isCheckingIn || loadingTeam}
             >
               <SelectTrigger className="w-full h-11 bg-muted/30">
-                <SelectValue placeholder="Selecione o profissional..." />
+                <SelectValue placeholder="Selecione o profissional que atendeu..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Sem profissional</SelectItem>
                 {teamMembers?.data?.map((member: any) => (
                   <SelectItem key={member.id} value={member.id}>
                     {member.display_name || "Sem Nome"}
@@ -716,6 +746,40 @@ function PackagesPageContent() {
               </SelectContent>
             </Select>
           </div>
+
+          {/* Etapa 2: Opção Condicional caso a finalização automática no totem/agenda esteja desativada */}
+          {orgSettings && orgSettings.autoCompleteOnCheckin === false && (
+            <div className="flex flex-col gap-2 py-3 px-3.5 bg-muted/20 border border-border/70 rounded-xl">
+              <Label className="text-xs font-bold text-foreground">
+                Como deseja registrar na agenda?
+              </Label>
+              <RadioGroup
+                value={checkInActionType}
+                onValueChange={(val: any) => setCheckInActionType(val)}
+                className="flex flex-col gap-2 mt-1"
+                disabled={isCheckingIn}
+              >
+                <div className="flex items-start space-x-2.5">
+                  <RadioGroupItem value="complete" id="action-complete" className="mt-0.5" />
+                  <label htmlFor="action-complete" className="text-xs font-medium cursor-pointer leading-tight">
+                    <span className="font-bold text-foreground block">Atendimento já concluído</span>
+                    <span className="text-muted-foreground text-[11px]">
+                      Marca como Realizado na agenda e desconta a sessão do pacote agora.
+                    </span>
+                  </label>
+                </div>
+                <div className="flex items-start space-x-2.5">
+                  <RadioGroupItem value="waiting" id="action-waiting" className="mt-0.5" />
+                  <label htmlFor="action-waiting" className="text-xs font-medium cursor-pointer leading-tight">
+                    <span className="font-bold text-foreground block">Registrar apenas o check-in</span>
+                    <span className="text-muted-foreground text-[11px]">
+                      Apenas registra o check-in na agenda. O pacote só será descontado quando finalizado.
+                    </span>
+                  </label>
+                </div>
+              </RadioGroup>
+            </div>
+          )}
 
           <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-end gap-2 mt-4">
             <Button
@@ -730,7 +794,14 @@ function PackagesPageContent() {
             <Button
               type="button"
               onClick={confirmManualCheckIn}
-              disabled={isCheckingIn}
+              disabled={
+                isCheckingIn ||
+                !checkInDate ||
+                !checkInTime ||
+                checkInTime.length !== 5 ||
+                !checkInProfessionalId ||
+                checkInProfessionalId === "none"
+              }
               className="w-full sm:w-auto h-12 font-bold"
             >
               {isCheckingIn ? (

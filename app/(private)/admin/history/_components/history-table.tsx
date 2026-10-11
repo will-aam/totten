@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSWRConfig } from "swr";
 import {
   TableBody,
   TableCell,
@@ -112,6 +113,7 @@ export function HistoryTable({
   data: EnrichedCheckIn[];
   onUpdate: () => void;
 }) {
+  const { mutate } = useSWRConfig();
   const [sorting, setSorting] = useState<SortingState>([
     { id: "date_time", desc: true },
   ]);
@@ -127,6 +129,14 @@ export function HistoryTable({
       const result = await deleteCheckIn(ciToDelete.id);
       if (result.success) {
         toast.success("Check-in removido com sucesso.");
+        // Atualiza a agenda e perfil do cliente em tempo real via SWR caso o usuário tenha abas abertas
+        mutate(
+          (key: any) =>
+            typeof key === "string" &&
+            (key.includes("admin/agenda") || key.includes("admin/clients")),
+          undefined,
+          { revalidate: true }
+        );
         onUpdate();
       } else {
         toast.error(result.error || "Erro ao remover check-in.");
@@ -291,9 +301,9 @@ export function HistoryTable({
                         {header.isPlaceholder
                           ? null
                           : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
-                            )}
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
                       </TableHead>
                     );
                   })}
@@ -303,24 +313,24 @@ export function HistoryTable({
             <TableBody>
               {table.getRowModel().rows?.length
                 ? table.getRowModel().rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      className="hover:bg-muted/30 border-b-border transition-colors group"
-                    >
-                      {row.getVisibleCells().map((cell) => {
-                        const customClass =
-                          (cell.column.columnDef.meta as any)?.className || "";
-                        return (
-                          <TableCell key={cell.id} className={customClass}>
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext(),
-                            )}
-                          </TableCell>
-                        );
-                      })}
-                    </TableRow>
-                  ))
+                  <TableRow
+                    key={row.id}
+                    className="hover:bg-muted/30 border-b-border transition-colors group"
+                  >
+                    {row.getVisibleCells().map((cell) => {
+                      const customClass =
+                        (cell.column.columnDef.meta as any)?.className || "";
+                      return (
+                        <TableCell key={cell.id} className={customClass}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                ))
                 : null}
             </TableBody>
           </table>

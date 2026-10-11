@@ -6,7 +6,7 @@ export default function PhoneMockup() {
         <div className="overflow-hidden rounded-[2.1rem] border border-totten bg-app">
           <div className="px-6 pt-8 text-center">
             <div className="text-[10px] tracking-[0.4em] text-zinc-soft">
-              CLÍNICA
+              Empresa
             </div>
             <div className="mt-1 font-serif text-3xl font-bold tracking-tight">
               HARMONIA

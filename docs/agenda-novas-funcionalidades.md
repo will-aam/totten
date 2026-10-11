@@ -13,7 +13,7 @@ Substituiu o antigo botão `+` por um menu dinâmico que oferece as seguintes op
 
 ## 3. Bloqueio de Horário
 Permite fechar horários específicos (como horário de almoço ou pausas) diretamente na grade da agenda.
-- **Banco de Dados:** Tabela `ScheduleBlock` adicionada via `prisma db push` (não destrutivo). Contém título, horário de início, término e relação com um Profissional (ou toda a clínica).
+- **Banco de Dados:** Tabela `ScheduleBlock` adicionada via `prisma db push` (não destrutivo). Contém título, horário de início, término e relação com um Profissional (ou toda a empresa).
 - **UI:** A grade diária e semanal (DailyAgendaGrid / WeeklyAgendaGrid) agora renderizam dinamicamente caixas vermelhas onde há bloqueios.
 - Ao tentar agendar por cima de um bloqueio, a visão visual já afasta a pessoa do erro (no futuro pode-se adicionar backend validation extra).
 

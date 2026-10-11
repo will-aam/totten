@@ -160,7 +160,7 @@ export default function ReportsPage() {
           </h2>
           <p className="text-muted-foreground text-sm font-medium mt-1 ml-12">
             Acompanhe o crescimento, faturamento e os melhores serviços da sua
-            clínica.
+            empresa.
           </p>
         </div>
 

@@ -25,7 +25,7 @@ Este documento registra as principais atualizações recentes feitas no sistema,
 ## 5. Herança Indesejada de Tema Dark (Área do Cliente)
 - **Problema:** Toda a página de autoagendamento do cliente estava puxando o tema escuro do celular do usuário (Dark Mode), ignorando as cores que foram configuradas pela organização no painel do sistema, deixando os textos e elementos "bugados" em termos de contraste.
 - **Causa:** O componente global aplicava as preferências de sistema indiscriminadamente no HTML raíz.
-- **Solução:** Implementamos `useTheme` no componente `client-agendar-view.tsx` para forçar o tema configurado nas variáveis da clínica (`booking_theme`), evitando a herança do sistema operacional do cliente e isolando as cores corretas da clínica na página de agendamento.
+- **Solução:** Implementamos `useTheme` no componente `client-agendar-view.tsx` para forçar o tema configurado nas variáveis da empresa (`booking_theme`), evitando a herança do sistema operacional do cliente e isolando as cores corretas da empresa na página de agendamento.
 
 ## 6. Limpeza de Interface Administrativa
 - **Problema:** Haviam botões repetitivos e em locais desnecessários referentes ao "Compartilhar Portal do Cliente".
@@ -33,5 +33,5 @@ Este documento registra as principais atualizações recentes feitas no sistema,
 
 ## 7. Contraste de Texto nos Botões (Tema Clean)
 - **Problema:** Na página de autoagendamento, ao usar temas claros como o "Clean (Branco)" e acessar os modais, a cor do texto do botão entrava em conflito com a cor de fundo primária escura do tema. Adicionalmente, alguns botões de agendar ficavam invisíveis caso o celular do cliente estivesse em "Modo Noturno", pois as classes do Tailwind (`dark:`) entravam em ação indevidamente.
-- **Causa:** O texto dos botões herdava configurações não relacionadas (`theme_config` do link da bio) que deixavam o texto preto, e o Tailwind aplicava classes `dark:` forçadas pelo sistema do cliente, ignorando as configurações da clínica.
+- **Causa:** O texto dos botões herdava configurações não relacionadas (`theme_config` do link da bio) que deixavam o texto preto, e o Tailwind aplicava classes `dark:` forçadas pelo sistema do cliente, ignorando as configurações da empresa.
 - **Solução:** Adicionamos uma nova propriedade explícita de `btnTxt` nos temas globais em `booking-appearance-settings.tsx`. Além disso, atualizamos o `client-agendar-view.tsx` para respeitar essas cores de contraste e substituímos as classes `dark:` estáticas por um controle dinâmico baseado na variável do tema da organização (`isDark`).

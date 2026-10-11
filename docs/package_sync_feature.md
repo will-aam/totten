@@ -23,4 +23,4 @@ Se o pacote de um cliente diz *"4 sessões usadas"*, mas o cliente jura que só 
 O botão **Sincronizar** atua como um botão de emergência (healing). O atendente só precisa apertar esse botão e o saldo volta magicamente para "3", alinhando os números com a realidade física registrada no banco.
 
 ## Mudanças UI recentes
-Para melhorar o entendimento da equipe, foi adicionado um ícone de Ajuda (`?`) com um tooltip ("Força a recontagem das sessões caso o saldo do pacote não esteja batendo com o histórico abaixo") que orienta de forma didática os colaboradores de clínica sobre a sua função, evitando o uso incorreto.
+Para melhorar o entendimento da equipe, foi adicionado um ícone de Ajuda (`?`) com um tooltip ("Força a recontagem das sessões caso o saldo do pacote não esteja batendo com o histórico abaixo") que orienta de forma didática os colaboradores de empresa sobre a sua função, evitando o uso incorreto.

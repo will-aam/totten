@@ -9,7 +9,7 @@ export const landingContent = {
     },
 
     title:
-      "Gestão inteligente para clínicas, salões e negócios de agendamentos.",
+      "Gestão inteligente para empresas, salões e negócios de agendamentos.",
 
     description:
       "O Totten reúne agendamento, check-in, financeiro, estoque, pacotes, prontuários e gestão completa em um único sistema moderno.",

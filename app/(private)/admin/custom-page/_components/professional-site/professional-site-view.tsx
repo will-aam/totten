@@ -592,7 +592,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
         <footer className="w-full bg-black text-white pt-8 pb-6 px-6 mt-auto">
           <div className="flex flex-col gap-6">
             <div>
-              <h3 className="font-bold text-lg mb-2">{presentation.headline || profile?.name || "Minha Clínica"}</h3>
+              <h3 className="font-bold text-lg mb-2">{presentation.headline || profile?.name || "Minha Empresa"}</h3>
               <p className="text-xs opacity-60 leading-relaxed">
                 {presentation.subheadline || "Transformando vidas e oferecendo o melhor atendimento para você se sentir especial todos os dias."}
               </p>
@@ -622,7 +622,7 @@ export function ProfessionalSiteView({ profile, initialData, globalContact }: { 
             )}
 
             <div className="border-t border-white/10 pt-4 flex flex-col gap-2 text-[10px] opacity-40">
-              <p>© {new Date().getFullYear()} {presentation.headline || profile?.name || "Minha Clínica"}. Todos os direitos reservados.</p>
+              <p>© {new Date().getFullYear()} {presentation.headline || profile?.name || "Minha Empresa"}. Todos os direitos reservados.</p>
               <p>Desenvolvido com Totten</p>
             </div>
           </div>

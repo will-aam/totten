@@ -70,7 +70,7 @@ export default function CashFlowDemo() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Fluxo de Caixa </h1>
           <p className="text-muted-foreground">
-            Acompanhe as entradas de pacotes/serviços e as saídas da clínica.
+            Acompanhe as entradas de pacotes/serviços e as saídas da empresa.
           </p>
         </div>
 
@@ -89,7 +89,7 @@ export default function CashFlowDemo() {
             <ExternalLink className="w-4 h-4" />
             Exportar para o Zibbe
           </button>
-          
+
           <button className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:pointer-events-none bg-blue-600 text-white hover:bg-blue-700 h-10 py-2 px-4 gap-2 shadow-md">
             <PlusCircle className="w-4 h-4" />
             Nova Despesa

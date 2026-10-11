@@ -425,67 +425,151 @@ export function ClientAreaView({
                         </div>
                       ) : (
                         <div className="space-y-6">
-                        <span className="text-xs font-bold uppercase text-slate-400 pl-2">Pacotes Finalizados/Expirados:</span>
-                        <div className="space-y-6">
-                          {paginatedFinishedPackages.map((pkg: any) => {
-                            const progress = Math.min(100, Math.round((pkg.used_sessions / pkg.total_sessions) * 100));
-                            const isExpired = pkg.expires_at ? new Date() > new Date(pkg.expires_at) : false;
-                            const validUntil = pkg.expires_at ? new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo" }).format(new Date(pkg.expires_at)) : null;
+                          <span className="text-xs font-bold uppercase text-slate-400 pl-2">Pacotes Finalizados/Expirados:</span>
+                          <div className="space-y-6">
+                            {paginatedFinishedPackages.map((pkg: any) => {
+                              const progress = Math.min(100, Math.round((pkg.used_sessions / pkg.total_sessions) * 100));
+                              const isExpired = pkg.expires_at ? new Date() > new Date(pkg.expires_at) : false;
+                              const validUntil = pkg.expires_at ? new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo" }).format(new Date(pkg.expires_at)) : null;
 
-                            return (
-                              <div key={pkg.id} className={cn("bg-white border p-6 rounded-3xl shadow-sm", (!pkg.active || isExpired) && "opacity-70 grayscale")}>
-                                <div className="mb-4 flex justify-between items-start">
-                                  <div>
-                                    <h4 className="font-black text-lg uppercase">{pkg.name}</h4>
-                                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1"><Store className="h-3 w-3" /> Pacote de Sessões</p>
+                              return (
+                                <div key={pkg.id} className={cn("bg-white border p-6 rounded-3xl shadow-sm", (!pkg.active || isExpired) && "opacity-70 grayscale")}>
+                                  <div className="mb-4 flex justify-between items-start">
+                                    <div>
+                                      <h4 className="font-black text-lg uppercase">{pkg.name}</h4>
+                                      <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1"><Store className="h-3 w-3" /> Pacote de Sessões</p>
+                                    </div>
+                                    {pkg.expires_at && (
+                                      <div className="text-right">
+                                        <span className={cn("text-[10px] font-bold uppercase px-2 py-1 rounded-full", isExpired ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700")}>
+                                          {isExpired ? "Expirado" : `Válido até: ${validUntil}`}
+                                        </span>
+                                      </div>
+                                    )}
                                   </div>
-                                  {pkg.expires_at && (
-                                    <div className="text-right">
-                                      <span className={cn("text-[10px] font-bold uppercase px-2 py-1 rounded-full", isExpired ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700")}>
-                                        {isExpired ? "Expirado" : `Válido até: ${validUntil}`}
-                                      </span>
+                                  <div className="bg-slate-50 p-4 rounded-2xl border mb-4">
+                                    <div className="flex justify-between items-end mb-2">
+                                      <span className="text-xs font-bold text-slate-500 uppercase">Sessões Realizadas</span>
+                                      <span className="text-xl font-black text-slate-800">{pkg.used_sessions} <span className="text-sm font-normal text-slate-500">/ {pkg.total_sessions}</span></span>
+                                    </div>
+                                    <Progress value={progress} className="h-2 bg-slate-200" />
+                                  </div>
+
+                                  {pkg.appointments?.length > 0 && (
+                                    <div className="space-y-3 mt-4">
+                                      <span className="text-xs font-bold uppercase text-slate-400">Agendamentos do Pacote:</span>
+                                      {pkg.appointments.map((item: any, index: number) => {
+                                        const isRealizado = item.status === "REALIZADO";
+                                        const isCancelado = item.status === "CANCELADO";
+                                        const isFalta = isCancelado && item.observations?.includes("Falta");
+
+                                        return (
+                                          <div key={item.id} className="flex items-center justify-between text-sm p-3 rounded-full bg-slate-50 border">
+                                            <div className="flex items-center gap-3">
+                                              <div className={cn("w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white", isRealizado ? "bg-emerald-500" : isFalta ? "bg-red-500" : "bg-slate-400")}>
+                                                {isRealizado ? <CheckCircle className="h-3 w-3" /> : index + 1}
+                                              </div>
+                                              <span className="font-medium">
+                                                {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(item.date_time))}
+                                              </span>
+                                            </div>
+                                            <span className={cn("text-[10px] font-bold uppercase px-2 py-1 rounded-full", isRealizado ? "bg-emerald-100 text-emerald-700" : isFalta ? "bg-red-100 text-red-700" : "bg-slate-200 text-slate-600")}>
+                                              {isRealizado ? "Realizada" : isFalta ? "Faltou" : item.status}
+                                            </span>
+                                          </div>
+                                        );
+                                      })}
                                     </div>
                                   )}
                                 </div>
-                                <div className="bg-slate-50 p-4 rounded-2xl border mb-4">
-                                  <div className="flex justify-between items-end mb-2">
-                                    <span className="text-xs font-bold text-slate-500 uppercase">Sessões Realizadas</span>
-                                    <span className="text-xl font-black text-slate-800">{pkg.used_sessions} <span className="text-sm font-normal text-slate-500">/ {pkg.total_sessions}</span></span>
-                                  </div>
-                                  <Progress value={progress} className="h-2 bg-slate-200" />
-                                </div>
+                              );
+                            })}
 
-                                {pkg.appointments?.length > 0 && (
-                                  <div className="space-y-3 mt-4">
-                                    <span className="text-xs font-bold uppercase text-slate-400">Agendamentos do Pacote:</span>
-                                    {pkg.appointments.map((item: any, index: number) => {
-                                      const isRealizado = item.status === "REALIZADO";
-                                      const isCancelado = item.status === "CANCELADO";
-                                      const isFalta = isCancelado && item.observations?.includes("Falta");
+                            {totalFinishedPackagesPages > 1 && (
+                              <div className="mt-8 mb-4">
+                                <Pagination>
+                                  <PaginationContent>
+                                    <PaginationItem>
+                                      <PaginationPrevious
+                                        href="#"
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          if (finishedPackagesPage > 1) setFinishedPackagesPage(finishedPackagesPage - 1);
+                                        }}
+                                        className={finishedPackagesPage === 1 ? "pointer-events-none opacity-50" : ""}
+                                      />
+                                    </PaginationItem>
 
-                                      return (
-                                        <div key={item.id} className="flex items-center justify-between text-sm p-3 rounded-full bg-slate-50 border">
-                                          <div className="flex items-center gap-3">
-                                            <div className={cn("w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white", isRealizado ? "bg-emerald-500" : isFalta ? "bg-red-500" : "bg-slate-400")}>
-                                              {isRealizado ? <CheckCircle className="h-3 w-3" /> : index + 1}
-                                            </div>
-                                            <span className="font-medium">
-                                              {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(item.date_time))}
-                                            </span>
-                                          </div>
-                                          <span className={cn("text-[10px] font-bold uppercase px-2 py-1 rounded-full", isRealizado ? "bg-emerald-100 text-emerald-700" : isFalta ? "bg-red-100 text-red-700" : "bg-slate-200 text-slate-600")}>
-                                            {isRealizado ? "Realizada" : isFalta ? "Faltou" : item.status}
-                                          </span>
-                                        </div>
-                                      );
+                                    {Array.from({ length: totalFinishedPackagesPages }, (_, i) => i + 1).map((p) => {
+                                      if (p === 1 || p === totalFinishedPackagesPages || (p >= finishedPackagesPage - 1 && p <= finishedPackagesPage + 1)) {
+                                        return (
+                                          <PaginationItem key={p}>
+                                            <PaginationLink
+                                              href="#"
+                                              onClick={(e) => {
+                                                e.preventDefault();
+                                                setFinishedPackagesPage(p);
+                                              }}
+                                              isActive={finishedPackagesPage === p}
+                                            >
+                                              {p}
+                                            </PaginationLink>
+                                          </PaginationItem>
+                                        );
+                                      }
+                                      return null;
                                     })}
-                                  </div>
-                                )}
+
+                                    <PaginationItem>
+                                      <PaginationNext
+                                        href="#"
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          if (finishedPackagesPage < totalFinishedPackagesPages) setFinishedPackagesPage(finishedPackagesPage + 1);
+                                        }}
+                                        className={finishedPackagesPage === totalFinishedPackagesPages ? "pointer-events-none opacity-50" : ""}
+                                      />
+                                    </PaginationItem>
+                                  </PaginationContent>
+                                </Pagination>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {/* AVULSAS */}
+                  {historySubTab === "avulsas" && (
+                    <div className="space-y-4">
+                      {historyStandalone.length === 0 ? (
+                        <div className="p-8 rounded-3xl border-2 border-dashed flex flex-col items-center justify-center text-center space-y-4 bg-white/50">
+                          <p className="font-medium text-muted-foreground">Você não possui sessões avulsas no histórico.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <span className="text-xs font-bold uppercase text-slate-400 pl-2">Sessões Avulsas:</span>
+                          {paginatedHistoryStandalone.map((item: any) => {
+                            const isRealizado = item.status === "REALIZADO";
+                            const isCancelado = item.status === "CANCELADO";
+                            const isFalta = isCancelado && item.observations?.includes("Falta");
+
+                            return (
+                              <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl bg-white border shadow-sm">
+                                <div>
+                                  <p className="font-bold">{item.service?.name}</p>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(item.date_time))}
+                                  </p>
+                                </div>
+                                <span className={cn("text-[10px] font-bold uppercase px-2 py-1 rounded-full", isRealizado ? "bg-emerald-100 text-emerald-700" : isFalta ? "bg-red-100 text-red-700" : "bg-slate-200 text-slate-600")}>
+                                  {isRealizado ? "Realizada" : isFalta ? "Faltou" : item.status}
+                                </span>
                               </div>
                             );
                           })}
 
-                          {totalFinishedPackagesPages > 1 && (
+                          {totalHistoryStandalonePages > 1 && (
                             <div className="mt-8 mb-4">
                               <Pagination>
                                 <PaginationContent>
@@ -494,23 +578,23 @@ export function ClientAreaView({
                                       href="#"
                                       onClick={(e) => {
                                         e.preventDefault();
-                                        if (finishedPackagesPage > 1) setFinishedPackagesPage(finishedPackagesPage - 1);
+                                        if (historyPage > 1) setHistoryPage(historyPage - 1);
                                       }}
-                                      className={finishedPackagesPage === 1 ? "pointer-events-none opacity-50" : ""}
+                                      className={historyPage === 1 ? "pointer-events-none opacity-50" : ""}
                                     />
                                   </PaginationItem>
 
-                                  {Array.from({ length: totalFinishedPackagesPages }, (_, i) => i + 1).map((p) => {
-                                    if (p === 1 || p === totalFinishedPackagesPages || (p >= finishedPackagesPage - 1 && p <= finishedPackagesPage + 1)) {
+                                  {Array.from({ length: totalHistoryStandalonePages }, (_, i) => i + 1).map((p) => {
+                                    if (p === 1 || p === totalHistoryStandalonePages || (p >= historyPage - 1 && p <= historyPage + 1)) {
                                       return (
                                         <PaginationItem key={p}>
                                           <PaginationLink
                                             href="#"
                                             onClick={(e) => {
                                               e.preventDefault();
-                                              setFinishedPackagesPage(p);
+                                              setHistoryPage(p);
                                             }}
-                                            isActive={finishedPackagesPage === p}
+                                            isActive={historyPage === p}
                                           >
                                             {p}
                                           </PaginationLink>
@@ -525,9 +609,9 @@ export function ClientAreaView({
                                       href="#"
                                       onClick={(e) => {
                                         e.preventDefault();
-                                        if (finishedPackagesPage < totalFinishedPackagesPages) setFinishedPackagesPage(finishedPackagesPage + 1);
+                                        if (historyPage < totalHistoryStandalonePages) setHistoryPage(historyPage + 1);
                                       }}
-                                      className={finishedPackagesPage === totalFinishedPackagesPages ? "pointer-events-none opacity-50" : ""}
+                                      className={historyPage === totalHistoryStandalonePages ? "pointer-events-none opacity-50" : ""}
                                     />
                                   </PaginationItem>
                                 </PaginationContent>
@@ -535,93 +619,9 @@ export function ClientAreaView({
                             </div>
                           )}
                         </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-                  {/* AVULSAS */}
-                  {historySubTab === "avulsas" && (
-                    <div className="space-y-4">
-                      {historyStandalone.length === 0 ? (
-                        <div className="p-8 rounded-3xl border-2 border-dashed flex flex-col items-center justify-center text-center space-y-4 bg-white/50">
-                          <p className="font-medium text-muted-foreground">Você não possui sessões avulsas no histórico.</p>
-                        </div>
-                      ) : (
-                      <div className="space-y-3">
-                        <span className="text-xs font-bold uppercase text-slate-400 pl-2">Sessões Avulsas:</span>
-                        {paginatedHistoryStandalone.map((item: any) => {
-                          const isRealizado = item.status === "REALIZADO";
-                          const isCancelado = item.status === "CANCELADO";
-                          const isFalta = isCancelado && item.observations?.includes("Falta");
-
-                          return (
-                            <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl bg-white border shadow-sm">
-                              <div>
-                                <p className="font-bold">{item.service?.name}</p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(item.date_time))}
-                                </p>
-                              </div>
-                              <span className={cn("text-[10px] font-bold uppercase px-2 py-1 rounded-full", isRealizado ? "bg-emerald-100 text-emerald-700" : isFalta ? "bg-red-100 text-red-700" : "bg-slate-200 text-slate-600")}>
-                                {isRealizado ? "Realizada" : isFalta ? "Faltou" : item.status}
-                              </span>
-                            </div>
-                          );
-                        })}
-
-                        {totalHistoryStandalonePages > 1 && (
-                          <div className="mt-8 mb-4">
-                            <Pagination>
-                              <PaginationContent>
-                                <PaginationItem>
-                                  <PaginationPrevious
-                                    href="#"
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      if (historyPage > 1) setHistoryPage(historyPage - 1);
-                                    }}
-                                    className={historyPage === 1 ? "pointer-events-none opacity-50" : ""}
-                                  />
-                                </PaginationItem>
-
-                                {Array.from({ length: totalHistoryStandalonePages }, (_, i) => i + 1).map((p) => {
-                                  if (p === 1 || p === totalHistoryStandalonePages || (p >= historyPage - 1 && p <= historyPage + 1)) {
-                                    return (
-                                      <PaginationItem key={p}>
-                                        <PaginationLink
-                                          href="#"
-                                          onClick={(e) => {
-                                            e.preventDefault();
-                                            setHistoryPage(p);
-                                          }}
-                                          isActive={historyPage === p}
-                                        >
-                                          {p}
-                                        </PaginationLink>
-                                      </PaginationItem>
-                                    );
-                                  }
-                                  return null;
-                                })}
-
-                                <PaginationItem>
-                                  <PaginationNext
-                                    href="#"
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      if (historyPage < totalHistoryStandalonePages) setHistoryPage(historyPage + 1);
-                                    }}
-                                    className={historyPage === totalHistoryStandalonePages ? "pointer-events-none opacity-50" : ""}
-                                  />
-                                </PaginationItem>
-                              </PaginationContent>
-                            </Pagination>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
+                      )}
+                    </div>
+                  )}
                 </Tabs>
               </div>
             )}
@@ -655,7 +655,7 @@ export function ClientAreaView({
 
                 <div className="bg-blue-50 border border-blue-100 rounded-3xl p-6 text-center space-y-4">
                   <p className="text-sm text-blue-800 font-medium">
-                    Para alterar seus dados cadastrais, por favor entre em contato com o atendimento da clínica.
+                    Para alterar seus dados cadastrais, por favor entre em contato com o atendimento da empresa.
                   </p>
                   {whatsappLink && (
                     <Button asChild className="w-full bg-[#25D366] hover:bg-[#1DA851] text-white font-bold rounded-full h-12">

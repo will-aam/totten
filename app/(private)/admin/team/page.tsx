@@ -614,7 +614,7 @@ export default function TeamPage() {
                   }
                 />
                 <Label htmlFor="show_instagram" className="text-xs font-normal text-muted-foreground">
-                  Exibir link do Instagram no perfil desta colaboradora no Site da Clínica
+                  Exibir link do Instagram no perfil desta colaboradora no Site da Empresa
                 </Label>
               </div>
             </div>
@@ -977,8 +977,8 @@ const DesktopTeamMemberRow = memo(
                 <div
                   key={i}
                   className={`flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold ${isActive
-                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                      : "text-muted-foreground font-medium"
+                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                    : "text-muted-foreground font-medium"
                     }`}
                 >
                   {d}
