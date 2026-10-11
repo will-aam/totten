@@ -37,7 +37,7 @@ export type TimelineEvent = {
 export function ClientHistory({ clientId }: { clientId: string }) {
   const getHistoryKey = (pageIndex: number, previousPageData: any) => {
     if (previousPageData && !previousPageData.hasMore) return null;
-    return `admin/clients/${clientId}/history?page=${pageIndex + 1}&limit=10`;
+    return `clients/${clientId}/history?page=${pageIndex + 1}&limit=10`;
   };
 
   const {

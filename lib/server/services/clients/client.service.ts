@@ -245,6 +245,8 @@ export class ClientService {
     activeParam: string | null,
     multiplePackages: boolean,
     sourceParam?: string | null,
+    hasNotesParam?: boolean | null,
+    hasManualNotesParam?: boolean | null,
   ) {
     const prisma = getTenantPrisma(organizationId);
     const skip = (page - 1) * limit;
@@ -252,6 +254,14 @@ export class ClientService {
     const andConditions: Prisma.ClientWhereInput[] = [
       { organization_id: organizationId },
     ];
+
+    if (hasNotesParam) {
+      andConditions.push({ notes: { some: {} } });
+    }
+
+    if (hasManualNotesParam) {
+      andConditions.push({ manual_notes: { some: {} } });
+    }
 
     if (activeParam === "true") {
       andConditions.push({ active: true });

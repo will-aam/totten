@@ -1,25 +1,25 @@
 export const dynamic = "force-dynamic";
-// app/api/admin/clients/[clientId]/history/route.ts
+// app/api/clients/[id]/history/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth, AuthError } from "@/lib/auth";
 import { ClientHistoryService } from "@/lib/server/services/clients/client-history.service";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ clientId: string }> },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // 🛡️ Validação unificada de sessão e tenant
     const admin = await requireAuth();
-    const { clientId } = await params;
+    const { id } = await params;
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "10", 10);
 
-    if (!clientId) {
+    if (!id) {
       return NextResponse.json(
-        { error: "clientId é obrigatório." },
+        { error: "id é obrigatório." },
         { status: 400 },
       );
     }
@@ -27,7 +27,7 @@ export async function GET(
     // Delega a busca em múltiplas tabelas, ordenação e paginação para o serviço
     const result = await ClientHistoryService.getClientTimeline(
       admin.organizationId,
-      clientId,
+      id,
       page,
       limit,
     );
@@ -46,8 +46,7 @@ export async function GET(
       );
     }
 
-    console.error("[GET /api/admin/clients/[clientId]/history] ERRO:", error);
+    console.error("[GET /api/clients/[id]/history] ERRO:", error);
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }
-

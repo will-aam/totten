@@ -1,23 +1,23 @@
 export const dynamic = "force-dynamic";
-// app/api/admin/clients/[clientId]/packages/route.ts
+// app/api/clients/[id]/packages/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth, AuthError } from "@/lib/auth";
 import { ClientPackagesService } from "@/lib/server/services/clients/client-packages.service";
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: Promise<{ clientId: string }> },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // 🛡️ Validação unificada de sessão e extração segura do tenant
     const admin = await requireAuth();
 
     // Next.js 15+: params precisa ser aguardado
-    const { clientId } = await params;
+    const { id } = await params;
 
-    if (!clientId) {
+    if (!id) {
       return NextResponse.json(
-        { error: "clientId é obrigatório." },
+        { error: "id é obrigatório." },
         { status: 400 },
       );
     }
@@ -25,7 +25,7 @@ export async function GET(
     // Delega a busca, formatação e join de tabelas para a camada de serviço
     const packages = await ClientPackagesService.getClientPackages(
       admin.organizationId,
-      clientId,
+      id,
     );
 
     // Retorna o array direto para bater perfeitamente com a tipagem do SWR no Front
@@ -43,11 +43,10 @@ export async function GET(
       );
     }
 
-    console.error("[GET /api/admin/clients/[clientId]/packages] ERRO:", error);
+    console.error("[GET /api/clients/[id]/packages] ERRO:", error);
     return NextResponse.json(
       { error: "Erro ao listar pacotes do cliente." },
       { status: 500 },
     );
   }
 }
-

@@ -27,3 +27,7 @@ app/api/dev/
 
 cleint-d.tsx
 route.tsx
+
+# Rascunhos e scripts temporários de teste
+scratch/
+scratch_test.ts

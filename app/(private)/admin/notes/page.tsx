@@ -32,7 +32,7 @@ export default function AdminHistoryPage() {
   }>(
     shouldSearch
       ? `clients?q=${encodeURIComponent(debouncedSearch.trim())}&limit=10`
-      : `admin/notes/clients`,
+      : `clients?has_notes=true&limit=50`,
     apiClient,
   );
   const displayClients = clientsResponse?.data || [];

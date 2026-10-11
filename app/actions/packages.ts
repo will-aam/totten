@@ -720,3 +720,30 @@ export async function extendPackageAction(packageId: string, newDate: string | n
     return { success: false, error: "Falha ao prorrogar o pacote." };
   }
 }
+
+/**
+ * Exclui um agendamento fantasma/avulso e estorna o saldo do pacote caso necessário.
+ * Migrado da antiga rota /api/admin/packages/fix-appointment.
+ */
+export async function fixAppointmentAction(appointmentId: string) {
+  try {
+    const admin = await requireAuth();
+
+    if (!appointmentId) {
+      return { success: false, error: "ID é obrigatório" };
+    }
+
+    await PackageService.fixAppointment(appointmentId, admin.organizationId);
+
+    revalidatePath("/admin/packages");
+    revalidatePath("/admin/dashboard");
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("[fixAppointmentAction] Erro:", error);
+    if (error?.message === "NOT_FOUND") {
+      return { success: false, error: "Registro não encontrado" };
+    }
+    return { success: false, error: "Erro ao deletar registro" };
+  }
+}

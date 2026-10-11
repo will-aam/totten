@@ -67,7 +67,7 @@ interface ClientPackageProps {
 }
 
 export function ClientPackage({ clientId, clientActive }: ClientPackageProps) {
-  const packageCacheKey = `admin/clients/${clientId}/packages`;
+  const packageCacheKey = `clients/${clientId}/packages`;
   const { data: packages, isLoading: isLoadingPackages } = useSWR<
     PackageType[]
   >(packageCacheKey, apiClient);

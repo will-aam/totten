@@ -17,6 +17,8 @@ export async function GET(request: NextRequest) {
     const activeParam = searchParams.get("active");
     const sourceParam = searchParams.get("source");
     const multiplePackages = searchParams.get("multiple_packages") === "true";
+    const hasNotes = searchParams.get("has_notes") === "true";
+    const hasManualNotes = searchParams.get("has_manual_notes") === "true";
 
     // Delega a busca, paginação e filtros pesados para a camada de serviço
     const result = await ClientService.getPaginatedClients(
@@ -27,6 +29,8 @@ export async function GET(request: NextRequest) {
       activeParam,
       multiplePackages,
       sourceParam,
+      hasNotes,
+      hasManualNotes,
     );
 
     return NextResponse.json(result);

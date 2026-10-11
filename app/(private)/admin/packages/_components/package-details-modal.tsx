@@ -51,11 +51,11 @@ import {
   archivePackage,
   syncPackageBalance,
   extendPackageAction,
+  fixAppointmentAction,
 } from "@/app/actions/packages";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/components/ui/use-toast";
-import { apiClient, ApiError } from "@/lib/api-client";
 
 interface PackageDetailsModalProps {
   open: boolean;
@@ -154,20 +154,17 @@ export function PackageDetailsModal({
     setIsDeleteConfirmOpen(false);
 
     try {
-      await apiClient("admin/packages/fix-appointment", {
-        method: "POST",
-        body: JSON.stringify({ appointmentId: apptToDelete }),
-      });
+      const res = await fixAppointmentAction(apptToDelete);
 
-      toast({ title: "Registro apagado!" });
-      await loadHistory();
-      onOpenChange(false); // Força recarregar a tela principal
-    } catch (error) {
-      if (error instanceof ApiError) {
-        toast({ title: "Erro ao apagar registro.", variant: "destructive" });
+      if (res.success) {
+        toast({ title: "Registro apagado!" });
+        await loadHistory();
+        onOpenChange(false); // Força recarregar a tela principal
       } else {
-        toast({ title: "Erro de conexão.", variant: "destructive" });
+        toast({ title: res.error || "Erro ao apagar registro.", variant: "destructive" });
       }
+    } catch (error) {
+      toast({ title: "Erro de conexão.", variant: "destructive" });
     } finally {
       setIsDeletingId(null);
       setApptToDelete(null);

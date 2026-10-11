@@ -32,7 +32,7 @@ export default function AdminManualNotesPage() {
   }>(
     shouldSearch
       ? `clients?q=${encodeURIComponent(debouncedSearch.trim())}&limit=10`
-      : `admin/manual-notes/clients`,
+      : `clients?has_manual_notes=true&limit=50`,
     apiClient,
   );
   const displayClients = clientsResponse?.data || [];

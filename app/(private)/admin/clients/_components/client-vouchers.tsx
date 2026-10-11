@@ -27,7 +27,7 @@ interface ClientVouchersProps {
 
 export function ClientVouchers({ clientId, clientName }: ClientVouchersProps) {
   const { data: packages, isLoading } = useSWR<PackageType[]>(
-    `admin/clients/${clientId}/packages`,
+    `clients/${clientId}/packages`,
     apiClient,
   );
 
