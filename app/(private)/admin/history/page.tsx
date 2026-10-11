@@ -7,14 +7,11 @@ import useSWR from "swr";
 import { apiClient } from "@/lib/api-client";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
+
 import {
   ClipboardDetail,
   ChevronUp,
   CalendarCheck,
-  ChevronLeft,
-  ChevronRight,
-  LoaderDots,
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 

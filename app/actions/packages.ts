@@ -6,6 +6,7 @@ import { requireAuth } from "@/lib/auth";
 import { AppointmentStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { PackageService } from "@/lib/server/services/packages/package.service";
+import { validateScheduleAppointment } from "@/lib/schedule-validation";
 
 /**
  * Busca todos os pacotes da organização e calcula os KPIs em tempo real.
@@ -259,6 +260,80 @@ export async function createManualPackageCheckIn(
     }
 
     const checkInDate = dateTimeString ? new Date(dateTimeString) : new Date();
+
+    // Validação Inteligente da Grade de Horários e Expediente do Profissional
+    if (professionalId) {
+      const professional = await prisma.admin.findFirst({
+        where: {
+          id: professionalId,
+          organizations: { some: { id: admin.organizationId } },
+        },
+        include: {
+          schedule_rule: {
+            include: {
+              working_hours: { orderBy: { day_of_week: "asc" } },
+              schedule_exceptions: { orderBy: { date: "asc" } },
+            },
+          },
+        },
+      });
+
+      if (!professional) {
+        return { success: false, error: "Profissional selecionado não encontrado." };
+      }
+
+      let scheduleRule = professional.schedule_rule;
+      if (!scheduleRule) {
+        scheduleRule = await prisma.scheduleRule.findFirst({
+          where: { organization_id: admin.organizationId, is_default: true },
+          include: {
+            working_hours: { orderBy: { day_of_week: "asc" } },
+            schedule_exceptions: { orderBy: { date: "asc" } },
+          },
+        });
+      }
+
+      const orgSettings = await prisma.settings.findUnique({
+        where: { organization_id: admin.organizationId },
+        select: {
+          opening_time: true,
+          closing_time: true,
+          allow_over_limit_appointments: true,
+        },
+      });
+
+      let dateStr: string;
+      let timeStr: string;
+
+      if (dateTimeString && dateTimeString.includes("T")) {
+        const [dPart, tPart] = dateTimeString.split("T");
+        dateStr = dPart;
+        timeStr = tPart.slice(0, 5);
+      } else {
+        const year = checkInDate.getFullYear();
+        const month = String(checkInDate.getMonth() + 1).padStart(2, "0");
+        const day = String(checkInDate.getDate()).padStart(2, "0");
+        const hours = String(checkInDate.getHours()).padStart(2, "0");
+        const minutes = String(checkInDate.getMinutes()).padStart(2, "0");
+        dateStr = `${year}-${month}-${day}`;
+        timeStr = `${hours}:${minutes}`;
+      }
+
+      const validation = validateScheduleAppointment({
+        professionalName: professional.display_name,
+        scheduleRule,
+        dateStr,
+        timeStr,
+        orgSettings,
+      });
+
+      if (!validation.isValid) {
+        return {
+          success: false,
+          error: validation.errorMessage || "Profissional ou horário indisponível conforme a grade de horários.",
+        };
+      }
+    }
 
     await prisma.$transaction(async (tx) => {
       // 1. Etapa 4: Detecção de agendamento existente pendente/confirmado do mesmo pacote no mesmo dia
@@ -802,10 +877,20 @@ export async function fixAppointmentAction(appointmentId: string) {
       return { success: false, error: "ID é obrigatório" };
     }
 
-    await PackageService.fixAppointment(appointmentId, admin.organizationId);
+    const result = await PackageService.fixAppointment(
+      appointmentId,
+      admin.organizationId,
+      { id: admin.id, name: admin.name || "Administrador" }
+    );
 
     revalidatePath("/admin/packages");
     revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/history");
+    revalidatePath("/admin/stock");
+    revalidatePath("/admin/agenda");
+    if (result?.clientId) {
+      revalidatePath(`/admin/clients/${result.clientId}`);
+    }
 
     return { success: true };
   } catch (error: any) {

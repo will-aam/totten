@@ -3,14 +3,35 @@ import { getTenantPrisma } from "@/lib/prisma";
 
 export class PackageService {
   /**
-   * Reverte um agendamento e devolve o saldo ao pacote, se aplicável.
+   * Reverte um agendamento e devolve o saldo ao pacote, com todas as garantias contábeis:
+   * 1. Auditoria detalhada na jornada do cliente (clientNote)
+   * 2. Estorno de sessão no pacote (somente se REALIZADO)
+   * 3. Devolução de insumos ao estoque e remoção de despesas de materiais
+   * 4. Estorno de pontos do programa de fidelidade
+   * 5. Soft delete do check-in (desvincula appointment_id para preservar histórico e evitar cascade do Postgres)
+   * 6. Remoção de transações residuais e exclusão do agendamento da agenda
    */
-  static async fixAppointment(appointmentId: string, organizationId: string) {
+  static async fixAppointment(
+    appointmentId: string,
+    organizationId: string,
+    adminUser?: { id: string; name?: string }
+  ) {
     const prisma = getTenantPrisma(organizationId);
 
     const appointment = await prisma.appointment.findUnique({
       where: { id: appointmentId, organization_id: organizationId },
-      include: { package: true },
+      include: {
+        package: { include: { service: true } },
+        service: {
+          include: {
+            stock_items: {
+              include: { stock_item: true },
+            },
+          },
+        },
+        check_in: true,
+        client: true,
+      },
     });
 
     if (!appointment) {
@@ -18,24 +39,133 @@ export class PackageService {
     }
 
     await prisma.$transaction(async (tx) => {
-      if (appointment.status === "REALIZADO" && appointment.package_id && appointment.package) {
-        const isManuallyArchived = !appointment.package.active && (appointment.package.used_sessions < appointment.package.total_sessions);
+      const adminName = adminUser?.name || "Administrador";
+      const wasRealizado = appointment.status === "REALIZADO";
+      const serviceName =
+        appointment.snapshot_service_name ||
+        appointment.service?.name ||
+        appointment.package?.snapshot_service_name ||
+        appointment.package?.service?.name ||
+        "Serviço";
+
+      const displayDate = appointment.check_in?.date_time || appointment.date_time;
+      const dateStr = new Intl.DateTimeFormat("pt-BR", {
+        dateStyle: "short",
+        timeStyle: "short",
+      }).format(displayDate);
+
+      // A. Auditoria Detalhada (Histórico de Ações e Jornada do Cliente)
+      if (appointment.client_id) {
+        const pacoteText =
+          appointment.package_id && wasRealizado
+            ? " (1 sessão estornada ao pacote)"
+            : "";
+        const statusLabel = wasRealizado
+          ? "Atendimento realizado"
+          : `Agendamento (${appointment.status})`;
+
+        await tx.clientNote.create({
+          data: {
+            text: `Ação: ${statusLabel} de ${serviceName} do dia ${dateStr} foi removido por ${adminName}${pacoteText} e o agendamento correspondente foi removido da agenda.`,
+            client_id: appointment.client_id,
+            organization_id: organizationId,
+            date: new Date(),
+          },
+        });
+      }
+
+      // B. Estorno do pacote (SOMENTE SE a sessão foi realmente consumida / REALIZADO)
+      if (wasRealizado && appointment.package_id && appointment.package) {
+        const isManuallyArchived =
+          !appointment.package.active &&
+          appointment.package.used_sessions < appointment.package.total_sessions;
         const finalActive = isManuallyArchived ? false : true;
 
         await tx.package.update({
           where: { id: appointment.package_id },
-          data: { used_sessions: { decrement: 1 }, active: finalActive },
+          data: {
+            used_sessions: { decrement: 1 },
+            active: finalActive,
+          },
         });
       }
 
-      await tx.checkIn.deleteMany({
+      // C. Desfaz estoque e financeiro (SÓ se houve movimentação de insumos ou baixa)
+      const hasMovedStock = Boolean(
+        appointment.check_in?.auto_processed ||
+          (wasRealizado && appointment.service?.track_stock)
+      );
+
+      if (hasMovedStock && appointment.service) {
+        const service = appointment.service;
+
+        if (service.track_stock && service.stock_items.length > 0) {
+          for (const item of service.stock_items) {
+            await tx.stockItem.update({
+              where: { id: item.stock_item_id },
+              data: { quantity: { increment: item.quantity_used } },
+            });
+          }
+        }
+
+        // Remove a(s) despesa(s) automáticas de insumos/materiais vinculadas a este agendamento
+        await tx.transaction.deleteMany({
+          where: { appointment_id: appointment.id, type: "DESPESA" },
+        });
+      }
+
+      // D. Reverter pontos de fidelidade concedidos no atendimento (se aplicável)
+      if (wasRealizado && appointment.client_id) {
+        const loyaltySettings = await tx.loyaltySettings.findUnique({
+          where: { organization_id: organizationId },
+        });
+
+        if (
+          loyaltySettings?.is_active &&
+          loyaltySettings?.check_in_active &&
+          appointment.client_id
+        ) {
+          const clientCurrent = await tx.client.findUnique({
+            where: { id: appointment.client_id },
+            select: { loyalty_points: true },
+          });
+          const newPoints = Math.max(
+            (clientCurrent?.loyalty_points || 0) - loyaltySettings.check_in_points,
+            0
+          );
+          await tx.client.update({
+            where: { id: appointment.client_id },
+            data: { loyalty_points: newPoints },
+          });
+        }
+      }
+
+      // E. Soft delete do check-in associado (desvincula appointment_id para evitar cascade hard delete do Postgres)
+      await tx.checkIn.updateMany({
+        where: { appointment_id: appointment.id },
+        data: {
+          deleted_at: new Date(),
+          deleted_by_admin_id: adminUser?.id || null,
+          deleted_by_name: adminName,
+          appointment_id: null,
+        },
+      });
+
+      // F. Remoção completa do Agendamento da Agenda
+      // Remove quaisquer transações residuais vinculadas ao appointment antes de deletá-lo
+      await tx.transaction.deleteMany({
         where: { appointment_id: appointment.id },
       });
 
-      await tx.appointment.delete({ where: { id: appointment.id } });
+      await tx.appointment.delete({
+        where: { id: appointment.id },
+      });
     });
 
-    return true;
+    return {
+      success: true,
+      clientId: appointment.client_id,
+    };
   }
 
   /**

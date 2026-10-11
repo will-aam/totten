@@ -1,7 +1,7 @@
 // app/(private)/admin/packages/page.tsx
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import {
@@ -27,6 +27,8 @@ import {
   Plus,
   Calendar,
   Cog,
+  Clock,
+  InfoCircle,
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { PackageDetailsModal } from "./_components/package-details-modal";
@@ -48,6 +50,10 @@ import { getSelfServiceSettingsAction, updateSelfServiceSettingsAction } from "@
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/use-debounce";
 import { apiClient } from "@/lib/api-client";
+import {
+  validateScheduleAppointment,
+  getProfessionalScheduleForDate,
+} from "@/lib/schedule-validation";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Dialog,
@@ -402,6 +408,19 @@ function PackagesPageContent() {
     setIsCheckInDialogOpen(true);
   };
 
+  const scheduleValidation = useMemo(() => {
+    if (!checkInProfessionalId || !checkInDate) return null;
+    const member = teamMembers?.data?.find((m: any) => m.id === checkInProfessionalId);
+    if (!member) return null;
+    return validateScheduleAppointment({
+      professionalName: member.display_name,
+      scheduleRule: member.schedule_rule,
+      dateStr: checkInDate,
+      timeStr: checkInTime && checkInTime.length === 5 ? checkInTime : undefined,
+      orgSettings,
+    });
+  }, [checkInProfessionalId, checkInDate, checkInTime, teamMembers?.data, orgSettings]);
+
   const confirmManualCheckIn = async () => {
     if (!pkgToCheckIn) return;
     if (!checkInDate || !checkInTime || checkInTime.length !== 5) {
@@ -415,20 +434,19 @@ function PackagesPageContent() {
       return toast.error("Por favor, selecione o profissional responsável.");
     }
 
+    if (scheduleValidation && !scheduleValidation.isValid) {
+      return toast.error(
+        scheduleValidation.errorMessage ||
+          "Não é possível registrar: profissional ou horário indisponível conforme a grade de horários."
+      );
+    }
+
     setIsCheckingIn(true);
     try {
       toast.loading("Registrando...", { id: "manual" });
 
-      // Garante fuso horário local correto
-      const localDate = new Date(
-        Number(checkInDate.split("-")[0]),
-        Number(checkInDate.split("-")[1]) - 1,
-        Number(checkInDate.split("-")[2]),
-        Number(hours),
-        Number(minutes),
-        0
-      );
-      const dateTimeString = localDate.toISOString();
+      // Garante fuso horário local correto no padrão de agendamentos com offset
+      const dateTimeString = `${checkInDate}T${hours}:${minutes}:00.000-03:00`;
 
       const isAutoComplete = orgSettings?.autoCompleteOnCheckin ?? true;
       const markAsCompleted = isAutoComplete ? true : checkInActionType === "complete";
@@ -738,14 +756,67 @@ function PackagesPageContent() {
                 <SelectValue placeholder="Selecione o profissional que atendeu..." />
               </SelectTrigger>
               <SelectContent>
-                {teamMembers?.data?.map((member: any) => (
-                  <SelectItem key={member.id} value={member.id}>
-                    {member.display_name || "Sem Nome"}
-                  </SelectItem>
-                ))}
+                {teamMembers?.data?.map((member: any) => {
+                  const memberSchedule = getProfessionalScheduleForDate(
+                    member.schedule_rule,
+                    checkInDate,
+                    orgSettings
+                  );
+                  return (
+                    <SelectItem key={member.id} value={member.id}>
+                      <div className="flex items-center justify-between w-full gap-3 text-xs">
+                        <span className="font-medium">{member.display_name || "Sem Nome"}</span>
+                        {!memberSchedule.isOpen ? (
+                          <span className="text-[10px] text-destructive bg-destructive/10 px-1.5 py-0.5 rounded font-bold">
+                            Folga / Fechado
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground font-medium">
+                            {memberSchedule.openTime} - {memberSchedule.closeTime}
+                          </span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
+
+          {/* Feedback Inteligente de Grade de Horário e Expediente */}
+          {checkInProfessionalId && scheduleValidation && (
+            <div className="my-1">
+              {!scheduleValidation.isValid ? (
+                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs animate-in fade-in">
+                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-destructive" />
+                  <div className="flex flex-col gap-0.5 leading-snug">
+                    <span className="font-bold">Indisponível na Grade de Horários</span>
+                    <span>{scheduleValidation.errorMessage}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-primary/5 border border-primary/10 text-xs text-foreground/80 animate-in fade-in">
+                  <Clock className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                  <div className="flex flex-col gap-0.5 leading-snug">
+                    <span>
+                      Expediente em <strong>{scheduleValidation.scheduleDetails.dayName}</strong>:{" "}
+                      <strong className="text-primary">
+                        {scheduleValidation.scheduleDetails.openTime} às {scheduleValidation.scheduleDetails.closeTime}
+                      </strong>
+                      {scheduleValidation.scheduleDetails.breakStart && (
+                        <span className="text-muted-foreground">
+                          {" "}(Intervalo: {scheduleValidation.scheduleDetails.breakStart} às {scheduleValidation.scheduleDetails.breakEnd})
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">
+                      Grade da empresa: {scheduleValidation.scheduleDetails.establishmentOpen} às {scheduleValidation.scheduleDetails.establishmentClose}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Etapa 2: Opção Condicional caso a finalização automática no totem/agenda esteja desativada */}
           {orgSettings && orgSettings.autoCompleteOnCheckin === false && (
@@ -800,7 +871,8 @@ function PackagesPageContent() {
                 !checkInTime ||
                 checkInTime.length !== 5 ||
                 !checkInProfessionalId ||
-                checkInProfessionalId === "none"
+                checkInProfessionalId === "none" ||
+                (scheduleValidation !== null && !scheduleValidation.isValid)
               }
               className="w-full sm:w-auto h-12 font-bold"
             >

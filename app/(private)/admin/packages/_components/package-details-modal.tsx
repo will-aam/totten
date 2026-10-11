@@ -56,6 +56,7 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/components/ui/use-toast";
+import { useSWRConfig } from "swr";
 
 interface PackageDetailsModalProps {
   open: boolean;
@@ -70,6 +71,7 @@ export function PackageDetailsModal({
 }: PackageDetailsModalProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const { mutate } = useSWRConfig();
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
@@ -157,7 +159,17 @@ export function PackageDetailsModal({
       const res = await fixAppointmentAction(apptToDelete);
 
       if (res.success) {
-        toast({ title: "Registro apagado!" });
+        toast({ title: "Registro removido com sucesso!" });
+        // Invalida o cache do SWR para atualizar agenda, clientes e extrato de histórico imediatamente
+        mutate(
+          (key: any) =>
+            typeof key === "string" &&
+            (key.includes("admin/agenda") ||
+              key.includes("admin/clients") ||
+              key.includes("admin/history")),
+          undefined,
+          { revalidate: true }
+        );
         await loadHistory();
         onOpenChange(false); // Força recarregar a tela principal
       } else {
@@ -398,27 +410,27 @@ export function PackageDetailsModal({
                         <RefreshCwAlt className="h-3 w-3 mr-1" /> Sincronizar
                       </Button>
                     </AlertDialogTrigger>
-                  <AlertDialogContent className="rounded-4xl">
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        Sincronizar saldo de sessões?
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Isso irá recontar todas as suas sessões realizadas e
-                        atualizar o saldo do pacote.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleSyncBalance}
-                        disabled={isSyncing}
-                      >
-                        {isSyncing ? "Sincronizando..." : "Confirmar"}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                    <AlertDialogContent className="rounded-4xl">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          Sincronizar saldo de sessões?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Isso irá recontar todas as suas sessões realizadas e
+                          atualizar o saldo do pacote.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleSyncBalance}
+                          disabled={isSyncing}
+                        >
+                          {isSyncing ? "Sincronizando..." : "Confirmar"}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               )}
             </div>
@@ -534,9 +546,9 @@ export function PackageDetailsModal({
             <AlertDialogHeader>
               <AlertDialogTitle>Deseja remover este registro?</AlertDialogTitle>
               <AlertDialogDescription>
-                Esta ação irá remover o agendamento da agenda e o registro do
-                histórico. Se a sessão foi marcada como REALIZADA, o saldo do
-                pacote será corrigido automaticamente.
+                Esta ação remove o agendamento da agenda e o registro do
+                histórico. Se a sessão foi realizada, o saldo do pacote é estornado,
+                os insumos retornam ao estoque e a auditoria é registrada.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

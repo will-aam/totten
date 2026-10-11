@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 
 export function SchedulingLink({ data: organizationSlug }: { data?: string }) {
   const [copied, setCopied] = useState(false);
-  const schedulingUrl = `https://totten.app/agendar/${organizationSlug || "minha-clinica"}`;
+  const schedulingUrl = `https://totten.com.br/${organizationSlug}/agendar`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(schedulingUrl);
@@ -26,7 +26,7 @@ export function SchedulingLink({ data: organizationSlug }: { data?: string }) {
         height={120}
         rotate={-15}
       />
-      
+
       <CardHeader className="py-3 px-4 relative z-10">
         <CardTitle className="text-base font-bold text-foreground">
           Link de Agendamento

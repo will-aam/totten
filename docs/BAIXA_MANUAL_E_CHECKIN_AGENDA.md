@@ -55,6 +55,32 @@ Para evitar inconsistências contábeis, falta de registro em relatórios de pro
 
 ---
 
+## 4. Validação Inteligente da Grade de Horários e Expediente dos Profissionais
+
+Para garantir que a baixa manual respeite integralmente o funcionamento da empresa e as escalas de trabalho de cada colaborador:
+
+### 1. Leitura da Grade Geral da Empresa (`opening_time` e `closing_time`)
+- O sistema lê os parâmetros globais configurados na Agenda / Autoatendimento (`openingTime` e `closingTime`, ex: 08:00 às 19:00).
+- Horários selecionados antes da abertura ou após o encerramento da grade são sinalizados como inválidos (a menos que a opção `allowOverLimitAppointments` esteja ativada).
+
+### 2. Leitura das Regras de Horários dos Profissionais (`ScheduleRule`, `WorkingHour`, `ScheduleException`)
+- Cada profissional possui vínculo com uma regra de horários (`schedule_rule_id`). Caso não tenha regra individual atribuída, o sistema herda automaticamente a **Grade Padrão (`is_default: true`)** da organização.
+- **Dias de Atendimento:** O sistema verifica se o dia da semana selecionado (ex: Domingo, Segunda, etc.) está habilitado (`is_open: true`) para o profissional selecionado.
+- **Folgas e Exceções:** Exceções específicas por data (`schedule_exceptions`, "YYYY-MM-DD") têm prioridade sobre a grade semanal. Se o colaborador possuir folga/exceção cadastrada na data, o sistema identifica imediatamente.
+- **Horário de Expediente e Intervalos:** O sistema verifica o horário de entrada (`open_time`), encerramento (`close_time`) e os intervalos de descanso/almoço (`break_start` até `break_end`).
+
+### 3. Feedback Visual e Notificações em Tempo Real (UI)
+- **Seletor de Profissionais Inteligente:** Ao abrir o seletor com a data preenchida, cada colaborador exibe o status correspondente para aquele dia:
+  - Se estiver em dia de folga/fechado: exibe a badge vermelha `Folga / Fechado`.
+  - Se estiver disponível: exibe a faixa de horário do expediente (ex: `08:00 - 18:00`).
+- **Alerta em Tempo Real:** Ao selecionar o colaborador e o horário, um card contextual informa:
+  - Se válido: exibe chip com o expediente daquele dia e a grade da empresa.
+  - Se indisponível: exibe card de alerta vermelho detalhando o motivo (ex: *"Profissional não atende aos Domingos conforme sua grade de horários"*, *"Horário fora do expediente"*, ou *"Horário coincide com o intervalo de descanso"*).
+- **Bloqueio do Botão "Confirmar Baixa":** O botão permanece bloqueado enquanto houver conflito com a grade de horários ou expediente.
+
+### 4. Validação Rigorosa no Servidor (`createManualPackageCheckIn`)
+- A Server Action executa a mesma validação contra o banco de dados antes de processar qualquer transação de check-in, impedindo manipulações client-side e retornando mensagem clara de erro caso o agendamento desrespeite a escala.
+
 ---
 
 ## 5. Exclusão de Check-in e Efeitos no Sistema (Opção 2)
@@ -86,11 +112,24 @@ Na tela de **Histórico de Check-in** (`/admin/history`), o administrador pode e
   - **Histórico de Ações:** No menu de registros do sistema (`/admin/notes`), permitindo consulta e auditoria sem possibilidade de exclusão do log.
 
 ### 5. Atualização em Tempo Real (SWR)
-- Ao confirmar a exclusão na tabela de histórico, o SWR invalida as chaves de cache da agenda (`admin/agenda`) e clientes (`admin/clients`), sincronizando imediatamente todas as abas abertas sem necessidade de recarregar a página (F5).
+- Ao confirmar a exclusão tanto na tabela de histórico quanto no modal de detalhes do pacote, o SWR invalida as chaves de cache da agenda (`admin/agenda`), clientes (`admin/clients`) e histórico (`admin/history`), sincronizando imediatamente todas as abas abertas sem necessidade de recarregar a página (F5).
+
+### 6. Unificação da Exclusão no Modal de Pacotes (`PackageDetailsModal`)
+- O botão de exclusão no modal de detalhes do pacote (`PackageService.fixAppointment`) agora opera com a mesma paridade contábil e de sistema que o Extrato de Presenças (`deleteCheckIn`):
+  1. **Estorno de Sessão:** Apenas se o status for `REALIZADO` (se for agendamento futuro `PENDENTE`/`CONFIRMADO`, o saldo permanece intacto).
+  2. **Estoque de Insumos:** Devolve produtos ao estoque e remove despesas automáticas de insumos vinculadas.
+  3. **Programa de Fidelidade:** Estorna os pontos concedidos pelo atendimento.
+  4. **Preservação de Check-in:** Realiza soft delete no `CheckIn` associado (desvinculando `appointment_id: null` para impedir a exclusão em cascata do banco).
+  5. **Remoção da Agenda:** Deleta o registro de `Appointment` da tabela `appointments` e quaisquer transações financeiras residuais.
+  6. **Auditoria:** Gera nota permanente em `client_notes` com autor e detalhes da ação.
 
 ---
 
-## 6. Arquivos Modificados
-- [`app/actions/packages.ts`](file:///c:/Users/will0/Desktop/totten/app/actions/packages.ts): Parâmetro `markAsCompleted`, verificação de agendamento do mesmo dia, baixa condicional de estoque e pacote; implementação de `deleteCheckIn` com auditoria em `client_notes`, estorno condicional de sessão e remoção do agendamento na agenda (Opção 2).
-- [`app/(private)/admin/packages/page.tsx`](file:///c:/Users/will0/Desktop/totten/app/(private)/admin/packages/page.tsx): Leitura de `autoCompleteOnCheckin`, exibição condicional do seletor de tipo de atendimento, validação de campos obrigatórios, fuso horário local e revalidação de cache SWR da agenda.
+## 7. Arquivos Modificados
+- [`lib/schedule-validation.ts`](file:///c:/Users/will0/Desktop/totten/lib/schedule-validation.ts): Módulo centralizado de validação de datas, expediente, intervalos e limites de grade.
+- [`lib/server/services/packages/package.service.ts`](file:///c:/Users/will0/Desktop/totten/lib/server/services/packages/package.service.ts): `fixAppointment` unificado com todas as garantias contábeis, estorno condicional, reversão de estoque e fidelidade, soft-delete de check-in e auditoria em `clientNote`.
+- [`app/actions/team.ts`](file:///c:/Users/will0/Desktop/totten/app/actions/team.ts): `getTeam` agora inclui os horários completos de expediente (`working_hours`), exceções pontuais (`schedule_exceptions`) e herança automática da regra padrão caso o colaborador não tenha regra individual vinculada.
+- [`app/actions/packages.ts`](file:///c:/Users/will0/Desktop/totten/app/actions/packages.ts): Validação de expediente e limites da grade na action `createManualPackageCheckIn`; parâmetro `markAsCompleted`, baixa condicional de estoque e pacote; `fixAppointmentAction` com autor e revalidação de rotas.
+- [`app/(private)/admin/packages/page.tsx`](file:///c:/Users/will0/Desktop/totten/app/(private)/admin/packages/page.tsx): Leitura de `autoCompleteOnCheckin`, exibição condicional do seletor de tipo de atendimento, validação reativa e badges de disponibilidade por profissional e data, bloqueio dinâmico do botão "Confirmar Baixa", fuso horário local seguro e revalidação de cache SWR da agenda.
+- [`app/(private)/admin/packages/_components/package-details-modal.tsx`](file:///c:/Users/will0/Desktop/totten/app/(private)/admin/packages/_components/package-details-modal.tsx): Invalidação SWR de agenda, clientes e histórico no callback de exclusão e texto explicativo claro no diálogo de confirmação.
 - [`app/(private)/admin/history/_components/history-table.tsx`](file:///c:/Users/will0/Desktop/totten/app/(private)/admin/history/_components/history-table.tsx): Invalidação de cache SWR (`admin/agenda` e `admin/clients`) no callback de sucesso de exclusão de check-in.

@@ -33,10 +33,33 @@ export async function getTeam() {
         schedule_rule_id: true,
         schedule_rule: {
           select: {
+            id: true,
+            name: true,
+            is_default: true,
             working_hours: {
-              select: { day_of_week: true, is_open: true }
-            }
-          }
+              select: {
+                day_of_week: true,
+                is_open: true,
+                open_time: true,
+                close_time: true,
+                break_start: true,
+                break_end: true,
+                break_reason: true,
+              },
+              orderBy: { day_of_week: "asc" },
+            },
+            schedule_exceptions: {
+              select: {
+                date: true,
+                is_open: true,
+                open_time: true,
+                close_time: true,
+                break_start: true,
+                break_end: true,
+                break_reason: true,
+              },
+            },
+          },
         },
         services: { select: { id: true, name: true } },
         package_templates: { select: { id: true, name: true } },
@@ -44,7 +67,48 @@ export async function getTeam() {
       orderBy: { created_at: "asc" },
     });
 
-    return { success: true, data: team };
+    const defaultRule = await prisma.scheduleRule.findFirst({
+      where: {
+        organization_id: admin.organizationId,
+        is_default: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        is_default: true,
+        working_hours: {
+          select: {
+            day_of_week: true,
+            is_open: true,
+            open_time: true,
+            close_time: true,
+            break_start: true,
+            break_end: true,
+            break_reason: true,
+          },
+          orderBy: { day_of_week: "asc" },
+        },
+        schedule_exceptions: {
+          select: {
+            date: true,
+            is_open: true,
+            open_time: true,
+            close_time: true,
+            break_start: true,
+            break_end: true,
+            break_reason: true,
+          },
+        },
+      },
+    });
+
+    // Se o colaborador não tiver regra específica vinculada, herda a regra padrão da organização
+    const enrichedTeam = team.map((member) => ({
+      ...member,
+      schedule_rule: member.schedule_rule || defaultRule || null,
+    }));
+
+    return { success: true, data: enrichedTeam };
   } catch (error) {
     console.error("Erro ao buscar equipe:", error);
     return { success: false, error: "Erro ao buscar equipe." };
