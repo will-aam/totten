@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useIsMobile } from "@/components/ui/use-mobile";
 
-interface Reward {
+export interface Reward {
   id: number | string;
   title: string;
   pointsCost: number;
@@ -18,10 +18,10 @@ interface Reward {
   validityDays?: number | null;
 }
 
-interface LoyaltyRewardModalProps {
+export interface LoyaltyRewardModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (reward: Reward) => void;
+  onSave: (reward: Reward) => void | Promise<void>;
   // If editing an existing one
   initialData?: Reward | null;
 }

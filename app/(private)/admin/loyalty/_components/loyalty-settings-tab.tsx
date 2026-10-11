@@ -29,17 +29,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { LoyaltyRewardModal } from "./loyalty-reward-modal";
+import { LoyaltyRewardModal, type Reward } from "./loyalty-reward-modal";
 import { toast } from "sonner";
 import { updateLoyaltySettings } from "@/app/actions/loyalty";
-
-interface Reward {
-  id: number | string;
-  title: string;
-  pointsCost: number;
-  conditions?: string;
-  validityDays?: number;
-}
 
 interface LoyaltySettingsTabProps {
   organizationId: string;

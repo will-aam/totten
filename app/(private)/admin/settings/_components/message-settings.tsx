@@ -24,6 +24,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { apiClient, ApiError } from "@/lib/api-client";
 // 🔌 Importando a nossa Server Action nativa
 import { updateMessagesAction } from "@/app/actions/messages";
+import { DEFAULT_MESSAGE_TEMPLATES } from "@/lib/whatsapp-utils";
 
 interface MessageSettingsResponse {
   msgUpdate?: string;
@@ -31,6 +32,7 @@ interface MessageSettingsResponse {
   msgRenewal?: string;
   msgReminder?: string;
   msgManualConfirmation?: string;
+  msgBirthday?: string;
 }
 
 export function MessageSettings() {
@@ -45,6 +47,7 @@ export function MessageSettings() {
   const [msgRenewal, setMsgRenewal] = useState("");
   const [msgReminder, setMsgReminder] = useState("");
   const [msgManualConfirmation, setMsgManualConfirmation] = useState("");
+  const [msgBirthday, setMsgBirthday] = useState("");
 
   // Busca dados do banco quando carrega
   useEffect(() => {
@@ -53,26 +56,15 @@ export function MessageSettings() {
         const data =
           await apiClient<MessageSettingsResponse>("settings/messages");
 
-        setMsgUpdate(
-          data.msgUpdate ||
-          "Olá, {nome}! Tudo bem? 💆‍♀️✨\n\nPassando para avisar que seu check-in foi registrado. Você já realizou {usadas} de {total} sessões do seu pacote.",
-        );
-        setMsgWelcome(
-          data.msgWelcome ||
-          "Olá, {nome}! Que alegria ter você aqui na nossa empresa. 🥰\n\nSeu pacote de {total} sessões já está ativo no nosso sistema. Qualquer dúvida, é só chamar!",
-        );
-        setMsgRenewal(
-          data.msgRenewal ||
-          "Parabéns, {nome}! 🎉 Você concluiu hoje a última sessão do seu pacote.\n\nComo o seu bem-estar é nossa prioridade, que tal já deixarmos o seu próximo pacote garantido? Responda SIM para vermos os horários!",
-        );
-        setMsgReminder(
-          data.msgReminder ||
-          "Oi, {nome}! Passando para lembrar do nosso horário agendado para amanhã às {horario}. \n\nPodemos confirmar sua presença? 👍",
-        );
+        setMsgUpdate(data.msgUpdate || DEFAULT_MESSAGE_TEMPLATES.CHECK_IN);
+        setMsgWelcome(data.msgWelcome || DEFAULT_MESSAGE_TEMPLATES.WELCOME);
+        setMsgRenewal(data.msgRenewal || DEFAULT_MESSAGE_TEMPLATES.RENEWAL);
+        setMsgReminder(data.msgReminder || DEFAULT_MESSAGE_TEMPLATES.REMINDER);
         setMsgManualConfirmation(
           data.msgManualConfirmation ||
-          "Olá {nome}! Passando para confirmar o seu horário amanhã às *{horario}* para o serviço de {servico}. Podemos confirmar? 🥰",
+          DEFAULT_MESSAGE_TEMPLATES.MANUAL_CONFIRMATION,
         );
+        setMsgBirthday(data.msgBirthday || DEFAULT_MESSAGE_TEMPLATES.BIRTHDAY);
       } catch (error) {
         console.error("Erro ao buscar mensagens:", error);
         if (error instanceof ApiError) {
@@ -99,6 +91,7 @@ export function MessageSettings() {
         msgRenewal,
         msgReminder,
         msgManualConfirmation,
+        msgBirthday,
       });
 
       if (result.error) {
@@ -289,7 +282,7 @@ export function MessageSettings() {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="item-5" className="px-4 border-0">
+              <AccordionItem value="item-5" className="border-b px-4">
                 <AccordionTrigger className="hover:no-underline hover:text-primary transition-colors">
                   5. Confirmação Manual (WhatsApp)
                 </AccordionTrigger>
@@ -307,6 +300,25 @@ export function MessageSettings() {
                       {"{nome}"}
                     </code>, <code className="text-primary">{"{horario}"}</code>
                     , <code className="text-primary">{"{servico}"}</code>
+                  </p>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-6" className="px-4 border-0">
+                <AccordionTrigger className="hover:no-underline hover:text-primary transition-colors">
+                  6. Mensagem de Aniversário (WhatsApp)
+                </AccordionTrigger>
+                <AccordionContent className="pb-4">
+                  <Textarea
+                    rows={3}
+                    value={msgBirthday}
+                    onChange={(e) => setMsgBirthday(e.target.value)}
+                    className="resize-none bg-muted focus-visible:ring-primary"
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Mensagem acionada pelo botão do WhatsApp na página de
+                    Aniversariantes. <br />
+                    Variáveis: <code className="text-primary">{"{nome}"}</code>
                   </p>
                 </AccordionContent>
               </AccordionItem>

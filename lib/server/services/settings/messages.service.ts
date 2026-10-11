@@ -28,6 +28,7 @@ export class MessagesService {
       msgRenewal: templatesMap["RENEWAL"] || "",
       msgReminder: templatesMap["REMINDER"] || "",
       msgManualConfirmation: templatesMap["MANUAL_CONFIRMATION"] || "",
+      msgBirthday: templatesMap["BIRTHDAY"] || "",
     };
   }
 
@@ -43,6 +44,7 @@ export class MessagesService {
       msgRenewal,
       msgReminder,
       msgManualConfirmation,
+      msgBirthday,
     } = data;
 
     await prisma.$transaction(async (tx) => {
@@ -52,6 +54,7 @@ export class MessagesService {
         { type: "RENEWAL", content: msgRenewal },
         { type: "REMINDER", content: msgReminder },
         { type: "MANUAL_CONFIRMATION", content: msgManualConfirmation },
+        { type: "BIRTHDAY", content: msgBirthday },
       ];
 
       for (const template of templates) {

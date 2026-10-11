@@ -15,6 +15,9 @@ import {
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
+import { DEFAULT_MESSAGE_TEMPLATES } from "@/lib/whatsapp-utils";
+import { WhatsAppDirectButton } from "@/app/(private)/admin/_components/whatsapp/whatsapp-direct-button";
+
 interface Reminder {
   id: string;
   time: string;
@@ -27,19 +30,6 @@ interface Reminder {
 type SettingsMessagesResponse = {
   msgManualConfirmation?: string;
 };
-
-const DEFAULT_MANUAL_CONFIRMATION_TEMPLATE =
-  "Olá {nome}! Passando para confirmar o seu horário amanhã às *{horario}* para o serviço de {servico}. Podemos confirmar? 🥰";
-
-function applyTemplate(
-  template: string,
-  vars: { nome: string; horario: string; servico: string },
-) {
-  return template
-    .replace(/{nome}/g, vars.nome)
-    .replace(/{horario}/g, vars.horario)
-    .replace(/{servico}/g, vars.servico);
-}
 
 export default function RemindersPage() {
   //  OTIMIZAÇÃO DE RENDERIZAÇÃO: Calcula as datas de forma síncrona com useMemo
@@ -74,28 +64,9 @@ export default function RemindersPage() {
 
   const manualTemplate =
     settingsMsgs?.msgManualConfirmation?.trim() ||
-    DEFAULT_MANUAL_CONFIRMATION_TEMPLATE;
+    DEFAULT_MESSAGE_TEMPLATES.MANUAL_CONFIRMATION;
 
   const [messagedIds, setMessagedIds] = useState<Set<string>>(new Set());
-
-  const handleSendWhatsApp = (appt: Reminder) => {
-    const cleanPhone = appt.phone.replace(/\D/g, "");
-    const firstName = appt.clientName?.split(" ")[0] || appt.clientName || "";
-
-    const msg = applyTemplate(manualTemplate, {
-      nome: firstName,
-      horario: appt.time,
-      servico: appt.serviceName,
-    });
-
-    setMessagedIds((prev) => new Set(prev).add(appt.id));
-    window.open(
-      `https://api.whatsapp.com/send?phone=55${cleanPhone}&text=${encodeURIComponent(
-        msg,
-      )}`,
-      "_blank",
-    );
-  };
 
   return (
     <>
@@ -197,19 +168,32 @@ export default function RemindersPage() {
                     </div>
 
                     <div className="flex justify-end w-full md:w-auto border-t md:border-none border-border/40 pt-4 md:pt-0">
-                      <Button
-                        onClick={() => handleSendWhatsApp(appt)}
+                      <WhatsAppDirectButton
+                        phone={appt.phone}
+                        template={manualTemplate}
+                        variables={{
+                          nome:
+                            appt.clientName?.split(" ")[0] ||
+                            appt.clientName ||
+                            "",
+                          horario: appt.time,
+                          servico: appt.serviceName,
+                        }}
+                        onSent={() =>
+                          setMessagedIds((prev) => new Set(prev).add(appt.id))
+                        }
                         variant={hasMessaged ? "secondary" : "default"}
-                        className={cn("w-full md:w-auto rounded-2xl h-11 px-5 shrink-0 transition-all font-bold text-sm over:bg-transparent active:scale-90 active:brightness-90",
+                        className={cn(
+                          "w-full md:w-auto rounded-2xl h-11 px-5 shrink-0 transition-all font-bold text-sm active:scale-90 active:brightness-90",
                         )}
                       >
-                        <Whatsapp removePadding className="h-5 w-5" />
+                        <Whatsapp removePadding className="h-5 w-5 mr-1" />
                         {hasMessaged
                           ? "Mensagem Enviada"
                           : isConfirmed
                             ? "Reenviar Lembrete"
                             : "Confirmar Presença"}
-                      </Button>
+                      </WhatsAppDirectButton>
                     </div>
                   </div>
                 );

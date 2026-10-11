@@ -11,6 +11,7 @@ export async function updateMessagesAction(data: {
   msgRenewal?: string;
   msgReminder?: string;
   msgManualConfirmation?: string;
+  msgBirthday?: string;
 }) {
   try {
     // 🛡️ Validação unificada de sessão e extração do tenant garantida
@@ -19,9 +20,10 @@ export async function updateMessagesAction(data: {
     // Delega a regra de negócio e o upsert em massa para o Service
     await MessagesService.updateTemplates(admin.organizationId, data);
 
-    // Revalida o cache do Next.js para as páginas de configurações
+    // Revalida o cache do Next.js para as páginas de configurações e aniversários
     revalidatePath("/admin/settings");
     revalidatePath("/admin/settings/messages");
+    revalidatePath("/admin/birthdays");
 
     return { success: true, message: "Mensagens atualizadas com sucesso!" };
   } catch (error: any) {

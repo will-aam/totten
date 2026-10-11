@@ -19,31 +19,45 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Gift, Whatsapp, LoaderDots } from "@boxicons/react";
+import { Gift, LoaderDots } from "@boxicons/react";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { apiClient } from "@/lib/api-client";
+import { updateMessagesAction } from "@/app/actions/messages";
+import { DEFAULT_MESSAGE_TEMPLATES } from "@/lib/whatsapp-utils";
+import { WhatsAppDirectButton } from "@/app/(private)/admin/_components/whatsapp/whatsapp-direct-button";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function BirthdaysPage() {
   const { data: clients, isLoading } = useSWR("/api/birthdays", fetcher);
+  const { data: settingsMsgs } = useSWR<{ msgBirthday?: string }>(
+    "settings/messages",
+    apiClient,
+  );
   const [messageTemplate, setMessageTemplate] = useState("");
 
   useEffect(() => {
-    const saved = localStorage.getItem("totten_birthday_msg");
-    if (saved) {
-      setMessageTemplate(saved);
+    if (settingsMsgs?.msgBirthday) {
+      setMessageTemplate(settingsMsgs.msgBirthday);
     } else {
-      setMessageTemplate(
-        "Olá {nome}! 🎉 Passando para te desejar um Feliz Aniversário! Que seu novo ciclo seja repleto de alegrias e muito bem-estar. Um abraço com carinho de toda a nossa equipe! 🥰",
-      );
+      const saved = localStorage.getItem("totten_birthday_msg");
+      setMessageTemplate(saved || DEFAULT_MESSAGE_TEMPLATES.BIRTHDAY);
     }
-  }, []);
+  }, [settingsMsgs]);
 
   const handleSaveMessage = (value: string) => {
     setMessageTemplate(value);
     localStorage.setItem("totten_birthday_msg", value);
+  };
+
+  const handlePersistMessage = async () => {
+    try {
+      await updateMessagesAction({ msgBirthday: messageTemplate });
+    } catch (e) {
+      console.error("Erro ao sincronizar template de aniversário", e);
+    }
   };
 
   const { lastMonth, thisWeek, thisMonth, nextMonth, upcoming } =
@@ -121,26 +135,7 @@ export default function BirthdaysPage() {
       return { lastMonth, thisWeek, thisMonth, nextMonth, upcoming };
     }, [clients]);
 
-  const handleWhatsApp = (e: React.MouseEvent, client: any) => {
-    e.preventDefault();
 
-    if (!client.phone_whatsapp) {
-      toast.error("Este cliente não possui WhatsApp cadastrado.");
-      return;
-    }
-
-    const firstName = client.name.split(" ")[0];
-    const finalMessage = messageTemplate.replace(/{nome}/g, firstName);
-    const phone = client.phone_whatsapp.replace(/\D/g, "");
-
-    //  Agora usando a API direta do WhatsApp igual à página de Lembretes!
-    window.open(
-      `https://api.whatsapp.com/send?phone=55${phone}&text=${encodeURIComponent(
-        finalMessage,
-      )}`,
-      "_blank",
-    );
-  };
   const renderClientList = (list: any[], emptyText: string) => {
     if (list.length === 0) {
       return (
@@ -181,15 +176,16 @@ export default function BirthdaysPage() {
               </div>
 
               <div className="flex items-center gap-2">
-                <Button
-                  onClick={(e) => handleWhatsApp(e, client)}
-                  variant="ghost"
-                  size="icon"
+                <WhatsAppDirectButton
+                  phone={client.phone_whatsapp}
+                  template={messageTemplate || DEFAULT_MESSAGE_TEMPLATES.BIRTHDAY}
+                  variables={{
+                    nome: client.name?.split(" ")[0] || client.name || "",
+                  }}
+                  iconOnly
                   className="h-9 w-9 bg-green-50 text-green-600 hover:bg-green-500 hover:text-white transition-colors"
                   title="Enviar WhatsApp"
-                >
-                  <Whatsapp className="h-4 w-4" />
-                </Button>
+                />
               </div>
             </Link>
           );
@@ -212,6 +208,7 @@ export default function BirthdaysPage() {
             rows={3}
             value={messageTemplate}
             onChange={(e) => handleSaveMessage(e.target.value)}
+            onBlur={handlePersistMessage}
             className="resize-none bg-background focus-visible:ring-primary/50 text-sm leading-relaxed border-border/50 mt-1"
             placeholder="Digite a mensagem de feliz aniversário..."
           />

@@ -8,14 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Whatsapp,
   Pencil,
   LoaderDots,
@@ -27,10 +19,10 @@ import {
 } from "@boxicons/react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { apiClient } from "@/lib/api-client";
 import { formatName } from "@/lib/utils";
 //  IMPORTANTE: Importando a Action nativa de atualização de cliente
 import { updateClientAction } from "@/app/actions/clients";
+import { WhatsAppQuickDropdown } from "@/app/(private)/admin/_components/whatsapp/whatsapp-quick-dropdown";
 
 export type ClientContactType = {
   id: string;
@@ -111,28 +103,6 @@ export function ClientContact({ client }: ClientContactProps) {
   const formattedName = formatName(client.name);
   const initial = formattedName ? formattedName.charAt(0).toUpperCase() : "?";
 
-  const [templates, setTemplates] = useState({
-    msgUpdate:
-      "Olá, {nome}! Tudo bem? 💆‍♀️✨\n\nPassando para avisar que seu check-in foi registrado.",
-    msgWelcome: "Olá, {nome}! Que alegria ter você aqui na nossa empresa. 🥰",
-    msgRenewal:
-      "Parabéns, {nome}! 🎉 Você concluiu hoje a última sessão do seu pacote.",
-    msgReminder:
-      "Oi, {nome}! Passando para lembrar do nosso horário agendado. 👍",
-  });
-
-  useEffect(() => {
-    const fetchTemplates = async () => {
-      try {
-        const data =
-          await apiClient<Partial<typeof templates>>("settings/messages");
-        setTemplates((prev) => ({ ...prev, ...data }));
-      } catch (e) {
-        console.error("Erro ao carregar templates", e);
-      }
-    };
-    fetchTemplates();
-  }, []);
 
   useEffect(() => {
     if (!isEditing) {
@@ -232,21 +202,6 @@ export function ClientContact({ client }: ClientContactProps) {
     }
   };
 
-  const handleSendWhatsApp = (templateText: string) => {
-    if (!client.phone_whatsapp) return toast.error("Cliente sem WhatsApp.");
-    const rawPhone = client.phone_whatsapp.replace(/\D/g, "");
-    const targetPhone =
-      rawPhone.startsWith("55") || rawPhone.length >= 12
-        ? rawPhone
-        : `55${rawPhone}`;
-    if (targetPhone.length < 12) return toast.error("WhatsApp inválido.");
-
-    const message = templateText.replace(/{nome}/g, formattedName.split(" ")[0]);
-    window.open(
-      `https://api.whatsapp.com/send?phone=${targetPhone}&text=${encodeURIComponent(message)}`,
-      "_blank",
-    );
-  };
 
   const addressDisplay = [
     client.street
@@ -454,59 +409,10 @@ export function ClientContact({ client }: ClientContactProps) {
 
                 {/* Botão de WhatsApp acoplado à área superior */}
                 <div className="mt-4 sm:mt-5 w-full sm:w-auto">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full sm:w-auto h-10 border-[#25D366]/30 bg-[#25D366]/5 text-[#25D366] hover:bg-[#25D366]/10 transition-colors font-semibold"
-                      >
-                        <Whatsapp className="mr-2 h-4 w-4" /> Enviar Mensagem
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      align="start"
-                      className="w-64 rounded-full"
-                    >
-                      <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider">
-                        Modelos Rápidos
-                      </DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => handleSendWhatsApp(templates.msgUpdate)}
-                        className="cursor-pointer py-2.5"
-                      >
-                        <span className="font-medium text-sm">
-                          Atualização (Check-in)
-                        </span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleSendWhatsApp(templates.msgWelcome)}
-                        className="cursor-pointer py-2.5"
-                      >
-                        <span className="font-medium text-sm">
-                          Boas-vindas
-                        </span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleSendWhatsApp(templates.msgRenewal)}
-                        className="cursor-pointer py-2.5"
-                      >
-                        <span className="font-medium text-sm">
-                          Renovação de Pacote
-                        </span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() =>
-                          handleSendWhatsApp(templates.msgReminder)
-                        }
-                        className="cursor-pointer py-2.5"
-                      >
-                        <span className="font-medium text-sm">
-                          Lembrete de Agenda
-                        </span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <WhatsAppQuickDropdown
+                    clientName={formattedName}
+                    clientPhone={client.phone_whatsapp}
+                  />
                 </div>
               </div>
             </div>
