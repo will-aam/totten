@@ -67,7 +67,7 @@ export function FinanceSpeedDial({
     <>
       <div
         className={cn(
-          "fixed bottom-28 right-4 md:bottom-8 md:right-8 z-50 flex flex-col items-end transition-all duration-300",
+          "fixed bottom-28 right-4 md:bottom-8 md:right-8 z-[60] flex flex-col items-end transition-all duration-300",
           showScrollTop
             ? "translate-y-16 opacity-0 pointer-events-none"
             : "translate-y-0 opacity-100",
