@@ -96,10 +96,23 @@ export async function updateTransaction(
 
     const currentTx = await prisma.transaction.findUnique({
       where: { id, organization_id: admin.organizationId },
-      select: { recurrence_id: true, date: true },
+      select: {
+        recurrence_id: true,
+        date: true,
+        package_id: true,
+        appointment_id: true,
+        stock_item_id: true,
+      },
     });
 
     if (!currentTx) throw new Error("Transação não encontrada.");
+
+    if (currentTx.package_id || currentTx.appointment_id || currentTx.stock_item_id) {
+      return {
+        success: false,
+        error: "Esta movimentação foi gerada automaticamente pelo sistema e não pode ser editada diretamente pelo extrato financeiro.",
+      };
+    }
 
     await prisma.transaction.update({
       where: { id },
@@ -131,9 +144,12 @@ export async function updateTransaction(
     revalidatePath("/admin/finance/dashboard");
     revalidatePath("/admin/finance/transactions");
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro ao atualizar transação:", error);
-    return { success: false, error: "Falha ao atualizar movimentação." };
+    return {
+      success: false,
+      error: error?.message || "Falha ao atualizar movimentação.",
+    };
   }
 }
 
@@ -144,10 +160,23 @@ export async function deleteTransaction(id: string, deleteFuture?: boolean) {
 
     const currentTx = await prisma.transaction.findUnique({
       where: { id, organization_id: admin.organizationId },
-      select: { recurrence_id: true, date: true },
+      select: {
+        recurrence_id: true,
+        date: true,
+        package_id: true,
+        appointment_id: true,
+        stock_item_id: true,
+      },
     });
 
     if (!currentTx) throw new Error("Transação não encontrada.");
+
+    if (currentTx.package_id || currentTx.appointment_id || currentTx.stock_item_id) {
+      return {
+        success: false,
+        error: "Esta movimentação foi gerada automaticamente pelo sistema e não pode ser excluída diretamente pelo extrato financeiro.",
+      };
+    }
 
     if (deleteFuture && currentTx.recurrence_id) {
       await prisma.transaction.deleteMany({
@@ -166,9 +195,12 @@ export async function deleteTransaction(id: string, deleteFuture?: boolean) {
     revalidatePath("/admin/finance/dashboard");
     revalidatePath("/admin/finance/transactions");
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro ao excluir transação:", error);
-    return { success: false, error: "Falha ao excluir movimentação." };
+    return {
+      success: false,
+      error: error?.message || "Falha ao excluir movimentação.",
+    };
   }
 }
 
@@ -211,6 +243,9 @@ export async function getFullTransactions(month: number, year: number) {
         status: true,
         recurrence_id: true,
         installment: true,
+        package_id: true,
+        appointment_id: true,
+        stock_item_id: true,
         client: { select: { name: true } },
         payment_method: { select: { type: true } },
         admin: { select: { display_name: true } }, //  RASTREABILIDADE
@@ -251,21 +286,27 @@ export async function getFullTransactions(month: number, year: number) {
       return items;
     });
 
-    const historyFromTx = manualTransactions.map((t) => ({
-      id: t.id,
-      originalId: t.id,
-      isManual: true,
-      type: t.type,
-      description: t.description,
-      amount: Number(t.amount),
-      date: t.date.toISOString(),
-      status: t.status,
-      clientName: t.client?.name,
-      paymentMethod: t.payment_method?.type || undefined,
-      recurrence_id: t.recurrence_id,
-      installment: t.installment,
-      professionalName: t.admin?.display_name || undefined, //
-    }));
+    const historyFromTx = manualTransactions.map((t) => {
+      const isManual = !t.package_id && !t.appointment_id && !t.stock_item_id;
+      return {
+        id: t.id,
+        originalId: t.id,
+        isManual,
+        type: t.type,
+        description: t.description,
+        amount: Number(t.amount),
+        date: t.date.toISOString(),
+        status: t.status,
+        clientName: t.client?.name,
+        paymentMethod: t.payment_method?.type || undefined,
+        recurrence_id: t.recurrence_id,
+        installment: t.installment,
+        package_id: t.package_id || undefined,
+        appointment_id: t.appointment_id || undefined,
+        stock_item_id: t.stock_item_id || undefined,
+        professionalName: t.admin?.display_name || undefined, //
+      };
+    });
 
     return [...historyFromAppts, ...historyFromTx].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
@@ -476,6 +517,8 @@ export async function getPaginatedTransactions(params: {
           recurrence_id: true,
           installment: true,
           package_id: true,
+          appointment_id: true,
+          stock_item_id: true,
           package: { select: { id: true, name: true } },
           client: { select: { name: true } },
           payment_method: { select: { type: true } },
@@ -528,23 +571,28 @@ export async function getPaginatedTransactions(params: {
       return items;
     });
 
-    const historyFromTx = rawTxs.map((t) => ({
-      id: t.id,
-      originalId: t.id,
-      isManual: true,
-      type: t.type,
-      description: t.description,
-      amount: Number(t.amount),
-      date: t.date.toISOString(),
-      status: t.status,
-      clientName: t.client?.name,
-      paymentMethod: t.payment_method?.type || undefined,
-      recurrence_id: t.recurrence_id,
-      installment: t.installment,
-      package_id: t.package_id || undefined,
-      packageName: t.package?.name || undefined,
-      professionalName: t.admin?.display_name || undefined, //
-    }));
+    const historyFromTx = rawTxs.map((t) => {
+      const isManual = !t.package_id && !t.appointment_id && !t.stock_item_id;
+      return {
+        id: t.id,
+        originalId: t.id,
+        isManual,
+        type: t.type,
+        description: t.description,
+        amount: Number(t.amount),
+        date: t.date.toISOString(),
+        status: t.status,
+        clientName: t.client?.name,
+        paymentMethod: t.payment_method?.type || undefined,
+        recurrence_id: t.recurrence_id,
+        installment: t.installment,
+        package_id: t.package_id || undefined,
+        packageName: t.package?.name || undefined,
+        appointment_id: t.appointment_id || undefined,
+        stock_item_id: t.stock_item_id || undefined,
+        professionalName: t.admin?.display_name || undefined, //
+      };
+    });
 
     // Une tudo e ordena
     const allHistory = [...historyFromAppts, ...historyFromTx].sort(

@@ -646,8 +646,22 @@ export default function TransactionsPage() {
                     {formatDate(viewingTx.date)}
                   </span>
                 </div>
+                <div className="flex flex-col gap-1.5 bg-muted/10 p-4 rounded-2xl border border-border/40">
+                  <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                    Origem
+                  </span>
+                  <span className="text-sm font-bold truncate">
+                    {viewingTx.package_id
+                      ? "Venda de Pacote"
+                      : viewingTx.appointment_id
+                        ? "Atendimento / Totem"
+                        : viewingTx.stock_item_id
+                          ? "Controle de Estoque"
+                          : "Lançamento Manual"}
+                  </span>
+                </div>
                 {viewingTx.clientName && (
-                  <div className="flex flex-col gap-1.5 bg-muted/10 p-4 rounded-2xl border border-border/40">
+                  <div className="flex flex-col gap-1.5 bg-muted/10 p-4 rounded-2xl border border-border/40 col-span-2">
                     <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
                       Cliente
                     </span>
