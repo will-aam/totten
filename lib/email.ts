@@ -109,7 +109,7 @@ export async function sendClosingReportEmail(
     await resend.emails.send({
       from: "Totten <noreply@totten.com.br>", // Dica: use o e-mail verificado no Resend
       to: email,
-      subject: `📊 Fechamento Mensal - ${monthStr}/${yearStr}`,
+      subject: `Fechamento Mensal - ${monthStr}/${yearStr}`,
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e4e4e7; border-radius: 12px;">
           <h1 style="color: #18181b; text-align: center;">Fechamento Mensal</h1>

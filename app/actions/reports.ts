@@ -128,11 +128,22 @@ export async function getClosingReportAvailablePeriods() {
     ]);
 
     // Mapeia ano -> Set de meses
+    // REGRA DE FECHAMENTO: Apenas meses que já fecharam (anteriores ao mês atual)
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1; // 1 a 12
+
     const periodsMap = new Map<number, Set<number>>();
 
     const addPeriod = (d: Date) => {
       const year = d.getFullYear();
       const month = d.getMonth() + 1; // 1 a 12
+
+      // Ignora datas futuras ou do mês atual que ainda está em andamento
+      if (year > currentYear || (year === currentYear && month >= currentMonth)) {
+        return;
+      }
+
       if (!periodsMap.has(year)) {
         periodsMap.set(year, new Set<number>());
       }
@@ -142,10 +153,13 @@ export async function getClosingReportAvailablePeriods() {
     transactions.forEach((t) => addPeriod(new Date(t.date)));
     appointments.forEach((a) => addPeriod(new Date(a.date_time)));
 
-    // Se ainda não houver nenhum dado, fornece ao menos o mês/ano atual
+    // Se ainda não houver nenhum mês fechado com dados históricos, sugere o mês anterior imediato como padrão
     if (periodsMap.size === 0) {
-      const now = new Date();
-      periodsMap.set(now.getFullYear(), new Set([now.getMonth() + 1]));
+      const lastMonthDate = new Date(currentYear, now.getMonth() - 1, 1);
+      periodsMap.set(
+        lastMonthDate.getFullYear(),
+        new Set([lastMonthDate.getMonth() + 1]),
+      );
     }
 
     const availableYears = Array.from(periodsMap.keys()).sort((a, b) => b - a);
@@ -166,10 +180,13 @@ export async function getClosingReportAvailablePeriods() {
   } catch (error) {
     console.error("Erro ao buscar períodos disponíveis:", error);
     const now = new Date();
+    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const fallbackYear = lastMonthDate.getFullYear();
+    const fallbackMonth = lastMonthDate.getMonth() + 1;
     return {
       success: false,
-      availableYears: [now.getFullYear()],
-      availableMonthsByYear: { [now.getFullYear()]: [now.getMonth() + 1] },
+      availableYears: [fallbackYear],
+      availableMonthsByYear: { [fallbackYear]: [fallbackMonth] },
       defaultEmail: "",
     };
   }
