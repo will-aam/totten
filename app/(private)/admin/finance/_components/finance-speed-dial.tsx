@@ -1,25 +1,29 @@
 // app/(private)/admin/finance/_components/finance-speed-dial.tsx
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus, MinusCircle, PlusCircle, X } from "@boxicons/react";
+import { useState } from "react";
+import { Plus, ArrowUpRight, ArrowDownRight, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TransactionModal } from "./transaction-modal";
+import { ClosingReportModal } from "./closing-report-modal";
 
 interface FinanceSpeedDialProps {
-  isHidden: boolean;
+  showScrollTop?: boolean;
   onSuccess?: () => void;
 }
 
 export function FinanceSpeedDial({
-  isHidden,
+  showScrollTop = false,
   onSuccess,
 }: FinanceSpeedDialProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isClosingModalOpen, setIsClosingModalOpen] = useState(false);
   const [transactionType, setTransactionType] = useState<"INCOME" | "EXPENSE">(
     "INCOME",
   );
+
+  const toggle = () => setIsOpen(!isOpen);
 
   const handleNewIncome = () => {
     setTransactionType("INCOME");
@@ -33,69 +37,93 @@ export function FinanceSpeedDial({
     setIsOpen(false);
   };
 
-  // Correção de Performance do React mantida:
-  // Fecha o menu flutuante automaticamente se o usuário começar a rolar a tela para baixo
-  useEffect(() => {
-    if (isHidden && isOpen) {
-      setIsOpen(false);
-    }
-  }, [isHidden, isOpen]);
+  const handleOpenClosingReport = () => {
+    setIsClosingModalOpen(true);
+    setIsOpen(false);
+  };
+
+  const actions = [
+    {
+      name: "Nova Receita",
+      icon: <ArrowUpRight className="w-5 h-5" />,
+      onClick: handleNewIncome,
+      color: "text-emerald-500 bg-emerald-500/10",
+    },
+    {
+      name: "Nova Despesa",
+      icon: <ArrowDownRight className="w-5 h-5" />,
+      onClick: handleNewExpense,
+      color: "text-rose-500 bg-rose-500/10",
+    },
+    {
+      name: "Exportar Fechamento",
+      icon: <FileText className="w-5 h-5" />,
+      onClick: handleOpenClosingReport,
+      color: "text-blue-500 bg-blue-500/10",
+    },
+  ];
 
   return (
     <>
-      {/* Container fixo no canto inferior direito. Só aparece no mobile. */}
       <div
         className={cn(
-          "md:hidden fixed bottom-24 right-4 z-50 flex flex-col items-center gap-4 transition-all duration-500",
-          isHidden
-            ? "translate-y-12 opacity-0 pointer-events-none"
+          "fixed bottom-28 right-4 md:bottom-8 md:right-8 z-50 flex flex-col items-end transition-all duration-300",
+          showScrollTop
+            ? "translate-y-16 opacity-0 pointer-events-none"
             : "translate-y-0 opacity-100",
         )}
       >
-        {/* Opções (Despesa e Receita) */}
-        <div
-          className={cn(
-            "flex flex-col items-center gap-4 transition-all duration-300 origin-bottom",
-            isOpen
-              ? "scale-100 opacity-100 translate-y-0"
-              : "scale-75 opacity-0 translate-y-4 pointer-events-none",
-          )}
-        >
-          {/* Botão de Despesa */}
-          <button
-            onClick={handleNewExpense}
-            aria-label="Nova Despesa"
-            className="flex items-center justify-center h-14 w-14 rounded-full bg-rose-500/90 backdrop-blur-md text-white shadow-[0_8px_25px_rgb(244,63,94,0.4)] hover:bg-rose-500 active:scale-90 transition-all border border-rose-400/30"
-          >
-            <MinusCircle className="h-7 w-7" />
-          </button>
+        {isOpen && (
+          <div className="flex flex-col items-end gap-3 mb-4">
+            {actions.map((action, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={action.onClick}
+                className="flex items-center gap-3 bg-background/80 dark:bg-card/90 backdrop-blur-md rounded-full py-1.5 pl-1.5 pr-5 border border-border/50 hover:bg-background transition-colors animate-in fade-in slide-in-from-bottom-5 active:scale-[0.98] shadow-lg"
+                style={{
+                  animationDelay: `${(actions.length - i) * 50}ms`,
+                  animationFillMode: "backwards",
+                }}
+              >
+                <div
+                  className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
+                    action.color,
+                  )}
+                >
+                  {action.icon}
+                </div>
+                <span className="text-sm font-bold text-foreground whitespace-nowrap">
+                  {action.name}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
 
-          {/* Botão de Receita */}
-          <button
-            onClick={handleNewIncome}
-            aria-label="Nova Receita"
-            className="flex items-center justify-center h-14 w-14 rounded-full bg-emerald-500/90 backdrop-blur-md text-white shadow-[0_8px_25px_rgb(16,185,129,0.4)] hover:bg-emerald-500 active:scale-90 transition-all border border-emerald-400/30"
-          >
-            <PlusCircle className="h-7 w-7" />
-          </button>
-        </div>
-
-        {/* Botão Flutuante Principal (+ ou X) com Glassmorphism Premium */}
         <button
-          onClick={() => setIsOpen(!isOpen)}
-          aria-label="Menu Financeiro"
+          type="button"
+          onClick={toggle}
+          aria-label={isOpen ? "Fechar menu" : "Abrir menu financeiro"}
           className={cn(
-            "flex items-center justify-center h-14 w-14 rounded-full transition-all active:scale-90 duration-300 border border-border/20 z-50 relative",
-            isOpen
-              ? "bg-muted/80 backdrop-blur-md text-foreground rotate-90 shadow-[0_8px_30px_rgb(0,0,0,0.12)]"
-              : "bg-primary/95 backdrop-blur-md text-primary-foreground rotate-0 shadow-[0_8px_25px_rgb(var(--primary)/0.4)]",
+            "w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-primary-foreground transition-all duration-300 active:scale-95",
+            isOpen ? "bg-red-500 rotate-45" : "bg-primary hover:scale-110",
           )}
         >
-          {isOpen ? <X className="h-7 w-7" /> : <Plus className="h-7 w-7" />}
+          <Plus className="w-7 h-7" />
         </button>
+
+        {/* Overlay invisível para fechar ao clicar fora */}
+        {isOpen && (
+          <div
+            className="fixed inset-0 z-[-1]"
+            onClick={() => setIsOpen(false)}
+          />
+        )}
       </div>
 
-      {/* OTIMIZAÇÃO DE BANCO DE DADOS (Lazy Mount) */}
+      {/* MODAL DE TRANSAÇÃO (Receita / Despesa) */}
       {isModalOpen && (
         <TransactionModal
           isOpen={isModalOpen}
@@ -104,6 +132,14 @@ export function FinanceSpeedDial({
             if (onSuccess) onSuccess();
           }}
           type={transactionType}
+        />
+      )}
+
+      {/* MODAL DE EXPORTAÇÃO DE FECHAMENTO */}
+      {isClosingModalOpen && (
+        <ClosingReportModal
+          isOpen={isClosingModalOpen}
+          onClose={() => setIsClosingModalOpen(false)}
         />
       )}
     </>

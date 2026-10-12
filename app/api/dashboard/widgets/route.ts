@@ -180,6 +180,36 @@ export async function GET() {
       value: historyMap[dayStr].count > 0 ? historyMap[dayStr].total / historyMap[dayStr].count : 0
     }));
 
+    // 4. Volume de Agendamentos nos últimos 6 meses (atendimentos realizados)
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    const sixMonthsAppointments = await prisma.appointment.findMany({
+      where: {
+        organization_id: admin.organizationId,
+        status: "REALIZADO",
+        date_time: { gte: sixMonthsAgo },
+      },
+      select: { date_time: true },
+    });
+
+    const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+    const sixMonthsMap = new Map<string, { month: string; agendamentos: number }>();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      const label = `${monthNames[d.getMonth()]}/${String(d.getFullYear()).slice(-2)}`;
+      sixMonthsMap.set(key, { month: label, agendamentos: 0 });
+    }
+
+    let totalSixMonths = 0;
+    sixMonthsAppointments.forEach((a) => {
+      const d = new Date(a.date_time);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      if (sixMonthsMap.has(key)) {
+        sixMonthsMap.get(key)!.agendamentos += 1;
+        totalSixMonths += 1;
+      }
+    });
+
     return NextResponse.json({
       scheduling: organizationSlug,
       ranking,
@@ -189,6 +219,10 @@ export async function GET() {
         current: currentTicket,
         percentageChange: percentageChange,
         history: history.length > 0 ? history : null
+      },
+      appointmentsVolume: {
+        total: totalSixMonths,
+        monthly: Array.from(sixMonthsMap.values()),
       }
     });
 

@@ -107,7 +107,75 @@ export async function getReportsData() {
   }
 }
 
-// Adicione isso lá no final de app/actions/reports.ts
+// Busca os anos e meses que realmente possuem dados financeiros (transações ou atendimentos)
+export async function getClosingReportAvailablePeriods() {
+  try {
+    const admin = await requireAuth();
+    const organizationId = admin.organizationId;
+
+    const [transactions, appointments] = await Promise.all([
+      prisma.transaction.findMany({
+        where: { organization_id: organizationId },
+        select: { date: true },
+      }),
+      prisma.appointment.findMany({
+        where: {
+          organization_id: organizationId,
+          status: "REALIZADO",
+        },
+        select: { date_time: true },
+      }),
+    ]);
+
+    // Mapeia ano -> Set de meses
+    const periodsMap = new Map<number, Set<number>>();
+
+    const addPeriod = (d: Date) => {
+      const year = d.getFullYear();
+      const month = d.getMonth() + 1; // 1 a 12
+      if (!periodsMap.has(year)) {
+        periodsMap.set(year, new Set<number>());
+      }
+      periodsMap.get(year)!.add(month);
+    };
+
+    transactions.forEach((t) => addPeriod(new Date(t.date)));
+    appointments.forEach((a) => addPeriod(new Date(a.date_time)));
+
+    // Se ainda não houver nenhum dado, fornece ao menos o mês/ano atual
+    if (periodsMap.size === 0) {
+      const now = new Date();
+      periodsMap.set(now.getFullYear(), new Set([now.getMonth() + 1]));
+    }
+
+    const availableYears = Array.from(periodsMap.keys()).sort((a, b) => b - a);
+    const availableMonthsByYear: Record<number, number[]> = {};
+
+    availableYears.forEach((year) => {
+      availableMonthsByYear[year] = Array.from(periodsMap.get(year)!).sort(
+        (a, b) => a - b,
+      );
+    });
+
+    return {
+      success: true,
+      availableYears,
+      availableMonthsByYear,
+      defaultEmail: admin.email || "",
+    };
+  } catch (error) {
+    console.error("Erro ao buscar períodos disponíveis:", error);
+    const now = new Date();
+    return {
+      success: false,
+      availableYears: [now.getFullYear()],
+      availableMonthsByYear: { [now.getFullYear()]: [now.getMonth() + 1] },
+      defaultEmail: "",
+    };
+  }
+}
+
+// Envia relatório de fechamento por e-mail
 export async function sendMonthlyReport(
   month: number,
   year: number,

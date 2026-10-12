@@ -60,6 +60,7 @@ import {
 import { toast } from "sonner";
 import { TransactionStatus } from "@/types/finance";
 import { TransactionModal } from "../_components/transaction-modal";
+import { FinanceSpeedDial } from "../_components/finance-speed-dial";
 import { useDebounce } from "@/hooks/use-debounce";
 
 const MONTHS = [
@@ -743,6 +744,9 @@ export default function TransactionsPage() {
           }}
         />
       )}
+
+      {/* Speed Dial Flutuante para Lançamento Rápido de Receita e Despesa */}
+      <FinanceSpeedDial onSuccess={loadTransactions} />
     </>
   );
 }

@@ -126,15 +126,14 @@ export const autoatendimentoSubItems: SubNavItem[] = [
   { title: "WhatsApp Automático", href: "/admin/whatsapp-auto", active: false },
 ];
 
-/** Financeiro — visão geral → movimentações → projeção → configuração. */
+/** Financeiro — visão geral → movimentações → contas a receber → relatórios → projeção → configuração. */
 export const financeSubItems: SubNavItem[] = [
   { title: "Dashboard", href: "/admin/finance/dashboard", active: true },
   { title: "Extrato", href: "/admin/finance/transactions", active: true },
   {
-    title: "Fluxo de Caixa",
-    href: "/admin/cashflow-demo",
+    title: "Contas a Receber",
+    href: "/admin/finance/receivables",
     active: true,
-    ownerOnly: true,
   },
   {
     title: "Meios de Pagamento",

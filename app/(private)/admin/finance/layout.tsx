@@ -49,7 +49,7 @@ export default function FinanceLayout({
     }
   }, [session, status, router]);
 
-  const hideBottomNavRoutes = ["/admin/finance/reports"];
+  const hideBottomNavRoutes: string[] = [];
   const shouldHideBottomNav = hideBottomNavRoutes.includes(pathname);
 
   //  Evita aquele "flash" na tela mostrando dados proibidos antes de redirecionar

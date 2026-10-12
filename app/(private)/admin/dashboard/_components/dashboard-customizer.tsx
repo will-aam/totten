@@ -24,7 +24,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/components/ui/use-mobile";
 import { Switch } from "@/components/ui/switch";
-import { Cog, Move } from "@boxicons/react";
+import { PencilDraw, Move } from "@boxicons/react";
 import {
   DndContext,
   closestCenter,
@@ -49,6 +49,7 @@ export type WidgetConfig = {
 };
 
 const DEFAULT_WIDGETS: WidgetConfig[] = [
+  { id: "appointments_volume", name: "Volume de Agendamentos", visible: true },
   { id: "heatmap", name: "Mapa de Calor", visible: true },
   { id: "scheduling", name: "Link de Agendamento", visible: true },
   { id: "busiest_hours", name: "Horários Movimentados", visible: true },
@@ -159,7 +160,7 @@ export function DashboardCustomizer({
 
   const triggerButton = (
     <Button variant="outline" size="sm" className="gap-2 rounded-xl border-border/50 bg-card hover:bg-muted/50 text-foreground shadow-sm">
-      <Cog size="sm" />
+      <PencilDraw size="sm" />
       <span className="hidden sm:inline">Personalizar Dashboard</span>
     </Button>
   );

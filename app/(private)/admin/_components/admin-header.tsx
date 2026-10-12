@@ -8,7 +8,15 @@ import { Button } from "@/components/ui/button";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
-export function AdminHeader({ title, action }: { title: string; action?: React.ReactNode }) {
+export function AdminHeader({
+  title,
+  action,
+  titleAddon,
+}: {
+  title: string;
+  action?: React.ReactNode;
+  titleAddon?: React.ReactNode;
+}) {
   const { toggleSidebar } = useSidebar();
   const { data: session } = useSession();
 
@@ -25,11 +33,14 @@ export function AdminHeader({ title, action }: { title: string; action?: React.R
           <span className="sr-only">Menu</span>
         </button>
 
-        <h1 className="text-sm font-medium text-muted-foreground">{title}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-sm font-medium text-muted-foreground">{title}</h1>
+          {titleAddon}
+        </div>
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
-        {title === "Dashboard" && action && (
+        {action && (
           <div className="flex items-center gap-2 sm:gap-3">
             {action}
             <div className="w-px h-5 bg-border/50" />

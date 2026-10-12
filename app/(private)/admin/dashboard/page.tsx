@@ -8,10 +8,12 @@ import { SchedulingLink } from "./_components/scheduling-link";
 import { AverageTicket } from "./_components/average-ticket";
 import { ClientRanking } from "./_components/client-ranking";
 import { BusiestHours } from "./_components/busiest-hours";
+import { AppointmentsVolume } from "./_components/appointments-volume";
 import { AppointmentsHeatmap } from "./_components/appointments-heatmap";
 import { DashboardCustomizer, type WidgetConfig } from "./_components/dashboard-customizer";
 
 const WIDGET_COMPONENTS: Record<string, React.ComponentType<any>> = {
+  appointments_volume: AppointmentsVolume,
   heatmap: AppointmentsHeatmap,
   scheduling: SchedulingLink,
   busiest_hours: BusiestHours,
@@ -21,6 +23,7 @@ const WIDGET_COMPONENTS: Record<string, React.ComponentType<any>> = {
 };
 
 const DEFAULT_WIDGETS: WidgetConfig[] = [
+  { id: "appointments_volume", name: "Volume de Agendamentos", visible: true },
   { id: "heatmap", name: "Mapa de Calor", visible: true },
   { id: "scheduling", name: "Link de Agendamento", visible: true },
   { id: "busiest_hours", name: "Horários Movimentados", visible: true },
@@ -45,7 +48,9 @@ export default function AdminDashboardPage() {
     setMounted(true);
     if (layoutData !== undefined) {
       if (layoutData?.layout && Array.isArray(layoutData.layout)) {
-        setWidgets(layoutData.layout);
+        const savedIds = new Set(layoutData.layout.map((w: any) => w.id));
+        const missingWidgets = DEFAULT_WIDGETS.filter((w) => !savedIds.has(w.id));
+        setWidgets([...layoutData.layout, ...missingWidgets]);
       } else {
         // Fallback for first time users
         setWidgets(DEFAULT_WIDGETS);
@@ -86,6 +91,12 @@ export default function AdminDashboardPage() {
     chunkedWidgets.push(visibleWidgets.slice(i, i + cols));
   }
 
+  const getWidgetData = (id: string) => {
+    if (id === "busiest_hours") return widgetsData?.busiestHours;
+    if (id === "appointments_volume") return widgetsData?.appointmentsVolume;
+    return widgetsData?.[id];
+  };
+
   return (
     <>
       <AdminHeader 
@@ -112,7 +123,7 @@ export default function AdminDashboardPage() {
                   if (!Component) return null;
                   return (
                     <div key={widget.id} className="flex flex-col h-[350px] w-full">
-                      <Component data={widgetsData?.[widget.id === 'busiest_hours' ? 'busiestHours' : widget.id]} />
+                      <Component data={getWidgetData(widget.id)} />
                     </div>
                   );
                 })}
@@ -135,7 +146,7 @@ export default function AdminDashboardPage() {
                         minSize={20} // Limite mínimo para não quebrar os gráficos
                         className="flex flex-col relative h-[350px] px-3 first:pl-0 last:pr-0 overflow-visible"
                       >
-                        <Component data={widgetsData?.[widget.id === 'busiest_hours' ? 'busiestHours' : widget.id]} />
+                        <Component data={getWidgetData(widget.id)} />
                       </ResizablePanel>
                       
                       {index < chunk.length - 1 && (
