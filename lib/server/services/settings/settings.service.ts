@@ -31,6 +31,8 @@ export class SettingsService {
       defaultScheduleView: settings.default_schedule_view,
       autoNoShowMode: settings.auto_no_show_mode,
       autoCompleteOnCheckin: settings.auto_complete_on_checkin,
+      autoSettleOnCheckin: settings.auto_settle_on_checkin,
+      defaultPaymentMethodId: settings.default_payment_method_id,
     };
   }
 
@@ -76,6 +78,10 @@ export class SettingsService {
       updateData.auto_no_show_mode = data.autoNoShowMode;
     if (data.autoCompleteOnCheckin !== undefined)
       updateData.auto_complete_on_checkin = data.autoCompleteOnCheckin;
+    if (data.autoSettleOnCheckin !== undefined)
+      updateData.auto_settle_on_checkin = data.autoSettleOnCheckin;
+    if (data.defaultPaymentMethodId !== undefined)
+      updateData.default_payment_method_id = data.defaultPaymentMethodId || null;
 
     return await prisma.settings.upsert({
       where: { organization_id: organizationId },

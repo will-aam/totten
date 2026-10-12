@@ -119,6 +119,10 @@ model Settings {
   show_team_likes       Boolean @default(true)
   package_validity_mode String  @default("ACQUISITION")
 
+  // Configurações Financeiras
+  auto_settle_on_checkin     Boolean @default(true)
+  default_payment_method_id  String?
+
   organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@map("settings")

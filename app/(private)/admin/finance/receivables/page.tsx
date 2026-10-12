@@ -184,13 +184,6 @@ export default function ReceivablesPage() {
                 </h2>
               </div>
             </div>
-
-            <Button
-              onClick={() => setSelectedItem("ALL")}
-              className="w-full sm:w-auto h-12 px-8 bg-emerald-500 hover:bg-emerald-600 text-white font-black shadow-[0_8px_25px_rgb(16,185,129,0.3)] hover:shadow-[0_10px_30px_rgb(16,185,129,0.4)] active:scale-95 transition-all relative z-10"
-            >
-              Dar Baixa em Todos
-            </Button>
           </div>
         )}
 

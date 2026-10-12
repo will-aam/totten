@@ -8,8 +8,8 @@ import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import {
   Dashboard,
   ArrowRightLeft,
-  CreditCard,
   Wallet,
+  Cog,
   LoaderDots, //  Adicionado para o estado de carregamento
 } from "@boxicons/react";
 
@@ -18,9 +18,9 @@ const mobileNavItems = [
   { id: "/admin/finance/transactions", label: "Extrato", icon: ArrowRightLeft },
   { id: "/admin/finance/receivables", label: "A Receber", icon: Wallet },
   {
-    id: "/admin/finance/payment-methods",
-    label: "Pagamentos",
-    icon: CreditCard,
+    id: "/admin/finance/settings",
+    label: "Configurações",
+    icon: Cog,
   },
 ];
 

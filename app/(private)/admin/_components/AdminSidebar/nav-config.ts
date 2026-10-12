@@ -136,8 +136,8 @@ export const financeSubItems: SubNavItem[] = [
     active: true,
   },
   {
-    title: "Meios de Pagamento",
-    href: "/admin/finance/payment-methods",
+    title: "Configurações",
+    href: "/admin/finance/settings",
     active: true,
   },
 ];

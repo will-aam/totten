@@ -18,6 +18,8 @@ export async function updateSettingsAction(data: {
   allowOverLimitAppointments?: boolean;
   defaultScheduleView?: string;
   address?: string;
+  autoSettleOnCheckin?: boolean;
+  defaultPaymentMethodId?: string;
 }) {
   try {
     // 🛡️ Validação unificada de sessão e extração do tenant
@@ -29,6 +31,7 @@ export async function updateSettingsAction(data: {
     // Revalida o cache do Next.js para as páginas de configurações
     revalidatePath("/admin/settings");
     revalidatePath("/admin/settings/general");
+    revalidatePath("/admin/finance/settings");
 
     return { success: true };
   } catch (error: any) {
@@ -44,6 +47,41 @@ export async function updateSettingsAction(data: {
       success: false,
       error: "Erro interno ao atualizar configurações.",
     };
+  }
+}
+
+export async function getFinancialSettingsAction() {
+  try {
+    const admin = await requireAuth();
+    const settings = await SettingsService.getSettings(admin.organizationId);
+    return {
+      success: true,
+      data: {
+        autoSettleOnCheckin: settings.autoSettleOnCheckin ?? true,
+        defaultPaymentMethodId: settings.defaultPaymentMethodId || "",
+      },
+    };
+  } catch (error: any) {
+    console.error("[ACTION getFinancialSettingsAction]", error);
+    return { success: false, error: "Erro ao buscar configurações financeiras." };
+  }
+}
+
+export async function updateFinancialSettingsAction(data: {
+  autoSettleOnCheckin: boolean;
+  defaultPaymentMethodId?: string;
+}) {
+  try {
+    const admin = await requireAuth();
+    await SettingsService.updateSettings(admin.organizationId, data);
+    revalidatePath("/admin/finance/settings");
+    revalidatePath("/admin/finance/receivables");
+    revalidatePath("/admin/finance/transactions");
+    revalidatePath("/admin/finance/dashboard");
+    return { success: true };
+  } catch (error: any) {
+    console.error("[ACTION updateFinancialSettingsAction]", error);
+    return { success: false, error: "Erro ao salvar configurações financeiras." };
   }
 }
 

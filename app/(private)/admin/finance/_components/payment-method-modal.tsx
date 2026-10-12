@@ -197,7 +197,7 @@ export function PaymentMethodModal({
                   Configure as taxas e prazos.
                 </SheetDescription>
               </div>
-              {isEditing && (
+              {isEditing && method?.name.toLowerCase() !== "à vista" && method?.name.toLowerCase() !== "a vista" && (
                 <Button
                   variant="ghost"
                   size="icon"

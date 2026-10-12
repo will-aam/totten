@@ -34,13 +34,29 @@ export async function getPaymentMethods() {
   try {
     const organizationId = await getAdminOrg();
 
-    const methods = await prisma.organizationPaymentMethod.findMany({
+    let methods = await prisma.organizationPaymentMethod.findMany({
       where: { organization_id: organizationId },
       orderBy: { created_at: "asc" },
     });
 
-    // CORREÃ‡ÃƒO: Convertemos os objetos Decimal para Number aqui no servidor
-    // Assim o Next.js consegue serializar os dados para o Client Component sem erro.
+    // Se a organização não possuir nenhum meio de pagamento ainda, ou não tiver "À Vista",
+    // garantimos a criação do meio padrão "À Vista"
+    const hasAVista = methods.some((m) => m.name.toLowerCase() === "à vista" || m.name.toLowerCase() === "a vista");
+    if (!hasAVista) {
+      const defaultAVista = await prisma.organizationPaymentMethod.create({
+        data: {
+          name: "À Vista",
+          type: "OUTRO",
+          isActive: true,
+          feePercentage: 0,
+          feeFixed: 0,
+          daysToReceive: 0,
+          organization_id: organizationId,
+        },
+      });
+      methods = [defaultAVista, ...methods];
+    }
+
     return methods.map((item) => ({
       ...item,
       feePercentage: Number(item.feePercentage),
@@ -97,15 +113,27 @@ export async function deletePaymentMethod(id: string) {
   try {
     const organizationId = await getAdminOrg();
 
+    const existing = await prisma.organizationPaymentMethod.findUnique({
+      where: { id, organization_id: organizationId },
+    });
+
+    if (existing && (existing.name.toLowerCase() === "à vista" || existing.name.toLowerCase() === "a vista")) {
+      return {
+        success: false,
+        error: "O meio de pagamento 'À Vista' é padrão do sistema e não pode ser excluído, apenas editado.",
+      };
+    }
+
     await prisma.organizationPaymentMethod.delete({
       where: { id, organization_id: organizationId },
     });
 
     revalidatePath("/admin/finance/payment-methods");
+    revalidatePath("/admin/finance/settings");
     return { success: true };
   } catch (error) {
     console.error("Erro ao deletar:", error);
-    return { success: false, error: "NÃ£o foi possÃ­vel excluir." };
+    return { success: false, error: "Não foi possível excluir." };
   }
 }
 

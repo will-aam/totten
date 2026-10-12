@@ -56,9 +56,14 @@ export class TotemCheckInService {
 
     const orgSettings = await prisma.settings.findUnique({
       where: { organization_id: organizationId },
-      select: { auto_complete_on_checkin: true },
+      select: {
+        auto_complete_on_checkin: true,
+        auto_settle_on_checkin: true,
+        default_payment_method_id: true,
+      },
     });
     const autoComplete = orgSettings?.auto_complete_on_checkin ?? true;
+    const autoSettle = orgSettings?.auto_settle_on_checkin ?? true;
 
     const loyaltySettings = await prisma.loyaltySettings.findUnique({
       where: { organization_id: organizationId }
@@ -105,10 +110,56 @@ export class TotemCheckInService {
           });
         } else {
           // Fluxo para agendamento avulso (sem pacote)
+          let paymentMethodEnum: any = null;
+          let paymentMethodRecordId: string | null = null;
+
+          if (autoSettle) {
+            // Se o usuário selecionou uma forma específica (ex: Pix ou Cartão), busca ela
+            let paymentMethod = null;
+            if (orgSettings?.default_payment_method_id) {
+              paymentMethod = await tx.organizationPaymentMethod.findUnique({
+                where: { id: orgSettings.default_payment_method_id },
+              });
+            }
+
+            if (paymentMethod) {
+              paymentMethodEnum = paymentMethod.type;
+              paymentMethodRecordId = paymentMethod.id;
+            } else {
+              // Padrão do Sistema: "À Vista" (sem amarrar a uma bandeira/taxa específica)
+              paymentMethodEnum = "OUTRO";
+              paymentMethodRecordId = null;
+            }
+          }
+
           await tx.appointment.update({
             where: { id: appt.id, organization_id: organizationId },
-            data: { status: "REALIZADO", has_charge: true },
+            data: {
+              status: "REALIZADO",
+              has_charge: !autoSettle,
+              payment_method: paymentMethodEnum,
+            },
           });
+
+          // Se autoSettle estiver ativo, gera a RECEITA como PAGO no caixa
+          if (autoSettle) {
+            const apptPrice = appt.snapshot_service_price ?? appt.service.price;
+            const apptName = appt.snapshot_service_name ?? appt.service.name;
+
+            await tx.transaction.create({
+              data: {
+                type: "RECEITA",
+                description: `Serviço Realizado (Totem): ${apptName} (${appt.client.name})`,
+                amount: apptPrice,
+                date: new Date(),
+                status: "PAGO",
+                organization_id: organizationId,
+                appointment_id: appt.id,
+                client_id: appt.client_id,
+                payment_method_id: paymentMethodRecordId,
+              },
+            });
+          }
         }
 
         // --- O CORAÇÃO DO SISTEMA FINANCEIRO E DE ESTOQUE ---

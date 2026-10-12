@@ -475,6 +475,8 @@ export async function getPaginatedTransactions(params: {
           status: true,
           recurrence_id: true,
           installment: true,
+          package_id: true,
+          package: { select: { id: true, name: true } },
           client: { select: { name: true } },
           payment_method: { select: { type: true } },
           admin: { select: { display_name: true } }, //
@@ -539,6 +541,8 @@ export async function getPaginatedTransactions(params: {
       paymentMethod: t.payment_method?.type || undefined,
       recurrence_id: t.recurrence_id,
       installment: t.installment,
+      package_id: t.package_id || undefined,
+      packageName: t.package?.name || undefined,
       professionalName: t.admin?.display_name || undefined, //
     }));
 

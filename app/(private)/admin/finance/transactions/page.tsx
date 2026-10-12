@@ -682,6 +682,17 @@ export default function TransactionsPage() {
                 Você está prestes a excluir esta transação. Essa ação atualizará
                 o seu caixa e não pode ser desfeita.
               </p>
+              {deletingTx?.package_id && (
+                <div className="flex flex-col gap-1 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs">
+                  <span className="font-black flex items-center gap-1.5 uppercase tracking-wide">
+                    ⚠️ Atenção: Parcela de Pacote
+                  </span>
+                  <span>
+                    Esta movimentação está vinculada ao pacote{" "}
+                    <strong>{deletingTx.packageName || "do cliente"}</strong>. Excluir esta parcela apenas removerá o lançamento financeiro, mantendo o pacote ativo para o cliente.
+                  </span>
+                </div>
+              )}
               {deletingTx?.recurrence_id && (
                 <label className="flex items-start gap-4 p-5 border border-rose-500/20 rounded-3xl bg-rose-500/5 cursor-pointer hover:bg-rose-500/10 transition-colors shadow-sm group">
                   <Checkbox
