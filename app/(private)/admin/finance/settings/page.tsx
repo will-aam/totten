@@ -254,9 +254,7 @@ export default function FinancialSettingsPage() {
 
           <div className="flex flex-col gap-1.5 relative z-10">
             <h1 className="text-3xl font-black tracking-tight bg-linear-to-br from-foreground to-foreground/70 bg-clip-text text-transparent flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-full text-primary hidden sm:flex">
-                <Cog size="sm" />
-              </div>
+
               Configurações Financeiras
             </h1>
             <p className="text-muted-foreground text-sm font-medium mt-1 sm:ml-12">
@@ -293,7 +291,7 @@ export default function FinancialSettingsPage() {
                   <div className="flex flex-col gap-1 max-w-2xl">
                     <div className="flex items-center gap-2">
                       <span className="text-base font-black text-foreground">
-                        Liquidação Imediata no Check-in (Modo Ágil)
+                        Liquidação Imediata no Check-in
                       </span>
                       <Badge
                         variant="secondary"
@@ -332,7 +330,7 @@ export default function FinancialSettingsPage() {
                       </p>
                     </div>
 
-                    <div className="w-full sm:w-64">
+                    <div className="w-full sm:w-auto sm:min-w-[320px] md:min-w-[360px] shrink-0">
                       <Select
                         value={
                           defaultMethodId ||
@@ -346,17 +344,17 @@ export default function FinancialSettingsPage() {
                         onValueChange={handleChangeDefaultMethod}
                         disabled={isSavingSettings || methods.length === 0}
                       >
-                        <SelectTrigger className="h-11 rounded-2xl font-bold bg-background/80 border-border/50">
+                        <SelectTrigger className="h-12 w-full font-bold bg-muted/20 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 transition-all shadow-inner rounded-2xl px-4 text-foreground whitespace-nowrap">
                           <SelectValue placeholder="Selecione um meio..." />
                         </SelectTrigger>
-                        <SelectContent className="rounded-2xl border-border/50 shadow-xl">
+                        <SelectContent className="rounded-2xl border-border/50 shadow-xl bg-background/95 backdrop-blur-md min-w-[var(--radix-select-trigger-width)] p-1.5">
                           {methods
                             .filter((m) => m.isActive)
                             .map((method) => (
                               <SelectItem
                                 key={method.id}
                                 value={method.id}
-                                className="rounded-xl font-medium"
+                                className="rounded-xl py-2.5 px-3 font-bold whitespace-nowrap cursor-pointer transition-colors"
                               >
                                 {method.name}
                               </SelectItem>
