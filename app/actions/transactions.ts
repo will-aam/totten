@@ -9,6 +9,10 @@ import {
   TransactionStatus,
   PaymentMethod,
 } from "@prisma/client";
+import {
+  triggerZibeeSyncById,
+  deleteTransactionFromZibee,
+} from "@/lib/server/integrations/zibee.service";
 
 // --- 1. CRIAR TRANSAÇÃO MANUAL (COM RECORRÊNCIA) ---
 export async function createTransaction(data: {
@@ -54,8 +58,17 @@ export async function createTransaction(data: {
       await prisma.transaction.createMany({
         data: transactionsToCreate,
       });
+
+      // Disparo automático em lote para o Zibee (assíncrono e não-bloqueante)
+      prisma.transaction
+        .findMany({
+          where: { recurrence_id: recurrenceId, organization_id: admin.organizationId },
+          select: { id: true },
+        })
+        .then((txs) => txs.forEach((t) => triggerZibeeSyncById(t.id)))
+        .catch(console.error);
     } else {
-      await prisma.transaction.create({
+      const createdTx = await prisma.transaction.create({
         data: {
           type: data.type,
           description: data.description,
@@ -67,6 +80,9 @@ export async function createTransaction(data: {
           admin_id: admin.id, //  RASTREABILIDADE
         },
       });
+
+      // Disparo automático imediato para o Zibee (assíncrono e não-bloqueante)
+      triggerZibeeSyncById(createdTx.id).catch(console.error);
     }
 
     revalidatePath("/admin/finance/dashboard");
@@ -139,6 +155,21 @@ export async function updateTransaction(
           payment_method_id: data.paymentMethodId || null,
         },
       });
+
+      // Sincronizar futuras também no Zibee
+      prisma.transaction
+        .findMany({
+          where: {
+            organization_id: admin.organizationId,
+            recurrence_id: currentTx.recurrence_id,
+            date: { gte: currentTx.date },
+          },
+          select: { id: true },
+        })
+        .then((txs) => txs.forEach((t) => triggerZibeeSyncById(t.id)))
+        .catch(console.error);
+    } else {
+      triggerZibeeSyncById(id).catch(console.error);
     }
 
     revalidatePath("/admin/finance/dashboard");
@@ -179,6 +210,15 @@ export async function deleteTransaction(id: string, deleteFuture?: boolean) {
     }
 
     if (deleteFuture && currentTx.recurrence_id) {
+      const txsToDelete = await prisma.transaction.findMany({
+        where: {
+          organization_id: admin.organizationId,
+          recurrence_id: currentTx.recurrence_id,
+          date: { gte: currentTx.date },
+        },
+        select: { id: true },
+      });
+
       await prisma.transaction.deleteMany({
         where: {
           organization_id: admin.organizationId,
@@ -186,10 +226,18 @@ export async function deleteTransaction(id: string, deleteFuture?: boolean) {
           date: { gte: currentTx.date },
         },
       });
+
+      // Remove do Zibee
+      txsToDelete.forEach((t) =>
+        deleteTransactionFromZibee(t.id, admin.organizationId).catch(console.error),
+      );
     } else {
       await prisma.transaction.delete({
         where: { id },
       });
+
+      // Remove do Zibee
+      deleteTransactionFromZibee(id, admin.organizationId).catch(console.error);
     }
 
     revalidatePath("/admin/finance/dashboard");
@@ -431,6 +479,9 @@ export async function processReceivablePayment(
           admin_id: admin.id, //  Assina quem quitou a pendência
         },
       });
+
+      // Sincroniza a liquidação no Zibee
+      triggerZibeeSyncById(id).catch(console.error);
     }
 
     revalidatePath("/admin/finance/dashboard");

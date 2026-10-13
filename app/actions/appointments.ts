@@ -11,6 +11,7 @@ import { requireAuth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { generateRecurrentDates } from "@/lib/date-utils";
 import { randomUUID } from "crypto";
+import { triggerZibeeSyncById } from "@/lib/server/integrations/zibee.service";
 
 /**
  * Limpa todos os agendamentos do dia atual para a organização.
@@ -298,6 +299,8 @@ export async function updateAppointment(
       }
     }
 
+    const createdTxIds: string[] = [];
+
     await prisma.$transaction(async (tx) => {
       if (updateAll && recurrenceId) {
         await tx.appointment.updateMany({
@@ -399,7 +402,7 @@ export async function updateAppointment(
           const apptPrice = currentAppt.snapshot_service_price ?? service.price;
           const apptName = currentAppt.snapshot_service_name ?? service.name;
 
-          await tx.transaction.create({
+          const recTx = await tx.transaction.create({
             data: {
               type: "RECEITA",
               description: `Serviço Realizado: ${apptName} (${currentAppt.client.name})`,
@@ -410,6 +413,7 @@ export async function updateAppointment(
               appointment_id: currentAppt.id,
             },
           });
+          createdTxIds.push(recTx.id);
         }
       }
 
@@ -429,7 +433,7 @@ export async function updateAppointment(
                 Number(usedQty) * Number(stockData.unit_cost);
 
               if (costOfUsedQty > 0) {
-                await tx.transaction.create({
+                const expTx = await tx.transaction.create({
                   data: {
                     type: "DESPESA",
                     description: `Custo de Insumo (Sessão): ${stockData.name}`,
@@ -440,6 +444,7 @@ export async function updateAppointment(
                     appointment_id: currentAppt.id,
                   },
                 });
+                createdTxIds.push(expTx.id);
               }
             }
           }
@@ -448,7 +453,7 @@ export async function updateAppointment(
           service.material_cost &&
           Number(service.material_cost) > 0
         ) {
-          await tx.transaction.create({
+          const expTx = await tx.transaction.create({
             data: {
               type: "DESPESA",
               description: `Custo Fixo de Material: ${service.name}`,
@@ -459,9 +464,14 @@ export async function updateAppointment(
               appointment_id: currentAppt.id,
             },
           });
+          createdTxIds.push(expTx.id);
         }
       }
     });
+
+    for (const txId of createdTxIds) {
+      triggerZibeeSyncById(txId);
+    }
 
     revalidatePath("/admin/agenda");
     revalidatePath("/admin/packages");

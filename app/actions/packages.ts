@@ -7,6 +7,7 @@ import { AppointmentStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { PackageService } from "@/lib/server/services/packages/package.service";
 import { validateScheduleAppointment } from "@/lib/schedule-validation";
+import { triggerZibeeSyncById, deleteTransactionFromZibee } from "@/lib/server/integrations/zibee.service";
 
 /**
  * Busca todos os pacotes da organização e calcula os KPIs em tempo real.
@@ -335,6 +336,8 @@ export async function createManualPackageCheckIn(
       }
     }
 
+    const createdTxIds: string[] = [];
+
     await prisma.$transaction(async (tx) => {
       // 1. Etapa 4: Detecção de agendamento existente pendente/confirmado do mesmo pacote no mesmo dia
       const dayStart = new Date(checkInDate);
@@ -427,7 +430,7 @@ export async function createManualPackageCheckIn(
           }
 
           if (totalCost > 0) {
-            await tx.transaction.create({
+            const expTx = await tx.transaction.create({
               data: {
                 type: "DESPESA",
                 description: `Custo Insumos (Baixa Manual) | Detalhes: ${detailsArray.join(" | ")}`,
@@ -438,13 +441,14 @@ export async function createManualPackageCheckIn(
                 appointment_id: appt.id,
               },
             });
+            createdTxIds.push(expTx.id);
           }
         } else if (
           !service.track_stock &&
           service.material_cost &&
           Number(service.material_cost) > 0
         ) {
-          await tx.transaction.create({
+          const expTx = await tx.transaction.create({
             data: {
               type: "DESPESA",
               description: `Custo Fixo de Material (Baixa Manual): ${service.name}`,
@@ -455,6 +459,7 @@ export async function createManualPackageCheckIn(
               appointment_id: appt.id,
             },
           });
+          createdTxIds.push(expTx.id);
           stockProcessed = true;
         }
       }
@@ -516,6 +521,10 @@ export async function createManualPackageCheckIn(
       }
     });
 
+    for (const txId of createdTxIds) {
+      triggerZibeeSyncById(txId);
+    }
+
     revalidatePath("/admin/packages");
     revalidatePath("/admin/agenda");
     revalidatePath("/admin/history");
@@ -556,6 +565,13 @@ export async function deleteCheckIn(checkInId: string) {
     if (checkIn.deleted_at) {
       return { success: false, error: "Este check-in já foi removido." };
     }
+
+    const txsToDelete = checkIn.appointment_id
+      ? await prisma.transaction.findMany({
+          where: { appointment_id: checkIn.appointment_id, organization_id: admin.organizationId },
+          select: { id: true },
+        })
+      : [];
 
     await prisma.$transaction(async (tx) => {
       const adminName = admin.name || "Administrador";
@@ -667,6 +683,10 @@ export async function deleteCheckIn(checkInId: string) {
         });
       }
     });
+
+    for (const t of txsToDelete) {
+      deleteTransactionFromZibee(t.id, admin.organizationId);
+    }
 
     revalidatePath("/admin/history");
     revalidatePath("/admin/packages");

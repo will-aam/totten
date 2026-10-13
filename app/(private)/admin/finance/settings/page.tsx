@@ -40,8 +40,13 @@ import {
   getFinancialSettingsAction,
   updateFinancialSettingsAction,
 } from "@/app/actions/settings";
+import {
+  getZibeeIntegrationStatusAction,
+  syncZibeeHistoryAction,
+} from "@/app/actions/zibee";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { RefreshCw } from "lucide-react";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -159,13 +164,22 @@ export default function FinancialSettingsPage() {
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
+  // Integração Zibee (Single-Tenant Exclusivo)
+  const [zibeeStatus, setZibeeStatus] = useState<{
+    isEnabled: boolean;
+    syncedCount?: number;
+    orgTotalCount?: number;
+  } | null>(null);
+  const [isSyncingZibee, setIsSyncingZibee] = useState(false);
+
   const loadData = useCallback(async () => {
     setIsLoadingMethods(true);
     setIsLoadingSettings(true);
     try {
-      const [methodsData, settingsRes] = await Promise.all([
+      const [methodsData, settingsRes, zibeeRes] = await Promise.all([
         getPaymentMethods(),
         getFinancialSettingsAction(),
+        getZibeeIntegrationStatusAction(),
       ]);
 
       setMethods(methodsData as OrganizationPaymentMethod[]);
@@ -173,6 +187,12 @@ export default function FinancialSettingsPage() {
       if (settingsRes.success && settingsRes.data) {
         setAutoSettle(settingsRes.data.autoSettleOnCheckin);
         setDefaultMethodId(settingsRes.data.defaultPaymentMethodId);
+      }
+
+      if (zibeeRes?.isEnabled) {
+        setZibeeStatus(zibeeRes);
+      } else {
+        setZibeeStatus({ isEnabled: false });
       }
     } catch (error) {
       console.error("Erro ao carregar configurações financeiras:", error);
@@ -241,6 +261,28 @@ export default function FinancialSettingsPage() {
   const handleEditPaymentMethod = (method: OrganizationPaymentMethod) => {
     setSelectedMethod(method);
     setIsModalOpen(true);
+  };
+
+  const handleSyncZibeeHistory = async () => {
+    setIsSyncingZibee(true);
+    try {
+      const res = await syncZibeeHistoryAction();
+      if (res.success) {
+        toast.success(
+          `${res.synced} movimentações históricas sincronizadas com o Zibee!`,
+        );
+        const updated = await getZibeeIntegrationStatusAction();
+        if (updated.isEnabled) {
+          setZibeeStatus(updated);
+        }
+      } else {
+        toast.error(res.error || "Erro ao sincronizar com o Zibee.");
+      }
+    } catch {
+      toast.error("Erro ao sincronizar com o Zibee.");
+    } finally {
+      setIsSyncingZibee(false);
+    }
   };
 
   return (
@@ -368,6 +410,81 @@ export default function FinancialSettingsPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* INTEGRAÇÃO ZIBEE (CARD EXCLUSIVO SINGLE-TENANT) */}
+        {zibeeStatus?.isEnabled && (
+          <Card className="relative overflow-hidden rounded-4xl border-border/40 shadow-sm bg-background/50 backdrop-blur-md border-emerald-500/30">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 blur-3xl rounded-full -z-10 pointer-events-none" />
+            <CardHeader className="px-6 pt-6 pb-4 border-b border-border/30 relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <CardTitle className="flex items-center gap-3 text-xl font-black text-foreground">
+                  <div className="p-2 bg-emerald-500/15 rounded-full text-emerald-600 dark:text-emerald-400">
+                    <RefreshCw className="h-5 w-5" />
+                  </div>
+                  Integração Zibee (Finanças Pessoais)
+                </CardTitle>
+                <CardDescription className="text-xs text-muted-foreground font-medium mt-1">
+                  Sincronização 100% em tempo real e silenciosa com seu aplicativo de finanças externo.
+                </CardDescription>
+              </div>
+
+              <Badge
+                variant="secondary"
+                className="bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400 border border-emerald-500/20 font-bold px-3 py-1.5 text-xs uppercase tracking-wider flex items-center gap-2 self-start sm:self-auto shadow-sm"
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                Sincronização Ativa
+              </Badge>
+            </CardHeader>
+
+            <CardContent className="p-6 relative z-10 flex flex-col gap-5">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-3xl bg-muted/10 border border-border/30">
+                <div className="flex flex-col gap-1 max-w-xl">
+                  <span className="text-sm font-black text-foreground">
+                    Lançamentos Sincronizados no Zibee
+                  </span>
+                  <p className="text-xs text-muted-foreground font-medium leading-relaxed">
+                    Todas as novas movimentações financeiras (vendas de pacotes, check-ins no Totem, atendimentos e despesas) são lançadas automaticamente no seu Zibee sem nenhuma intervenção manual.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-4 shrink-0 w-full sm:w-auto justify-between sm:justify-end">
+                  <div className="text-right">
+                    <div className="text-2xl font-black text-foreground">
+                      {zibeeStatus.syncedCount ?? 0}
+                      <span className="text-xs font-bold text-muted-foreground ml-1">
+                        / {zibeeStatus.orgTotalCount ?? 0}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                      Registros no Zibee
+                    </span>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSyncZibeeHistory}
+                    disabled={isSyncingZibee}
+                    className="h-11 px-4 font-bold rounded-2xl border-border/60 hover:bg-muted/30 transition-all text-xs shrink-0 cursor-pointer"
+                  >
+                    {isSyncingZibee ? (
+                      <>
+                        <LoaderDots className="animate-spin mr-1.5" size="sm" />
+                        Sincronizando...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                        Ressincronizar Histórico
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* 2. SEÇÃO DE MEIOS DE PAGAMENTO (Taxas, Prazos e Bandeiras) */}
         <Card className="relative overflow-hidden rounded-4xl border-border/40 shadow-sm bg-background/50 backdrop-blur-md">

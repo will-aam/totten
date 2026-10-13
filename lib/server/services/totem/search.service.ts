@@ -1,5 +1,5 @@
-// lib/server/services/totem/search.service.ts
 import { getTenantPrisma } from "@/lib/prisma";
+import { triggerZibeeSyncById } from "@/lib/server/integrations/zibee.service";
 
 export class TotemSearchService {
   /**
@@ -130,6 +130,7 @@ const agendamentos = await prisma.appointment.findMany({
     // 🛡️ REMOVIDO: Travas de segurança manuais (agora filtrado direto na query)
     
     let packageInfo = null;
+    const createdTxIds: string[] = [];
 
     try {
       await prisma.$transaction(async (tx) => {
@@ -205,7 +206,7 @@ const agendamentos = await prisma.appointment.findMany({
         }
 
         if (totalCost > 0) {
-          await tx.transaction.create({
+          const expTx = await tx.transaction.create({
             data: {
               type: "DESPESA",
               description: `Custo Insumos (Totem) | Agend: ${agendamento.id} | Detalhes: ${detailsArray.join(" | ")}`,
@@ -216,13 +217,14 @@ const agendamentos = await prisma.appointment.findMany({
               appointment_id: agendamento.id,
             },
           });
+          createdTxIds.push(expTx.id);
         }
       } else if (
         !service.track_stock &&
         service.material_cost &&
         Number(service.material_cost) > 0
       ) {
-        await tx.transaction.create({
+        const expTx = await tx.transaction.create({
           data: {
             type: "DESPESA",
             description: `Custo Fixo de Material (Totem - Agend: ${agendamento.id}): ${service.name}`,
@@ -233,8 +235,13 @@ const agendamentos = await prisma.appointment.findMany({
             appointment_id: agendamento.id,
           },
         });
+        createdTxIds.push(expTx.id);
       }
     });
+
+    for (const txId of createdTxIds) {
+      triggerZibeeSyncById(txId);
+    }
     } catch (error: any) {
       // Se for um erro de Violação de Chave Única no check-in (P2002) 
       // ou qualquer falha por concorrência de atualização, tratamos como NOT_FOUND

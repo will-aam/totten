@@ -4,6 +4,7 @@
 import { getTenantPrisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { triggerZibeeSyncById, deleteTransactionFromZibee } from "@/lib/server/integrations/zibee.service";
 
 async function getOrgId() {
   const admin = await requireAuth();
@@ -49,7 +50,7 @@ export async function createStockItem(data: {
     const orgId = await getOrgId();
     const prisma = getTenantPrisma(orgId);
 
-    await prisma.$transaction(async (tx) => {
+    const txResult = await prisma.$transaction(async (tx) => {
       const newItem = await tx.stockItem.create({
         data: {
           name: data.name,
@@ -62,9 +63,10 @@ export async function createStockItem(data: {
         },
       });
 
+      let createdExpenseTxId: string | null = null;
       if (data.createExpense) {
         const totalCost = data.quantity * data.unit_cost;
-        await tx.transaction.create({
+        const expTx = await tx.transaction.create({
           data: {
             type: "DESPESA",
             description: `Compra de Insumo: ${data.name}`,
@@ -75,8 +77,14 @@ export async function createStockItem(data: {
             stock_item_id: newItem.id,
           },
         });
+        createdExpenseTxId = expTx.id;
       }
+      return createdExpenseTxId;
     });
+
+    if (txResult) {
+      triggerZibeeSyncById(txResult);
+    }
 
     revalidatePath("/admin/stock");
     revalidatePath("/admin/finance/dashboard");
@@ -168,6 +176,15 @@ export async function deleteStockItem(id: string) {
     }
 
     // CENÁRIO 2: Nunca foi usado em serviço. Hard delete em tudo.
+    const txsToDelete = await prisma.transaction.findMany({
+      where: {
+        stock_item_id: id,
+        organization_id: orgId,
+        type: "DESPESA",
+      },
+      select: { id: true },
+    });
+
     await prisma.$transaction(async (tx) => {
       await tx.transaction.deleteMany({
         where: {
@@ -181,6 +198,10 @@ export async function deleteStockItem(id: string) {
         where: { id },
       });
     });
+
+    for (const t of txsToDelete) {
+      deleteTransactionFromZibee(t.id, orgId);
+    }
 
     revalidatePath("/admin/stock");
     revalidatePath("/admin/finance/dashboard");

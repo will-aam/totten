@@ -1,5 +1,6 @@
 // lib/server/services/packages/package.service.ts
 import { getTenantPrisma } from "@/lib/prisma";
+import { triggerZibeeSyncById, deleteTransactionFromZibee } from "@/lib/server/integrations/zibee.service";
 
 export class PackageService {
   /**
@@ -37,6 +38,11 @@ export class PackageService {
     if (!appointment) {
       throw new Error("NOT_FOUND");
     }
+
+    const txsToDelete = await prisma.transaction.findMany({
+      where: { appointment_id: appointment.id, organization_id: organizationId },
+      select: { id: true },
+    });
 
     await prisma.$transaction(async (tx) => {
       const adminName = adminUser?.name || "Administrador";
@@ -162,6 +168,10 @@ export class PackageService {
       });
     });
 
+    for (const t of txsToDelete) {
+      deleteTransactionFromZibee(t.id, organizationId);
+    }
+
     return {
       success: true,
       clientId: appointment.client_id,
@@ -270,6 +280,8 @@ export class PackageService {
     }
 
     // Transação de criação do pacote e financeiro
+    const createdTxIds: string[] = [];
+
     const result = await prisma.$transaction(async (tx) => {
       const novoPacote = await tx.package.create({
         data: {
@@ -314,7 +326,7 @@ export class PackageService {
           txDescription += ` (Taxa abatida: R$ ${feeDiscount.toFixed(2).replace(".", ",")})`;
         }
 
-        await tx.transaction.create({
+        const createdUpfrontTx = await tx.transaction.create({
           data: {
             type: "RECEITA",
             description: txDescription,
@@ -327,6 +339,7 @@ export class PackageService {
             payment_method_id: orgPaymentMethod?.id || null,
           },
         });
+        createdTxIds.push(createdUpfrontTx.id);
       }
 
       // 3. GERAR PARCELAS (CONTAS A RECEBER PENDENTE)
@@ -344,7 +357,7 @@ export class PackageService {
           const dueDate = new Date(baseDate);
           dueDate.setMonth(baseDate.getMonth() + i);
 
-          await tx.transaction.create({
+          const createdInstTx = await tx.transaction.create({
             data: {
               type: "RECEITA",
               description: `Parcela Pacote: ${service.name} (${client.name})`,
@@ -357,11 +370,16 @@ export class PackageService {
               package_id: novoPacote.id,
             },
           });
+          createdTxIds.push(createdInstTx.id);
         }
       }
 
       return novoPacote;
     });
+
+    for (const txId of createdTxIds) {
+      triggerZibeeSyncById(txId);
+    }
 
     return result;
   }

@@ -1,5 +1,6 @@
 // lib/server/services/totem/checkin.service.ts
 import { getTenantPrisma } from "@/lib/prisma";
+import { triggerZibeeSyncById } from "@/lib/server/integrations/zibee.service";
 
 export class TotemCheckInService {
   /**
@@ -70,6 +71,7 @@ export class TotemCheckInService {
     });
 
     // A GRANDE TRANSAÇÃO DO TOTEM
+    const createdTxIds: string[] = [];
     const result = await prisma.$transaction(async (tx) => {
       // 1. Cria o registro de Check-in
       const checkIn = await tx.checkIn.create({
@@ -146,7 +148,7 @@ export class TotemCheckInService {
             const apptPrice = appt.snapshot_service_price ?? appt.service.price;
             const apptName = appt.snapshot_service_name ?? appt.service.name;
 
-            await tx.transaction.create({
+            const recTx = await tx.transaction.create({
               data: {
                 type: "RECEITA",
                 description: `Serviço Realizado (Totem): ${apptName} (${appt.client.name})`,
@@ -159,6 +161,7 @@ export class TotemCheckInService {
                 payment_method_id: paymentMethodRecordId,
               },
             });
+            createdTxIds.push(recTx.id);
           }
         }
 
@@ -181,7 +184,7 @@ export class TotemCheckInService {
               const costOfUsedQty = Number(usedQty) * Number(stockData.unit_cost);
 
               if (costOfUsedQty > 0) {
-                await tx.transaction.create({
+                const expTx = await tx.transaction.create({
                   data: {
                     type: "DESPESA",
                     description: `Custo de Insumo (Totem): ${stockData.name}`,
@@ -192,6 +195,7 @@ export class TotemCheckInService {
                     appointment_id: appt.id,
                   },
                 });
+                createdTxIds.push(expTx.id);
               }
             }
           }
@@ -201,7 +205,7 @@ export class TotemCheckInService {
           Number(service.material_cost) > 0
         ) {
           // Fluxo de Custo Fixo de Material
-          await tx.transaction.create({
+          const expTx = await tx.transaction.create({
             data: {
               type: "DESPESA",
               description: `Custo Fixo de Material (Totem): ${service.name}`,
@@ -212,6 +216,7 @@ export class TotemCheckInService {
               appointment_id: appt.id,
             },
           });
+          createdTxIds.push(expTx.id);
         }
       }
 
@@ -233,6 +238,9 @@ export class TotemCheckInService {
 
       return checkIn;
     });
+
+    // Disparar sincronização com Zibee para as transações criadas no check-in
+    createdTxIds.forEach((txId) => triggerZibeeSyncById(txId).catch(console.error));
 
     return {
       clientName: appt.client.name,
