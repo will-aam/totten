@@ -196,3 +196,27 @@ export async function deleteScheduleRuleAction(ruleId: string) {
     return { success: false, error: error.message || "Erro ao excluir regra de horários." };
   }
 }
+
+export async function disconnectMercadoPagoAction() {
+  try {
+    const admin = await requireAuth();
+    const { prisma } = await import("@/lib/prisma");
+
+    await prisma.settings.update({
+      where: { organization_id: admin.organizationId },
+      data: {
+        pix_payment_type: "MANUAL",
+        mp_access_token: null,
+        mp_refresh_token: null,
+        mp_public_key: null,
+        mp_user_id: null,
+      },
+    });
+
+    revalidatePath("/admin/custom-page");
+    return { success: true };
+  } catch (error: any) {
+    console.error("[ACTION disconnectMercadoPago]", error);
+    return { success: false, error: "Erro ao desconectar conta do Mercado Pago." };
+  }
+}

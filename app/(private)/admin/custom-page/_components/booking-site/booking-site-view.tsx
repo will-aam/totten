@@ -26,6 +26,23 @@ export function BookingSiteView({ profile }: { profile?: any }) {
   const [mercadoPagoConnected, setMercadoPagoConnected] = useState(false);
 
   useEffect(() => {
+    // Feedback de retorno do OAuth do Mercado Pago
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const mpStatus = urlParams.get("mp_status");
+      const mpMsg = urlParams.get("mp_msg");
+
+      if (mpStatus === "success") {
+        toast.success("Conta do Mercado Pago conectada com sucesso!");
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } else if (mpStatus === "error") {
+        toast.error("Erro na conexão do Mercado Pago", {
+          description: mpMsg || "Não foi possível autorizar a conta.",
+        });
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+
     getSelfServiceSettingsAction().then(res => {
       if (res.success && res.data) {
         setBookingTheme(res.data.bookingTheme || "light");
@@ -286,7 +303,17 @@ export function BookingSiteView({ profile }: { profile?: any }) {
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => setMercadoPagoConnected(false)}
+                        onClick={async () => {
+                          const { disconnectMercadoPagoAction } = await import("@/app/actions/settings");
+                          const res = await disconnectMercadoPagoAction();
+                          if (res.success) {
+                            setMercadoPagoConnected(false);
+                            setPixMode("MANUAL");
+                            toast.success("Conta do Mercado Pago desconectada.");
+                          } else {
+                            toast.error("Erro ao desconectar conta.");
+                          }
+                        }}
                         className="text-xs h-8 text-red-600 hover:text-red-850 hover:bg-red-50 border-red-200"
                       >
                         Desconectar
@@ -296,18 +323,17 @@ export function BookingSiteView({ profile }: { profile?: any }) {
                     <div className="space-y-3 pt-1">
                       <Button
                         type="button"
-                        onClick={() => {
-                          setMercadoPagoConnected(true);
-                          toast.success("Conta conectada com sucesso (Simulação visual)!");
-                        }}
-                        className="w-full h-11 rounded-xl bg-[#009EE3] hover:bg-[#0089c7] text-white font-bold gap-2 shadow-sm transition-all"
+                        asChild
+                        className="w-full h-11 rounded-xl bg-[#009EE3] hover:bg-[#0089c7] text-white font-bold gap-2 shadow-sm transition-all cursor-pointer"
                       >
-                        <img
-                          src="/mercado-pago-seeklogo.png"
-                          alt=""
-                          className="h-5 w-auto object-contain"
-                        />
-                        Conectar com Mercado Pago
+                        <a href="/api/auth/mercadopago/authorize">
+                          <img
+                            src="/mercado-pago-seeklogo.png"
+                            alt=""
+                            className="h-5 w-auto object-contain"
+                          />
+                          Conectar com Mercado Pago
+                        </a>
                       </Button>
                       <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
                         <span>Você será redirecionado para autorizar com segurança</span>
