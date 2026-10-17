@@ -133,7 +133,7 @@ export function DashboardCards() {
               </p>
               {Number(kpis.totalPixDepositsToday || 0) > 0 && (
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Total de sinais Pix recebidos hoje: <strong className="text-[#009EE3]">R$ {kpis.totalPixDepositsToday?.toFixed(2)}</strong>
+                  Total de sinais Pix recebidos hoje: <strong className="text-green-500">R$ {kpis.totalPixDepositsToday?.toFixed(2)}</strong>
                 </p>
               )}
             </div>

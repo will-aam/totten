@@ -110,7 +110,7 @@ export const registrosSubItems: SubNavItem[] = [
 
 /** Autoatendimento — visão geral → pedidos → configuração → divulgação. */
 export const autoatendimentoSubItems: SubNavItem[] = [
-  { title: "Dashboard", href: "/admin/auto/dashboard", active: false },
+  { title: "Dashboard", href: "/admin/auto/dashboard", active: true },
   {
     title: "Solicitações Pendentes",
     href: "/admin/auto/requests",

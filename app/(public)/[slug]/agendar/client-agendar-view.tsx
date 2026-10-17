@@ -128,6 +128,7 @@ export function ClientAgendarView({ org }: { org: any }) {
     firstName: "",
     phone: "",
     email: "",
+    cpf: "",
     professionalId: null as string | null,
     professionalName: null as string | null,
     professionalImage: null as string | null,
@@ -220,6 +221,16 @@ export function ClientAgendarView({ org }: { org: any }) {
     setBookingData({ ...bookingData, phone: v.slice(0, 15) });
   };
 
+  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let v = e.target.value.replace(/\D/g, "");
+    if (v.length <= 11) {
+      v = v.replace(/(\d{3})(\d)/, "$1.$2");
+      v = v.replace(/(\d{3})(\d)/, "$1.$2");
+      v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+    }
+    setBookingData({ ...bookingData, cpf: v.slice(0, 14) });
+  };
+
   const handleOpenBooking = (item: any) => {
     setSelectedItem(item);
     setBookingData({
@@ -228,6 +239,7 @@ export function ClientAgendarView({ org }: { org: any }) {
       firstName: typeof window !== "undefined" ? localStorage.getItem(`totten_client_name_${org.slug}`) || "" : "",
       phone: typeof window !== "undefined" ? localStorage.getItem(`totten_client_phone_${org.slug}`) || "" : "",
       email: "",
+      cpf: "",
       notes: "",
       professionalId: selectedProfessional?.id || null,
       professionalName: selectedProfessional?.name || null,
@@ -1151,6 +1163,19 @@ export function ClientAgendarView({ org }: { org: any }) {
                     />
                     <p className="text-xs opacity-70">Necessário para acessar sua área do cliente no futuro.</p>
                   </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>CPF</Label>
+                      <span className="text-[11px] opacity-60 font-medium">Opcional</span>
+                    </div>
+                    <Input
+                      value={bookingData.cpf}
+                      onChange={handleCpfChange}
+                      placeholder="000.000.000-00"
+                      className={cn(isDark ? "bg-black/20 border-white/10" : "")}
+                    />
+                    <p className="text-xs opacity-70">Facilita a identificação rápida do seu cadastro na clínica.</p>
+                  </div>
                 </div>
               </div>
             )}
@@ -1543,6 +1568,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                       firstName: bookingData.firstName,
                       phone: bookingData.phone,
                       email: bookingData.email,
+                      cpf: bookingData.cpf,
                       serviceId: selectedItem?.id,
                       date: bookingData.date ? format(bookingData.date, "yyyy-MM-dd") : "",
                       time: bookingData.time || "",

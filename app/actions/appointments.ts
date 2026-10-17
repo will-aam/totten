@@ -825,6 +825,7 @@ export type CreateClientAppointmentInput = {
   slug: string;
   firstName: string;
   phone: string;
+  cpf?: string;
   email?: string;
   serviceId?: string;
   date: string; // ISO date or yyyy-MM-dd
@@ -848,11 +849,20 @@ export async function createClientAppointmentAction(input: CreateClientAppointme
 
     const tenantPrisma = getTenantPrisma(org.id);
 
-    // Encontrar ou criar cliente
+    // Encontrar ou criar cliente buscando por WhatsApp ou CPF (se fornecido)
+    const clientSearchOr: any[] = [{ phone_whatsapp: input.phone }];
+    if (input.cpf && input.cpf.trim() !== "") {
+      const cleanCpf = input.cpf.replace(/\D/g, "");
+      if (cleanCpf.length > 0) {
+        clientSearchOr.push({ cpf: input.cpf });
+        clientSearchOr.push({ cpf: cleanCpf });
+      }
+    }
+
     let client = await tenantPrisma.client.findFirst({
       where: {
         organization_id: org.id,
-        phone_whatsapp: input.phone,
+        OR: clientSearchOr,
       },
     });
 
@@ -861,11 +871,20 @@ export async function createClientAppointmentAction(input: CreateClientAppointme
         data: {
           name: input.firstName,
           phone_whatsapp: input.phone,
+          cpf: input.cpf && input.cpf.trim() !== "" ? input.cpf : null,
           email: input.email || null,
           organization_id: org.id,
           source: "SELF_SERVICE"
         },
       });
+    } else {
+      // Se o cliente já existia e preencheu CPF novo, atualiza apenas se ele não tinha CPF
+      if (input.cpf && !client.cpf) {
+        await tenantPrisma.client.update({
+          where: { id: client.id },
+          data: { cpf: input.cpf },
+        });
+      }
     }
 
     if (!input.serviceId) {

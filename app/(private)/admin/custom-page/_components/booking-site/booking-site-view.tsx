@@ -13,7 +13,15 @@ import { Badge } from "@/components/ui/badge";
 import { BookingAppearanceSettings } from "@/app/(private)/admin/self-service/_components/booking-appearance-settings";
 import { getSelfServiceSettingsAction, updateSelfServiceSettingsAction } from "@/app/actions/settings";
 import { detectAndFormatPixKey } from "@/lib/pix";
-import { Zap, KeyRound, CheckCircle2, ExternalLink, ShieldCheck, AlertCircle } from "lucide-react";
+import { Zap, KeyRound, CheckCircle2, ExternalLink, ShieldCheck, AlertCircle, AlertTriangle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export function BookingSiteView({ profile }: { profile?: any }) {
   const [isSaving, setIsSaving] = useState(false);
@@ -24,6 +32,9 @@ export function BookingSiteView({ profile }: { profile?: any }) {
   // Modo de Pagamento: "MANUAL" (Chave Pix própria) ou "MERCADO_PAGO" (Automático)
   const [pixMode, setPixMode] = useState<"MANUAL" | "MERCADO_PAGO">("MANUAL");
   const [mercadoPagoConnected, setMercadoPagoConnected] = useState(false);
+  const [isDisconnectModalOpen, setIsDisconnectModalOpen] = useState(false);
+  const [disconnectConfirmationText, setDisconnectConfirmationText] = useState("");
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
 
   useEffect(() => {
     // Feedback de retorno do OAuth do Mercado Pago
@@ -325,18 +336,11 @@ export function BookingSiteView({ profile }: { profile?: any }) {
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={async () => {
-                          const { disconnectMercadoPagoAction } = await import("@/app/actions/settings");
-                          const res = await disconnectMercadoPagoAction();
-                          if (res.success) {
-                            setMercadoPagoConnected(false);
-                            setPixMode("MANUAL");
-                            toast.success("Conta do Mercado Pago desconectada.");
-                          } else {
-                            toast.error("Erro ao desconectar conta.");
-                          }
+                        onClick={() => {
+                          setDisconnectConfirmationText("");
+                          setIsDisconnectModalOpen(true);
                         }}
-                        className="text-xs h-8 text-red-600 hover:text-red-850 hover:bg-red-50 border-red-200"
+                        className="text-xs h-8 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                       >
                         Desconectar
                       </Button>
@@ -479,6 +483,74 @@ export function BookingSiteView({ profile }: { profile?: any }) {
         </section>
 
       </div>
+
+      {/* Modal de Confirmação de Segurança para Desconectar */}
+      <Dialog open={isDisconnectModalOpen} onOpenChange={setIsDisconnectModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-950/40 text-red-600 flex items-center justify-center mb-2">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <DialogTitle className="text-lg">Desconectar Mercado Pago?</DialogTitle>
+            <DialogDescription className="text-sm space-y-2">
+              <span>
+                Ao desconectar, o sistema deixará de gerar cobranças Pix automáticas com sinal de 50% e voltará para o modo de cobrança manual com chave Pix.
+              </span>
+              <div className="p-3 bg-muted/50 rounded-xl text-xs text-foreground/80 mt-2">
+                Para confirmar esta ação por segurança, digite <strong className="font-bold text-red-600 dark:text-red-400">desconectar</strong> abaixo:
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-2">
+            <Input
+              value={disconnectConfirmationText}
+              onChange={(e) => setDisconnectConfirmationText(e.target.value)}
+              placeholder="desconectar"
+              autoFocus
+              className="font-mono text-center"
+            />
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDisconnectModalOpen(false)}
+              disabled={isDisconnecting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={disconnectConfirmationText.trim().toLowerCase() !== "desconectar" || isDisconnecting}
+              onClick={async () => {
+                setIsDisconnecting(true);
+                try {
+                  const { disconnectMercadoPagoAction } = await import("@/app/actions/settings");
+                  const res = await disconnectMercadoPagoAction();
+                  if (res.success) {
+                    setMercadoPagoConnected(false);
+                    setPixMode("MANUAL");
+                    setIsDisconnectModalOpen(false);
+                    toast.success("Conta do Mercado Pago desconectada.");
+                  } else {
+                    toast.error("Erro ao desconectar conta.");
+                  }
+                } catch (err) {
+                  console.error(err);
+                  toast.error("Erro inesperado ao desconectar.");
+                } finally {
+                  setIsDisconnecting(false);
+                }
+              }}
+            >
+              {isDisconnecting ? "Desconectando..." : "Confirmar e Desconectar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
