@@ -126,12 +126,12 @@ export function BookingSiteView({ profile }: { profile?: any }) {
             <div className="flex flex-col gap-3 p-4 rounded-2xl border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800/40 border-l-4 border-l-red-500">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <Label className="text-foreground font-semibold">Política de Cancelamento</Label>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/40 px-2 py-0.5 rounded-2xl">Obrigatório</span>
+                  <Label className="text-foreground font-semibold">Termos e Política do Agendamento Online</Label>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/40 px-2 py-0.5 rounded-2xl">Agendamento</span>
                 </div>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
                   <p className="text-xs text-muted-foreground">
-                    Texto que aparece acima do botão final de confirmar agendamento.
+                    Exibido na etapa de revisão da reserva, antes da confirmação do horário e pagamento do sinal.
                   </p>
                   <Button
                     variant="ghost"

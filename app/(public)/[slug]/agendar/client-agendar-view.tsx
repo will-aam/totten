@@ -432,10 +432,11 @@ export function ClientAgendarView({ org }: { org: any }) {
                             R$ {Number(pkg.price).toFixed(2)}
                           </span>
                           <Button
-                            className={cn("rounded-full px-6 h-10 shadow-sm font-bold transition-transform active:scale-95 whitespace-nowrap", isDark ? "bg-white text-slate-900 hover:bg-slate-200" : "bg-slate-900 text-white hover:bg-slate-800")}
+                            className={cn("rounded-full px-5 h-10 shadow-sm font-bold transition-transform active:scale-95 whitespace-nowrap flex items-center gap-1.5", isDark ? "bg-white text-slate-900 hover:bg-slate-200" : "bg-slate-900 text-white hover:bg-slate-800")}
                             onClick={(e) => { e.stopPropagation(); handleOpenBooking(pkg); }}
                           >
-                            Agendar
+                            <Whatsapp className="w-4 h-4 text-emerald-500 shrink-0" />
+                            Adquirir
                           </Button>
                         </div>
                       </div>
@@ -1149,22 +1150,27 @@ export function ClientAgendarView({ org }: { org: any }) {
             {/* STEP 5: Pacotes / Planos */}
             {bookingStep === 5 && (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4 text-center pb-4">
-                <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mx-auto mb-2 dark:bg-blue-900/30 dark:text-blue-400">
-                  <User className="w-8 h-8" />
+                <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-2 dark:bg-emerald-900/30 dark:text-emerald-400">
+                  <Whatsapp className="w-8 h-8" />
                 </div>
-                <h3 className="font-bold text-xl px-4">Fale com nossa equipe</h3>
+                <h3 className="font-bold text-xl px-4">Adquirir Pacote</h3>
                 <p className="text-sm opacity-70 px-6 mt-2 mb-6">
-                  Os pacotes e planos são ativados diretamente com a nossa equipe. Clique no botão abaixo para conversar no WhatsApp e garantir o seu.
+                  Os pacotes e planos possuem condições especiais e são ativados diretamente com nossa equipe. Fale conosco no WhatsApp para garantir o seu!
                 </p>
+                <div className="bg-muted/30 p-4 rounded-2xl mx-6 border text-left space-y-1">
+                  <p className="font-bold text-base">{selectedItem?.name}</p>
+                  <p className="text-xs text-muted-foreground">{selectedItem?.total_sessions} sessões &bull; R$ {Number(selectedItem?.price || 0).toFixed(2).replace('.', ',')}</p>
+                </div>
                 <div className="px-6">
                   <a
-                    href={`https://wa.me/${globalContact?.phone?.replace(/\D/g, '') || ""}?text=Ol%C3%A1%2C%20tenho%20interesse%20no%20pacote%2Fplano%20*${selectedItem?.name}*%20no%20valor%20de%20R%24%20${Number(selectedItem?.price || 0).toFixed(2)}.`}
+                    href={`https://wa.me/${adminWhatsApp}?text=${encodeURIComponent(`Olá! Tenho interesse em adquirir o pacote *${selectedItem?.name}* (${selectedItem?.total_sessions} sessões por R$ ${Number(selectedItem?.price || 0).toFixed(2).replace('.', ',')}). Como posso prosseguir?`)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setBookingWizardOpen(false)}
-                    className="flex w-full items-center justify-center rounded-full h-14 font-bold bg-[#25D366] hover:bg-[#25D366]/90 text-white transition-colors shadow-lg shadow-[#25D366]/20"
+                    className="flex w-full items-center justify-center rounded-full h-14 font-bold bg-[#25D366] hover:bg-[#25D366]/90 text-white transition-colors shadow-lg shadow-[#25D366]/20 gap-2"
                   >
-                    Falar via WhatsApp
+                    <Whatsapp className="w-5 h-5" />
+                    Conversar no WhatsApp
                   </a>
                 </div>
               </div>
@@ -1231,7 +1237,6 @@ export function ClientAgendarView({ org }: { org: any }) {
                       phone: bookingData.phone,
                       email: bookingData.email,
                       serviceId: selectedItem?.id,
-                      packageId: selectedItem?.service ? selectedItem?.id : undefined,
                       date: bookingData.date ? format(bookingData.date, "yyyy-MM-dd") : "",
                       time: bookingData.time || "",
                       professionalId: bookingData.professionalId || "ANY",

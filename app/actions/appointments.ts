@@ -796,7 +796,6 @@ export type CreateClientAppointmentInput = {
   phone: string;
   email?: string;
   serviceId?: string;
-  packageId?: string;
   date: string; // ISO date or yyyy-MM-dd
   time: string; // HH:mm
   professionalId: string;
@@ -838,18 +837,13 @@ export async function createClientAppointmentAction(input: CreateClientAppointme
       });
     }
 
-    let service = null;
-    if (input.serviceId) {
-      service = await tenantPrisma.service.findUnique({
-        where: { id: input.serviceId },
-      });
-    } else if (input.packageId) {
-      const pkg = await tenantPrisma.packageTemplate.findUnique({
-        where: { id: input.packageId },
-        include: { service: true }
-      });
-      service = pkg?.service || null;
+    if (!input.serviceId) {
+      return { success: false, error: "Serviço não informado." };
     }
+
+    const service = await tenantPrisma.service.findUnique({
+      where: { id: input.serviceId },
+    });
 
     if (!service) {
       return { success: false, error: "Serviço não encontrado." };
@@ -921,7 +915,7 @@ export async function createClientAppointmentAction(input: CreateClientAppointme
         status: status,
         client_id: client.id,
         service_id: service.id,
-        package_id: null, // Self-service booking of packages creates a NEW package, mas por enquanto vamos manter simples.
+        package_id: null,
         organization_id: org.id,
         professional_id: finalProfessionalId,
         snapshot_service_name: service.name,

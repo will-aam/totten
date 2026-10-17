@@ -6,7 +6,7 @@ import { useFieldArray, useForm } from "react-hook-form";
 import * as z from "zod";
 import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { DEFAULT_TERMS_OF_USE } from "@/lib/constants";
+import { DEFAULT_TERMS_OF_USE, DEFAULT_CLINIC_TERMS } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -78,6 +78,7 @@ const settingsSchema = z.object({
   scheduleGenerationType: z.string().optional(),
   allowOverLimitAppointments: z.boolean().default(false),
   termsOfUse: z.string().optional(),
+  clinicTermsOfUse: z.string().optional(),
   packageValidityMode: z.string().optional(),
 });
 
@@ -688,6 +689,7 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
       scheduleGenerationType: initialData?.scheduleGenerationType || "fixed_30",
       allowOverLimitAppointments: initialData?.allowOverLimitAppointments ?? false,
       termsOfUse: initialData?.termsOfUse || DEFAULT_TERMS_OF_USE,
+      clinicTermsOfUse: initialData?.clinicTermsOfUse || DEFAULT_CLINIC_TERMS,
       packageValidityMode: initialData?.packageValidityMode || "ACQUISITION",
     },
   });
@@ -702,6 +704,7 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
         scheduleGenerationType: data.scheduleGenerationType,
         allowOverLimitAppointments: data.allowOverLimitAppointments,
         termsOfUse: data.termsOfUse,
+        clinicTermsOfUse: data.clinicTermsOfUse,
         packageValidityMode: data.packageValidityMode,
       } as any);
 
@@ -964,23 +967,23 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
 
               <FormField
                 control={form.control}
-                name="termsOfUse"
+                name="clinicTermsOfUse"
                 render={({ field }) => (
-                  <FormItem className="flex flex-col gap-3 p-4 rounded-2xl border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800/40 border-l-4 border-l-red-500">
+                  <FormItem className="flex flex-col gap-3 p-5 rounded-2xl border border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-800/40 border-l-4 border-l-blue-500">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <FormLabel className="text-foreground font-semibold">Termos de Uso e Política de Cancelamento</FormLabel>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/40 px-2 py-0.5 rounded-2xl">Obrigatório</span>
+                        <FormLabel className="text-foreground font-semibold">Regras e Políticas da Clínica (Área do Cliente)</FormLabel>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 rounded-2xl">Área do Cliente</span>
                       </div>
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
                         <CardDescription className="text-xs text-muted-foreground">
-                          Texto que aparece na área do cliente e é exigido aceite para usar o site.
+                          Regras gerais exibidas na aba de termos para seus clientes cadastrados (tolerâncias, regras de recepção e cancelamentos via WhatsApp).
                         </CardDescription>
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => form.setValue("termsOfUse", DEFAULT_TERMS_OF_USE)}
+                          onClick={() => form.setValue("clinicTermsOfUse", DEFAULT_CLINIC_TERMS)}
                           className="h-7 text-[10px] font-bold bg-muted/50 hover:bg-muted"
                         >
                           Restaurar Padrão
@@ -991,7 +994,7 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
                       <Textarea
                         {...field}
                         className="resize-none h-48 bg-white dark:bg-black/20"
-                        placeholder="Insira os termos de uso e políticas de cancelamento..."
+                        placeholder="Insira as regras e políticas gerais da clínica..."
                       />
                     </FormControl>
                   </FormItem>

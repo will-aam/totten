@@ -4,12 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { TermsOfUseBox } from "@/components/terms-of-use-box";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, LogOut, Calendar, History, User, CheckCircle, Store, FileText } from "lucide-react";
+import { ArrowLeft, LogOut, Calendar, History, User, CheckCircle, Store, FileText, Plus } from "lucide-react";
 import { Whatsapp } from "@boxicons/react";
 import { logoutClientSession } from "@/app/actions/client-auth";
 import { cancelPendingAppointment } from "@/app/actions/public-client";
 import { toast } from "sonner";
-import { DEFAULT_TERMS_OF_USE } from "@/lib/constants";
+import { DEFAULT_TERMS_OF_USE, DEFAULT_CLINIC_TERMS } from "@/lib/constants";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -61,7 +61,7 @@ export function ClientAreaView({
   const historyStandalone = data.historyStandalone || [];
   const historyVouchers = data.historyVouchers || [];
   const clinicPhone = data.clinicPhone;
-  const termsText = org?.settings?.terms_of_use || DEFAULT_TERMS_OF_USE;
+  const termsText = org?.settings?.clinic_terms_of_use || org?.settings?.terms_of_use || DEFAULT_CLINIC_TERMS;
 
   const now = new Date();
   const activePackages = historyPackages.filter((pkg: any) => {
@@ -193,8 +193,19 @@ export function ClientAreaView({
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto space-y-6 w-full pb-8">
-            <div className="space-y-2 mb-6">
-              <h2 className="text-2xl font-black">Olá, {client.name?.split(" ")[0] || "Cliente"}</h2>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+              <div className="space-y-1">
+                <h2 className="text-2xl font-black">Olá, {client.name?.split(" ")[0] || "Cliente"}</h2>
+                <p className="text-xs text-muted-foreground">Acompanhe seus horários, pacotes e histórico</p>
+              </div>
+              {data.customPageActive && (
+                <Button
+                  onClick={() => router.push(`/${org.slug}/agendar`)}
+                  className="rounded-full font-bold shadow-md hover:shadow-lg transition-all h-10 px-5 gap-2 self-start sm:self-auto bg-primary text-primary-foreground"
+                >
+                  <Plus className="h-4 w-4" /> Novo Agendamento
+                </Button>
+              )}
             </div>
 
             {error && (

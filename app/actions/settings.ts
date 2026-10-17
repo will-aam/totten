@@ -114,6 +114,7 @@ export async function getSelfServiceSettingsAction() {
 
 export async function updateSelfServiceSettingsAction(data: {
   termsOfUse?: string;
+  clinicTermsOfUse?: string;
   futureBookingLimitDays?: number;
   openingTime?: string;
   closingTime?: string;

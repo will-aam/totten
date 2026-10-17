@@ -123,6 +123,7 @@ export class SettingsService {
         where: { organization_id: organizationId },
         select: { 
           terms_of_use: true, 
+          clinic_terms_of_use: true,
           future_booking_limit_days: true,
           opening_time: true,
           closing_time: true,
@@ -138,7 +139,7 @@ export class SettingsService {
           show_team: true,
           show_team_likes: true,
           package_validity_mode: true,
-        },
+        } as any,
       }),
       prisma.scheduleRule.findMany({
         where: { organization_id: organizationId },
@@ -152,6 +153,7 @@ export class SettingsService {
 
     return {
       termsOfUse: settings?.terms_of_use || "",
+      clinicTermsOfUse: settings?.clinic_terms_of_use || "",
       futureBookingLimitDays: settings?.future_booking_limit_days ?? 30,
       openingTime: settings?.opening_time || "08:00",
       closingTime: settings?.closing_time || "19:00",
@@ -203,6 +205,7 @@ export class SettingsService {
       // 1. Atualizar Configurações no Settings
       if (
         data.termsOfUse !== undefined ||
+        data.clinicTermsOfUse !== undefined ||
         data.futureBookingLimitDays !== undefined ||
         data.openingTime !== undefined ||
         data.closingTime !== undefined ||
@@ -221,6 +224,7 @@ export class SettingsService {
       ) {
         const updateData: any = {};
         if (data.termsOfUse !== undefined) updateData.terms_of_use = data.termsOfUse;
+        if (data.clinicTermsOfUse !== undefined) updateData.clinic_terms_of_use = data.clinicTermsOfUse;
         if (data.futureBookingLimitDays !== undefined) updateData.future_booking_limit_days = data.futureBookingLimitDays;
         if (data.openingTime !== undefined) updateData.opening_time = data.openingTime;
         if (data.closingTime !== undefined) updateData.closing_time = data.closingTime;

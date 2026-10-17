@@ -109,6 +109,7 @@ model Settings {
 
   require_cpf  Boolean @default(true)
   terms_of_use String? @db.Text
+  clinic_terms_of_use String? @db.Text
 
   require_prepayment    Boolean @default(true)
   pix_key               String?
