@@ -125,6 +125,7 @@ export async function updateSelfServiceSettingsAction(data: {
   bookingPrimaryColor?: string;
 
   requirePrepayment?: boolean;
+  pixPaymentType?: string;
   pixKey?: string;
   paymentInstructions?: string;
   showPackages?: boolean;

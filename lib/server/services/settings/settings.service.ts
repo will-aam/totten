@@ -132,8 +132,11 @@ export class SettingsService {
           booking_primary_color: true,
           allow_over_limit_appointments: true,
           require_prepayment: true,
+          pix_payment_type: true,
           pix_key: true,
           payment_instructions: true,
+          mp_user_id: true,
+          mp_access_token: true,
           show_packages: true,
           show_most_booked: true,
           show_team: true,
@@ -163,6 +166,8 @@ export class SettingsService {
       bookingPrimaryColor: settings?.booking_primary_color || "#0f172a",
       allowOverLimitAppointments: settings?.allow_over_limit_appointments ?? false,
       requirePrepayment: settings?.require_prepayment ?? true,
+      pixPaymentType: (settings as any)?.pix_payment_type || "MANUAL",
+      mercadoPagoConnected: !!((settings as any)?.mp_access_token),
       pixKey: settings?.pix_key || "",
       paymentInstructions: settings?.payment_instructions || "",
       showPackages: settings?.show_packages ?? true,
@@ -214,6 +219,7 @@ export class SettingsService {
         data.bookingPrimaryColor !== undefined ||
         data.allowOverLimitAppointments !== undefined ||
         data.requirePrepayment !== undefined ||
+        data.pixPaymentType !== undefined ||
         data.pixKey !== undefined ||
         data.paymentInstructions !== undefined ||
         data.showPackages !== undefined ||
@@ -235,6 +241,7 @@ export class SettingsService {
         if (data.bookingPrimaryColor !== undefined) updateData.booking_primary_color = data.bookingPrimaryColor;
         if (data.allowOverLimitAppointments !== undefined) updateData.allow_over_limit_appointments = data.allowOverLimitAppointments;
         if (data.requirePrepayment !== undefined) updateData.require_prepayment = data.requirePrepayment;
+        if (data.pixPaymentType !== undefined) updateData.pix_payment_type = data.pixPaymentType;
         if (data.pixKey !== undefined) updateData.pix_key = data.pixKey;
         if (data.paymentInstructions !== undefined) updateData.payment_instructions = data.paymentInstructions;
         if (data.showPackages !== undefined) updateData.show_packages = data.showPackages;

@@ -9,9 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { BookingAppearanceSettings } from "@/app/(private)/admin/self-service/_components/booking-appearance-settings";
 import { getSelfServiceSettingsAction, updateSelfServiceSettingsAction } from "@/app/actions/settings";
 import { detectAndFormatPixKey } from "@/lib/pix";
+import { Zap, KeyRound, CheckCircle2, ExternalLink, ShieldCheck, AlertCircle } from "lucide-react";
 
 export function BookingSiteView({ profile }: { profile?: any }) {
   const [isSaving, setIsSaving] = useState(false);
@@ -19,11 +21,18 @@ export function BookingSiteView({ profile }: { profile?: any }) {
   const [bookingTheme, setBookingTheme] = useState("light");
   const [bookingPrimaryColor, setBookingPrimaryColor] = useState("#0f172a");
 
+  // Modo de Pagamento: "MANUAL" (Chave Pix própria) ou "MERCADO_PAGO" (Automático)
+  const [pixMode, setPixMode] = useState<"MANUAL" | "MERCADO_PAGO">("MANUAL");
+  const [mercadoPagoConnected, setMercadoPagoConnected] = useState(false);
+
   useEffect(() => {
     getSelfServiceSettingsAction().then(res => {
       if (res.success && res.data) {
         setBookingTheme(res.data.bookingTheme || "light");
         setBookingPrimaryColor(res.data.bookingPrimaryColor || "#0f172a");
+
+        setPixMode((res.data.pixPaymentType as "MANUAL" | "MERCADO_PAGO") || "MANUAL");
+        setMercadoPagoConnected(!!res.data.mercadoPagoConnected);
 
         setGeneral({
           requirePrepayment: res.data.requirePrepayment ?? true,
@@ -58,8 +67,8 @@ export function BookingSiteView({ profile }: { profile?: any }) {
   });
 
   const handleSave = useCallback(async () => {
-    if (general.requirePrepayment && !general.pixKey.trim()) {
-      toast.error("A Chave Pix é obrigatória quando o Pagamento Antecipado (Sinal) está ativado.");
+    if (general.requirePrepayment && pixMode === "MANUAL" && !general.pixKey.trim()) {
+      toast.error("A Chave Pix é obrigatória no modo de pagamento manual.");
       return;
     }
 
@@ -69,6 +78,7 @@ export function BookingSiteView({ profile }: { profile?: any }) {
         bookingTheme,
         bookingPrimaryColor,
         requirePrepayment: general.requirePrepayment,
+        pixPaymentType: pixMode,
         termsOfUse: general.termsText,
         pixKey: general.pixKey,
         paymentInstructions: general.paymentInstructions,
@@ -90,7 +100,7 @@ export function BookingSiteView({ profile }: { profile?: any }) {
     } finally {
       setIsSaving(false);
     }
-  }, [general, bookingTheme, bookingPrimaryColor]);
+  }, [general, bookingTheme, bookingPrimaryColor, pixMode, features]);
 
   return (
     <div className="w-full flex flex-col gap-6 animate-in fade-in duration-300">
@@ -153,12 +163,17 @@ export function BookingSiteView({ profile }: { profile?: any }) {
           </div>
 
           {/* Pagamento Antecipado */}
-          <div className="flex flex-col gap-4 pt-4 border-t">
+          <div className="flex flex-col gap-5 pt-4 border-t">
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="text-base font-semibold text-foreground">Exigir Pagamento Antecipado (Sinal)</h4>
+                <div className="flex items-center gap-2">
+                  <h4 className="text-base font-semibold text-foreground">Exigir Pagamento Antecipado (Sinal)</h4>
+                  <Badge variant="outline" className="text-[11px] font-semibold text-blue-600 border-blue-200 bg-blue-50/50 dark:text-blue-300 dark:border-blue-400/50 dark:bg-blue-950/40">
+                    50% do Serviço
+                  </Badge>
+                </div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Requer 50% do valor via PIX para confirmar o agendamento.
+                  Requer 50% do valor do atendimento via PIX para garantir e confirmar a reserva na agenda.
                 </p>
               </div>
               <Switch
@@ -167,28 +182,183 @@ export function BookingSiteView({ profile }: { profile?: any }) {
               />
             </div>
 
-            <div className={`space-y-4 transition-opacity duration-300 ${!general.requirePrepayment ? "opacity-40 pointer-events-none" : ""}`}>
+            <div className={`space-y-5 transition-opacity duration-300 ${!general.requirePrepayment ? "opacity-40 pointer-events-none" : ""}`}>
+
+              {/* Seletor Granular: Manual vs Mercado Pago */}
               <div className="space-y-2">
-                <Label className="text-foreground font-medium">Chave PIX</Label>
-                <Input
-                  value={general.pixKey}
-                  onChange={(e) => setGeneral({ ...general, pixKey: e.target.value })}
-                  onBlur={(e) => setGeneral({ ...general, pixKey: detectAndFormatPixKey(e.target.value) })}
-                  placeholder="Ex: (00) 00000-0000, email@exemplo.com ou CPF"
-                  disabled={!general.requirePrepayment}
-                />
+                <Label className="text-foreground font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                  Escolha como deseja receber o PIX:
+                </Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+
+                  {/* Opção 1: Mercado Pago (Automático) */}
+                  <div
+                    onClick={() => setPixMode("MERCADO_PAGO")}
+                    className={`cursor-pointer rounded-2xl p-4 border-2 transition-all flex flex-col justify-between relative overflow-hidden ${pixMode === "MERCADO_PAGO"
+                      ? "border-[#009EE3] bg-[#009EE3]/5 shadow-sm"
+                      : "border-border/60 hover:border-border bg-card/60"
+                      }`}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-[#009EE3]/15 flex items-center justify-center text-[#009EE3] font-black text-xs">
+                          <img
+                            src="/mercado-pago-seeklogo.png"
+                            alt=""
+                            className="w-5 h-5 object-contain"
+                          />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-sm text-foreground">Mercado Pago</span>
+                            <Badge className="bg-[#009EE3] hover:bg-[#009EE3] text-[9px] px-1.5 py-0 h-4 font-bold text-white">
+                              Recomendado
+                            </Badge>
+                          </div>
+                          <span className="text-[11px] text-muted-foreground">Automático via QR Code</span>
+                        </div>
+                      </div>
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${pixMode === "MERCADO_PAGO" ? "border-[#009EE3] bg-[#009EE3]" : "border-muted-foreground/30"}`}>
+                        {pixMode === "MERCADO_PAGO" && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground mt-1">
+                      O cliente escaneia o QR Code dinâmico e o sistema <strong>confirma a agenda sozinho na hora</strong>.
+                    </p>
+                  </div>
+
+                  {/* Opção 2: Manual (Chave Própria) */}
+                  <div
+                    onClick={() => setPixMode("MANUAL")}
+                    className={`cursor-pointer rounded-2xl p-4 border-2 transition-all flex flex-col justify-between relative overflow-hidden ${pixMode === "MANUAL"
+                      ? "border-slate-800 dark:border-slate-200 bg-slate-50 dark:bg-slate-900/40 shadow-sm"
+                      : "border-border/60 hover:border-border bg-card/60"
+                      }`}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300">
+                          <KeyRound className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <span className="font-bold text-sm text-foreground">Chave Própria (Manual)</span>
+                          <p className="text-[11px] text-muted-foreground">Comprovante via WhatsApp</p>
+                        </div>
+                      </div>
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${pixMode === "MANUAL" ? "border-slate-900 bg-slate-900 dark:border-white dark:bg-white" : "border-muted-foreground/30"}`}>
+                        {pixMode === "MANUAL" && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-slate-900" />}
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Você informa sua chave PIX e o cliente anexa o comprovante no WhatsApp para você aprovar.
+                    </p>
+                  </div>
+
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-foreground font-medium">Mensagem de Confirmação (Informação Importante)</Label>
-                <Textarea
-                  value={general.paymentInstructions}
-                  onChange={(e) => setGeneral({ ...general, paymentInstructions: e.target.value })}
-                  className="resize-none h-48"
-                  placeholder={`Agendamento confirmado com sucesso!...`}
-                  disabled={!general.requirePrepayment}
-                />
-              </div>
+              {/* CONTEÚDO CONDICIONAL CONFORME A ESCOLHA */}
+              {pixMode === "MERCADO_PAGO" ? (
+                <div className="rounded-2xl border border-[#009EE3]/30 bg-[#009EE3]/5 p-5 space-y-4">
+                  <div className="flex items-start gap-3">
+                    <ShieldCheck className="w-5 h-5 text-[#009EE3] shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <h5 className="font-bold text-sm text-foreground">Conexão Oficial com Mercado Pago</h5>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Funciona tanto para autônomos com <strong>CPF comum</strong> quanto empresas com <strong>CNPJ</strong>.
+                        O dinheiro do sinal cai diretamente na sua conta Mercado Pago sem intermediários.
+                      </p>
+                    </div>
+                  </div>
+
+                  {mercadoPagoConnected ? (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-xl">
+                      <div className="flex items-center gap-2.5">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                        <div>
+                          <p className="text-xs font-bold text-emerald-900 dark:text-emerald-300">Conta Mercado Pago Conectada</p>
+                          <p className="text-[11px] text-emerald-700/80 dark:text-emerald-400">Pronta para gerar cobranças automáticas</p>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setMercadoPagoConnected(false)}
+                        className="text-xs h-8 text-red-600 hover:text-red-850 hover:bg-red-50 border-red-200"
+                      >
+                        Desconectar
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 pt-1">
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          setMercadoPagoConnected(true);
+                          toast.success("Conta conectada com sucesso (Simulação visual)!");
+                        }}
+                        className="w-full h-11 rounded-xl bg-[#009EE3] hover:bg-[#0089c7] text-white font-bold gap-2 shadow-sm transition-all"
+                      >
+                        <img
+                          src="/mercado-pago-seeklogo.png"
+                          alt=""
+                          className="h-5 w-auto object-contain"
+                        />
+                        Conectar com Mercado Pago
+                      </Button>
+                      <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
+                        <span>Você será redirecionado para autorizar com segurança</span>
+                        <ExternalLink className="w-3 h-3 opacity-60" />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-2 pt-2 border-t border-[#009EE3]/20">
+                    <Label className="text-foreground font-medium text-xs">Instruções pós-agendamento (Opcional)</Label>
+                    <Textarea
+                      value={general.paymentInstructions}
+                      onChange={(e) => setGeneral({ ...general, paymentInstructions: e.target.value })}
+                      className="resize-none h-28 text-xs bg-white dark:bg-black/20"
+                      placeholder="Instruções de comparecimento que o cliente vê assim que o PIX for pago..."
+                    />
+                  </div>
+                </div>
+              ) : (
+                /* Bloco do Modo Manual */
+                <div className="space-y-4 rounded-2xl border border-border/80 bg-muted/20 p-5">
+                  <div className="flex items-start gap-2.5 text-xs text-muted-foreground bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl">
+                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <span>No modo manual, seu cliente copia sua chave e você precisa conferir o comprovante no WhatsApp para aprovar a agenda.</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-foreground font-medium text-xs">Sua Chave PIX</Label>
+                    <Input
+                      value={general.pixKey}
+                      onChange={(e) => setGeneral({ ...general, pixKey: e.target.value })}
+                      onBlur={(e) => setGeneral({ ...general, pixKey: detectAndFormatPixKey(e.target.value) })}
+                      placeholder="Ex: (00) 00000-0000, email@exemplo.com ou CPF"
+                      className="bg-white dark:bg-black/20"
+                      disabled={!general.requirePrepayment}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-foreground font-medium text-xs">Mensagem de Confirmação e Envio de Comprovante</Label>
+                    <Textarea
+                      value={general.paymentInstructions}
+                      onChange={(e) => setGeneral({ ...general, paymentInstructions: e.target.value })}
+                      className="resize-none h-36 text-xs bg-white dark:bg-black/20"
+                      placeholder="Instruções para o cliente com envio do comprovante..."
+                      disabled={!general.requirePrepayment}
+                    />
+                  </div>
+                </div>
+              )}
+
             </div>
           </div>
         </section>

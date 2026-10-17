@@ -236,6 +236,7 @@ export function ClientAgendarView({ org }: { org: any }) {
 
   const activeGeneral = previewGeneral || {
     requirePrepayment: org.settings?.require_prepayment ?? true,
+    pixPaymentType: org.settings?.pix_payment_type || "MANUAL",
     pixKey: org.settings?.pix_key || "",
     termsText: org.settings?.terms_of_use || "",
     paymentInstructions: org.settings?.payment_instructions || ""
@@ -1053,10 +1054,10 @@ export function ClientAgendarView({ org }: { org: any }) {
                   {/* Política de Cancelamento */}
                   <div className="space-y-3 pt-4 border-t" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
                     <Label className="text-xs font-bold uppercase tracking-wider opacity-80">Política de Cancelamento</Label>
-                    <TermsOfUseBox 
-                      text={activeGeneral.termsText} 
-                      requirePrepayment={activeGeneral.requirePrepayment} 
-                      className="rounded-full" 
+                    <TermsOfUseBox
+                      text={activeGeneral.termsText}
+                      requirePrepayment={activeGeneral.requirePrepayment}
+                      className="rounded-2xl"
                     />
 
                     <label className="flex items-start gap-3 p-4 cursor-pointer hover:bg-muted/60 hover:bg- rounded-full transition-colors mt-2">
@@ -1081,66 +1082,165 @@ export function ClientAgendarView({ org }: { org: any }) {
             {bookingStep === 4 && activeGeneral.requirePrepayment !== false && (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4 text-center">
 
-                <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-2 dark:bg-emerald-900/30 dark:text-emerald-400">
-                  <CheckCircle2 className="w-8 h-8" />
-                </div>
+                {activeGeneral.pixPaymentType === "MERCADO_PAGO" ? (
+                  /* FLUXO AUTOMÁTICO MERCADO PAGO */
+                  <>
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <div className="w-12 h-12 rounded-full bg-[#009EE3]/15 flex items-center justify-center p-2.5">
+                        <img
+                          src="/mercado-pago-seeklogo.png"
+                          alt="Mercado Pago"
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                    </div>
 
-                <h3 className="font-bold text-xl">Quase lá!</h3>
-                <p className="text-sm opacity-70 px-4">
-                  Transfira a metade do serviço via PIX para a chave abaixo para confirmar seu agendamento.
-                </p>
+                    <div>
+                      <h3 className="font-bold text-xl">Pagamento do Sinal via PIX</h3>
+                      <p className="text-sm opacity-70 px-4 mt-1">
+                        Pague o sinal de 50% para que sua vaga seja <strong>confirmada instantaneamente</strong>.
+                      </p>
+                    </div>
 
-                <div className="bg-muted/20 py-8 border-y my-6">
-                  <p className="text-sm font-medium opacity-70 mb-1">Valor a pagar agora</p>
-                  <p className="text-4xl font-black mb-8 tracking-tight text-slate-900 dark:text-white">
-                    R$ {(Number(selectedItem?.price || 0) / 2).toFixed(2)}
-                  </p>
+                    <div className="bg-muted/20 py-6 px-4 border-y my-4 rounded-3xl border">
+                      <div className="flex items-center justify-between px-2 mb-4">
+                        <span className="text-xs font-bold uppercase tracking-wider opacity-60">Sinal a Pagar Agora</span>
+                        <span className="text-2xl font-black text-[#009EE3]">
+                          R$ {(Number(selectedItem?.price || 0) / 2).toFixed(2)}
+                        </span>
+                      </div>
 
-                  <p className="text-xs font-semibold uppercase tracking-wider opacity-60 mb-2">Chave PIX (Telefone/Email/CPF)</p>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      readOnly
-                      value={detectAndFormatPixKey(activeGeneral.pixKey || "(00) 00000-0000")}
-                      className={cn("font-mono text-center", isDark ? "bg-black/40 border-white/10" : "bg-white")}
-                    />
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      className={cn("shrink-0 transition-colors", copiedPix ? "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500" : "")}
-                      onClick={() => {
-                        const rawKey = getRawPixKey(activeGeneral.pixKey || "");
-                        navigator.clipboard.writeText(rawKey);
-                        setCopiedPix(true);
-                        setTimeout(() => setCopiedPix(false), 2000);
-                      }}
-                    >
-                      {copiedPix ? <Check className="w-5 h-5" /> : <Copy className="w-4 h-4" />}
-                    </Button>
-                  </div>
-                </div>
+                      {/* QR Code Mercado Pago Simulado */}
+                      <div className="bg-white p-5 rounded-2xl border shadow-sm inline-block mx-auto mb-4 text-slate-900">
+                        <div className="relative w-44 h-44 mx-auto flex items-center justify-center bg-slate-50 border rounded-xl overflow-hidden">
+                          <div className="w-full h-full p-2 flex flex-col justify-between items-center opacity-90">
+                            <div className="w-full flex justify-between">
+                              <div className="w-8 h-8 border-4 border-slate-900 rounded-sm"></div>
+                              <div className="w-8 h-8 border-4 border-slate-900 rounded-sm"></div>
+                            </div>
+                            <div className="flex items-center justify-center p-2 bg-white rounded-lg shadow-sm border border-slate-200">
+                              <img
+                                src="/mercado-pago-seeklogo.png"
+                                alt="Mercado Pago"
+                                className="w-6 h-6 object-contain"
+                              />
+                            </div>
+                            <div className="w-full flex justify-between">
+                              <div className="w-8 h-8 border-4 border-slate-900 rounded-sm"></div>
+                              <div className="flex gap-1">
+                                <div className="w-3 h-3 bg-slate-900"></div>
+                                <div className="w-3 h-3 bg-slate-900"></div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-center gap-1.5 mt-2.5 text-[11px] font-semibold text-slate-500">
+                          <Clock className="w-3.5 h-3.5 text-amber-500" />
+                          <span>Expira em 14:59 minutos</span>
+                        </div>
+                      </div>
 
-                <div className="text-left bg-blue-50 text-blue-900 p-5 text-sm mx-4 mb-6 dark:bg-blue-950/40 dark:text-blue-200 whitespace-pre-wrap border-l-4 border-blue-500 leading-relaxed shadow-sm">
-                  {activeGeneral.paymentInstructions || `Agendamento confirmado com sucesso!\n\nRecebi seu pagamento e seu horário está oficialmente reservado.\n\nPeço, por gentileza, que chegue no horário agendado. Para manter a organização da agenda e não prejudicar os atendimentos seguintes, não tolero atrasos.\n\nEm caso de atraso, o atendimento poderá ser reduzido, remarcado ou cancelado, conforme a disponibilidade do dia.\n\nAgradeço pela compreensão e estou ansiosa para atender você!`}
-                </div>
+                      {/* Copia e Cola */}
+                      <div className="space-y-1.5 text-left max-w-sm mx-auto">
+                        <Label className="text-[11px] font-bold uppercase tracking-wider opacity-60">PIX Copia e Cola</Label>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            readOnly
+                            value="00020126580014br.gov.bcb.pix0136123e4567-e89b-12d3-a456-426614174000520400005303986540540.005802BR"
+                            className={cn("font-mono text-xs select-all", isDark ? "bg-black/40 border-white/10" : "bg-white")}
+                          />
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className={cn("shrink-0 transition-colors", copiedPix ? "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500" : "")}
+                            onClick={() => {
+                              navigator.clipboard.writeText("00020126580014br.gov.bcb.pix0136123e4567-e89b-12d3-a456-426614174000520400005303986540540.005802BR");
+                              setCopiedPix(true);
+                              toast.success("Código PIX copiado!");
+                              setTimeout(() => setCopiedPix(false), 2000);
+                            }}
+                          >
+                            {copiedPix ? <Check className="w-5 h-5" /> : <Copy className="w-4 h-4" />}
+                          </Button>
+                        </div>
+                      </div>
 
-                <div className="px-4">
-                  <a
-                    href={`https://wa.me/${adminWhatsApp}?text=${encodeURIComponent(`Olá! Fiz um agendamento e aqui estão os detalhes:\n\n*Data:* ${bookingData.date ? format(bookingData.date, "dd/MM/yyyy") : ""}\n*Horário:* ${bookingData.time}\n${bookingData.professionalName ? `*Profissional:* ${bookingData.professionalName}\n` : ""}${selectedItem?.name ? `*Serviço:* ${selectedItem.name}\n` : ""}*Valor Total:* R$ ${Number(selectedItem?.price || 0).toFixed(2).replace('.', ',')}\n${activeGeneral.requirePrepayment !== false ? `*Sinal (50%):* R$ ${(Number(selectedItem?.price || 0) / 2).toFixed(2).replace('.', ',')}\n` : ""}\nAqui está meu comprovante:`)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex w-full items-center justify-center rounded-full h-14 font-bold mb-6 bg-[#25D366] hover:bg-[#25D366]/90 text-white transition-colors shadow-lg shadow-[#25D366]/20"
-                  >
-                    Enviar comprovante via WhatsApp
-                  </a>
-                </div>
+                      {/* Status do Pagamento */}
+                      <div className="mt-4 flex items-center justify-center gap-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-xs text-[#009EE3] font-medium">
+                        <div className="w-2 h-2 rounded-full bg-[#009EE3] animate-ping"></div>
+                        <span>Aguardando identificação do pagamento...</span>
+                      </div>
+                    </div>
+
+                    <div className="text-left bg-blue-50 text-blue-900 p-4 text-xs mx-2 mb-4 dark:bg-blue-950/40 dark:text-blue-200 whitespace-pre-wrap border-l-4 border-blue-500 leading-relaxed shadow-sm rounded-r-xl">
+                      {activeGeneral.paymentInstructions || `Agendamento confirmado com sucesso!\n\nRecebi seu pagamento e seu horário está oficialmente reservado.\n\nPeço, por gentileza, que chegue no horário agendado. Para manter a organização da agenda e não prejudicar os atendimentos seguintes, não tolero atrasos.`}
+                    </div>
+                  </>
+                ) : (
+                  /* FLUXO MANUAL COM CHAVE PIX E WHATSAPP */
+                  <>
+                    <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-2 dark:bg-emerald-900/30 dark:text-emerald-400">
+                      <CheckCircle2 className="w-8 h-8" />
+                    </div>
+
+                    <h3 className="font-bold text-xl">Quase lá!</h3>
+                    <p className="text-sm opacity-70 px-4">
+                      Transfira a metade do serviço via PIX para a chave abaixo para confirmar seu agendamento.
+                    </p>
+
+                    <div className="bg-muted/20 py-8 border-y my-6">
+                      <p className="text-sm font-medium opacity-70 mb-1">Valor a pagar agora</p>
+                      <p className="text-4xl font-black mb-8 tracking-tight text-slate-900 dark:text-white">
+                        R$ {(Number(selectedItem?.price || 0) / 2).toFixed(2)}
+                      </p>
+
+                      <p className="text-xs font-semibold uppercase tracking-wider opacity-60 mb-2">Chave PIX (Telefone/Email/CPF)</p>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          readOnly
+                          value={detectAndFormatPixKey(activeGeneral.pixKey || "(00) 00000-0000")}
+                          className={cn("font-mono text-center", isDark ? "bg-black/40 border-white/10" : "bg-white")}
+                        />
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          className={cn("shrink-0 transition-colors", copiedPix ? "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500" : "")}
+                          onClick={() => {
+                            const rawKey = getRawPixKey(activeGeneral.pixKey || "");
+                            navigator.clipboard.writeText(rawKey);
+                            setCopiedPix(true);
+                            setTimeout(() => setCopiedPix(false), 2000);
+                          }}
+                        >
+                          {copiedPix ? <Check className="w-5 h-5" /> : <Copy className="w-4 h-4" />}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="text-left bg-blue-50 text-blue-900 p-5 text-sm mx-4 mb-6 dark:bg-blue-950/40 dark:text-blue-200 whitespace-pre-wrap border-l-4 border-blue-500 leading-relaxed shadow-sm">
+                      {activeGeneral.paymentInstructions || `Agendamento confirmado com sucesso!\n\nRecebi seu pagamento e seu horário está oficialmente reservado.\n\nPeço, por gentileza, que chegue no horário agendado. Para manter a organização da agenda e não prejudicar os atendimentos seguintes, não tolero atrasos.\n\nEm caso de atraso, o atendimento poderá ser reduzido, remarcado ou cancelado, conforme a disponibilidade do dia.\n\nAgradeço pela compreensão e estou ansiosa para atender você!`}
+                    </div>
+
+                    <div className="px-4">
+                      <a
+                        href={`https://wa.me/${adminWhatsApp}?text=${encodeURIComponent(`Olá! Fiz um agendamento e aqui estão os detalhes:\n\n*Data:* ${bookingData.date ? format(bookingData.date, "dd/MM/yyyy") : ""}\n*Horário:* ${bookingData.time}\n${bookingData.professionalName ? `*Profissional:* ${bookingData.professionalName}\n` : ""}${selectedItem?.name ? `*Serviço:* ${selectedItem.name}\n` : ""}*Valor Total:* R$ ${Number(selectedItem?.price || 0).toFixed(2).replace('.', ',')}\n${activeGeneral.requirePrepayment !== false ? `*Sinal (50%):* R$ ${(Number(selectedItem?.price || 0) / 2).toFixed(2).replace('.', ',')}\n` : ""}\nAqui está meu comprovante:`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex w-full items-center justify-center rounded-full h-14 font-bold mb-6 bg-[#25D366] hover:bg-[#25D366]/90 text-white transition-colors shadow-lg shadow-[#25D366]/20"
+                      >
+                        Enviar comprovante via WhatsApp
+                      </a>
+                    </div>
+                  </>
+                )}
 
                 {/* Re-exibir Política no finalzinho */}
-                <div className="px-4 text-left">
+                <div className="px-2 text-left">
                   <p className="text-xs font-bold uppercase tracking-wider opacity-60 mb-2">Lembrete</p>
-                  <TermsOfUseBox 
-                    text={activeGeneral.termsText} 
-                    requirePrepayment={activeGeneral.requirePrepayment} 
-                    className="rounded-full opacity-80" 
+                  <TermsOfUseBox
+                    text={activeGeneral.termsText}
+                    requirePrepayment={activeGeneral.requirePrepayment}
+                    className="rounded-2xl opacity-80"
                   />
                 </div>
 
@@ -1248,7 +1348,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                       return;
                     }
 
-                    if (previewGeneral?.requirePrepayment !== false) {
+                    if (activeGeneral.requirePrepayment !== false) {
                       setBookingStep(4);
                     } else {
                       if (res.isPending) {
@@ -1272,12 +1372,12 @@ export function ClientAgendarView({ org }: { org: any }) {
                 {isBooking ? (
                   <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                 ) : (
-                  previewGeneral?.requirePrepayment !== false ? "Confirmar" : "Solicitar Agendamento"
+                  activeGeneral.requirePrepayment !== false ? "Avançar para Pagamento" : "Solicitar Agendamento"
                 )}
               </Button>
             )}
 
-            {bookingStep === 4 && previewGeneral?.requirePrepayment !== false && (
+            {bookingStep === 4 && activeGeneral.requirePrepayment !== false && (
               <Button
                 onClick={() => { setBookingWizardOpen(false); }}
                 variant="outline"

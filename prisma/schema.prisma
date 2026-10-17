@@ -112,6 +112,7 @@ model Settings {
   clinic_terms_of_use String? @db.Text
 
   require_prepayment    Boolean @default(true)
+  pix_payment_type      String  @default("MANUAL") // "MANUAL" ou "MERCADO_PAGO"
   pix_key               String?
   payment_instructions  String? @db.Text
   show_packages         Boolean @default(true)
@@ -119,6 +120,12 @@ model Settings {
   show_team             Boolean @default(true)
   show_team_likes       Boolean @default(true)
   package_validity_mode String  @default("ACQUISITION")
+
+  // Integração Mercado Pago (OAuth)
+  mp_access_token       String? @db.Text
+  mp_refresh_token      String? @db.Text
+  mp_public_key         String?
+  mp_user_id            String?
 
   // Configurações Financeiras
   auto_settle_on_checkin     Boolean @default(true)
