@@ -12,12 +12,11 @@ export function TermsOfUseBox({ text, requirePrepayment, className }: TermsOfUse
   const content = text || DEFAULT_TERMS_OF_USE;
 
   return (
-    <div className={cn("text-xs p-4 rounded-3xl border bg-muted/30 overflow-y-auto max-h-32 whitespace-pre-wrap leading-relaxed", className)}>
+    <div className={cn("text-xs p-4 rounded-3xl border bg-muted/30 overflow-y-auto max-h-36 whitespace-pre-wrap leading-relaxed", className)}>
       {content}
       {requirePrepayment !== false && (
-        <span className="font-bold block mt-3">
-          • A taxa de sinal não é reembolsável em casos de cancelamento fora do prazo ou não comparecimento.
-          <br />• O não comparecimento sem aviso implica na perda do sinal.
+        <span className="font-bold block mt-3 text-red-600 dark:text-red-400">
+          • CLÁUSULA DE SINAL: O valor pago a título de sinal (50%) é retido para garantia da reserva do horário e NÃO É REEMBOLSÁVEL pelo sistema em hipótese de cancelamento, desistência ou não comparecimento.
         </span>
       )}
     </div>

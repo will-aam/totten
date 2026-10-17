@@ -210,7 +210,18 @@ export function BookingSiteView({ profile }: { profile?: any }) {
 
                   {/* Opção 1: Mercado Pago (Automático) */}
                   <div
-                    onClick={() => setPixMode("MERCADO_PAGO")}
+                    onClick={async () => {
+                      setPixMode("MERCADO_PAGO");
+                      try {
+                        const { updateSelfServiceSettingsAction } = await import("@/app/actions/settings");
+                        await updateSelfServiceSettingsAction({
+                          pixPaymentType: "MERCADO_PAGO",
+                        });
+                        toast.success("Modo Mercado Pago selecionado!");
+                      } catch (e) {
+                        console.error("Erro ao salvar modo PIX:", e);
+                      }
+                    }}
                     className={`cursor-pointer rounded-2xl p-4 border-2 transition-all flex flex-col justify-between relative overflow-hidden ${pixMode === "MERCADO_PAGO"
                       ? "border-[#009EE3] bg-[#009EE3]/5 shadow-sm"
                       : "border-border/60 hover:border-border bg-card/60"
@@ -247,7 +258,18 @@ export function BookingSiteView({ profile }: { profile?: any }) {
 
                   {/* Opção 2: Manual (Chave Própria) */}
                   <div
-                    onClick={() => setPixMode("MANUAL")}
+                    onClick={async () => {
+                      setPixMode("MANUAL");
+                      try {
+                        const { updateSelfServiceSettingsAction } = await import("@/app/actions/settings");
+                        await updateSelfServiceSettingsAction({
+                          pixPaymentType: "MANUAL",
+                        });
+                        toast.success("Modo Manual (Chave Própria) selecionado!");
+                      } catch (e) {
+                        console.error("Erro ao salvar modo PIX:", e);
+                      }
+                    }}
                     className={`cursor-pointer rounded-2xl p-4 border-2 transition-all flex flex-col justify-between relative overflow-hidden ${pixMode === "MANUAL"
                       ? "border-slate-800 dark:border-slate-200 bg-slate-50 dark:bg-slate-900/40 shadow-sm"
                       : "border-border/60 hover:border-border bg-card/60"

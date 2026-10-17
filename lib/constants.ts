@@ -1,9 +1,9 @@
-export const DEFAULT_TERMS_OF_USE = `Política de Cancelamento e Regras de Uso
+export const DEFAULT_TERMS_OF_USE = `Política de Agendamento, Sinal e Cancelamento:
 
-• Cancelamentos ou remarcações devem ser feitos com no mínimo 24 horas de antecedência.
-• Em caso de atraso, o atendimento poderá ser reduzido ou cancelado, respeitando o tempo da agenda.
-• O não comparecimento sem aviso prévio será considerado como falta e a sessão será debitada do pacote.
-• A validade dos pacotes de sessões deve ser rigorosamente respeitada. Sessões não utilizadas dentro do prazo de validade expiram automaticamente.`;
+• Sinal Antecipado: O pagamento do sinal (50%) é obrigatório para a reserva do horário e NÃO É REEMBOLSÁVEL pelo sistema em caso de desistência ou cancelamento.
+• Pontualidade: Pedimos a gentileza de comparecer no horário agendado. Em caso de atraso, o atendimento poderá ser reduzido ou cancelado para não prejudicar os próximos clientes.
+• Cancelamentos ou Remarcações: Devem ser informados com no mínimo 24 horas de antecedência diretamente com o estabelecimento.
+• O não comparecimento sem aviso prévio implica na perda integral do sinal pago.`;
 
 export const DEFAULT_CLINIC_TERMS = `Regras e Políticas da Clínica
 

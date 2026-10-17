@@ -17,6 +17,8 @@ interface KpiData {
   checkInsPercentage: number; // Ex: 65
   activeClients: number;
   noShowsToday: number;
+  pendingRequestsCount?: number;
+  totalPixDepositsToday?: number;
 }
 
 function KpiCard({
@@ -117,38 +119,67 @@ export function DashboardCards() {
       : `${kpis.appointmentsVsYesterday}% em relação a ontem`;
 
   return (
-    <div className="flex overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scroll-smooth md:grid md:grid-cols-4 md:overflow-visible md:pb-0 md:px-0 md:mx-0 gap-4 [&::-webkit-scrollbar]:hidden">
-      {/* CARD 1: Agendamentos Hoje */}
-      <KpiCard
-        title="Agendamentos de Hoje"
-        value={kpis.appointmentsToday}
-        description={vsYesterdayText}
-        icon={CalendarAlt}
-      />
+    <div className="space-y-4">
+      {/* Alerta de Solicitações Pendentes (se houver) */}
+      {Number(kpis.pendingRequestsCount || 0) > 0 && (
+        <div className="p-4 rounded-2xl border bg-amber-500/10 border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm animate-in fade-in">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold shrink-0">
+              {kpis.pendingRequestsCount}
+            </div>
+            <div>
+              <p className="font-bold text-sm text-foreground">
+                {kpis.pendingRequestsCount === 1 ? "1 nova solicitação de agendamento aguardando aprovação" : `${kpis.pendingRequestsCount} novas solicitações aguardando aprovação`}
+              </p>
+              {Number(kpis.totalPixDepositsToday || 0) > 0 && (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Total de sinais Pix recebidos hoje: <strong className="text-[#009EE3]">R$ {kpis.totalPixDepositsToday?.toFixed(2)}</strong>
+                </p>
+              )}
+            </div>
+          </div>
+          <a
+            href="/admin/auto/requests"
+            className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white transition-colors shrink-0 shadow-sm"
+          >
+            Ver Solicitações
+          </a>
+        </div>
+      )}
 
-      {/* CARD 2: Check-ins Realizados */}
-      <KpiCard
-        title="Check-ins Realizados"
-        value={kpis.checkInsToday}
-        description={`${kpis.checkInsPercentage}% dos agendamentos`}
-        icon={CalendarCheck}
-      />
+      <div className="flex overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scroll-smooth md:grid md:grid-cols-4 md:overflow-visible md:pb-0 md:px-0 md:mx-0 gap-4 [&::-webkit-scrollbar]:hidden">
+        {/* CARD 1: Agendamentos Hoje */}
+        <KpiCard
+          title="Agendamentos de Hoje"
+          value={kpis.appointmentsToday}
+          description={vsYesterdayText}
+          icon={CalendarAlt}
+        />
 
-      {/* CARD 3: Clientes Ativos */}
-      <KpiCard
-        title="Clientes Ativos"
-        value={kpis.activeClients}
-        description="Com pacotes em andamento"
-        icon={Group}
-      />
+        {/* CARD 2: Check-ins Realizados */}
+        <KpiCard
+          title="Check-ins Realizados"
+          value={kpis.checkInsToday}
+          description={`${kpis.checkInsPercentage}% dos agendamentos`}
+          icon={CalendarCheck}
+        />
 
-      {/* CARD 4: Faltas */}
-      <KpiCard
-        title="Faltas Hoje"
-        value={kpis.noShowsToday}
-        description="Clientes que não compareceram"
-        icon={UserX}
-      />
+        {/* CARD 3: Clientes Ativos */}
+        <KpiCard
+          title="Clientes Ativos"
+          value={kpis.activeClients}
+          description="Com pacotes em andamento"
+          icon={Group}
+        />
+
+        {/* CARD 4: Faltas */}
+        <KpiCard
+          title="Faltas Hoje"
+          value={kpis.noShowsToday}
+          description="Clientes que não compareceram"
+          icon={UserX}
+        />
+      </div>
     </div>
   );
 }

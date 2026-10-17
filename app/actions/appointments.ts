@@ -262,7 +262,12 @@ export async function updateAppointment(
     const currentAppt = await prisma.appointment.findUnique({
       where: { id, organization_id: admin.organizationId },
       include: {
-        client: true,
+        client: {
+          include: {
+            appointments: { select: { id: true } },
+            packages: { select: { id: true } },
+          },
+        },
         package: true,
         service: {
           include: {
@@ -276,6 +281,32 @@ export async function updateAppointment(
 
     if (!currentAppt)
       return { success: false, error: "Agendamento não encontrado." };
+
+    // Se estiver recusando/cancelando uma solicitação pendente (SOLICITADO)
+    if (currentAppt.status === AppointmentStatus.SOLICITADO && finalStatus === AppointmentStatus.CANCELADO) {
+      await prisma.$transaction(async (tx) => {
+        // Exclui o agendamento recusado para limpar a base
+        await tx.appointment.delete({
+          where: { id: currentAppt.id },
+        });
+
+        // Se o cliente foi criado via auto-agendamento (SELF_SERVICE) e só tinha essa solicitação
+        if (
+          currentAppt.client.source === "SELF_SERVICE" &&
+          currentAppt.client.appointments.length <= 1 &&
+          currentAppt.client.packages.length === 0
+        ) {
+          await tx.client.delete({
+            where: { id: currentAppt.client.id },
+          });
+        }
+      });
+
+      revalidatePath("/admin/agenda");
+      revalidatePath("/admin/auto/requests");
+      revalidatePath("/admin/clients");
+      return { success: true };
+    }
 
     const isMarkingAsDone =
       finalStatus === AppointmentStatus.REALIZADO &&

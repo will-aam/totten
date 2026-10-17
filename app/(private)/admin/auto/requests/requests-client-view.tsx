@@ -63,9 +63,19 @@ export function RequestsClientView({ initialRequests }: { initialRequests: any[]
                     </div>
                     <div>
                       <p className="font-bold text-sm leading-tight text-foreground">{req.client?.name}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{req.client?.phone}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{req.client?.phone_whatsapp || req.client?.phone}</p>
                     </div>
                   </div>
+
+                  {req.mp_payment_id ? (
+                    <span className="inline-flex items-center text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#009EE3]/15 text-[#009EE3] border border-[#009EE3]/30">
+                      PIX Mercado Pago
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                      Solicitação Manual
+                    </span>
+                  )}
                 </div>
 
                 <div className="space-y-3 mb-6 flex-1">

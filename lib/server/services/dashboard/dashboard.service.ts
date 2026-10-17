@@ -158,6 +158,34 @@ export class DashboardService {
       },
     });
 
+    // 6. Solicitações Pendentes de Agendamento
+    const pendingRequestsCount = await prisma.appointment.count({
+      where: {
+        organization_id: organizationId,
+        status: "SOLICITADO",
+      },
+    });
+
+    // 7. Sinais Recebidos Hoje via Mercado Pago
+    const mpPaidAppointmentsToday = await prisma.appointment.findMany({
+      where: {
+        organization_id: organizationId,
+        created_at: {
+          gte: startOfDay,
+          lt: tomorrow,
+        },
+        mp_payment_status: "approved",
+      },
+      select: {
+        snapshot_service_price: true,
+      },
+    });
+
+    const totalPixDepositsToday = mpPaidAppointmentsToday.reduce((acc, appt) => {
+      const price = Number(appt.snapshot_service_price || 0);
+      return acc + (price / 2);
+    }, 0);
+
     // --- 🧮 CÁLCULO DOS KPIs ---
     let appointmentsVsYesterday = 0;
     if (appointmentsYesterday > 0) {
@@ -185,6 +213,8 @@ export class DashboardService {
       checkInsPercentage,
       activeClients,
       noShowsToday,
+      pendingRequestsCount,
+      totalPixDepositsToday,
     };
   }
 }
