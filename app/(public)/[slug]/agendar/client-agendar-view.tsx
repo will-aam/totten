@@ -134,6 +134,45 @@ export function ClientAgendarView({ org }: { org: any }) {
     notes: "",
   });
 
+  // Active Booking Persistido (Comprovante / Acompanhamento)
+  const [persistedBooking, setPersistedBooking] = useState<{
+    appointmentId: string;
+    serviceName: string;
+    date: string;
+    time: string;
+    professionalName?: string;
+    depositAmount: number;
+    status: string;
+    isPaid: boolean;
+  } | null>(null);
+
+  // Carrega agendamento recente salvo no localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(`totten_recent_booking_${org.slug}`);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setPersistedBooking(parsed);
+
+        // Checa status atualizado no servidor
+        if (parsed.appointmentId) {
+          checkClientAppointmentPaymentStatusAction(parsed.appointmentId).then((res) => {
+            if (res.success && res.isPaid) {
+              setPersistedBooking((prev) => prev ? { ...prev, isPaid: true, status: "CONFIRMADO" } : null);
+              localStorage.setItem(`totten_recent_booking_${org.slug}`, JSON.stringify({
+                ...parsed,
+                isPaid: true,
+                status: "CONFIRMADO",
+              }));
+            }
+          });
+        }
+      }
+    } catch (e) {
+      console.error("Erro ao carregar agendamento do localStorage:", e);
+    }
+  }, [org.slug]);
+
   // Polling para verificar aprovação automática do pagamento PIX Mercado Pago
   useEffect(() => {
     if (!createdAppointmentId || isPaymentConfirmed || bookingStep !== 4) return;
@@ -145,15 +184,29 @@ export function ClientAgendarView({ org }: { org: any }) {
         if (res.success && res.isPaid) {
           setIsPaymentConfirmed(true);
           toast.success("Pagamento confirmado com sucesso!");
+
+          // Atualiza o agendamento persistido
+          try {
+            const currentStored = localStorage.getItem(`totten_recent_booking_${org.slug}`);
+            if (currentStored) {
+              const parsed = JSON.parse(currentStored);
+              parsed.isPaid = true;
+              parsed.status = "CONFIRMADO";
+              localStorage.setItem(`totten_recent_booking_${org.slug}`, JSON.stringify(parsed));
+              setPersistedBooking(parsed);
+            }
+          } catch (err) {}
+
           clearInterval(interval);
         }
       } catch (e) {
         console.error("Erro na verificação de status do pagamento:", e);
       }
-    }, 4000);
+    }, 3500);
 
     return () => clearInterval(interval);
-  }, [createdAppointmentId, isPaymentConfirmed, bookingStep, org?.settings?.pix_payment_type]);
+  }, [createdAppointmentId, isPaymentConfirmed, bookingStep, org?.settings?.pix_payment_type, org.slug]);
+
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let v = e.target.value.replace(/\D/g, "");
@@ -334,6 +387,68 @@ export function ClientAgendarView({ org }: { org: any }) {
               <h1 className="font-black text-2xl md:text-3xl text-center tracking-tight leading-tight">{org.name}</h1>
             </div>
           </div>
+
+          {/* Card de Acompanhamento / Comprovante do Agendamento Recente */}
+          {persistedBooking && (
+            <div className="mx-5 md:mx-10 mt-6 animate-in fade-in slide-in-from-top-2">
+              <div className={cn(
+                "p-4 md:p-5 rounded-2xl border flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm",
+                persistedBooking.isPaid 
+                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-950 dark:text-emerald-200"
+                  : "bg-amber-500/10 border-amber-500/30 text-amber-950 dark:text-amber-200"
+              )}>
+                <div className="flex items-start gap-3">
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center shrink-0 mt-0.5",
+                    persistedBooking.isPaid ? "bg-emerald-500 text-white" : "bg-amber-500 text-white"
+                  )}>
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-black/10 dark:bg-white/10">
+                        {persistedBooking.isPaid ? "Horário Confirmado" : "Aguardando Pagamento"}
+                      </span>
+                    </div>
+                    <p className="font-bold text-base md:text-lg">{persistedBooking.serviceName}</p>
+                    <p className="text-xs opacity-80 flex items-center gap-2 flex-wrap">
+                      <span><strong>Data:</strong> {persistedBooking.date} às {persistedBooking.time}</span>
+                      {persistedBooking.professionalName && <span>&bull; <strong>Com:</strong> {persistedBooking.professionalName}</span>}
+                      {persistedBooking.isPaid && (
+                        <span>&bull; <strong>Sinal:</strong> R$ {persistedBooking.depositAmount.toFixed(2)} pago via PIX</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
+                  <a
+                    href={`https://wa.me/${adminWhatsApp}?text=${encodeURIComponent(`Olá! Tenho um agendamento do serviço *${persistedBooking.serviceName}* no dia *${persistedBooking.date}* às *${persistedBooking.time}* com status *${persistedBooking.isPaid ? "CONFIRMADO (Sinal Pago)" : "AGUARDANDO"}*. Gostaria de confirmar!`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 h-10 rounded-full text-xs font-bold bg-[#25D366] hover:bg-[#25D366]/90 text-white shadow-sm transition-transform active:scale-95"
+                  >
+                    <Whatsapp className="w-4 h-4" />
+                    WhatsApp
+                  </a>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-xs opacity-60 hover:opacity-100 rounded-full h-10 px-3"
+                    onClick={() => {
+                      try {
+                        localStorage.removeItem(`totten_recent_booking_${org.slug}`);
+                        setPersistedBooking(null);
+                        toast.info("Aviso de agendamento fechado.");
+                      } catch (e) {}
+                    }}
+                  >
+                    Dispensar
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="p-5 md:p-10 space-y-10 md:space-y-12 mt-2">
 
@@ -785,8 +900,24 @@ export function ClientAgendarView({ org }: { org: any }) {
       </Dialog>
 
       {/* Booking Wizard Modal */}
-      <Dialog open={bookingWizardOpen} onOpenChange={(open) => !open && setBookingWizardOpen(false)}>
-        <DialogContent className={cn("w-full max-w-none m-0 sm:max-w-[425px] p-0 overflow-hidden flex flex-col h-[100dvh] sm:h-[650px] border-0 rounded-none sm:rounded-2xl", isDark ? "bg-[#0f172a] text-white sm:border-white/10" : "bg-white text-slate-900 sm:border-black/10")} style={{ color: theme.textColor }}>
+      <Dialog 
+        open={bookingWizardOpen} 
+        onOpenChange={(open) => {
+          if (!open) {
+            // Se estiver no passo 4 de pagamento e ainda aguardando, confirma ou fecha
+            setBookingWizardOpen(false);
+          }
+        }}
+      >
+        <DialogContent 
+          onPointerDownOutside={(e) => {
+            // Evita fechar acidentalmente ao clicar fora durante o pagamento
+            if (bookingStep === 4) {
+              e.preventDefault();
+            }
+          }}
+          className={cn("w-full max-w-none m-0 sm:max-w-[425px] p-0 overflow-hidden flex flex-col h-[100dvh] sm:h-[650px] border-0 rounded-none sm:rounded-2xl", isDark ? "bg-[#0f172a] text-white sm:border-white/10" : "bg-white text-slate-900 sm:border-black/10")} style={{ color: theme.textColor }}
+        >
 
           {/* Header */}
           <div className="shrink-0 p-4 border-b flex items-center justify-between" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
@@ -1125,11 +1256,26 @@ export function ClientAgendarView({ org }: { org: any }) {
                       <p className="text-sm opacity-80 px-6">
                         O seu sinal de 50% foi identificado com sucesso pelo Mercado Pago e o seu horário está <strong>oficialmente reservado</strong>.
                       </p>
-                      <div className="p-4 bg-muted/40 rounded-2xl mx-4 text-xs space-y-1 text-left border">
+                      <div className="p-4 bg-muted/40 rounded-2xl mx-4 text-xs space-y-1.5 text-left border">
                         <p><strong>Serviço:</strong> {selectedItem?.name}</p>
                         <p><strong>Data:</strong> {bookingData.date ? format(bookingData.date, "dd/MM/yyyy") : ""}</p>
                         <p><strong>Horário:</strong> {bookingData.time}</p>
                         {bookingData.professionalName && <p><strong>Profissional:</strong> {bookingData.professionalName}</p>}
+                        <p className="text-emerald-600 dark:text-emerald-400 font-bold pt-1 border-t">
+                          Sinal de 50% pago com sucesso via Mercado Pago
+                        </p>
+                      </div>
+
+                      <div className="px-4 pt-2">
+                        <a
+                          href={`https://wa.me/${adminWhatsApp}?text=${encodeURIComponent(`Olá! Realizei o pagamento do sinal do meu agendamento via Mercado Pago no Totten.\n\n*Detalhes da Reserva:*\n*Serviço:* ${selectedItem?.name}\n*Data:* ${bookingData.date ? format(bookingData.date, "dd/MM/yyyy") : ""}\n*Horário:* ${bookingData.time}\n${bookingData.professionalName ? `*Profissional:* ${bookingData.professionalName}\n` : ""}*Cliente:* ${bookingData.firstName}\n\nMeu horário está confirmado!`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex w-full items-center justify-center rounded-full h-12 font-bold bg-[#25D366] hover:bg-[#25D366]/90 text-white transition-colors shadow-md gap-2"
+                        >
+                          <Whatsapp className="w-5 h-5" />
+                          Enviar confirmação no WhatsApp da Clínica
+                        </a>
                       </div>
                     </div>
                   ) : (
@@ -1411,6 +1557,22 @@ export function ClientAgendarView({ org }: { org: any }) {
 
                     if (res.appointment?.id) {
                       setCreatedAppointmentId(res.appointment.id);
+
+                      // Salva no localStorage para persistência de comprovante
+                      const bookingSnapshot = {
+                        appointmentId: res.appointment.id,
+                        serviceName: selectedItem?.name || "Serviço",
+                        date: bookingData.date ? format(bookingData.date, "yyyy-MM-dd") : "",
+                        time: bookingData.time || "",
+                        professionalName: bookingData.professionalName || undefined,
+                        depositAmount: Number(selectedItem?.price || 0) / 2,
+                        status: res.appointment.status || "PENDENTE",
+                        isPaid: !res.isPending && activeGeneral.requirePrepayment === false,
+                      };
+                      try {
+                        localStorage.setItem(`totten_recent_booking_${org.slug}`, JSON.stringify(bookingSnapshot));
+                        setPersistedBooking(bookingSnapshot);
+                      } catch (err) {}
                     }
 
                     if (res.pixPayment) {
