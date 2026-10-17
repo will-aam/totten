@@ -906,13 +906,17 @@ export async function createClientAppointmentAction(input: CreateClientAppointme
     }
 
     const autoConfirm = org.settings?.auto_confirm_appointments ?? true;
-    const status = autoConfirm ? AppointmentStatus.CONFIRMADO : AppointmentStatus.SOLICITADO;
+    const isMpPix = org.settings?.pix_payment_type === "MERCADO_PAGO" && !!org.settings?.mp_access_token;
+    // Se exigir pré-pagamento com Mercado Pago, o status inicial fica PENDENTE_PAGAMENTO (ou SOLICITADO) até que o webhook aprove
+    const initialStatus = isMpPix 
+      ? AppointmentStatus.SOLICITADO 
+      : (autoConfirm ? AppointmentStatus.CONFIRMADO : AppointmentStatus.SOLICITADO);
 
     const appointment = await tenantPrisma.appointment.create({
       data: {
         date_time: appointmentDateTime,
         observations: input.notes,
-        status: status,
+        status: initialStatus,
         client_id: client.id,
         service_id: service.id,
         package_id: null,
@@ -924,6 +928,38 @@ export async function createClientAppointmentAction(input: CreateClientAppointme
       },
     });
 
+    let pixPaymentData: {
+      paymentId?: string | number;
+      qrCode?: string;
+      qrCodeBase64?: string;
+      ticketUrl?: string;
+      expiresAt?: string;
+    } | null = null;
+
+    // Se a organização usar Mercado Pago para o sinal, gera a cobrança PIX imediata
+    if (isMpPix) {
+      try {
+        const { MercadoPagoService } = await import("@/lib/server/services/payments/mercadopago.service");
+        const depositAmount = Number(service.price) / 2;
+
+        pixPaymentData = await MercadoPagoService.createPixPayment({
+          organizationId: org.id,
+          appointmentId: appointment.id,
+          amount: depositAmount,
+          description: `Sinal: ${service.name} - ${org.name || "Totten"}`,
+          payer: {
+            email: input.email || client.email || "cliente@totten.com.br",
+            firstName: input.firstName || client.name,
+            phone: input.phone,
+          },
+        });
+      } catch (mpError: any) {
+        console.error("[MERCADO_PAGO] Erro ao gerar PIX:", mpError);
+        // Mesmo se houver erro ao gerar o PIX no MP, não quebramos a criação do agendamento,
+        // apenas retornamos sem os dados dinâmicos do PIX
+      }
+    }
+
     revalidatePath("/admin/agenda");
     revalidatePath("/admin/auto/requests");
 
@@ -931,7 +967,8 @@ export async function createClientAppointmentAction(input: CreateClientAppointme
     return { 
       success: true, 
       appointment: JSON.parse(JSON.stringify(appointment)),
-      isPending: status === AppointmentStatus.SOLICITADO 
+      isPending: initialStatus === AppointmentStatus.SOLICITADO,
+      pixPayment: pixPaymentData,
     };
 
   } catch (error) {
@@ -939,3 +976,39 @@ export async function createClientAppointmentAction(input: CreateClientAppointme
     return { success: false, error: "Falha ao criar o agendamento." };
   }
 }
+
+/**
+ * Consulta se o agendamento foi aprovado/pago pelo cliente via Mercado Pago
+ */
+export async function checkClientAppointmentPaymentStatusAction(appointmentId: string) {
+  try {
+    const appointment = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      select: {
+        id: true,
+        status: true,
+        mp_payment_status: true,
+        has_charge: true,
+      },
+    });
+
+    if (!appointment) {
+      return { success: false, error: "Agendamento não encontrado." };
+    }
+
+    const isPaid = appointment.status === AppointmentStatus.CONFIRMADO || 
+                   appointment.mp_payment_status === "approved" || 
+                   appointment.has_charge;
+
+    return {
+      success: true,
+      isPaid,
+      status: appointment.status,
+      mpStatus: appointment.mp_payment_status,
+    };
+  } catch (error) {
+    console.error("Erro ao checar status do pagamento:", error);
+    return { success: false, error: "Erro ao consultar status." };
+  }
+}
+

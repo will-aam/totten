@@ -392,6 +392,10 @@ model Appointment {
   snapshot_service_price    Decimal? @db.Decimal(10, 2)
   snapshot_service_duration Int?
 
+  // Mercado Pago PIX Payment Info
+  mp_payment_id             String?
+  mp_payment_status         String?
+
   client       Client       @relation(fields: [client_id], references: [id], onDelete: Cascade)
   organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   package      Package?     @relation(fields: [package_id], references: [id])
@@ -403,6 +407,7 @@ model Appointment {
   @@index([organization_id, date_time])
   @@index([client_id, date_time])
   @@index([recurrence_id])
+  @@index([mp_payment_id])
   @@map("appointments")
 }
 

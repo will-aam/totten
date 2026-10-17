@@ -22,6 +22,8 @@ export async function proxy(request: NextRequest) {
     "/check-email",
     "/verify-email",
     "/api/auth",
+    "/api/mercadopago",
+    "/api/webhooks",
     "/api/totem",
     "/api/public/organization", // <--- ROTA NOVA ATUALIZADA AQUI
     "/cliente", // <--- ROTA DO PORTAL DO CLIENTE UI

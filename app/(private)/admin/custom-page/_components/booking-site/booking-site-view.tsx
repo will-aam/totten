@@ -326,7 +326,7 @@ export function BookingSiteView({ profile }: { profile?: any }) {
                         asChild
                         className="w-full h-11 rounded-xl bg-[#009EE3] hover:bg-[#0089c7] text-white font-bold gap-2 shadow-sm transition-all cursor-pointer"
                       >
-                        <a href="/api/auth/mercadopago/authorize">
+                        <a href="/api/mercadopago/authorize">
                           <img
                             src="/mercado-pago-seeklogo.png"
                             alt=""

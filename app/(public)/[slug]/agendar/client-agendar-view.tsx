@@ -27,7 +27,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { ptBR } from "date-fns/locale";
 import { format } from "date-fns";
 import { getAvailableTimesAndProfessionals } from "@/app/actions/availability";
-import { createClientAppointmentAction } from "@/app/actions/appointments";
+import { createClientAppointmentAction, checkClientAppointmentPaymentStatusAction } from "@/app/actions/appointments";
 import { toggleProfessionalLike, getProfessionalInteractions, createProfessionalReview, replyProfessionalReview, deleteProfessionalReview } from "@/app/actions/reviews";
 import { PRO_THEMES } from "@/app/(private)/admin/self-service/_components/booking-appearance-settings";
 import { toast } from "sonner";
@@ -113,6 +113,14 @@ export function ClientAgendarView({ org }: { org: any }) {
   const [bookingWizardOpen, setBookingWizardOpen] = useState(false);
   const [bookingStep, setBookingStep] = useState(1);
   const [isBooking, setIsBooking] = useState(false);
+  const [createdAppointmentId, setCreatedAppointmentId] = useState<string | null>(null);
+  const [mpPixData, setMpPixData] = useState<{
+    paymentId?: string | number;
+    qrCode?: string;
+    qrCodeBase64?: string;
+    expiresAt?: string;
+  } | null>(null);
+  const [isPaymentConfirmed, setIsPaymentConfirmed] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [bookingData, setBookingData] = useState({
     date: undefined as Date | undefined,
@@ -125,6 +133,28 @@ export function ClientAgendarView({ org }: { org: any }) {
     professionalImage: null as string | null,
     notes: "",
   });
+
+  // Polling para verificar aprovação automática do pagamento PIX Mercado Pago
+  useEffect(() => {
+    if (!createdAppointmentId || isPaymentConfirmed || bookingStep !== 4) return;
+    if (org?.settings?.pix_payment_type !== "MERCADO_PAGO") return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await checkClientAppointmentPaymentStatusAction(createdAppointmentId);
+        if (res.success && res.isPaid) {
+          setIsPaymentConfirmed(true);
+          toast.success("Pagamento confirmado com sucesso!");
+          clearInterval(interval);
+        }
+      } catch (e) {
+        console.error("Erro na verificação de status do pagamento:", e);
+      }
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [createdAppointmentId, isPaymentConfirmed, bookingStep, org?.settings?.pix_payment_type]);
+
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let v = e.target.value.replace(/\D/g, "");
     if (v.length <= 10) {
@@ -1084,98 +1114,129 @@ export function ClientAgendarView({ org }: { org: any }) {
 
                 {activeGeneral.pixPaymentType === "MERCADO_PAGO" ? (
                   /* FLUXO AUTOMÁTICO MERCADO PAGO */
-                  <>
-                    <div className="flex items-center justify-center gap-2 mb-1">
-                      <div className="w-12 h-12 rounded-full bg-[#009EE3]/15 flex items-center justify-center p-2.5">
-                        <img
-                          src="/mercado-pago-seeklogo.png"
-                          alt="Mercado Pago"
-                          className="w-full h-full object-contain"
-                        />
+                  isPaymentConfirmed ? (
+                    <div className="py-8 space-y-4 animate-in fade-in zoom-in-95 text-center">
+                      <div className="w-20 h-20 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-2 dark:bg-emerald-950 dark:text-emerald-400">
+                        <CheckCircle2 className="w-10 h-10" />
                       </div>
-                    </div>
-
-                    <div>
-                      <h3 className="font-bold text-xl">Pagamento do Sinal via PIX</h3>
-                      <p className="text-sm opacity-70 px-4 mt-1">
-                        Pague o sinal de 50% para que sua vaga seja <strong>confirmada instantaneamente</strong>.
+                      <h3 className="font-black text-2xl text-emerald-600 dark:text-emerald-400">
+                        Pagamento Confirmado!
+                      </h3>
+                      <p className="text-sm opacity-80 px-6">
+                        O seu sinal de 50% foi identificado com sucesso pelo Mercado Pago e o seu horário está <strong>oficialmente reservado</strong>.
                       </p>
+                      <div className="p-4 bg-muted/40 rounded-2xl mx-4 text-xs space-y-1 text-left border">
+                        <p><strong>Serviço:</strong> {selectedItem?.name}</p>
+                        <p><strong>Data:</strong> {bookingData.date ? format(bookingData.date, "dd/MM/yyyy") : ""}</p>
+                        <p><strong>Horário:</strong> {bookingData.time}</p>
+                        {bookingData.professionalName && <p><strong>Profissional:</strong> {bookingData.professionalName}</p>}
+                      </div>
                     </div>
-
-                    <div className="bg-muted/20 py-6 px-4 border-y my-4 rounded-3xl border">
-                      <div className="flex items-center justify-between px-2 mb-4">
-                        <span className="text-xs font-bold uppercase tracking-wider opacity-60">Sinal a Pagar Agora</span>
-                        <span className="text-2xl font-black text-[#009EE3]">
-                          R$ {(Number(selectedItem?.price || 0) / 2).toFixed(2)}
-                        </span>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <div className="w-12 h-12 rounded-full bg-[#009EE3]/15 flex items-center justify-center p-2.5">
+                          <img
+                            src="/mercado-pago-seeklogo.png"
+                            alt="Mercado Pago"
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
                       </div>
 
-                      {/* QR Code Mercado Pago Simulado */}
-                      <div className="bg-white p-5 rounded-2xl border shadow-sm inline-block mx-auto mb-4 text-slate-900">
-                        <div className="relative w-44 h-44 mx-auto flex items-center justify-center bg-slate-50 border rounded-xl overflow-hidden">
-                          <div className="w-full h-full p-2 flex flex-col justify-between items-center opacity-90">
-                            <div className="w-full flex justify-between">
-                              <div className="w-8 h-8 border-4 border-slate-900 rounded-sm"></div>
-                              <div className="w-8 h-8 border-4 border-slate-900 rounded-sm"></div>
-                            </div>
-                            <div className="flex items-center justify-center p-2 bg-white rounded-lg shadow-sm border border-slate-200">
+                      <div>
+                        <h3 className="font-bold text-xl">Pagamento do Sinal via PIX</h3>
+                        <p className="text-sm opacity-70 px-4 mt-1">
+                          Pague o sinal de 50% para que sua vaga seja <strong>confirmada instantaneamente</strong>.
+                        </p>
+                      </div>
+
+                      <div className="bg-muted/20 py-6 px-4 border-y my-4 rounded-3xl border">
+                        <div className="flex items-center justify-between px-2 mb-4">
+                          <span className="text-xs font-bold uppercase tracking-wider opacity-60">Sinal a Pagar Agora</span>
+                          <span className="text-2xl font-black text-[#009EE3]">
+                            R$ {(Number(selectedItem?.price || 0) / 2).toFixed(2)}
+                          </span>
+                        </div>
+
+                        {/* QR Code Mercado Pago */}
+                        <div className="bg-white p-5 rounded-2xl border shadow-sm inline-block mx-auto mb-4 text-slate-900">
+                          <div className="relative w-48 h-48 mx-auto flex items-center justify-center bg-slate-50 border rounded-xl overflow-hidden">
+                            {mpPixData?.qrCodeBase64 ? (
                               <img
-                                src="/mercado-pago-seeklogo.png"
-                                alt="Mercado Pago"
-                                className="w-6 h-6 object-contain"
+                                src={`data:image/png;base64,${mpPixData.qrCodeBase64}`}
+                                alt="QR Code PIX Mercado Pago"
+                                className="w-full h-full object-contain p-2"
                               />
-                            </div>
-                            <div className="w-full flex justify-between">
-                              <div className="w-8 h-8 border-4 border-slate-900 rounded-sm"></div>
-                              <div className="flex gap-1">
-                                <div className="w-3 h-3 bg-slate-900"></div>
-                                <div className="w-3 h-3 bg-slate-900"></div>
+                            ) : (
+                              <div className="w-full h-full p-2 flex flex-col justify-between items-center opacity-90">
+                                <div className="w-full flex justify-between">
+                                  <div className="w-8 h-8 border-4 border-slate-900 rounded-sm"></div>
+                                  <div className="w-8 h-8 border-4 border-slate-900 rounded-sm"></div>
+                                </div>
+                                <div className="flex items-center justify-center p-2 bg-white rounded-lg shadow-sm border border-slate-200">
+                                  <img
+                                    src="/mercado-pago-seeklogo.png"
+                                    alt="Mercado Pago"
+                                    className="w-6 h-6 object-contain"
+                                  />
+                                </div>
+                                <div className="w-full flex justify-between">
+                                  <div className="w-8 h-8 border-4 border-slate-900 rounded-sm"></div>
+                                  <div className="flex gap-1">
+                                    <div className="w-3 h-3 bg-slate-900"></div>
+                                    <div className="w-3 h-3 bg-slate-900"></div>
+                                  </div>
+                                </div>
                               </div>
-                            </div>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-center gap-1.5 mt-2.5 text-[11px] font-semibold text-slate-500">
+                            <Clock className="w-3.5 h-3.5 text-amber-500" />
+                            <span>Expira em 15 minutos</span>
                           </div>
                         </div>
-                        <div className="flex items-center justify-center gap-1.5 mt-2.5 text-[11px] font-semibold text-slate-500">
-                          <Clock className="w-3.5 h-3.5 text-amber-500" />
-                          <span>Expira em 14:59 minutos</span>
+
+                        {/* Copia e Cola */}
+                        <div className="space-y-1.5 text-left max-w-sm mx-auto">
+                          <Label className="text-[11px] font-bold uppercase tracking-wider opacity-60">PIX Copia e Cola</Label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              readOnly
+                              value={mpPixData?.qrCode || "Gerando chave PIX Mercado Pago..."}
+                              className={cn("font-mono text-xs select-all", isDark ? "bg-black/40 border-white/10" : "bg-white")}
+                            />
+                            <Button
+                              size="icon"
+                              variant="outline"
+                              disabled={!mpPixData?.qrCode}
+                              className={cn("shrink-0 transition-colors", copiedPix ? "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500" : "")}
+                              onClick={() => {
+                                if (mpPixData?.qrCode) {
+                                  navigator.clipboard.writeText(mpPixData.qrCode);
+                                  setCopiedPix(true);
+                                  toast.success("Código PIX copiado!");
+                                  setTimeout(() => setCopiedPix(false), 2000);
+                                }
+                              }}
+                            >
+                              {copiedPix ? <Check className="w-5 h-5" /> : <Copy className="w-4 h-4" />}
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Status do Pagamento com Polling */}
+                        <div className="mt-4 flex items-center justify-center gap-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-xs text-[#009EE3] font-medium">
+                          <div className="w-2 h-2 rounded-full bg-[#009EE3] animate-ping"></div>
+                          <span>Aguardando identificação do pagamento...</span>
                         </div>
                       </div>
 
-                      {/* Copia e Cola */}
-                      <div className="space-y-1.5 text-left max-w-sm mx-auto">
-                        <Label className="text-[11px] font-bold uppercase tracking-wider opacity-60">PIX Copia e Cola</Label>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            readOnly
-                            value="00020126580014br.gov.bcb.pix0136123e4567-e89b-12d3-a456-426614174000520400005303986540540.005802BR"
-                            className={cn("font-mono text-xs select-all", isDark ? "bg-black/40 border-white/10" : "bg-white")}
-                          />
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            className={cn("shrink-0 transition-colors", copiedPix ? "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500" : "")}
-                            onClick={() => {
-                              navigator.clipboard.writeText("00020126580014br.gov.bcb.pix0136123e4567-e89b-12d3-a456-426614174000520400005303986540540.005802BR");
-                              setCopiedPix(true);
-                              toast.success("Código PIX copiado!");
-                              setTimeout(() => setCopiedPix(false), 2000);
-                            }}
-                          >
-                            {copiedPix ? <Check className="w-5 h-5" /> : <Copy className="w-4 h-4" />}
-                          </Button>
-                        </div>
+                      <div className="text-left bg-blue-50 text-blue-900 p-4 text-xs mx-2 mb-4 dark:bg-blue-950/40 dark:text-blue-200 whitespace-pre-wrap border-l-4 border-blue-500 leading-relaxed shadow-sm rounded-r-xl">
+                        {activeGeneral.paymentInstructions || `Agendamento confirmado com sucesso!\n\nRecebi seu pagamento e seu horário está oficialmente reservado.\n\nPeço, por gentileza, que chegue no horário agendado. Para manter a organização da agenda e não prejudicar os atendimentos seguintes, não tolero atrasos.`}
                       </div>
-
-                      {/* Status do Pagamento */}
-                      <div className="mt-4 flex items-center justify-center gap-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-xs text-[#009EE3] font-medium">
-                        <div className="w-2 h-2 rounded-full bg-[#009EE3] animate-ping"></div>
-                        <span>Aguardando identificação do pagamento...</span>
-                      </div>
-                    </div>
-
-                    <div className="text-left bg-blue-50 text-blue-900 p-4 text-xs mx-2 mb-4 dark:bg-blue-950/40 dark:text-blue-200 whitespace-pre-wrap border-l-4 border-blue-500 leading-relaxed shadow-sm rounded-r-xl">
-                      {activeGeneral.paymentInstructions || `Agendamento confirmado com sucesso!\n\nRecebi seu pagamento e seu horário está oficialmente reservado.\n\nPeço, por gentileza, que chegue no horário agendado. Para manter a organização da agenda e não prejudicar os atendimentos seguintes, não tolero atrasos.`}
-                    </div>
-                  </>
+                    </>
+                  )
                 ) : (
                   /* FLUXO MANUAL COM CHAVE PIX E WHATSAPP */
                   <>
@@ -1346,6 +1407,14 @@ export function ClientAgendarView({ org }: { org: any }) {
                     if (!res.success) {
                       toast.error(res.error || "Erro ao criar agendamento.");
                       return;
+                    }
+
+                    if (res.appointment?.id) {
+                      setCreatedAppointmentId(res.appointment.id);
+                    }
+
+                    if (res.pixPayment) {
+                      setMpPixData(res.pixPayment);
                     }
 
                     if (activeGeneral.requirePrepayment !== false) {
