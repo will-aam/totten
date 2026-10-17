@@ -146,10 +146,10 @@ function ClientMobileItem({
               <button
                 type="button"
                 className="inline-block w-2 h-2 rounded-full bg-blue-500 ml-1 transition-transform hover:scale-125"
-                title="Cadastrado via autoatendimento"
+                title="Cadastrado via agendamento online"
                 onClick={(e) => {
                   e.stopPropagation();
-                  toast("Agendamento realizado via autoatendimento");
+                  toast("Cliente cadastrado via agendamento online");
                 }}
               />
             )}
@@ -363,7 +363,7 @@ function AdminClientsPageContent() {
                 )}
                 {search.includes("++") && (
                   <span className="text-[10px] font-bold bg-blue-500 text-white px-2 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 animate-in zoom-in duration-300">
-                    <Mobile size="xs" /> Autoagendamento
+                    <Mobile size="xs" /> Agendamento
                   </span>
                 )}
               </div>
@@ -550,10 +550,10 @@ function AdminClientsPageContent() {
                                   <button
                                     type="button"
                                     className="inline-block w-2 h-2 rounded-full bg-blue-500 ml-1 transition-transform hover:scale-125"
-                                    title="Cadastrado via autoatendimento"
+                                    title="Cadastrado via agendamento online"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      toast("Agendamento realizado via autoatendimento");
+                                      toast("Cliente cadastrado via agendamento online");
                                     }}
                                   />
                                 )}
@@ -777,7 +777,7 @@ function AdminClientsPageContent() {
               Digite <strong>**</strong> para ver clientes que possuem <strong>mais de um pacote</strong> ativo.
             </li>
             <li>
-              Digite <strong>++</strong> para ver clientes que vieram através do <strong>autoatendimento</strong>.
+              Digite <strong>++</strong> para ver clientes que vieram através do <strong>agendamento online</strong>.
             </li>
           </ul>
           <p className="text-xs text-muted-foreground/80 mt-2">

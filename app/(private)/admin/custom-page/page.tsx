@@ -530,7 +530,7 @@ export default function CustomPage() {
                 { id: "global", label: "Global", icon: MobileGlobe },
                 { id: "link-bio", label: "Link na Bio", icon: MobileLink },
                 { id: "professional-site", label: "Site", icon: MobileSite },
-                { id: "booking-site", label: "Agenda", icon: MobileCalendar },
+                { id: "booking-site", label: "Agendamento", icon: MobileCalendar },
               ]}
               activeId={activeTab}
               onChange={(id) => {

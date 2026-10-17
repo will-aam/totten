@@ -15,7 +15,7 @@ export default async function SelfServicePage() {
 
   return (
     <>
-      <AdminHeader title="Autoatendimento" />
+      <AdminHeader title="Regras e Horários" />
 
       <div className="flex flex-col gap-6 p-6 md:p-8">
         <RulesAndHoursForm initialData={initialData} />

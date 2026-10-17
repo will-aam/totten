@@ -855,29 +855,61 @@ export async function createClientAppointmentAction(input: CreateClientAppointme
       return { success: false, error: "Serviço não encontrado." };
     }
 
-    // Se professionalId for "ANY", vamos pegar um profissional disponível? 
-    // O frontend já deve mandar o ID de um profissional (pode selecionar o primeiro disponível no frontend).
-    // Se ainda vier "ANY", pegamos qualquer um vinculado ao serviço.
-    let finalProfessionalId = input.professionalId;
-    if (finalProfessionalId === "ANY") {
-      const availablePros = await tenantPrisma.admin.findMany({
-        where: {
-          organizations: { some: { id: org.id } },
-          OR: [
-            { role: "OWNER" }, // Owner faz todos
-            { services: { some: { id: service.id } } }
-          ]
-        },
-      });
-      if (availablePros.length > 0) {
-        finalProfessionalId = availablePros[0].id;
-      }
-    }
-
     // Date/Time parsing
     const [year, month, day] = input.date.split("-").map(Number);
     const [hours, minutes] = input.time.split(":").map(Number);
     const appointmentDateTime = new Date(year, month - 1, day, hours, minutes);
+
+    // Se professionalId for "ANY", seleciona de forma inteligente:
+    // 1. Apenas profissionais habilitados para o serviço
+    // 2. Que realmente estejam livres no horário solicitado
+    // 3. Balanceando a carga (prioriza quem tem menos agendamentos no dia)
+    let finalProfessionalId = input.professionalId;
+    if (finalProfessionalId === "ANY") {
+      const startOfDayDate = new Date(year, month - 1, day, 0, 0, 0);
+      const endOfDayDate = new Date(year, month - 1, day, 23, 59, 59);
+      const apptEnd = new Date(appointmentDateTime.getTime() + (service.duration || 60) * 60000);
+
+      const candidatePros = await tenantPrisma.admin.findMany({
+        where: {
+          organizations: { some: { id: org.id } },
+          active: true,
+          OR: [
+            { role: "OWNER" },
+            { services: { some: { id: service.id } } }
+          ]
+        },
+        include: {
+          appointments: {
+            where: {
+              date_time: {
+                gte: startOfDayDate,
+                lte: endOfDayDate,
+              },
+              status: { notIn: [AppointmentStatus.CANCELADO] }
+            }
+          }
+        }
+      });
+
+      // Filtra os que não têm sobreposição de horário no momento
+      const freePros = candidatePros.filter(pro => {
+        const hasConflict = pro.appointments.some(appt => {
+          const aStart = new Date(appt.date_time);
+          const aDuration = appt.snapshot_service_duration || 60;
+          const aEnd = new Date(aStart.getTime() + aDuration * 60000);
+          return appointmentDateTime < aEnd && apptEnd > aStart;
+        });
+        return !hasConflict;
+      });
+
+      const pool = freePros.length > 0 ? freePros : candidatePros;
+      if (pool.length > 0) {
+        // Ordena por menor quantidade de agendamentos no dia (balanceamento de carga)
+        pool.sort((a, b) => a.appointments.length - b.appointments.length);
+        finalProfessionalId = pool[0].id;
+      }
+    }
 
     const autoConfirm = org.settings?.auto_confirm_appointments ?? true;
     const status = autoConfirm ? AppointmentStatus.CONFIRMADO : AppointmentStatus.SOLICITADO;
