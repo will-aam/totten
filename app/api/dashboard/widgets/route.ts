@@ -9,12 +9,20 @@ export async function GET() {
     const admin = await requireAuth();
     const prisma = getTenantPrisma(admin.organizationId);
 
-    // Pegar o slug da organização para o link de agendamento
+    // Pegar o slug da organização e status da página personalizada para o link de agendamento
     const organization = await prisma.organization.findUnique({
       where: { id: admin.organizationId },
-      select: { slug: true }
+      select: {
+        slug: true,
+        link_bio: {
+          select: {
+            is_active: true
+          }
+        }
+      }
     });
     const organizationSlug = organization?.slug || "minha-clinica";
+    const isCustomPageActive = Boolean(organization?.link_bio?.is_active);
 
     // 1. Ranking de Clientes (Top 5 clientes com mais receitas pagas)
     const topClientsData = await prisma.transaction.groupBy({
@@ -211,7 +219,10 @@ export async function GET() {
     });
 
     return NextResponse.json({
-      scheduling: organizationSlug,
+      scheduling: {
+        slug: organizationSlug,
+        isActive: isCustomPageActive
+      },
       ranking,
       busiestHours: busiestHours.length > 0 ? busiestHours : null,
       heatmap,

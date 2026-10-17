@@ -106,16 +106,16 @@ export function RecentCheckIns() {
       checkinsPages[checkinsPages.length - 1]?.data?.length < 5);
 
   return (
-    <Card className="border-none shadow-none bg-transparent flex flex-col w-full h-full transition-all">
+    <Card className="border-none shadow-none bg-transparent flex flex-col w-full h-auto transition-all">
       <CardHeader className="py-3 px-4">
         <CardTitle className="text-base font-bold text-foreground">
           Check-ins Recentes
         </CardTitle>
       </CardHeader>
 
-      {/* flex-1 + min-h-0: ocupa exatamente o espaço restante do card, com scroll interno */}
-      <CardContent className="p-0 flex-1 min-h-0 flex flex-col">
-        <div className="flex-1 min-h-0 overflow-y-auto p-4 custom-scrollbar">
+      {/* Conteúdo com expansão natural para baixo sem scroll interno limitado */}
+      <CardContent className="p-0 flex flex-col">
+        <div className="p-4">
           {isLoadingFirstCheckins ? (
             <div className="flex flex-col gap-4">
               {Array.from({ length: 4 }).map((_, i) => (

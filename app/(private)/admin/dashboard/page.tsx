@@ -84,11 +84,29 @@ export default function AdminDashboardPage() {
 
   if (!mounted) return null; // Evita hidration mismatch
 
-  // Chunk visible widgets into rows based on screen size
+  // Separar em linhas respeitando widgets que exigem linha inteira (ex: checkins)
   const visibleWidgets = widgets.filter(w => w.visible);
-  const chunkedWidgets: WidgetConfig[][] = [];
-  for (let i = 0; i < visibleWidgets.length; i += cols) {
-    chunkedWidgets.push(visibleWidgets.slice(i, i + cols));
+  const rows: { isFullWidth: boolean; widgets: WidgetConfig[] }[] = [];
+  let currentRow: WidgetConfig[] = [];
+
+  for (const widget of visibleWidgets) {
+    if (widget.id === "checkins") {
+      if (currentRow.length > 0) {
+        rows.push({ isFullWidth: false, widgets: currentRow });
+        currentRow = [];
+      }
+      rows.push({ isFullWidth: true, widgets: [widget] });
+    } else {
+      currentRow.push(widget);
+      if (currentRow.length === cols) {
+        rows.push({ isFullWidth: false, widgets: currentRow });
+        currentRow = [];
+      }
+    }
+  }
+
+  if (currentRow.length > 0) {
+    rows.push({ isFullWidth: false, widgets: currentRow });
   }
 
   const getWidgetData = (id: string) => {
@@ -111,14 +129,26 @@ export default function AdminDashboardPage() {
         <DashboardCards />
 
         {/* 
-          Grid Responsivo com Paineis Redimensionáveis
+          Grid Responsivo com Paineis Redimensionáveis e suporte a Linha Inteira Dinâmica
         */}
         <div className="flex flex-col gap-12 mt-2 w-full">
-          {chunkedWidgets.map((chunk, rowIndex) => (
-            cols === 1 ? (
+          {rows.map((row, rowIndex) => {
+            if (row.isFullWidth) {
+              const widget = row.widgets[0];
+              const Component = WIDGET_COMPONENTS[widget.id];
+              if (!Component) return null;
+
+              return (
+                <div key={`full-${widget.id}-${rowIndex}`} className="w-full flex flex-col min-h-[350px]">
+                  <Component data={getWidgetData(widget.id)} />
+                </div>
+              );
+            }
+
+            return cols === 1 ? (
               // MOBILE: Empilhado normalmente, sem redimensionamento horizontal
               <div key={`row-${rowIndex}`} className="flex flex-col gap-12">
-                {chunk.map(widget => {
+                {row.widgets.map(widget => {
                   const Component = WIDGET_COMPONENTS[widget.id];
                   if (!Component) return null;
                   return (
@@ -135,21 +165,21 @@ export default function AdminDashboardPage() {
                 key={`row-${rowIndex}`}
                 className="w-full flex min-h-[350px] overflow-visible"
               >
-                {chunk.map((widget, index) => {
+                {row.widgets.map((widget, index) => {
                   const Component = WIDGET_COMPONENTS[widget.id];
                   if (!Component) return null;
                   
                   return (
                     <Fragment key={widget.id}>
                       <ResizablePanel 
-                        defaultSize={100 / cols} 
+                        defaultSize={100 / row.widgets.length} 
                         minSize={20} // Limite mínimo para não quebrar os gráficos
                         className="flex flex-col relative h-[350px] px-3 first:pl-0 last:pr-0 overflow-visible"
                       >
                         <Component data={getWidgetData(widget.id)} />
                       </ResizablePanel>
                       
-                      {index < chunk.length - 1 && (
+                      {index < row.widgets.length - 1 && (
                         <ResizableHandle 
                           withHandle={false}
                           className="w-px !bg-transparent bg-gradient-to-b from-transparent via-border/50 to-transparent transition-colors hover:via-primary/50 cursor-col-resize after:w-6" 
@@ -159,8 +189,8 @@ export default function AdminDashboardPage() {
                   );
                 })}
               </ResizablePanelGroup>
-            )
-          ))}
+            );
+          })}
         </div>
       </div>
     </>
