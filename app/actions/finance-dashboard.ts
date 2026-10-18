@@ -60,9 +60,9 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
     );
 
     // ============================================================================
-    //  O SEGREDO DO ERP: Ler apenas a Tabela Transaction!
+    //  O SEGREDO DO ERP: Transações do Mês + Pendências em Aberto
     // ============================================================================
-    const [monthlyTxRaw, pendingApptsRaw, recentTx] = await Promise.all([
+    const [monthlyTxRaw, pendingTxRaw, pendingApptsRaw, recentTx] = await Promise.all([
       prisma.transaction.findMany({
         where: {
           organization_id: organizationId,
@@ -76,15 +76,30 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
           payment_method: { select: { type: true } },
         },
       }),
+      // Busca receitas pendentes (no mês corrente considera todas em aberto, alinhado ao Contas a Receber)
+      prisma.transaction.findMany({
+        where: {
+          organization_id: organizationId,
+          type: "RECEITA",
+          status: "PENDENTE",
+          ...(isCurrentMonth ? {} : { date: { gte: monthStart, lte: monthEnd } }),
+        },
+        select: {
+          amount: true,
+        },
+      }),
+      // Busca agendamentos pendentes de quitação (no mês corrente considera todos em aberto, alinhado ao Contas a Receber)
       prisma.appointment.findMany({
         where: {
           organization_id: organizationId,
           status: "REALIZADO",
           payment_method: null,
-          package_id: null, // Evita cobrar do fiado se for pacote
-          date_time: { gte: monthStart, lte: monthEnd },
+          ...(isCurrentMonth
+            ? {}
+            : { date_time: { gte: monthStart, lte: monthEnd } }),
         },
         select: {
+          snapshot_service_price: true,
           service: { select: { price: true } },
         },
       }),
@@ -125,7 +140,7 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
     let pendingItemsCount = 0;
     const paymentCounts: Record<string, number> = {};
 
-    // 1. Processa o Dinheiro Real (Transactions)
+    // 1. Processa o Dinheiro Real (Transactions Liquidadas)
     monthlyTxRaw.forEach((t) => {
       const amount = Number(t.amount);
 
@@ -146,15 +161,18 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
         }
       } else if (t.type === "DESPESA" && t.status === "PAGO") {
         expensesMonth += amount;
-      } else if (t.type === "RECEITA" && t.status === "PENDENTE") {
-        pendingMonth += amount;
-        pendingItemsCount++;
       }
     });
 
-    // 2. Processa o "Fiado" (Agenda Pendente)
+    // 2. Processa as Receitas Pendentes (Contas a Receber)
+    pendingTxRaw.forEach((t) => {
+      pendingMonth += Number(t.amount);
+      pendingItemsCount++;
+    });
+
+    // 3. Processa o "Fiado" (Agenda Pendente de Recebimento)
     pendingApptsRaw.forEach((a) => {
-      pendingMonth += Number(a.service?.price || 0);
+      pendingMonth += Number(a.snapshot_service_price ?? a.service?.price ?? 0);
       pendingItemsCount++;
     });
 

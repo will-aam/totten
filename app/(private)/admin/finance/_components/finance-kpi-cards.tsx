@@ -10,6 +10,8 @@ import type { BoxIconProps } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
 import { useFinanceVisibility } from "./finance-visibility-context";
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -22,6 +24,7 @@ function FinanceKpiCard({
   description,
   icon: Icon,
   className,
+  link,
 }: {
   title: string;
   value: string | number;
@@ -30,6 +33,10 @@ function FinanceKpiCard({
     BoxIconProps & React.RefAttributes<SVGSVGElement>
   >;
   className?: string;
+  link?: {
+    href: string;
+    label: string;
+  };
 }) {
   return (
     <Card
@@ -64,9 +71,20 @@ function FinanceKpiCard({
         <div className="text-3xl font-bold text-foreground tracking-tight truncate">
           {value}
         </div>
-        <p className="mt-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-          {description}
-        </p>
+        <div className="flex items-center justify-between mt-1 gap-2">
+          <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground truncate">
+            {description}
+          </p>
+          {link && (
+            <Link
+              href={link.href}
+              className="inline-flex items-center gap-0.5 text-[11px] font-bold text-primary/90 hover:text-primary transition-all group/link shrink-0 hover:underline underline-offset-2"
+            >
+              <span>{link.label}</span>
+              <ChevronRight className="h-3 w-3 transition-transform group-hover/link:translate-x-0.5" />
+            </Link>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
@@ -79,7 +97,7 @@ export function FinanceKpiCards() {
     async () => {
       return await getFinanceDashboardData();
     },
-    { revalidateOnFocus: true, dedupingInterval: 10000 },
+    { revalidateOnFocus: true, revalidateOnMount: true, dedupingInterval: 2000 },
   );
 
   if (isLoading) {
@@ -112,10 +130,14 @@ export function FinanceKpiCards() {
         icon={ArrowUpCircle}
       />
       <FinanceKpiCard
-        title="Pendente no Mês"
+        title="Aguardando Pagamento"
         value={formatVal(summary.pendingMonth)}
-        description="Aguardando pagamento"
+        description="Contas a receber"
         icon={Clock}
+        link={{
+          href: "/admin/finance/receivables",
+          label: "Ver contas",
+        }}
       />
       <FinanceKpiCard
         title="Despesas do Mês"

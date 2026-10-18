@@ -21,6 +21,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationPrevious,
+  PaginationNext,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
+import {
   LoaderDots,
   Dollar,
   Calendar,
@@ -31,6 +40,7 @@ import {
 import {
   getPendingReceivables,
   processReceivablePayment,
+  processAllReceivablesPayment,
 } from "@/app/actions/transactions";
 import { getPaymentMethods } from "@/app/actions/payment-methods";
 import { OrganizationPaymentMethod } from "@/types/finance";
@@ -43,6 +53,10 @@ export default function ReceivablesPage() {
     OrganizationPaymentMethod[]
   >([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Paginação Client-side para fluidez e escalabilidade
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   // Controle do Modal de Pagamento - aceita o item ou a chave "ALL" para dar baixa em todos
   const [selectedItem, setSelectedItem] = useState<any | "ALL" | null>(null);
@@ -85,27 +99,21 @@ export default function ReceivablesPage() {
     setIsProcessing(true);
     try {
       if (selectedItem === "ALL") {
-        // Fluxo Master: Múltiplas baixas em lote
-        const promises = receivables.map((item) =>
-          processReceivablePayment(
-            item.id,
-            item.sourceType,
-            selectedMethod.type,
-            selectedMethod.id,
-          ),
+        // Fluxo Master: Baixa atômica em todos os pendentes no banco (independente de paginação)
+        const res = await processAllReceivablesPayment(
+          selectedMethod.type,
+          selectedMethod.id,
         );
 
-        const results = await Promise.all(promises);
-        const allSuccess = results.every((res) => res.success);
-
-        if (allSuccess) {
-          toast.success("Todos os recebimentos foram registrados com sucesso!");
+        if (res.success) {
+          toast.success(
+            `Todos os recebimentos foram quitados com sucesso! (${res.count ?? receivables.length} itens)`,
+          );
           handleCloseModal();
+          setCurrentPage(1);
           loadData();
         } else {
-          toast.error("Alguns recebimentos falharam. Verifique a lista.");
-          handleCloseModal();
-          loadData();
+          toast.error(res.error || "Erro ao quitar todos os recebimentos.");
         }
       } else {
         // Fluxo original: Baixa em um único item
@@ -125,7 +133,7 @@ export default function ReceivablesPage() {
         }
       }
     } catch (error) {
-      toast.error("Erro na conexão.");
+      toast.error("Erro na conexão ao processar recebimento.");
     } finally {
       setIsProcessing(false);
     }
@@ -161,6 +169,13 @@ export default function ReceivablesPage() {
     0,
   );
 
+  // Cálculos de Paginação
+  const totalPages = Math.max(1, Math.ceil(receivables.length / ITEMS_PER_PAGE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedReceivables = receivables.slice(startIndex, endIndex);
+
   return (
     <>
       <AdminHeader title="Contas a Receber" />
@@ -177,13 +192,23 @@ export default function ReceivablesPage() {
               </div>
               <div className="flex flex-col">
                 <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600/80 dark:text-emerald-400/80">
-                  Total Pendente
+                  Total Pendente ({receivables.length}{" "}
+                  {receivables.length === 1 ? "lançamento" : "lançamentos"})
                 </p>
                 <h2 className="text-3xl font-black text-foreground tracking-tighter mt-0.5">
                   {formatCurrency(totalReceivables)}
                 </h2>
               </div>
             </div>
+
+            {/* BOTÃO MASTER: DAR BAIXA EM TODOS */}
+            <Button
+              onClick={() => setSelectedItem("ALL")}
+              className="w-full sm:w-auto font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 rounded-2xl h-12 px-6 transition-all gap-2 relative z-10 active:scale-95"
+            >
+              <CheckCircle className="h-5 w-5" />
+              Dar Baixa em Todos
+            </Button>
           </div>
         )}
 
@@ -207,7 +232,7 @@ export default function ReceivablesPage() {
             </div>
           ) : (
             <div className="flex flex-col">
-              {receivables.map((item) => (
+              {paginatedReceivables.map((item) => (
                 <div
                   key={item.id}
                   className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b border-border/40 last:border-0 hover:bg-muted/40 transition-all duration-300 rounded-2xl group gap-4"
@@ -258,6 +283,80 @@ export default function ReceivablesPage() {
                   </div>
                 </div>
               ))}
+
+              {/* PAGINAÇÃO */}
+              {totalPages > 1 && (
+                <div className="pt-6 pb-2 border-t border-border/30 mt-2">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          onClick={() =>
+                            setCurrentPage((p) => Math.max(1, p - 1))
+                          }
+                          className={
+                            safeCurrentPage === 1
+                              ? "pointer-events-none opacity-40"
+                              : "cursor-pointer"
+                          }
+                        />
+                      </PaginationItem>
+
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                        (p) => {
+                          if (
+                            p === 1 ||
+                            p === totalPages ||
+                            (p >= safeCurrentPage - 1 &&
+                              p <= safeCurrentPage + 1)
+                          ) {
+                            return (
+                              <PaginationItem key={p}>
+                                <PaginationLink
+                                  onClick={() => setCurrentPage(p)}
+                                  isActive={safeCurrentPage === p}
+                                  className="cursor-pointer font-bold"
+                                >
+                                  {p}
+                                </PaginationLink>
+                              </PaginationItem>
+                            );
+                          }
+
+                          if (
+                            p === safeCurrentPage - 2 ||
+                            p === safeCurrentPage + 2
+                          ) {
+                            return (
+                              <PaginationItem key={p}>
+                                <PaginationEllipsis />
+                              </PaginationItem>
+                            );
+                          }
+                          return null;
+                        },
+                      )}
+
+                      <PaginationItem>
+                        <PaginationNext
+                          onClick={() =>
+                            setCurrentPage((p) => Math.min(totalPages, p + 1))
+                          }
+                          className={
+                            safeCurrentPage === totalPages
+                              ? "pointer-events-none opacity-40"
+                              : "cursor-pointer"
+                          }
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                  <p className="text-center text-[11px] font-semibold text-muted-foreground mt-2">
+                    Página {safeCurrentPage} de {totalPages} ({receivables.length}{" "}
+                    pendências no total)
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -279,7 +378,11 @@ export default function ReceivablesPage() {
               Selecione a forma de pagamento utilizada para dar baixa{" "}
               {selectedItem === "ALL" ? (
                 <>
-                  em todos os valores pendentes, totalizando{" "}
+                  em todos os{" "}
+                  <strong className="text-foreground font-black">
+                    {receivables.length} lançamentos pendentes
+                  </strong>{" "}
+                  (de todas as páginas), totalizando{" "}
                   <strong className="text-foreground font-black">
                     {formatCurrency(totalReceivables)}
                   </strong>

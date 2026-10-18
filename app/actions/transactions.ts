@@ -401,6 +401,8 @@ export async function getPendingReceivables() {
       select: {
         id: true,
         date_time: true,
+        snapshot_service_name: true,
+        snapshot_service_price: true,
         client: { select: { name: true } },
         service: { select: { name: true, price: true } },
       },
@@ -426,10 +428,10 @@ export async function getPendingReceivables() {
     const formattedAppointments = pendingAppointments.map((a) => ({
       id: a.id,
       sourceType: "APPOINTMENT" as const,
-      description: a.service.name,
-      amount: Number(a.service.price),
+      description: a.snapshot_service_name || a.service?.name || "Serviço",
+      amount: Number(a.snapshot_service_price ?? a.service?.price ?? 0),
       date: a.date_time.toISOString(),
-      clientName: a.client.name,
+      clientName: a.client?.name || "Sem cliente",
     }));
 
     const formattedTransactions = pendingTransactions.map((t) => ({
@@ -461,14 +463,61 @@ export async function processReceivablePayment(
     const admin = await requireAuth();
 
     if (sourceType === "APPOINTMENT") {
-      await prisma.appointment.update({
+      const appt = await prisma.appointment.findUnique({
         where: { id, organization_id: admin.organizationId },
-        data: {
-          payment_method: paymentMethod as PaymentMethod, // Cast seguro para Enum
-          has_charge: false,
-          professional_id: admin.id, //  Assina o apontamento (baixa no caixa)
-        },
+        include: { client: true, service: true, transaction: true },
       });
+
+      if (!appt) throw new Error("Agendamento não encontrado.");
+
+      const apptPrice = appt.snapshot_service_price ?? appt.service.price;
+      const apptName = appt.snapshot_service_name ?? appt.service.name;
+
+      let txIdToSync: string | null = null;
+
+      await prisma.$transaction(async (tx) => {
+        await tx.appointment.update({
+          where: { id, organization_id: admin.organizationId },
+          data: {
+            payment_method: paymentMethod as PaymentMethod, // Cast seguro para Enum
+            has_charge: false,
+            professional_id: admin.id, // Assina o apontamento (baixa no caixa)
+          },
+        });
+
+        if (!appt.transaction) {
+          const newTx = await tx.transaction.create({
+            data: {
+              type: "RECEITA",
+              description: `Serviço Realizado: ${apptName} (${appt.client.name})`,
+              amount: apptPrice,
+              date: new Date(),
+              status: "PAGO",
+              organization_id: admin.organizationId,
+              appointment_id: appt.id,
+              client_id: appt.client_id,
+              payment_method_id: paymentMethodId || null,
+              admin_id: admin.id,
+            },
+          });
+          txIdToSync = newTx.id;
+        } else {
+          await tx.transaction.update({
+            where: { id: appt.transaction.id },
+            data: {
+              status: "PAGO",
+              payment_method_id: paymentMethodId || null,
+              admin_id: admin.id,
+            },
+          });
+          txIdToSync = appt.transaction.id;
+        }
+      });
+
+      if (txIdToSync) {
+        triggerZibeeSyncById(txIdToSync).catch(console.error);
+      }
+
       revalidatePath("/admin/agenda");
     } else {
       await prisma.transaction.update({
@@ -476,7 +525,7 @@ export async function processReceivablePayment(
         data: {
           status: "PAGO",
           payment_method_id: paymentMethodId || null,
-          admin_id: admin.id, //  Assina quem quitou a pendência
+          admin_id: admin.id, // Assina quem quitou a pendência
         },
       });
 
@@ -492,6 +541,124 @@ export async function processReceivablePayment(
   } catch (error) {
     console.error("Erro ao dar baixa em recebimento:", error);
     return { success: false, error: "Falha ao processar pagamento." };
+  }
+}
+
+// --- 7.1. DAR BAIXA EM TODOS OS RECEBIMENTOS (EM MASSA) ---
+export async function processAllReceivablesPayment(
+  paymentMethod: string,
+  paymentMethodId?: string,
+) {
+  try {
+    const admin = await requireAuth();
+
+    // 1. Busca todos os agendamentos pendentes da organização
+    const pendingAppointments = await prisma.appointment.findMany({
+      where: {
+        organization_id: admin.organizationId,
+        status: "REALIZADO",
+        payment_method: null,
+      },
+      include: {
+        client: true,
+        service: true,
+        transaction: true,
+      },
+    });
+
+    // 2. Busca todas as transações manuais pendentes da organização
+    const pendingTransactions = await prisma.transaction.findMany({
+      where: {
+        organization_id: admin.organizationId,
+        type: "RECEITA",
+        status: "PENDENTE",
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    const createdOrUpdatedTxIds: string[] = [];
+
+    await prisma.$transaction(async (tx) => {
+      // Baixa nos agendamentos
+      for (const appt of pendingAppointments) {
+        await tx.appointment.update({
+          where: { id: appt.id },
+          data: {
+            payment_method: paymentMethod as PaymentMethod,
+            has_charge: false,
+            professional_id: admin.id,
+          },
+        });
+
+        const apptPrice = appt.snapshot_service_price ?? appt.service.price;
+        const apptName = appt.snapshot_service_name ?? appt.service.name;
+
+        if (!appt.transaction) {
+          const newTx = await tx.transaction.create({
+            data: {
+              type: "RECEITA",
+              description: `Serviço Realizado: ${apptName} (${appt.client.name})`,
+              amount: apptPrice,
+              date: new Date(),
+              status: "PAGO",
+              organization_id: admin.organizationId,
+              appointment_id: appt.id,
+              client_id: appt.client_id,
+              payment_method_id: paymentMethodId || null,
+              admin_id: admin.id,
+            },
+          });
+          createdOrUpdatedTxIds.push(newTx.id);
+        } else {
+          await tx.transaction.update({
+            where: { id: appt.transaction.id },
+            data: {
+              status: "PAGO",
+              payment_method_id: paymentMethodId || null,
+              admin_id: admin.id,
+            },
+          });
+          createdOrUpdatedTxIds.push(appt.transaction.id);
+        }
+      }
+
+      // Baixa nas transações manuais
+      if (pendingTransactions.length > 0) {
+        await tx.transaction.updateMany({
+          where: {
+            id: { in: pendingTransactions.map((t) => t.id) },
+            organization_id: admin.organizationId,
+          },
+          data: {
+            status: "PAGO",
+            payment_method_id: paymentMethodId || null,
+            admin_id: admin.id,
+          },
+        });
+
+        pendingTransactions.forEach((t) => createdOrUpdatedTxIds.push(t.id));
+      }
+    });
+
+    // Sincroniza Zibee em background
+    createdOrUpdatedTxIds.forEach((txId) => {
+      triggerZibeeSyncById(txId).catch(console.error);
+    });
+
+    revalidatePath("/admin/finance/dashboard");
+    revalidatePath("/admin/finance/transactions");
+    revalidatePath("/admin/finance/receivables");
+    revalidatePath("/admin/agenda");
+
+    return {
+      success: true,
+      count: pendingAppointments.length + pendingTransactions.length,
+    };
+  } catch (error) {
+    console.error("Erro ao dar baixa em todos os recebimentos:", error);
+    return { success: false, error: "Falha ao processar pagamentos em lote." };
   }
 }
 
