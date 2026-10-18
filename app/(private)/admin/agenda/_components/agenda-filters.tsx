@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import useSWR from "swr";
 import { useSession } from "next-auth/react";
-import { Filter, ChevronDown } from "@boxicons/react";
+import { Filter } from "@boxicons/react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -28,7 +28,7 @@ import {
 import { getTeam } from "@/app/actions/team";
 import { apiClient } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
-import { Check } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import {
   Command,
   CommandEmpty,
@@ -140,9 +140,9 @@ export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, serv
   };
 
   const CustomTrigger = ({ placeholder }: { placeholder: string }) => (
-    <SelectTrigger className="w-full bg-muted/20 border border-input -[10px] h-10 px-3 [&>svg]:hidden flex justify-between items-center shadow-none text-muted-foreground hover:bg-muted/40 transition-colors focus:ring-1 focus:ring-primary/20 font-medium font-normal">
+    <SelectTrigger className="w-full bg-muted/20 border border-input rounded-lg h-10 data-[size=default]:h-10 px-3 [&>svg]:hidden flex justify-between items-center shadow-none text-muted-foreground hover:bg-muted/40 transition-colors focus:ring-1 focus:ring-primary/20 font-medium font-normal">
       <SelectValue placeholder={placeholder} />
-      <div className="bg-muted/60 rounded-md h-6 w-6 flex items-center justify-center text-muted-foreground shrink-0 self-start mt-0.5">
+      <div className="bg-muted/60 rounded-md h-6 w-6 flex items-center justify-center text-muted-foreground shrink-0">
         <ChevronDown className="w-4 h-4" />
       </div>
     </SelectTrigger>

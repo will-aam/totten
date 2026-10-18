@@ -87,7 +87,7 @@ export function MultiSelectCombobox({
               </Badge>
             ))}
           </div>
-          <div className="bg-muted/60 rounded-md h-6 w-6 flex items-center justify-center text-muted-foreground shrink-0 self-start mt-0.5">
+          <div className={cn("bg-muted/60 rounded-md h-6 w-6 flex items-center justify-center text-muted-foreground shrink-0", selectedOptions.length > 0 ? "self-start mt-0.5" : "")}>
             <ChevronDown className="w-4 h-4" />
           </div>
         </Button>
