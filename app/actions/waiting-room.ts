@@ -3,6 +3,7 @@
 import { prisma as db } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { createAppointment } from "./appointments";
+import { triggerZibeeSyncById } from "@/lib/server/integrations/zibee.service";
 
 export async function getWaitingRoomData() {
   try {
@@ -75,6 +76,8 @@ export async function createManualCheckIn(data: {
   serviceId: string;
   professionalId: string;
   packageId?: string;
+  isPaid?: boolean;
+  paymentMethod?: string | null;
 }) {
   try {
     const admin = await requireAuth();
@@ -83,7 +86,6 @@ export async function createManualCheckIn(data: {
     // 1. Criar agendamento instantâneo com data atual
     const now = new Date();
     
-    // Vacina para fuso: precisamos alinhar a criação para que passe nas validações
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, "0");
     const day = String(now.getDate()).padStart(2, "0");
@@ -97,6 +99,8 @@ export async function createManualCheckIn(data: {
       dateTime: dateTimeString,
       professionalId: data.professionalId,
       packageId: data.packageId,
+      isPaid: data.isPaid,
+      paymentMethod: data.paymentMethod,
     });
 
     if (!apptResult.success) {
@@ -107,41 +111,143 @@ export async function createManualCheckIn(data: {
       throw new Error("Agendamento não foi criado corretamente.");
     }
 
-    const newAppointmentId = apptResult.appointments[0].id;
+    const newAppointment = apptResult.appointments[0];
+    const newAppointmentId = newAppointment.id;
 
-    // 2. Mudar status para CONFIRMADO (se já não estiver)
-    await db.appointment.update({
-      where: { id: newAppointmentId },
-      data: { status: "CONFIRMADO" }
+    // 2. Buscar configurações da organização para saber se completa automaticamente
+    const orgSettings = await db.settings.findUnique({
+      where: { organization_id: organizationId },
+      select: {
+        auto_complete_on_checkin: true,
+      },
+    });
+    const autoComplete = orgSettings?.auto_complete_on_checkin ?? true;
+
+    // 3. Buscar serviço com insumos para estoque
+    const service = await db.service.findUnique({
+      where: { id: data.serviceId, organization_id: organizationId },
+      include: {
+        stock_items: {
+          include: { stock_item: true },
+        },
+      },
     });
 
-    // 3. Gerar o Check-in
-    const checkIn = await db.checkIn.create({
-      data: {
-        appointment_id: newAppointmentId,
-        client_id: data.clientId,
-        organization_id: organizationId,
+    const targetStatus = autoComplete ? "REALIZADO" : "CONFIRMADO";
+    const createdTxIds: string[] = [];
+
+    const checkIn = await db.$transaction(async (tx) => {
+      // a) Atualiza status do agendamento
+      await tx.appointment.update({
+        where: { id: newAppointmentId },
+        data: {
+          status: targetStatus,
+          payment_method: data.paymentMethod ? (data.paymentMethod as any) : null,
+          has_charge: !data.packageId && !data.isPaid,
+        },
+      });
+
+      // b) Se estiver associado a pacote e for autoComplete, incrementa sessões usadas
+      if (autoComplete && data.packageId) {
+        const pkg = await tx.package.findUnique({
+          where: { id: data.packageId, organization_id: organizationId },
+        });
+
+        if (pkg) {
+          const newUsed = pkg.used_sessions + 1;
+          const willRemainActive = newUsed < pkg.total_sessions;
+          await tx.package.update({
+            where: { id: pkg.id },
+            data: {
+              used_sessions: { increment: 1 },
+              active: willRemainActive,
+            },
+          });
+        }
       }
+
+      // c) Processar baixa de estoque e despesas de insumo se autoComplete estiver ativo
+      if (autoComplete && service) {
+        if (service.track_stock && service.stock_items.length > 0) {
+          for (const item of service.stock_items) {
+            const stockData = item.stock_item;
+            const usedQty = item.quantity_used;
+
+            await tx.stockItem.update({
+              where: { id: stockData.id, organization_id: organizationId },
+              data: { quantity: { decrement: usedQty } },
+            });
+
+            if (!stockData.was_expensed) {
+              const costOfUsedQty = Number(usedQty) * Number(stockData.unit_cost);
+              if (costOfUsedQty > 0) {
+                const expTx = await tx.transaction.create({
+                  data: {
+                    type: "DESPESA",
+                    description: `Custo Insumo (Check-in Rápido): ${stockData.name}`,
+                    amount: costOfUsedQty,
+                    date: new Date(),
+                    status: "PAGO",
+                    organization_id: organizationId,
+                    appointment_id: newAppointmentId,
+                  },
+                });
+                createdTxIds.push(expTx.id);
+              }
+            }
+          }
+        } else if (!service.track_stock && service.material_cost && Number(service.material_cost) > 0) {
+          const expTx = await tx.transaction.create({
+            data: {
+              type: "DESPESA",
+              description: `Custo Fixo de Material (Check-in Rápido): ${service.name}`,
+              amount: service.material_cost,
+              date: new Date(),
+              status: "PAGO",
+              organization_id: organizationId,
+              appointment_id: newAppointmentId,
+            },
+          });
+          createdTxIds.push(expTx.id);
+        }
+      }
+
+      // d) Gerar o Check-in
+      const ci = await tx.checkIn.create({
+        data: {
+          appointment_id: newAppointmentId,
+          client_id: data.clientId,
+          package_id: data.packageId || null,
+          organization_id: organizationId,
+          auto_processed: autoComplete,
+        },
+      });
+
+      // e) Adicionar pontos de fidelidade
+      const loyaltySettings = await tx.loyaltySettings.findUnique({
+        where: { organization_id: organizationId },
+      });
+
+      if (loyaltySettings?.is_active && loyaltySettings?.check_in_active) {
+        const clientCurrent = await tx.client.findUnique({
+          where: { id: data.clientId },
+          select: { loyalty_points: true },
+        });
+        const newPoints = Math.min(
+          (clientCurrent?.loyalty_points || 0) + loyaltySettings.check_in_points,
+          loyaltySettings.max_points,
+        );
+        await tx.client.update({
+          where: { id: data.clientId },
+          data: { loyalty_points: newPoints },
+        });
+      }
+
+      return ci;
     });
 
-    // 4. Adicionar pontos de fidelidade
-    const loyaltySettings = await db.loyaltySettings.findUnique({
-      where: { organization_id: organizationId }
-    });
-
-    if (loyaltySettings?.is_active && loyaltySettings?.check_in_active) {
-      const clientCurrent = await db.client.findUnique({
-        where: { id: data.clientId },
-        select: { loyalty_points: true }
-      });
-      const newPoints = Math.min(
-        (clientCurrent?.loyalty_points || 0) + loyaltySettings.check_in_points,
-        loyaltySettings.max_points
-      );
-      await db.client.update({
-        where: { id: data.clientId },
-        data: { loyalty_points: newPoints }
-      });
+    for (const txId of createdTxIds) {
+      triggerZibeeSyncById(txId);
     }
 
     return { success: true, data: checkIn };

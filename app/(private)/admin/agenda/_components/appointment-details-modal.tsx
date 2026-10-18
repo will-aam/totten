@@ -169,6 +169,18 @@ export const AppointmentDetailsModal = memo(
       appointment?.snapshot_service_duration,
     ]);
 
+    const appointmentDateFormatted = useMemo(() => {
+      if (!appointment?.date_time) return "";
+      const date = new Date(appointment.date_time);
+      if (isNaN(date.getTime())) return "";
+      return new Intl.DateTimeFormat("pt-BR", {
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      }).format(date);
+    }, [appointment?.date_time]);
+
     if (!appointment) return null;
 
     // --- REGRAS DE NEGÓCIO DE ESTADO ---
@@ -432,11 +444,16 @@ export const AppointmentDetailsModal = memo(
                   <CheckCircle className="h-4 w-4" /> Check-in Realizado
                 </span>
                 <span className="text-xs font-medium text-purple-700/80 dark:text-purple-400/80 mt-1">
-                  A cliente realizou o check-in no totem para este agendamento às{" "}
-                  {new Date(appointment.checkInTime).toLocaleTimeString("pt-BR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
+                  A cliente realizou o check-in presencial no totem em{" "}
+                  <strong>
+                    {new Intl.DateTimeFormat("pt-BR", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }).format(new Date(appointment.checkInTime))}
+                  </strong>
                   .
                 </span>
               </div>
@@ -483,12 +500,19 @@ export const AppointmentDetailsModal = memo(
                 </Badge>
               </div>
             </div>
-            <div className="text-2xl font-black text-primary flex items-baseline gap-1">
-              {appointment.time}
-              <span className="text-xs font-bold text-muted-foreground uppercase">
-                até
-              </span>
-              {endTime}
+            <div className="flex flex-col gap-1">
+              {appointmentDateFormatted && (
+                <span className="text-xs font-bold text-foreground/80 capitalize">
+                  {appointmentDateFormatted}
+                </span>
+              )}
+              <div className="text-2xl font-black text-primary flex items-baseline gap-1.5">
+                {appointment.time}
+                <span className="text-xs font-bold text-muted-foreground uppercase">
+                  até
+                </span>
+                {endTime}
+              </div>
             </div>
           </div>
 
@@ -539,36 +563,53 @@ export const AppointmentDetailsModal = memo(
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">
-                Pagamento
-              </Label>
-              <Select
-                value={payment}
-                onValueChange={setPayment}
-                disabled={
-                  isLocked ||
-                  isPackageArchived ||
-                  status === "cancelado" ||
-                  status === "nao_compareceu" ||
-                  status === "nao_compareceu_abonado"
-                }
-              >
-                <SelectTrigger className="w-full h-12 bg-muted/20 border-none font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="border-border/50 bg-background rounded-2xl !w-max min-w-[var(--radix-select-trigger-width)]">
-                  <SelectItem value="nenhum" className="whitespace-nowrap">Aguardando...</SelectItem>
-                  {paymentMethods
-                    .filter((pm) => pm.isActive)
-                    .map((pm) => (
-                      <SelectItem key={pm.id} value={pm.type} className="whitespace-nowrap">
-                        {pm.name}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* CAMPO DE PAGAMENTO OU INDICAÇÃO DE PACOTE PAGO */}
+            {isFromPackage ? (
+              <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-2xl flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
+                    Pagamento
+                  </span>
+                  <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 mt-0.5">
+                    Sessão coberta por Pacote (Pago na Venda)
+                  </span>
+                </div>
+                <Badge variant="outline" className="bg-background text-emerald-600 border-emerald-500/30 font-bold text-[10px]">
+                  Pacote
+                </Badge>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">
+                  Pagamento
+                </Label>
+                <Select
+                  value={payment}
+                  onValueChange={setPayment}
+                  disabled={
+                    isLocked ||
+                    isPackageArchived ||
+                    status === "cancelado" ||
+                    status === "nao_compareceu" ||
+                    status === "nao_compareceu_abonado"
+                  }
+                >
+                  <SelectTrigger className="w-full h-12 bg-muted/20 border-none font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="border-border/50 bg-background rounded-2xl !w-max min-w-[var(--radix-select-trigger-width)]">
+                    <SelectItem value="nenhum" className="whitespace-nowrap">Aguardando...</SelectItem>
+                    {paymentMethods
+                      .filter((pm) => pm.isActive)
+                      .map((pm) => (
+                        <SelectItem key={pm.id} value={pm.type} className="whitespace-nowrap">
+                          {pm.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -588,36 +629,21 @@ export const AppointmentDetailsModal = memo(
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3 pt-2">
-            <Button
-              variant={hasCharge ? "destructive" : "outline"}
-              className={cn("rounded-2xl h-12 font-bold transition-all",
-                !hasCharge && "bg-muted/20 border-none",
-              )}
-              onClick={() => setHasCharge(!hasCharge)}
-              disabled={
-                isLocked ||
-                status === "realizado" ||
-                isPackageArchived ||
-                status === "cancelado" ||
-                status === "nao_compareceu" ||
-                status === "nao_compareceu_abonado"
-              }
-            >
-              {hasCharge ? "Cobrança Ativa" : "Tudo Pago"}
-            </Button>
-
-            <Button
-              variant="secondary"
-              className="bg-primary/10 text-primary font-black h-12"
-              onClick={() => {
-                handlePrint();
-                toast.success("Gerando recibo...");
-              }}
-            >
-              <Printer className="mr-2 h-5 w-5" /> Recibo
-            </Button>
-          </div>
+          {/* AÇÕES ADICIONAIS: RECIBO APENAS PARA ATENDIMENTOS REALIZADOS */}
+          {status === "realizado" && (
+            <div className="pt-2 flex justify-end">
+              <Button
+                variant="secondary"
+                className="bg-primary/10 text-primary hover:bg-primary/20 font-black h-12 px-6 rounded-2xl w-full sm:w-auto transition-all"
+                onClick={() => {
+                  handlePrint();
+                  toast.success("Gerando recibo...");
+                }}
+              >
+                <Printer className="mr-2 h-5 w-5" /> Imprimir Recibo
+              </Button>
+            </div>
+          )}
         </div>
 
         {!isLocked && (

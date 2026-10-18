@@ -138,12 +138,14 @@ export class ClientHistoryService {
     clientNotes.forEach((note) => {
       if (note.text.includes("Falta Automática")) return;
 
+      const isReagendamento = note.text.includes("Reagendamento");
+
       timelineEvents.push({
         id: `note-${note.id}`,
         type: "CLIENT_NOTE",
         date: note.date,
-        title: "Anotação Adicionada",
-        meta: { text: note.text },
+        title: isReagendamento ? "Horário Reagendado" : "Anotação Adicionada",
+        meta: { text: note.text, isReagendamento },
       });
     });
 

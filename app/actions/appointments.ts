@@ -70,6 +70,8 @@ export type CreateAppointmentInput = {
   packageId?: string;
   repeatCount?: number;
   professionalId?: string;
+  isPaid?: boolean;
+  paymentMethod?: string | null;
 };
 
 export type CreateAppointmentResult =
@@ -92,6 +94,8 @@ export async function createAppointment(
       packageId,
       repeatCount = 1,
       professionalId,
+      isPaid = false,
+      paymentMethod = null,
     } = input;
 
     const firstDateTime =
@@ -180,6 +184,8 @@ export async function createAppointment(
       startSessionNumber = pkg.used_sessions;
     }
 
+    const createdTxIds: string[] = [];
+
     const appointments = await prisma.$transaction(async (tx) => {
       const created: any[] = [];
       for (let i = 0; i < appointmentDates.length; i++) {
@@ -194,17 +200,47 @@ export async function createAppointment(
             recurrence_id: recurrenceId,
             session_number: packageId ? startSessionNumber + i + 1 : null,
             professional_id: targetProfessional,
+            payment_method: (!packageId && isPaid && paymentMethod) ? (paymentMethod as any) : null,
+            has_charge: !packageId && !isPaid,
             snapshot_service_name: service.name,
             snapshot_service_price: service.price,
             snapshot_service_duration: service.duration,
           },
+          include: {
+            client: { select: { name: true } },
+          },
         });
         created.push(appt);
+
+        // Se for avulso e o usuário já marcou como pago no ato do agendamento
+        if (!packageId && isPaid) {
+          const apptPrice = appt.snapshot_service_price ?? service.price;
+          const apptName = appt.snapshot_service_name ?? service.name;
+          const clientName = appt.client?.name || "Cliente";
+
+          const recTx = await tx.transaction.create({
+            data: {
+              type: "RECEITA",
+              description: `Serviço Realizado / Pago Antecipado: ${apptName} (${clientName})`,
+              amount: apptPrice,
+              date: new Date(),
+              status: "PAGO",
+              organization_id: admin.organizationId,
+              appointment_id: appt.id,
+            },
+          });
+          createdTxIds.push(recTx.id);
+        }
       }
       return created;
     });
 
+    for (const txId of createdTxIds) {
+      triggerZibeeSyncById(txId);
+    }
+
     revalidatePath("/admin/agenda");
+    revalidatePath("/admin/finance/dashboard");
 
     const sanitizedAppointments = appointments.map((appt) => ({
       ...appt,
@@ -624,20 +660,111 @@ export async function updateAppointmentDateTime(
 
     const apptToMove = await prisma.appointment.findUnique({
       where: { id, organization_id: admin.organizationId },
+      include: {
+        service: true,
+        package: true,
+        check_in: true,
+      },
     });
 
     if (!apptToMove) {
       return { success: false, error: "Agendamento não encontrado." };
     }
 
+    // Regra: Agendamentos com check-in já realizado não podem ser movidos
+    if (apptToMove.check_in) {
+      return {
+        success: false,
+        error: "Agendamentos com check-in já realizado não podem ser movidos.",
+      };
+    }
+
+    const isCancelled = apptToMove.status === AppointmentStatus.CANCELADO;
+    const isRealizado = apptToMove.status === AppointmentStatus.REALIZADO;
+    const isFalta = isCancelled && (
+      apptToMove.observations?.includes("(Falta Registrada)") ||
+      apptToMove.observations?.includes("Falta automática")
+    );
+    const isPendenteOuConfirmado = apptToMove.status === AppointmentStatus.PENDENTE ||
+      apptToMove.status === AppointmentStatus.CONFIRMADO;
+
+    // Regra: Agendamentos com status REALIZADO não podem ser movidos via drag and drop
+    if (isRealizado) {
+      return {
+        success: false,
+        error: "Agendamentos com status Realizado não podem ser movidos. Altere o status antes de reagendar.",
+      };
+    }
+
+    // Regra: Os únicos agendamentos que podem ser movidos são os pendentes e o Rosa (Falta)
+    if (!isPendenteOuConfirmado && !isFalta) {
+      return {
+        success: false,
+        error: "Apenas agendamentos pendentes ou faltas podem ser movidos.",
+      };
+    }
+
+    if (apptToMove.package && apptToMove.package.active === false) {
+      return {
+        success: false,
+        error: "Não é possível reagendar. Este pacote foi arquivado.",
+      };
+    }
+
+    const oldDate = new Date(apptToMove.date_time);
     const newDate = new Date(newDateIso);
 
-    await prisma.appointment.update({
-      where: { id, organization_id: admin.organizationId },
-      data: { date_time: newDate },
+    // Se o horário for idêntico, ignora a escrita
+    if (oldDate.getTime() === newDate.getTime()) {
+      return { success: true };
+    }
+
+    const now = new Date();
+
+    const formatDateBr = (d: Date) =>
+      new Intl.DateTimeFormat("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(d);
+
+    const oldDateFormatted = formatDateBr(oldDate);
+    const newDateFormatted = formatDateBr(newDate);
+    const nowFormatted = formatDateBr(now);
+    const serviceName =
+      apptToMove.snapshot_service_name ||
+      apptToMove.service?.name ||
+      "Serviço";
+    const authorName = admin.name || "Administrador";
+
+    const logText = `Ação: Reagendamento de ${serviceName}. Horário anterior: ${oldDateFormatted} -> Novo horário: ${newDateFormatted}. Alterado em ${nowFormatted} por: ${authorName}.`;
+
+    await prisma.$transaction(async (tx) => {
+      await tx.appointment.update({
+        where: { id, organization_id: admin.organizationId },
+        data: { date_time: newDate },
+      });
+
+      if (apptToMove.client_id) {
+        await tx.clientNote.create({
+          data: {
+            text: logText,
+            client_id: apptToMove.client_id,
+            organization_id: admin.organizationId,
+            date: now,
+          },
+        });
+      }
     });
 
     revalidatePath("/admin/agenda");
+    revalidatePath("/admin/clients");
+    if (apptToMove.client_id) {
+      revalidatePath(`/admin/clients/${apptToMove.client_id}`);
+    }
+
     return { success: true };
   } catch (error) {
     console.error(error);

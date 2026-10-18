@@ -4,7 +4,7 @@ import { ReactNode } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useSidebar } from "@/components/ui/sidebar";
-import { MenuLeft, CheckShield, ChevronDown, Slider, InfoCircle } from "@boxicons/react";
+import { MenuLeft, CheckShield, ChevronDown, Slider, InfoCircle, CalendarAlt } from "@boxicons/react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -138,7 +138,12 @@ export function AgendaHeader({
                 <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-blue-500 shadow-sm"></div>
                 <div>
                   <h4 className="font-semibold text-sm text-foreground">Azul (Realizado)</h4>
-                  <p className="text-xs text-muted-foreground mt-1">O atendimento foi finalizado. O cliente compareceu e o serviço foi concluído.</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    O atendimento foi finalizado com sucesso. 
+                    <strong className="block mt-1 text-foreground/80 font-bold">
+                      🔒 Fixo na agenda: não pode ser arrastado (altere o status antes se precisar reagendar).
+                    </strong>
+                  </p>
                 </div>
               </div>
 
@@ -147,20 +152,24 @@ export function AgendaHeader({
                 <div>
                   <h4 className="font-semibold text-sm text-foreground">Roxo (Check-in Realizado)</h4>
                   <p className="text-xs text-muted-foreground mt-1">
-                    O cliente já fez check-in no totem e aguarda atendimento.
-                    <span className="block mt-1 italic opacity-80">
-                      (Exibido apenas se a "Conclusão Automática" estiver desativada nas configurações da agenda).
-                    </span>
+                    O cliente já fez check-in presencial no totem e aguarda atendimento.
+                    <strong className="block mt-1 text-foreground/80 font-bold">
+                      🔒 Fixo na agenda: não pode ser arrastado para preservar o horário do check-in.
+                    </strong>
                   </p>
                 </div>
               </div>
-
 
               <div className="flex items-start gap-3">
                 <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-amber-500 shadow-sm"></div>
                 <div>
                   <h4 className="font-semibold text-sm text-foreground">Amarelo (Avulso Pendente)</h4>
-                  <p className="text-xs text-muted-foreground mt-1">Agendamento sem vínculo com pacote. O Cliente ainda não fez check-in.</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Agendamento sem vínculo com pacote. O Cliente ainda não fez check-in.
+                    <span className="block mt-1 text-primary font-bold">
+                      ✨ Pode ser arrastado livremente para reagendar data e horário.
+                    </span>
+                  </p>
                 </div>
               </div>
 
@@ -168,15 +177,12 @@ export function AgendaHeader({
                 <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-teal-500 shadow-sm"></div>
                 <div>
                   <h4 className="font-semibold text-sm text-foreground">Verde Água (Pacote Pendente)</h4>
-                  <p className="text-xs text-muted-foreground mt-1">Agendamento que faz parte de um pacote ou retorno. O Cliente ainda não fez check-in.</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-slate-400 shadow-sm dark:bg-slate-500 opacity-80"></div>
-                <div>
-                  <h4 className="font-semibold text-sm text-foreground">Cinza (Cancelado)</h4>
-                  <p className="text-xs text-muted-foreground mt-1">O agendamento foi cancelado pelo Cliente ou pelo estabelecimento.</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Agendamento de pacote ou retorno. O Cliente ainda não fez check-in.
+                    <span className="block mt-1 text-primary font-bold">
+                      ✨ Pode ser arrastado livremente para reagendar data e horário.
+                    </span>
+                  </p>
                 </div>
               </div>
 
@@ -185,10 +191,23 @@ export function AgendaHeader({
                 <div>
                   <h4 className="font-semibold text-sm text-foreground">Rosa (Falta)</h4>
                   <p className="text-xs text-muted-foreground mt-1">
-                    O Cliente faltou ao atendimento.
-                    <span className="block mt-1 italic opacity-80">
-                      (Atenção: verifique nas configurações da agenda se as faltas descontam sessões de pacotes automaticamente).
+                    O cliente faltou ao atendimento agendado.
+                    <span className="block mt-1 text-primary font-bold">
+                      ✨ Pode ser arrastado para reagendar a falta para um novo dia e horário.
                     </span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-slate-400 shadow-sm dark:bg-slate-500 opacity-80"></div>
+                <div>
+                  <h4 className="font-semibold text-sm text-foreground">Cinza (Cancelado)</h4>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    O agendamento foi cancelado amigavelmente.
+                    <strong className="block mt-1 text-foreground/80 font-bold">
+                      🔒 Fixo na agenda: não pode ser arrastado.
+                    </strong>
                   </p>
                 </div>
               </div>
@@ -201,8 +220,26 @@ export function AgendaHeader({
                 </div>
                 <div>
                   <h4 className="font-semibold text-sm text-foreground">Vermelho (Inativo)</h4>
-                  <p className="text-xs text-muted-foreground mt-1">Agendamento atrelado a um pacote que acabou ou foi cancelado.</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Agendamento atrelado a um pacote que acabou ou foi cancelado.
+                    <strong className="block mt-1 text-foreground/80 font-bold">
+                      🔒 Fixo na agenda: não pode ser arrastado.
+                    </strong>
+                  </p>
                 </div>
+              </div>
+
+              {/* Bloco Explicativo de Reagendamento */}
+              <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 space-y-2 mt-4">
+                <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-wider">
+                  <CalendarAlt className="h-4 w-4" /> Arrastar e Soltar (Reagendamento)
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Ao arrastar um card pendente ou falta para outro dia/horário, tanto a data quanto o horário no banco de dados são atualizados imediatamente para o novo momento escolhido.
+                </p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Um registro detalhado de auditoria contendo a data/horário anterior e a nova data/horário é automaticamente salvo no histórico da ficha do cliente.
+                </p>
               </div>
             </div>
           </SheetContent>

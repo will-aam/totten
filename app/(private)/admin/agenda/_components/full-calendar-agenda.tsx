@@ -92,6 +92,19 @@ export function FullCalendarAgenda({
    // Transform appointments to FullCalendar events
    const events = appointments.map((appt) => {
       const isCancelled = appt.status?.toUpperCase() === "CANCELADO";
+      const isRealizado = appt.status?.toUpperCase() === "REALIZADO";
+      const hasCheckIn = !!appt.checkInTime;
+      const isFalta = isCancelled && (
+         appt.observations?.includes("(Falta Registrada)") ||
+         appt.observations?.includes("Falta automática")
+      );
+      const isPackageArchived = appt.package && appt.package.active === false;
+      const isPendenteOuConfirmado = appt.status === "PENDENTE" || appt.status === "CONFIRMADO";
+
+      // Regra: Os únicos agendamentos que podem ser movidos são os pendentes (sem check-in) e o Rosa (Falta)
+      // Regra: Agendamentos com Azul (Realizado) e Roxo (Check-in já realizado) não podem ser movidos
+      const canMove = (isPendenteOuConfirmado || isFalta) && !isPackageArchived && !isRealizado && !hasCheckIn;
+
       const effectiveDuration = isCancelled ? 25 : appt.duration;
 
       // We assume appt.date_time is ISO string or valid Date string
@@ -103,7 +116,10 @@ export function FullCalendarAgenda({
          title: `${appt.clientName} - ${appt.service}`,
          start,
          end,
-         extendedProps: { appt },
+         editable: canMove && viewMode !== "month",
+         startEditable: canMove && viewMode !== "month",
+         durationEditable: false,
+         extendedProps: { appt, canMove, isRealizado, isFalta, hasCheckIn },
       };
    });
 
@@ -119,12 +135,51 @@ export function FullCalendarAgenda({
 
    const allEvents = [...events, ...backgroundEvents];
 
+   const isUpdatingAppointmentRef = useRef(false);
+
    const handleEventDrop = async (info: any) => {
       const { event, oldEvent, revert } = info;
       const appt = event.extendedProps.appt as Appointment;
 
-      if (isDateClosed && isDateClosed(event.start)) {
-         toast.error("Não é possível agendar em um dia fora do horário de funcionamento.");
+      // 1. Se já tem um drag em processamento, cancela para evitar flood
+      if (isUpdatingAppointmentRef.current) {
+         toast.error("Aguarde a atualização anterior finalizar.");
+         revert();
+         return;
+      }
+
+      // 2. Se soltou no mesmo milissegundo de horário, ignora a requisição
+      if (oldEvent?.start && event.start && oldEvent.start.getTime() === event.start.getTime()) {
+         return;
+      }
+
+      const isCancelled = appt.status?.toUpperCase() === "CANCELADO";
+      const isRealizado = appt.status?.toUpperCase() === "REALIZADO";
+      const hasCheckIn = !!appt.checkInTime;
+      const isFalta = isCancelled && (
+         appt.observations?.includes("(Falta Registrada)") ||
+         appt.observations?.includes("Falta automática")
+      );
+      const isPackageArchived = appt.package && appt.package.active === false;
+      const isPendenteOuConfirmado = appt.status === "PENDENTE" || appt.status === "CONFIRMADO";
+
+      // 3. Regra: Agendamentos com Check-in (Roxo) não podem ser movidos
+      if (hasCheckIn) {
+         toast.error("Agendamentos com check-in já realizado não podem ser movidos.");
+         revert();
+         return;
+      }
+
+      // 4. Regra: Agendamento com Azul (Realizado) não pode ser movido
+      if (isRealizado) {
+         toast.error("Agendamentos realizados não podem ser movidos. Altere o status dele antes.");
+         revert();
+         return;
+      }
+
+      // 5. Regra: Os únicos agendamentos que podem ser movidos são os pendentes e o Rosa (Falta)
+      if (!isPendenteOuConfirmado && !isFalta) {
+         toast.error("Apenas agendamentos pendentes ou faltas podem ser movidos.");
          revert();
          return;
       }
@@ -135,16 +190,29 @@ export function FullCalendarAgenda({
          return;
       }
 
+      if (isDateClosed && isDateClosed(event.start)) {
+         toast.error("Não é possível agendar em um dia fora do horário de funcionamento.");
+         revert();
+         return;
+      }
+
+      isUpdatingAppointmentRef.current = true;
       try {
          const newDate = event.start;
-         const hours = String(newDate.getHours()).padStart(2, "0");
-         const mins = String(newDate.getMinutes()).padStart(2, "0");
          const newDateIso = newDate.toISOString();
+
+         const formattedDateTime = new Intl.DateTimeFormat("pt-BR", {
+            weekday: "short",
+            day: "2-digit",
+            month: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+         }).format(newDate);
 
          const result = await updateAppointmentDateTime(appt.id, newDateIso);
 
          if (result.success) {
-            toast.success(`Movido para às ${hours}:${mins} com sucesso!`);
+            toast.success(`Reagendado para ${formattedDateTime} com sucesso!`);
             onRefresh();
          } else {
             toast.error(result.error || "Erro ao mover.");
@@ -153,6 +221,8 @@ export function FullCalendarAgenda({
       } catch (err) {
          toast.error("Erro de conexão.");
          revert();
+      } finally {
+         isUpdatingAppointmentRef.current = false;
       }
    };
 

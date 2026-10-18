@@ -39,6 +39,9 @@ import { useSession } from "next-auth/react";
 import { getTeam } from "@/app/actions/team";
 import { apiClient } from "@/lib/api-client";
 
+import { getPaymentMethods } from "@/app/actions/payment-methods";
+import { OrganizationPaymentMethod } from "@/types/finance";
+
 interface NewAppointmentModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -116,6 +119,11 @@ export const NewAppointmentModal = memo(
     );
     const [usePackage, setUsePackage] = useState(false);
 
+    // Pagamento antecipado (para agendamento avulso)
+    const [isPaid, setIsPaid] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState<string | undefined>(undefined);
+    const [paymentMethods, setPaymentMethods] = useState<OrganizationPaymentMethod[]>([]);
+
     const TIME_SLOTS = useMemo(
       () => generateTimeSlots(openingTime, closingTime),
       [openingTime, closingTime],
@@ -134,6 +142,20 @@ export const NewAppointmentModal = memo(
     const services = Array.isArray(servicesResponse)
       ? servicesResponse
       : servicesResponse?.data || [];
+
+    useEffect(() => {
+      async function loadPaymentMethods() {
+        if (open) {
+          try {
+            const methods = await getPaymentMethods();
+            setPaymentMethods((methods as OrganizationPaymentMethod[]) || []);
+          } catch (e) {
+            console.error("Erro ao carregar formas de pagamento:", e);
+          }
+        }
+      }
+      loadPaymentMethods();
+    }, [open]);
 
     useEffect(() => {
       async function loadClientPackage() {
@@ -198,6 +220,8 @@ export const NewAppointmentModal = memo(
         setTime(undefined);
         setActivePackage(null);
         setSelectedProfessionalId(undefined);
+        setIsPaid(false);
+        setPaymentMethod(undefined);
       } else {
         setDate(initialDate || new Date());
         if (initialTime) setTime(initialTime);
@@ -228,6 +252,11 @@ export const NewAppointmentModal = memo(
         return;
       }
 
+      if (!usePackage && isPaid && !paymentMethod) {
+        toast.error("Selecione a forma de pagamento.");
+        return;
+      }
+
       //  VACINA CONTRA O "BUG DA MADRUGADA" E FUSO HORÁRIO
       // Construímos a string ISO com o "-03:00" cravado nela
       const [hourStr, minuteStr] = time.split(":");
@@ -245,6 +274,8 @@ export const NewAppointmentModal = memo(
           packageId: usePackage && activePackage ? activePackage.id : undefined,
           repeatCount: isRecurring ? repeatCount : 1,
           professionalId: finalProfessionalId,
+          isPaid: !usePackage ? isPaid : false,
+          paymentMethod: !usePackage && isPaid ? paymentMethod : null,
         });
 
         if (!result.success) {
@@ -605,6 +636,52 @@ export const NewAppointmentModal = memo(
               </div>
             )}
           </div>
+
+          {/* PAGAMENTO ANTECIPADO (SOMENTE PARA AGENDAMENTO AVULSO) */}
+          {!usePackage && (
+            <div
+              className={cn(
+                "border-2 rounded-3xl p-4 transition-all duration-300 select-none",
+                isPaid
+                  ? "border-emerald-500/30 bg-emerald-500/5 shadow-sm"
+                  : "border-muted/30 bg-muted/5 opacity-90"
+              )}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-sm font-black text-foreground">
+                    Cliente já pagou antecipado?
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    Gera a receita no financeiro como paga no ato do agendamento
+                  </span>
+                </div>
+                <Switch checked={isPaid} onCheckedChange={setIsPaid} />
+              </div>
+
+              {isPaid && (
+                <div className="mt-4 pt-3 border-t border-dashed border-emerald-500/20 space-y-2 animate-in fade-in slide-in-from-top-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
+                    Forma de Pagamento
+                  </Label>
+                  <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                    <SelectTrigger className="bg-background border-border/50 h-11 rounded-2xl font-semibold">
+                      <SelectValue placeholder="Selecione o método pago..." />
+                    </SelectTrigger>
+                    <SelectContent className="border border-border/50 bg-background shadow-xl rounded-2xl">
+                      {paymentMethods
+                        .filter((pm) => pm.isActive)
+                        .map((pm) => (
+                          <SelectItem key={pm.id} value={pm.type} className="rounded-xl font-medium py-2">
+                            {pm.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 pt-2 pb-2 mt-4">

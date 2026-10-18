@@ -162,10 +162,11 @@ export class ClientService {
     allClientNotes.forEach(note => {
       if (note.text.includes("Falta Automática")) return;
       if (eventsByClient.has(note.client_id)) {
+        const isReagendamento = note.text.includes("Reagendamento");
         eventsByClient.get(note.client_id)!.push({
           type: "CLIENT_NOTE",
           date: note.date,
-          title: "Anotação Adicionada",
+          title: isReagendamento ? "Horário Reagendado" : "Anotação Adicionada",
           details: note.text
         });
       }
