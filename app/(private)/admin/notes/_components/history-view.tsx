@@ -1,7 +1,17 @@
 "use client";
 
-import { ChevronLeft, Folder, ChevronRight, LoaderDots } from "@boxicons/react";
+import { useRef } from "react";
+import { ChevronLeft, Folder, LoaderDots } from "@boxicons/react";
 import { Button } from "@/components/ui/button";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { HistoryLog, Note } from "./history-log";
 
 interface HistoryViewProps {
@@ -9,6 +19,7 @@ interface HistoryViewProps {
   notes: Note[];
   page: number;
   totalPages: number;
+  total?: number;
   isLoading?: boolean;
   onPageChange: (page: number) => void;
   onBack: () => void;
@@ -19,10 +30,18 @@ export function HistoryView({
   notes,
   page,
   totalPages,
+  total,
   isLoading,
   onPageChange,
   onBack,
 }: HistoryViewProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handlePageSelect = (newPage: number) => {
+    onPageChange(newPage);
+    containerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   // 1. Agrupar as notas por data (YYYY-MM-DD)
   const groupedNotes = notes.reduce(
     (acc, note) => {
@@ -84,14 +103,14 @@ export function HistoryView({
               {clientName}
             </h1>
             <span className="text-[11px] text-muted-foreground mt-1 tracking-wide">
-              Histórico de Ações
+              Histórico de Ações {total ? `• ${total} registros` : ""}
             </span>
           </div>
         </div>
       </header>
 
       {/* Container das Notas */}
-      <div className="flex-1 p-4 md:p-6 pb-28 max-w-400 mx-auto w-full overflow-y-auto">
+      <div ref={containerRef} className="flex-1 p-4 md:p-6 pb-28 max-w-400 mx-auto w-full overflow-y-auto">
         <div className="flex flex-col gap-6">
           {isLoading ? (
             <div className="flex justify-center py-20">
@@ -134,28 +153,56 @@ export function HistoryView({
           )}
         </div>
         
-        {/* Paginação */}
-        {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-4 mt-8 pt-6 border-t">
-            <Button
-              variant="outline"
-              size="icon"
-              disabled={page <= 1 || isLoading}
-              onClick={() => onPageChange(page - 1)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm font-medium text-muted-foreground">
-              Página {page} de {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="icon"
-              disabled={page >= totalPages || isLoading}
-              onClick={() => onPageChange(page + 1)}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+        {/* Paginação Padrão do Sistema */}
+        {!isLoading && totalPages > 1 && (
+          <div className="pt-6 mt-8 border-t border-border/50">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => handlePageSelect(Math.max(1, page - 1))}
+                    className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
+                  if (
+                    p === 1 ||
+                    p === totalPages ||
+                    (p >= page - 1 && p <= page + 1)
+                  ) {
+                    return (
+                      <PaginationItem key={p}>
+                        <PaginationLink
+                          onClick={() => handlePageSelect(p)}
+                          isActive={page === p}
+                          className="cursor-pointer"
+                        >
+                          {p}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  }
+
+                  if (p === page - 2 || p === page + 2) {
+                    return (
+                      <PaginationItem key={p}>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    );
+                  }
+
+                  return null;
+                })}
+
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => handlePageSelect(Math.min(totalPages, page + 1))}
+                    className={page === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
           </div>
         )}
       </div>

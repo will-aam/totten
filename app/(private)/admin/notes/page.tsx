@@ -22,7 +22,7 @@ export default function AdminHistoryPage() {
   
   // Pagination state for history
   const [page, setPage] = useState(1);
-  const limit = 20;
+  const limit = 15;
 
   const shouldSearch = debouncedSearch.trim().length >= 2;
 
@@ -38,12 +38,20 @@ export default function AdminHistoryPage() {
   const displayClients = clientsResponse?.data || [];
 
   // 2. Busca o histórico do cliente selecionado via API Route (SWR)
-  const { data: historyResponse, isLoading: isLoadingHistory } = useSWR<{ data: Note[], totalPages: number, page: number }>(
-    selectedClient ? `admin/notes?clientId=${selectedClient.id}&page=${page}&limit=${limit}` : null,
+  const { data: historyResponse, isLoading: isLoadingHistory } = useSWR<{
+    data: Note[];
+    totalPages: number;
+    page: number;
+    total: number;
+  }>(
+    selectedClient
+      ? `admin/notes?clientId=${selectedClient.id}&page=${page}&limit=${limit}`
+      : null,
     apiClient,
   );
   const clientHistory = historyResponse?.data || [];
   const totalPages = historyResponse?.totalPages || 1;
+  const totalNotes = historyResponse?.total;
 
   // --- VISÃO 1: Lista e Pesquisa ---
   if (!selectedClient) {
@@ -71,6 +79,7 @@ export default function AdminHistoryPage() {
       notes={clientHistory}
       page={page}
       totalPages={totalPages}
+      total={totalNotes}
       isLoading={isLoadingHistory}
       onPageChange={setPage}
       onBack={() => {

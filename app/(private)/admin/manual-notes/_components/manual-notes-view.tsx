@@ -1,9 +1,16 @@
-"use client";
-
 import { useState, useRef, useEffect } from "react";
-import { ChevronLeft, Folder, ChevronRight, LoaderDots, Send } from "@boxicons/react";
+import { ChevronLeft, Folder, LoaderDots, Send } from "@boxicons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { ManualNotesBubble, ManualNote } from "./manual-notes-bubble";
 import { createManualNote, deleteManualNote } from "@/app/actions/manual-notes";
 import { toast } from "sonner";
@@ -152,28 +159,56 @@ export function ManualNotesView({
       {/* Container das Notas */}
       <div className="flex-1 p-4 md:p-6 pb-28 max-w-400 mx-auto w-full flex flex-col justify-end overflow-y-auto">
 
-        {/* Paginação (No topo porque é um chat, os antigos ficam pra cima) */}
-        {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-4 mb-6">
-            <Button
-              variant="outline"
-              size="icon"
-              disabled={page >= totalPages || isLoading}
-              onClick={() => onPageChange(page + 1)} // Antigos -> + página
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">
-              Página {page} de {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="icon"
-              disabled={page <= 1 || isLoading}
-              onClick={() => onPageChange(page - 1)} // Novos -> - página
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+        {/* Paginação Padrão */}
+        {!isLoading && totalPages > 1 && (
+          <div className="mb-6">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => onPageChange(Math.max(1, page - 1))}
+                    className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
+                  if (
+                    p === 1 ||
+                    p === totalPages ||
+                    (p >= page - 1 && p <= page + 1)
+                  ) {
+                    return (
+                      <PaginationItem key={p}>
+                        <PaginationLink
+                          onClick={() => onPageChange(p)}
+                          isActive={page === p}
+                          className="cursor-pointer"
+                        >
+                          {p}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  }
+
+                  if (p === page - 2 || p === page + 2) {
+                    return (
+                      <PaginationItem key={p}>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    );
+                  }
+
+                  return null;
+                })}
+
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+                    className={page === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
           </div>
         )}
 
