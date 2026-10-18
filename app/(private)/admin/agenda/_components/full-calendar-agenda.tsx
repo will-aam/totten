@@ -136,6 +136,7 @@ export function FullCalendarAgenda({
    const allEvents = [...events, ...backgroundEvents];
 
    const isUpdatingAppointmentRef = useRef(false);
+   const lastCardMoveTimesRef = useRef<Map<string, number>>(new Map());
 
    const handleEventDrop = async (info: any) => {
       const { event, oldEvent, revert } = info;
@@ -148,7 +149,17 @@ export function FullCalendarAgenda({
          return;
       }
 
-      // 2. Se soltou no mesmo milissegundo de horário, ignora a requisição
+      // 2. Trava de Cooldown por Card (evita duplo clique ou arraste afobado)
+      const lastMove = lastCardMoveTimesRef.current.get(appt.id) || 0;
+      const now = Date.now();
+      if (now - lastMove < 2500) {
+         const waitSec = Math.ceil((2500 - (now - lastMove)) / 1000);
+         toast.error(`Aguarde ${waitSec}s para mover este agendamento novamente.`);
+         revert();
+         return;
+      }
+
+      // 3. Se soltou no mesmo milissegundo de horário, ignora a requisição
       if (oldEvent?.start && event.start && oldEvent.start.getTime() === event.start.getTime()) {
          return;
       }
@@ -212,6 +223,7 @@ export function FullCalendarAgenda({
          const result = await updateAppointmentDateTime(appt.id, newDateIso);
 
          if (result.success) {
+            lastCardMoveTimesRef.current.set(appt.id, Date.now());
             toast.success(`Reagendado para ${formattedDateTime} com sucesso!`);
             onRefresh();
          } else {

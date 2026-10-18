@@ -12,6 +12,10 @@ import { revalidatePath } from "next/cache";
 import { generateRecurrentDates } from "@/lib/date-utils";
 import { randomUUID } from "crypto";
 import { triggerZibeeSyncById } from "@/lib/server/integrations/zibee.service";
+import {
+  checkAppointmentThrottle,
+  recordAppointmentMove,
+} from "@/lib/server/security/appointment-throttle";
 
 /**
  * Limpa todos os agendamentos do dia atual para a organização.
@@ -656,6 +660,16 @@ export async function updateAppointmentDateTime(
 ) {
   try {
     const admin = await requireAuth();
+
+    // 🛡️ Trava de Segurança & Rate Limit Multi-Camada (Anti-Bot / Anti-Spam / Anti-Afobado)
+    const throttle = checkAppointmentThrottle(admin.id, id);
+    if (!throttle.allowed) {
+      return {
+        success: false,
+        error: throttle.reason,
+      };
+    }
+
     const prisma = getTenantPrisma(admin.organizationId);
 
     const apptToMove = await prisma.appointment.findUnique({
@@ -748,16 +762,43 @@ export async function updateAppointmentDateTime(
       });
 
       if (apptToMove.client_id) {
-        await tx.clientNote.create({
-          data: {
-            text: logText,
+        // Consolidação Inteligente de Logs:
+        // Se já houver um registro de reagendamento para este mesmo agendamento nos últimos 15 minutos,
+        // apenas atualizamos o texto em vez de criar dezenas de linhas poluindo o banco.
+        const fifteenMinutesAgo = new Date(now.getTime() - 15 * 60 * 1000);
+        const recentNote = await tx.clientNote.findFirst({
+          where: {
             client_id: apptToMove.client_id,
             organization_id: admin.organizationId,
-            date: now,
+            date: { gte: fifteenMinutesAgo },
+            text: { startsWith: `Ação: Reagendamento de ${serviceName}` },
           },
+          orderBy: { date: "desc" },
         });
+
+        if (recentNote) {
+          await tx.clientNote.update({
+            where: { id: recentNote.id },
+            data: {
+              text: logText,
+              date: now,
+            },
+          });
+        } else {
+          await tx.clientNote.create({
+            data: {
+              text: logText,
+              client_id: apptToMove.client_id,
+              organization_id: admin.organizationId,
+              date: now,
+            },
+          });
+        }
       }
     });
+
+    // Registra a movimentação no monitor de segurança em memória
+    recordAppointmentMove(admin.id, id);
 
     revalidatePath("/admin/agenda");
     revalidatePath("/admin/clients");
