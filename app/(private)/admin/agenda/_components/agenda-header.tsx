@@ -4,7 +4,7 @@ import { ReactNode } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useSidebar } from "@/components/ui/sidebar";
-import { MenuLeft, CheckShield, ChevronDown, Slider, InfoCircle, CalendarAlt } from "@boxicons/react";
+import { MenuLeft, CheckShield, ChevronDown, Slider, InfoCircle, CalendarAlt, Lock, LockOpen } from "@boxicons/react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -23,6 +23,84 @@ import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+
+/* ── Legenda de cores – dados ─────────────────────────────────── */
+
+interface LegendItem {
+  color: string;
+  label: string;
+  tag: string;
+  description: string;
+}
+
+const MOVABLE_ITEMS: LegendItem[] = [
+  {
+    color: "bg-amber-500",
+    label: "Avulso Pendente",
+    tag: "Amarelo",
+    description: "Agendamento avulso sem vínculo com pacote. Ainda não fez check-in.",
+  },
+  {
+    color: "bg-teal-500",
+    label: "Pacote Pendente",
+    tag: "Verde Água",
+    description: "Agendamento de pacote ou retorno. Ainda não fez check-in.",
+  },
+  {
+    color: "bg-pink-500",
+    label: "Falta",
+    tag: "Rosa",
+    description: "O cliente faltou ao atendimento agendado.",
+  },
+];
+
+const LOCKED_ITEMS: LegendItem[] = [
+  {
+    color: "bg-blue-500",
+    label: "Realizado",
+    tag: "Azul",
+    description: "O atendimento foi finalizado. Altere o status para poder reagendar.",
+  },
+  {
+    color: "bg-purple-500",
+    label: "Check-in Realizado",
+    tag: "Roxo",
+    description: "O cliente já fez check-in presencial e aguarda atendimento.",
+  },
+  {
+    color: "bg-slate-400 dark:bg-slate-500",
+    label: "Cancelado",
+    tag: "Cinza",
+    description: "O agendamento foi cancelado amigavelmente.",
+  },
+  {
+    color: "bg-red-500",
+    label: "Inativo",
+    tag: "Vermelho",
+    description: "Pacote encerrado ou cancelado. Agendamento inativo.",
+  },
+];
+
+function LegendRow({ item }: { item: LegendItem }) {
+  return (
+    <div className="flex items-center gap-3 py-2.5">
+      <span className={cn("w-3 h-3 rounded-full shrink-0 ring-2 ring-offset-2 ring-offset-background", item.color, item.color.replace("bg-", "ring-"))} />
+      <div className="min-w-0">
+        <p className="text-[13px] font-semibold text-foreground leading-tight">
+          {item.label}
+          <span className="ml-1.5 text-[11px] font-normal text-muted-foreground">
+            {item.tag}
+          </span>
+        </p>
+        <p className="text-[11px] text-muted-foreground/80 leading-snug mt-0.5">
+          {item.description}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ── Header Props ─────────────────────────────────────────────── */
 
 interface AgendaHeaderProps {
   selectedDate: Date;
@@ -114,6 +192,7 @@ export function AgendaHeader({
           {filtersNode}
         </div>
 
+        {/* ── Legenda de Cores (Sheet) ────────────────────────── */}
         <Sheet>
           <SheetTrigger asChild>
             <Button
@@ -125,122 +204,67 @@ export function AgendaHeader({
             </Button>
           </SheetTrigger>
           <SheetContent className="flex flex-col h-[100dvh] w-full p-0 sm:max-w-md border-l-0 sm:border-l shadow-2xl overflow-hidden z-[100]">
-            <SheetHeader className="px-6 py-6 border-b shrink-0 flex-row items-center justify-between text-left space-y-0">
-              <div className="space-y-1.5">
-                <SheetTitle className="text-xl font-black">Legenda de Cores</SheetTitle>
-                <SheetDescription className="font-medium text-xs">
-                  Entenda o significado de cada cor nos cards da sua agenda.
+            <SheetHeader className="px-6 pt-6 pb-5 border-b shrink-0 flex-row items-center justify-between text-left space-y-0">
+              <div className="space-y-1">
+                <SheetTitle className="text-lg font-extrabold tracking-tight">
+                  Legenda de Cores
+                </SheetTitle>
+                <SheetDescription className="font-medium text-xs text-muted-foreground">
+                  Significado de cada cor nos cards da agenda.
                 </SheetDescription>
               </div>
             </SheetHeader>
-            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 custom-scrollbar pb-10">
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-blue-500 shadow-sm"></div>
-                <div>
-                  <h4 className="font-semibold text-sm text-foreground">Azul (Realizado)</h4>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    O atendimento foi finalizado com sucesso. 
-                    <strong className="block mt-1 text-foreground/80 font-bold">
-                      🔒 Fixo na agenda: não pode ser arrastado (altere o status antes se precisar reagendar).
-                    </strong>
-                  </p>
-                </div>
-              </div>
 
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-purple-500 shadow-sm"></div>
-                <div>
-                  <h4 className="font-semibold text-sm text-foreground">Roxo (Check-in Realizado)</h4>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    O cliente já fez check-in presencial no totem e aguarda atendimento.
-                    <strong className="block mt-1 text-foreground/80 font-bold">
-                      🔒 Fixo na agenda: não pode ser arrastado para preservar o horário do check-in.
-                    </strong>
-                  </p>
-                </div>
-              </div>
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6 custom-scrollbar pb-10">
 
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-amber-500 shadow-sm"></div>
-                <div>
-                  <h4 className="font-semibold text-sm text-foreground">Amarelo (Avulso Pendente)</h4>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Agendamento sem vínculo com pacote. O Cliente ainda não fez check-in.
-                    <span className="block mt-1 text-primary font-bold">
-                      ✨ Pode ser arrastado livremente para reagendar data e horário.
-                    </span>
-                  </p>
+              {/* ── Seção: Reagendável ──────────────────────────── */}
+              <section>
+                <div className="flex items-center gap-2 mb-1">
+                  <LockOpen className="h-3.5 w-3.5 text-primary" />
+                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-primary">
+                    Reagendável
+                  </h3>
                 </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-teal-500 shadow-sm"></div>
-                <div>
-                  <h4 className="font-semibold text-sm text-foreground">Verde Água (Pacote Pendente)</h4>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Agendamento de pacote ou retorno. O Cliente ainda não fez check-in.
-                    <span className="block mt-1 text-primary font-bold">
-                      ✨ Pode ser arrastado livremente para reagendar data e horário.
-                    </span>
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-pink-500 shadow-sm"></div>
-                <div>
-                  <h4 className="font-semibold text-sm text-foreground">Rosa (Falta)</h4>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    O cliente faltou ao atendimento agendado.
-                    <span className="block mt-1 text-primary font-bold">
-                      ✨ Pode ser arrastado para reagendar a falta para um novo dia e horário.
-                    </span>
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-slate-400 shadow-sm dark:bg-slate-500 opacity-80"></div>
-                <div>
-                  <h4 className="font-semibold text-sm text-foreground">Cinza (Cancelado)</h4>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    O agendamento foi cancelado amigavelmente.
-                    <strong className="block mt-1 text-foreground/80 font-bold">
-                      🔒 Fixo na agenda: não pode ser arrastado.
-                    </strong>
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 rounded mt-0.5 shrink-0 bg-red-500 shadow-sm relative overflow-hidden">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-full h-px bg-white/60 rotate-45"></div>
-                  </div>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-sm text-foreground">Vermelho (Inativo)</h4>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Agendamento atrelado a um pacote que acabou ou foi cancelado.
-                    <strong className="block mt-1 text-foreground/80 font-bold">
-                      🔒 Fixo na agenda: não pode ser arrastado.
-                    </strong>
-                  </p>
-                </div>
-              </div>
-
-              {/* Bloco Explicativo de Reagendamento */}
-              <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 space-y-2 mt-4">
-                <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-wider">
-                  <CalendarAlt className="h-4 w-4" /> Arrastar e Soltar (Reagendamento)
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Ao arrastar um card pendente ou falta para outro dia/horário, tanto a data quanto o horário no banco de dados são atualizados imediatamente para o novo momento escolhido.
+                <p className="text-[11px] text-muted-foreground/70 mb-3">
+                  Pode ser arrastado para outro dia e horário.
                 </p>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Um registro detalhado de auditoria contendo a data/horário anterior e a nova data/horário é automaticamente salvo no histórico da ficha do cliente.
+                <div className="rounded-xl border border-border/60 bg-muted/20 divide-y divide-border/40 px-3.5">
+                  {MOVABLE_ITEMS.map((item) => (
+                    <LegendRow key={item.tag} item={item} />
+                  ))}
+                </div>
+              </section>
+
+              {/* ── Seção: Fixo na agenda ───────────────────────── */}
+              <section>
+                <div className="flex items-center gap-2 mb-1">
+                  <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Fixo na agenda
+                  </h3>
+                </div>
+                <p className="text-[11px] text-muted-foreground/70 mb-3">
+                  Não pode ser arrastado. Altere o status antes de reagendar.
                 </p>
-              </div>
+                <div className="rounded-xl border border-border/60 bg-muted/20 divide-y divide-border/40 px-3.5">
+                  {LOCKED_ITEMS.map((item) => (
+                    <LegendRow key={item.tag} item={item} />
+                  ))}
+                </div>
+              </section>
+
+              {/* ── Nota: Reagendamento ─────────────────────────── */}
+              <section className="rounded-xl border border-border/50 bg-muted/10 p-4 space-y-2">
+                <div className="flex items-center gap-2">
+                  <CalendarAlt className="h-3.5 w-3.5 text-foreground/70" />
+                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-foreground/70">
+                    Arrastar e Soltar
+                  </h3>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Ao arrastar um card, a data e o horário são atualizados imediatamente. Um registro de auditoria com o horário anterior e o novo é salvo automaticamente no histórico do cliente.
+                </p>
+              </section>
             </div>
           </SheetContent>
         </Sheet>
