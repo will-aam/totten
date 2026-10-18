@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { LoaderDots } from "@boxicons/react";
 
 export default function HistoryLayout({
   children,
@@ -27,20 +26,11 @@ export default function HistoryLayout({
     }
   }, [session, status, router]);
 
-  // Exibe um estado de carregamento enquanto valida a sessão para evitar "flashes" de conteúdo
-  if (status === "loading") {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <LoaderDots className="h-8 w-8 text-primary animate-spin" />
-      </div>
-    );
-  }
-
   // Verificação de segurança final antes da renderização
   const isOwner = session?.user?.role === "OWNER";
   const hasHistoryPermission = session?.user?.permissions?.includes("HISTORY");
 
-  if (!isOwner && !hasHistoryPermission) {
+  if (status !== "loading" && !isOwner && !hasHistoryPermission) {
     return null; // O useEffect cuidará do redirecionamento
   }
 

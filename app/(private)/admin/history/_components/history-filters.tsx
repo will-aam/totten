@@ -56,7 +56,7 @@ export function HistoryFilters({
   };
 
   return (
-    <div className="flex flex-col gap-4 w-full animate-in fade-in slide-in-from-top-2 duration-500">
+    <div className="flex flex-col gap-4 w-full">
       {/* Atalhos Rápidos (Mês Atual / Mês Passado) */}
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mr-2">
