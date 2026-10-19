@@ -465,7 +465,7 @@ export async function processReceivablePayment(
     if (sourceType === "APPOINTMENT") {
       const appt = await prisma.appointment.findUnique({
         where: { id, organization_id: admin.organizationId },
-        include: { client: true, service: true, transaction: true },
+        include: { client: true, service: true, transactions: true },
       });
 
       if (!appt) throw new Error("Agendamento não encontrado.");
@@ -485,7 +485,9 @@ export async function processReceivablePayment(
           },
         });
 
-        if (!appt.transaction) {
+        const revenueTx = appt.transactions.find((t) => t.type === "RECEITA");
+
+        if (!revenueTx) {
           const newTx = await tx.transaction.create({
             data: {
               type: "RECEITA",
@@ -503,14 +505,14 @@ export async function processReceivablePayment(
           txIdToSync = newTx.id;
         } else {
           await tx.transaction.update({
-            where: { id: appt.transaction.id },
+            where: { id: revenueTx.id },
             data: {
               status: "PAGO",
               payment_method_id: paymentMethodId || null,
               admin_id: admin.id,
             },
           });
-          txIdToSync = appt.transaction.id;
+          txIdToSync = revenueTx.id;
         }
       });
 
@@ -562,7 +564,7 @@ export async function processAllReceivablesPayment(
       include: {
         client: true,
         service: true,
-        transaction: true,
+        transactions: true,
       },
     });
 
@@ -595,7 +597,9 @@ export async function processAllReceivablesPayment(
         const apptPrice = appt.snapshot_service_price ?? appt.service.price;
         const apptName = appt.snapshot_service_name ?? appt.service.name;
 
-        if (!appt.transaction) {
+        const revenueTx = appt.transactions.find((t) => t.type === "RECEITA");
+
+        if (!revenueTx) {
           const newTx = await tx.transaction.create({
             data: {
               type: "RECEITA",
@@ -613,14 +617,14 @@ export async function processAllReceivablesPayment(
           createdOrUpdatedTxIds.push(newTx.id);
         } else {
           await tx.transaction.update({
-            where: { id: appt.transaction.id },
+            where: { id: revenueTx.id },
             data: {
               status: "PAGO",
               payment_method_id: paymentMethodId || null,
               admin_id: admin.id,
             },
           });
-          createdOrUpdatedTxIds.push(appt.transaction.id);
+          createdOrUpdatedTxIds.push(revenueTx.id);
         }
       }
 

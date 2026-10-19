@@ -402,7 +402,7 @@ model Appointment {
   professional Admin?       @relation("ProfessionalToAppointment", fields: [professional_id], references: [id])
   service      Service      @relation(fields: [service_id], references: [id])
   check_in     CheckIn?
-  transaction  Transaction?
+  transactions Transaction[]
 
   @@index([organization_id, date_time])
   @@index([client_id, date_time])
@@ -476,7 +476,7 @@ model Transaction {
   status            TransactionStatus          @default(PAGO)
   client_id         String?
   payment_method_id String?
-  appointment_id    String?                    @unique
+  appointment_id    String?
   package_id        String?
   organization_id   String
   created_at        DateTime                   @default(now())
@@ -495,6 +495,7 @@ model Transaction {
 
   @@index([organization_id, date])
   @@index([recurrence_id])
+  @@index([appointment_id])
   @@map("transactions")
 }
 
