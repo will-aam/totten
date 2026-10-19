@@ -271,9 +271,13 @@ export async function getFullTransactions(month: number, year: number) {
         id: true,
         date_time: true,
         payment_method: true,
+        package_id: true,
+        snapshot_service_name: true,
+        snapshot_service_price: true,
         client: { select: { name: true } },
         service: { select: { name: true, price: true, material_cost: true } },
-        professional: { select: { display_name: true } }, //  RASTREABILIDADE
+        professional: { select: { display_name: true } },
+        transactions: { select: { id: true, type: true } },
       },
     });
 
@@ -296,11 +300,23 @@ export async function getFullTransactions(month: number, year: number) {
         stock_item_id: true,
         client: { select: { name: true } },
         payment_method: { select: { type: true } },
-        admin: { select: { display_name: true } }, //  RASTREABILIDADE
+        admin: { select: { display_name: true } },
+        appointment: {
+          select: {
+            client: { select: { name: true } },
+            payment_method: true,
+            professional: { select: { display_name: true } },
+          },
+        },
       },
     });
 
-    const historyFromAppts = appointments.flatMap((a) => {
+    // Apenas atendimentos legados avulsos pagos sem transação vinculada no banco
+    const legacyAppts = appointments.filter(
+      (a) => !a.package_id && a.payment_method && a.transactions.length === 0,
+    );
+
+    const historyFromAppts = legacyAppts.flatMap((a) => {
       const items = [];
 
       items.push({
@@ -308,13 +324,13 @@ export async function getFullTransactions(month: number, year: number) {
         originalId: a.id,
         isManual: false,
         type: "RECEITA" as const,
-        description: a.service.name,
-        amount: Number(a.service.price),
+        description: a.snapshot_service_name || a.service.name,
+        amount: Number(a.snapshot_service_price ?? a.service.price),
         date: a.date_time.toISOString(),
-        status: (a.payment_method ? "PAGO" : "PENDENTE") as "PAGO" | "PENDENTE",
+        status: "PAGO" as const,
         clientName: a.client.name,
         paymentMethod: a.payment_method || undefined,
-        professionalName: a.professional?.display_name || undefined, //
+        professionalName: a.professional?.display_name || undefined,
       });
 
       if (a.service.material_cost && Number(a.service.material_cost) > 0) {
@@ -328,7 +344,7 @@ export async function getFullTransactions(month: number, year: number) {
           date: a.date_time.toISOString(),
           status: "PAGO" as const,
           clientName: a.client.name,
-          professionalName: undefined, // Custo de insumo é automático
+          professionalName: undefined,
         });
       }
       return items;
@@ -345,14 +361,14 @@ export async function getFullTransactions(month: number, year: number) {
         amount: Number(t.amount),
         date: t.date.toISOString(),
         status: t.status,
-        clientName: t.client?.name,
-        paymentMethod: t.payment_method?.type || undefined,
+        clientName: t.client?.name || t.appointment?.client?.name || undefined,
+        paymentMethod: t.payment_method?.type || t.appointment?.payment_method || undefined,
         recurrence_id: t.recurrence_id,
         installment: t.installment,
         package_id: t.package_id || undefined,
         appointment_id: t.appointment_id || undefined,
         stock_item_id: t.stock_item_id || undefined,
-        professionalName: t.admin?.display_name || undefined, //
+        professionalName: t.admin?.display_name || t.appointment?.professional?.display_name || undefined,
       };
     });
 
@@ -722,9 +738,13 @@ export async function getPaginatedTransactions(params: {
           id: true,
           date_time: true,
           payment_method: true,
+          package_id: true,
+          snapshot_service_name: true,
+          snapshot_service_price: true,
           client: { select: { name: true } },
           service: { select: { name: true, price: true, material_cost: true } },
-          professional: { select: { display_name: true } }, //
+          professional: { select: { display_name: true } },
+          transactions: { select: { id: true, type: true } },
         },
       }),
       prisma.transaction.findMany({
@@ -744,54 +764,39 @@ export async function getPaginatedTransactions(params: {
           package: { select: { id: true, name: true } },
           client: { select: { name: true } },
           payment_method: { select: { type: true } },
-          admin: { select: { display_name: true } }, //
+          admin: { select: { display_name: true } },
+          appointment: {
+            select: {
+              client: { select: { name: true } },
+              payment_method: true,
+              professional: { select: { display_name: true } },
+            },
+          },
         },
       }),
     ]);
 
-    // Mesclando os dados com segurança
-    const historyFromAppts = rawAppts.flatMap((a) => {
-      const items = [];
+    // Apenas atendimentos legados avulsos pagos sem transação vinculada no banco
+    const legacyAppts = rawAppts.filter(
+      (a) => !a.package_id && a.payment_method && a.transactions.length === 0,
+    );
 
-      // Receita
-      if (params.type !== "DESPESA") {
-        items.push({
-          id: `rec_${a.id}`,
-          originalId: a.id,
-          isManual: false,
-          type: "RECEITA" as const,
-          description: a.service.name,
-          amount: Number(a.service.price),
-          date: a.date_time.toISOString(),
-          status: (a.payment_method ? "PAGO" : "PENDENTE") as
-            | "PAGO"
-            | "PENDENTE",
-          clientName: a.client.name,
-          paymentMethod: a.payment_method || undefined,
-          professionalName: a.professional?.display_name || undefined, //
-        });
-      }
-
-      // Despesa (Insumos)
-      if (
-        params.type !== "RECEITA" &&
-        a.service.material_cost &&
-        Number(a.service.material_cost) > 0
-      ) {
-        items.push({
-          id: `custo_${a.id}`,
-          originalId: a.id,
-          isManual: false,
-          type: "DESPESA" as const,
-          description: `Insumos: ${a.service.name}`,
-          amount: Number(a.service.material_cost),
-          date: a.date_time.toISOString(),
-          status: "PAGO" as const,
-          clientName: a.client.name,
-        });
-      }
-      return items;
-    });
+    const historyFromAppts =
+      params.type === "DESPESA"
+        ? []
+        : legacyAppts.map((a) => ({
+            id: `rec_${a.id}`,
+            originalId: a.id,
+            isManual: false,
+            type: "RECEITA" as const,
+            description: a.snapshot_service_name || a.service.name,
+            amount: Number(a.snapshot_service_price ?? a.service.price),
+            date: a.date_time.toISOString(),
+            status: "PAGO" as const,
+            clientName: a.client.name,
+            paymentMethod: a.payment_method || undefined,
+            professionalName: a.professional?.display_name || undefined,
+          }));
 
     const historyFromTx = rawTxs.map((t) => {
       const isManual = !t.package_id && !t.appointment_id && !t.stock_item_id;
@@ -804,15 +809,19 @@ export async function getPaginatedTransactions(params: {
         amount: Number(t.amount),
         date: t.date.toISOString(),
         status: t.status,
-        clientName: t.client?.name,
-        paymentMethod: t.payment_method?.type || undefined,
+        clientName: t.client?.name || t.appointment?.client?.name || undefined,
+        paymentMethod:
+          t.payment_method?.type || t.appointment?.payment_method || undefined,
         recurrence_id: t.recurrence_id,
         installment: t.installment,
         package_id: t.package_id || undefined,
         packageName: t.package?.name || undefined,
         appointment_id: t.appointment_id || undefined,
         stock_item_id: t.stock_item_id || undefined,
-        professionalName: t.admin?.display_name || undefined, //
+        professionalName:
+          t.admin?.display_name ||
+          t.appointment?.professional?.display_name ||
+          undefined,
       };
     });
 

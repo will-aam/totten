@@ -19,10 +19,10 @@ export async function getReportsData() {
         status: "REALIZADO",
         date_time: { gte: sixMonthsAgo },
       },
-      include: { service: true },
+      include: { service: true, transactions: true },
     });
 
-    const manualTransactions = await prisma.transaction.findMany({
+    const paidTransactions = await prisma.transaction.findMany({
       where: {
         organization_id: organizationId,
         status: "PAGO",
@@ -64,14 +64,17 @@ export async function getReportsData() {
       const key = `${d.getFullYear()}-${d.getMonth()}`;
       if (monthlyDataMap.has(key)) {
         const entry = monthlyDataMap.get(key);
-        entry.agendamentos += 1; // Conta 1 agendamento
-        if (a.payment_method) entry.receitas += Number(a.service.price);
-        if (a.service.material_cost)
-          entry.despesas += Number(a.service.material_cost);
+        entry.agendamentos += 1; // Conta 1 agendamento realizado
+
+        // Apenas contabiliza se for um agendamento legado avulso pago que não possui registro em Transaction
+        const hasRevenueTx = a.transactions?.some((t) => t.type === "RECEITA");
+        if (!hasRevenueTx && !a.package_id && a.payment_method) {
+          entry.receitas += Number(a.snapshot_service_price ?? a.service.price);
+        }
       }
     });
 
-    manualTransactions.forEach((t) => {
+    paidTransactions.forEach((t) => {
       const d = new Date(t.date);
       const key = `${d.getFullYear()}-${d.getMonth()}`;
       if (monthlyDataMap.has(key)) {
@@ -83,13 +86,19 @@ export async function getReportsData() {
 
     const serviceMap = new Map();
     appointments.forEach((a) => {
-      const sName = a.service.name;
+      const sName = a.snapshot_service_name || a.service.name;
       if (!serviceMap.has(sName)) {
         serviceMap.set(sName, { name: sName, faturamento: 0, sessoes: 0 });
       }
       const sData = serviceMap.get(sName);
       sData.sessoes += 1;
-      if (a.payment_method) sData.faturamento += Number(a.service.price);
+
+      const revenueTx = a.transactions?.find((t) => t.type === "RECEITA" && t.status === "PAGO");
+      if (revenueTx) {
+        sData.faturamento += Number(revenueTx.amount);
+      } else if (!a.package_id && a.payment_method) {
+        sData.faturamento += Number(a.snapshot_service_price ?? a.service.price);
+      }
     });
 
     const topServices = Array.from(serviceMap.values())
@@ -212,7 +221,7 @@ export async function sendMonthlyReport(
         status: "REALIZADO",
         date_time: { gte: monthStart, lte: monthEnd },
       },
-      include: { service: true },
+      include: { service: true, transactions: true },
     });
 
     const transactions = await prisma.transaction.findMany({
@@ -228,14 +237,18 @@ export async function sendMonthlyReport(
     let despesas = 0;
     const agendamentos = appointments.length;
 
-    appointments.forEach((a) => {
-      if (a.payment_method) receitas += Number(a.service.price);
-      if (a.service.material_cost) despesas += Number(a.service.material_cost);
-    });
-
+    // Transações registradas no caixa (Fonte da Verdade)
     transactions.forEach((t) => {
       if (t.type === "RECEITA") receitas += Number(t.amount);
       if (t.type === "DESPESA") despesas += Number(t.amount);
+    });
+
+    // Atendimentos legados avulsos pagos sem transação vinculada no banco
+    appointments.forEach((a) => {
+      const hasRevenueTx = a.transactions?.some((t) => t.type === "RECEITA");
+      if (!hasRevenueTx && !a.package_id && a.payment_method) {
+        receitas += Number(a.snapshot_service_price ?? a.service.price);
+      }
     });
 
     const saldo = receitas - despesas;
