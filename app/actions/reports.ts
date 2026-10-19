@@ -65,12 +65,6 @@ export async function getReportsData() {
       if (monthlyDataMap.has(key)) {
         const entry = monthlyDataMap.get(key);
         entry.agendamentos += 1; // Conta 1 agendamento realizado
-
-        // Apenas contabiliza se for um agendamento legado avulso pago que não possui registro em Transaction
-        const hasRevenueTx = a.transactions?.some((t) => t.type === "RECEITA");
-        if (!hasRevenueTx && !a.package_id && a.payment_method) {
-          entry.receitas += Number(a.snapshot_service_price ?? a.service.price);
-        }
       }
     });
 
@@ -96,8 +90,6 @@ export async function getReportsData() {
       const revenueTx = a.transactions?.find((t) => t.type === "RECEITA" && t.status === "PAGO");
       if (revenueTx) {
         sData.faturamento += Number(revenueTx.amount);
-      } else if (!a.package_id && a.payment_method) {
-        sData.faturamento += Number(a.snapshot_service_price ?? a.service.price);
       }
     });
 
@@ -241,14 +233,6 @@ export async function sendMonthlyReport(
     transactions.forEach((t) => {
       if (t.type === "RECEITA") receitas += Number(t.amount);
       if (t.type === "DESPESA") despesas += Number(t.amount);
-    });
-
-    // Atendimentos legados avulsos pagos sem transação vinculada no banco
-    appointments.forEach((a) => {
-      const hasRevenueTx = a.transactions?.some((t) => t.type === "RECEITA");
-      if (!hasRevenueTx && !a.package_id && a.payment_method) {
-        receitas += Number(a.snapshot_service_price ?? a.service.price);
-      }
     });
 
     const saldo = receitas - despesas;

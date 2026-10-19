@@ -261,27 +261,7 @@ export async function getFullTransactions(month: number, year: number) {
     const monthStart = new Date(year, targetMonth, 1, 0, 0, 0);
     const monthEnd = new Date(year, targetMonth + 1, 0, 23, 59, 59, 999);
 
-    const appointments = await prisma.appointment.findMany({
-      where: {
-        organization_id: admin.organizationId,
-        status: "REALIZADO",
-        date_time: { gte: monthStart, lte: monthEnd },
-      },
-      select: {
-        id: true,
-        date_time: true,
-        payment_method: true,
-        package_id: true,
-        snapshot_service_name: true,
-        snapshot_service_price: true,
-        client: { select: { name: true } },
-        service: { select: { name: true, price: true, material_cost: true } },
-        professional: { select: { display_name: true } },
-        transactions: { select: { id: true, type: true } },
-      },
-    });
-
-    const manualTransactions = await prisma.transaction.findMany({
+    const transactions = await prisma.transaction.findMany({
       where: {
         organization_id: admin.organizationId,
         date: { gte: monthStart, lte: monthEnd },
@@ -298,6 +278,7 @@ export async function getFullTransactions(month: number, year: number) {
         package_id: true,
         appointment_id: true,
         stock_item_id: true,
+        package: { select: { id: true, name: true } },
         client: { select: { name: true } },
         payment_method: { select: { type: true } },
         admin: { select: { display_name: true } },
@@ -309,48 +290,10 @@ export async function getFullTransactions(month: number, year: number) {
           },
         },
       },
+      orderBy: { date: "desc" },
     });
 
-    // Apenas atendimentos legados avulsos pagos sem transação vinculada no banco
-    const legacyAppts = appointments.filter(
-      (a) => !a.package_id && a.payment_method && a.transactions.length === 0,
-    );
-
-    const historyFromAppts = legacyAppts.flatMap((a) => {
-      const items = [];
-
-      items.push({
-        id: `rec_${a.id}`,
-        originalId: a.id,
-        isManual: false,
-        type: "RECEITA" as const,
-        description: a.snapshot_service_name || a.service.name,
-        amount: Number(a.snapshot_service_price ?? a.service.price),
-        date: a.date_time.toISOString(),
-        status: "PAGO" as const,
-        clientName: a.client.name,
-        paymentMethod: a.payment_method || undefined,
-        professionalName: a.professional?.display_name || undefined,
-      });
-
-      if (a.service.material_cost && Number(a.service.material_cost) > 0) {
-        items.push({
-          id: `custo_${a.id}`,
-          originalId: a.id,
-          isManual: false,
-          type: "DESPESA" as const,
-          description: `Insumos: ${a.service.name}`,
-          amount: Number(a.service.material_cost),
-          date: a.date_time.toISOString(),
-          status: "PAGO" as const,
-          clientName: a.client.name,
-          professionalName: undefined,
-        });
-      }
-      return items;
-    });
-
-    const historyFromTx = manualTransactions.map((t) => {
+    return transactions.map((t) => {
       const isManual = !t.package_id && !t.appointment_id && !t.stock_item_id;
       return {
         id: t.id,
@@ -362,19 +305,20 @@ export async function getFullTransactions(month: number, year: number) {
         date: t.date.toISOString(),
         status: t.status,
         clientName: t.client?.name || t.appointment?.client?.name || undefined,
-        paymentMethod: t.payment_method?.type || t.appointment?.payment_method || undefined,
+        paymentMethod:
+          t.payment_method?.type || t.appointment?.payment_method || undefined,
         recurrence_id: t.recurrence_id,
         installment: t.installment,
         package_id: t.package_id || undefined,
+        packageName: t.package?.name || undefined,
         appointment_id: t.appointment_id || undefined,
         stock_item_id: t.stock_item_id || undefined,
-        professionalName: t.admin?.display_name || t.appointment?.professional?.display_name || undefined,
+        professionalName:
+          t.admin?.display_name ||
+          t.appointment?.professional?.display_name ||
+          undefined,
       };
     });
-
-    return [...historyFromAppts, ...historyFromTx].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-    );
   } catch (error) {
     console.error("Erro ao buscar extrato:", error);
     return [];
@@ -705,50 +649,30 @@ export async function getPaginatedTransactions(params: {
       ? undefined
       : { gte: monthStart, lte: monthEnd };
 
-    const commonApptWhere: any = {
-      organization_id: admin.organizationId,
-      status: "REALIZADO",
-    };
-    if (dateFilter) commonApptWhere.date_time = dateFilter;
-
-    const commonTxWhere: any = {
+    const where: any = {
       organization_id: admin.organizationId,
     };
-    if (dateFilter) commonTxWhere.date = dateFilter;
-    if (params.type) commonTxWhere.type = params.type;
+    if (dateFilter) where.date = dateFilter;
+    if (params.type) where.type = params.type;
 
     if (params.search) {
-      const searchLower = params.search.toLowerCase();
-
-      commonApptWhere.OR = [
-        { service: { name: { contains: searchLower, mode: "insensitive" } } },
-        { client: { name: { contains: searchLower, mode: "insensitive" } } },
-      ];
-
-      commonTxWhere.OR = [
-        { description: { contains: searchLower, mode: "insensitive" } },
-        { client: { name: { contains: searchLower, mode: "insensitive" } } },
+      const search = params.search.trim();
+      where.OR = [
+        { description: { contains: search, mode: "insensitive" } },
+        { client: { name: { contains: search, mode: "insensitive" } } },
+        { appointment: { client: { name: { contains: search, mode: "insensitive" } } } },
+        { package: { name: { contains: search, mode: "insensitive" } } },
+        { admin: { display_name: { contains: search, mode: "insensitive" } } },
       ];
     }
 
-    const [rawAppts, rawTxs] = await Promise.all([
-      prisma.appointment.findMany({
-        where: commonApptWhere,
-        select: {
-          id: true,
-          date_time: true,
-          payment_method: true,
-          package_id: true,
-          snapshot_service_name: true,
-          snapshot_service_price: true,
-          client: { select: { name: true } },
-          service: { select: { name: true, price: true, material_cost: true } },
-          professional: { select: { display_name: true } },
-          transactions: { select: { id: true, type: true } },
-        },
-      }),
+    const [total, rawTxs] = await Promise.all([
+      prisma.transaction.count({ where }),
       prisma.transaction.findMany({
-        where: commonTxWhere,
+        where,
+        skip,
+        take: params.limit,
+        orderBy: { date: "desc" },
         select: {
           id: true,
           type: true,
@@ -776,29 +700,7 @@ export async function getPaginatedTransactions(params: {
       }),
     ]);
 
-    // Apenas atendimentos legados avulsos pagos sem transação vinculada no banco
-    const legacyAppts = rawAppts.filter(
-      (a) => !a.package_id && a.payment_method && a.transactions.length === 0,
-    );
-
-    const historyFromAppts =
-      params.type === "DESPESA"
-        ? []
-        : legacyAppts.map((a) => ({
-            id: `rec_${a.id}`,
-            originalId: a.id,
-            isManual: false,
-            type: "RECEITA" as const,
-            description: a.snapshot_service_name || a.service.name,
-            amount: Number(a.snapshot_service_price ?? a.service.price),
-            date: a.date_time.toISOString(),
-            status: "PAGO" as const,
-            clientName: a.client.name,
-            paymentMethod: a.payment_method || undefined,
-            professionalName: a.professional?.display_name || undefined,
-          }));
-
-    const historyFromTx = rawTxs.map((t) => {
+    const data = rawTxs.map((t) => {
       const isManual = !t.package_id && !t.appointment_id && !t.stock_item_id;
       return {
         id: t.id,
@@ -825,17 +727,8 @@ export async function getPaginatedTransactions(params: {
       };
     });
 
-    // Une tudo e ordena
-    const allHistory = [...historyFromAppts, ...historyFromTx].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-    );
-
-    // Aplica a paginação no array final
-    const total = allHistory.length;
-    const paginatedData = allHistory.slice(skip, skip + params.limit);
-
     return {
-      data: paginatedData,
+      data,
       total,
       page: params.page,
       totalPages: Math.ceil(total / params.limit) || 1,
