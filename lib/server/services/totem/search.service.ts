@@ -162,7 +162,7 @@ const agendamentos = await prisma.appointment.findMany({
 
         await tx.appointment.update({
           where: { id: agendamento.id, organization_id: organizationId },
-          data: { status: "REALIZADO" },
+          data: { status: "REALIZADO", has_charge: false },
         });
       } else {
         await tx.appointment.update({

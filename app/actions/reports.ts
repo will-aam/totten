@@ -27,6 +27,12 @@ export async function getReportsData() {
         organization_id: organizationId,
         status: "PAGO",
         date: { gte: sixMonthsAgo },
+        NOT: {
+          type: "RECEITA",
+          appointment: {
+            package_id: { not: null },
+          },
+        },
       },
     });
 
@@ -221,6 +227,12 @@ export async function sendMonthlyReport(
         organization_id: organizationId,
         status: "PAGO",
         date: { gte: monthStart, lte: monthEnd },
+        NOT: {
+          type: "RECEITA",
+          appointment: {
+            package_id: { not: null },
+          },
+        },
       },
     });
 

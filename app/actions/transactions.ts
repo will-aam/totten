@@ -265,6 +265,12 @@ export async function getFullTransactions(month: number, year: number) {
       where: {
         organization_id: admin.organizationId,
         date: { gte: monthStart, lte: monthEnd },
+        NOT: {
+          type: "RECEITA",
+          appointment: {
+            package_id: { not: null },
+          },
+        },
       },
       select: {
         id: true,
@@ -357,6 +363,7 @@ export async function getPendingReceivables() {
         organization_id: admin.organizationId,
         status: "REALIZADO",
         payment_method: null,
+        package_id: null, // Sessões de pacote já são quitadas na venda do pacote
       },
       select: {
         id: true,
@@ -429,6 +436,13 @@ export async function processReceivablePayment(
       });
 
       if (!appt) throw new Error("Agendamento não encontrado.");
+
+      if (appt.package_id) {
+        return {
+          success: false,
+          error: "Agendamentos vinculados a pacotes já foram quitados na aquisição do pacote.",
+        };
+      }
 
       const apptPrice = appt.snapshot_service_price ?? appt.service.price;
       const apptName = appt.snapshot_service_name ?? appt.service.name;
@@ -514,12 +528,13 @@ export async function processAllReceivablesPayment(
   try {
     const admin = await requireAuth();
 
-    // 1. Busca todos os agendamentos pendentes da organização
+    // 1. Busca todos os agendamentos pendentes da organização (excluindo pacotes)
     const pendingAppointments = await prisma.appointment.findMany({
       where: {
         organization_id: admin.organizationId,
         status: "REALIZADO",
         payment_method: null,
+        package_id: null,
       },
       include: {
         client: true,
@@ -651,6 +666,12 @@ export async function getPaginatedTransactions(params: {
 
     const where: any = {
       organization_id: admin.organizationId,
+      NOT: {
+        type: "RECEITA",
+        appointment: {
+          package_id: { not: null },
+        },
+      },
     };
     if (dateFilter) where.date = dateFilter;
     if (params.type) where.type = params.type;

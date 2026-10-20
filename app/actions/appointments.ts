@@ -322,6 +322,10 @@ export async function updateAppointment(
     if (!currentAppt)
       return { success: false, error: "Agendamento não encontrado." };
 
+    if (currentAppt.package_id) {
+      finalHasCharge = false;
+    }
+
     // Se estiver recusando/cancelando uma solicitação pendente (SOLICITADO)
     if (currentAppt.status === AppointmentStatus.SOLICITADO && finalStatus === AppointmentStatus.CANCELADO) {
       await prisma.$transaction(async (tx) => {

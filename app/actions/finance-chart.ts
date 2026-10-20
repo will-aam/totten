@@ -82,6 +82,12 @@ export async function getFinanceChartData(
       where: {
         organization_id: organizationId,
         date: { gte: startDate, lte: now },
+        NOT: {
+          type: "RECEITA",
+          appointment: {
+            package_id: { not: null },
+          },
+        },
       },
       select: {
         type: true,
@@ -97,6 +103,11 @@ export async function getFinanceChartData(
         date: { gte: prevStartDate, lt: startDate },
         type: "RECEITA",
         status: "PAGO",
+        NOT: {
+          appointment: {
+            package_id: { not: null },
+          },
+        },
       },
       select: {
         amount: true,

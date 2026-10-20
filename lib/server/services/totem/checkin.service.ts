@@ -108,7 +108,7 @@ export class TotemCheckInService {
 
           await tx.appointment.update({
             where: { id: appt.id, organization_id: organizationId },
-            data: { status: "REALIZADO" },
+            data: { status: "REALIZADO", has_charge: false },
           });
         } else {
           // Fluxo para agendamento avulso (sem pacote)

@@ -67,6 +67,12 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
         where: {
           organization_id: organizationId,
           date: { gte: monthStart, lte: monthEnd },
+          NOT: {
+            type: "RECEITA",
+            appointment: {
+              package_id: { not: null },
+            },
+          },
         },
         select: {
           type: true,
@@ -94,6 +100,7 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
           organization_id: organizationId,
           status: "REALIZADO",
           payment_method: null,
+          package_id: null, // Sessões de pacote já são quitadas na venda do pacote
           ...(isCurrentMonth
             ? {}
             : { date_time: { gte: monthStart, lte: monthEnd } }),
@@ -108,6 +115,12 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
         where: {
           organization_id: organizationId,
           date: { gte: monthStart, lte: monthEnd },
+          NOT: {
+            type: "RECEITA",
+            appointment: {
+              package_id: { not: null },
+            },
+          },
         },
         take: 10,
         select: {
