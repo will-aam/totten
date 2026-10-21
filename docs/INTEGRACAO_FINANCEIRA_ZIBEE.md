@@ -1,4 +1,9 @@
-# Integração Financeira Automática: Totten & Zibee (Supabase)
+# Integração Financeira: Totten & Zibee (Supabase)
+
+> [!WARNING]
+> **EXCEÇÃO TEMPORÁRIA E SINGLE-TENANT (NÃO É PADRÃO DO SISTEMA):**
+> Esta integração foi desenvolvida contra a vontade do mantenedor do sistema para atender à exigência específica e temporária de **uma única cliente** (`cmmgntg4s0000l504vyelqq2u`).
+> **O financeiro nativo do Totten é soberano e oficial.** Novas funcionalidades financeiras devem ser construídas para o Totten e **nunca** desenhadas em torno do Zibee. Nenhuma outra organização do Totten possui ou deve ter essa integração ativada.
 
 ## 1. Visão Geral da Funcionalidade
 

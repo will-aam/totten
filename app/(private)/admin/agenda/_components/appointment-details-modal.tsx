@@ -128,7 +128,8 @@ export const AppointmentDetailsModal = memo(
 
     useEffect(() => {
       if (appointment) {
-        let initialStatusValue = appointment.status?.toLowerCase() || "pendente";
+        const rawStatus = (appointment.status || "").toLowerCase();
+        let initialStatusValue = rawStatus || "a_confirmar";
         const isNoShow =
           appointment.status === "CANCELADO" &&
           (appointment.observations?.includes("Falta automática") ||
@@ -139,11 +140,17 @@ export const AppointmentDetailsModal = memo(
           
         if (isNoShow || isManualNoShow) {
           initialStatusValue = "nao_compareceu";
+        } else if (rawStatus === "pendente" || rawStatus === "solicitado") {
+          initialStatusValue = "a_confirmar";
+        } else if (rawStatus === "confirmado") {
+          initialStatusValue = "confirmado";
+        } else if (rawStatus === "realizado") {
+          initialStatusValue = "realizado";
+        } else if (rawStatus === "cancelado") {
+          initialStatusValue = "cancelado";
         }
         
-        setStatus(
-          initialStatusValue === "pendente" ? "a_confirmar" : initialStatusValue || "a_confirmar",
-        );
+        setStatus(initialStatusValue);
         setPayment(
           appointment.paymentMethod || appointment.payment_method || "nenhum",
         );
@@ -190,6 +197,17 @@ export const AppointmentDetailsModal = memo(
       appointment.package && appointment.package.active === false;
     const isAlreadyCanceled = appointment.status?.toLowerCase() === "cancelado";
     const isLocked = isAlreadyCanceled;
+
+    // Dados de Sinal / Pré-pagamento Pix
+    const hasDepositPaid =
+      Number(appointment.deposit_paid_amount || 0) > 0 ||
+      appointment.mp_payment_status === "approved";
+    const depositAmount =
+      Number(appointment.deposit_paid_amount || 0) > 0
+        ? Number(appointment.deposit_paid_amount)
+        : Number(appointment.snapshot_service_price || appointment.price || 0) / 2;
+    const servicePrice = Number(appointment.snapshot_service_price || appointment.price || 0);
+    const remainingBalance = Math.max(0, servicePrice - depositAmount);
 
     //  O FARO DE FALTAS: Descobre se foi Automática ou Manual
     const isAutoNoShow =
@@ -304,6 +322,36 @@ export const AppointmentDetailsModal = memo(
         }
       } catch (error) {
         toast.error("Erro na conexão.");
+      }
+    };
+
+    const handleMoveToRequests = async () => {
+      if (isLocked) return;
+      setIsSaving(true);
+      try {
+        const result = await updateAppointment(
+          appointment.id,
+          {
+            status: "solicitado",
+            paymentMethod: payment === "nenhum" ? null : payment,
+            observations: obs ? `${obs}\n(Retornado para solicitações pendentes)` : "(Retornado para solicitações pendentes)",
+            hasCharge: hasCharge,
+          },
+          false,
+          appointment.recurrence_id,
+        );
+
+        if (result.success) {
+          toast.success("Agendamento retornado para Solicitações Pendentes!");
+          onRefresh?.();
+          onOpenChange(false);
+        } else {
+          toast.error(result.error || "Erro ao retornar agendamento.");
+        }
+      } catch (error) {
+        toast.error("Erro na conexão.");
+      } finally {
+        setIsSaving(false);
       }
     };
 
@@ -460,6 +508,33 @@ export const AppointmentDetailsModal = memo(
             </div>
           )}
 
+          {/* SINAL PAGO VIA MERCADO PAGO */}
+          {hasDepositPaid && !isAlreadyCanceled && (
+            <div className="bg-emerald-500/10 border border-emerald-500/20 p-3.5 rounded-2xl flex items-center justify-between animate-in fade-in zoom-in-95">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold shrink-0">
+                  <CheckCircle className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
+                    Sinal Pago via Pix (Mercado Pago)
+                  </span>
+                  <p className="text-xs font-bold text-foreground mt-0.5">
+                    {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(depositAmount)} já pago
+                    {hasCharge && (
+                      <span className="text-muted-foreground font-normal ml-1">
+                        • Restante a cobrar na recepção: {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(remainingBalance)}
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <Badge variant="outline" className="bg-background text-emerald-600 border-emerald-500/30 font-bold text-[10px]">
+                Sinal Pago
+              </Badge>
+            </div>
+          )}
+
           <div
             className={cn(
               "bg-muted/30 p-4 rounded-2xl flex flex-col gap-3 border border-border/40",
@@ -531,6 +606,7 @@ export const AppointmentDetailsModal = memo(
                 </SelectTrigger>
                 <SelectContent className="border-border/50 bg-background rounded-2xl !w-max min-w-[var(--radix-select-trigger-width)]">
                   <SelectItem value="a_confirmar" className="whitespace-nowrap">A Confirmar</SelectItem>
+                  <SelectItem value="confirmado" className="whitespace-nowrap">Confirmado</SelectItem>
                   <SelectItem value="realizado" className="whitespace-nowrap">Realizado</SelectItem>
                   <SelectItem value="cancelado" className="whitespace-nowrap">
                     Cancelado (Sem Cobrar)
@@ -661,18 +737,43 @@ export const AppointmentDetailsModal = memo(
                 <AlertDialogContent className="rounded-3xl border border-border/50 p-6 bg-background">
                   <AlertDialogHeader>
                     <AlertDialogTitle className="text-xl font-bold">
-                      Excluir Agendamento?
+                      {hasDepositPaid ? "Excluir ou Retornar Solicitação?" : "Excluir Agendamento?"}
                     </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {isRecurrent
-                        ? "Este agendamento faz parte de uma série. Como deseja proceder?"
-                        : "Isso apagará este agendamento permanentemente."}
+                    <AlertDialogDescription asChild>
+                      <div className="space-y-3 mt-2 text-sm text-muted-foreground">
+                        {hasDepositPaid && (
+                          <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 rounded-xl text-amber-800 dark:text-amber-300 text-xs leading-relaxed text-left">
+                            <p className="font-bold flex items-center gap-1.5 mb-1">
+                              <AlertTriangle className="w-4 h-4" /> Cliente já pagou sinal de {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(depositAmount)} via Pix Mercado Pago.
+                            </p>
+                            <p>
+                              Para liberar o horário na agenda sem perder o vínculo do cliente e do sinal pago, você pode <strong>mover de volta para a tela de Solicitações Pendentes</strong>.
+                            </p>
+                          </div>
+                        )}
+                        <p>
+                          {isRecurrent
+                            ? "Este agendamento faz parte de uma série. Como deseja proceder?"
+                            : hasDepositPaid
+                              ? "Você pode retornar este agendamento para a tela de solicitações para remarcar futuramente ou excluir permanentemente."
+                              : "Isso apagará este agendamento permanentemente."}
+                        </p>
+                      </div>
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
                     <AlertDialogCancel className="rounded-2xl border-none bg-muted">
                       Voltar
                     </AlertDialogCancel>
+                    {hasDepositPaid && (
+                      <Button
+                        type="button"
+                        onClick={handleMoveToRequests}
+                        className="rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-bold"
+                      >
+                        Mover para Solicitações
+                      </Button>
+                    )}
                     {isRecurrent && (
                       <AlertDialogAction
                         onClick={() => handleDelete(true)}

@@ -144,7 +144,7 @@ export class AgendaService {
         lte: to,
       },
       status: {
-        in: ["CONFIRMADO", "REALIZADO", "CANCELADO", "PENDENTE"],
+        in: ["CONFIRMADO", "REALIZADO", "CANCELADO", "PENDENTE", "SOLICITADO"],
       },
     };
 
@@ -232,6 +232,8 @@ export class AgendaService {
         color,
         hasCharge: appt.has_charge,
         status: appt.status,
+        deposit_paid_amount: appt.mp_payment_status === "approved" ? Number(rawPrice) / 2 : null,
+        mp_payment_status: appt.mp_payment_status,
         checkInTime: appt.check_in?.date_time ?? null,
         observations: appt.observations ?? "",
         paymentMethod: appt.payment_method ?? "nenhum",

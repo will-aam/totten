@@ -18,6 +18,9 @@ export async function POST(request: NextRequest) {
     const appointment = await prisma.appointment.findFirst({
       where: { mp_payment_id: String(paymentId) },
       include: {
+        client: true,
+        service: true,
+        transactions: true,
         organization: {
           include: { settings: true },
         },
@@ -50,17 +53,108 @@ export async function POST(request: NextRequest) {
     const paymentData = await paymentCheck.json();
     const status = paymentData.status;
 
-    // Se o pagamento foi aprovado, atualiza o status do agendamento
+    // Se o pagamento foi aprovado, atualiza o status do agendamento e registra o sinal no caixa
     if (status === "approved") {
+      // 1. Idempotência: verifica se o sinal já foi registrado em Transaction
+      const existingRevenue = appointment.transactions.find(
+        (t) => t.type === "RECEITA" && t.status === "PAGO",
+      );
+
+      if (!existingRevenue) {
+        // Busca o método de pagamento PIX da organização
+        const pixMethod = await prisma.organizationPaymentMethod.findFirst({
+          where: {
+            organization_id: appointment.organization_id,
+            type: "PIX",
+            isActive: true,
+          },
+        });
+
+        const grossAmount = Number(
+          paymentData.transaction_amount ||
+            Number(appointment.snapshot_service_price ?? appointment.service?.price ?? 0) / 2,
+        );
+
+        // Taxa cobrada pelo Mercado Pago (via fee_details ou net_received_amount)
+        let feeAmount = 0;
+        if (Array.isArray(paymentData.fee_details) && paymentData.fee_details.length > 0) {
+          feeAmount = paymentData.fee_details.reduce(
+            (acc: number, f: any) => acc + Number(f.amount || 0),
+            0,
+          );
+        } else if (paymentData.net_received_amount && paymentData.transaction_amount) {
+          feeAmount = Math.max(0, Number(paymentData.transaction_amount) - Number(paymentData.net_received_amount));
+        }
+        feeAmount = Math.max(0, Number(feeAmount.toFixed(2)));
+
+        const approvalDate = paymentData.date_approved
+          ? new Date(paymentData.date_approved)
+          : new Date();
+        const serviceName =
+          appointment.snapshot_service_name || appointment.service?.name || "Serviço";
+        const clientName = appointment.client?.name || "Cliente";
+
+        // Cria a RECEITA do Sinal no Caixa
+        const revenueTx = await prisma.transaction.create({
+          data: {
+            type: "RECEITA",
+            description: `Sinal Online (PIX Mercado Pago): ${serviceName} (${clientName})`,
+            amount: grossAmount,
+            date: approvalDate,
+            status: "PAGO",
+            organization_id: appointment.organization_id,
+            appointment_id: appointment.id,
+            client_id: appointment.client_id,
+            payment_method_id: pixMethod?.id || null,
+          },
+        });
+
+        // Integração Zibee (caso seja o cliente configurado)
+        try {
+          const { triggerZibeeSyncById } = await import(
+            "@/lib/server/integrations/zibee.service"
+          );
+          triggerZibeeSyncById(revenueTx.id).catch(console.error);
+        } catch (zibeeErr) {
+          console.error("[ZIBEE_SYNC_ERROR]", zibeeErr);
+        }
+
+        // Se o Mercado Pago cobrou taxa, cria a DESPESA correspondente
+        if (feeAmount > 0) {
+          const feeTx = await prisma.transaction.create({
+            data: {
+              type: "DESPESA",
+              description: `Taxa Mercado Pago - Sinal: ${serviceName} (${clientName})`,
+              amount: feeAmount,
+              date: approvalDate,
+              status: "PAGO",
+              organization_id: appointment.organization_id,
+              appointment_id: appointment.id,
+              client_id: appointment.client_id,
+              payment_method_id: pixMethod?.id || null,
+            },
+          });
+
+          try {
+            const { triggerZibeeSyncById } = await import(
+              "@/lib/server/integrations/zibee.service"
+            );
+            triggerZibeeSyncById(feeTx.id).catch(console.error);
+          } catch (zibeeErr) {
+            console.error("[ZIBEE_SYNC_ERROR]", zibeeErr);
+          }
+        }
+      }
+
       await prisma.appointment.update({
         where: { id: appointment.id },
         data: {
           status: "CONFIRMADO",
           mp_payment_status: "approved",
-          has_charge: true,
+          has_charge: true, // Ainda resta o saldo restante a pagar quando comparecer
         },
       });
-      console.log(`[WEBHOOK_MP] Agendamento ${appointment.id} CONFIRMADO com sucesso via PIX Mercado Pago.`);
+      console.log(`[WEBHOOK_MP] Agendamento ${appointment.id} CONFIRMADO e Sinal registrado no financeiro.`);
     } else if (status === "rejected" || status === "cancelled") {
       await prisma.appointment.update({
         where: { id: appointment.id },

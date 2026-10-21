@@ -211,7 +211,7 @@ export default function AgendaPage() {
         if (filters.statuses!.includes("FALTA") && isFalta) return true;
         if (filters.statuses!.includes("CANCELADO") && isCancelado) return true;
         if (filters.statuses!.includes("CHECKIN") && isCheckin) return true;
-        if (filters.statuses!.includes("PENDENTE") && a.status === "PENDENTE") return true;
+        if (filters.statuses!.includes("PENDENTE") && (a.status === "PENDENTE" || a.status === "SOLICITADO")) return true;
         if (filters.statuses!.includes("CONFIRMADO") && a.status === "CONFIRMADO") return true;
         if (filters.statuses!.includes("REALIZADO") && a.status === "REALIZADO") return true;
 

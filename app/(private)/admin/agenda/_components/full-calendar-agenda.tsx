@@ -99,7 +99,7 @@ export function FullCalendarAgenda({
          appt.observations?.includes("Falta automática")
       );
       const isPackageArchived = appt.package && appt.package.active === false;
-      const isPendenteOuConfirmado = appt.status === "PENDENTE" || appt.status === "CONFIRMADO";
+      const isPendenteOuConfirmado = appt.status === "PENDENTE" || appt.status === "CONFIRMADO" || appt.status === "SOLICITADO";
 
       // Regra: Os únicos agendamentos que podem ser movidos são os pendentes (sem check-in) e o Rosa (Falta)
       // Regra: Agendamentos com Azul (Realizado) e Roxo (Check-in já realizado) não podem ser movidos

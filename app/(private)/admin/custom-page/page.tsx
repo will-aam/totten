@@ -503,6 +503,13 @@ export default function CustomPage() {
                 <Cog size="sm" /> Global
               </TabsTrigger>
               <TabsTrigger
+                value="booking-site"
+                disabled={!globalValid}
+                className="flex items-center gap-2 py-2 rounded-lg disabled:opacity-50"
+              >
+                <Calendar size="sm" /> Agendamento
+              </TabsTrigger>
+              <TabsTrigger
                 value="link-bio"
                 disabled={!globalValid}
                 className="flex items-center gap-2 py-2 rounded-lg disabled:opacity-50"
@@ -516,21 +523,14 @@ export default function CustomPage() {
               >
                 <GlobeAmericas size="sm" /> Site
               </TabsTrigger>
-              <TabsTrigger
-                value="booking-site"
-                disabled={!globalValid}
-                className="flex items-center gap-2 py-2 rounded-lg disabled:opacity-50"
-              >
-                <Calendar size="sm" /> Agendamento
-              </TabsTrigger>
             </TabsList>
 
             <MobileBottomNav
               items={[
                 { id: "global", label: "Global", icon: MobileGlobe },
+                { id: "booking-site", label: "Agendamento", icon: MobileCalendar },
                 { id: "link-bio", label: "Link na Bio", icon: MobileLink },
                 { id: "professional-site", label: "Site", icon: MobileSite },
-                { id: "booking-site", label: "Agendamento", icon: MobileCalendar },
               ]}
               activeId={activeTab}
               onChange={(id) => {
@@ -553,6 +553,11 @@ export default function CustomPage() {
                 onSave={handleSave}
                 isSaving={isSaving}
               />
+            </TabsContent>
+
+            <TabsContent value="booking-site" className="mt-0">
+              {renderCopyLinkBox("booking-site")}
+              <BookingSiteView profile={profile} />
             </TabsContent>
 
             <TabsContent value="link-bio" className="mt-0">
@@ -624,11 +629,6 @@ export default function CustomPage() {
             <TabsContent value="professional-site" className="mt-0">
               {renderCopyLinkBox("professional-site")}
               <ProfessionalSiteView profile={profile} initialData={proSiteConfig} globalContact={globalContact} />
-            </TabsContent>
-
-            <TabsContent value="booking-site" className="mt-0">
-              {renderCopyLinkBox("booking-site")}
-              <BookingSiteView profile={profile} />
             </TabsContent>
           </Tabs>
         )}

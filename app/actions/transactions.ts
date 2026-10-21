@@ -410,6 +410,10 @@ export async function getPendingReceivables() {
         snapshot_service_price: true,
         client: { select: { name: true } },
         service: { select: { name: true, price: true } },
+        transactions: {
+          where: { type: "RECEITA", status: "PAGO" },
+          select: { id: true, amount: true, description: true },
+        },
       },
       orderBy: { date_time: "asc" },
     });
@@ -430,20 +434,45 @@ export async function getPendingReceivables() {
       orderBy: { date: "asc" },
     });
 
-    const formattedAppointments = pendingAppointments.map((a) => ({
-      id: a.id,
-      sourceType: "APPOINTMENT" as const,
-      description: a.snapshot_service_name || a.service?.name || "Serviço",
-      amount: Number(a.snapshot_service_price ?? a.service?.price ?? 0),
-      date: a.date_time.toISOString(),
-      clientName: a.client?.name || "Sem cliente",
-    }));
+    const formattedAppointments = [];
+
+    for (const a of pendingAppointments) {
+      const fullPrice = Number(a.snapshot_service_price ?? a.service?.price ?? 0);
+      const totalPaid = a.transactions.reduce((acc, t) => acc + Number(t.amount), 0);
+      const remainingAmount = Math.max(0, Number((fullPrice - totalPaid).toFixed(2)));
+
+      // Se o agendamento já tiver sido 100% quitado (ex: sinal cobriu integralmente), não exibe no a receber
+      if (remainingAmount <= 0.01) {
+        continue;
+      }
+
+      const serviceName = a.snapshot_service_name || a.service?.name || "Serviço";
+      const hasDeposit = totalPaid > 0;
+      const description = hasDeposit
+        ? `${serviceName} (Saldo a Receber — Sinal de R$ ${totalPaid.toFixed(2)} já pago via MP)`
+        : serviceName;
+
+      formattedAppointments.push({
+        id: a.id,
+        sourceType: "APPOINTMENT" as const,
+        description,
+        amount: remainingAmount,
+        totalServicePrice: fullPrice,
+        depositPaidAmount: totalPaid,
+        hasDeposit,
+        date: a.date_time.toISOString(),
+        clientName: a.client?.name || "Sem cliente",
+      });
+    }
 
     const formattedTransactions = pendingTransactions.map((t) => ({
       id: t.id,
       sourceType: "TRANSACTION" as const,
       description: t.description,
       amount: Number(t.amount),
+      totalServicePrice: Number(t.amount),
+      depositPaidAmount: 0,
+      hasDeposit: false,
       date: t.date.toISOString(),
       clientName: t.client?.name || "Sem cliente",
     }));
@@ -482,8 +511,15 @@ export async function processReceivablePayment(
         };
       }
 
-      const apptPrice = appt.snapshot_service_price ?? appt.service.price;
+      const fullPrice = Number(appt.snapshot_service_price ?? appt.service.price);
       const apptName = appt.snapshot_service_name ?? appt.service.name;
+
+      // Desconta qualquer valor já pago anteriormente (ex: sinal online PIX Mercado Pago)
+      const paidRevenue = appt.transactions
+        .filter((t) => t.type === "RECEITA" && t.status === "PAGO")
+        .reduce((acc, t) => acc + Number(t.amount), 0);
+
+      const remainingAmount = Math.max(0, Number((fullPrice - paidRevenue).toFixed(2)));
 
       let txIdToSync: string | null = null;
 
@@ -497,14 +533,26 @@ export async function processReceivablePayment(
           },
         });
 
-        const revenueTx = appt.transactions.find((t) => t.type === "RECEITA");
+        // Se o agendamento já estava 100% quitado (ex: sinal integral), não gera receita duplicada
+        if (remainingAmount <= 0.01) {
+          return;
+        }
 
-        if (!revenueTx) {
+        const pendingRevenueTx = appt.transactions.find(
+          (t) => t.type === "RECEITA" && t.status === "PENDENTE",
+        );
+
+        const desc =
+          paidRevenue > 0
+            ? `Serviço Quitado (Saldo Restante): ${apptName} (${appt.client.name})`
+            : `Serviço Realizado: ${apptName} (${appt.client.name})`;
+
+        if (!pendingRevenueTx) {
           const result = await createSettledRevenueWithFee({
             prismaClient: tx,
             organizationId: admin.organizationId,
-            grossAmount: Number(apptPrice),
-            description: `Serviço Realizado: ${apptName} (${appt.client.name})`,
+            grossAmount: remainingAmount,
+            description: desc,
             paymentMethodId: paymentMethodId || null,
             paymentMethodEnum: paymentMethod as PaymentMethod,
             appointmentId: appt.id,
@@ -522,22 +570,23 @@ export async function processReceivablePayment(
             await calculatePaymentSettlementAndFee({
               prismaClient: tx,
               organizationId: admin.organizationId,
-              grossAmount: Number(revenueTx.amount),
+              grossAmount: remainingAmount,
               paymentMethodId: paymentMethodId || null,
               paymentMethodEnum: paymentMethod as PaymentMethod,
               baseDate: new Date(),
             });
 
           await tx.transaction.update({
-            where: { id: revenueTx.id },
+            where: { id: pendingRevenueTx.id },
             data: {
+              amount: remainingAmount,
               status: "PAGO",
               date: settlementDate,
               payment_method_id: method?.id || paymentMethodId || null,
               admin_id: admin.id,
             },
           });
-          txIdToSync = revenueTx.id;
+          txIdToSync = pendingRevenueTx.id;
 
           if (feeAmount > 0) {
             const feeTx = await tx.transaction.create({
@@ -671,17 +720,35 @@ export async function processAllReceivablesPayment(
           },
         });
 
-        const apptPrice = appt.snapshot_service_price ?? appt.service.price;
+        const fullPrice = Number(appt.snapshot_service_price ?? appt.service.price);
         const apptName = appt.snapshot_service_name ?? appt.service.name;
 
-        const revenueTx = appt.transactions.find((t) => t.type === "RECEITA");
+        // Desconta qualquer sinal já pago (ex: sinal via Mercado Pago)
+        const paidRevenue = appt.transactions
+          .filter((t) => t.type === "RECEITA" && t.status === "PAGO")
+          .reduce((acc, t) => acc + Number(t.amount), 0);
 
-        if (!revenueTx) {
+        const remainingAmount = Math.max(0, Number((fullPrice - paidRevenue).toFixed(2)));
+
+        if (remainingAmount <= 0.01) {
+          continue;
+        }
+
+        const pendingRevenueTx = appt.transactions.find(
+          (t) => t.type === "RECEITA" && t.status === "PENDENTE",
+        );
+
+        const desc =
+          paidRevenue > 0
+            ? `Serviço Quitado (Saldo Restante): ${apptName} (${appt.client.name})`
+            : `Serviço Realizado: ${apptName} (${appt.client.name})`;
+
+        if (!pendingRevenueTx) {
           const result = await createSettledRevenueWithFee({
             prismaClient: tx,
             organizationId: admin.organizationId,
-            grossAmount: Number(apptPrice),
-            description: `Serviço Realizado: ${apptName} (${appt.client.name})`,
+            grossAmount: remainingAmount,
+            description: desc,
             paymentMethodId: paymentMethodId || null,
             paymentMethodEnum: paymentMethod as PaymentMethod,
             appointmentId: appt.id,
@@ -699,22 +766,23 @@ export async function processAllReceivablesPayment(
             await calculatePaymentSettlementAndFee({
               prismaClient: tx,
               organizationId: admin.organizationId,
-              grossAmount: Number(revenueTx.amount),
+              grossAmount: remainingAmount,
               paymentMethodId: paymentMethodId || null,
               paymentMethodEnum: paymentMethod as PaymentMethod,
               baseDate: new Date(),
             });
 
           await tx.transaction.update({
-            where: { id: revenueTx.id },
+            where: { id: pendingRevenueTx.id },
             data: {
+              amount: remainingAmount,
               status: "PAGO",
               date: settlementDate,
               payment_method_id: method?.id || paymentMethodId || null,
               admin_id: admin.id,
             },
           });
-          createdOrUpdatedTxIds.push(revenueTx.id);
+          createdOrUpdatedTxIds.push(pendingRevenueTx.id);
 
           if (feeAmount > 0) {
             const feeTx = await tx.transaction.create({

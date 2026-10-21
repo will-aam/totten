@@ -252,6 +252,14 @@ export default function ReceivablesPage() {
                             ? "Agenda"
                             : "Manual"}
                         </Badge>
+                        {item.hasDeposit && (
+                          <Badge
+                            variant="secondary"
+                            className="text-[9px] uppercase tracking-wider bg-[#009EE3]/15 text-[#009EE3] border border-[#009EE3]/30 font-bold"
+                          >
+                            Sinal Pago ({formatCurrency(item.depositPaidAmount)})
+                          </Badge>
+                        )}
                       </span>
                       <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px] font-medium text-muted-foreground">
                         <span className="flex items-center gap-1">
@@ -403,6 +411,29 @@ export default function ReceivablesPage() {
           </DialogHeader>
 
           <div className="py-4 space-y-4">
+            {selectedItem && selectedItem !== "ALL" && selectedItem.hasDeposit && (
+              <div className="p-3.5 bg-muted/40 border border-[#009EE3]/30 rounded-2xl space-y-1.5 text-xs">
+                <div className="flex justify-between items-center text-muted-foreground">
+                  <span>Preço Total do Serviço:</span>
+                  <span className="font-semibold text-foreground">
+                    {formatCurrency(selectedItem.totalServicePrice)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-[#009EE3]">
+                  <span>Sinal Pago Online (Mercado Pago):</span>
+                  <span className="font-semibold">
+                    - {formatCurrency(selectedItem.depositPaidAmount)}
+                  </span>
+                </div>
+                <div className="border-t border-border/40 pt-1.5 flex justify-between items-center font-bold text-foreground">
+                  <span>Saldo a Receber Agora:</span>
+                  <span className="text-amber-600 dark:text-amber-500 font-black text-sm">
+                    {formatCurrency(selectedItem.amount)}
+                  </span>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                 Forma de Pagamento

@@ -280,6 +280,7 @@ export async function updateAppointment(
     const statusMap: Record<string, AppointmentStatus> = {
       a_confirmar: AppointmentStatus.PENDENTE,
       confirmado: AppointmentStatus.CONFIRMADO,
+      solicitado: AppointmentStatus.SOLICITADO,
       aprovado: AppointmentStatus.PENDENTE,
       atrasou: AppointmentStatus.PENDENTE,
       nao_compareceu: AppointmentStatus.CANCELADO,
@@ -550,6 +551,7 @@ export async function updateAppointment(
     }
 
     revalidatePath("/admin/agenda");
+    revalidatePath("/admin/auto/requests");
     revalidatePath("/admin/packages");
     revalidatePath("/admin/stock");
     revalidatePath("/admin/finance/dashboard");

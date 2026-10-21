@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { BookingAppearanceSettings } from "@/app/(private)/admin/self-service/_components/booking-appearance-settings";
 import { getSelfServiceSettingsAction, updateSelfServiceSettingsAction } from "@/app/actions/settings";
 import { detectAndFormatPixKey } from "@/lib/pix";
-import { Zap, KeyRound, CheckCircle2, ExternalLink, ShieldCheck, AlertCircle, AlertTriangle } from "lucide-react";
+import { Zap, KeyRound, CheckCircle2, ExternalLink, ShieldCheck, AlertCircle, AlertTriangle, Info } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -22,8 +22,32 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { useIsMobile } from "@/components/ui/use-mobile";
+
+const StepBadge = ({ step, tag, required }: { step: number; tag?: string; required?: boolean }) => (
+  <div className="flex items-center gap-2 mb-2">
+    <span className="flex items-center justify-center w-6 h-6 rounded-2xl bg-primary text-primary-foreground text-xs font-bold shadow-sm">
+      {step}
+    </span>
+    {tag ? (
+      <span className="text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-2xl">{tag}</span>
+    ) : required ? (
+      <span className="text-[10px] uppercase font-bold text-destructive bg-destructive/10 px-2 py-0.5 rounded-2xl">Obrigatório</span>
+    ) : (
+      <span className="text-[10px] uppercase font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-2xl">Configuração</span>
+    )}
+  </div>
+);
 
 export function BookingSiteView({ profile }: { profile?: any }) {
+  const isMobile = useIsMobile();
   const [isSaving, setIsSaving] = useState(false);
 
   const [bookingTheme, setBookingTheme] = useState("light");
@@ -35,6 +59,7 @@ export function BookingSiteView({ profile }: { profile?: any }) {
   const [isDisconnectModalOpen, setIsDisconnectModalOpen] = useState(false);
   const [disconnectConfirmationText, setDisconnectConfirmationText] = useState("");
   const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [isRatesInfoModalOpen, setIsRatesInfoModalOpen] = useState(false);
 
   useEffect(() => {
     // Feedback de retorno do OAuth do Mercado Pago
@@ -131,93 +156,243 @@ export function BookingSiteView({ profile }: { profile?: any }) {
   }, [general, bookingTheme, bookingPrimaryColor, pixMode, features]);
 
   return (
-    <div className="w-full flex flex-col gap-6 animate-in fade-in duration-300">
+    <div className="w-full flex flex-col gap-8 animate-in fade-in duration-300 relative pb-16">
 
       {/* Header com único botão salvar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/50 pb-6">
-        <p className="text-sm text-muted-foreground">
-          Personalize a página onde seus clientes agendam horários sozinhos.
-        </p>
-        <Button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="h-10 shadow-sm w-full md:w-36 shrink-0"
-        >
-          {isSaving ? "Salvando..." : "Salvar"}
-        </Button>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border/50 pb-6">
+        <div>
+          <h3 className="text-2xl font-bold flex items-center gap-2 text-foreground">
+            Autoagendamento Online
+          </h3>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Siga as etapas abaixo para configurar a aparência, seções e regras de pagamento da sua agenda online.
+          </p>
+        </div>
+        <div className="flex gap-2 w-full md:w-auto">
+          <Button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex-1 md:flex-none h-10 shadow-sm w-full md:w-36 shrink-0 font-bold"
+          >
+            {isSaving ? "Salvando..." : "Salvar"}
+          </Button>
+        </div>
       </div>
 
-      {/* Grid: 1 coluna no mobile, 2 colunas no desktop */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-start">
+      {/* Barra de Atalhos Rápidos (Guia do Usuário) */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 -mx-1 px-1 custom-scrollbar">
+        <button
+          type="button"
+          onClick={() => document.getElementById("step-booking-1")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border/60 bg-muted/40 hover:bg-muted text-xs font-semibold text-foreground transition-all shrink-0 cursor-pointer shadow-xs hover:border-border"
+        >
+          <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[11px] font-bold flex items-center justify-center">1</span>
+          <span>Aparência & Tema</span>
+        </button>
 
-        {/* ─── COLUNA ESQUERDA: Configurações Gerais ─── */}
-        <section className="flex flex-col gap-6">
+        <button
+          type="button"
+          onClick={() => document.getElementById("step-booking-2")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border/60 bg-muted/40 hover:bg-muted text-xs font-semibold text-foreground transition-all shrink-0 cursor-pointer shadow-xs hover:border-border"
+        >
+          <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[11px] font-bold flex items-center justify-center">2</span>
+          <span>Elementos da Página</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => document.getElementById("step-booking-3")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border/60 bg-muted/40 hover:bg-muted text-xs font-semibold text-foreground transition-all shrink-0 cursor-pointer shadow-xs hover:border-border"
+        >
+          <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[11px] font-bold flex items-center justify-center">3</span>
+          <span>Termos & Política</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => document.getElementById("step-booking-4")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[#009EE3]/30 bg-[#009EE3]/10 hover:bg-[#009EE3]/20 text-xs font-bold text-[#009EE3] transition-all shrink-0 cursor-pointer shadow-xs"
+        >
+          <span className="w-5 h-5 rounded-full bg-[#009EE3] text-white text-[11px] font-bold flex items-center justify-center">4</span>
+          <span>Pagamento & Sinal (PIX)</span>
+        </button>
+      </div>
+
+      {/* Layout Sequencial em Blocos Separados (Igual Configurações Globais) */}
+      <div className="flex flex-col gap-10 mt-2">
+
+        {/* STEP 1: Aparência e Tema Visual */}
+        <div id="step-booking-1" className="flex flex-col gap-2 scroll-m-20 p-5 md:p-6 border border-border/50 rounded-2xl bg-card shadow-sm">
+          <StepBadge step={1} tag="Aparência" />
+          <div className="mb-2">
+            <h4 className="text-base font-semibold text-foreground">Tema e Identidade Visual</h4>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Escolha a paleta de cores e o fundo da sua página de agendamento online.
+            </p>
+          </div>
+          <BookingAppearanceSettings
+            bookingTheme={bookingTheme}
+            setBookingTheme={setBookingTheme}
+            bookingPrimaryColor={bookingPrimaryColor}
+            setBookingPrimaryColor={setBookingPrimaryColor}
+          />
+        </div>
+
+        {/* STEP 2: Elementos e Seções Visuais da Página */}
+        <div id="step-booking-2" className="flex flex-col gap-4 scroll-m-20 p-5 md:p-6 border border-border/50 rounded-2xl bg-card shadow-sm">
           <div>
-            <h3 className="text-lg font-semibold text-foreground">Configurações Gerais</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Configure a política de cancelamento e os detalhes de pagamento antecipado do seu agendamento.
+            <StepBadge step={2} tag="Seções da Página" />
+            <h4 className="text-base font-semibold text-foreground">Elementos e Seções da Página</h4>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Ative ou desative os blocos de conteúdo opcionais na sua página de agendamento.
             </p>
           </div>
 
-          {/* Política de Cancelamento */}
-          <div className="flex flex-col gap-3 pt-0">
-            <div className="flex flex-col gap-3 p-4 rounded-2xl border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800/40 border-l-4 border-l-red-500">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <Label className="text-foreground font-semibold">Termos e Política do Agendamento Online</Label>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/40 px-2 py-0.5 rounded-2xl">Agendamento</span>
-                </div>
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
-                  <p className="text-xs text-muted-foreground">
-                    Exibido na etapa de revisão da reserva, antes da confirmação do horário e pagamento do sinal.
-                  </p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setGeneral({ ...general, termsText: DEFAULT_TERMS_OF_USE })}
-                    className="h-7 text-[10px] font-bold bg-muted/50 hover:bg-muted"
-                  >
-                    Restaurar Padrão
-                  </Button>
-                </div>
-              </div>
-              <Textarea
-                value={general.termsText}
-                onChange={(e) => setGeneral({ ...general, termsText: e.target.value })}
-                className="resize-none h-48 bg-white dark:bg-black/20"
-                placeholder={DEFAULT_TERMS_OF_USE}
-              />
-            </div>
-          </div>
-
-          {/* Pagamento Antecipado */}
-          <div className="flex flex-col gap-5 pt-4 border-t">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h4 className="text-base font-semibold text-foreground">Exigir Pagamento Antecipado (Sinal)</h4>
-                  <Badge variant="outline" className="text-[11px] font-semibold text-blue-600 border-blue-200 bg-blue-50/50 dark:text-blue-300 dark:border-blue-400/50 dark:bg-blue-950/40">
-                    50% do Serviço
-                  </Badge>
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Requer 50% do valor do atendimento via PIX para garantir e confirmar a reserva na agenda.
-                </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
+            <div
+              onClick={() => setFeatures((f) => ({ ...f, showPackages: !f.showPackages }))}
+              className="flex items-center justify-between gap-4 p-4 border border-border/60 rounded-2xl bg-muted/10 hover:bg-muted/20 transition-colors cursor-pointer"
+            >
+              <div className="flex-1 min-w-0 pr-2">
+                <Label className="font-semibold text-sm leading-snug cursor-pointer">Mostrar &quot;Pacotes&quot;</Label>
+                <p className="text-xs text-muted-foreground mt-1 leading-normal">Exibe combos promocionais para agendamento direto.</p>
               </div>
               <Switch
-                checked={general.requirePrepayment}
-                onCheckedChange={(val) => setGeneral({ ...general, requirePrepayment: val })}
+                className="shrink-0"
+                checked={features.showPackages}
+                onCheckedChange={(val) => setFeatures((f) => ({ ...f, showPackages: val }))}
               />
             </div>
 
-            <div className={`space-y-5 transition-opacity duration-300 ${!general.requirePrepayment ? "opacity-40 pointer-events-none" : ""}`}>
+            <div
+              onClick={() => setFeatures((f) => ({ ...f, showMostBooked: !f.showMostBooked }))}
+              className="flex items-center justify-between gap-4 p-4 border border-border/60 rounded-2xl bg-muted/10 hover:bg-muted/20 transition-colors cursor-pointer"
+            >
+              <div className="flex-1 min-w-0 pr-2">
+                <Label className="font-semibold text-sm leading-snug cursor-pointer">Mostrar &quot;Mais Agendados&quot;</Label>
+                <p className="text-xs text-muted-foreground mt-1 leading-normal">Destaca os serviços mais populares no topo.</p>
+              </div>
+              <Switch
+                className="shrink-0"
+                checked={features.showMostBooked}
+                onCheckedChange={(val) => setFeatures((f) => ({ ...f, showMostBooked: val }))}
+              />
+            </div>
 
+            <div
+              onClick={() => setFeatures((f) => ({ ...f, showTeam: !f.showTeam }))}
+              className="flex items-center justify-between gap-4 p-4 border border-border/60 rounded-2xl bg-muted/10 hover:bg-muted/20 transition-colors cursor-pointer"
+            >
+              <div className="flex-1 min-w-0 pr-2">
+                <Label className="font-semibold text-sm leading-snug cursor-pointer">Mostrar &quot;Nossa Equipe&quot;</Label>
+                <p className="text-xs text-muted-foreground mt-1 leading-normal">Exibe fotos e nomes dos profissionais da clínica.</p>
+              </div>
+              <Switch
+                className="shrink-0"
+                checked={features.showTeam}
+                onCheckedChange={(val) => setFeatures((f) => ({ ...f, showTeam: val }))}
+              />
+            </div>
+
+            {features.showTeam && (
+              <div
+                onClick={() => setFeatures((f) => ({ ...f, showTeamLikes: !f.showTeamLikes }))}
+                className="flex items-center justify-between gap-4 p-4 border border-border/60 rounded-2xl bg-muted/20 hover:bg-muted/30 transition-colors animate-in fade-in duration-200 cursor-pointer"
+              >
+                <div className="flex-1 min-w-0 pr-2">
+                  <Label className="font-semibold text-sm leading-snug cursor-pointer">Mostrar Curtidas na Equipe</Label>
+                  <p className="text-xs text-muted-foreground mt-1 leading-normal">Gera prova social e validação para os profissionais.</p>
+                </div>
+                <Switch
+                  className="shrink-0"
+                  checked={features.showTeamLikes}
+                  onCheckedChange={(val) => setFeatures((f) => ({ ...f, showTeamLikes: val }))}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* STEP 3: Termos e Política do Agendamento */}
+        <div id="step-booking-3" className="flex flex-col gap-4 scroll-m-20 p-5 md:p-6 border border-border/50 rounded-2xl bg-card shadow-sm">
+          <div>
+            <StepBadge step={3} tag="Termos de Uso" />
+            <h4 className="text-base font-semibold text-foreground">Termos e Política do Agendamento Online</h4>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Configure as regras de cancelamento, tolerância de atraso e avisos que o cliente deve concordar antes de concluir a reserva.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3 p-4 rounded-2xl border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800/40 border-l-4 border-l-red-500">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+              <p className="text-xs text-muted-foreground">
+                Exibido na etapa de revisão da reserva, antes da confirmação do horário e pagamento do sinal.
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setGeneral({ ...general, termsText: DEFAULT_TERMS_OF_USE })}
+                className="h-7 text-[10px] font-bold bg-muted/50 hover:bg-muted self-start md:self-auto"
+              >
+                Restaurar Padrão
+              </Button>
+            </div>
+            <Textarea
+              value={general.termsText}
+              onChange={(e) => setGeneral({ ...general, termsText: e.target.value })}
+              className="resize-none h-44 bg-white dark:bg-black/20 text-xs leading-relaxed"
+              placeholder={DEFAULT_TERMS_OF_USE}
+            />
+          </div>
+        </div>
+
+        {/* STEP 4: Pagamento Antecipado (Sinal PIX) */}
+        <div id="step-booking-4" className="flex flex-col gap-6 scroll-m-20 p-5 md:p-6 border border-border/50 rounded-2xl bg-card shadow-sm">
+          <div>
+            <StepBadge step={4} tag="Financeiro & PIX" />
+            <h4 className="text-base font-semibold text-foreground">Pagamento Antecipado (Sinal PIX)</h4>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Configure a exigência de sinal para garantir e confirmar a reserva na agenda.
+            </p>
+          </div>
+
+          {/* Card Ativar Exigir Pagamento de Sinal - Alinhamento Perfeito no Mobile */}
+          <div
+            onClick={() => setGeneral((g) => ({ ...g, requirePrepayment: !g.requirePrepayment }))}
+            className="flex items-center justify-between gap-4 p-4 rounded-2xl border border-blue-200/80 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-800/40 transition-colors cursor-pointer"
+          >
+            <div className="flex-1 min-w-0 pr-2">
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <span className="font-bold text-sm text-foreground">Exigir Sinal de 50%</span>
+                <Badge variant="outline" className="text-[10px] font-bold text-blue-600 border-blue-300 bg-blue-100/70 dark:text-blue-300 dark:border-blue-700 dark:bg-blue-900/50">
+                  PIX Antecipado
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Requer metade do valor do serviço via PIX para garantir e confirmar a reserva na agenda.
+              </p>
+            </div>
+            <Switch
+              className="shrink-0"
+              checked={general.requirePrepayment}
+              onCheckedChange={(val) => setGeneral({ ...general, requirePrepayment: val })}
+            />
+          </div>
+
+          {!general.requirePrepayment ? (
+            <div className="p-4 rounded-2xl border border-dashed border-border/70 bg-muted/20 text-center animate-in fade-in duration-200">
+              <p className="text-xs text-muted-foreground font-medium">
+                O pagamento de sinal está <strong>desativado</strong>. Os clientes poderão agendar seus horários online sem necessidade de pagamento prévio.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6 animate-in fade-in duration-300">
               {/* Seletor Granular: Manual vs Mercado Pago */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Label className="text-foreground font-semibold text-xs uppercase tracking-wider text-muted-foreground">
                   Escolha como deseja receber o PIX:
                 </Label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
                   {/* Opção 1: Mercado Pago (Automático) */}
                   <div
@@ -239,8 +414,8 @@ export function BookingSiteView({ profile }: { profile?: any }) {
                       }`}
                   >
                     <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-[#009EE3]/15 flex items-center justify-center text-[#009EE3] font-black text-xs">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-[#009EE3]/15 flex items-center justify-center text-[#009EE3] font-black text-xs shrink-0">
                           <img
                             src="/mercado-pago-seeklogo.png"
                             alt=""
@@ -287,8 +462,8 @@ export function BookingSiteView({ profile }: { profile?: any }) {
                       }`}
                   >
                     <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 shrink-0">
                           <KeyRound className="w-4 h-4" />
                         </div>
                         <div>
@@ -305,11 +480,10 @@ export function BookingSiteView({ profile }: { profile?: any }) {
                       Você informa sua chave PIX e o cliente anexa o comprovante no WhatsApp para você aprovar.
                     </p>
                   </div>
-
                 </div>
               </div>
 
-              {/* CONTEÚDO CONDICIONAL CONFORME A ESCOLHA */}
+              {/* Conteúdo do Modo Escolhido */}
               {pixMode === "MERCADO_PAGO" ? (
                 <div className="rounded-2xl border border-[#009EE3]/30 bg-[#009EE3]/5 p-5 space-y-4">
                   <div className="flex items-start gap-3">
@@ -320,6 +494,19 @@ export function BookingSiteView({ profile }: { profile?: any }) {
                         Funciona tanto para autônomos com <strong>CPF comum</strong> quanto empresas com <strong>CNPJ</strong>.
                         O dinheiro do sinal cai diretamente na sua conta Mercado Pago sem intermediários.
                       </p>
+                    <div className="pt-2.5 pb-1 mt-2 border-t border-[#009EE3]/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                      <p className="text-[11px] text-muted-foreground leading-relaxed flex-1 min-w-0 pr-1">
+                        <span className="font-bold text-foreground">Taxas do Mercado Pago:</span> Taxa padrão de 0,99% por transação com liberação imediata.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setIsRatesInfoModalOpen(true)}
+                        className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#009EE3] hover:underline self-start sm:self-auto shrink-0 cursor-pointer py-0.5"
+                      >
+                        <Info className="w-3.5 h-3.5" />
+                        <span>Consultar taxas</span>
+                      </button>
+                    </div>
                     </div>
                   </div>
 
@@ -340,7 +527,7 @@ export function BookingSiteView({ profile }: { profile?: any }) {
                           setDisconnectConfirmationText("");
                           setIsDisconnectModalOpen(true);
                         }}
-                        className="text-xs h-8 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                        className="text-xs h-8 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 cursor-pointer"
                       >
                         Desconectar
                       </Button>
@@ -410,78 +597,21 @@ export function BookingSiteView({ profile }: { profile?: any }) {
                   </div>
                 </div>
               )}
-
             </div>
-          </div>
-        </section>
+          )}
+        </div>
 
-        {/* ─── COLUNA DIREITA: Elementos da Página ─── */}
-        <section className="flex flex-col gap-6 lg:border-l lg:pl-10 border-border/50">
-          <div>
-            <h3 className="text-lg font-semibold text-foreground">Elementos da Página</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Ligue ou desligue as seções na sua página de agendamento.
-            </p>
-          </div>
+      </div>
 
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between p-4 border rounded-2xl bg-card shadow-sm">
-              <div className="flex flex-col">
-                <Label className="font-semibold">Mostrar &quot;Pacotes&quot;</Label>
-                <span className="text-xs text-muted-foreground mt-0.5">Exibe combos promocionais.</span>
-              </div>
-              <Switch
-                checked={features.showPackages}
-                onCheckedChange={(val) => setFeatures((f) => ({ ...f, showPackages: val }))}
-              />
-            </div>
-
-            <div className="flex items-center justify-between p-4 border rounded-2xl bg-card shadow-sm">
-              <div className="flex flex-col">
-                <Label className="font-semibold">Mostrar &quot;Mais Agendados&quot;</Label>
-                <span className="text-xs text-muted-foreground mt-0.5">Destaca os serviços populares.</span>
-              </div>
-              <Switch
-                checked={features.showMostBooked}
-                onCheckedChange={(val) => setFeatures((f) => ({ ...f, showMostBooked: val }))}
-              />
-            </div>
-
-            <div className="flex items-center justify-between p-4 border rounded-2xl bg-card shadow-sm">
-              <div className="flex flex-col">
-                <Label className="font-semibold">Mostrar &quot;Nossa Equipe&quot;</Label>
-                <span className="text-xs text-muted-foreground mt-0.5">Exibe fotos dos profissionais.</span>
-              </div>
-              <Switch
-                checked={features.showTeam}
-                onCheckedChange={(val) => setFeatures((f) => ({ ...f, showTeam: val }))}
-              />
-            </div>
-
-            {features.showTeam && (
-              <div className="flex items-center justify-between p-4 border rounded-2xl bg-muted/40 ml-5">
-                <div className="flex flex-col">
-                  <Label className="font-semibold">Mostrar Curtidas na Equipe</Label>
-                  <span className="text-xs text-muted-foreground mt-0.5">Gera prova social para os profissionais.</span>
-                </div>
-                <Switch
-                  checked={features.showTeamLikes}
-                  onCheckedChange={(val) => setFeatures((f) => ({ ...f, showTeamLikes: val }))}
-                />
-              </div>
-            )}
-          </div>
-
-          <div className="mt-8 border-t border-border/50 pt-8">
-            <BookingAppearanceSettings
-              bookingTheme={bookingTheme}
-              setBookingTheme={setBookingTheme}
-              bookingPrimaryColor={bookingPrimaryColor}
-              setBookingPrimaryColor={setBookingPrimaryColor}
-            />
-          </div>
-        </section>
-
+      {/* Botão Salvar Rodapé */}
+      <div className="flex items-center justify-end gap-3 pt-6 border-t border-border/50">
+        <Button
+          onClick={handleSave}
+          disabled={isSaving}
+          className="h-11 px-8 shadow-sm font-bold w-full sm:w-auto cursor-pointer"
+        >
+          {isSaving ? "Salvando..." : "Salvar Configurações"}
+        </Button>
       </div>
 
       {/* Modal de Confirmação de Segurança para Desconectar */}
@@ -551,6 +681,202 @@ export function BookingSiteView({ profile }: { profile?: any }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal Informativo: Taxas do Mercado Pago (Drawer no Mobile que sobe de baixo pra cima, Dialog no Desktop) */}
+      {isMobile ? (
+        <Drawer open={isRatesInfoModalOpen} onOpenChange={setIsRatesInfoModalOpen}>
+          <DrawerContent className="bg-background max-h-[85vh] rounded-t-3xl">
+            <DrawerHeader className="text-left px-5 pt-3 pb-2">
+              <div className="flex items-center gap-2.5 mb-1">
+                <div className="w-8 h-8 rounded-full bg-[#009EE3]/15 text-[#009EE3] flex items-center justify-center font-bold shrink-0">
+                  <Info className="w-4 h-4" />
+                </div>
+                <DrawerTitle className="text-base font-bold text-foreground">
+                  Como funcionam as taxas do Pix Automático?
+                </DrawerTitle>
+              </div>
+              <DrawerDescription className="text-xs text-muted-foreground">
+                Entenda como o Mercado Pago processa seus recebimentos e como conferir os valores na sua conta.
+              </DrawerDescription>
+            </DrawerHeader>
+            <div className="px-5 pb-8 overflow-y-auto custom-scrollbar">
+              <div className="space-y-4 text-xs leading-relaxed text-foreground/90 py-1">
+                {/* Box Exemplo Prático */}
+                <div className="p-3.5 bg-muted/60 rounded-xl border border-border/60 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-foreground text-xs">Tarifa padrão por Pix recebido:</span>
+                    <span className="font-extrabold text-[#009EE3] text-sm">0,99%</span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    O valor é liberado <strong>na hora</strong> na sua conta Mercado Pago. Não há mensalidade nem custo de cancelamento.
+                  </p>
+                  <div className="p-2.5 rounded-lg bg-background/80 border border-border/40 text-[11px]">
+                    <span className="font-semibold text-foreground">Exemplo prático:</span> Se o cliente pagar <strong>R$ 50,00</strong> de sinal, a tarifa é de apenas <strong>R$ 0,50</strong> (você recebe <strong>R$ 49,50</strong> líquidos na hora).
+                  </div>
+                </div>
+
+                {/* Benefícios para o dia a dia */}
+                <div className="space-y-2">
+                  <p className="font-bold text-foreground text-xs">
+                    Por que usar o Pix Automático vale a pena?
+                  </p>
+                  <div className="grid grid-cols-1 gap-2 text-[11px]">
+                    <div className="flex items-start gap-2 p-2 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                      <span className="text-muted-foreground">
+                        <strong className="text-foreground">Confirmação Imediata:</strong> Seu cliente paga pelo QR Code e o sistema confirma o horário na sua agenda na mesma hora, sem você precisar conferir comprovantes no WhatsApp.
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-2 p-2 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                      <span className="text-muted-foreground">
+                        <strong className="text-foreground">Proteção contra Golpes:</strong> Fim dos comprovantes falsos ou clientes fantasmas que reservam horários e não aparecem.
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-2 p-2 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                      <span className="text-muted-foreground">
+                        <strong className="text-foreground">Financeiro Automático:</strong> O sinal recebido e a taxa operacional já são lançados sozinhos no seu financeiro do sistema.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Como conferir no seu app */}
+                <div className="space-y-2 pt-1 border-t border-border/50">
+                  <p className="font-bold text-foreground text-xs">
+                    Como conferir sua taxa no Mercado Pago:
+                  </p>
+                  <div className="space-y-1.5 pl-0.5 text-muted-foreground text-[11px]">
+                    <div className="flex items-start gap-2">
+                      <span className="w-4 h-4 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+                      <span>
+                        Acesse o app no celular ou o site{" "}
+                        <a
+                          href="https://www.mercadopago.com.br"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#009EE3] hover:underline font-semibold inline-flex items-center gap-0.5"
+                        >
+                          mercadopago.com.br <ExternalLink className="w-3 h-3 inline" />
+                        </a>.
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="w-4 h-4 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+                      <span>No menu, clique em <strong>Seu negócio</strong> (ou <strong>Configurações</strong>).</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="w-4 h-4 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
+                      <span>Vá em <strong>Tarifas e Prazos</strong> e consulte a opção <strong>Pix / Vendas Online</strong>.</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-2.5 bg-blue-50/80 dark:bg-blue-950/30 rounded-xl border border-blue-200/60 dark:border-blue-900/40 text-blue-900 dark:text-blue-200 text-[11px] leading-relaxed">
+                  <em>Essa taxa é descontada diretamente pelo Mercado Pago apenas quando uma venda é realizada. O sistema não cobra nenhuma taxa extra nem mensalidade sobre seus atendimentos.</em>
+                </div>
+              </div>
+            </div>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={isRatesInfoModalOpen} onOpenChange={setIsRatesInfoModalOpen}>
+          <DialogContent className="max-w-md rounded-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <div className="flex items-center gap-2.5 mb-1">
+                <div className="w-8 h-8 rounded-full bg-[#009EE3]/15 text-[#009EE3] flex items-center justify-center font-bold">
+                  <Info className="w-4 h-4" />
+                </div>
+                <DialogTitle className="text-base font-bold text-foreground">
+                  Como funcionam as taxas do Pix Automático?
+                </DialogTitle>
+              </div>
+              <DialogDescription className="text-xs text-muted-foreground">
+                Entenda como o Mercado Pago processa seus recebimentos e como conferir os valores na sua conta.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 text-xs leading-relaxed text-foreground/90 py-1">
+              {/* Box Exemplo Prático */}
+              <div className="p-3.5 bg-muted/60 rounded-xl border border-border/60 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-foreground text-xs">Tarifa padrão por Pix recebido:</span>
+                  <span className="font-extrabold text-[#009EE3] text-sm">0,99%</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  O valor é liberado <strong>na hora</strong> na sua conta Mercado Pago. Não há mensalidade nem custo de cancelamento.
+                </p>
+                <div className="p-2.5 rounded-lg bg-background/80 border border-border/40 text-[11px]">
+                  <span className="font-semibold text-foreground">Exemplo prático:</span> Se o cliente pagar <strong>R$ 50,00</strong> de sinal, a tarifa é de apenas <strong>R$ 0,50</strong> (você recebe <strong>R$ 49,50</strong> líquidos na hora).
+                </div>
+              </div>
+
+              {/* Benefícios para o dia a dia */}
+              <div className="space-y-2">
+                <p className="font-bold text-foreground text-xs">
+                  Por que usar o Pix Automático vale a pena?
+                </p>
+                <div className="grid grid-cols-1 gap-2 text-[11px]">
+                  <div className="flex items-start gap-2 p-2 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                    <span className="text-muted-foreground">
+                      <strong className="text-foreground">Confirmação Imediata:</strong> Seu cliente paga pelo QR Code e o sistema confirma o horário na sua agenda na mesma hora, sem você precisar conferir comprovantes no WhatsApp.
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2 p-2 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                    <span className="text-muted-foreground">
+                      <strong className="text-foreground">Proteção contra Golpes:</strong> Fim dos comprovantes falsos ou clientes fantasmas que reservam horários e não aparecem.
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2 p-2 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                    <span className="text-muted-foreground">
+                      <strong className="text-foreground">Financeiro Automático:</strong> O sinal recebido e a taxa operacional já são lançados sozinhos no seu financeiro do sistema.
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Como conferir no seu app */}
+              <div className="space-y-2 pt-1 border-t border-border/50">
+                <p className="font-bold text-foreground text-xs">
+                  Como conferir sua taxa no Mercado Pago:
+                </p>
+                <div className="space-y-1.5 pl-0.5 text-muted-foreground text-[11px]">
+                  <div className="flex items-start gap-2">
+                    <span className="w-4 h-4 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+                    <span>
+                      Acesse o app no celular ou o site{" "}
+                      <a
+                        href="https://www.mercadopago.com.br"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#009EE3] hover:underline font-semibold inline-flex items-center gap-0.5"
+                      >
+                        mercadopago.com.br <ExternalLink className="w-3 h-3 inline" />
+                      </a>.
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="w-4 h-4 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+                    <span>No menu, clique em <strong>Seu negócio</strong> (ou <strong>Configurações</strong>).</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="w-4 h-4 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
+                    <span>Vá em <strong>Tarifas e Prazos</strong> e consulte a opção <strong>Pix / Vendas Online</strong>.</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-2.5 bg-blue-50/80 dark:bg-blue-950/30 rounded-xl border border-blue-200/60 dark:border-blue-900/40 text-blue-900 dark:text-blue-200 text-[11px] leading-relaxed">
+                <em>Essa taxa é descontada diretamente pelo Mercado Pago apenas quando uma venda é realizada. O sistema não cobra nenhuma taxa extra nem mensalidade sobre seus atendimentos.</em>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
