@@ -16,6 +16,7 @@ import {
   checkAppointmentThrottle,
   recordAppointmentMove,
 } from "@/lib/server/security/appointment-throttle";
+import { createSettledRevenueWithFee } from "@/lib/server/services/payments/settlement.service";
 
 /**
  * Limpa todos os agendamentos do dia atual para a organização.
@@ -218,22 +219,22 @@ export async function createAppointment(
 
         // Se for avulso e o usuário já marcou como pago no ato do agendamento
         if (!packageId && isPaid) {
-          const apptPrice = appt.snapshot_service_price ?? service.price;
+          const apptPrice = Number(appt.snapshot_service_price ?? service.price);
           const apptName = appt.snapshot_service_name ?? service.name;
           const clientName = appt.client?.name || "Cliente";
 
-          const recTx = await tx.transaction.create({
-            data: {
-              type: "RECEITA",
-              description: `Serviço Realizado / Pago Antecipado: ${apptName} (${clientName})`,
-              amount: apptPrice,
-              date: new Date(),
-              status: "PAGO",
-              organization_id: admin.organizationId,
-              appointment_id: appt.id,
-            },
+          const { createdTxIds: newTxIds } = await createSettledRevenueWithFee({
+            tx,
+            organizationId: admin.organizationId,
+            grossAmount: apptPrice,
+            description: `Serviço Realizado / Pago Antecipado: ${apptName} (${clientName})`,
+            appointment_id: appt.id,
+            client_id: appt.client_id,
+            admin_id: admin.id,
+            paymentMethodEnum: paymentMethod,
+            status: "PAGO",
           });
-          createdTxIds.push(recTx.id);
+          createdTxIds.push(...newTxIds);
         }
       }
       return created;
@@ -474,21 +475,21 @@ export async function updateAppointment(
         });
 
         if (!existingRevenue) {
-          const apptPrice = currentAppt.snapshot_service_price ?? service.price;
+          const apptPrice = Number(currentAppt.snapshot_service_price ?? service.price);
           const apptName = currentAppt.snapshot_service_name ?? service.name;
 
-          const recTx = await tx.transaction.create({
-            data: {
-              type: "RECEITA",
-              description: `Serviço Realizado: ${apptName} (${currentAppt.client.name})`,
-              amount: apptPrice,
-              date: new Date(),
-              status: "PAGO",
-              organization_id: admin.organizationId,
-              appointment_id: currentAppt.id,
-            },
+          const { createdTxIds: newTxIds } = await createSettledRevenueWithFee({
+            tx,
+            organizationId: admin.organizationId,
+            grossAmount: apptPrice,
+            description: `Serviço Realizado: ${apptName} (${currentAppt.client.name})`,
+            appointment_id: currentAppt.id,
+            client_id: currentAppt.client_id,
+            admin_id: admin.id,
+            paymentMethodEnum: finalPaymentMethod,
+            status: "PAGO",
           });
-          createdTxIds.push(recTx.id);
+          createdTxIds.push(...newTxIds);
         }
       }
 

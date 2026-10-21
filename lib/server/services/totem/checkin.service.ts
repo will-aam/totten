@@ -1,6 +1,7 @@
 // lib/server/services/totem/checkin.service.ts
 import { getTenantPrisma } from "@/lib/prisma";
 import { triggerZibeeSyncById } from "@/lib/server/integrations/zibee.service";
+import { createSettledRevenueWithFee } from "@/lib/server/services/payments/settlement.service";
 
 export class TotemCheckInService {
   /**
@@ -143,25 +144,23 @@ export class TotemCheckInService {
             },
           });
 
-          // Se autoSettle estiver ativo, gera a RECEITA como PAGO no caixa
+          // Se autoSettle estiver ativo, gera a RECEITA (bruto) e eventual DESPESA de taxa no fluxo de caixa (D+X)
           if (autoSettle) {
-            const apptPrice = appt.snapshot_service_price ?? appt.service.price;
+            const apptPrice = Number(appt.snapshot_service_price ?? appt.service.price);
             const apptName = appt.snapshot_service_name ?? appt.service.name;
 
-            const recTx = await tx.transaction.create({
-              data: {
-                type: "RECEITA",
-                description: `Serviço Realizado (Totem): ${apptName} (${appt.client.name})`,
-                amount: apptPrice,
-                date: new Date(),
-                status: "PAGO",
-                organization_id: organizationId,
-                appointment_id: appt.id,
-                client_id: appt.client_id,
-                payment_method_id: paymentMethodRecordId,
-              },
+            const { createdTxIds: newTxIds } = await createSettledRevenueWithFee({
+              tx,
+              organizationId,
+              grossAmount: apptPrice,
+              description: `Serviço Realizado (Totem): ${apptName} (${appt.client.name})`,
+              appointment_id: appt.id,
+              client_id: appt.client_id,
+              paymentMethodId: paymentMethodRecordId,
+              paymentMethodEnum,
+              status: "PAGO",
             });
-            createdTxIds.push(recTx.id);
+            createdTxIds.push(...newTxIds);
           }
         }
 

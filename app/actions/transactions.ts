@@ -13,6 +13,10 @@ import {
   triggerZibeeSyncById,
   deleteTransactionFromZibee,
 } from "@/lib/server/integrations/zibee.service";
+import {
+  calculatePaymentSettlementAndFee,
+  createSettledRevenueWithFee,
+} from "@/lib/server/services/payments/settlement.service";
 
 // --- 1. CRIAR TRANSAÇÃO MANUAL (COM RECORRÊNCIA) ---
 export async function createTransaction(data: {
@@ -68,14 +72,32 @@ export async function createTransaction(data: {
         .then((txs) => txs.forEach((t) => triggerZibeeSyncById(t.id)))
         .catch(console.error);
     } else {
+      let txDate = new Date(data.date + "T12:00:00Z");
+      let feeAmount = 0;
+      let methodId = data.paymentMethodId || null;
+
+      if (data.type === "RECEITA" && data.paymentMethodId && data.status === "PAGO") {
+        const calculation = await calculatePaymentSettlementAndFee({
+          organizationId: admin.organizationId,
+          grossAmount: data.amount,
+          paymentMethodId: data.paymentMethodId,
+          baseDate: txDate,
+        });
+        txDate = calculation.settlementDate;
+        feeAmount = calculation.feeAmount;
+        if (calculation.method?.id) {
+          methodId = calculation.method.id;
+        }
+      }
+
       const createdTx = await prisma.transaction.create({
         data: {
           type: data.type,
           description: data.description,
           amount: data.amount,
-          date: new Date(data.date + "T12:00:00Z"),
+          date: txDate,
           status: data.status,
-          payment_method_id: data.paymentMethodId || null,
+          payment_method_id: methodId,
           organization_id: admin.organizationId,
           admin_id: admin.id, //  RASTREABILIDADE
         },
@@ -83,6 +105,22 @@ export async function createTransaction(data: {
 
       // Disparo automático imediato para o Zibee (assíncrono e não-bloqueante)
       triggerZibeeSyncById(createdTx.id).catch(console.error);
+
+      if (feeAmount > 0) {
+        const feeTx = await prisma.transaction.create({
+          data: {
+            type: "DESPESA",
+            description: `Taxa - ${data.description}`,
+            amount: feeAmount,
+            date: txDate,
+            status: "PAGO",
+            payment_method_id: methodId,
+            organization_id: admin.organizationId,
+            admin_id: admin.id,
+          },
+        });
+        triggerZibeeSyncById(feeTx.id).catch(console.error);
+      }
     }
 
     revalidatePath("/admin/finance/dashboard");
@@ -462,31 +500,62 @@ export async function processReceivablePayment(
         const revenueTx = appt.transactions.find((t) => t.type === "RECEITA");
 
         if (!revenueTx) {
-          const newTx = await tx.transaction.create({
-            data: {
-              type: "RECEITA",
-              description: `Serviço Realizado: ${apptName} (${appt.client.name})`,
-              amount: apptPrice,
-              date: new Date(),
-              status: "PAGO",
-              organization_id: admin.organizationId,
-              appointment_id: appt.id,
-              client_id: appt.client_id,
-              payment_method_id: paymentMethodId || null,
-              admin_id: admin.id,
-            },
+          const result = await createSettledRevenueWithFee({
+            prismaClient: tx,
+            organizationId: admin.organizationId,
+            grossAmount: Number(apptPrice),
+            description: `Serviço Realizado: ${apptName} (${appt.client.name})`,
+            paymentMethodId: paymentMethodId || null,
+            paymentMethodEnum: paymentMethod as PaymentMethod,
+            appointmentId: appt.id,
+            clientId: appt.client_id,
+            adminId: admin.id,
+            baseDate: new Date(),
+            feeDescription: `Taxa Cartão - Serviço: ${apptName}`,
           });
-          txIdToSync = newTx.id;
+          txIdToSync = result.revenueTx.id;
+          if (result.feeTx) {
+            triggerZibeeSyncById(result.feeTx.id).catch(console.error);
+          }
         } else {
+          const { settlementDate, feeAmount, method } =
+            await calculatePaymentSettlementAndFee({
+              prismaClient: tx,
+              organizationId: admin.organizationId,
+              grossAmount: Number(revenueTx.amount),
+              paymentMethodId: paymentMethodId || null,
+              paymentMethodEnum: paymentMethod as PaymentMethod,
+              baseDate: new Date(),
+            });
+
           await tx.transaction.update({
             where: { id: revenueTx.id },
             data: {
               status: "PAGO",
-              payment_method_id: paymentMethodId || null,
+              date: settlementDate,
+              payment_method_id: method?.id || paymentMethodId || null,
               admin_id: admin.id,
             },
           });
           txIdToSync = revenueTx.id;
+
+          if (feeAmount > 0) {
+            const feeTx = await tx.transaction.create({
+              data: {
+                type: "DESPESA",
+                description: `Taxa Cartão - Serviço: ${apptName}`,
+                amount: feeAmount,
+                date: settlementDate,
+                status: "PAGO",
+                organization_id: admin.organizationId,
+                appointment_id: appt.id,
+                client_id: appt.client_id,
+                payment_method_id: method?.id || paymentMethodId || null,
+                admin_id: admin.id,
+              },
+            });
+            triggerZibeeSyncById(feeTx.id).catch(console.error);
+          }
         }
       });
 
@@ -496,14 +565,47 @@ export async function processReceivablePayment(
 
       revalidatePath("/admin/agenda");
     } else {
-      await prisma.transaction.update({
+      const manualTx = await prisma.transaction.findUnique({
         where: { id, organization_id: admin.organizationId },
-        data: {
-          status: "PAGO",
-          payment_method_id: paymentMethodId || null,
-          admin_id: admin.id, // Assina quem quitou a pendência
-        },
       });
+
+      if (manualTx) {
+        const { settlementDate, feeAmount, method } =
+          await calculatePaymentSettlementAndFee({
+            organizationId: admin.organizationId,
+            grossAmount: Number(manualTx.amount),
+            paymentMethodId: paymentMethodId || null,
+            paymentMethodEnum: paymentMethod as PaymentMethod,
+            baseDate: new Date(),
+          });
+
+        await prisma.transaction.update({
+          where: { id, organization_id: admin.organizationId },
+          data: {
+            status: "PAGO",
+            date: settlementDate,
+            payment_method_id: method?.id || paymentMethodId || null,
+            admin_id: admin.id, // Assina quem quitou a pendência
+          },
+        });
+
+        if (feeAmount > 0) {
+          const feeTx = await prisma.transaction.create({
+            data: {
+              type: "DESPESA",
+              description: `Taxa - ${manualTx.description}`,
+              amount: feeAmount,
+              date: settlementDate,
+              status: "PAGO",
+              organization_id: admin.organizationId,
+              client_id: manualTx.client_id,
+              payment_method_id: method?.id || paymentMethodId || null,
+              admin_id: admin.id,
+            },
+          });
+          triggerZibeeSyncById(feeTx.id).catch(console.error);
+        }
+      }
 
       // Sincroniza a liquidação no Zibee
       triggerZibeeSyncById(id).catch(console.error);
@@ -575,49 +677,113 @@ export async function processAllReceivablesPayment(
         const revenueTx = appt.transactions.find((t) => t.type === "RECEITA");
 
         if (!revenueTx) {
-          const newTx = await tx.transaction.create({
-            data: {
-              type: "RECEITA",
-              description: `Serviço Realizado: ${apptName} (${appt.client.name})`,
-              amount: apptPrice,
-              date: new Date(),
-              status: "PAGO",
-              organization_id: admin.organizationId,
-              appointment_id: appt.id,
-              client_id: appt.client_id,
-              payment_method_id: paymentMethodId || null,
-              admin_id: admin.id,
-            },
+          const result = await createSettledRevenueWithFee({
+            prismaClient: tx,
+            organizationId: admin.organizationId,
+            grossAmount: Number(apptPrice),
+            description: `Serviço Realizado: ${apptName} (${appt.client.name})`,
+            paymentMethodId: paymentMethodId || null,
+            paymentMethodEnum: paymentMethod as PaymentMethod,
+            appointmentId: appt.id,
+            clientId: appt.client_id,
+            adminId: admin.id,
+            baseDate: new Date(),
+            feeDescription: `Taxa Cartão - Serviço: ${apptName}`,
           });
-          createdOrUpdatedTxIds.push(newTx.id);
+          createdOrUpdatedTxIds.push(result.revenueTx.id);
+          if (result.feeTx) {
+            createdOrUpdatedTxIds.push(result.feeTx.id);
+          }
         } else {
+          const { settlementDate, feeAmount, method } =
+            await calculatePaymentSettlementAndFee({
+              prismaClient: tx,
+              organizationId: admin.organizationId,
+              grossAmount: Number(revenueTx.amount),
+              paymentMethodId: paymentMethodId || null,
+              paymentMethodEnum: paymentMethod as PaymentMethod,
+              baseDate: new Date(),
+            });
+
           await tx.transaction.update({
             where: { id: revenueTx.id },
             data: {
               status: "PAGO",
-              payment_method_id: paymentMethodId || null,
+              date: settlementDate,
+              payment_method_id: method?.id || paymentMethodId || null,
               admin_id: admin.id,
             },
           });
           createdOrUpdatedTxIds.push(revenueTx.id);
+
+          if (feeAmount > 0) {
+            const feeTx = await tx.transaction.create({
+              data: {
+                type: "DESPESA",
+                description: `Taxa Cartão - Serviço: ${apptName}`,
+                amount: feeAmount,
+                date: settlementDate,
+                status: "PAGO",
+                organization_id: admin.organizationId,
+                appointment_id: appt.id,
+                client_id: appt.client_id,
+                payment_method_id: method?.id || paymentMethodId || null,
+                admin_id: admin.id,
+              },
+            });
+            createdOrUpdatedTxIds.push(feeTx.id);
+          }
         }
       }
 
       // Baixa nas transações manuais
       if (pendingTransactions.length > 0) {
-        await tx.transaction.updateMany({
+        const fullPendingTxs = await tx.transaction.findMany({
           where: {
             id: { in: pendingTransactions.map((t) => t.id) },
             organization_id: admin.organizationId,
           },
-          data: {
-            status: "PAGO",
-            payment_method_id: paymentMethodId || null,
-            admin_id: admin.id,
-          },
         });
 
-        pendingTransactions.forEach((t) => createdOrUpdatedTxIds.push(t.id));
+        for (const mTx of fullPendingTxs) {
+          const { settlementDate, feeAmount, method } =
+            await calculatePaymentSettlementAndFee({
+              prismaClient: tx,
+              organizationId: admin.organizationId,
+              grossAmount: Number(mTx.amount),
+              paymentMethodId: paymentMethodId || null,
+              paymentMethodEnum: paymentMethod as PaymentMethod,
+              baseDate: new Date(),
+            });
+
+          await tx.transaction.update({
+            where: { id: mTx.id },
+            data: {
+              status: "PAGO",
+              date: settlementDate,
+              payment_method_id: method?.id || paymentMethodId || null,
+              admin_id: admin.id,
+            },
+          });
+          createdOrUpdatedTxIds.push(mTx.id);
+
+          if (feeAmount > 0) {
+            const feeTx = await tx.transaction.create({
+              data: {
+                type: "DESPESA",
+                description: `Taxa - ${mTx.description}`,
+                amount: feeAmount,
+                date: settlementDate,
+                status: "PAGO",
+                organization_id: admin.organizationId,
+                client_id: mTx.client_id,
+                payment_method_id: method?.id || paymentMethodId || null,
+                admin_id: admin.id,
+              },
+            });
+            createdOrUpdatedTxIds.push(feeTx.id);
+          }
+        }
       }
     });
 

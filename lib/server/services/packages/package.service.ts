@@ -1,6 +1,7 @@
 // lib/server/services/packages/package.service.ts
 import { getTenantPrisma } from "@/lib/prisma";
 import { triggerZibeeSyncById, deleteTransactionFromZibee } from "@/lib/server/integrations/zibee.service";
+import { createSettledRevenueWithFee } from "@/lib/server/services/payments/settlement.service";
 
 export class PackageService {
   /**
@@ -301,46 +302,23 @@ export class PackageService {
         },
       });
 
-      // 2. GERAR RECEITA À VISTA
-      if (pay_upfront && payment_method && finalPrice > 0) {
-        const orgPaymentMethod = await tx.organizationPaymentMethod.findFirst({
-          where: {
-            organization_id: organizationId,
-            type: payment_method,
-            isActive: true,
-          },
-        });
+        // 2. GERAR RECEITA À VISTA (PADRONIZAÇÃO: VALOR BRUTO + PREVISÃO D+X + DESPESA DE TAXA)
+        if (pay_upfront && payment_method && finalPrice > 0) {
+          const txDescription = `Venda de Pacote: ${service.name} (${client.name})`;
 
-        let netAmount = finalPrice;
-        let feeDiscount = 0;
-
-        if (orgPaymentMethod) {
-          const feePercentage = Number(orgPaymentMethod.feePercentage);
-          const feeFixed = Number(orgPaymentMethod.feeFixed);
-          feeDiscount = netAmount * (feePercentage / 100) + feeFixed;
-          netAmount = netAmount - feeDiscount;
-        }
-
-        let txDescription = `Venda de Pacote: ${service.name} (${client.name})`;
-        if (feeDiscount > 0) {
-          txDescription += ` (Taxa abatida: R$ ${feeDiscount.toFixed(2).replace(".", ",")})`;
-        }
-
-        const createdUpfrontTx = await tx.transaction.create({
-          data: {
-            type: "RECEITA",
+          const { createdTxIds: newTxIds } = await createSettledRevenueWithFee({
+            tx,
+            organizationId,
+            grossAmount: finalPrice,
             description: txDescription,
-            amount: netAmount,
-            date: new Date(),
-            status: "PAGO",
-            organization_id: organizationId,
             client_id: client.id,
             package_id: novoPacote.id,
-            payment_method_id: orgPaymentMethod?.id || null,
-          },
-        });
-        createdTxIds.push(createdUpfrontTx.id);
-      }
+            paymentMethodEnum: payment_method,
+            status: "PAGO",
+          });
+
+          createdTxIds.push(...newTxIds);
+        }
 
       // 3. GERAR PARCELAS (CONTAS A RECEBER PENDENTE)
       else if (
