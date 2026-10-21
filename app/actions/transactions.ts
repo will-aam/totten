@@ -643,9 +643,14 @@ export async function processAllReceivablesPayment(
 
 // --- 8. HISTÓRICO PAGINADO E BUSCA SERVER-SIDE ---
 export async function getPaginatedTransactions(params: {
-  month: number;
-  year: number;
-  type?: "RECEITA" | "DESPESA";
+  month?: number;
+  year?: number;
+  startDate?: string;
+  endDate?: string;
+  specificDate?: string;
+  type?: "RECEITA" | "DESPESA" | "ALL";
+  status?: TransactionStatus | "ALL";
+  paymentMethod?: string;
   page: number;
   limit: number;
   search?: string;
@@ -653,39 +658,126 @@ export async function getPaginatedTransactions(params: {
   try {
     const admin = await requireAuth();
 
-    const targetMonth = params.month - 1;
-    const monthStart = new Date(params.year, targetMonth, 1, 0, 0, 0);
-    const monthEnd = new Date(params.year, targetMonth + 1, 0, 23, 59, 59, 999);
-
-    const skip = (params.page - 1) * params.limit;
-
-    // Se houver busca, ignoramos o mês para pesquisar no histórico todo
-    const dateFilter = params.search
-      ? undefined
-      : { gte: monthStart, lte: monthEnd };
-
-    const where: any = {
-      organization_id: admin.organizationId,
-      NOT: {
-        type: "RECEITA",
-        appointment: {
-          package_id: { not: null },
+    const andConditions: any[] = [
+      {
+        organization_id: admin.organizationId,
+        NOT: {
+          type: "RECEITA",
+          appointment: {
+            package_id: { not: null },
+          },
         },
       },
-    };
-    if (dateFilter) where.date = dateFilter;
-    if (params.type) where.type = params.type;
+    ];
 
-    if (params.search) {
+    // 1. Filtro de Data
+    if (params.specificDate) {
+      const [sYear, sMonth, sDay] = params.specificDate.split("-").map(Number);
+      const startOfDay = new Date(sYear, sMonth - 1, sDay, 0, 0, 0, 0);
+      const endOfDay = new Date(sYear, sMonth - 1, sDay, 23, 59, 59, 999);
+      andConditions.push({
+        date: { gte: startOfDay, lte: endOfDay },
+      });
+    } else if (params.startDate || params.endDate) {
+      const dateRange: any = {};
+      if (params.startDate) {
+        const [sYear, sMonth, sDay] = params.startDate.split("-").map(Number);
+        dateRange.gte = new Date(sYear, sMonth - 1, sDay, 0, 0, 0, 0);
+      }
+      if (params.endDate) {
+        const [eYear, eMonth, eDay] = params.endDate.split("-").map(Number);
+        dateRange.lte = new Date(eYear, eMonth - 1, eDay, 23, 59, 59, 999);
+      }
+      andConditions.push({ date: dateRange });
+    } else if (params.month && params.year) {
+      const targetMonth = params.month - 1;
+      const monthStart = new Date(params.year, targetMonth, 1, 0, 0, 0);
+      const monthEnd = new Date(params.year, targetMonth + 1, 0, 23, 59, 59, 999);
+      andConditions.push({
+        date: { gte: monthStart, lte: monthEnd },
+      });
+    }
+
+    // 2. Filtro de Tipo (RECEITA / DESPESA)
+    if (params.type && params.type !== "ALL") {
+      andConditions.push({ type: params.type });
+    }
+
+    // 3. Filtro de Status (PAGO / PENDENTE / ATRASADO)
+    if (params.status && params.status !== "ALL") {
+      andConditions.push({ status: params.status });
+    }
+
+    // 4. Filtro por Forma de Pagamento
+    if (params.paymentMethod && params.paymentMethod !== "ALL") {
+      andConditions.push({
+        OR: [
+          { payment_method: { type: params.paymentMethod as any } },
+          { appointment: { payment_method: params.paymentMethod as any } },
+        ],
+      });
+    }
+
+    // 5. Busca Inteligente (Nome, CPF, Telefone/WhatsApp, Descrição, Pacote, Profissional, Valor)
+    if (params.search && params.search.trim().length > 0) {
       const search = params.search.trim();
-      where.OR = [
+      const onlyDigits = search.replace(/\D/g, "");
+
+      const cleanNumberStr = search
+        .replace(/R\$/gi, "")
+        .replace(/\s/g, "")
+        .replace(/\./g, "")
+        .replace(",", ".");
+      const parsedAmount = parseFloat(cleanNumberStr);
+      const isNumeric =
+        !isNaN(parsedAmount) && parsedAmount > 0 && isFinite(parsedAmount);
+
+      const searchOrConditions: any[] = [
         { description: { contains: search, mode: "insensitive" } },
         { client: { name: { contains: search, mode: "insensitive" } } },
         { appointment: { client: { name: { contains: search, mode: "insensitive" } } } },
         { package: { name: { contains: search, mode: "insensitive" } } },
         { admin: { display_name: { contains: search, mode: "insensitive" } } },
+        { appointment: { professional: { display_name: { contains: search, mode: "insensitive" } } } },
       ];
+
+      // Busca por CPF
+      searchOrConditions.push(
+        { client: { cpf: { contains: search, mode: "insensitive" } } },
+        { appointment: { client: { cpf: { contains: search, mode: "insensitive" } } } },
+      );
+      if (onlyDigits.length >= 3) {
+        searchOrConditions.push(
+          { client: { cpf: { contains: onlyDigits, mode: "insensitive" } } },
+          { appointment: { client: { cpf: { contains: onlyDigits, mode: "insensitive" } } } },
+        );
+      }
+
+      // Busca por Telefone / WhatsApp
+      searchOrConditions.push(
+        { client: { phone_whatsapp: { contains: search, mode: "insensitive" } } },
+        { appointment: { client: { phone_whatsapp: { contains: search, mode: "insensitive" } } } },
+      );
+      if (onlyDigits.length >= 4) {
+        searchOrConditions.push(
+          { client: { phone_whatsapp: { contains: onlyDigits, mode: "insensitive" } } },
+          { appointment: { client: { phone_whatsapp: { contains: onlyDigits, mode: "insensitive" } } } },
+        );
+      }
+
+      // Busca por Valor exato (ex: 650, 150.00, etc.)
+      if (isNumeric) {
+        searchOrConditions.push({ amount: parsedAmount });
+      }
+
+      andConditions.push({ OR: searchOrConditions });
     }
+
+    const where = {
+      AND: andConditions,
+    };
+
+    const skip = (params.page - 1) * params.limit;
 
     const [total, rawTxs] = await Promise.all([
       prisma.transaction.count({ where }),
@@ -707,12 +799,26 @@ export async function getPaginatedTransactions(params: {
           appointment_id: true,
           stock_item_id: true,
           package: { select: { id: true, name: true } },
-          client: { select: { name: true } },
-          payment_method: { select: { type: true } },
+          client: {
+            select: {
+              id: true,
+              name: true,
+              cpf: true,
+              phone_whatsapp: true,
+            },
+          },
+          payment_method: { select: { type: true, name: true } },
           admin: { select: { display_name: true } },
           appointment: {
             select: {
-              client: { select: { name: true } },
+              client: {
+                select: {
+                  id: true,
+                  name: true,
+                  cpf: true,
+                  phone_whatsapp: true,
+                },
+              },
               payment_method: true,
               professional: { select: { display_name: true } },
             },
@@ -733,8 +839,14 @@ export async function getPaginatedTransactions(params: {
         date: t.date.toISOString(),
         status: t.status,
         clientName: t.client?.name || t.appointment?.client?.name || undefined,
+        clientCpf: t.client?.cpf || t.appointment?.client?.cpf || undefined,
+        clientPhone:
+          t.client?.phone_whatsapp ||
+          t.appointment?.client?.phone_whatsapp ||
+          undefined,
         paymentMethod:
           t.payment_method?.type || t.appointment?.payment_method || undefined,
+        paymentMethodName: t.payment_method?.name || undefined,
         recurrence_id: t.recurrence_id,
         installment: t.installment,
         package_id: t.package_id || undefined,
