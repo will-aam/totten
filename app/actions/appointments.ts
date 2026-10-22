@@ -471,19 +471,27 @@ export async function updateAppointment(
         finalPaymentMethod !== null;
 
       if (requiresRevenue) {
-        const existingRevenue = await tx.transaction.findFirst({
-          where: { appointment_id: currentAppt.id, type: "RECEITA" },
+        // Busca receitas já pagas para esse agendamento (ex: sinal online de 50% via Mercado Pago)
+        const paidRevenues = await tx.transaction.findMany({
+          where: { appointment_id: currentAppt.id, type: "RECEITA", status: "PAGO" },
         });
 
-        if (!existingRevenue) {
-          const apptPrice = Number(currentAppt.snapshot_service_price ?? service.price);
+        const totalPaid = paidRevenues.reduce((acc: number, t: any) => acc + Number(t.amount), 0);
+        const apptPrice = Number(currentAppt.snapshot_service_price ?? service.price);
+        const remainingAmount = Math.max(0, Number((apptPrice - totalPaid).toFixed(2)));
+
+        if (remainingAmount > 0.01) {
           const apptName = currentAppt.snapshot_service_name ?? service.name;
+          const desc =
+            totalPaid > 0
+              ? `Serviço Quitado (Saldo Restante): ${apptName} (${currentAppt.client.name})`
+              : `Serviço Realizado: ${apptName} (${currentAppt.client.name})`;
 
           const { createdTxIds: newTxIds } = await createSettledRevenueWithFee({
             tx,
             organizationId: admin.organizationId,
-            grossAmount: apptPrice,
-            description: `Serviço Realizado: ${apptName} (${currentAppt.client.name})`,
+            grossAmount: remainingAmount,
+            description: desc,
             appointment_id: currentAppt.id,
             client_id: currentAppt.client_id,
             admin_id: admin.id,

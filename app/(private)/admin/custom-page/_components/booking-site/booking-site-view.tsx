@@ -172,7 +172,7 @@ export function BookingSiteView({ profile }: { profile?: any }) {
           <Button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex-1 md:flex-none h-10 shadow-sm w-full md:w-36 shrink-0 font-bold"
+            className="flex-1 md:flex-none h-10 shadow-sm w-full md:w-32 shrink-0"
           >
             {isSaving ? "Salvando..." : "Salvar"}
           </Button>
@@ -603,16 +603,6 @@ export function BookingSiteView({ profile }: { profile?: any }) {
 
       </div>
 
-      {/* Botão Salvar Rodapé */}
-      <div className="flex items-center justify-end gap-3 pt-6 border-t border-border/50">
-        <Button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="h-11 px-8 shadow-sm font-bold w-full sm:w-auto cursor-pointer"
-        >
-          {isSaving ? "Salvando..." : "Salvar Configurações"}
-        </Button>
-      </div>
 
       {/* Modal de Confirmação de Segurança para Desconectar */}
       <Dialog open={isDisconnectModalOpen} onOpenChange={setIsDisconnectModalOpen}>
