@@ -4,7 +4,7 @@
 import { getTenantPrisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-import { triggerZibeeSyncById, deleteTransactionFromZibee } from "@/lib/server/integrations/zibee.service";
+import { triggerZibeeSyncById } from "@/lib/server/integrations/zibee.service";
 
 async function getOrgId() {
   const admin = await requireAuth();
@@ -135,7 +135,7 @@ export async function updateStockItem(
   }
 }
 
-// 4. EXCLUIR INSUMO (Padrão Sênior: Limpeza de Vínculos + Soft Delete)
+// 4. EXCLUIR INSUMO (Preservação Contábil e Limpeza de Vínculos)
 export async function deleteStockItem(id: string) {
   try {
     const orgId = await getOrgId();
@@ -145,65 +145,40 @@ export async function deleteStockItem(id: string) {
       where: { id, organization_id: orgId },
       include: {
         services: true,
+        transactions: {
+          select: { id: true },
+          take: 1,
+        },
       },
     });
 
     if (!item) return { success: false, error: "Insumo não encontrado." };
 
-    // LÓGICA SÊNIOR: O insumo já foi usado em serviços.
-    if (item.services.length > 0) {
-      await prisma.$transaction(async (tx) => {
-        // 1. ARRANCAMOS o insumo de todos os serviços (Hard Delete no vínculo).
-        // Isso atualiza a contagem na tela de Serviços (ex: de 4 para 3) e derruba o custo.
+    await prisma.$transaction(async (tx) => {
+      // 1. Removemos os vínculos do insumo com qualquer serviço cadastrado
+      if (item.services.length > 0) {
         await tx.serviceStockItem.deleteMany({
           where: { stock_item_id: id },
         });
+      }
 
-        // 2. Fazemos o Soft Delete no insumo APENAS para não quebrar as Transações passadas.
+      // 2. Se houver despesas financeiras históricas registradas, NUNCA apagamos as transações
+      // para não distorcer o balanço contábil e fiscal de meses anteriores. Aplicamos Soft Delete.
+      if (item.transactions.length > 0) {
         await tx.stockItem.update({
           where: { id },
           data: { active: false },
         });
-      });
-
-      revalidatePath("/admin/stock");
-      revalidatePath("/admin/services"); // Avisamos o Next.js para recarregar a tela de serviços!
-
-      return {
-        success: true,
-        message: "Insumo excluído com sucesso!", // UX perfeita para o usuário
-      };
-    }
-
-    // CENÁRIO 2: Nunca foi usado em serviço. Hard delete em tudo.
-    const txsToDelete = await prisma.transaction.findMany({
-      where: {
-        stock_item_id: id,
-        organization_id: orgId,
-        type: "DESPESA",
-      },
-      select: { id: true },
+      } else {
+        // Se nunca gerou despesa e não possui histórico financeiro, pode ser removido fisicamente
+        await tx.stockItem.delete({
+          where: { id },
+        });
+      }
     });
-
-    await prisma.$transaction(async (tx) => {
-      await tx.transaction.deleteMany({
-        where: {
-          stock_item_id: id,
-          organization_id: orgId,
-          type: "DESPESA",
-        },
-      });
-
-      await tx.stockItem.delete({
-        where: { id },
-      });
-    });
-
-    for (const t of txsToDelete) {
-      deleteTransactionFromZibee(t.id, orgId);
-    }
 
     revalidatePath("/admin/stock");
+    revalidatePath("/admin/services");
     revalidatePath("/admin/finance/dashboard");
     revalidatePath("/admin/finance/transactions");
 
