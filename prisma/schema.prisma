@@ -490,7 +490,7 @@ model Transaction {
   client            Client?                    @relation(fields: [client_id], references: [id])
   organization      Organization               @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   package           Package?                   @relation(fields: [package_id], references: [id])
-  payment_method    OrganizationPaymentMethod? @relation(fields: [payment_method_id], references: [id])
+  payment_method    OrganizationPaymentMethod? @relation(fields: [payment_method_id], references: [id], onDelete: SetNull)
   stock_item        StockItem?                 @relation(fields: [stock_item_id], references: [id])
 
   @@index([organization_id, date])

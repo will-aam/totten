@@ -124,8 +124,33 @@ export async function deletePaymentMethod(id: string) {
       };
     }
 
-    await prisma.organizationPaymentMethod.delete({
-      where: { id, organization_id: organizationId },
+    await prisma.$transaction(async (tx) => {
+      // 1. Se este método for o default_payment_method_id nas configurações gerais, desvincula (set null)
+      await tx.settings.updateMany({
+        where: {
+          organization_id: organizationId,
+          default_payment_method_id: id,
+        },
+        data: {
+          default_payment_method_id: null,
+        },
+      });
+
+      // 2. Desvincula transações associadas para garantir integridade a nível de aplicação
+      await tx.transaction.updateMany({
+        where: {
+          organization_id: organizationId,
+          payment_method_id: id,
+        },
+        data: {
+          payment_method_id: null,
+        },
+      });
+
+      // 3. Exclui o meio de pagamento
+      await tx.organizationPaymentMethod.delete({
+        where: { id, organization_id: organizationId },
+      });
     });
 
     revalidatePath("/admin/finance/payment-methods");
