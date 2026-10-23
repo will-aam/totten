@@ -703,6 +703,7 @@ export async function deleteCheckIn(checkInId: string) {
 }
 /**
  * Encerra/Arquiva um pacote manualmente antes da hora.
+ * Remove quaisquer parcelas pendentes (Transaction com status != 'PAGO') e agendamentos futuros não realizados.
  */
 export async function archivePackage(packageId: string) {
   try {
@@ -721,39 +722,98 @@ export async function archivePackage(packageId: string) {
       return { success: false, error: "Este pacote já está encerrado." };
     }
 
+    const deletedTxIds: string[] = [];
+
     await prisma.$transaction(async (tx) => {
-      // A. Auditoria: registra o encerramento manual no histórico do cliente
       const packageName = pkg.package_template_id
         ? pkg.name
         : pkg.snapshot_service_name || pkg.service?.name || "Pacote";
 
+      // 1. Exclui parcelas pendentes ou futuras do pacote para não gerar "parcelas fantasmas" no Contas a Receber
+      const pendingPackageTxs = await tx.transaction.findMany({
+        where: {
+          package_id: pkg.id,
+          organization_id: admin.organizationId,
+          status: { not: "PAGO" },
+        },
+        select: { id: true },
+      });
+
+      if (pendingPackageTxs.length > 0) {
+        deletedTxIds.push(...pendingPackageTxs.map((t) => t.id));
+        await tx.transaction.deleteMany({
+          where: {
+            id: { in: pendingPackageTxs.map((t) => t.id) },
+          },
+        });
+      }
+
+      // 2. Auditoria: registra o encerramento manual no histórico do cliente
+      const noteDetails =
+        pendingPackageTxs.length > 0
+          ? ` (${pendingPackageTxs.length} parcela(s) pendente(s) cancelada(s))`
+          : "";
+
       await tx.clientNote.create({
         data: {
-          text: `Ação: Pacote "${packageName}" (${pkg.used_sessions}/${pkg.total_sessions} sessões usadas) foi ENCERRADO manualmente pelo admin ID: ${admin.id}`,
+          text: `Ação: Pacote "${packageName}" (${pkg.used_sessions}/${pkg.total_sessions} sessões usadas) foi ENCERRADO manualmente pelo admin ID: ${admin.id}${noteDetails}`,
           client_id: pkg.client_id,
           organization_id: admin.organizationId,
           date: new Date(),
         },
       });
 
-      // B. Encerramento de fato (lógica original mantida)
+      // 3. Encerramento de fato
       await tx.package.update({
         where: { id: pkg.id },
         data: { active: false },
       });
 
-      // C. OTIMIZAÇÃO DE AGENDA: Exclui todos os agendamentos pendentes deste pacote (já que ele não pode mais ser usado)
-      await tx.appointment.deleteMany({
+      // 4. OTIMIZAÇÃO DE AGENDA: Exclui todos os agendamentos pendentes deste pacote (já que ele não pode mais ser usado)
+      const pendingAppointments = await tx.appointment.findMany({
         where: {
           package_id: pkg.id,
           organization_id: admin.organizationId,
           status: { not: "REALIZADO" },
         },
+        select: { id: true },
       });
+
+      if (pendingAppointments.length > 0) {
+        const apptIds = pendingAppointments.map((a) => a.id);
+
+        // Remove transações não pagas residuais vinculadas a estes agendamentos
+        const apptTxs = await tx.transaction.findMany({
+          where: {
+            appointment_id: { in: apptIds },
+            status: { not: "PAGO" },
+          },
+          select: { id: true },
+        });
+
+        if (apptTxs.length > 0) {
+          deletedTxIds.push(...apptTxs.map((t) => t.id));
+          await tx.transaction.deleteMany({
+            where: { id: { in: apptTxs.map((t) => t.id) } },
+          });
+        }
+
+        await tx.appointment.deleteMany({
+          where: {
+            id: { in: apptIds },
+          },
+        });
+      }
     });
+
+    for (const txId of deletedTxIds) {
+      deleteTransactionFromZibee(txId, admin.organizationId);
+    }
 
     revalidatePath("/admin/packages");
     revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/transactions");
+    revalidatePath("/admin/financial");
     revalidatePath(`/admin/clients/${pkg.client_id}`);
 
     return { success: true };
