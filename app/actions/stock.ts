@@ -162,9 +162,9 @@ export async function deleteStockItem(id: string) {
         });
       }
 
-      // 2. Se houver despesas financeiras históricas registradas, NUNCA apagamos as transações
-      // para não distorcer o balanço contábil e fiscal de meses anteriores. Aplicamos Soft Delete.
-      if (item.transactions.length > 0) {
+      // 2. Se houver despesas financeiras históricas registradas ou se o insumo já gerou despesa contábil,
+      // NUNCA apagamos as transações para não distorcer o balanço contábil e fiscal. Aplicamos Soft Delete.
+      if (item.transactions.length > 0 || item.was_expensed) {
         await tx.stockItem.update({
           where: { id },
           data: { active: false },

@@ -559,7 +559,7 @@ model ServiceStockItem {
   stock_item_id String
   quantity_used Decimal   @db.Decimal(10, 3)
   service       Service   @relation(fields: [service_id], references: [id], onDelete: Cascade)
-  stock_item    StockItem @relation(fields: [stock_item_id], references: [id])
+  stock_item    StockItem @relation(fields: [stock_item_id], references: [id], onDelete: Cascade)
 
   @@unique([service_id, stock_item_id])
   @@map("service_stock_items")
