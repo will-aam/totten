@@ -338,7 +338,7 @@ export class PackageService {
           const createdInstTx = await tx.transaction.create({
             data: {
               type: "RECEITA",
-              description: `Parcela Pacote: ${service.name} (${client.name})`,
+              description: `Pacote: ${service.name}`,
               amount: amountPerInstallment,
               date: dueDate,
               status: "PENDENTE",

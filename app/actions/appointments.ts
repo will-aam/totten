@@ -227,7 +227,7 @@ export async function createAppointment(
             tx,
             organizationId: admin.organizationId,
             grossAmount: apptPrice,
-            description: `Serviço Realizado / Pago Antecipado: ${apptName} (${clientName})`,
+            description: `Serviço Realizado: ${apptName}`,
             appointment_id: appt.id,
             client_id: appt.client_id,
             admin_id: admin.id,
@@ -521,7 +521,7 @@ export async function updateAppointment(
                 const expTx = await tx.transaction.create({
                   data: {
                     type: "DESPESA",
-                    description: `Custo de Insumo (Sessão): ${stockData.name}`,
+                    description: `Custo de Insumo: ${stockData.name}`,
                     amount: costOfUsedQty,
                     date: new Date(),
                     status: "PAGO",
@@ -541,7 +541,7 @@ export async function updateAppointment(
           const expTx = await tx.transaction.create({
             data: {
               type: "DESPESA",
-              description: `Custo Fixo de Material: ${service.name}`,
+              description: `Custo de Material: ${service.name}`,
               amount: service.material_cost,
               date: new Date(),
               status: "PAGO",

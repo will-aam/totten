@@ -209,7 +209,7 @@ const agendamentos = await prisma.appointment.findMany({
           const expTx = await tx.transaction.create({
             data: {
               type: "DESPESA",
-              description: `Custo Insumos (Totem) | Agend: ${agendamento.id} | Detalhes: ${detailsArray.join(" | ")}`,
+              description: `Custo de Insumos: ${service.name}${detailsArray.length > 0 ? ` (${detailsArray.join(", ")})` : ""}`,
               amount: totalCost,
               date: new Date(),
               status: "PAGO",
@@ -227,7 +227,7 @@ const agendamentos = await prisma.appointment.findMany({
         const expTx = await tx.transaction.create({
           data: {
             type: "DESPESA",
-            description: `Custo Fixo de Material (Totem - Agend: ${agendamento.id}): ${service.name}`,
+            description: `Custo de Material: ${service.name}`,
             amount: service.material_cost,
             date: new Date(),
             status: "PAGO",

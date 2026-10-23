@@ -23,8 +23,13 @@ import {
   Receipt,
   User,
   InfoCircle,
+  Tag,
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
+import {
+  getCleanDescription,
+  parseTransactionDescription,
+} from "../_lib/transaction-formatters";
 
 export interface ExtendedTransaction extends Transaction {
   professionalName?: string | null;
@@ -52,40 +57,6 @@ function getPaymentMethodLabel(method: string | null | undefined): string {
   if (m.includes("DEBIT") || m.includes("DEBITO")) return "Débito";
   if (m.includes("CASH") || m.includes("DINHEIRO")) return "Dinheiro";
   return "Outros";
-}
-
-function getCleanDescription(
-  desc: string,
-  type: string,
-  clientName?: string | null,
-) {
-  if (!desc) return type === "RECEITA" ? "Receita" : "Despesa";
-
-  let clean = desc.split("|")[0];
-
-  clean = clean.replace(/\(Totem[^)]+\):?/gi, "");
-  clean = clean.replace(/\(Agend[^)]+\):?/gi, "");
-  clean = clean.replace(
-    /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/gi,
-    "",
-  );
-  clean = clean.replace(/[a-z0-9]{24,30}/gi, "");
-  clean = clean.replace(/Custo fixo de material/gi, "");
-  clean = clean.replace(/Custo de insumo/gi, "");
-  clean = clean.replace(/Agendamento/gi, "");
-  clean = clean.replace(/ID:/gi, "");
-
-  if (clientName) {
-    const escapedName = clientName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const nameRegex = new RegExp(`\\(\\s*${escapedName}\\s*\\)`, "i");
-    clean = clean.replace(nameRegex, "");
-  }
-
-  clean = clean.replace(/\s{2,}/g, " ");
-  clean = clean.replace(/-\s*-/g, "-");
-  clean = clean.replace(/^[-\s,:]+|[-\s,:]+$/g, "");
-
-  return clean.trim() || (type === "RECEITA" ? "Receita" : "Despesa");
 }
 
 const StatusBadge = ({ status }: { status: TransactionStatus }) => {
@@ -297,14 +268,37 @@ export function RecentTransactionsList({ data }: RecentTransactionsListProps) {
                 <StatusBadge status={viewingTx.status} />
               </div>
 
-              <div className="space-y-2">
-                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
-                  Descrição Completa
-                </span>
-                <div className="bg-muted/20 p-5 rounded-2xl border border-border/40 text-sm font-medium leading-relaxed text-foreground shadow-inner">
-                  {viewingTx.description}
-                </div>
-              </div>
+              {(() => {
+                const parsed = parseTransactionDescription(
+                  viewingTx.description,
+                  viewingTx.type,
+                  viewingTx.clientName,
+                );
+                return (
+                  <>
+                    <div className="space-y-2">
+                      <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
+                        Descrição
+                      </span>
+                      <div className="bg-muted/20 p-5 rounded-2xl border border-border/40 text-sm font-medium leading-relaxed text-foreground shadow-inner">
+                        {parsed.title}
+                      </div>
+                    </div>
+
+                    {parsed.details && (
+                      <div className="space-y-2">
+                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
+                          Itens / Detalhes dos Insumos
+                        </span>
+                        <div className="bg-muted/20 p-4 rounded-2xl border border-border/40 text-xs font-semibold leading-relaxed text-muted-foreground shadow-inner flex items-center gap-2">
+                          <Tag className="h-4 w-4 text-primary shrink-0" />
+                          <span>{parsed.details}</span>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5 bg-muted/10 p-4 rounded-2xl border border-border/40">

@@ -153,7 +153,7 @@ export class TotemCheckInService {
               tx,
               organizationId,
               grossAmount: apptPrice,
-              description: `Serviço Realizado (Totem): ${apptName} (${appt.client.name})`,
+              description: `Serviço Realizado: ${apptName}`,
               appointment_id: appt.id,
               client_id: appt.client_id,
               paymentMethodId: paymentMethodRecordId,
@@ -186,7 +186,7 @@ export class TotemCheckInService {
                 const expTx = await tx.transaction.create({
                   data: {
                     type: "DESPESA",
-                    description: `Custo de Insumo (Totem): ${stockData.name}`,
+                    description: `Custo de Insumo: ${stockData.name}`,
                     amount: costOfUsedQty,
                     date: new Date(),
                     status: "PAGO",
@@ -207,7 +207,7 @@ export class TotemCheckInService {
           const expTx = await tx.transaction.create({
             data: {
               type: "DESPESA",
-              description: `Custo Fixo de Material (Totem): ${service.name}`,
+              description: `Custo de Material: ${service.name}`,
               amount: service.material_cost,
               date: new Date(),
               status: "PAGO",

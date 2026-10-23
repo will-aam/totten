@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
         const revenueTx = await prisma.transaction.create({
           data: {
             type: "RECEITA",
-            description: `Sinal Online (PIX Mercado Pago): ${serviceName} (${clientName})`,
+            description: `Sinal Online: ${serviceName}`,
             amount: grossAmount,
             date: approvalDate,
             status: "PAGO",
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
           const feeTx = await prisma.transaction.create({
             data: {
               type: "DESPESA",
-              description: `Taxa Mercado Pago - Sinal: ${serviceName} (${clientName})`,
+              description: `Taxa Mercado Pago: ${serviceName}`,
               amount: feeAmount,
               date: approvalDate,
               status: "PAGO",

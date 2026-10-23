@@ -184,7 +184,7 @@ export async function createManualCheckIn(data: {
                 const expTx = await tx.transaction.create({
                   data: {
                     type: "DESPESA",
-                    description: `Custo Insumo (Check-in Rápido): ${stockData.name}`,
+                    description: `Custo de Insumo: ${stockData.name}`,
                     amount: costOfUsedQty,
                     date: new Date(),
                     status: "PAGO",
@@ -200,7 +200,7 @@ export async function createManualCheckIn(data: {
           const expTx = await tx.transaction.create({
             data: {
               type: "DESPESA",
-              description: `Custo Fixo de Material (Check-in Rápido): ${service.name}`,
+              description: `Custo de Material: ${service.name}`,
               amount: service.material_cost,
               date: new Date(),
               status: "PAGO",
