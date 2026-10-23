@@ -2,6 +2,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import useSWR from "swr";
+import { invalidateFinanceCaches } from "../_lib/finance-cache";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -127,13 +129,8 @@ function getCleanDescription(
 type DateMode = "month" | "day" | "range" | "all";
 
 export default function TransactionsPage() {
-  const [transactions, setTransactions] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
   // Paginação padrão do sistema
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
 
   // Busca Inteligente
   const [searchTerm, setSearchTerm] = useState("");
@@ -151,7 +148,6 @@ export default function TransactionsPage() {
   const [filterType, setFilterType] = useState<"ALL" | "RECEITA" | "DESPESA">("ALL");
   const [statusFilter, setStatusFilter] = useState<"ALL" | TransactionStatus>("ALL");
   const [paymentMethodFilter, setPaymentMethodFilter] = useState("ALL");
-  const [paymentMethodsList, setPaymentMethodsList] = useState<any[]>([]);
 
   // Modais e Ações
   const [deletingTx, setDeletingTx] = useState<any | null>(null);
@@ -166,13 +162,6 @@ export default function TransactionsPage() {
     { length: currentYear - startYear + 2 },
     (_, i) => startYear + i,
   );
-
-  // Carregar formas de pagamento cadastradas
-  useEffect(() => {
-    getPaymentMethods()
-      .then((methods) => setPaymentMethodsList(methods || []))
-      .catch((err) => console.error("Erro ao carregar formas de pagamento:", err));
-  }, []);
 
   // Reiniciar paginação quando qualquer filtro for alterado
   useEffect(() => {
@@ -190,37 +179,29 @@ export default function TransactionsPage() {
     debouncedSearch,
   ]);
 
-  const loadTransactions = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const params: any = {
-        page,
-        limit: 25,
-        type: filterType === "ALL" ? undefined : filterType,
-        status: statusFilter === "ALL" ? undefined : statusFilter,
-        paymentMethod: paymentMethodFilter === "ALL" ? undefined : paymentMethodFilter,
-        search: debouncedSearch.trim() || undefined,
-      };
+  // Parâmetros memoizados para a chave do SWR
+  const queryParams = useMemo(() => {
+    const params: any = {
+      page,
+      limit: 25,
+      type: filterType === "ALL" ? undefined : filterType,
+      status: statusFilter === "ALL" ? undefined : statusFilter,
+      paymentMethod:
+        paymentMethodFilter === "ALL" ? undefined : paymentMethodFilter,
+      search: debouncedSearch.trim() || undefined,
+    };
 
-      if (dateMode === "day" && specificDate) {
-        params.specificDate = specificDate;
-      } else if (dateMode === "range") {
-        if (startDate) params.startDate = startDate;
-        if (endDate) params.endDate = endDate;
-      } else if (dateMode === "month") {
-        params.month = selectedMonth;
-        params.year = selectedYear;
-      }
-
-      const response = await getPaginatedTransactions(params);
-      setTransactions(response.data);
-      setTotalPages(response.totalPages);
-      setTotalCount(response.total);
-    } catch (error) {
-      toast.error("Erro ao carregar extrato.");
-    } finally {
-      setIsLoading(false);
+    if (dateMode === "day" && specificDate) {
+      params.specificDate = specificDate;
+    } else if (dateMode === "range") {
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
+    } else if (dateMode === "month") {
+      params.month = selectedMonth;
+      params.year = selectedYear;
     }
+
+    return params;
   }, [
     page,
     dateMode,
@@ -235,9 +216,37 @@ export default function TransactionsPage() {
     debouncedSearch,
   ]);
 
-  useEffect(() => {
-    loadTransactions();
-  }, [loadTransactions]);
+  // Consulta otimizada com SWR (mantém dados anteriores e elimina re-buscas desnecessárias ao trocar de aba)
+  const {
+    data: response,
+    isLoading: isTransactionsLoading,
+    mutate: mutateTransactions,
+  } = useSWR(
+    ["finance-transactions", queryParams],
+    ([, params]) => getPaginatedTransactions(params),
+    {
+      keepPreviousData: true,
+    },
+  );
+
+  const transactions = response?.data || [];
+  const totalPages = response?.totalPages || 1;
+  const totalCount = response?.total || 0;
+  const isLoading = isTransactionsLoading && transactions.length === 0;
+
+  // Carregar formas de pagamento cadastradas com SWR compartilhado
+  const { data: paymentMethodsList = [] } = useSWR(
+    "finance-payment-methods",
+    getPaymentMethods,
+    {
+      keepPreviousData: true,
+    },
+  );
+
+  const refreshData = useCallback(async () => {
+    await mutateTransactions();
+    invalidateFinanceCaches();
+  }, [mutateTransactions]);
 
   // Agrupamento por Dia
   const groupedTransactions = useMemo(() => {
@@ -309,7 +318,7 @@ export default function TransactionsPage() {
             ? "Parcelas excluídas com sucesso!"
             : "Movimentação excluída com sucesso!",
         );
-        loadTransactions();
+        refreshData();
       } else {
         toast.error(res.error || "Erro ao excluir.");
       }
@@ -330,7 +339,7 @@ export default function TransactionsPage() {
       const res = await updateTransactionStatus(id, newStatus);
       if (res.success) {
         toast.success("Status atualizado com sucesso!");
-        loadTransactions();
+        refreshData();
       } else {
         toast.error(res.error || "Erro ao atualizar status.");
       }
@@ -946,10 +955,11 @@ export default function TransactionsPage() {
                                     <span className="w-1 h-1 rounded-full bg-border shrink-0"></span>
                                     <span className="uppercase text-[9px] sm:text-[10px] font-semibold text-foreground/70 shrink-0">
                                       {transaction.paymentMethodName ||
-                                        paymentMethodMap[
-                                          transaction.paymentMethod
-                                        ] ||
-                                        transaction.paymentMethod}
+                                        (transaction.paymentMethod
+                                          ? paymentMethodMap[
+                                              transaction.paymentMethod
+                                            ] || transaction.paymentMethod
+                                          : "")}
                                     </span>
                                   </>
                                 )}
@@ -1190,7 +1200,8 @@ export default function TransactionsPage() {
                   </span>
                   <span className="text-sm font-bold truncate">
                     {viewingTx.paymentMethodName ||
-                      paymentMethodMap[viewingTx.paymentMethod] ||
+                      (viewingTx.paymentMethod &&
+                        paymentMethodMap[viewingTx.paymentMethod]) ||
                       viewingTx.paymentMethod ||
                       "Não informada"}
                   </span>
@@ -1300,7 +1311,7 @@ export default function TransactionsPage() {
           isOpen={!!editingTransaction}
           onClose={() => {
             setEditingTransaction(null);
-            loadTransactions();
+            refreshData();
           }}
           type={editingTransaction.type === "RECEITA" ? "INCOME" : "EXPENSE"}
           initialData={{
@@ -1316,7 +1327,7 @@ export default function TransactionsPage() {
       )}
 
       {/* Speed Dial Flutuante para Lançamento Rápido de Receita e Despesa */}
-      <FinanceSpeedDial onSuccess={loadTransactions} />
+      <FinanceSpeedDial onSuccess={refreshData} />
     </>
   );
 }

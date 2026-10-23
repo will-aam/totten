@@ -39,6 +39,8 @@ import {
   updateTransaction,
 } from "@/app/actions/transactions";
 import { getPaymentMethods } from "@/app/actions/payment-methods";
+import useSWR from "swr";
+import { invalidateFinanceCaches } from "../_lib/finance-cache";
 import { useToast } from "@/hooks/use-toast";
 
 interface TransactionModalProps {
@@ -79,20 +81,17 @@ export function TransactionModal({
   // Estado para Edição de Recorrência (Lote)
   const [updateFuture, setUpdateFuture] = useState(false);
 
-  const [paymentMethods, setPaymentMethods] = useState<
-    OrganizationPaymentMethod[]
-  >([]);
+  const { data: paymentMethods = [] } = useSWR<OrganizationPaymentMethod[]>(
+    "finance-payment-methods",
+    getPaymentMethods,
+    { keepPreviousData: true },
+  );
 
   const isIncome = type === "INCOME";
   const isEditing = !!initialData;
 
   useEffect(() => {
     if (isOpen) {
-      const loadMethods = async () => {
-        const data = await getPaymentMethods();
-        setPaymentMethods(data as OrganizationPaymentMethod[]);
-      };
-      loadMethods();
 
       if (initialData) {
         setDescription(initialData.description);
@@ -166,6 +165,7 @@ export function TransactionModal({
               ? "Lançamentos programados!"
               : "Registrada!",
         });
+        invalidateFinanceCaches();
         onClose();
       } else {
         toast({

@@ -39,6 +39,7 @@ import {
   upsertPaymentMethod,
   deletePaymentMethod,
 } from "@/app/actions/payment-methods";
+import { invalidateFinanceCaches } from "../_lib/finance-cache";
 import { useToast } from "@/hooks/use-toast";
 
 interface PaymentMethodModalProps {
@@ -133,6 +134,7 @@ export function PaymentMethodModal({
           title: "Sucesso",
           description: "Configuração salva com sucesso!",
         });
+        invalidateFinanceCaches();
         onClose();
       } else {
         toast({
@@ -157,6 +159,7 @@ export function PaymentMethodModal({
           title: "Excluído",
           description: "Meio de pagamento removido.",
         });
+        invalidateFinanceCaches();
         onClose();
       } else {
         toast({

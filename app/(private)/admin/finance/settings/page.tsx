@@ -44,6 +44,8 @@ import {
   getZibeeIntegrationStatusAction,
   syncZibeeHistoryAction,
 } from "@/app/actions/zibee";
+import useSWR from "swr";
+import { invalidateFinanceCaches } from "../_lib/finance-cache";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { RefreshCw } from "lucide-react";
@@ -155,57 +157,47 @@ export default function FinancialSettingsPage() {
   const [selectedMethod, setSelectedMethod] =
     useState<OrganizationPaymentMethod | null>(null);
 
-  const [methods, setMethods] = useState<OrganizationPaymentMethod[]>([]);
-  const [isLoadingMethods, setIsLoadingMethods] = useState(true);
-
-  // Estados das configurações financeiras
+  // Estados das configurações financeiras locais
   const [autoSettle, setAutoSettle] = useState(true);
   const [defaultMethodId, setDefaultMethodId] = useState<string>("");
-  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
-
-  // Integração Zibee (Single-Tenant Exclusivo)
-  const [zibeeStatus, setZibeeStatus] = useState<{
-    isEnabled: boolean;
-    syncedCount?: number;
-    orgTotalCount?: number;
-  } | null>(null);
   const [isSyncingZibee, setIsSyncingZibee] = useState(false);
 
-  const loadData = useCallback(async () => {
-    setIsLoadingMethods(true);
-    setIsLoadingSettings(true);
-    try {
-      const [methodsData, settingsRes, zibeeRes] = await Promise.all([
-        getPaymentMethods(),
-        getFinancialSettingsAction(),
-        getZibeeIntegrationStatusAction(),
-      ]);
+  // SWR Otimizado com Cache Compartilhado
+  const {
+    data: methods = [],
+    isLoading: isLoadingMethods,
+    mutate: mutateMethods,
+  } = useSWR<OrganizationPaymentMethod[]>(
+    "finance-payment-methods",
+    getPaymentMethods,
+    { keepPreviousData: true },
+  );
 
-      setMethods(methodsData as OrganizationPaymentMethod[]);
+  const {
+    data: settingsRes,
+    isLoading: isLoadingSettings,
+    mutate: mutateSettings,
+  } = useSWR(
+    "finance-settings",
+    getFinancialSettingsAction,
+    { keepPreviousData: true },
+  );
 
-      if (settingsRes.success && settingsRes.data) {
-        setAutoSettle(settingsRes.data.autoSettleOnCheckin);
-        setDefaultMethodId(settingsRes.data.defaultPaymentMethodId);
-      }
-
-      if (zibeeRes?.isEnabled) {
-        setZibeeStatus(zibeeRes);
-      } else {
-        setZibeeStatus({ isEnabled: false });
-      }
-    } catch (error) {
-      console.error("Erro ao carregar configurações financeiras:", error);
-      toast.error("Erro ao carregar dados.");
-    } finally {
-      setIsLoadingMethods(false);
-      setIsLoadingSettings(false);
-    }
-  }, []);
+  const { data: zibeeRes, mutate: mutateZibee } = useSWR(
+    "finance-zibee-status",
+    getZibeeIntegrationStatusAction,
+    { keepPreviousData: true },
+  );
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    if (settingsRes?.success && settingsRes.data) {
+      setAutoSettle(settingsRes.data.autoSettleOnCheckin);
+      setDefaultMethodId(settingsRes.data.defaultPaymentMethodId);
+    }
+  }, [settingsRes]);
+
+  const zibeeStatus = zibeeRes?.isEnabled ? zibeeRes : { isEnabled: false };
 
   const handleToggleAutoSettle = async (checked: boolean) => {
     setAutoSettle(checked);
@@ -221,6 +213,8 @@ export default function FinancialSettingsPage() {
             ? "Liquidação imediata ativada! Atendimentos no check-in cairão direto no caixa."
             : "Modo conferência manual ativado! Atendimentos irão para Contas a Receber.",
         );
+        await mutateSettings();
+        invalidateFinanceCaches();
       } else {
         toast.error("Erro ao atualizar configuração.");
         setAutoSettle(!checked);
@@ -243,6 +237,8 @@ export default function FinancialSettingsPage() {
       });
       if (res.success) {
         toast.success("Meio de pagamento padrão atualizado com sucesso!");
+        await mutateSettings();
+        invalidateFinanceCaches();
       } else {
         toast.error("Erro ao atualizar meio padrão.");
       }
@@ -273,7 +269,7 @@ export default function FinancialSettingsPage() {
         );
         const updated = await getZibeeIntegrationStatusAction();
         if (updated.isEnabled) {
-          setZibeeStatus(updated);
+          mutateZibee(updated, false);
         }
       } else {
         toast.error(res.error || "Erro ao sincronizar com o Zibee.");
@@ -559,7 +555,8 @@ export default function FinancialSettingsPage() {
           isOpen={isModalOpen}
           onClose={() => {
             setIsModalOpen(false);
-            loadData();
+            mutateMethods();
+            invalidateFinanceCaches();
           }}
           method={selectedMethod}
         />

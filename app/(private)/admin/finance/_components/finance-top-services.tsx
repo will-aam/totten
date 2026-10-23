@@ -32,7 +32,7 @@ export function FinanceTopServices() {
     async () => {
       return await getReportsData();
     },
-    { revalidateOnFocus: true, dedupingInterval: 5000 },
+    { keepPreviousData: true },
   );
 
   const topServices = (res?.topServices || []).slice(0, 4);

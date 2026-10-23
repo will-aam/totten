@@ -43,16 +43,36 @@ import {
   processAllReceivablesPayment,
 } from "@/app/actions/transactions";
 import { getPaymentMethods } from "@/app/actions/payment-methods";
+import useSWR from "swr";
+import { invalidateFinanceCaches } from "../_lib/finance-cache";
 import { OrganizationPaymentMethod } from "@/types/finance";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export default function ReceivablesPage() {
-  const [receivables, setReceivables] = useState<any[]>([]);
-  const [paymentMethods, setPaymentMethods] = useState<
-    OrganizationPaymentMethod[]
-  >([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const {
+    data: receivables = [],
+    isLoading: isLoadingReceivables,
+    mutate: mutateReceivables,
+  } = useSWR(
+    "finance-pending-receivables",
+    getPendingReceivables,
+    {
+      keepPreviousData: true,
+    },
+  );
+
+  const {
+    data: paymentMethods = [],
+  } = useSWR<OrganizationPaymentMethod[]>(
+    "finance-payment-methods",
+    getPaymentMethods,
+    {
+      keepPreviousData: true,
+    },
+  );
+
+  const isLoading = isLoadingReceivables && receivables.length === 0;
 
   // Paginação Client-side para fluidez e escalabilidade
   const [currentPage, setCurrentPage] = useState(1);
@@ -62,27 +82,6 @@ export default function ReceivablesPage() {
   const [selectedItem, setSelectedItem] = useState<any | "ALL" | null>(null);
   const [paymentMethodId, setPaymentMethodId] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
-
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const [receivablesData, methodsData] = await Promise.all([
-        getPendingReceivables(),
-        getPaymentMethods(),
-      ]);
-
-      setReceivables(receivablesData);
-      setPaymentMethods(methodsData as OrganizationPaymentMethod[]);
-    } catch (error) {
-      toast.error("Erro ao carregar dados.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
 
   const handleConfirmPayment = async () => {
     if (!selectedItem) return;
@@ -111,7 +110,8 @@ export default function ReceivablesPage() {
           );
           handleCloseModal();
           setCurrentPage(1);
-          loadData();
+          await mutateReceivables();
+          invalidateFinanceCaches();
         } else {
           toast.error(res.error || "Erro ao quitar todos os recebimentos.");
         }
@@ -127,7 +127,8 @@ export default function ReceivablesPage() {
         if (res.success) {
           toast.success("Pagamento registrado com sucesso!");
           handleCloseModal();
-          loadData();
+          await mutateReceivables();
+          invalidateFinanceCaches();
         } else {
           toast.error(res.error || "Erro ao registrar pagamento.");
         }

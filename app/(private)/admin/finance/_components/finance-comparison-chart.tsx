@@ -41,7 +41,7 @@ export function FinanceComparisonChart() {
     async () => {
       return await getReportsData();
     },
-    { revalidateOnFocus: true, dedupingInterval: 5000 },
+    { keepPreviousData: true },
   );
 
   const monthlyData = res?.monthlyData || [];

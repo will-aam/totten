@@ -13,6 +13,8 @@ import {
   LoaderDots, //  Adicionado para o estado de carregamento
 } from "@boxicons/react";
 
+import { SWRConfig } from "swr";
+
 const mobileNavItems = [
   { id: "/admin/finance/dashboard", label: "Dashboard", icon: Dashboard },
   { id: "/admin/finance/transactions", label: "Extrato", icon: ArrowRightLeft },
@@ -32,10 +34,10 @@ export default function FinanceLayout({
   const pathname = usePathname();
   const router = useRouter();
 
-  //  Pegando a sessão para verificar as permissões
+  // 🛡️ Pegando a sessão para verificar as permissões
   const { data: session, status } = useSession();
 
-  //  LÓGICA DE PROTEÇÃO DE ROTA (RBAC)
+  // 🛡️ LÓGICA DE PROTEÇÃO DE ROTA (RBAC)
   useEffect(() => {
     if (status === "loading") return; // Espera carregar
 
@@ -52,7 +54,7 @@ export default function FinanceLayout({
   const hideBottomNavRoutes: string[] = [];
   const shouldHideBottomNav = hideBottomNavRoutes.includes(pathname);
 
-  //  Evita aquele "flash" na tela mostrando dados proibidos antes de redirecionar
+  // ⏳ Evita aquele "flash" na tela mostrando dados proibidos antes de redirecionar
   if (status === "loading") {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -69,7 +71,14 @@ export default function FinanceLayout({
   }
 
   return (
-    <>
+    <SWRConfig
+      value={{
+        revalidateOnFocus: false,
+        revalidateOnReconnect: false,
+        dedupingInterval: 60000,
+        keepPreviousData: true,
+      }}
+    >
       <div
         className={shouldHideBottomNav ? "w-full pb-6" : "w-full pb-24 md:pb-6"}
       >
@@ -85,6 +94,6 @@ export default function FinanceLayout({
           />
         </div>
       )}
-    </>
+    </SWRConfig>
   );
 }

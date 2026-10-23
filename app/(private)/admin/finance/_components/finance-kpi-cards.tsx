@@ -97,7 +97,7 @@ export function FinanceKpiCards() {
     async () => {
       return await getFinanceDashboardData();
     },
-    { revalidateOnFocus: true, revalidateOnMount: true, dedupingInterval: 2000 },
+    { keepPreviousData: true },
   );
 
   if (isLoading) {

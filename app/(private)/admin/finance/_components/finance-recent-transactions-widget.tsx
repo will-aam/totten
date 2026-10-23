@@ -36,7 +36,7 @@ export function FinanceRecentTransactionsWidget() {
     async () => {
       return await getFinanceDashboardData();
     },
-    { revalidateOnFocus: true, dedupingInterval: 5000 },
+    { keepPreviousData: true },
   );
 
   const transactions = (res?.recentTransactions || []).slice(0, 5);

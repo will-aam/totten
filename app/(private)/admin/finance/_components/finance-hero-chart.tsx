@@ -46,8 +46,7 @@ export function FinanceHeroChart() {
     ["finance-hero-chart", timeframe],
     ([, tf]: [string, TimeframeOption]) => getFinanceChartData(tf),
     {
-      revalidateOnFocus: true,
-      dedupingInterval: 5000,
+      keepPreviousData: true,
     },
   );
 
