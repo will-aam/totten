@@ -46,6 +46,7 @@ export class VoucherService {
             take: 1, // Pega o log do último voucher gerado
           },
           check_ins: {
+            where: { deleted_at: null },
             select: { date_time: true },
             orderBy: { date_time: "asc" },
           },

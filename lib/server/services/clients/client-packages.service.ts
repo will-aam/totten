@@ -42,6 +42,7 @@ export class ClientPackagesService {
           },
         },
         check_ins: {
+          where: { deleted_at: null },
           select: {
             date_time: true,
           },

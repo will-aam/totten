@@ -134,7 +134,7 @@ export async function getPackagesDashboardData(params?: {
 }
 
 /**
- * Sincroniza o saldo de um pacote contando os check-ins reais vinculados a ele.
+ * Sincroniza o saldo de um pacote contando os check-ins reais vinculados a ele (desconsiderando soft deletes).
  */
 export async function syncPackageBalance(packageId: string) {
   try {
@@ -145,13 +145,35 @@ export async function syncPackageBalance(packageId: string) {
       return { error: "ID do pacote é obrigatório." };
     }
 
-    // 1. Conta quantos check-ins reais existem para este pacote
+    const pkg = await prisma.package.findUnique({
+      where: {
+        id: packageId,
+        organization_id: admin.organizationId,
+      },
+      select: {
+        id: true,
+        total_sessions: true,
+        expires_at: true,
+        active: true,
+        client_id: true,
+      },
+    });
+
+    if (!pkg) {
+      return { error: "Pacote não encontrado." };
+    }
+
+    // 1. Conta quantos check-ins reais existem para este pacote (filtrando soft deletes)
     const realCount = await prisma.checkIn.count({
       where: {
         package_id: packageId,
         organization_id: admin.organizationId,
+        deleted_at: null,
       },
     });
+
+    const isExpired = pkg.expires_at ? new Date() > pkg.expires_at : false;
+    const willBeActive = realCount < pkg.total_sessions && !isExpired;
 
     // 2. Atualiza o saldo do pacote para esse valor real
     await prisma.package.update({
@@ -159,10 +181,18 @@ export async function syncPackageBalance(packageId: string) {
         id: packageId,
         organization_id: admin.organizationId,
       },
-      data: { used_sessions: realCount },
+      data: {
+        used_sessions: realCount,
+        active: willBeActive,
+      },
     });
 
     revalidatePath("/admin/packages");
+    revalidatePath("/admin/dashboard");
+    if (pkg.client_id) {
+      revalidatePath(`/admin/clients/${pkg.client_id}`);
+    }
+
     return { success: true, count: realCount };
   } catch (error: any) {
     console.error("[ACTION syncPackageBalance] ERRO:", error);
@@ -188,7 +218,7 @@ export async function getPackageHistory(packageId: string) {
         organization_id: admin.organizationId,
       },
       include: {
-        check_in: true, //  NOVO: Traz o registro de check-in (se existir)
+        check_in: true, // Traz o registro de check-in (se existir)
       },
       orderBy: {
         date_time: "asc",
@@ -198,11 +228,12 @@ export async function getPackageHistory(packageId: string) {
     return {
       success: true,
       history: appointments.map((appt) => {
-        //  NOVO: Lógica para decidir qual data mostrar
-        // Se foi realizado e tem check-in, pega a hora real que bateu no totem
+        // Lógica para decidir qual data mostrar:
+        // Se foi realizado e tem check-in ativo (sem soft delete), pega a hora real que bateu no totem
+        const hasValidCheckIn = appt.check_in && !appt.check_in.deleted_at;
         const displayDate =
-          appt.status === "REALIZADO" && appt.check_in
-            ? appt.check_in.date_time
+          appt.status === "REALIZADO" && hasValidCheckIn
+            ? appt.check_in!.date_time
             : appt.date_time;
 
         return {
