@@ -380,7 +380,7 @@ export async function updateAppointment(
 
     await prisma.$transaction(async (tx) => {
       if (updateAll && recurrenceId) {
-        await tx.appointment.updateMany({
+        const updateResult = await tx.appointment.updateMany({
           where: {
             recurrence_id: recurrenceId,
             organization_id: admin.organizationId,
@@ -394,17 +394,11 @@ export async function updateAppointment(
           },
         });
 
-        if (isMarkingAsDone && currentAppt.package_id && currentAppt.package) {
-          const updateResult = await tx.appointment.count({
-            where: {
-              recurrence_id: recurrenceId,
-              organization_id: admin.organizationId,
-              status: finalStatus,
-            },
-          });
+        const newlyCompletedCount = updateResult.count;
 
+        if (isMarkingAsDone && currentAppt.package_id && currentAppt.package && newlyCompletedCount > 0) {
           const newUsedSessions =
-            currentAppt.package.used_sessions + updateResult;
+            currentAppt.package.used_sessions + newlyCompletedCount;
           const stillActive = newUsedSessions < currentAppt.package.total_sessions;
           const isManuallyArchived = !currentAppt.package.active && (currentAppt.package.used_sessions < currentAppt.package.total_sessions);
           const finalActive = isManuallyArchived ? false : stillActive;
@@ -412,7 +406,7 @@ export async function updateAppointment(
           await tx.package.update({
             where: { id: currentAppt.package_id },
             data: {
-              used_sessions: { increment: updateResult },
+              used_sessions: { increment: newlyCompletedCount },
               active: finalActive,
             },
           });
@@ -422,7 +416,7 @@ export async function updateAppointment(
               where: {
                 package_id: currentAppt.package_id,
                 organization_id: admin.organizationId,
-                status: { not: "REALIZADO" },
+                status: { not: AppointmentStatus.REALIZADO },
               },
             });
           }

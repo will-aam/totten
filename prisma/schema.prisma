@@ -494,6 +494,8 @@ model Transaction {
   stock_item        StockItem?                 @relation(fields: [stock_item_id], references: [id], onDelete: SetNull)
 
   @@index([organization_id, date])
+  @@index([organization_id, status])
+  @@index([organization_id, type])
   @@index([recurrence_id])
   @@index([appointment_id])
   @@map("transactions")
