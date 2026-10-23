@@ -17,6 +17,13 @@ import {
   calculatePaymentSettlementAndFee,
   createSettledRevenueWithFee,
 } from "@/lib/server/services/payments/settlement.service";
+import {
+  parseDateToBrasilia,
+  getBrasiliaDayRange,
+  getBrasiliaMonthRange,
+  addBrasiliaMonths,
+  addBrasiliaWeeks,
+} from "@/lib/date-utils";
 
 // --- 1. CRIAR TRANSAÇÃO MANUAL (COM RECORRÊNCIA) ---
 export async function createTransaction(data: {
@@ -38,12 +45,11 @@ export async function createTransaction(data: {
       const transactionsToCreate = [];
 
       for (let i = 0; i < data.duration; i++) {
-        const txDate = new Date(data.date + "T12:00:00Z");
-        if (data.frequency === "WEEKLY") {
-          txDate.setDate(txDate.getDate() + i * 7);
-        } else {
-          txDate.setMonth(txDate.getMonth() + i);
-        }
+        const baseDate = parseDateToBrasilia(data.date);
+        const txDate =
+          data.frequency === "WEEKLY"
+            ? addBrasiliaWeeks(baseDate, i)
+            : addBrasiliaMonths(baseDate, i);
 
         transactionsToCreate.push({
           type: data.type,
@@ -72,7 +78,7 @@ export async function createTransaction(data: {
         .then((txs) => txs.forEach((t) => triggerZibeeSyncById(t.id)))
         .catch(console.error);
     } else {
-      let txDate = new Date(data.date + "T12:00:00Z");
+      let txDate = parseDateToBrasilia(data.date);
       let feeAmount = 0;
       let methodId = data.paymentMethodId || null;
 
@@ -174,7 +180,7 @@ export async function updateTransaction(
         type: data.type,
         description: data.description,
         amount: data.amount,
-        date: new Date(data.date + "T12:00:00Z"),
+        date: data.date ? parseDateToBrasilia(data.date) : undefined,
         status: data.status,
         payment_method_id: data.paymentMethodId || null,
       },
@@ -295,9 +301,7 @@ export async function getFullTransactions(month: number, year: number) {
   try {
     const admin = await requireAuth();
 
-    const targetMonth = month - 1;
-    const monthStart = new Date(year, targetMonth, 1, 0, 0, 0);
-    const monthEnd = new Date(year, targetMonth + 1, 0, 23, 59, 59, 999);
+    const { monthStart, monthEnd } = getBrasiliaMonthRange(year, month);
 
     const transactions = await prisma.transaction.findMany({
       where: {
@@ -904,29 +908,26 @@ export async function getPaginatedTransactions(params: {
       },
     ];
 
-    // 1. Filtro de Data
+    // 1. Filtro de Data (Fuso Oficial de Brasília America/Sao_Paulo)
     if (params.specificDate) {
-      const [sYear, sMonth, sDay] = params.specificDate.split("-").map(Number);
-      const startOfDay = new Date(sYear, sMonth - 1, sDay, 0, 0, 0, 0);
-      const endOfDay = new Date(sYear, sMonth - 1, sDay, 23, 59, 59, 999);
+      const { startOfDay, endOfDay } = getBrasiliaDayRange(params.specificDate);
       andConditions.push({
         date: { gte: startOfDay, lte: endOfDay },
       });
     } else if (params.startDate || params.endDate) {
       const dateRange: any = {};
       if (params.startDate) {
-        const [sYear, sMonth, sDay] = params.startDate.split("-").map(Number);
-        dateRange.gte = new Date(sYear, sMonth - 1, sDay, 0, 0, 0, 0);
+        dateRange.gte = getBrasiliaDayRange(params.startDate).startOfDay;
       }
       if (params.endDate) {
-        const [eYear, eMonth, eDay] = params.endDate.split("-").map(Number);
-        dateRange.lte = new Date(eYear, eMonth - 1, eDay, 23, 59, 59, 999);
+        dateRange.lte = getBrasiliaDayRange(params.endDate).endOfDay;
       }
       andConditions.push({ date: dateRange });
     } else if (params.month && params.year) {
-      const targetMonth = params.month - 1;
-      const monthStart = new Date(params.year, targetMonth, 1, 0, 0, 0);
-      const monthEnd = new Date(params.year, targetMonth + 1, 0, 23, 59, 59, 999);
+      const { monthStart, monthEnd } = getBrasiliaMonthRange(
+        params.year,
+        params.month,
+      );
       andConditions.push({
         date: { gte: monthStart, lte: monthEnd },
       });

@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { format, addMinutes, parse, isBefore, isEqual, isAfter, startOfDay, endOfDay } from "date-fns";
+import { getBrasiliaDayRange } from "@/lib/date-utils";
 
 export async function getAvailableTimesAndProfessionals(
   organizationSlug: string,
@@ -23,8 +24,9 @@ export async function getAvailableTimesAndProfessionals(
     if (!service) return { success: false, error: "Serviço não encontrado" };
 
     const serviceDuration = service.duration || 60; // default 60 min
-    const date = new Date(dateStr + "T12:00:00Z"); // fix timezone issues by forcing midday UTC
-    const dayOfWeek = date.getUTCDay(); // 0 = Sunday, 1 = Monday...
+    const { startOfDay: dayStart, endOfDay: dayEnd } = getBrasiliaDayRange(dateStr);
+    const date = new Date(dateStr + "T12:00:00-03:00"); // fix timezone issues by forcing midday Brasilia
+    const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday...
 
     // Busca profissionais ativos que realizam este serviço e têm uma schedule_rule
     const professionals = await prisma.admin.findMany({
@@ -51,8 +53,8 @@ export async function getAvailableTimesAndProfessionals(
         appointments: {
           where: {
             date_time: {
-              gte: startOfDay(date),
-              lte: endOfDay(date)
+              gte: dayStart,
+              lte: dayEnd
             },
             status: { notIn: ["CANCELADO"] }
           }

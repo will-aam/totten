@@ -4,14 +4,27 @@
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { sendClosingReportEmail } from "@/lib/email";
+import {
+  getBrasiliaDateParts,
+  getBrasiliaMonthRange,
+} from "@/lib/date-utils";
 
 export async function getReportsData() {
   try {
     const admin = await requireAuth();
     const organizationId = admin.organizationId;
-    const now = new Date();
+    const nowParts = getBrasiliaDateParts();
 
-    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    let startMonth = nowParts.month - 5;
+    let startYear = nowParts.year;
+    while (startMonth < 1) {
+      startMonth += 12;
+      startYear -= 1;
+    }
+    const { monthStart: sixMonthsAgo } = getBrasiliaMonthRange(
+      startYear,
+      startMonth,
+    );
 
     const appointments = await prisma.appointment.findMany({
       where: {
@@ -53,9 +66,14 @@ export async function getReportsData() {
     ];
 
     for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = `${d.getFullYear()}-${d.getMonth()}`;
-      const label = `${monthNames[d.getMonth()]}/${String(d.getFullYear()).slice(-2)}`;
+      let m = nowParts.month - i;
+      let y = nowParts.year;
+      while (m < 1) {
+        m += 12;
+        y -= 1;
+      }
+      const key = `${y}-${m}`;
+      const label = `${monthNames[m - 1]}/${String(y).slice(-2)}`;
       //  Adicionamos 'agendamentos' aqui para o novo gráfico de desempenho
       monthlyDataMap.set(key, {
         month: label,
@@ -66,8 +84,8 @@ export async function getReportsData() {
     }
 
     appointments.forEach((a) => {
-      const d = new Date(a.date_time);
-      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      const p = getBrasiliaDateParts(a.date_time);
+      const key = `${p.year}-${p.month}`;
       if (monthlyDataMap.has(key)) {
         const entry = monthlyDataMap.get(key);
         entry.agendamentos += 1; // Conta 1 agendamento realizado
@@ -75,8 +93,8 @@ export async function getReportsData() {
     });
 
     paidTransactions.forEach((t) => {
-      const d = new Date(t.date);
-      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      const p = getBrasiliaDateParts(t.date);
+      const key = `${p.year}-${p.month}`;
       if (monthlyDataMap.has(key)) {
         const entry = monthlyDataMap.get(key);
         if (t.type === "RECEITA") entry.receitas += Number(t.amount);
@@ -135,16 +153,17 @@ export async function getClosingReportAvailablePeriods() {
     ]);
 
     // Mapeia ano -> Set de meses
-    // REGRA DE FECHAMENTO: Apenas meses que já fecharam (anteriores ao mês atual)
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1; // 1 a 12
+    // REGRA DE FECHAMENTO: Apenas meses que já fecharam (anteriores ao mês atual no fuso de Brasília)
+    const nowParts = getBrasiliaDateParts();
+    const currentYear = nowParts.year;
+    const currentMonth = nowParts.month; // 1 a 12
 
     const periodsMap = new Map<number, Set<number>>();
 
-    const addPeriod = (d: Date) => {
-      const year = d.getFullYear();
-      const month = d.getMonth() + 1; // 1 a 12
+    const addPeriod = (dateInput: Date | string) => {
+      const p = getBrasiliaDateParts(dateInput);
+      const year = p.year;
+      const month = p.month; // 1 a 12
 
       // Ignora datas futuras ou do mês atual que ainda está em andamento
       if (year > currentYear || (year === currentYear && month >= currentMonth)) {
@@ -157,16 +176,18 @@ export async function getClosingReportAvailablePeriods() {
       periodsMap.get(year)!.add(month);
     };
 
-    transactions.forEach((t) => addPeriod(new Date(t.date)));
-    appointments.forEach((a) => addPeriod(new Date(a.date_time)));
+    transactions.forEach((t) => addPeriod(t.date));
+    appointments.forEach((a) => addPeriod(a.date_time));
 
     // Se ainda não houver nenhum mês fechado com dados históricos, sugere o mês anterior imediato como padrão
     if (periodsMap.size === 0) {
-      const lastMonthDate = new Date(currentYear, now.getMonth() - 1, 1);
-      periodsMap.set(
-        lastMonthDate.getFullYear(),
-        new Set([lastMonthDate.getMonth() + 1]),
-      );
+      let prevMonth = currentMonth - 1;
+      let prevYear = currentYear;
+      if (prevMonth < 1) {
+        prevMonth = 12;
+        prevYear -= 1;
+      }
+      periodsMap.set(prevYear, new Set([prevMonth]));
     }
 
     const availableYears = Array.from(periodsMap.keys()).sort((a, b) => b - a);
@@ -186,10 +207,13 @@ export async function getClosingReportAvailablePeriods() {
     };
   } catch (error) {
     console.error("Erro ao buscar períodos disponíveis:", error);
-    const now = new Date();
-    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const fallbackYear = lastMonthDate.getFullYear();
-    const fallbackMonth = lastMonthDate.getMonth() + 1;
+    const nowParts = getBrasiliaDateParts();
+    let fallbackMonth = nowParts.month - 1;
+    let fallbackYear = nowParts.year;
+    if (fallbackMonth < 1) {
+      fallbackMonth = 12;
+      fallbackYear -= 1;
+    }
     return {
       success: false,
       availableYears: [fallbackYear],
@@ -209,9 +233,8 @@ export async function sendMonthlyReport(
     const admin = await requireAuth();
     const organizationId = admin.organizationId;
 
-    // Pega o início e o fim exato do mês selecionado
-    const monthStart = new Date(year, month - 1, 1, 0, 0, 0);
-    const monthEnd = new Date(year, month, 0, 23, 59, 59, 999);
+    // Pega o início e o fim exato do mês selecionado no fuso de Brasília
+    const { monthStart, monthEnd } = getBrasiliaMonthRange(year, month);
 
     const appointments = await prisma.appointment.findMany({
       where: {

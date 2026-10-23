@@ -4,6 +4,12 @@
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { PaymentMethod } from "@prisma/client";
+import {
+  getBrasiliaDateParts,
+  getBrasiliaDayRange,
+  getBrasiliaMonthRange,
+  getBrasiliaWeekRange,
+} from "@/lib/date-utils";
 
 // Tipagem de retorno inferida para garantir contrato com o Frontend
 export async function getFinanceDashboardData(month?: number, year?: number) {
@@ -11,53 +17,20 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
     const admin = await requireAuth();
     const organizationId = admin.organizationId;
 
-    // Trabalhando com datas de forma mais segura para evitar bugs de UTC no servidor
-    const now = new Date();
-    const targetMonth = month ? month - 1 : now.getMonth();
-    const targetYear = year || now.getFullYear();
+    // Trabalhando com datas no fuso oficial de Brasília para evitar bugs de UTC no servidor
+    const nowParts = getBrasiliaDateParts();
+    const targetMonth = month ? month : nowParts.month; // 1 a 12
+    const targetYear = year || nowParts.year;
     const isCurrentMonth =
-      targetMonth === now.getMonth() && targetYear === now.getFullYear();
+      targetMonth === nowParts.month && targetYear === nowParts.year;
 
     // 1. LIMITES DE DATA
-    const monthStart = new Date(targetYear, targetMonth, 1, 0, 0, 0);
-    const monthEnd = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59, 999);
-
-    const todayStart = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      0,
-      0,
-      0,
+    const { monthStart, monthEnd } = getBrasiliaMonthRange(
+      targetYear,
+      targetMonth,
     );
-    const todayEnd = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      23,
-      59,
-      59,
-      999,
-    );
-
-    const dayOfWeek = now.getDay();
-    const weekStart = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate() - dayOfWeek,
-      0,
-      0,
-      0,
-    );
-    const weekEnd = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate() + (6 - dayOfWeek),
-      23,
-      59,
-      59,
-      999,
-    );
+    const { startOfDay: todayStart, endOfDay: todayEnd } = getBrasiliaDayRange();
+    const { weekStart, weekEnd } = getBrasiliaWeekRange();
 
     // ============================================================================
     //  O SEGREDO DO ERP: Transações do Mês + Pendências em Aberto
