@@ -437,7 +437,7 @@ function PackagesPageContent() {
     if (scheduleValidation && !scheduleValidation.isValid) {
       return toast.error(
         scheduleValidation.errorMessage ||
-          "Não é possível registrar: profissional ou horário indisponível conforme a grade de horários."
+        "Não é possível registrar: profissional ou horário indisponível conforme a grade de horários."
       );
     }
 

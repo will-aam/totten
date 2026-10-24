@@ -134,7 +134,9 @@ export async function getPackagesDashboardData(params?: {
 }
 
 /**
- * Sincroniza o saldo de um pacote contando os check-ins reais vinculados a ele (desconsiderando soft deletes).
+ * Sincroniza o saldo de um pacote realizando uma auditoria completa:
+ * Conta todos os agendamentos realizados vinculados ao pacote (atendimentos concluídos na agenda, totem ou baixa manual)
+ * somados aos check-ins avulsos ativos (feitos diretamente por CPF no totem sem agendamento prévio).
  */
 export async function syncPackageBalance(packageId: string) {
   try {
@@ -153,6 +155,7 @@ export async function syncPackageBalance(packageId: string) {
       select: {
         id: true,
         total_sessions: true,
+        used_sessions: true,
         expires_at: true,
         active: true,
         client_id: true,
@@ -163,19 +166,42 @@ export async function syncPackageBalance(packageId: string) {
       return { error: "Pacote não encontrado." };
     }
 
-    // 1. Conta quantos check-ins reais existem para este pacote (filtrando soft deletes)
-    const realCount = await prisma.checkIn.count({
+    // 1. Busca todos os agendamentos concluídos (REALIZADO) vinculados ao pacote
+    // (abrange tanto atendimentos realizados na Agenda tradicional quanto via Totem e Baixa Manual)
+    const completedAppointments = await prisma.appointment.findMany({
+      where: {
+        package_id: packageId,
+        organization_id: admin.organizationId,
+        status: "REALIZADO",
+      },
+      select: { id: true },
+    });
+    const completedApptIds = new Set(completedAppointments.map((a) => a.id));
+
+    // 2. Busca check-ins ativos (não deletados) vinculados a este pacote
+    const validCheckIns = await prisma.checkIn.findMany({
       where: {
         package_id: packageId,
         organization_id: admin.organizationId,
         deleted_at: null,
       },
+      select: { id: true, appointment_id: true },
     });
 
-    const isExpired = pkg.expires_at ? new Date() > pkg.expires_at : false;
-    const willBeActive = realCount < pkg.total_sessions && !isExpired;
+    // Check-ins que NÃO estão vinculados aos agendamentos REALIZADOS já contados acima
+    // (ex: check-ins diretos por CPF no totem sem agendamento prévio)
+    const standaloneCheckIns = validCheckIns.filter(
+      (ci) => !ci.appointment_id || !completedApptIds.has(ci.appointment_id)
+    );
 
-    // 2. Atualiza o saldo do pacote para esse valor real
+    const realCount = completedAppointments.length + standaloneCheckIns.length;
+
+    // Preserva o status de arquivamento caso o pacote tenha sido encerrado manualmente pelo estabelecimento
+    const isManuallyArchived = !pkg.active && (pkg.used_sessions < pkg.total_sessions);
+    const isExpired = pkg.expires_at ? new Date() > pkg.expires_at : false;
+    const willBeActive = isManuallyArchived ? false : (realCount < pkg.total_sessions && !isExpired);
+
+    // 3. Atualiza o saldo do pacote para esse valor real apurado
     await prisma.package.update({
       where: {
         id: packageId,
@@ -206,7 +232,8 @@ export async function syncPackageBalance(packageId: string) {
 }
 
 /**
- * Busca o histórico de agendamentos vinculados a um pacote específico.
+ * Busca o histórico de sessões vinculadas a um pacote específico.
+ * Traz todos os agendamentos do pacote e eventuais check-ins avulsos via CPF.
  */
 export async function getPackageHistory(packageId: string) {
   try {
@@ -225,25 +252,52 @@ export async function getPackageHistory(packageId: string) {
       },
     });
 
+    // Busca também check-ins avulsos realizados sem agendamento prévio (ex: totem por CPF)
+    const standaloneCheckIns = await prisma.checkIn.findMany({
+      where: {
+        package_id: packageId,
+        organization_id: admin.organizationId,
+        deleted_at: null,
+        appointment_id: null,
+      },
+      orderBy: {
+        date_time: "asc",
+      },
+    });
+
+    const appointmentItems = appointments.map((appt) => {
+      // Lógica para decidir qual data mostrar:
+      // Se foi realizado e tem check-in ativo (sem soft delete), pega a hora real que bateu no totem
+      const hasValidCheckIn = appt.check_in && !appt.check_in.deleted_at;
+      const displayDate =
+        appt.status === "REALIZADO" && hasValidCheckIn
+          ? appt.check_in!.date_time
+          : appt.date_time;
+
+      return {
+        id: appt.id,
+        session: appt.session_number,
+        date: displayDate,
+        status: appt.status,
+        obs: appt.observations,
+      };
+    });
+
+    const standaloneItems = standaloneCheckIns.map((ci) => ({
+      id: ci.id,
+      session: null,
+      date: ci.date_time,
+      status: "REALIZADO",
+      obs: "Check-in avulso via Totem (CPF)",
+    }));
+
+    const allHistory = [...appointmentItems, ...standaloneItems].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
     return {
       success: true,
-      history: appointments.map((appt) => {
-        // Lógica para decidir qual data mostrar:
-        // Se foi realizado e tem check-in ativo (sem soft delete), pega a hora real que bateu no totem
-        const hasValidCheckIn = appt.check_in && !appt.check_in.deleted_at;
-        const displayDate =
-          appt.status === "REALIZADO" && hasValidCheckIn
-            ? appt.check_in!.date_time
-            : appt.date_time;
-
-        return {
-          id: appt.id,
-          session: appt.session_number,
-          date: displayDate,
-          status: appt.status,
-          obs: appt.observations,
-        };
-      }),
+      history: allHistory,
     };
   } catch (error) {
     console.error("Erro ao buscar histórico do pacote:", error);
@@ -988,11 +1042,29 @@ export async function fixAppointmentAction(appointmentId: string) {
       return { success: false, error: "ID é obrigatório" };
     }
 
-    const result = await PackageService.fixAppointment(
-      appointmentId,
-      admin.organizationId,
-      { id: admin.id, name: admin.name || "Administrador" }
-    );
+    let result: any;
+    try {
+      result = await PackageService.fixAppointment(
+        appointmentId,
+        admin.organizationId,
+        { id: admin.id, name: admin.name || "Administrador" }
+      );
+    } catch (err: any) {
+      if (err?.message === "NOT_FOUND") {
+        // Se não for um agendamento, verifica se é um Check-in avulso (sem agendamento)
+        const checkIn = await prisma.checkIn.findUnique({
+          where: { id: appointmentId, organization_id: admin.organizationId },
+        });
+        if (checkIn) {
+          const deleteResult = await deleteCheckIn(checkIn.id);
+          if (deleteResult.success) {
+            return { success: true };
+          }
+          return { success: false, error: deleteResult.error || "Erro ao estornar check-in." };
+        }
+      }
+      throw err;
+    }
 
     revalidatePath("/admin/packages");
     revalidatePath("/admin/dashboard");

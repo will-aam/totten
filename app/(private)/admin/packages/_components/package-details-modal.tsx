@@ -36,7 +36,6 @@ import {
   LoaderDots,
   Archive,
   AlertTriangle,
-  RefreshCwAlt,
   Trash,
   CalendarDetail,
   HelpCircle,
@@ -46,7 +45,6 @@ import { cn } from "@/lib/utils";
 import {
   getPackageHistory,
   archivePackage,
-  syncPackageBalance,
   extendPackageAction,
   fixAppointmentAction,
 } from "@/app/actions/packages";
@@ -73,8 +71,6 @@ export function PackageDetailsModal({
   const [isArchiving, setIsArchiving] = useState(false);
 
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [isSyncDialogOpen, setIsSyncDialogOpen] = useState(false);
 
   // Estados para o Dialog de Exclusão customizado
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -169,30 +165,6 @@ export function PackageDetailsModal({
     }
   };
 
-  // Nova versão chamando a Server Action
-  const handleSyncBalance = async () => {
-    setIsSyncing(true);
-    try {
-      const result = await syncPackageBalance(packageData.id);
-
-      if (result.error) {
-        toast({
-          title: "Erro",
-          description: result.error,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      toast({ title: "Saldo Sincronizado com sucesso!" });
-      setIsSyncDialogOpen(false);
-      onOpenChange(false);
-    } catch (error) {
-      toast({ title: "Erro de conexão.", variant: "destructive" });
-    } finally {
-      setIsSyncing(false);
-    }
-  };
 
   const handleProrrogar = async () => {
     if (!newExpirationDate) {
@@ -317,56 +289,6 @@ export function PackageDetailsModal({
               <h3 className="font-black text-xs uppercase tracking-widest flex items-center gap-2 text-muted-foreground">
                 <CalendarIcon className="h-4 w-4" /> Cronograma
               </h3>
-
-              {packageData.active && (
-                <div className="flex items-center gap-2">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <button type="button" className="text-muted-foreground hover:text-foreground transition-colors outline-none cursor-help">
-                        <HelpCircle className="h-4 w-4" />
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent side="top" className="w-[220px] text-xs leading-relaxed bg-foreground text-background border-none rounded-xl p-3 shadow-xl">
-                      <p>Força a recontagem das sessões caso o saldo do pacote não esteja batendo com o histórico abaixo.</p>
-                    </PopoverContent>
-                  </Popover>
-
-                  <AlertDialog
-                    open={isSyncDialogOpen}
-                    onOpenChange={setIsSyncDialogOpen}
-                  >
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-7 text-[10px] px-2 font-bold border-primary/20 text-primary hover:bg-primary/10"
-                      >
-                        <RefreshCwAlt className="h-3 w-3 mr-1" /> Sincronizar
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent className="rounded-4xl">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>
-                          Sincronizar saldo de sessões?
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Isso irá recontar todas as suas sessões realizadas e
-                          atualizar o saldo do pacote.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={handleSyncBalance}
-                          disabled={isSyncing}
-                        >
-                          {isSyncing ? "Sincronizando..." : "Confirmar"}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              )}
             </div>
 
             {loading ? (
