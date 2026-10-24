@@ -2,6 +2,7 @@
 import { getTenantPrisma } from "@/lib/prisma";
 import { triggerZibeeSyncById, deleteTransactionFromZibee } from "@/lib/server/integrations/zibee.service";
 import { createSettledRevenueWithFee } from "@/lib/server/services/payments/settlement.service";
+import { addBrasiliaMonths } from "@/lib/date-utils";
 
 export class PackageService {
   /**
@@ -332,8 +333,7 @@ export class PackageService {
         const baseDate = new Date();
 
         for (let i = 0; i < count; i++) {
-          const dueDate = new Date(baseDate);
-          dueDate.setMonth(baseDate.getMonth() + i);
+          const dueDate = addBrasiliaMonths(baseDate, i);
 
           const createdInstTx = await tx.transaction.create({
             data: {
