@@ -274,22 +274,41 @@ export class TotemCheckInService {
   }
 
   /**
-   * Processa o check-in avulso via CPF, validando o pacote ativo do cliente
-   * e consumindo a sessão de forma atômica.
+   * Processa o check-in avulso via CPF, validando o pacote ativo do cliente,
+   * checando validade, criando o agendamento correspondente, dando baixa no estoque
+   * e consumindo a sessão de forma estritamente atômica.
    */
   static async processCheckInByCpf(cpf: string, organizationId: string) {
     const prisma = getTenantPrisma(organizationId);
 
-    // Busca o cliente dentro do escopo da organização
+    const cleanCpf = cpf.replace(/\D/g, "");
+    const cpfFormatado =
+      cleanCpf.length === 11
+        ? cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
+        : cpf;
+    const cpfCandidates = Array.from(
+      new Set([cpf.trim(), cleanCpf, cpfFormatado]),
+    );
+
+    // Busca o cliente dentro do escopo da organização com o pacote ativo e insumos do serviço
     const client = await prisma.client.findFirst({
       where: {
-        cpf: cpf,
+        cpf: { in: cpfCandidates },
         organization_id: organizationId,
       },
       include: {
         packages: {
           where: {
             active: true,
+          },
+          include: {
+            service: {
+              include: {
+                stock_items: {
+                  include: { stock_item: true },
+                },
+              },
+            },
           },
           orderBy: {
             created_at: "desc",
@@ -309,53 +328,174 @@ export class TotemCheckInService {
 
     const activePackage = client.packages[0];
 
+    // Trava de validade: impede check-in em pacotes vencidos
+    if (activePackage.expires_at && new Date() > new Date(activePackage.expires_at)) {
+      throw new Error("PACKAGE_EXPIRED");
+    }
+
+    // Trava prévia de sessões esgotadas
     if (activePackage.used_sessions >= activePackage.total_sessions) {
       throw new Error("PACKAGE_COMPLETED");
     }
 
-    const newUsedSessions = activePackage.used_sessions + 1;
-    const willRemainActive = newUsedSessions < activePackage.total_sessions;
-
     const loyaltySettings = await prisma.loyaltySettings.findUnique({
-      where: { organization_id: organizationId }
+      where: { organization_id: organizationId },
     });
 
-    // Registra o check-in e atualiza o pacote de forma atômica
+    const createdTxIds: string[] = [];
+    const now = new Date();
+
+    // Registra o agendamento, check-in, baixa de estoque e consumo atômico do pacote
     const result = await prisma.$transaction(async (tx) => {
-      const checkIn = await tx.checkIn.create({
-        data: {
-          client_id: client.id,
-          package_id: activePackage.id,
+      // 1. Trava atômica de concorrência com condição no banco (evita race condition de cliques duplos)
+      const pacoteUpdate = await tx.package.updateMany({
+        where: {
+          id: activePackage.id,
           organization_id: organizationId,
+          active: true,
+          used_sessions: { lt: activePackage.total_sessions },
         },
-      });
-
-      await tx.package.update({
-        where: { id: activePackage.id, organization_id: organizationId },
         data: {
-          used_sessions: newUsedSessions,
-          active: willRemainActive,
+          used_sessions: { increment: 1 },
         },
       });
 
-      // Adicionar pontos de fidelidade
-      if (loyaltySettings?.is_active && loyaltySettings?.check_in_active) {
-        const clientCurrent = await tx.client.findUnique({
-          where: { id: client.id },
-          select: { loyalty_points: true }
-        });
-        const newPoints = Math.min(
-          (clientCurrent?.loyalty_points || 0) + loyaltySettings.check_in_points,
-          loyaltySettings.max_points
-        );
-        await tx.client.update({
-          where: { id: client.id },
-          data: { loyalty_points: newPoints }
+      if (pacoteUpdate.count === 0) {
+        throw new Error("SALDO_ESGOTADO");
+      }
+
+      // Lê o saldo atualizado de forma consistente dentro da transação
+      const updatedPkg = await tx.package.findUnique({
+        where: { id: activePackage.id },
+        select: { used_sessions: true, total_sessions: true },
+      });
+
+      const currentUsedSessions =
+        updatedPkg?.used_sessions ?? (activePackage.used_sessions + 1);
+      const willRemainActive =
+        currentUsedSessions < activePackage.total_sessions;
+
+      if (!willRemainActive) {
+        await tx.package.update({
+          where: { id: activePackage.id },
+          data: { active: false },
         });
       }
 
-      return checkIn;
+      // 2. Criação do Agendamento REALIZADO (garante registro na agenda, jornada e histórico do cliente)
+      const service = activePackage.service;
+      const appt = await tx.appointment.create({
+        data: {
+          date_time: now,
+          status: "REALIZADO",
+          client_id: client.id,
+          service_id: activePackage.service_id,
+          package_id: activePackage.id,
+          organization_id: organizationId,
+          has_charge: false,
+          session_number: currentUsedSessions,
+          snapshot_service_name:
+            activePackage.snapshot_service_name ?? service?.name,
+          snapshot_service_price:
+            activePackage.snapshot_service_price ?? service?.price,
+          snapshot_service_duration:
+            activePackage.snapshot_service_duration ?? service?.duration,
+          observations: "Check-in avulso via Totem (Autoatendimento CPF).",
+        },
+      });
+
+      // 3. Criação do Check-in vinculado ao Agendamento
+      const checkIn = await tx.checkIn.create({
+        data: {
+          appointment_id: appt.id,
+          client_id: client.id,
+          package_id: activePackage.id,
+          organization_id: organizationId,
+          auto_processed: true,
+        },
+      });
+
+      // 4. Processamento de Insumos e Estoque
+      if (service && service.track_stock && service.stock_items.length > 0) {
+        for (const item of service.stock_items) {
+          const stockData = item.stock_item;
+          const usedQty = item.quantity_used;
+
+          // Baixa a quantidade física na prateleira
+          await tx.stockItem.update({
+            where: { id: stockData.id, organization_id: organizationId },
+            data: { quantity: { decrement: usedQty } },
+          });
+
+          // Registra despesa para insumos que não foram expensados na compra
+          if (!stockData.was_expensed) {
+            const costOfUsedQty =
+              Number(usedQty) * Number(stockData.unit_cost);
+
+            if (costOfUsedQty > 0) {
+              const expTx = await tx.transaction.create({
+                data: {
+                  type: "DESPESA",
+                  description: `Custo de Insumo: ${stockData.name}`,
+                  amount: costOfUsedQty,
+                  date: now,
+                  status: "PAGO",
+                  organization_id: organizationId,
+                  appointment_id: appt.id,
+                },
+              });
+              createdTxIds.push(expTx.id);
+            }
+          }
+        }
+      } else if (
+        service &&
+        !service.track_stock &&
+        service.material_cost &&
+        Number(service.material_cost) > 0
+      ) {
+        // Custo Fixo de Material
+        const expTx = await tx.transaction.create({
+          data: {
+            type: "DESPESA",
+            description: `Custo de Material: ${service.name}`,
+            amount: service.material_cost,
+            date: now,
+            status: "PAGO",
+            organization_id: organizationId,
+            appointment_id: appt.id,
+          },
+        });
+        createdTxIds.push(expTx.id);
+      }
+
+      // 5. Adicionar pontos de fidelidade
+      if (loyaltySettings?.is_active && loyaltySettings?.check_in_active) {
+        const clientCurrent = await tx.client.findUnique({
+          where: { id: client.id },
+          select: { loyalty_points: true },
+        });
+        const newPoints = Math.min(
+          (clientCurrent?.loyalty_points || 0) +
+            loyaltySettings.check_in_points,
+          loyaltySettings.max_points,
+        );
+        await tx.client.update({
+          where: { id: client.id },
+          data: { loyalty_points: newPoints },
+        });
+      }
+
+      return {
+        checkIn,
+        currentUsedSessions,
+      };
     });
+
+    // Disparar sincronização com Zibee para transações criadas no check-in
+    createdTxIds.forEach((txId) =>
+      triggerZibeeSyncById(txId).catch(console.error),
+    );
 
     return {
       client: {
@@ -363,12 +503,12 @@ export class TotemCheckInService {
         name: client.name,
       },
       package_info: {
-        used_sessions: newUsedSessions,
+        used_sessions: result.currentUsedSessions,
         total_sessions: activePackage.total_sessions,
       },
       check_in: {
-        id: result.id,
-        date_time: result.date_time,
+        id: result.checkIn.id,
+        date_time: result.checkIn.date_time,
       },
     };
   }

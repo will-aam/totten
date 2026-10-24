@@ -63,6 +63,14 @@ export async function POST(request: NextRequest) {
         message: "Saldo de sessões esgotado devido a requisições simultâneas.",
         status: 400,
       },
+      PACKAGE_EXPIRED: {
+        message: "Este pacote está vencido. Por favor, dirija-se à recepção.",
+        status: 400,
+      },
+      PACKAGE_COMPLETED: {
+        message: "Este pacote já utilizou todas as sessões contratadas.",
+        status: 400,
+      },
     };
 
     if (error.message && domainErrors[error.message]) {
