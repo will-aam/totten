@@ -704,8 +704,16 @@ export async function deleteCheckIn(checkInId: string) {
         });
       }
 
-      // C. Desfaz estoque e financeiro (SÓ se houve movimentação automática)
-      if (checkIn.auto_processed && checkIn.appointment?.service) {
+      // C. Desfaz estoque e financeiro (se houve movimentação automática ou atendimento foi REALIZADO)
+      const hasMovedStock = Boolean(
+        checkIn.auto_processed ||
+          (wasRealizado && (
+            checkIn.appointment?.service?.track_stock ||
+            (checkIn.appointment?.service?.material_cost && Number(checkIn.appointment.service.material_cost) > 0)
+          ))
+      );
+
+      if (hasMovedStock && checkIn.appointment?.service) {
         const service = checkIn.appointment.service;
 
         if (service.track_stock && service.stock_items.length > 0) {

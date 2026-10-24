@@ -668,6 +668,13 @@ export async function updateAppointment(
       }
 
       if (isMarkingAsDone) {
+        // Se houver check-in registrado previamente (ex: totem com auto_complete_on_checkin = false),
+        // atualiza auto_processed para true para permitir o estorno de estoque caso seja cancelado
+        await tx.checkIn.updateMany({
+          where: { appointment_id: currentAppt.id },
+          data: { auto_processed: true },
+        });
+
         if (service.track_stock && service.stock_items.length > 0) {
           for (const item of service.stock_items) {
             const stockData = item.stock_item;

@@ -101,7 +101,10 @@ export class PackageService {
       // C. Desfaz estoque e financeiro (SÓ se houve movimentação de insumos ou baixa)
       const hasMovedStock = Boolean(
         appointment.check_in?.auto_processed ||
-          (wasRealizado && appointment.service?.track_stock)
+          (wasRealizado && (
+            appointment.service?.track_stock ||
+            (appointment.service?.material_cost && Number(appointment.service.material_cost) > 0)
+          ))
       );
 
       if (hasMovedStock && appointment.service) {
