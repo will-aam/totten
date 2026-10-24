@@ -533,7 +533,6 @@ export async function processReceivablePayment(
           data: {
             payment_method: paymentMethod as PaymentMethod, // Cast seguro para Enum
             has_charge: false,
-            professional_id: admin.id, // Assina o apontamento (baixa no caixa)
           },
         });
 
@@ -720,7 +719,6 @@ export async function processAllReceivablesPayment(
           data: {
             payment_method: paymentMethod as PaymentMethod,
             has_charge: false,
-            professional_id: admin.id,
           },
         });
 
