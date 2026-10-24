@@ -1,5 +1,5 @@
 import { getTenantPrisma } from "@/lib/prisma";
-import { triggerZibeeSyncById } from "@/lib/server/integrations/zibee.service";
+import { TotemCheckInService } from "./checkin.service";
 
 export class TotemSearchService {
   /**
@@ -121,148 +121,40 @@ const agendamentos = await prisma.appointment.findMany({
     }
 
 
-   // ==========================================================
+    // ==========================================================
     // SE CHEGOU AQUI: O Cliente tem apenas 1 agendamento.
-    // Fazemos o AUTO CHECK-IN!
+    // Fazemos o AUTO CHECK-IN unificado via TotemCheckInService!
     // ==========================================================
     const agendamento = agendamentos[0];
 
-    // 🛡️ REMOVIDO: Travas de segurança manuais (agora filtrado direto na query)
-    
-    let packageInfo = null;
-    const createdTxIds: string[] = [];
-
     try {
-      await prisma.$transaction(async (tx) => {
-      // 1. Cria o registro de CheckIn
-      await tx.checkIn.create({
-        data: {
-          appointment_id: agendamento.id,
-          client_id: cliente.id,
+      const checkInResult = await TotemCheckInService.processCheckIn(
+        agendamento.id,
+        organizationId,
+      );
+
+      return {
+        status: "FOUND",
+        appointment: {
+          id: agendamento.id,
+          date_time: agendamento.date_time,
+          service_name: checkInResult.serviceName,
+          client_name: checkInResult.clientName,
           package_id: agendamento.package_id ?? null,
-          organization_id: organizationId,
-          auto_processed: true,
+          package_info: checkInResult.package_info,
         },
-      });
-
-      // 2. LÓGICA DE PACOTE OU AVULSO
-      if (agendamento.package_id) {
-        const pacote = await tx.package.update({
-          where: {
-            id: agendamento.package_id,
-            organization_id: organizationId,
-          },
-          data: { used_sessions: { increment: 1 } },
-        });
-
-        packageInfo = {
-          used: pacote.used_sessions,
-          total: pacote.total_sessions,
-        };
-
-        await tx.appointment.update({
-          where: { id: agendamento.id, organization_id: organizationId },
-          data: { status: "REALIZADO", has_charge: false },
-        });
-      } else {
-        await tx.appointment.update({
-          where: { id: agendamento.id, organization_id: organizationId },
-          data: { status: "REALIZADO", has_charge: true },
-        });
-      }
-
-      // --- O CORAÇÃO DO SISTEMA FINANCEIRO E DE ESTOQUE (AUTO CHECK-IN) ---
-      const service = agendamento.service;
-
-      if (
-        service.track_stock &&
-        service.stock_items &&
-        service.stock_items.length > 0
-      ) {
-        let totalCost = 0;
-        let detailsArray: string[] = [];
-
-        for (const item of service.stock_items) {
-          const stockData = item.stock_item;
-          const usedQty = item.quantity_used;
-
-          await tx.stockItem.update({
-            where: {
-              id: stockData.id,
-              organization_id: organizationId,
-            },
-            data: { quantity: { decrement: usedQty } },
-          });
-
-          if (!stockData.was_expensed) {
-            const itemCost = Number(usedQty) * Number(stockData.unit_cost);
-            if (itemCost > 0) {
-              totalCost += itemCost;
-              detailsArray.push(
-                `${usedQty}x ${stockData.name} (R$ ${itemCost.toFixed(2).replace(".", ",")})`,
-              );
-            }
-          }
-        }
-
-        if (totalCost > 0) {
-          const expTx = await tx.transaction.create({
-            data: {
-              type: "DESPESA",
-              description: `Custo de Insumos: ${service.name}${detailsArray.length > 0 ? ` (${detailsArray.join(", ")})` : ""}`,
-              amount: totalCost,
-              date: new Date(),
-              status: "PAGO",
-              organization_id: organizationId,
-              appointment_id: agendamento.id,
-            },
-          });
-          createdTxIds.push(expTx.id);
-        }
-      } else if (
-        !service.track_stock &&
-        service.material_cost &&
-        Number(service.material_cost) > 0
-      ) {
-        const expTx = await tx.transaction.create({
-          data: {
-            type: "DESPESA",
-            description: `Custo de Material: ${service.name}`,
-            amount: service.material_cost,
-            date: new Date(),
-            status: "PAGO",
-            organization_id: organizationId,
-            appointment_id: agendamento.id,
-          },
-        });
-        createdTxIds.push(expTx.id);
-      }
-    });
-
-    for (const txId of createdTxIds) {
-      triggerZibeeSyncById(txId);
-    }
+      };
     } catch (error: any) {
       // Se for um erro de Violação de Chave Única no check-in (P2002) 
       // ou qualquer falha por concorrência de atualização, tratamos como NOT_FOUND
-      if (error.code === 'P2002') {
-        console.warn(`[TOTEM_SEARCH_SERVICE] P2002 Unique Constraint Failed for appointment ${agendamento.id}. Treating as NOT_FOUND.`);
+      if (error.code === "P2002" || error.message === "CHECKIN_JA_REGISTRADO") {
+        console.warn(
+          `[TOTEM_SEARCH_SERVICE] Check-in duplicado/concorrente para agendamento ${agendamento.id}. Tratando como NOT_FOUND.`
+        );
         return { status: "NOT_FOUND" };
       }
       throw error;
     }
-
-    return {
-      status: "FOUND",
-      appointment: {
-        id: agendamento.id,
-        date_time: agendamento.date_time,
-        service_name: agendamento.service.name,
-        client_name: cliente.name,
-        package_id: agendamento.package_id ?? null,
-        package_info: packageInfo,
-      },
-    };
   }
   /**
    * Busca os detalhes de um cliente (e seus pacotes ativos) pelo CPF

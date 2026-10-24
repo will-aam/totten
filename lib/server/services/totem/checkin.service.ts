@@ -135,25 +135,45 @@ export class TotemCheckInService {
             }
           }
 
+          // Busca receitas pagas já vinculadas ao agendamento (ex: sinal online Mercado Pago ou pagamento antecipado)
+          const paidRevenues = await tx.transaction.findMany({
+            where: {
+              appointment_id: appt.id,
+              organization_id: organizationId,
+              type: "RECEITA",
+              status: "PAGO",
+            },
+          });
+
+          const totalPaid = paidRevenues.reduce(
+            (acc: number, t: any) => acc + Number(t.amount),
+            0
+          );
+          const apptPrice = Number(appt.snapshot_service_price ?? appt.service.price);
+          const remainingAmount = Math.max(0, Number((apptPrice - totalPaid).toFixed(2)));
+
           await tx.appointment.update({
             where: { id: appt.id, organization_id: organizationId },
             data: {
               status: "REALIZADO",
-              has_charge: !autoSettle,
-              payment_method: paymentMethodEnum,
+              has_charge: remainingAmount > 0.01 && !autoSettle,
+              payment_method: paymentMethodEnum || appt.payment_method,
             },
           });
 
-          // Se autoSettle estiver ativo, gera a RECEITA (bruto) e eventual DESPESA de taxa no fluxo de caixa (D+X)
-          if (autoSettle) {
-            const apptPrice = Number(appt.snapshot_service_price ?? appt.service.price);
+          // Se autoSettle estiver ativo e ainda houver saldo a quitar, gera a RECEITA do saldo restante
+          if (autoSettle && remainingAmount > 0.01) {
             const apptName = appt.snapshot_service_name ?? appt.service.name;
+            const desc =
+              totalPaid > 0
+                ? `Serviço Quitado (Saldo Restante): ${apptName}`
+                : `Serviço Realizado: ${apptName}`;
 
             const { createdTxIds: newTxIds } = await createSettledRevenueWithFee({
               tx,
               organizationId,
-              grossAmount: apptPrice,
-              description: `Serviço Realizado: ${apptName}`,
+              grossAmount: remainingAmount,
+              description: desc,
               appointment_id: appt.id,
               client_id: appt.client_id,
               paymentMethodId: paymentMethodRecordId,
