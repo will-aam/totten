@@ -186,6 +186,29 @@ export class DashboardService {
       return acc + (price / 2);
     }, 0);
 
+    // 8. Autoatendimento no Mês e Status de Ativação
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const [autoAppointmentsMonth, settings] = await Promise.all([
+      prisma.appointment.count({
+        where: {
+          organization_id: organizationId,
+          created_at: { gte: startOfMonth },
+          OR: [
+            { client: { source: "SELF_SERVICE" } },
+            { mp_payment_status: "approved" },
+          ],
+        },
+      }),
+      prisma.settings.findUnique({
+        where: { organization_id: organizationId },
+        select: { pix_payment_type: true, mp_access_token: true },
+      }),
+    ]);
+
+    const hasAutoService = Boolean(
+      settings?.pix_payment_type === "MERCADO_PAGO" || autoAppointmentsMonth > 0
+    );
+
     // --- 🧮 CÁLCULO DOS KPIs ---
     let appointmentsVsYesterday = 0;
     if (appointmentsYesterday > 0) {
@@ -215,6 +238,8 @@ export class DashboardService {
       noShowsToday,
       pendingRequestsCount,
       totalPixDepositsToday,
+      autoAppointmentsMonth,
+      hasAutoService,
     };
   }
 }

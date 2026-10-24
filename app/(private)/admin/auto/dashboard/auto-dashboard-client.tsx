@@ -23,6 +23,7 @@ import {
   CreditCard,
   User,
   Settings,
+  ShieldCheck,
 } from "lucide-react";
 
 interface AutoDashboardClientProps {
@@ -310,6 +311,34 @@ export function AutoDashboardClient({ initialData }: AutoDashboardClientProps) {
                 <Lock className="w-3.5 h-3.5" />
                 Desbloquear no Plano Pro
               </Button>
+            </div>
+          </div>
+
+          {/* Card Didático: Política de Sinal & Cancelamento (Arras) */}
+          <div className="p-5 rounded-2xl bg-card border border-border/80 shadow-sm space-y-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-foreground">Política de Sinal & Cancelamentos</h3>
+                <span className="text-[10px] text-muted-foreground font-medium">Legislação de Arras (Código Civil, Art. 418)</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              O sinal pago pelo cliente reserva a vaga na sua agenda. Em caso de desistência ou não comparecimento (no-show), o valor fica retido pelo salão como indenização pelo tempo reservado.
+            </p>
+
+            <div className="p-2.5 rounded-xl bg-muted/50 border border-border/50 text-[11px] text-muted-foreground space-y-1.5">
+              <div className="flex items-start gap-1.5">
+                <span className="font-semibold text-foreground shrink-0">• Sem Estorno Automático:</span>
+                <span>O sistema protege o seu caixa e nunca faz saques ou devoluções na sua conta.</span>
+              </div>
+              <div className="flex items-start gap-1.5">
+                <span className="font-semibold text-foreground shrink-0">• Exceções do Salão:</span>
+                <span>Se o salão precisar cancelar por imprevisto próprio, a devolução é combinada e feita manualmente via Pix bancário direto.</span>
+              </div>
             </div>
           </div>
         </div>

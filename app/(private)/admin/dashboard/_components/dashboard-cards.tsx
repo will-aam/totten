@@ -5,7 +5,8 @@ import useSWR from "swr";
 import { apiClient } from "@/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CalendarAlt, CalendarCheck, Group, UserX } from "@boxicons/react";
+import Link from "next/link";
+import { CalendarAlt, CalendarCheck, Group, UserX, Globe } from "@boxicons/react";
 import type { BoxIconProps } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +20,8 @@ interface KpiData {
   noShowsToday: number;
   pendingRequestsCount?: number;
   totalPixDepositsToday?: number;
+  autoAppointmentsMonth?: number;
+  hasAutoService?: boolean;
 }
 
 function KpiCard({
@@ -147,7 +150,12 @@ export function DashboardCards() {
         </div>
       )}
 
-      <div className="flex overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scroll-smooth md:grid md:grid-cols-4 md:overflow-visible md:pb-0 md:px-0 md:mx-0 gap-4 [&::-webkit-scrollbar]:hidden">
+      <div
+        className={cn(
+          "flex overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scroll-smooth md:grid md:overflow-visible md:pb-0 md:px-0 md:mx-0 gap-4 [&::-webkit-scrollbar]:hidden",
+          kpis.hasAutoService ? "md:grid-cols-5" : "md:grid-cols-4",
+        )}
+      >
         {/* CARD 1: Agendamentos Hoje */}
         <KpiCard
           title="Agendamentos de Hoje"
@@ -179,6 +187,22 @@ export function DashboardCards() {
           description="Clientes que não compareceram"
           icon={UserX}
         />
+
+        {/* CARD 5: Autoatendimento (Atalho dinâmico para o painel online) */}
+        {kpis.hasAutoService && (
+          <Link
+            href="/admin/auto/dashboard"
+            className="cursor-pointer group flex flex-col min-w-[85vw] md:min-w-0 snap-center shrink-0"
+          >
+            <KpiCard
+              title="Autoatendimento"
+              value={kpis.autoAppointmentsMonth || 0}
+              description="Ver Painel Online →"
+              icon={Globe}
+              className="border-primary/40 group-hover:border-primary group-hover:shadow-lg transition-all"
+            />
+          </Link>
+        )}
       </div>
     </div>
   );

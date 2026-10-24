@@ -11,7 +11,10 @@ import { requireAuth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { generateRecurrentDates } from "@/lib/date-utils";
 import { randomUUID } from "crypto";
-import { triggerZibeeSyncById } from "@/lib/server/integrations/zibee.service";
+import {
+  triggerZibeeSyncById,
+  deleteTransactionFromZibee,
+} from "@/lib/server/integrations/zibee.service";
 import {
   checkAppointmentThrottle,
   recordAppointmentMove,
@@ -49,15 +52,110 @@ export async function clearTodayAgenda(password: string) {
     const from = startOfDay(today);
     const to = endOfDay(today);
 
-    // Trava de segurança: Deleta apenas os agendamentos da organização atual
-    const result = await prisma.appointment.deleteMany({
+    // 1. Busca os agendamentos de hoje com suas transações vinculadas
+    const todayAppointments = await prisma.appointment.findMany({
       where: {
         organization_id: admin.organizationId,
         date_time: { gte: from, lte: to },
       },
+      select: {
+        id: true,
+        date_time: true,
+        client_id: true,
+        snapshot_service_name: true,
+        service: { select: { name: true } },
+        transactions: {
+          select: { id: true, status: true, amount: true, description: true },
+        },
+      },
     });
 
-    return { success: true, deleted: result.count };
+    if (todayAppointments.length === 0) {
+      return { success: true, deleted: 0 };
+    }
+
+    const apptIds = todayAppointments.map((a) => a.id);
+    const allTxs = todayAppointments.flatMap((a) => a.transactions);
+    const paidTxs = allTxs.filter((t) => t.status === "PAGO");
+    const unpaidTxs = allTxs.filter((t) => t.status !== "PAGO");
+
+    let deletedCount = 0;
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Desvincula transações quitadas e atualiza a descrição para ficar claro no financeiro
+      for (const t of paidTxs) {
+        const extraNote = t.description && t.description.includes("(Agendamento excluído")
+          ? ""
+          : " (Agendamento excluído da agenda)";
+        await tx.transaction.update({
+          where: { id: t.id },
+          data: {
+            appointment_id: null,
+            description: `${t.description || "Transação"}${extraNote}`,
+          },
+        });
+      }
+
+      // 2. Remove transações não-pagas (pendentes/atrasadas)
+      if (unpaidTxs.length > 0) {
+        await tx.transaction.deleteMany({
+          where: { id: { in: unpaidTxs.map((t) => t.id) } },
+        });
+      }
+
+      // 3. Registra logs no Histórico de Ações do Cliente (ClientNote)
+      for (const appt of todayAppointments) {
+        const dateStr = new Intl.DateTimeFormat("pt-BR", {
+          dateStyle: "short",
+          timeStyle: "short",
+        }).format(appt.date_time);
+        const serviceName = appt.snapshot_service_name || appt.service?.name || "Serviço";
+
+        const apptPaid = appt.transactions.filter((t) => t.status === "PAGO");
+        const apptUnpaid = appt.transactions.filter((t) => t.status !== "PAGO");
+
+        let logText = `Ação: Agendamento de ${serviceName} (${dateStr}) excluído na limpeza de agenda por: ${admin.name || "Administrador"}.`;
+        if (apptPaid.length > 0) {
+          const totalPaid = apptPaid.reduce((acc, t) => acc + Number(t.amount || 0), 0);
+          logText += ` Sinal pago de R$ ${totalPaid.toFixed(2)} foi mantido no caixa.`;
+        } else if (apptUnpaid.length > 0) {
+          const totalUnpaid = apptUnpaid.reduce((acc, t) => acc + Number(t.amount || 0), 0);
+          logText += ` Cobrança pendente de R$ ${totalUnpaid.toFixed(2)} foi cancelada.`;
+        }
+
+        await tx.clientNote.create({
+          data: {
+            text: logText,
+            client_id: appt.client_id,
+            organization_id: admin.organizationId,
+            date: new Date(),
+          },
+        });
+      }
+
+      // 4. Deleta os agendamentos da data
+      const result = await tx.appointment.deleteMany({
+        where: {
+          id: { in: apptIds },
+          organization_id: admin.organizationId,
+        },
+      });
+
+      deletedCount = result.count;
+    });
+
+    // Sincroniza exclusão no Zibee em segundo plano
+    for (const t of unpaidTxs) {
+      deleteTransactionFromZibee(t.id, admin.organizationId).catch((err) =>
+        console.error("[clearTodayAgenda] Erro ao sincronizar remoção no Zibee:", err)
+      );
+    }
+
+    revalidatePath("/admin/agenda");
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/history");
+
+    return { success: true, deleted: deletedCount };
   } catch (error: any) {
     console.error("[ACTION clearTodayAgenda] ERRO:", error);
     if (error.message === "Unauthorized") {
@@ -318,6 +416,9 @@ export async function updateAppointment(
             },
           },
         },
+        transactions: {
+          select: { id: true, status: true, amount: true, description: true },
+        },
       },
     });
 
@@ -330,23 +431,93 @@ export async function updateAppointment(
 
     // Se estiver recusando/cancelando uma solicitação pendente (SOLICITADO)
     if (currentAppt.status === AppointmentStatus.SOLICITADO && finalStatus === AppointmentStatus.CANCELADO) {
+      const linkedTxs = currentAppt.transactions || [];
+      const paidTxIds = linkedTxs.filter((t) => t.status === "PAGO").map((t) => t.id);
+      const unpaidTxs = linkedTxs.filter((t) => t.status !== "PAGO");
+
       await prisma.$transaction(async (tx) => {
+        // Desvincula transações quitadas (ex: sinal pago via PIX/Mercado Pago) e atualiza a descrição
+        if (paidTxIds.length > 0) {
+          for (const t of linkedTxs.filter((tx) => tx.status === "PAGO")) {
+            const extraNote = t.description && t.description.includes("(Solicitação recusada")
+              ? ""
+              : " (Solicitação recusada pelo estabelecimento)";
+            await tx.transaction.update({
+              where: { id: t.id },
+              data: {
+                appointment_id: null,
+                description: `${t.description || "Transação"}${extraNote}`,
+              },
+            });
+          }
+        }
+
+        // Deleta transações não-pagas (pendentes) vinculadas a esta solicitação
+        if (unpaidTxs.length > 0) {
+          await tx.transaction.deleteMany({
+            where: { id: { in: unpaidTxs.map((t) => t.id) } },
+          });
+        }
+
+        // Registra log no Histórico de Ações do Cliente (ClientNote)
+        const willDeleteClient =
+          currentAppt.client.source === "SELF_SERVICE" &&
+          currentAppt.client.appointments.length <= 1 &&
+          currentAppt.client.packages.length === 0 &&
+          paidTxIds.length === 0;
+
+        if (!willDeleteClient) {
+          const dateStr = new Intl.DateTimeFormat("pt-BR", {
+            dateStyle: "short",
+            timeStyle: "short",
+          }).format(currentAppt.date_time);
+          const serviceName = currentAppt.snapshot_service_name || currentAppt.service?.name || "Serviço";
+
+          let logText = `Ação: Solicitação de ${serviceName} (${dateStr}) recusada por: ${admin.name || "Administrador"}.`;
+          if (paidTxIds.length > 0) {
+            const totalPaid = linkedTxs.filter((t) => t.status === "PAGO").reduce((acc, t) => acc + Number(t.amount || 0), 0);
+            logText += ` Sinal pago de R$ ${totalPaid.toFixed(2)} foi mantido no caixa.`;
+          } else if (unpaidTxs.length > 0) {
+            const totalUnpaid = unpaidTxs.reduce((acc, t) => acc + Number(t.amount || 0), 0);
+            logText += ` Cobrança pendente de R$ ${totalUnpaid.toFixed(2)} foi cancelada.`;
+          }
+
+          await tx.clientNote.create({
+            data: {
+              text: logText,
+              client_id: currentAppt.client.id,
+              organization_id: admin.organizationId,
+              date: new Date(),
+            },
+          });
+        }
+
         // Exclui o agendamento recusado para limpar a base
         await tx.appointment.delete({
           where: { id: currentAppt.id },
         });
 
         // Se o cliente foi criado via auto-agendamento (SELF_SERVICE) e só tinha essa solicitação
-        if (
-          currentAppt.client.source === "SELF_SERVICE" &&
-          currentAppt.client.appointments.length <= 1 &&
-          currentAppt.client.packages.length === 0
-        ) {
-          await tx.client.delete({
-            where: { id: currentAppt.client.id },
+        if (willDeleteClient) {
+          // Trava de integridade: Só deleta o cliente se ele não tiver registros financeiros vinculados
+          const remainingTxs = await tx.transaction.count({
+            where: { client_id: currentAppt.client.id },
           });
+
+          if (remainingTxs === 0) {
+            await tx.client.delete({
+              where: { id: currentAppt.client.id },
+            });
+          }
         }
       });
+
+      // Remove transações não-pagas do Zibee em segundo plano
+      for (const t of unpaidTxs) {
+        deleteTransactionFromZibee(t.id, admin.organizationId).catch((err) =>
+          console.error("[updateAppointment cancel SOLICITADO] Erro ao sincronizar remoção no Zibee:", err)
+        );
+      }
 
       revalidatePath("/admin/agenda");
       revalidatePath("/admin/auto/requests");
@@ -583,7 +754,14 @@ export async function deleteAppointment(
           : { id }),
         organization_id: admin.organizationId,
       },
-      include: { package: true, client: true, check_in: true },
+      include: {
+        package: true,
+        client: true,
+        check_in: true,
+        transactions: {
+          select: { id: true, status: true, amount: true, description: true },
+        },
+      },
     });
 
     if (allAppointments.length === 0)
@@ -602,22 +780,60 @@ export async function deleteAppointment(
     }
 
     const idsToDelete = appointmentsToDelete.map(a => a.id);
+    const allTxs = appointmentsToDelete.flatMap((a) => a.transactions || []);
+    const paidTxs = allTxs.filter((t) => t.status === "PAGO");
+    const unpaidTxs = allTxs.filter((t) => t.status !== "PAGO");
 
     await prisma.$transaction(async (tx) => {
+      // 1. Desvincula transações pagas (ex: sinal ou pré-pagamento) e atualiza a descrição
+      if (paidTxs.length > 0) {
+        for (const t of paidTxs) {
+          const extraNote = t.description && t.description.includes("(Agendamento excluído")
+            ? ""
+            : " (Agendamento excluído da agenda)";
+          await tx.transaction.update({
+            where: { id: t.id },
+            data: {
+              appointment_id: null,
+              description: `${t.description || "Transação"}${extraNote}`,
+            },
+          });
+        }
+      }
+
+      // 2. Deleta transações não-pagas (pendentes/atrasadas) vinculadas ao agendamento
+      if (unpaidTxs.length > 0) {
+        await tx.transaction.deleteMany({
+          where: { id: { in: unpaidTxs.map((t) => t.id) } },
+        });
+      }
+
       for (const appt of appointmentsToDelete) {
-        // A. Auditoria: Registra a exclusão no histórico do cliente
+        // A. Auditoria: Registra a exclusão no histórico do cliente com contexto financeiro
         const dateStr = new Intl.DateTimeFormat("pt-BR", {
           dateStyle: "short",
           timeStyle: "short",
         }).format(appt.date_time);
 
         const checkInText = appt.check_in
-          ? "e seu Check-in correspondente foram EXCLUÍDOS"
-          : "foi EXCLUÍDO";
+          ? " e seu Check-in correspondente foram excluídos"
+          : " foi excluído";
+
+        const apptPaid = (appt.transactions || []).filter((t) => t.status === "PAGO");
+        const apptUnpaid = (appt.transactions || []).filter((t) => t.status !== "PAGO");
+
+        let logText = `Ação: Agendamento de ${appt.snapshot_service_name || "Serviço"} no dia ${dateStr}${checkInText} por: ${admin.name || "Administrador"}.`;
+        if (apptPaid.length > 0) {
+          const totalPaid = apptPaid.reduce((acc, t) => acc + Number(t.amount || 0), 0);
+          logText += ` Sinal pago de R$ ${totalPaid.toFixed(2)} foi mantido no caixa.`;
+        } else if (apptUnpaid.length > 0) {
+          const totalUnpaid = apptUnpaid.reduce((acc, t) => acc + Number(t.amount || 0), 0);
+          logText += ` Cobrança pendente de R$ ${totalUnpaid.toFixed(2)} foi cancelada.`;
+        }
 
         await tx.clientNote.create({
           data: {
-            text: `Ação: Agendamento de ${appt.snapshot_service_name || "Serviço"} no dia ${dateStr} ${checkInText} por: ${admin.name || "Administrador"}`,
+            text: logText,
             client_id: appt.client_id,
             organization_id: admin.organizationId,
             date: new Date(),
@@ -649,6 +865,13 @@ export async function deleteAppointment(
         },
       });
     });
+
+    // Sincroniza remoção no Zibee para transações pendentes
+    for (const t of unpaidTxs) {
+      deleteTransactionFromZibee(t.id, admin.organizationId).catch((err) =>
+        console.error("[deleteAppointment] Erro ao sincronizar remoção no Zibee:", err)
+      );
+    }
 
     revalidatePath("/admin/agenda");
     revalidatePath("/admin/packages");

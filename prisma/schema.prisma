@@ -486,7 +486,7 @@ model Transaction {
   stock_item_id     String?
   admin_id          String?
   admin             Admin?                     @relation("AdminToTransaction", fields: [admin_id], references: [id])
-  appointment       Appointment?               @relation(fields: [appointment_id], references: [id])
+  appointment       Appointment?               @relation(fields: [appointment_id], references: [id], onDelete: SetNull)
   client            Client?                    @relation(fields: [client_id], references: [id])
   organization      Organization               @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   package           Package?                   @relation(fields: [package_id], references: [id])
