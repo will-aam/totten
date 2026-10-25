@@ -81,6 +81,10 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
         select: {
           snapshot_service_price: true,
           service: { select: { price: true } },
+          transactions: {
+            where: { type: "RECEITA", status: "PAGO" },
+            select: { amount: true },
+          },
         },
       }),
       // Já buscamos as recentes paralelamente para ganhar performance
@@ -156,10 +160,22 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
       pendingItemsCount++;
     });
 
-    // 3. Processa o "Fiado" (Agenda Pendente de Recebimento)
+    // 3. Processa o "Fiado" (Agenda Pendente de Recebimento, descontando eventuais sinais pagos)
     pendingApptsRaw.forEach((a) => {
-      pendingMonth += Number(a.snapshot_service_price ?? a.service?.price ?? 0);
-      pendingItemsCount++;
+      const fullPrice = Number(a.snapshot_service_price ?? a.service?.price ?? 0);
+      const totalPaid = (a.transactions || []).reduce(
+        (acc, t) => acc + Number(t.amount),
+        0,
+      );
+      const remainingAmount = Math.max(
+        0,
+        Number((fullPrice - totalPaid).toFixed(2)),
+      );
+
+      if (remainingAmount > 0.01) {
+        pendingMonth += remainingAmount;
+        pendingItemsCount++;
+      }
     });
 
     // Descobre o Meio Favorito
