@@ -324,7 +324,7 @@ export class PackageService {
           createdTxIds.push(...newTxIds);
         }
 
-      // 3. GERAR PARCELAS (CONTAS A RECEBER PENDENTE)
+      // 3. GERAR PARCELAS (CONTAS A RECEBER PENDENTE - PARCELAMENTO)
       else if (
         !pay_upfront &&
         generate_installments &&
@@ -355,11 +355,29 @@ export class PackageService {
         }
       }
 
+      // 4. VENDA A PRAZO / FIADO SIMPLES (1 COBRANÇA PENDENTE NO CONTAS A RECEBER)
+      else if (!pay_upfront && finalPrice > 0) {
+        const createdPendingTx = await tx.transaction.create({
+          data: {
+            type: "RECEITA",
+            description: `Pacote: ${service.name}`,
+            amount: finalPrice,
+            date: new Date(),
+            status: "PENDENTE",
+            installment: "1/1",
+            organization_id: organizationId,
+            client_id: client.id,
+            package_id: novoPacote.id,
+          },
+        });
+        createdTxIds.push(createdPendingTx.id);
+      }
+
       return novoPacote;
     });
 
     for (const txId of createdTxIds) {
-      triggerZibeeSyncById(txId);
+      triggerZibeeSyncById(txId).catch(console.error);
     }
 
     return result;

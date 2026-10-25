@@ -1,5 +1,5 @@
 ---
-description: Padrão para páginas (max-w-400) e layout fluido
+trigger: always_on
 ---
 
 # Padrões de Layout para Páginas (Pages)

@@ -929,6 +929,14 @@ export async function createPackageAction(data: any) {
       data,
     );
 
+    revalidatePath("/admin/packages");
+    revalidatePath("/admin/finance/dashboard");
+    revalidatePath("/admin/finance/transactions");
+    revalidatePath("/admin/finance/receivables");
+    if (data?.client_id) {
+      revalidatePath(`/admin/clients/${data.client_id}`);
+    }
+
     return { success: true, data: JSON.parse(JSON.stringify(result)) };
   } catch (error: any) {
     if (error.name === "AuthError" || error.message === "Não autorizado") {

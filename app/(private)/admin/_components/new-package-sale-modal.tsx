@@ -296,10 +296,10 @@ export function NewPackageSaleModal({
               <div className="flex flex-row items-center justify-between rounded-2xl border border-border/50 p-3 bg-amber-500/10 dark:bg-amber-500/5">
                 <div className="space-y-0.5 pr-4">
                   <Label className="text-sm font-bold text-amber-700 dark:text-amber-500">
-                    Gerar Contas a Receber?
+                    Parcelar Pagamento?
                   </Label>
                   <p className="text-[11px] text-amber-600/80 dark:text-amber-500/80 leading-tight">
-                    Cria parcelas mensais pendentes.
+                    Dividir em parcelas mensais no Contas a Receber.
                   </p>
                 </div>
                 <Switch
@@ -308,6 +308,12 @@ export function NewPackageSaleModal({
                   disabled={loading}
                 />
               </div>
+
+              {!generateInstallments && (
+                <p className="text-[11px] text-muted-foreground px-1 leading-relaxed">
+                  O valor total de {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(currentTemplate ? Number(currentTemplate.price) : 0)} será registrado como pendência única no <strong>Contas a Receber</strong>.
+                </p>
+              )}
 
               {generateInstallments && (
                 <div className="flex flex-col gap-2">
