@@ -32,7 +32,11 @@ export async function getReportsData() {
         status: "REALIZADO",
         date_time: { gte: sixMonthsAgo },
       },
-      include: { service: true, transactions: true },
+      include: {
+        service: true,
+        package: true,
+        transactions: true,
+      },
     });
 
     const paidTransactions = await prisma.transaction.findMany({
@@ -104,20 +108,42 @@ export async function getReportsData() {
 
     const serviceMap = new Map();
     appointments.forEach((a) => {
-      const sName = a.snapshot_service_name || a.service.name;
+      const sName = a.snapshot_service_name || a.service?.name || "Serviço";
       if (!serviceMap.has(sName)) {
         serviceMap.set(sName, { name: sName, faturamento: 0, sessoes: 0 });
       }
       const sData = serviceMap.get(sName);
       sData.sessoes += 1;
 
-      const revenueTx = a.transactions?.find((t) => t.type === "RECEITA" && t.status === "PAGO");
-      if (revenueTx) {
-        sData.faturamento += Number(revenueTx.amount);
+      if (a.package_id) {
+        // Atendimento coberto por pacote: computa a receita proporcional da sessão
+        const sessionValue =
+          a.package && a.package.total_sessions > 0
+            ? Number(a.package.price) / a.package.total_sessions
+            : Number(a.snapshot_service_price ?? a.service?.price ?? 0);
+        sData.faturamento += sessionValue;
+      } else {
+        // Atendimento avulso: soma as receitas pagas vinculadas ao agendamento
+        const paidRevenues = (a.transactions || [])
+          .filter((t) => t.type === "RECEITA" && t.status === "PAGO")
+          .reduce((acc, t) => acc + Number(t.amount), 0);
+
+        if (paidRevenues > 0) {
+          sData.faturamento += paidRevenues;
+        } else if (a.payment_method !== null) {
+          // Atendimento avulso realizado com pagamento confirmado
+          sData.faturamento += Number(
+            a.snapshot_service_price ?? a.service?.price ?? 0,
+          );
+        }
       }
     });
 
     const topServices = Array.from(serviceMap.values())
+      .map((s) => ({
+        ...s,
+        faturamento: Number(s.faturamento.toFixed(2)),
+      }))
       .sort((a, b) => b.faturamento - a.faturamento)
       .slice(0, 10); // Pegamos os Top 10 agora
 
