@@ -78,6 +78,7 @@ export async function createManualCheckIn(data: {
   packageId?: string;
   isPaid?: boolean;
   paymentMethod?: string | null;
+  paymentMethodId?: string | null;
 }) {
   try {
     const admin = await requireAuth();
@@ -101,6 +102,7 @@ export async function createManualCheckIn(data: {
       packageId: data.packageId,
       isPaid: data.isPaid,
       paymentMethod: data.paymentMethod,
+      paymentMethodId: data.paymentMethodId,
     });
 
     if (!apptResult.success) {

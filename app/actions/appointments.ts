@@ -175,6 +175,7 @@ export type CreateAppointmentInput = {
   professionalId?: string;
   isPaid?: boolean;
   paymentMethod?: string | null;
+  paymentMethodId?: string | null;
 };
 
 export type CreateAppointmentResult =
@@ -199,7 +200,29 @@ export async function createAppointment(
       professionalId,
       isPaid = false,
       paymentMethod = null,
+      paymentMethodId = null,
     } = input;
+
+    let finalPaymentMethodId = paymentMethodId || null;
+    let finalPaymentMethod: PaymentMethod | null = null;
+
+    if (paymentMethod) {
+      if (Object.values(PaymentMethod).includes(paymentMethod as any)) {
+        finalPaymentMethod = paymentMethod as PaymentMethod;
+      } else {
+        finalPaymentMethodId = paymentMethod;
+      }
+    }
+
+    if (finalPaymentMethodId && !finalPaymentMethod) {
+      const pmRecord = await prisma.organizationPaymentMethod.findUnique({
+        where: { id: finalPaymentMethodId },
+        select: { type: true },
+      });
+      if (pmRecord) {
+        finalPaymentMethod = pmRecord.type;
+      }
+    }
 
     const firstDateTime =
       typeof dateTime === "string" ? new Date(dateTime) : dateTime;
@@ -303,7 +326,7 @@ export async function createAppointment(
             recurrence_id: recurrenceId,
             session_number: packageId ? startSessionNumber + i + 1 : null,
             professional_id: targetProfessional,
-            payment_method: (!packageId && isPaid && paymentMethod) ? (paymentMethod as any) : null,
+            payment_method: (!packageId && isPaid && finalPaymentMethod) ? finalPaymentMethod : null,
             has_charge: !packageId && !isPaid,
             snapshot_service_name: service.name,
             snapshot_service_price: service.price,
@@ -329,7 +352,8 @@ export async function createAppointment(
             appointment_id: appt.id,
             client_id: appt.client_id,
             admin_id: admin.id,
-            paymentMethodEnum: paymentMethod,
+            paymentMethodId: finalPaymentMethodId,
+            paymentMethodEnum: finalPaymentMethod,
             status: "PAGO",
           });
           createdTxIds.push(...newTxIds);
@@ -365,6 +389,7 @@ export async function updateAppointment(
   data: {
     status: string;
     paymentMethod: string | null;
+    paymentMethodId?: string | null;
     observations: string;
     hasCharge: boolean;
   },
@@ -387,9 +412,28 @@ export async function updateAppointment(
     };
 
     const finalStatus = statusMap[data.status] || AppointmentStatus.PENDENTE;
-    const finalPaymentMethod = data.paymentMethod
-      ? (data.paymentMethod as PaymentMethod)
-      : null;
+    
+    let finalPaymentMethodId = data.paymentMethodId || null;
+    let finalPaymentMethod: PaymentMethod | null = null;
+
+    if (data.paymentMethod) {
+      if (Object.values(PaymentMethod).includes(data.paymentMethod as any)) {
+        finalPaymentMethod = data.paymentMethod as PaymentMethod;
+      } else {
+        finalPaymentMethodId = data.paymentMethod;
+      }
+    }
+
+    if (finalPaymentMethodId && !finalPaymentMethod) {
+      const pmRecord = await prisma.organizationPaymentMethod.findUnique({
+        where: { id: finalPaymentMethodId },
+        select: { type: true },
+      });
+      if (pmRecord) {
+        finalPaymentMethod = pmRecord.type;
+      }
+    }
+
     let finalHasCharge = data.hasCharge;
 
     if (
@@ -660,6 +704,7 @@ export async function updateAppointment(
             appointment_id: currentAppt.id,
             client_id: currentAppt.client_id,
             admin_id: admin.id,
+            paymentMethodId: finalPaymentMethodId,
             paymentMethodEnum: finalPaymentMethod,
             status: "PAGO",
           });

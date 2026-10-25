@@ -259,13 +259,15 @@ export function ClientForm({ onSuccess, onCancel }: { onSuccess?: () => void, on
         );
 
         if (template) {
+          const selectedPm = paymentMethods.find((pm) => pm.id === selectedMethod);
           const result = await createPackageAction({
             client_id: clientResponse.client.id,
             service_id: template.service_id,
             total_sessions: Number(template.total_sessions),
             price: Number(template.price),
             pay_upfront: payUpfront,
-            payment_method: payUpfront ? selectedMethod : null,
+            payment_method: payUpfront ? (selectedPm ? selectedPm.type : selectedMethod) : null,
+            payment_method_id: payUpfront ? (selectedPm ? selectedPm.id : null) : null,
             generate_installments: !payUpfront ? generateInstallments : false,
             installments_count: installmentsCount,
             package_template_id: template.id,
@@ -664,8 +666,13 @@ export function ClientForm({ onSuccess, onCancel }: { onSuccess?: () => void, on
                           {paymentMethods
                             .filter((pm) => pm.isActive)
                             .map((pm) => (
-                              <SelectItem key={pm.id} value={pm.type}>
+                              <SelectItem key={pm.id} value={pm.id}>
                                 {pm.name}
+                                {Number(pm.feePercentage) > 0 && (
+                                  <span className="text-muted-foreground ml-1.5 text-xs">
+                                    ({Number(pm.feePercentage)}%)
+                                  </span>
+                                )}
                               </SelectItem>
                             ))}
                         </SelectContent>

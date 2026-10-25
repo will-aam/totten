@@ -151,14 +151,24 @@ export const AppointmentDetailsModal = memo(
         }
         
         setStatus(initialStatusValue);
-        setPayment(
-          appointment.paymentMethod || appointment.payment_method || "nenhum",
-        );
+
+        const initialMethodId = appointment.paymentMethodId || appointment.payment_method_id;
+        const initialEnum = appointment.paymentMethod || appointment.payment_method;
+
+        if (initialMethodId && paymentMethods.some((pm) => pm.id === initialMethodId)) {
+          setPayment(initialMethodId);
+        } else if (initialEnum && initialEnum !== "nenhum") {
+          const match = paymentMethods.find((pm) => pm.type === initialEnum && pm.isActive);
+          setPayment(match ? match.id : initialEnum);
+        } else {
+          setPayment("nenhum");
+        }
+
         setObs(appointment.observations || "");
         setHasCharge(appointment.hasCharge ?? appointment.has_charge ?? false);
         setShowSaveOptions(false);
       }
-    }, [appointment]);
+    }, [appointment, paymentMethods]);
 
     const endTime = useMemo(() => {
       if (!appointment?.time) return "";
@@ -275,12 +285,21 @@ export const AppointmentDetailsModal = memo(
           return;
         }
 
+        const selectedPm = paymentMethods.find((pm) => pm.id === payment);
+        const finalPaymentMethodEnum = selectedPm
+          ? selectedPm.type
+          : payment === "nenhum"
+            ? null
+            : payment;
+        const finalPaymentMethodId = selectedPm ? selectedPm.id : null;
+
         // Se for outro status, roda o update normal
         const result = await updateAppointment(
           appointment.id,
           {
             status: finalStatus,
-            paymentMethod: payment === "nenhum" ? null : payment,
+            paymentMethod: finalPaymentMethodEnum,
+            paymentMethodId: finalPaymentMethodId,
             observations: obs,
             hasCharge: finalStatus === "cancelado" ? false : hasCharge,
           },
@@ -329,11 +348,20 @@ export const AppointmentDetailsModal = memo(
       if (isLocked) return;
       setIsSaving(true);
       try {
+        const selectedPm = paymentMethods.find((pm) => pm.id === payment);
+        const finalPaymentMethodEnum = selectedPm
+          ? selectedPm.type
+          : payment === "nenhum"
+            ? null
+            : payment;
+        const finalPaymentMethodId = selectedPm ? selectedPm.id : null;
+
         const result = await updateAppointment(
           appointment.id,
           {
             status: "solicitado",
-            paymentMethod: payment === "nenhum" ? null : payment,
+            paymentMethod: finalPaymentMethodEnum,
+            paymentMethodId: finalPaymentMethodId,
             observations: obs ? `${obs}\n(Retornado para solicitações pendentes)` : "(Retornado para solicitações pendentes)",
             hasCharge: hasCharge,
           },
@@ -678,8 +706,13 @@ export const AppointmentDetailsModal = memo(
                     {paymentMethods
                       .filter((pm) => pm.isActive)
                       .map((pm) => (
-                        <SelectItem key={pm.id} value={pm.type} className="whitespace-nowrap">
+                        <SelectItem key={pm.id} value={pm.id} className="whitespace-nowrap">
                           {pm.name}
+                          {Number(pm.feePercentage) > 0 && (
+                            <span className="text-muted-foreground ml-1.5 text-xs">
+                              ({Number(pm.feePercentage)}%)
+                            </span>
+                          )}
                         </SelectItem>
                       ))}
                   </SelectContent>

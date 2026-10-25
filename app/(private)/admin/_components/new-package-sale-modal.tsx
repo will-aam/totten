@@ -130,13 +130,15 @@ export function NewPackageSaleModal({
 
     setLoading(true);
     try {
+      const selectedPm = paymentMethods.find((pm) => pm.id === selectedMethod);
       const result = await createPackageAction({
         client_id: selectedClientId,
         service_id: selectedTemplate.service_id,
         total_sessions: Number(selectedTemplate.total_sessions),
         price: Number(selectedTemplate.price),
         pay_upfront: payUpfront,
-        payment_method: payUpfront ? selectedMethod : null,
+        payment_method: payUpfront ? (selectedPm ? selectedPm.type : selectedMethod) : null,
+        payment_method_id: payUpfront ? (selectedPm ? selectedPm.id : null) : null,
         generate_installments: !payUpfront ? generateInstallments : false,
         installments_count: installmentsCount,
         package_template_id: selectedTemplate.id,
@@ -282,8 +284,13 @@ export function NewPackageSaleModal({
                   {paymentMethods
                     .filter((pm) => pm.isActive)
                     .map((pm) => (
-                      <SelectItem key={pm.id} value={pm.type} className="rounded-2xl py-2 font-medium">
+                      <SelectItem key={pm.id} value={pm.id} className="rounded-2xl py-2 font-medium">
                         {pm.name}
+                        {Number(pm.feePercentage) > 0 && (
+                          <span className="text-muted-foreground ml-1.5 text-xs">
+                            ({Number(pm.feePercentage)}%)
+                          </span>
+                        )}
                       </SelectItem>
                     ))}
                 </SelectContent>

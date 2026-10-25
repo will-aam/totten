@@ -267,6 +267,7 @@ export const NewAppointmentModal = memo(
 
       setSaving(true);
       try {
+        const selectedPm = paymentMethods.find((pm) => pm.id === paymentMethod);
         const result = await createAppointment({
           clientId: selectedClientId,
           serviceId: selectedServiceId,
@@ -275,7 +276,8 @@ export const NewAppointmentModal = memo(
           repeatCount: isRecurring ? repeatCount : 1,
           professionalId: finalProfessionalId,
           isPaid: !usePackage ? isPaid : false,
-          paymentMethod: !usePackage && isPaid ? paymentMethod : null,
+          paymentMethod: !usePackage && isPaid ? (selectedPm ? selectedPm.type : paymentMethod) : null,
+          paymentMethodId: !usePackage && isPaid ? (selectedPm ? selectedPm.id : null) : null,
         });
 
         if (!result.success) {
@@ -672,8 +674,13 @@ export const NewAppointmentModal = memo(
                       {paymentMethods
                         .filter((pm) => pm.isActive)
                         .map((pm) => (
-                          <SelectItem key={pm.id} value={pm.type} className="rounded-xl font-medium py-2">
+                          <SelectItem key={pm.id} value={pm.id} className="rounded-xl font-medium py-2">
                             {pm.name}
+                            {Number(pm.feePercentage) > 0 && (
+                              <span className="text-muted-foreground ml-1.5 text-xs">
+                                ({Number(pm.feePercentage)}%)
+                              </span>
+                            )}
                           </SelectItem>
                         ))}
                     </SelectContent>

@@ -1,5 +1,6 @@
 // lib/server/services/packages/package.service.ts
 import { getTenantPrisma } from "@/lib/prisma";
+import { PaymentMethod } from "@prisma/client";
 import { triggerZibeeSyncById, deleteTransactionFromZibee } from "@/lib/server/integrations/zibee.service";
 import { createSettledRevenueWithFee } from "@/lib/server/services/payments/settlement.service";
 import { addBrasiliaMonths } from "@/lib/date-utils";
@@ -195,10 +196,32 @@ export class PackageService {
       price,
       pay_upfront,
       payment_method,
+      payment_method_id,
       generate_installments,
       installments_count,
       package_template_id,
     } = data;
+
+    let finalPaymentMethodId = payment_method_id || null;
+    let finalPaymentMethodEnum: PaymentMethod | null = null;
+
+    if (payment_method) {
+      if (Object.values(PaymentMethod).includes(payment_method as any)) {
+        finalPaymentMethodEnum = payment_method as PaymentMethod;
+      } else {
+        finalPaymentMethodId = payment_method;
+      }
+    }
+
+    if (finalPaymentMethodId && !finalPaymentMethodEnum) {
+      const pmRecord = await prisma.organizationPaymentMethod.findUnique({
+        where: { id: finalPaymentMethodId },
+        select: { type: true },
+      });
+      if (pmRecord) {
+        finalPaymentMethodEnum = pmRecord.type;
+      }
+    }
 
     // Validações de payload
     if (!client_id || !service_id || !total_sessions || price === undefined) {
@@ -307,7 +330,7 @@ export class PackageService {
       });
 
         // 2. GERAR RECEITA À VISTA (PADRONIZAÇÃO: VALOR BRUTO + PREVISÃO D+X + DESPESA DE TAXA)
-        if (pay_upfront && payment_method && finalPrice > 0) {
+        if (pay_upfront && (finalPaymentMethodEnum || finalPaymentMethodId) && finalPrice > 0) {
           const txDescription = `Venda de Pacote: ${service.name} (${client.name})`;
 
           const { createdTxIds: newTxIds } = await createSettledRevenueWithFee({
@@ -317,7 +340,8 @@ export class PackageService {
             description: txDescription,
             client_id: client.id,
             package_id: novoPacote.id,
-            paymentMethodEnum: payment_method,
+            paymentMethodId: finalPaymentMethodId,
+            paymentMethodEnum: finalPaymentMethodEnum,
             status: "PAGO",
           });
 

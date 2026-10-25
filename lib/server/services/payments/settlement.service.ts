@@ -57,7 +57,10 @@ export async function calculatePaymentSettlementAndFee(
         organization_id: params.organizationId,
       },
     });
-  } else if (params.paymentMethodEnum) {
+  }
+
+  // Fallback caso paymentMethodId não tenha sido fornecido ou não seja mais válido
+  if (!paymentMethodRecord && params.paymentMethodEnum) {
     paymentMethodRecord = await db.organizationPaymentMethod.findFirst({
       where: {
         organization_id: params.organizationId,

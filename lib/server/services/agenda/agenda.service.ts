@@ -161,6 +161,10 @@ export class AgendaService {
         package: true,
         check_in: true,
         professional: { select: { display_name: true } },
+        transactions: {
+          where: { type: "RECEITA" },
+          select: { payment_method_id: true, status: true },
+        },
       },
       orderBy: {
         date_time: "asc",
@@ -237,6 +241,10 @@ export class AgendaService {
         checkInTime: appt.check_in?.date_time ?? null,
         observations: appt.observations ?? "",
         paymentMethod: appt.payment_method ?? "nenhum",
+        paymentMethodId:
+          appt.transactions?.find((t) => t.status === "PAGO")?.payment_method_id ??
+          appt.transactions?.[0]?.payment_method_id ??
+          null,
         price: Number(rawPrice),
         date_time: appt.date_time.toISOString(),
         package_id: appt.package_id,
