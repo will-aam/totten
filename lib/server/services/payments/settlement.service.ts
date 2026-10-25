@@ -198,6 +198,7 @@ export async function createSettledRevenueWithFee(params: CreateSettledRevenuePa
         package_id: packageId,
         payment_method_id: method.id,
         admin_id: adminId,
+        parent_transaction_id: revenueTx.id,
       },
     });
     createdTxIds.push(feeTx.id);

@@ -356,17 +356,21 @@ export class PackageService {
         finalPrice > 0
       ) {
         const count = Number(installments_count);
-        const amountPerInstallment = finalPrice / count;
+        const standardAmount = Math.floor((finalPrice / count) * 100) / 100;
+        const lastAmount = Number(
+          (finalPrice - standardAmount * (count - 1)).toFixed(2)
+        );
         const baseDate = new Date();
 
         for (let i = 0; i < count; i++) {
           const dueDate = addBrasiliaMonths(baseDate, i);
+          const currentAmount = i === count - 1 ? lastAmount : standardAmount;
 
           const createdInstTx = await tx.transaction.create({
             data: {
               type: "RECEITA",
               description: `Pacote: ${service.name}`,
-              amount: amountPerInstallment,
+              amount: currentAmount,
               date: dueDate,
               status: "PENDENTE",
               installment: `${i + 1}/${count}`,
