@@ -130,8 +130,8 @@ export async function getReportsData() {
 
         if (paidRevenues > 0) {
           sData.faturamento += paidRevenues;
-        } else if (a.payment_method !== null) {
-          // Atendimento avulso realizado com pagamento confirmado
+        } else if (a.payment_method !== null && !a.has_charge) {
+          // Atendimento avulso realizado com pagamento confirmado (sem cobrança pendente)
           sData.faturamento += Number(
             a.snapshot_service_price ?? a.service?.price ?? 0,
           );

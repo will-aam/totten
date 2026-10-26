@@ -72,8 +72,19 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
         where: {
           organization_id: organizationId,
           status: "REALIZADO",
-          payment_method: null,
           package_id: null, // Sessões de pacote já são quitadas na venda do pacote
+          OR: [
+            { payment_method: null },
+            { has_charge: true },
+            {
+              transactions: {
+                none: {
+                  type: "RECEITA",
+                  status: "PAGO",
+                },
+              },
+            },
+          ],
           ...(isCurrentMonth
             ? {}
             : { date_time: { gte: monthStart, lte: monthEnd } }),

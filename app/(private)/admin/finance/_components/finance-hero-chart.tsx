@@ -73,13 +73,12 @@ export function FinanceHeroChart() {
     <div className="w-full h-full flex flex-col justify-between transition-all">
       <div className="w-full flex flex-col gap-3 flex-1 justify-between">
         {/* Topo no padrão exato dos dashboards do sistema */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
           <div className="flex flex-col gap-0.5">
             <div className="flex items-center gap-2">
               <h2 className="text-base sm:text-lg font-bold text-foreground">
                 Painel Consolidado de Receita
               </h2>
-
             </div>
             <p className="text-xs text-muted-foreground">
               Acompanhamento de receita realizada comparada ao {comparisonLabel.toLowerCase()}.
@@ -87,7 +86,7 @@ export function FinanceHeroChart() {
           </div>
 
           {/* Valor Principal + Comparativo */}
-          <div className="flex items-baseline gap-2.5 self-start sm:self-auto">
+          <div className="flex flex-col items-start sm:items-end self-start sm:self-auto shrink-0">
             <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
               {isLoading && !data ? (
                 <span className="inline-flex items-center gap-1.5 text-muted-foreground text-xl font-bold">
@@ -101,16 +100,16 @@ export function FinanceHeroChart() {
             {data && !hideValues && (
               <div
                 className={cn(
-                  "flex items-center font-bold text-xs pb-0.5",
+                  "flex items-center font-bold text-xs mt-0.5 whitespace-nowrap",
                   data.isPositive
                     ? "text-emerald-600 dark:text-emerald-400"
                     : "text-rose-600 dark:text-rose-400",
                 )}
               >
                 {data.isPositive ? (
-                  <TrendingUp className="h-3.5 w-3.5 mr-0.5 inline" />
+                  <TrendingUp className="h-3.5 w-3.5 mr-1 inline shrink-0" />
                 ) : (
-                  <TrendingDown className="h-3.5 w-3.5 mr-0.5 inline" />
+                  <TrendingDown className="h-3.5 w-3.5 mr-1 inline shrink-0" />
                 )}
                 <span>
                   {data.isPositive ? "+" : ""}

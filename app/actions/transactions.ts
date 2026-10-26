@@ -404,8 +404,19 @@ export async function getPendingReceivables() {
       where: {
         organization_id: admin.organizationId,
         status: "REALIZADO",
-        payment_method: null,
         package_id: null, // Sessões de pacote já são quitadas na venda do pacote
+        OR: [
+          { payment_method: null },
+          { has_charge: true },
+          {
+            transactions: {
+              none: {
+                type: "RECEITA",
+                status: "PAGO",
+              },
+            },
+          },
+        ],
       },
       select: {
         id: true,
@@ -687,8 +698,19 @@ export async function processAllReceivablesPayment(
       where: {
         organization_id: admin.organizationId,
         status: "REALIZADO",
-        payment_method: null,
         package_id: null,
+        OR: [
+          { payment_method: null },
+          { has_charge: true },
+          {
+            transactions: {
+              none: {
+                type: "RECEITA",
+                status: "PAGO",
+              },
+            },
+          },
+        ],
       },
       include: {
         client: true,
@@ -714,14 +736,6 @@ export async function processAllReceivablesPayment(
     await prisma.$transaction(async (tx) => {
       // Baixa nos agendamentos
       for (const appt of pendingAppointments) {
-        await tx.appointment.update({
-          where: { id: appt.id },
-          data: {
-            payment_method: paymentMethod as PaymentMethod,
-            has_charge: false,
-          },
-        });
-
         const fullPrice = Number(appt.snapshot_service_price ?? appt.service.price);
         const apptName = appt.snapshot_service_name ?? appt.service.name;
 
@@ -735,6 +749,14 @@ export async function processAllReceivablesPayment(
         if (remainingAmount <= 0.01) {
           continue;
         }
+
+        await tx.appointment.update({
+          where: { id: appt.id },
+          data: {
+            payment_method: paymentMethod as PaymentMethod,
+            has_charge: false,
+          },
+        });
 
         const pendingRevenueTx = appt.transactions.find(
           (t) => t.type === "RECEITA" && t.status === "PENDENTE",

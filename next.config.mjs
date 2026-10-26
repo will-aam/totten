@@ -7,7 +7,7 @@ const withPWA = withPWAInit({
   reloadOnOnline: true,
   swcMinify: true,
 
-  disable: false,
+  disable: process.env.NODE_ENV === "development",
 
   register: true,
   skipWaiting: true,
