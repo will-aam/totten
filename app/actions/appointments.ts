@@ -428,6 +428,20 @@ export async function updateAppointment(
       finalStatus === AppointmentStatus.REALIZADO &&
       currentAppt.status !== AppointmentStatus.REALIZADO;
 
+    const isUnmarkingAsDone =
+      currentAppt.status === AppointmentStatus.REALIZADO &&
+      finalStatus !== AppointmentStatus.REALIZADO;
+
+    if (isUnmarkingAsDone) {
+      if (currentAppt.package_id) {
+        finalHasCharge = false;
+      } else if (finalStatus === AppointmentStatus.CANCELADO) {
+        finalHasCharge = false;
+      } else {
+        finalHasCharge = true;
+      }
+    }
+
     if (isMarkingAsDone && currentAppt.package) {
       if (!currentAppt.package.active) {
         return {
@@ -447,6 +461,7 @@ export async function updateAppointment(
     }
 
     const createdTxIds: string[] = [];
+    const deletedTxIds: string[] = [];
 
     await prisma.$transaction(async (tx) => {
       if (updateAll && recurrenceId) {
@@ -522,6 +537,23 @@ export async function updateAppointment(
                 package_id: currentAppt.package_id,
                 organization_id: admin.organizationId,
                 status: { not: "REALIZADO" },
+              },
+            });
+          }
+        }
+
+        if (isUnmarkingAsDone && currentAppt.package_id && currentAppt.package) {
+          const isManuallyArchived =
+            !currentAppt.package.active &&
+            currentAppt.package.used_sessions < currentAppt.package.total_sessions;
+          const finalActive = isManuallyArchived ? false : true;
+
+          if (currentAppt.package.used_sessions > 0) {
+            await tx.package.update({
+              where: { id: currentAppt.package_id },
+              data: {
+                used_sessions: { decrement: 1 },
+                active: finalActive,
               },
             });
           }
@@ -624,10 +656,100 @@ export async function updateAppointment(
           createdTxIds.push(expTx.id);
         }
       }
+
+      if (isUnmarkingAsDone) {
+        // 1. Se houver check-in registrado previamente, reseta auto_processed
+        await tx.checkIn.updateMany({
+          where: { appointment_id: currentAppt.id },
+          data: { auto_processed: false },
+        });
+
+        // 2. Devolve ao estoque os insumos consumidos na realização
+        if (service.track_stock && service.stock_items.length > 0) {
+          for (const item of service.stock_items) {
+            const stockData = item.stock_item;
+            const usedQty = item.quantity_used;
+
+            await tx.stockItem.update({
+              where: { id: stockData.id },
+              data: { quantity: { increment: usedQty } },
+            });
+          }
+        }
+
+        // 3. Estorno financeiro: busca transações vinculadas à realização deste agendamento
+        const linkedTxs = await tx.transaction.findMany({
+          where: {
+            appointment_id: currentAppt.id,
+            organization_id: admin.organizationId,
+          },
+        });
+
+        // Despesas geradas na realização: insumos, materiais e taxas de intermediação
+        // (preserva taxas do Mercado Pago pagas antecipadamente)
+        const expensesToDelete = linkedTxs.filter((t) => {
+          if (t.type !== "DESPESA") return false;
+          const desc = t.description || "";
+          if (desc.startsWith("Taxa Mercado Pago")) return false;
+          return (
+            desc.startsWith("Custo de Insumo:") ||
+            desc.startsWith("Custo de Material:") ||
+            desc.startsWith("Taxa ") ||
+            t.parent_transaction_id != null
+          );
+        });
+
+        // Receitas geradas na realização: Serviço Realizado ou Saldo Restante
+        // (preserva depósitos/sinais online pré-pagos)
+        const revenuesToDelete = linkedTxs.filter((t) => {
+          if (t.type !== "RECEITA") return false;
+          const desc = t.description || "";
+          return (
+            desc.startsWith("Serviço Realizado:") ||
+            desc.startsWith("Serviço Quitado (Saldo Restante):")
+          );
+        });
+
+        const txsToDelete = [...expensesToDelete, ...revenuesToDelete];
+        if (txsToDelete.length > 0) {
+          const idsToDelete = txsToDelete.map((t) => t.id);
+          await tx.transaction.deleteMany({
+            where: { id: { in: idsToDelete } },
+          });
+          deletedTxIds.push(...idsToDelete);
+        }
+
+        // 4. Auditoria no Histórico do Cliente (ClientNote)
+        if (currentAppt.client_id) {
+          const serviceName =
+            currentAppt.snapshot_service_name ||
+            currentAppt.service?.name ||
+            "Serviço";
+          const dateStr = new Intl.DateTimeFormat("pt-BR", {
+            dateStyle: "short",
+            timeStyle: "short",
+          }).format(currentAppt.date_time);
+
+          await tx.clientNote.create({
+            data: {
+              text: `Ação: Status de ${serviceName} (${dateStr}) regredido de Realizado para ${finalStatus} por: ${admin.name || "Administrador"}. Lançamentos financeiros e estoque da realização foram estornados.`,
+              client_id: currentAppt.client_id,
+              organization_id: admin.organizationId,
+              date: new Date(),
+            },
+          });
+        }
+      }
     });
 
     for (const txId of createdTxIds) {
       triggerZibeeSyncById(txId);
+    }
+
+    for (const txId of deletedTxIds) {
+      deleteTransactionFromZibee(txId, admin.organizationId).catch((err) =>
+        console.error("[updateAppointment rollback] Erro ao sincronizar remoção no Zibee:", err)
+      );
     }
 
     revalidatePath("/admin/agenda");
@@ -635,6 +757,12 @@ export async function updateAppointment(
     revalidatePath("/admin/packages");
     revalidatePath("/admin/stock");
     revalidatePath("/admin/finance/dashboard");
+    revalidatePath("/admin/finance/transactions");
+    revalidatePath("/admin/finance/receivables");
+    revalidatePath("/admin/clients");
+    if (currentAppt.client_id) {
+      revalidatePath(`/admin/clients/${currentAppt.client_id}`);
+    }
 
     return { success: true };
   } catch (error) {
