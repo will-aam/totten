@@ -156,8 +156,9 @@ export function PaymentMethodModal({
       const result = await deletePaymentMethod(method.id);
       if (result.success) {
         toast({
-          title: "Excluído",
-          description: "Meio de pagamento removido.",
+          title: (result as any).softDeleted ? "Desativado" : "Excluído",
+          description:
+            (result as any).message || "Meio de pagamento removido.",
         });
         invalidateFinanceCaches();
         onClose();

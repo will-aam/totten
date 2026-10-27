@@ -117,45 +117,72 @@ export async function deletePaymentMethod(id: string) {
       where: { id, organization_id: organizationId },
     });
 
-    if (existing && (existing.name.toLowerCase() === "à vista" || existing.name.toLowerCase() === "a vista")) {
+    if (!existing) {
+      return { success: false, error: "Meio de pagamento não encontrado." };
+    }
+
+    if (
+      existing.name.toLowerCase() === "à vista" ||
+      existing.name.toLowerCase() === "a vista"
+    ) {
       return {
         success: false,
-        error: "O meio de pagamento 'À Vista' é padrão do sistema e não pode ser excluído, apenas editado.",
+        error:
+          "O meio de pagamento 'À Vista' é padrão do sistema e não pode ser excluído, apenas editado.",
       };
     }
 
-    await prisma.$transaction(async (tx) => {
-      // 1. Se este método for o default_payment_method_id nas configurações gerais, desvincula (set null)
-      await tx.settings.updateMany({
-        where: {
-          organization_id: organizationId,
-          default_payment_method_id: id,
-        },
-        data: {
-          default_payment_method_id: null,
-        },
-      });
+    // 1. Se este método for o default_payment_method_id nas configurações gerais, desvincula (set null)
+    await prisma.settings.updateMany({
+      where: {
+        organization_id: organizationId,
+        default_payment_method_id: id,
+      },
+      data: {
+        default_payment_method_id: null,
+      },
+    });
 
-      // 2. Desvincula transações associadas para garantir integridade a nível de aplicação
-      await tx.transaction.updateMany({
-        where: {
-          organization_id: organizationId,
-          payment_method_id: id,
-        },
-        data: {
-          payment_method_id: null,
-        },
-      });
+    // 2. Verifica se existem transações financeiras vinculadas a este meio de pagamento
+    const linkedTransactionsCount = await prisma.transaction.count({
+      where: {
+        organization_id: organizationId,
+        payment_method_id: id,
+      },
+    });
 
-      // 3. Exclui o meio de pagamento
-      await tx.organizationPaymentMethod.delete({
+    if (linkedTransactionsCount > 0) {
+      // ✅ SOFT DELETE: Preserva integralmente os vínculos contábeis históricos das transações
+      // e apenas desativa a forma de pagamento (isActive: false) para que ela não seja utilizada em novas vendas.
+      await prisma.organizationPaymentMethod.update({
         where: { id, organization_id: organizationId },
+        data: { isActive: false },
       });
+
+      revalidatePath("/admin/finance/payment-methods");
+      revalidatePath("/admin/finance/settings");
+      revalidatePath("/admin/finance/transactions");
+      revalidatePath("/admin/finance/receivables");
+
+      return {
+        success: true,
+        softDeleted: true,
+        message:
+          "Meio de pagamento desativado com sucesso para preservar o histórico contábil das transações.",
+      };
+    }
+
+    // 3. Se NÃO houver nenhuma transação vinculada, pode ser excluído fisicamente com segurança
+    await prisma.organizationPaymentMethod.delete({
+      where: { id, organization_id: organizationId },
     });
 
     revalidatePath("/admin/finance/payment-methods");
     revalidatePath("/admin/finance/settings");
-    return { success: true };
+    revalidatePath("/admin/finance/transactions");
+    revalidatePath("/admin/finance/receivables");
+
+    return { success: true, softDeleted: false };
   } catch (error) {
     console.error("Erro ao deletar:", error);
     return { success: false, error: "Não foi possível excluir." };
