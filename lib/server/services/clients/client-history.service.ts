@@ -139,12 +139,43 @@ export class ClientHistoryService {
       if (note.text.includes("Falta Automática")) return;
 
       const isReagendamento = note.text.includes("Reagendamento");
+      const isRealizado = note.text.includes("marcado como Realizado");
+      const isRollback = note.text.includes("regredido de Realizado");
+      const isStatusChange = note.text.includes("alterado de ");
+      const isCheckInAction =
+        note.text.includes("Check-in presencial") ||
+        note.text.includes("Check-in de encaixe");
+      const isExclusao =
+        note.text.includes("excluído") ||
+        note.text.includes("Exclusão de ") ||
+        note.text.includes("recusada");
+      const isCriacao =
+        note.text.includes("criado por:") || note.text.includes("criada por:");
+
+      let title = "Anotação Adicionada";
+      if (isReagendamento) {
+        title = "Horário Reagendado";
+      } else if (isRealizado) {
+        title = "Atendimento Realizado";
+      } else if (isRollback) {
+        title = "Status Regredido (Estorno)";
+      } else if (isStatusChange) {
+        title = "Status Alterado";
+      } else if (isCheckInAction) {
+        title = "Check-in Registrado";
+      } else if (isExclusao) {
+        title = "Agendamento Excluído";
+      } else if (isCriacao) {
+        title = "Agendamento Criado";
+      } else if (note.text.startsWith("Ação:")) {
+        title = "Registro do Sistema";
+      }
 
       timelineEvents.push({
         id: `note-${note.id}`,
         type: "CLIENT_NOTE",
         date: note.date,
-        title: isReagendamento ? "Horário Reagendado" : "Anotação Adicionada",
+        title,
         meta: { text: note.text, isReagendamento },
       });
     });

@@ -2,8 +2,9 @@
 
 import { prisma as db } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
-import { createAppointment } from "./appointments";
+import { createAppointment, updateAppointment } from "./appointments";
 import { triggerZibeeSyncById } from "@/lib/server/integrations/zibee.service";
+import { revalidatePath } from "next/cache";
 
 export async function getWaitingRoomData() {
   try {
@@ -54,6 +55,20 @@ export async function completeCheckIn(checkInId: string) {
     const admin = await requireAuth();
     const organizationId = admin.organizationId;
 
+    const ci = await db.checkIn.findUnique({
+      where: { id: checkInId, organization_id: organizationId },
+      include: { appointment: true },
+    });
+
+    if (ci?.appointment_id && ci.appointment && ci.appointment.status !== "REALIZADO") {
+      return await updateAppointment(ci.appointment_id, {
+        status: "realizado",
+        paymentMethod: ci.appointment.payment_method,
+        observations: ci.appointment.observations || "",
+        hasCharge: false,
+      });
+    }
+
     await db.checkIn.update({
       where: {
         id: checkInId,
@@ -63,6 +78,10 @@ export async function completeCheckIn(checkInId: string) {
         completed_at: new Date(),
       },
     });
+
+    revalidatePath("/admin/agenda");
+    revalidatePath("/admin/clients");
+    revalidatePath("/admin/notes");
 
     return { success: true };
   } catch (error: any) {
@@ -245,11 +264,35 @@ export async function createManualCheckIn(data: {
         });
       }
 
+      // f) Auditoria no Histórico do Cliente (ClientNote)
+      if (data.clientId) {
+        const serviceName = service?.name || "Serviço";
+        const nowStr = new Intl.DateTimeFormat("pt-BR", {
+          dateStyle: "short",
+          timeStyle: "short",
+        }).format(now);
+        await tx.clientNote.create({
+          data: {
+            text: `Ação: Check-in de encaixe (${serviceName} - ${nowStr}) registrado como ${targetStatus === "REALIZADO" ? "Realizado" : "Aguardando na Recepção"} por: ${admin.name || "Administrador"}.`,
+            client_id: data.clientId,
+            organization_id: organizationId,
+            date: new Date(),
+          },
+        });
+      }
+
       return ci;
     });
 
     for (const txId of createdTxIds) {
       triggerZibeeSyncById(txId);
+    }
+
+    revalidatePath("/admin/agenda");
+    revalidatePath("/admin/clients");
+    revalidatePath("/admin/notes");
+    if (data.clientId) {
+      revalidatePath(`/admin/clients/${data.clientId}`);
     }
 
     return { success: true, data: checkIn };

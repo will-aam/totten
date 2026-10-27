@@ -215,6 +215,28 @@ export async function createAppointment(
           createdTxIds.push(...newTxIds);
         }
       }
+
+      if (clientId) {
+        const dateStr = new Intl.DateTimeFormat("pt-BR", {
+          dateStyle: "short",
+          timeStyle: "short",
+        }).format(firstDateTime);
+        const authorName = admin.name || "Administrador";
+        const noteText =
+          totalSessionsToCreate > 1
+            ? `Ação: Série recorrente de ${service.name} (${totalSessionsToCreate} agendamentos a partir de ${dateStr}) criada por: ${authorName}.`
+            : `Ação: Agendamento de ${service.name} (${dateStr}) criado por: ${authorName}.`;
+
+        await tx.clientNote.create({
+          data: {
+            text: noteText,
+            client_id: clientId,
+            organization_id: admin.organizationId,
+            date: new Date(),
+          },
+        });
+      }
+
       return created;
     });
 
@@ -224,6 +246,11 @@ export async function createAppointment(
 
     revalidatePath("/admin/agenda");
     revalidatePath("/admin/finance/dashboard");
+    revalidatePath("/admin/clients");
+    revalidatePath("/admin/notes");
+    if (clientId) {
+      revalidatePath(`/admin/clients/${clientId}`);
+    }
 
     const sanitizedAppointments = appointments.map((appt) => ({
       ...appt,
@@ -463,6 +490,7 @@ export async function updateAppointment(
 
     const createdTxIds: string[] = [];
     const deletedTxIds: string[] = [];
+    let affectedCount = 1;
 
     await prisma.$transaction(async (tx) => {
       if (updateAll && recurrenceId) {
@@ -480,7 +508,8 @@ export async function updateAppointment(
           },
         });
 
-        const newlyCompletedCount = updateResult.count;
+        affectedCount = updateResult.count;
+        const newlyCompletedCount = affectedCount;
 
         if (isMarkingAsDone && currentAppt.package_id && currentAppt.package && newlyCompletedCount > 0) {
           const newUsedSessions =
@@ -720,21 +749,84 @@ export async function updateAppointment(
           });
           deletedTxIds.push(...idsToDelete);
         }
+      }
 
-        // 4. Auditoria no Histórico do Cliente (ClientNote)
-        if (currentAppt.client_id) {
-          const serviceName =
-            currentAppt.snapshot_service_name ||
-            currentAppt.service?.name ||
-            "Serviço";
-          const dateStr = new Intl.DateTimeFormat("pt-BR", {
-            dateStyle: "short",
-            timeStyle: "short",
-          }).format(currentAppt.date_time);
+      // 4. Auditoria Unificada no Histórico do Cliente (ClientNote)
+      if (currentAppt.client_id) {
+        const serviceName =
+          currentAppt.snapshot_service_name ||
+          currentAppt.service?.name ||
+          "Serviço";
+        const dateStr = new Intl.DateTimeFormat("pt-BR", {
+          dateStyle: "short",
+          timeStyle: "short",
+        }).format(currentAppt.date_time);
+        const authorName = admin.name || "Administrador";
 
+        const getStatusLabel = (s: AppointmentStatus) => {
+          switch (s) {
+            case AppointmentStatus.CONFIRMADO:
+              return "Confirmado";
+            case AppointmentStatus.REALIZADO:
+              return "Realizado";
+            case AppointmentStatus.CANCELADO:
+              return "Cancelado";
+            case AppointmentStatus.PENDENTE:
+              return "A Confirmar";
+            case AppointmentStatus.SOLICITADO:
+              return "Solicitado";
+            case AppointmentStatus.VENCIDO:
+              return "Vencido";
+            default:
+              return s;
+          }
+        };
+
+        const isStatusChanged = currentAppt.status !== finalStatus;
+        const oldStatusLabel = getStatusLabel(currentAppt.status);
+        const newStatusLabel = getStatusLabel(finalStatus);
+
+        let auditNoteText: string | null = null;
+
+        if (isUnmarkingAsDone) {
+          auditNoteText = `Ação: Status de ${serviceName} (${dateStr}) regredido de Realizado para ${newStatusLabel} por: ${authorName}. Lançamentos financeiros e estoque da realização foram estornados.`;
+        } else if (isMarkingAsDone) {
+          if (updateAll && recurrenceId && affectedCount > 1) {
+            auditNoteText = `Ação: ${affectedCount} atendimentos da série recorrente de ${serviceName} (a partir de ${dateStr}) marcados como Realizados por: ${authorName}.`;
+          } else {
+            auditNoteText = `Ação: Atendimento de ${serviceName} (${dateStr}) marcado como Realizado por: ${authorName}.`;
+          }
+
+          if (currentAppt.package_id && currentAppt.package) {
+            const added = updateAll && recurrenceId ? affectedCount : 1;
+            const newUsed = currentAppt.package.used_sessions + added;
+            auditNoteText += ` (Sessão ${newUsed} de ${currentAppt.package.total_sessions} do pacote "${currentAppt.package.name}" debitada).`;
+          } else if (finalPaymentMethod) {
+            auditNoteText += ` (Pagamento registrado: ${finalPaymentMethod}).`;
+          }
+        } else if (isStatusChanged) {
+          if (updateAll && recurrenceId && affectedCount > 1) {
+            auditNoteText = `Ação: Status de ${affectedCount} atendimentos da série recorrente de ${serviceName} (a partir de ${dateStr}) alterado de ${oldStatusLabel} para ${newStatusLabel} por: ${authorName}.`;
+          } else {
+            auditNoteText = `Ação: Status de ${serviceName} (${dateStr}) alterado de ${oldStatusLabel} para ${newStatusLabel} por: ${authorName}.`;
+          }
+
+          if (data.observations?.trim() && data.observations.trim() !== (currentAppt.observations || "").trim()) {
+            auditNoteText += ` Obs: "${data.observations.trim()}".`;
+          }
+        } else {
+          // Status não mudou, mas verificamos se a observação foi alterada
+          const oldObs = (currentAppt.observations || "").trim();
+          const newObs = (data.observations || "").trim();
+          if (newObs !== oldObs && newObs.length > 0) {
+            auditNoteText = `Ação: Observação do atendimento de ${serviceName} (${dateStr}) atualizada por: ${authorName}. Detalhes: "${newObs}".`;
+          }
+        }
+
+        if (auditNoteText) {
           await tx.clientNote.create({
             data: {
-              text: `Ação: Status de ${serviceName} (${dateStr}) regredido de Realizado para ${finalStatus} por: ${admin.name || "Administrador"}. Lançamentos financeiros e estoque da realização foram estornados.`,
+              text: auditNoteText,
               client_id: currentAppt.client_id,
               organization_id: admin.organizationId,
               date: new Date(),
@@ -762,6 +854,7 @@ export async function updateAppointment(
     revalidatePath("/admin/finance/transactions");
     revalidatePath("/admin/finance/receivables");
     revalidatePath("/admin/clients");
+    revalidatePath("/admin/notes");
     if (currentAppt.client_id) {
       revalidatePath(`/admin/clients/${currentAppt.client_id}`);
     }

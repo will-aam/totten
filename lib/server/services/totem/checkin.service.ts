@@ -256,6 +256,35 @@ export class TotemCheckInService {
         });
       }
 
+      // 4. Auditoria no Histórico do Cliente (ClientNote)
+      if (appt.client_id) {
+        const serviceName =
+          appt.snapshot_service_name || appt.service?.name || "Serviço";
+        const nowStr = new Intl.DateTimeFormat("pt-BR", {
+          dateStyle: "short",
+          timeStyle: "short",
+        }).format(new Date());
+
+        let noteText = "";
+        if (autoComplete) {
+          noteText = `Ação: Check-in presencial no Totem (${serviceName} - ${nowStr}) finalizado como Realizado automaticamente.`;
+          if (appt.package) {
+            noteText += ` (Sessão ${appt.package.used_sessions + 1} de ${appt.package.total_sessions} consumida).`;
+          }
+        } else {
+          noteText = `Ação: Check-in presencial no Totem (${serviceName} - ${nowStr}) registrado. Paciente aguardando na Recepção.`;
+        }
+
+        await tx.clientNote.create({
+          data: {
+            text: noteText,
+            client_id: appt.client_id,
+            organization_id: organizationId,
+            date: new Date(),
+          },
+        });
+      }
+
       return checkIn;
     });
 

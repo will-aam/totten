@@ -17,6 +17,7 @@ import {
   MessageCircle,
   UserX,
   Trash,
+  History,
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
@@ -200,14 +201,26 @@ export function ClientHistory({ clientId }: { clientId: string }) {
           </div>
         );
 
-      case "CLIENT_NOTE":
+      case "CLIENT_NOTE": {
+        const isAction = event.meta?.text?.startsWith("Ação:");
+        const displayText = isAction
+          ? event.meta.text.replace(/^Ação:\s*/, "")
+          : event.meta.text;
         return (
           <div className="flex flex-col mt-1.5">
-            <p className="text-xs text-muted-foreground italic border-l-2 border-muted-foreground/30 pl-2 py-0.5 whitespace-pre-wrap">
-              "{event.meta.text}"
+            <p
+              className={cn(
+                "text-xs leading-relaxed border-l-2 pl-2 py-0.5 whitespace-pre-wrap",
+                isAction
+                  ? "border-primary/50 text-foreground font-medium not-italic"
+                  : "border-muted-foreground/30 text-muted-foreground italic",
+              )}
+            >
+              {isAction ? displayText : `"${displayText}"`}
             </p>
           </div>
         );
+      }
 
       default:
         return null;
@@ -250,8 +263,8 @@ export function ClientHistory({ clientId }: { clientId: string }) {
         };
       case "CLIENT_NOTE":
         return {
-          icon: MessageCircle,
-          color: "border-amber-500/30 text-amber-600 bg-amber-500/5",
+          icon: History,
+          color: "border-primary/30 text-primary bg-primary/5",
         };
       default:
         return {
