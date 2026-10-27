@@ -94,8 +94,25 @@ export default function RegisterPage() {
     strengthText = "Muito Forte";
   }
 
-  // Validar senhas antes do submit
+  // Validar senhas, documentos e contatos antes do submit
   const preSubmitCheck = (e: React.FormEvent<HTMLFormElement>) => {
+    const cleanDoc = document.replace(/\D/g, "");
+    if (docType === "CPF" && cleanDoc.length !== 11) {
+      e.preventDefault();
+      setPasswordMatchError("CPF incompleto. Digite os 11 números.");
+      return;
+    }
+    if (docType === "CNPJ" && cleanDoc.length !== 14) {
+      e.preventDefault();
+      setPasswordMatchError("CNPJ incompleto. Digite os 14 números.");
+      return;
+    }
+    const cleanPhone = phone.replace(/\D/g, "");
+    if (cleanPhone.length < 10 || cleanPhone.length > 11) {
+      e.preventDefault();
+      setPasswordMatchError("Telefone/WhatsApp inválido. Digite o DDD + número.");
+      return;
+    }
     if (password !== confirmPassword) {
       e.preventDefault();
       setPasswordMatchError("As senhas não coincidem.");
@@ -208,7 +225,7 @@ export default function RegisterPage() {
 
               <div className="flex flex-col gap-2">
                 <Label htmlFor="contactPhone" className="text-base sm:text-sm">
-                  Telefone de Contato
+                  WhatsApp / Telefone Principal
                 </Label>
                 <Input
                   id="contactPhone"
@@ -237,6 +254,9 @@ export default function RegisterPage() {
                 id="email"
                 name="email"
                 type="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 placeholder="admin@empresa.com"
                 required
                 className="h-12 sm:h-11 bg-muted/50 border-transparent hover:border-border focus-visible:bg-transparent text-base sm:text-sm"

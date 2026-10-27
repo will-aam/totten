@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { resendVerificationEmail } from "@/app/actions/auth";
 
 //  FORÇA RENDERIZAÇÃO APENAS NO CLIENTE
 export const dynamic = "force-dynamic";
@@ -22,6 +23,8 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [resendingEmail, setResendingEmail] = useState(false);
 
   const verified = searchParams.get("verified");
   const error = searchParams.get("error");
@@ -41,16 +44,20 @@ function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setUnverifiedEmail(null);
+
+    const cleanEmail = email.toLowerCase().trim();
 
     try {
       const result = await signIn("credentials", {
-        email,
+        email: cleanEmail,
         password,
         redirect: false,
       });
 
       if (result?.error) {
         if (result.error.includes("E-mail não verificado")) {
+          setUnverifiedEmail(cleanEmail);
           toast.error(
             "Você precisa verificar seu e-mail primeiro. Verifique sua caixa de entrada.",
           );
@@ -128,6 +135,9 @@ function LoginForm() {
               <Input
                 id="email"
                 type="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 placeholder="admin@empresa.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -174,6 +184,39 @@ function LoginForm() {
                 </button>
               </div>
             </div>
+
+            {unverifiedEmail && (
+              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-sm flex flex-col gap-2 text-center animate-in fade-in duration-300">
+                <p className="font-semibold text-xs uppercase tracking-wider">Conta Pendente de Ativação</p>
+                <p className="text-xs text-muted-foreground">
+                  Não encontrou o link de confirmação no seu e-mail (ou na pasta de spam)?
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={resendingEmail}
+                  onClick={async () => {
+                    setResendingEmail(true);
+                    try {
+                      const res = await resendVerificationEmail(unverifiedEmail);
+                      if (res.success) {
+                        toast.success(res.message);
+                      } else {
+                        toast.error(res.error || "Erro ao reenviar.");
+                      }
+                    } catch {
+                      toast.error("Erro de conexão ao reenviar.");
+                    } finally {
+                      setResendingEmail(false);
+                    }
+                  }}
+                  className="mt-1 w-full rounded-xl border-amber-500/40 hover:bg-amber-500/20 text-xs font-medium"
+                >
+                  {resendingEmail ? "Reenviando..." : "Reenviar e-mail de ativação"}
+                </Button>
+              </div>
+            )}
 
             <div className="pt-2">
               <Button

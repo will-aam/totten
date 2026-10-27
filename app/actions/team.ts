@@ -141,8 +141,12 @@ export async function createCollaborator(data: {
       return { success: false, error: "Preencha todos os campos." };
     }
 
-    const existingAdmin = await prisma.admin.findUnique({
-      where: { email: data.email },
+    const cleanEmail = (data.email || "").toLowerCase().trim();
+
+    const existingAdmin = await prisma.admin.findFirst({
+      where: {
+        email: { equals: cleanEmail, mode: "insensitive" },
+      },
     });
 
     if (existingAdmin) {
@@ -154,7 +158,7 @@ export async function createCollaborator(data: {
     await prisma.admin.create({
       data: {
         display_name: data.name,
-        email: data.email,
+        email: cleanEmail,
         password: hashedPassword,
         role: "COLLABORATOR",
         active: true,
@@ -220,7 +224,20 @@ export async function updateCollaborator(
 
     // O dono não pode alterar o próprio email, senha e permissões por aqui
     if (!isOwner) {
-      updateData.email = data.email;
+      if (data.email) {
+        const cleanEmail = data.email.toLowerCase().trim();
+        const existingAdmin = await prisma.admin.findFirst({
+          where: {
+            email: { equals: cleanEmail, mode: "insensitive" },
+            id: { not: id },
+          },
+        });
+
+        if (existingAdmin) {
+          return { success: false, error: "Este e-mail já está em uso por outro usuário." };
+        }
+        updateData.email = cleanEmail;
+      }
       if (data.permissions !== undefined) updateData.permissions = data.permissions;
       if (data.password && data.password.trim().length >= 6) {
         updateData.password = await bcrypt.hash(data.password, 10);
