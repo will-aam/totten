@@ -13,6 +13,8 @@ export interface Transaction {
   description: string;
   amount: number;
   date: string;
+  settlementDate?: string | null;
+  dueDate?: string | null;
   paymentMethod?: PaymentMethod;
   status: TransactionStatus;
   clientId?: string;

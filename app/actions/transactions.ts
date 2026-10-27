@@ -1,4 +1,4 @@
-// app/actions/transactions.ts
+// app/actions/transactions.ts (Schema atualizado com settlement_date e due_date)
 "use server";
 
 import { prisma } from "@/lib/prisma";
@@ -56,6 +56,8 @@ export async function createTransaction(data: {
           description: data.description,
           amount: data.amount,
           date: txDate,
+          due_date: txDate,
+          settlement_date: i === 0 && data.status === "PAGO" ? txDate : null,
           status: i === 0 ? data.status : "PENDENTE",
           payment_method_id: data.paymentMethodId || null,
           organization_id: admin.organizationId,
@@ -81,6 +83,7 @@ export async function createTransaction(data: {
       let txDate = parseDateToBrasilia(data.date);
       let feeAmount = 0;
       let methodId = data.paymentMethodId || null;
+      let settlementDate: Date | null = null;
 
       if (data.type === "RECEITA" && data.paymentMethodId && data.status === "PAGO") {
         const calculation = await calculatePaymentSettlementAndFee({
@@ -89,7 +92,7 @@ export async function createTransaction(data: {
           paymentMethodId: data.paymentMethodId,
           baseDate: txDate,
         });
-        txDate = calculation.settlementDate;
+        settlementDate = calculation.settlementDate;
         feeAmount = calculation.feeAmount;
         if (calculation.method?.id) {
           methodId = calculation.method.id;
@@ -101,7 +104,9 @@ export async function createTransaction(data: {
           type: data.type,
           description: data.description,
           amount: data.amount,
-          date: txDate,
+          date: txDate, // Regime de competência: a data escolhida para a transação
+          settlement_date: settlementDate || (data.status === "PAGO" ? txDate : null),
+          due_date: data.status === "PENDENTE" ? txDate : null,
           status: data.status,
           payment_method_id: methodId,
           organization_id: admin.organizationId,
@@ -118,11 +123,13 @@ export async function createTransaction(data: {
             type: "DESPESA",
             description: `Taxa - ${data.description}`,
             amount: feeAmount,
-            date: txDate,
+            date: txDate, // Mesma competência
+            settlement_date: settlementDate || txDate, // Mesma liquidação
             status: "PAGO",
             payment_method_id: methodId,
             organization_id: admin.organizationId,
             admin_id: admin.id,
+            parent_transaction_id: createdTx.id,
           },
         });
         triggerZibeeSyncById(feeTx.id).catch(console.error);
@@ -320,6 +327,8 @@ export async function getFullTransactions(month: number, year: number) {
         description: true,
         amount: true,
         date: true,
+        settlement_date: true,
+        due_date: true,
         status: true,
         recurrence_id: true,
         installment: true,
@@ -351,6 +360,8 @@ export async function getFullTransactions(month: number, year: number) {
         description: t.description,
         amount: Number(t.amount),
         date: t.date.toISOString(),
+        settlementDate: t.settlement_date ? t.settlement_date.toISOString() : null,
+        dueDate: t.due_date ? t.due_date.toISOString() : null,
         status: t.status,
         clientName: t.client?.name || t.appointment?.client?.name || undefined,
         paymentMethod:
@@ -442,6 +453,7 @@ export async function getPendingReceivables() {
       select: {
         id: true,
         date: true,
+        due_date: true,
         description: true,
         amount: true,
         client: { select: { name: true } },
@@ -476,6 +488,7 @@ export async function getPendingReceivables() {
         depositPaidAmount: totalPaid,
         hasDeposit,
         date: a.date_time.toISOString(),
+        dueDate: a.date_time.toISOString(),
         clientName: a.client?.name || "Sem cliente",
       });
     }
@@ -488,7 +501,8 @@ export async function getPendingReceivables() {
       totalServicePrice: Number(t.amount),
       depositPaidAmount: 0,
       hasDeposit: false,
-      date: t.date.toISOString(),
+      date: (t.due_date || t.date).toISOString(), // Ordena e exibe pela data de vencimento real
+      dueDate: t.due_date ? t.due_date.toISOString() : undefined,
       clientName: t.client?.name || "Sem cliente",
     }));
 
@@ -572,7 +586,7 @@ export async function processReceivablePayment(
             appointmentId: appt.id,
             clientId: appt.client_id,
             adminId: admin.id,
-            baseDate: new Date(),
+            baseDate: appt.date_time || new Date(),
             feeDescription: `Taxa Cartão - Serviço: ${apptName}`,
           });
           txIdToSync = result.revenueTx.id;
@@ -587,7 +601,7 @@ export async function processReceivablePayment(
               grossAmount: remainingAmount,
               paymentMethodId: paymentMethodId || null,
               paymentMethodEnum: paymentMethod as PaymentMethod,
-              baseDate: new Date(),
+              baseDate: pendingRevenueTx.date || appt.date_time || new Date(),
             });
 
           await tx.transaction.update({
@@ -595,7 +609,8 @@ export async function processReceivablePayment(
             data: {
               amount: remainingAmount,
               status: "PAGO",
-              date: settlementDate,
+              settlement_date: settlementDate, // Guarda a data em que o valor compensará na conta
+              // OBS: Preserva pendingRevenueTx.date original para garantir o regime de competência
               payment_method_id: method?.id || paymentMethodId || null,
               admin_id: admin.id,
             },
@@ -608,13 +623,15 @@ export async function processReceivablePayment(
                 type: "DESPESA",
                 description: `Taxa Cartão - Serviço: ${apptName}`,
                 amount: feeAmount,
-                date: settlementDate,
+                date: pendingRevenueTx.date || new Date(), // Competência da venda original
+                settlement_date: settlementDate, // Liquidação bancária
                 status: "PAGO",
                 organization_id: admin.organizationId,
                 appointment_id: appt.id,
                 client_id: appt.client_id,
                 payment_method_id: method?.id || paymentMethodId || null,
                 admin_id: admin.id,
+                parent_transaction_id: pendingRevenueTx.id,
               },
             });
             triggerZibeeSyncById(feeTx.id).catch(console.error);
@@ -646,7 +663,7 @@ export async function processReceivablePayment(
           where: { id, organization_id: admin.organizationId },
           data: {
             status: "PAGO",
-            date: settlementDate,
+            settlement_date: settlementDate, // Guarda a data de liquidação sem sobrescrever a competência nem o vencimento original!
             payment_method_id: method?.id || paymentMethodId || null,
             admin_id: admin.id, // Assina quem quitou a pendência
           },
@@ -658,12 +675,14 @@ export async function processReceivablePayment(
               type: "DESPESA",
               description: `Taxa - ${manualTx.description}`,
               amount: feeAmount,
-              date: settlementDate,
+              date: manualTx.date || new Date(), // Competência original
+              settlement_date: settlementDate, // Liquidação
               status: "PAGO",
               organization_id: admin.organizationId,
               client_id: manualTx.client_id,
               payment_method_id: method?.id || paymentMethodId || null,
               admin_id: admin.id,
+              parent_transaction_id: manualTx.id,
             },
           });
           triggerZibeeSyncById(feeTx.id).catch(console.error);
@@ -778,7 +797,7 @@ export async function processAllReceivablesPayment(
             appointmentId: appt.id,
             clientId: appt.client_id,
             adminId: admin.id,
-            baseDate: new Date(),
+            baseDate: appt.date_time || new Date(),
             feeDescription: `Taxa Cartão - Serviço: ${apptName}`,
           });
           createdOrUpdatedTxIds.push(result.revenueTx.id);
@@ -793,7 +812,7 @@ export async function processAllReceivablesPayment(
               grossAmount: remainingAmount,
               paymentMethodId: paymentMethodId || null,
               paymentMethodEnum: paymentMethod as PaymentMethod,
-              baseDate: new Date(),
+              baseDate: pendingRevenueTx.date || appt.date_time || new Date(),
             });
 
           await tx.transaction.update({
@@ -801,7 +820,7 @@ export async function processAllReceivablesPayment(
             data: {
               amount: remainingAmount,
               status: "PAGO",
-              date: settlementDate,
+              settlement_date: settlementDate, // Guarda compensação sem alterar competência
               payment_method_id: method?.id || paymentMethodId || null,
               admin_id: admin.id,
             },
@@ -814,13 +833,15 @@ export async function processAllReceivablesPayment(
                 type: "DESPESA",
                 description: `Taxa Cartão - Serviço: ${apptName}`,
                 amount: feeAmount,
-                date: settlementDate,
+                date: pendingRevenueTx.date || new Date(),
+                settlement_date: settlementDate,
                 status: "PAGO",
                 organization_id: admin.organizationId,
                 appointment_id: appt.id,
                 client_id: appt.client_id,
                 payment_method_id: method?.id || paymentMethodId || null,
                 admin_id: admin.id,
+                parent_transaction_id: pendingRevenueTx.id,
               },
             });
             createdOrUpdatedTxIds.push(feeTx.id);
@@ -852,7 +873,7 @@ export async function processAllReceivablesPayment(
             where: { id: mTx.id },
             data: {
               status: "PAGO",
-              date: settlementDate,
+              settlement_date: settlementDate, // Preserva competência e vencimento
               payment_method_id: method?.id || paymentMethodId || null,
               admin_id: admin.id,
             },
@@ -865,12 +886,14 @@ export async function processAllReceivablesPayment(
                 type: "DESPESA",
                 description: `Taxa - ${mTx.description}`,
                 amount: feeAmount,
-                date: settlementDate,
+                date: mTx.date || new Date(),
+                settlement_date: settlementDate,
                 status: "PAGO",
                 organization_id: admin.organizationId,
                 client_id: mTx.client_id,
                 payment_method_id: method?.id || paymentMethodId || null,
                 admin_id: admin.id,
+                parent_transaction_id: mTx.id,
               },
             });
             createdOrUpdatedTxIds.push(feeTx.id);
@@ -1047,6 +1070,8 @@ export async function getPaginatedTransactions(params: {
           description: true,
           amount: true,
           date: true,
+          settlement_date: true,
+          due_date: true,
           status: true,
           recurrence_id: true,
           installment: true,
@@ -1092,6 +1117,8 @@ export async function getPaginatedTransactions(params: {
         description: t.description,
         amount: Number(t.amount),
         date: t.date.toISOString(),
+        settlementDate: t.settlement_date ? t.settlement_date.toISOString() : null,
+        dueDate: t.due_date ? t.due_date.toISOString() : null,
         status: t.status,
         clientName: t.client?.name || t.appointment?.client?.name || undefined,
         clientCpf: t.client?.cpf || t.appointment?.client?.cpf || undefined,

@@ -486,6 +486,8 @@ model Transaction {
   stock_item_id     String?
   parent_transaction_id String?
   admin_id              String?
+  settlement_date       DateTime?                  // Data prevista/realizada de compensação líquida (D+X)
+  due_date              DateTime?                  // Data de vencimento original (para cobranças a prazo e parcelas)
   admin                 Admin?                     @relation("AdminToTransaction", fields: [admin_id], references: [id])
   appointment           Appointment?               @relation(fields: [appointment_id], references: [id], onDelete: SetNull)
   client                Client?                    @relation(fields: [client_id], references: [id])
@@ -497,6 +499,8 @@ model Transaction {
   child_transactions    Transaction[]              @relation("TransactionHierarchy")
 
   @@index([organization_id, date])
+  @@index([organization_id, settlement_date])
+  @@index([organization_id, due_date])
   @@index([organization_id, status])
   @@index([organization_id, type])
   @@index([recurrence_id])

@@ -1,4 +1,4 @@
-// lib/server/services/packages/package.service.ts
+// lib/server/services/packages/package.service.ts (Schema atualizado com due_date)
 import { getTenantPrisma } from "@/lib/prisma";
 import { PaymentMethod } from "@prisma/client";
 import { triggerZibeeSyncById, deleteTransactionFromZibee } from "@/lib/server/integrations/zibee.service";
@@ -371,7 +371,8 @@ export class PackageService {
               type: "RECEITA",
               description: `Pacote: ${service.name}`,
               amount: currentAmount,
-              date: dueDate,
+              date: baseDate, // Data de competência da venda
+              due_date: dueDate, // Data de vencimento da parcela
               status: "PENDENTE",
               installment: `${i + 1}/${count}`,
               organization_id: organizationId,
@@ -385,12 +386,14 @@ export class PackageService {
 
       // 4. VENDA A PRAZO / FIADO SIMPLES (1 COBRANÇA PENDENTE NO CONTAS A RECEBER)
       else if (!pay_upfront && finalPrice > 0) {
+        const now = new Date();
         const createdPendingTx = await tx.transaction.create({
           data: {
             type: "RECEITA",
             description: `Pacote: ${service.name}`,
             amount: finalPrice,
-            date: new Date(),
+            date: now, // Competência da venda
+            due_date: now, // Vencimento original
             status: "PENDENTE",
             installment: "1/1",
             organization_id: organizationId,

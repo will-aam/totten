@@ -933,6 +933,21 @@ export default function TransactionsPage() {
                                     </span>
                                   </>
                                 )}
+                                {transaction.settlementDate &&
+                                  new Date(transaction.settlementDate).toDateString() !==
+                                    new Date(transaction.date).toDateString() && (
+                                    <>
+                                      <span className="w-1 h-1 rounded-full bg-border shrink-0"></span>
+                                      <span className="text-[9px] sm:text-[10px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-1">
+                                        <Calendar className="h-2.5 w-2.5" />
+                                        Compensa em{" "}
+                                        {new Intl.DateTimeFormat("pt-BR", {
+                                          day: "2-digit",
+                                          month: "2-digit",
+                                        }).format(new Date(transaction.settlementDate))}
+                                      </span>
+                                    </>
+                                  )}
                                 {transaction.clientName && (
                                   <>
                                     <span className="w-1 h-1 rounded-full bg-border shrink-0"></span>
@@ -1166,7 +1181,7 @@ export default function TransactionsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5 bg-muted/10 p-4 rounded-2xl border border-border/40">
                   <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                    Data e Hora
+                    Data e Hora (Competência)
                   </span>
                   <span className="text-sm font-bold">
                     {formatDateFull(viewingTx.date)}
@@ -1186,6 +1201,23 @@ export default function TransactionsPage() {
                           : "Lançamento Manual"}
                   </span>
                 </div>
+
+                {viewingTx.settlementDate &&
+                  new Date(viewingTx.settlementDate).toDateString() !==
+                    new Date(viewingTx.date).toDateString() && (
+                    <div className="flex flex-col gap-1.5 bg-amber-500/10 p-4 rounded-2xl border border-amber-500/20 col-span-2">
+                      <span className="text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
+                        <Calendar className="h-3.5 w-3.5" />
+                        Previsão de Compensação Líquida (D+X)
+                      </span>
+                      <span className="text-sm font-bold text-amber-900 dark:text-amber-200">
+                        {formatDateFull(viewingTx.settlementDate)}
+                      </span>
+                      <span className="text-xs text-amber-700/80 dark:text-amber-300/80">
+                        O lançamento foi registrado no dia da venda ({formatDateFull(viewingTx.date)}), e o crédito compensará na conta no prazo da operadora.
+                      </span>
+                    </div>
+                  )}
 
                 <div className="flex flex-col gap-1.5 bg-muted/10 p-4 rounded-2xl border border-border/40 col-span-2">
                   <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">

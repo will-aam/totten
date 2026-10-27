@@ -210,6 +210,7 @@ export async function createAppointment(
             paymentMethodId: finalPaymentMethodId,
             paymentMethodEnum: finalPaymentMethod,
             status: "PAGO",
+            baseDate: appointmentDates[i] || new Date(),
           });
           createdTxIds.push(...newTxIds);
         }
@@ -594,6 +595,7 @@ export async function updateAppointment(
             paymentMethodId: finalPaymentMethodId,
             paymentMethodEnum: finalPaymentMethod,
             status: "PAGO",
+            baseDate: currentAppt.date_time || new Date(),
           });
           createdTxIds.push(...newTxIds);
         }

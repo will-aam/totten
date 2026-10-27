@@ -179,6 +179,7 @@ export class TotemCheckInService {
               paymentMethodId: paymentMethodRecordId,
               paymentMethodEnum,
               status: "PAGO",
+              baseDate: appt.date_time || new Date(),
             });
             createdTxIds.push(...newTxIds);
           }

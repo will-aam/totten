@@ -161,13 +161,16 @@ export async function createSettledRevenueWithFee(params: CreateSettledRevenuePa
   const stockItemId = params.stock_item_id ?? params.stockItemId ?? null;
   const adminId = params.admin_id ?? params.adminId ?? null;
 
-  // 1. Cria a RECEITA no valor BRUTO (Padronização do Faturamento Bruto)
+  const occurrenceDate = params.baseDate || new Date();
+
+  // 1. Cria a RECEITA no valor BRUTO (Regime de Competência: date = ocorrência, settlement_date = D+X)
   const revenueTx = await db.transaction.create({
     data: {
       type: "RECEITA",
       description: params.description,
       amount: grossAmount,
-      date: settlementDate, // Reflete os dias para recebimento (D+X)
+      date: occurrenceDate, // Data do fato gerador (competência)
+      settlement_date: settlementDate, // Previsão/liquidação real no fluxo de caixa (D+X)
       status: params.status || "PAGO",
       organization_id: params.organizationId,
       client_id: clientId,
@@ -182,7 +185,7 @@ export async function createSettledRevenueWithFee(params: CreateSettledRevenuePa
 
   let feeTx: any = null;
 
-  // 2. Se houver taxa de cartão / maquininha, cria a DESPESA correspondente (Padronização do Faturamento Líquido)
+  // 2. Se houver taxa de cartão / maquininha, cria a DESPESA correspondente (mesma competência e liquidação)
   if (feeAmount > 0 && method) {
     const feeDesc = params.feeDescription || `Taxa ${method.name}: ${params.description}`;
     feeTx = await db.transaction.create({
@@ -190,7 +193,8 @@ export async function createSettledRevenueWithFee(params: CreateSettledRevenuePa
         type: "DESPESA",
         description: feeDesc,
         amount: feeAmount,
-        date: settlementDate, // Mesma data de liquidação
+        date: occurrenceDate, // Mesma competência da venda
+        settlement_date: settlementDate, // Mesma liquidação do valor líquido
         status: "PAGO",
         organization_id: params.organizationId,
         client_id: clientId,
@@ -208,6 +212,7 @@ export async function createSettledRevenueWithFee(params: CreateSettledRevenuePa
     revenueTx,
     feeTx,
     createdTxIds,
+    occurrenceDate,
     settlementDate,
     feeAmount,
   };
