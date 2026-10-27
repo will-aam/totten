@@ -23,6 +23,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { Couch } from "@/components/icons/couch";
 
 /* ── Legenda de cores – dados ─────────────────────────────────── */
 
@@ -111,6 +112,10 @@ interface AgendaHeaderProps {
   filtersNode?: ReactNode;
   viewMode: "day" | "week" | "month";
   onViewModeChange: (val: "day" | "week" | "month") => void;
+  isWaitingRoomOpen?: boolean;
+  onToggleWaitingRoom?: () => void;
+  waitingCount?: number;
+  isWaitingRoomEnabled?: boolean;
 }
 
 export function AgendaHeader({
@@ -122,6 +127,10 @@ export function AgendaHeader({
   filtersNode,
   viewMode,
   onViewModeChange,
+  isWaitingRoomOpen = false,
+  onToggleWaitingRoom,
+  waitingCount = 0,
+  isWaitingRoomEnabled = false,
 }: AgendaHeaderProps) {
   const { toggleSidebar } = useSidebar();
   const { data: session } = useSession();
@@ -268,6 +277,30 @@ export function AgendaHeader({
             </div>
           </SheetContent>
         </Sheet>
+
+        {/* ── Botão Sala de Espera (Mobile apenas - apenas se autoCompleteOnCheckin for false) ────────────────────────── */}
+        {isWaitingRoomEnabled && onToggleWaitingRoom && (
+          <Button
+            variant={isWaitingRoomOpen ? "default" : "outline"}
+            size="icon"
+            onClick={onToggleWaitingRoom}
+            className={cn(
+              "h-9 w-9 border md:hidden relative transition-all",
+              isWaitingRoomOpen
+                ? "bg-purple-600 text-white hover:bg-purple-700 border-purple-600 shadow-sm"
+                : "bg-none border-none hover:bg-muted text-muted-foreground hover:text-foreground",
+              waitingCount > 0 && !isWaitingRoomOpen && "text-purple-600 dark:text-purple-400"
+            )}
+            title={isWaitingRoomOpen ? "Voltar para Agenda" : "Sala de Espera"}
+          >
+            <Couch size={18} />
+            {waitingCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-purple-600 text-[9px] font-black text-white shadow-sm ring-2 ring-background animate-pulse">
+                {waitingCount}
+              </span>
+            )}
+          </Button>
+        )}
 
         <Button
           variant="outline"

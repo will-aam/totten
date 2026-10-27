@@ -22,10 +22,14 @@ export interface Appointment {
   observations?: string | null;
   payment_method?: string | null;
   paymentMethod?: string | null;
+  paymentMethodId?: string | null;
+  price?: number | null;
+  deposit_paid_amount?: number | null;
   date_time?: string;
   checkInTime?: string | null;
   package_id?: string | null;
   session_number?: number | null;
+  recurrence_id?: string | null;
   package?: {
     total_sessions: number;
     used_sessions: number;

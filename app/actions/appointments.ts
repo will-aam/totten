@@ -116,7 +116,7 @@ export async function createAppointment(
 
       // NOVO: Lógica FIRST_BOOKING e Verificação de Validade do Pacote
       let packageExpiryDate = pkg.expires_at ? new Date(pkg.expires_at) : null;
-      
+
       if (!packageExpiryDate && pkg.package_template_id) {
         const settings = await prisma.settings.findUnique({
           where: { organization_id: admin.organizationId },
@@ -267,7 +267,7 @@ export async function updateAppointment(
     };
 
     const finalStatus = statusMap[data.status] || AppointmentStatus.PENDENTE;
-    
+
     let finalPaymentMethodId = data.paymentMethodId || null;
     let finalPaymentMethod: PaymentMethod | null = null;
 
@@ -604,7 +604,7 @@ export async function updateAppointment(
         // atualiza auto_processed para true para permitir o estorno de estoque caso seja cancelado
         await tx.checkIn.updateMany({
           where: { appointment_id: currentAppt.id },
-          data: { auto_processed: true },
+          data: { auto_processed: true, completed_at: new Date() },
         });
 
         if (service.track_stock && service.stock_items.length > 0) {
@@ -661,7 +661,7 @@ export async function updateAppointment(
         // 1. Se houver check-in registrado previamente, reseta auto_processed
         await tx.checkIn.updateMany({
           where: { appointment_id: currentAppt.id },
-          data: { auto_processed: false },
+          data: { auto_processed: false, completed_at: null },
         });
 
         // 2. Devolve ao estoque os insumos consumidos na realização
@@ -1393,8 +1393,8 @@ export async function createClientAppointmentAction(input: CreateClientAppointme
     const autoConfirm = org.settings?.auto_confirm_appointments ?? true;
     const isMpPix = org.settings?.pix_payment_type === "MERCADO_PAGO" && !!org.settings?.mp_access_token;
     // Se exigir pré-pagamento com Mercado Pago, o status inicial fica PENDENTE_PAGAMENTO (ou SOLICITADO) até que o webhook aprove
-    const initialStatus = isMpPix 
-      ? AppointmentStatus.SOLICITADO 
+    const initialStatus = isMpPix
+      ? AppointmentStatus.SOLICITADO
       : (autoConfirm ? AppointmentStatus.CONFIRMADO : AppointmentStatus.SOLICITADO);
 
     const appointment = await tenantPrisma.appointment.create({
@@ -1449,8 +1449,8 @@ export async function createClientAppointmentAction(input: CreateClientAppointme
     revalidatePath("/admin/auto/requests");
 
     // Return a plain object safely avoiding Prisma Decimal errors
-    return { 
-      success: true, 
+    return {
+      success: true,
       appointment: JSON.parse(JSON.stringify(appointment)),
       isPending: initialStatus === AppointmentStatus.SOLICITADO,
       pixPayment: pixPaymentData,
@@ -1481,9 +1481,9 @@ export async function checkClientAppointmentPaymentStatusAction(appointmentId: s
       return { success: false, error: "Agendamento não encontrado." };
     }
 
-    const isPaid = appointment.status === AppointmentStatus.CONFIRMADO || 
-                   appointment.mp_payment_status === "approved" || 
-                   appointment.has_charge;
+    const isPaid = appointment.status === AppointmentStatus.CONFIRMADO ||
+      appointment.mp_payment_status === "approved" ||
+      appointment.has_charge;
 
     return {
       success: true,

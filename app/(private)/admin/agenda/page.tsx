@@ -36,6 +36,7 @@ import { toast } from "sonner";
 import { MobileMonthAgenda } from "./_components/mobile-month-agenda";
 
 import { FullCalendarAgenda } from "./_components/full-calendar-agenda";
+import { AgendaWaitingRoom } from "./_components/agenda-waiting-room";
 import { Appointment } from "./_components/appointment-card";
 import { NewAppointmentModal } from "./_components/new-appointment-modal";
 import { AppointmentDetailsModal } from "./_components/appointment-details-modal";
@@ -77,6 +78,7 @@ export default function AgendaPage() {
   const [selectedAppointment, setSelectedAppointment] =
     useState<Appointment | null>(null);
   const [isClosedDayModalOpen, setIsClosedDayModalOpen] = useState(false);
+  const [isWaitingRoomOpen, setIsWaitingRoomOpen] = useState(false);
   const router = useRouter();
 
   const { data: selfServiceRes } = useSWR(
@@ -241,6 +243,34 @@ export default function AgendaPage() {
   const weekAppointments = currentViewAppointments;
   const monthAppointments = currentViewAppointments;
 
+  const todayWaitingCount = useMemo(() => {
+    const now = new Date();
+    return ((agendaData as any)?.appointments ?? []).filter((a: any) => {
+      const isToday = isSameDay(new Date(a.date_time || new Date()), now);
+      const hasCheckIn = !!a.checkInTime;
+      const isNotDone = a.status !== "REALIZADO" && a.status !== "CANCELADO";
+      return isToday && hasCheckIn && isNotDone;
+    }).length;
+  }, [agendaData]);
+
+  const isWaitingRoomEnabled = settings?.autoCompleteOnCheckin === false;
+
+  useEffect(() => {
+    if (!isWaitingRoomEnabled && isWaitingRoomOpen) {
+      setIsWaitingRoomOpen(false);
+    }
+  }, [isWaitingRoomEnabled, isWaitingRoomOpen]);
+
+  const handleToggleWaitingRoom = () => {
+    setIsWaitingRoomOpen((prev) => {
+      const next = !prev;
+      if (next && !isSameDay(selectedDate, new Date())) {
+        setSelectedDate(new Date());
+      }
+      return next;
+    });
+  };
+
   const goNext = () => {
     if (viewMode === "month") {
       const newDate = addMonths(selectedDate, 1);
@@ -334,12 +364,14 @@ export default function AgendaPage() {
           setSelectedDate(date);
           setWeekStart(startOfWeek(date, { weekStartsOn: 0 }));
         }}
-        title={headerTitle}
+        title={isWaitingRoomOpen ? "Sala de Espera" : headerTitle}
         subtitle={
           loadingAgenda ? (
             <span className="flex items-center gap-1">
               <LoaderDots size="xs" className="animate-spin" /> Atualizando...
             </span>
+          ) : isWaitingRoomOpen ? (
+            `${todayWaitingCount} aguardando atendimento`
           ) : viewMode === "day" ? (
             `${appointments.length} agendamentos`
           ) : viewMode === "week" ? (
@@ -354,6 +386,10 @@ export default function AgendaPage() {
         }
         viewMode={viewMode}
         onViewModeChange={(val) => setViewMode(val)}
+        isWaitingRoomOpen={isWaitingRoomOpen}
+        onToggleWaitingRoom={handleToggleWaitingRoom}
+        waitingCount={todayWaitingCount}
+        isWaitingRoomEnabled={isWaitingRoomEnabled}
       />
 
       <div className="flex flex-1 relative h-[calc(100vh-64px)] overflow-hidden">
@@ -367,89 +403,105 @@ export default function AgendaPage() {
             setSelectedDate(date);
             setWeekStart(startOfWeek(date, { weekStartsOn: 0 }));
           }}
+          isWaitingRoomOpen={isWaitingRoomOpen}
+          onToggleWaitingRoom={handleToggleWaitingRoom}
+          waitingCount={todayWaitingCount}
+          isWaitingRoomEnabled={isWaitingRoomEnabled}
         />
 
-        <div className="flex-1 flex flex-col min-w-0 min-h-0">
-          <div className="flex flex-col gap-4 p-0 md:p-6 w-full relative flex-1 min-h-0">
-            <div className="flex justify-end md:hidden px-4 pt-4">
-              <Tabs
-                value={viewMode}
-                onValueChange={(val) =>
-                  setViewMode(val as "day" | "week" | "month")
-                }
-                className="w-full sm:w-auto shrink-0"
-              >
-                <TabsList className="grid w-full sm:w-64 grid-cols-3 h-11 rounded-2xl bg-muted/40 p-1">
-                  <TabsTrigger value="day" className="rounded-full font-bold">
-                    Dia
-                  </TabsTrigger>
-                  <TabsTrigger value="week" className="rounded-full font-bold">
-                    Semana
-                  </TabsTrigger>
-                  <TabsTrigger value="month" className="rounded-full font-bold">
-                    Mês
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
+        <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-y-auto custom-scrollbar">
+          {isWaitingRoomOpen ? (
+            <AgendaWaitingRoom
+              appointments={currentViewAppointments}
+              selectedDate={selectedDate}
+              onAppointmentClick={(appt) => {
+                setSelectedAppointment(appt);
+              }}
+              onRefresh={mutateAll}
+              onBackToCalendar={() => setIsWaitingRoomOpen(false)}
+            />
+          ) : (
+            <div className="flex flex-col gap-4 p-0 md:p-6 w-full relative flex-1 min-h-0">
+              <div className="flex justify-end md:hidden px-4 pt-4">
+                <Tabs
+                  value={viewMode}
+                  onValueChange={(val) =>
+                    setViewMode(val as "day" | "week" | "month")
+                  }
+                  className="w-full sm:w-auto shrink-0"
+                >
+                  <TabsList className="grid w-full sm:w-64 grid-cols-3 h-11 rounded-2xl bg-muted/40 p-1">
+                    <TabsTrigger value="day" className="rounded-full font-bold">
+                      Dia
+                    </TabsTrigger>
+                    <TabsTrigger value="week" className="rounded-full font-bold">
+                      Semana
+                    </TabsTrigger>
+                    <TabsTrigger value="month" className="rounded-full font-bold">
+                      Mês
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
 
-            {/* GRIDS DA AGENDA */}
-            <div className="flex-1 flex flex-col min-h-0 animate-in fade-in slide-in-from-bottom-2 duration-500 relative">
-              {!hasSetInitialView ? (
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin opacity-50" />
-                </div>
-              ) : (
-                <>
-                  <div className={cn("absolute inset-0", viewMode === "month" ? "hidden md:block" : "block")}>
-                      <FullCalendarAgenda
-                      appointments={currentViewAppointments}
-                      scheduleBlocks={scheduleBlocks}
-                      viewMode={viewMode}
-                      currentDate={selectedDate}
-                      startHour={openingHourNumber}
-                      endHour={closingHourNumber}
-                      schedule={schedule}
-                      isDateClosed={isDateClosed}
-                      onClosedDayClick={() => setIsClosedDayModalOpen(true)}
-                      onAppointmentClick={(appt) => {
-                        setSelectedAppointment(appt);
-                      }}
-                      onRefresh={mutateAll}
-                      onEmptySlotClick={(time) => {
-                        setSelectedTimeSlot(time);
-                        setIsNewModalOpen(true);
-                      }}
-                      onDayClick={(day) => {
-                        setSelectedDate(day);
-                        setWeekStart(startOfWeek(day, { weekStartsOn: 0 }));
-                        setViewMode("day");
-                      }}
-                      onQuickConfirm={handleQuickConfirm}
-                    />
+              {/* GRIDS DA AGENDA */}
+              <div className="flex-1 flex flex-col min-h-0 animate-in fade-in slide-in-from-bottom-2 duration-500 relative">
+                {!hasSetInitialView ? (
+                  <div className="flex-1 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin opacity-50" />
                   </div>
-
-                  {viewMode === "month" && (
-                    <div className="md:hidden flex-1 h-full w-full flex flex-col min-h-0 overflow-hidden bg-background">
-                      <MobileMonthAgenda
+                ) : (
+                  <>
+                    <div className={cn("absolute inset-0", viewMode === "month" ? "hidden md:block" : "block")}>
+                        <FullCalendarAgenda
                         appointments={currentViewAppointments}
-                        selectedDate={selectedDate}
+                        scheduleBlocks={scheduleBlocks}
+                        viewMode={viewMode}
+                        currentDate={selectedDate}
+                        startHour={openingHourNumber}
+                        endHour={closingHourNumber}
+                        schedule={schedule}
                         isDateClosed={isDateClosed}
                         onClosedDayClick={() => setIsClosedDayModalOpen(true)}
-                        onSelectDate={(date) => {
-                          setSelectedDate(date);
-                          setWeekStart(startOfWeek(date, { weekStartsOn: 0 }));
-                        }}
                         onAppointmentClick={(appt) => {
                           setSelectedAppointment(appt);
                         }}
+                        onRefresh={mutateAll}
+                        onEmptySlotClick={(time) => {
+                          setSelectedTimeSlot(time);
+                          setIsNewModalOpen(true);
+                        }}
+                        onDayClick={(day) => {
+                          setSelectedDate(day);
+                          setWeekStart(startOfWeek(day, { weekStartsOn: 0 }));
+                          setViewMode("day");
+                        }}
+                        onQuickConfirm={handleQuickConfirm}
                       />
                     </div>
-                  )}
-                </>
-              )}
+
+                    {viewMode === "month" && (
+                      <div className="md:hidden flex-1 h-full w-full flex flex-col min-h-0 overflow-hidden bg-background">
+                        <MobileMonthAgenda
+                          appointments={currentViewAppointments}
+                          selectedDate={selectedDate}
+                          isDateClosed={isDateClosed}
+                          onClosedDayClick={() => setIsClosedDayModalOpen(true)}
+                          onSelectDate={(date) => {
+                            setSelectedDate(date);
+                            setWeekStart(startOfWeek(date, { weekStartsOn: 0 }));
+                          }}
+                          onAppointmentClick={(appt) => {
+                            setSelectedAppointment(appt);
+                          }}
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 

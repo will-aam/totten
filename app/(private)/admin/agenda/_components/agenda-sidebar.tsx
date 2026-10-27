@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import useSWR from "swr";
 import { useSession } from "next-auth/react";
-import { Plus, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, addMonths, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { AgendaFilterForm } from "./agenda-filters";
 import { getTeam } from "@/app/actions/team";
 import { apiClient } from "@/lib/api-client";
+import { Couch } from "@/components/icons/couch";
+import { cn } from "@/lib/utils";
 
 interface AgendaSidebarProps {
   filters: any;
@@ -19,6 +21,10 @@ interface AgendaSidebarProps {
   selectedDate: Date;
   onSelectDate: (date: Date) => void;
   isOpen?: boolean;
+  isWaitingRoomOpen?: boolean;
+  onToggleWaitingRoom?: () => void;
+  waitingCount?: number;
+  isWaitingRoomEnabled?: boolean;
 }
 
 export function AgendaSidebar({
@@ -28,6 +34,10 @@ export function AgendaSidebar({
   selectedDate,
   onSelectDate,
   isOpen = true,
+  isWaitingRoomOpen = false,
+  onToggleWaitingRoom,
+  waitingCount = 0,
+  isWaitingRoomEnabled: isWaitingRoomEnabledProp,
 }: AgendaSidebarProps) {
   const { data: session } = useSession();
   const isOwner = session?.user?.role === "OWNER";
@@ -52,6 +62,7 @@ export function AgendaSidebar({
     }
     fetchTeam();
   }, [isOwner]);
+
   const [month, setMonth] = useState<Date>(selectedDate);
 
   const nextMonth = () => {
@@ -65,23 +76,46 @@ export function AgendaSidebar({
     onSelectDate(prev);
   };
 
+  const isWaitingRoomEnabled = isWaitingRoomEnabledProp ?? (settings?.autoCompleteOnCheckin === false);
+
   return (
     <aside
-      className={`hidden md:flex flex-col shrink-0 bg-background overflow-y-auto overflow-x-hidden custom-scrollbar h-full relative z-10 p-4 gap-6 transition-[width,padding,opacity] duration-300 ease-in-out ${isOpen ? "w-[17rem] xl:w-[18rem] opacity-100" : "w-0 px-0 opacity-0 pointer-events-none"
-        }`}
+      className={`hidden md:flex flex-col shrink-0 bg-background overflow-y-auto overflow-x-hidden custom-scrollbar h-full relative z-10 p-4 gap-6 transition-[width,padding,opacity] duration-300 ease-in-out ${
+        isOpen ? "w-[17rem] xl:w-[18rem] opacity-100" : "w-0 px-0 opacity-0 pointer-events-none"
+      }`}
     >
-      {/* botão para apagar depois */}
-      <div className="px-2 pt-2 whitespace-nowrap">
-        {/* <Button
-          onClick={onCreateClick}
-          className="shadow-sm hover:shadow-md transition-shadow flex items-center gap-2 px-6 py-7 font-medium text-base bg-background border border-border/50 text-foreground hover:bg-accent hover:text-accent-foreground dark:shadow-none"
-        >
-          <div className="flex items-center gap-3">
-            <Plus size={32} className="text-foreground" strokeWidth={2.5} />
-            <span className="text-[1.05rem]">Novo agendamento</span>
-          </div>
-        </Button> */}
-      </div>
+      {/* Botão Sala de Espera no Desktop (acima do calendário) - Apenas se autoCompleteOnCheckin for false */}
+      {isWaitingRoomEnabled && (
+        <div className="px-2 pt-1">
+          <Button
+            variant={isWaitingRoomOpen ? "default" : "outline"}
+            onClick={onToggleWaitingRoom}
+            className={cn(
+              "w-full flex items-center justify-between px-3 h-10 rounded-2xl transition-all font-bold text-xs shadow-xs border",
+              isWaitingRoomOpen
+                ? "bg-purple-600 hover:bg-purple-700 text-white border-purple-600 shadow-purple-600/20"
+                : "hover:bg-muted text-muted-foreground hover:text-foreground border-border/60",
+              waitingCount !== undefined && waitingCount > 0 && !isWaitingRoomOpen && "border-purple-300 dark:border-purple-800 text-purple-700 dark:text-purple-300 bg-purple-50/50 dark:bg-purple-950/20"
+            )}
+            title={isWaitingRoomOpen ? "Voltar para Grade da Agenda" : "Abrir Sala de Espera"}
+          >
+            <div className="flex items-center gap-2.5">
+              <Couch size={18} className="shrink-0" />
+              <span>{isWaitingRoomOpen ? "Voltar para Agenda" : "Sala de Espera"}</span>
+            </div>
+            {waitingCount !== undefined && waitingCount > 0 && (
+              <span
+                className={cn(
+                  "px-2 py-0.5 rounded-full text-[10px] font-black",
+                  isWaitingRoomOpen ? "bg-white text-purple-700" : "bg-purple-600 text-white"
+                )}
+              >
+                {waitingCount}
+              </span>
+            )}
+          </Button>
+        </div>
+      )}
 
       <div className="flex flex-col px-2 min-w-[15rem]">
         <div className="flex items-center justify-between mb-2">
@@ -125,8 +159,8 @@ export function AgendaSidebar({
             day_outside: "text-muted-foreground opacity-50",
             day_disabled: "text-muted-foreground opacity-50",
             day_hidden: "invisible",
-            nav: "hidden", // We use custom nav above
-            month_caption: "hidden" // We use custom caption above
+            nav: "hidden",
+            month_caption: "hidden"
           }}
         />
       </div>

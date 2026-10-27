@@ -8,16 +8,17 @@ export class AuthService {
    * e retorna o objeto formatado para a sessão do NextAuth.
    */
   static async validateCredentials(email?: string, password?: string) {
-    console.log("👉 1. Iniciando login para o email:", email);
+    const cleanEmail = (email || "").toLowerCase().trim();
+    console.log("👉 1. Iniciando login para o email:", cleanEmail);
 
-    if (!email || !password) {
+    if (!cleanEmail || !password) {
       console.log("❌ Erro: Credenciais vazias");
       throw new Error("Credenciais inválidas");
     }
 
     console.log("👉 2. Buscando usuário no Prisma/Neon...");
-    const admin = await prisma.admin.findUnique({
-      where: { email },
+    let admin = await prisma.admin.findUnique({
+      where: { email: cleanEmail },
       include: {
         organizations: {
           select: {
@@ -29,6 +30,33 @@ export class AuthService {
         },
       },
     });
+
+    // Fallback: se não achar por busca exata, busca case-insensitive para dar suporte a contas antigas
+    if (!admin) {
+      admin = await prisma.admin.findFirst({
+        where: {
+          email: { equals: cleanEmail, mode: "insensitive" },
+        },
+        include: {
+          organizations: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+            take: 1,
+          },
+        },
+      });
+
+      // Auto-cura: se o e-mail no banco estava com maiúsculas antigas, normaliza para lowercase
+      if (admin && admin.email !== cleanEmail) {
+        await prisma.admin.update({
+          where: { id: admin.id },
+          data: { email: cleanEmail },
+        }).catch((err) => console.error("Falha ao normalizar e-mail do admin:", err));
+      }
+    }
 
     console.log(
       "👉 3. Resposta do Prisma:",
