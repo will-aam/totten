@@ -168,20 +168,55 @@ export async function createManualCheckIn(data: {
         },
       });
 
-      // b) Se estiver associado a pacote e for autoComplete, incrementa sessões usadas
+      // b) Se estiver associado a pacote e for autoComplete, incrementa sessões usadas com trava atômica
       if (autoComplete && data.packageId) {
         const pkg = await tx.package.findUnique({
           where: { id: data.packageId, organization_id: organizationId },
+          select: { id: true, name: true, total_sessions: true, used_sessions: true, active: true },
         });
 
-        if (pkg) {
-          const newUsed = pkg.used_sessions + 1;
-          const willRemainActive = newUsed < pkg.total_sessions;
-          await tx.package.update({
-            where: { id: pkg.id },
-            data: {
-              used_sessions: { increment: 1 },
-              active: willRemainActive,
+        if (!pkg) {
+          throw new Error("Pacote não encontrado.");
+        }
+
+        const pacoteUpdate = await tx.package.updateMany({
+          where: {
+            id: data.packageId,
+            organization_id: organizationId,
+            used_sessions: { lt: pkg.total_sessions },
+          },
+          data: {
+            used_sessions: { increment: 1 },
+          },
+        });
+
+        if (pacoteUpdate.count === 0) {
+          throw new Error(
+            `Saldo de sessões esgotado no pacote "${pkg.name}".`,
+          );
+        }
+
+        const updatedPkg = await tx.package.findUnique({
+          where: { id: data.packageId },
+          select: { used_sessions: true, total_sessions: true },
+        });
+
+        const currentUsed = updatedPkg?.used_sessions ?? (pkg.used_sessions + 1);
+        const willRemainActive = currentUsed < pkg.total_sessions;
+
+        await tx.package.update({
+          where: { id: data.packageId },
+          data: {
+            active: willRemainActive,
+          },
+        });
+
+        if (!willRemainActive) {
+          await tx.appointment.deleteMany({
+            where: {
+              package_id: data.packageId,
+              organization_id: organizationId,
+              status: { not: "REALIZADO" },
             },
           });
         }

@@ -80,29 +80,46 @@ export class AgendaService {
                 },
               });
 
-              // 2. Desconta do pacote se aplicável
+              // 2. Desconta do pacote se aplicável com trava atômica
               if (deductSession && appt.package_id && appt.package) {
-                const newUsedSessions = appt.package.used_sessions + 1;
-                const stillActive = newUsedSessions < appt.package.total_sessions;
-                const isManuallyArchived = !appt.package.active && (appt.package.used_sessions < appt.package.total_sessions);
-                const finalActive = isManuallyArchived ? false : stillActive;
-
-                await tx.package.update({
-                  where: { id: appt.package_id },
+                const pacoteUpdate = await tx.package.updateMany({
+                  where: {
+                    id: appt.package_id,
+                    organization_id: organizationId,
+                    used_sessions: { lt: appt.package.total_sessions },
+                  },
                   data: {
-                    used_sessions: newUsedSessions,
-                    active: finalActive,
+                    used_sessions: { increment: 1 },
                   },
                 });
 
-                if (!finalActive) {
-                  await tx.appointment.deleteMany({
-                    where: {
-                      package_id: appt.package_id,
-                      organization_id: organizationId,
-                      status: { not: AppointmentStatus.REALIZADO },
+                if (pacoteUpdate.count > 0) {
+                  const updatedPkg = await tx.package.findUnique({
+                    where: { id: appt.package_id },
+                    select: { used_sessions: true, total_sessions: true, active: true },
+                  });
+
+                  const currentUsedSessions = updatedPkg?.used_sessions ?? (appt.package.used_sessions + 1);
+                  const stillActive = currentUsedSessions < appt.package.total_sessions;
+                  const isManuallyArchived = !appt.package.active && (appt.package.used_sessions < appt.package.total_sessions);
+                  const finalActive = isManuallyArchived ? false : stillActive;
+
+                  await tx.package.update({
+                    where: { id: appt.package_id },
+                    data: {
+                      active: finalActive,
                     },
                   });
+
+                  if (!finalActive) {
+                    await tx.appointment.deleteMany({
+                      where: {
+                        package_id: appt.package_id,
+                        organization_id: organizationId,
+                        status: { not: AppointmentStatus.REALIZADO },
+                      },
+                    });
+                  }
                 }
               }
 

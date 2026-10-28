@@ -512,16 +512,44 @@ export async function updateAppointment(
         const newlyCompletedCount = affectedCount;
 
         if (isMarkingAsDone && currentAppt.package_id && currentAppt.package && newlyCompletedCount > 0) {
-          const newUsedSessions =
-            currentAppt.package.used_sessions + newlyCompletedCount;
-          const stillActive = newUsedSessions < currentAppt.package.total_sessions;
+          // Trava atômica condicional no banco contra concorrência e race condition
+          const maxAllowedIncrement = currentAppt.package.total_sessions - currentAppt.package.used_sessions;
+          if (newlyCompletedCount > maxAllowedIncrement) {
+            throw new Error(
+              `Saldo insuficiente no pacote "${currentAppt.package.name}". Restam ${Math.max(0, maxAllowedIncrement)} sessões, mas foram concluídas ${newlyCompletedCount}.`,
+            );
+          }
+
+          const pacoteUpdate = await tx.package.updateMany({
+            where: {
+              id: currentAppt.package_id,
+              organization_id: admin.organizationId,
+              used_sessions: { lte: currentAppt.package.total_sessions - newlyCompletedCount },
+            },
+            data: {
+              used_sessions: { increment: newlyCompletedCount },
+            },
+          });
+
+          if (pacoteUpdate.count === 0) {
+            throw new Error(
+              `Saldo insuficiente no pacote "${currentAppt.package.name}".`,
+            );
+          }
+
+          const updatedPkg = await tx.package.findUnique({
+            where: { id: currentAppt.package_id },
+            select: { used_sessions: true, total_sessions: true, active: true },
+          });
+
+          const currentUsedSessions = updatedPkg?.used_sessions ?? (currentAppt.package.used_sessions + newlyCompletedCount);
+          const stillActive = currentUsedSessions < currentAppt.package.total_sessions;
           const isManuallyArchived = !currentAppt.package.active && (currentAppt.package.used_sessions < currentAppt.package.total_sessions);
           const finalActive = isManuallyArchived ? false : stillActive;
 
           await tx.package.update({
             where: { id: currentAppt.package_id },
             data: {
-              used_sessions: { increment: newlyCompletedCount },
               active: finalActive,
             },
           });
@@ -548,15 +576,37 @@ export async function updateAppointment(
         });
 
         if (isMarkingAsDone && currentAppt.package_id && currentAppt.package) {
-          const newUsedSessions = currentAppt.package.used_sessions + 1;
-          const stillActive = newUsedSessions < currentAppt.package.total_sessions;
+          // Trava atômica condicional no banco contra concorrência e race condition (evita > total_sessions)
+          const pacoteUpdate = await tx.package.updateMany({
+            where: {
+              id: currentAppt.package_id,
+              organization_id: admin.organizationId,
+              used_sessions: { lt: currentAppt.package.total_sessions },
+            },
+            data: {
+              used_sessions: { increment: 1 },
+            },
+          });
+
+          if (pacoteUpdate.count === 0) {
+            throw new Error(
+              `Saldo de sessões esgotado no pacote "${currentAppt.package.name}".`,
+            );
+          }
+
+          const updatedPkg = await tx.package.findUnique({
+            where: { id: currentAppt.package_id },
+            select: { used_sessions: true, total_sessions: true, active: true },
+          });
+
+          const currentUsedSessions = updatedPkg?.used_sessions ?? (currentAppt.package.used_sessions + 1);
+          const stillActive = currentUsedSessions < currentAppt.package.total_sessions;
           const isManuallyArchived = !currentAppt.package.active && (currentAppt.package.used_sessions < currentAppt.package.total_sessions);
           const finalActive = isManuallyArchived ? false : stillActive;
 
           await tx.package.update({
             where: { id: currentAppt.package_id },
             data: {
-              used_sessions: { increment: 1 },
               active: finalActive,
             },
           });
@@ -860,9 +910,12 @@ export async function updateAppointment(
     }
 
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    return { success: false, error: "Erro ao atualizar agendamento." };
+    return {
+      success: false,
+      error: error?.message || "Erro ao atualizar agendamento.",
+    };
   }
 }
 
@@ -1294,15 +1347,37 @@ export async function registerManualNoShow(
       });
 
       if (deductSession && appt.package_id && appt.package) {
-        const newUsedSessions = appt.package.used_sessions + 1;
-        const stillActive = newUsedSessions < appt.package.total_sessions;
+        // Trava atômica condicional no banco contra concorrência e race condition
+        const pacoteUpdate = await tx.package.updateMany({
+          where: {
+            id: appt.package_id,
+            organization_id: admin.organizationId,
+            used_sessions: { lt: appt.package.total_sessions },
+          },
+          data: {
+            used_sessions: { increment: 1 },
+          },
+        });
+
+        if (pacoteUpdate.count === 0) {
+          throw new Error(
+            `Saldo de sessões esgotado no pacote "${appt.package.name}".`,
+          );
+        }
+
+        const updatedPkg = await tx.package.findUnique({
+          where: { id: appt.package_id },
+          select: { used_sessions: true, total_sessions: true, active: true },
+        });
+
+        const currentUsedSessions = updatedPkg?.used_sessions ?? (appt.package.used_sessions + 1);
+        const stillActive = currentUsedSessions < appt.package.total_sessions;
         const isManuallyArchived = !appt.package.active && (appt.package.used_sessions < appt.package.total_sessions);
         const finalActive = isManuallyArchived ? false : stillActive;
 
         await tx.package.update({
           where: { id: appt.package_id },
           data: {
-            used_sessions: newUsedSessions,
             active: finalActive,
           },
         });
@@ -1344,9 +1419,12 @@ export async function registerManualNoShow(
     revalidatePath("/admin/clients");
 
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro ao registrar falta:", error);
-    return { success: false, error: "Falha ao registrar a falta." };
+    return {
+      success: false,
+      error: error?.message || "Falha ao registrar a falta.",
+    };
   }
 }
 

@@ -585,12 +585,35 @@ export async function createManualPackageCheckIn(
       // 5. Desconto de pacote (SOMENTE SE markAsCompleted for TRUE)
       // Se for apenas check-in / em espera, o pacote NÃO é descontado agora para evitar duplo desconto!
       if (markAsCompleted) {
-        const newUsedSessions = pkg.used_sessions + 1;
-        const willRemainActive = newUsedSessions < pkg.total_sessions;
+        const pacoteUpdate = await tx.package.updateMany({
+          where: {
+            id: pkg.id,
+            organization_id: admin.organizationId,
+            used_sessions: { lt: pkg.total_sessions },
+          },
+          data: {
+            used_sessions: { increment: 1 },
+          },
+        });
+
+        if (pacoteUpdate.count === 0) {
+          throw new Error(
+            `Saldo de sessões esgotado no pacote "${pkg.name}".`,
+          );
+        }
+
+        const updatedPkg = await tx.package.findUnique({
+          where: { id: pkg.id },
+          select: { used_sessions: true, total_sessions: true },
+        });
+
+        const currentUsedSessions =
+          updatedPkg?.used_sessions ?? (pkg.used_sessions + 1);
+        const willRemainActive = currentUsedSessions < pkg.total_sessions;
 
         await tx.package.update({
           where: { id: pkg.id },
-          data: { used_sessions: { increment: 1 }, active: willRemainActive },
+          data: { active: willRemainActive },
         });
 
         // Se encerrou o pacote, limpa agendamentos futuros não realizados
@@ -617,9 +640,12 @@ export async function createManualPackageCheckIn(
     revalidatePath(`/admin/clients/${pkg.client_id}`);
 
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro na baixa manual:", error);
-    return { success: false, error: "Falha ao processar registro." };
+    return {
+      success: false,
+      error: error?.message || "Falha ao processar registro.",
+    };
   }
 }
 
