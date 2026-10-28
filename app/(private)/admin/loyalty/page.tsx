@@ -12,21 +12,14 @@ export const metadata: Metadata = {
 
 export default async function LoyaltyPage() {
   const session = await requireAuth();
-  if (!session) redirect("/login");
+  if (!session || !session.organizationId) redirect("/login");
 
-  const admin = await prisma.admin.findUnique({
-    where: { id: session.id },
-    include: { organizations: true },
-  });
-
-  const organization = admin?.organizations[0];
-  if (!organization) redirect("/login");
-
-  const { settings } = await getLoyaltySettings(organization.id);
+  const organizationId = session.organizationId;
+  const { settings } = await getLoyaltySettings(organizationId);
 
   // Fetch all clients in this organization
   const clients = await prisma.client.findMany({
-    where: { organization_id: organization.id },
+    where: { organization_id: organizationId },
     select: {
       id: true,
       name: true,
@@ -64,7 +57,7 @@ export default async function LoyaltyPage() {
 
   return (
     <LoyaltyView 
-      organizationId={organization.id} 
+      organizationId={organizationId} 
       initialSettings={settings} 
       clients={formattedClients} 
     />
