@@ -209,9 +209,14 @@ export const AppointmentDetailsModal = memo(
     const isLocked = isAlreadyCanceled;
 
     // Dados de Sinal / Pré-pagamento Pix
+    const isDepositRefundedOrChargedBack =
+      appointment.mp_payment_status === "refunded" ||
+      appointment.mp_payment_status === "charged_back";
+
     const hasDepositPaid =
-      Number(appointment.deposit_paid_amount || 0) > 0 ||
-      appointment.mp_payment_status === "approved";
+      !isDepositRefundedOrChargedBack &&
+      (Number(appointment.deposit_paid_amount || 0) > 0 ||
+        appointment.mp_payment_status === "approved");
     const depositAmount =
       Number(appointment.deposit_paid_amount || 0) > 0
         ? Number(appointment.deposit_paid_amount)
@@ -559,6 +564,32 @@ export const AppointmentDetailsModal = memo(
               </div>
               <Badge variant="outline" className="bg-background text-emerald-600 border-emerald-500/30 font-bold text-[10px]">
                 Sinal Pago
+              </Badge>
+            </div>
+          )}
+
+          {/* SINAL ESTORNADO NO MERCADO PAGO / CONTESTAÇÃO */}
+          {isDepositRefundedOrChargedBack && !isAlreadyCanceled && (
+            <div className="bg-amber-500/10 border border-amber-500/30 p-3.5 rounded-2xl flex items-center justify-between animate-in fade-in zoom-in-95">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold shrink-0">
+                  <AlertTriangle className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-400">
+                    {appointment.mp_payment_status === "refunded"
+                      ? "Sinal Estornado no Mercado Pago"
+                      : "Contestação / Chargeback"}
+                  </span>
+                  <p className="text-xs font-medium text-foreground mt-0.5">
+                    {appointment.mp_payment_status === "refunded"
+                      ? "Este sinal foi devolvido externamente pelo app do Mercado Pago. Trate diretamente com o cliente se necessário."
+                      : "Este pagamento foi contestado pelo cliente no banco."}
+                  </p>
+                </div>
+              </div>
+              <Badge variant="outline" className="bg-background text-amber-600 border-amber-500/30 font-bold text-[10px]">
+                {appointment.mp_payment_status === "refunded" ? "Estornado no MP" : "Chargeback"}
               </Badge>
             </div>
           )}

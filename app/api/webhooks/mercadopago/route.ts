@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
           const { triggerZibeeSyncById } = await import(
             "@/lib/server/integrations/zibee.service"
           );
-          triggerZibeeSyncById(revenueTx.id).catch(console.error);
+          triggerZibeeSyncById(revenueTx.id, appointment.organization_id).catch(console.error);
         } catch (zibeeErr) {
           console.error("[ZIBEE_SYNC_ERROR]", zibeeErr);
         }
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
             const { triggerZibeeSyncById } = await import(
               "@/lib/server/integrations/zibee.service"
             );
-            triggerZibeeSyncById(feeTx.id).catch(console.error);
+            triggerZibeeSyncById(feeTx.id, appointment.organization_id).catch(console.error);
           } catch (zibeeErr) {
             console.error("[ZIBEE_SYNC_ERROR]", zibeeErr);
           }
@@ -155,13 +155,23 @@ export async function POST(request: NextRequest) {
         },
       });
       console.log(`[WEBHOOK_MP] Agendamento ${appointment.id} CONFIRMADO e Sinal registrado no financeiro.`);
-    } else if (status === "rejected" || status === "cancelled") {
+    } else if (
+      status === "rejected" ||
+      status === "cancelled" ||
+      status === "refunded" ||
+      status === "charged_back"
+    ) {
+      // Diretriz Totten: O sistema NÃO realiza estornos financeiros automáticos nem remove
+      // transações do caixa. Apenas atualiza o status de pagamento para visibilidade da clínica.
       await prisma.appointment.update({
         where: { id: appointment.id },
         data: {
           mp_payment_status: status,
         },
       });
+      console.log(
+        `[WEBHOOK_MP] Pagamento ${paymentId} do agendamento ${appointment.id} atualizado para status '${status}'. Diretriz do sistema: sem estorno automático de caixa.`,
+      );
     }
 
     return NextResponse.json({ success: true });
