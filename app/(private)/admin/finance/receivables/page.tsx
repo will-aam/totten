@@ -165,6 +165,39 @@ export default function ReceivablesPage() {
     return `${dayMonth} às ${time}`;
   };
 
+  const getDueStatus = (dueDateStr?: string) => {
+    if (!dueDateStr) return null;
+    const due = new Date(dueDateStr);
+    const now = new Date();
+    const dueMidnight = new Date(due.getFullYear(), due.getMonth(), due.getDate()).getTime();
+    const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const diffDays = Math.round((dueMidnight - nowMidnight) / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+      const daysLate = Math.abs(diffDays);
+      return {
+        label: `Vencido há ${daysLate} ${daysLate === 1 ? "dia" : "dias"}`,
+        className:
+          "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 font-bold",
+        isLate: true,
+      };
+    } else if (diffDays === 0) {
+      return {
+        label: "Vence hoje",
+        className:
+          "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 font-bold",
+        isLate: false,
+      };
+    } else {
+      return {
+        label: `Vence em ${diffDays} ${diffDays === 1 ? "dia" : "dias"}`,
+        className:
+          "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-semibold",
+        isLate: false,
+      };
+    }
+  };
+
   const totalReceivables = receivables.reduce(
     (acc, item) => acc + item.amount,
     0,
@@ -245,6 +278,14 @@ export default function ReceivablesPage() {
                     <div className="flex flex-col min-w-0">
                       <span className="text-sm font-bold text-foreground truncate flex flex-wrap items-center gap-2 group-hover:text-primary transition-colors">
                         {item.description}
+                        {item.installment && (
+                          <Badge
+                            variant="secondary"
+                            className="text-[9px] uppercase tracking-wider bg-primary/10 text-primary border border-primary/20 font-bold"
+                          >
+                            Parcela {item.installment}
+                          </Badge>
+                        )}
                         <Badge
                           variant="secondary"
                           className="text-[9px] uppercase tracking-widest bg-muted/50 border-none font-bold"
@@ -272,8 +313,23 @@ export default function ReceivablesPage() {
                         <span className="w-1 h-1 rounded-full bg-border mx-0.5"></span>
                         <span className="flex items-center gap-1 font-semibold">
                           <Calendar className="h-3.5 w-3.5" />
-                          {formatDate(item.date)}
+                          Vencimento: {formatDate(item.dueDate || item.date)}
                         </span>
+                        {(() => {
+                          const status = getDueStatus(item.dueDate || item.date);
+                          if (!status) return null;
+                          return (
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "text-[9px] px-1.5 py-0 h-4 border",
+                                status.className,
+                              )}
+                            >
+                              {status.label}
+                            </Badge>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -412,22 +468,71 @@ export default function ReceivablesPage() {
           </DialogHeader>
 
           <div className="py-4 space-y-4">
-            {selectedItem && selectedItem !== "ALL" && selectedItem.hasDeposit && (
-              <div className="p-3.5 bg-muted/40 border border-[#009EE3]/30 rounded-2xl space-y-1.5 text-xs">
+            {selectedItem && selectedItem !== "ALL" && (
+              <div className="p-3.5 bg-muted/30 border border-border/40 rounded-2xl space-y-2 text-xs">
                 <div className="flex justify-between items-center text-muted-foreground">
-                  <span>Preço Total do Serviço:</span>
+                  <span>Lançamento:</span>
+                  <span className="font-semibold text-foreground truncate max-w-56 flex items-center gap-1.5">
+                    {selectedItem.description}
+                    {selectedItem.installment && (
+                      <Badge
+                        variant="secondary"
+                        className="text-[9px] px-1 py-0 h-4 bg-primary/10 text-primary border-none font-bold"
+                      >
+                        {selectedItem.installment}
+                      </Badge>
+                    )}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-muted-foreground">
+                  <span>Cliente:</span>
                   <span className="font-semibold text-foreground">
-                    {formatCurrency(selectedItem.totalServicePrice)}
+                    {selectedItem.clientName}
                   </span>
                 </div>
-                <div className="flex justify-between items-center text-[#009EE3]">
-                  <span>Sinal Pago Online (Mercado Pago):</span>
-                  <span className="font-semibold">
-                    - {formatCurrency(selectedItem.depositPaidAmount)}
-                  </span>
+                <div className="flex justify-between items-center text-muted-foreground">
+                  <span>Vencimento:</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-semibold text-foreground">
+                      {formatDate(selectedItem.dueDate || selectedItem.date)}
+                    </span>
+                    {(() => {
+                      const status = getDueStatus(
+                        selectedItem.dueDate || selectedItem.date,
+                      );
+                      if (!status) return null;
+                      return (
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "text-[9px] px-1.5 py-0 h-4 border",
+                            status.className,
+                          )}
+                        >
+                          {status.label}
+                        </Badge>
+                      );
+                    })()}
+                  </div>
                 </div>
+                {selectedItem.hasDeposit && (
+                  <>
+                    <div className="flex justify-between items-center text-muted-foreground pt-1 border-t border-border/30">
+                      <span>Preço Total do Serviço:</span>
+                      <span className="font-semibold text-foreground">
+                        {formatCurrency(selectedItem.totalServicePrice)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-[#009EE3]">
+                      <span>Sinal Pago Online (Mercado Pago):</span>
+                      <span className="font-semibold">
+                        - {formatCurrency(selectedItem.depositPaidAmount)}
+                      </span>
+                    </div>
+                  </>
+                )}
                 <div className="border-t border-border/40 pt-1.5 flex justify-between items-center font-bold text-foreground">
-                  <span>Saldo a Receber Agora:</span>
+                  <span>Valor a Quitar:</span>
                   <span className="text-amber-600 dark:text-amber-500 font-black text-sm">
                     {formatCurrency(selectedItem.amount)}
                   </span>

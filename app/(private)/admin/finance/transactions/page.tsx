@@ -377,6 +377,76 @@ export default function TransactionsPage() {
     setEndDate("");
   };
 
+  const getPaymentPunctuality = (
+    dateStr: string,
+    dueDateStr?: string | null,
+    status?: string,
+  ) => {
+    if (!dueDateStr) return null;
+    const pay = new Date(dateStr);
+    const due = new Date(dueDateStr);
+    const payMidnight = new Date(pay.getFullYear(), pay.getMonth(), pay.getDate()).getTime();
+    const dueMidnight = new Date(due.getFullYear(), due.getMonth(), due.getDate()).getTime();
+    const diffDays = Math.round((payMidnight - dueMidnight) / (1000 * 60 * 60 * 24));
+
+    if (status === "PAGO") {
+      if (diffDays > 0) {
+        return {
+          label: `Pago com ${diffDays}d de atraso`,
+          fullLabel: `Pago com ${diffDays} ${diffDays === 1 ? "dia" : "dias"} de atraso`,
+          className:
+            "text-amber-700 dark:text-amber-400 bg-amber-500/10 border-amber-500/20",
+          isLate: true,
+          diffDays,
+        };
+      } else {
+        return {
+          label: "Pago em dia",
+          fullLabel: "Pago pontualmente no prazo",
+          className:
+            "text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+          isLate: false,
+          diffDays,
+        };
+      }
+    } else if (status === "PENDENTE") {
+      const now = new Date();
+      const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const pendingDiffDays = Math.round((nowMidnight - dueMidnight) / (1000 * 60 * 60 * 24));
+
+      if (pendingDiffDays > 0) {
+        return {
+          label: `Vencido há ${pendingDiffDays}d`,
+          fullLabel: `Vencido há ${pendingDiffDays} ${pendingDiffDays === 1 ? "dia" : "dias"}`,
+          className:
+            "text-rose-700 dark:text-rose-400 bg-rose-500/10 border-rose-500/20",
+          isLate: true,
+          diffDays: pendingDiffDays,
+        };
+      } else if (pendingDiffDays === 0) {
+        return {
+          label: "Vence hoje",
+          fullLabel: "Vence hoje",
+          className:
+            "text-amber-700 dark:text-amber-400 bg-amber-500/15 border-amber-500/30",
+          isLate: false,
+          diffDays: 0,
+        };
+      } else {
+        const daysLeft = Math.abs(pendingDiffDays);
+        return {
+          label: `Vence em ${daysLeft}d`,
+          fullLabel: `A vencer em ${daysLeft} ${daysLeft === 1 ? "dia" : "dias"}`,
+          className:
+            "text-muted-foreground bg-muted/40 border-border/40",
+          isLate: false,
+          diffDays: pendingDiffDays,
+        };
+      }
+    }
+    return null;
+  };
+
   const StatusBadge = ({ transaction }: { transaction: any }) => {
     const isManual = transaction.isManual;
     const status = transaction.status as TransactionStatus;
@@ -948,6 +1018,27 @@ export default function TransactionsPage() {
                                       </span>
                                     </>
                                   )}
+                                {transaction.dueDate && (() => {
+                                  const punctuality = getPaymentPunctuality(
+                                    transaction.date,
+                                    transaction.dueDate,
+                                    transaction.status,
+                                  );
+                                  if (!punctuality) return null;
+                                  return (
+                                    <>
+                                      <span className="w-1 h-1 rounded-full bg-border shrink-0"></span>
+                                      <span
+                                        className={cn(
+                                          "text-[9px] sm:text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-1 border",
+                                          punctuality.className,
+                                        )}
+                                      >
+                                        {punctuality.label}
+                                      </span>
+                                    </>
+                                  );
+                                })()}
                                 {transaction.clientName && (
                                   <>
                                     <span className="w-1 h-1 rounded-full bg-border shrink-0"></span>
@@ -1218,6 +1309,39 @@ export default function TransactionsPage() {
                       </span>
                     </div>
                   )}
+
+                {viewingTx.dueDate && (
+                  <div className="flex flex-col gap-1.5 bg-muted/10 p-4 rounded-2xl border border-border/40 col-span-2">
+                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5" />
+                      Vencimento Original e Pontualidade
+                    </span>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-1">
+                      <span className="text-sm font-bold text-foreground">
+                        {formatDateFull(viewingTx.dueDate)}
+                      </span>
+                      {(() => {
+                        const punctuality = getPaymentPunctuality(
+                          viewingTx.date,
+                          viewingTx.dueDate,
+                          viewingTx.status,
+                        );
+                        if (!punctuality) return null;
+                        return (
+                          <Badge
+                            variant="secondary"
+                            className={cn(
+                              "text-xs px-2.5 py-1 font-bold border",
+                              punctuality.className,
+                            )}
+                          >
+                            {punctuality.fullLabel}
+                          </Badge>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex flex-col gap-1.5 bg-muted/10 p-4 rounded-2xl border border-border/40 col-span-2">
                   <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">

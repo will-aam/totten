@@ -456,6 +456,7 @@ export async function getPendingReceivables() {
         due_date: true,
         description: true,
         amount: true,
+        installment: true,
         client: { select: { name: true } },
       },
       orderBy: { date: "asc" },
@@ -489,6 +490,7 @@ export async function getPendingReceivables() {
         hasDeposit,
         date: a.date_time.toISOString(),
         dueDate: a.date_time.toISOString(),
+        installment: undefined as string | undefined,
         clientName: a.client?.name || "Sem cliente",
       });
     }
@@ -502,7 +504,8 @@ export async function getPendingReceivables() {
       depositPaidAmount: 0,
       hasDeposit: false,
       date: (t.due_date || t.date).toISOString(), // Ordena e exibe pela data de vencimento real
-      dueDate: t.due_date ? t.due_date.toISOString() : undefined,
+      dueDate: (t.due_date || t.date).toISOString(),
+      installment: t.installment || undefined,
       clientName: t.client?.name || "Sem cliente",
     }));
 
@@ -575,7 +578,10 @@ export async function processReceivablePayment(
             ? `Serviço Quitado (Saldo Restante): ${apptName} (${appt.client.name})`
             : `Serviço Realizado: ${apptName} (${appt.client.name})`;
 
+        const paymentDate = new Date();
+
         if (!pendingRevenueTx) {
+          const originalDueDate = appt.date_time || paymentDate;
           const result = await createSettledRevenueWithFee({
             prismaClient: tx,
             organizationId: admin.organizationId,
@@ -586,14 +592,35 @@ export async function processReceivablePayment(
             appointmentId: appt.id,
             clientId: appt.client_id,
             adminId: admin.id,
-            baseDate: appt.date_time || new Date(),
+            baseDate: paymentDate,
+            dueDate: originalDueDate, // Preserva a data original do agendamento como vencimento
             feeDescription: `Taxa Cartão - Serviço: ${apptName}`,
           });
           txIdToSync = result.revenueTx.id;
           if (result.feeTx) {
             triggerZibeeSyncById(result.feeTx.id).catch(console.error);
           }
+
+          if (appt.client_id) {
+            const dueTime = new Date(originalDueDate).setHours(0, 0, 0, 0);
+            const payTime = new Date(paymentDate).setHours(0, 0, 0, 0);
+            const diffDays = Math.floor((payTime - dueTime) / (1000 * 60 * 60 * 24));
+            const noteText =
+              diffDays > 0
+                ? `Ação: Serviço quitado com ${diffDays} ${diffDays === 1 ? "dia" : "dias"} de atraso: ${apptName} (R$ ${remainingAmount.toFixed(2)}) via ${paymentMethod}. Vencimento original: ${new Intl.DateTimeFormat("pt-BR").format(originalDueDate)}. Quitado por: ${admin.name || admin.email}.`
+                : `Ação: Serviço quitado em dia: ${apptName} (R$ ${remainingAmount.toFixed(2)}) via ${paymentMethod}. Vencimento original: ${new Intl.DateTimeFormat("pt-BR").format(originalDueDate)}. Quitado por: ${admin.name || admin.email}.`;
+
+            await tx.clientNote.create({
+              data: {
+                client_id: appt.client_id,
+                organization_id: admin.organizationId,
+                text: noteText,
+                date: paymentDate,
+              },
+            });
+          }
         } else {
+          const originalDueDate = pendingRevenueTx.due_date || pendingRevenueTx.date || appt.date_time || paymentDate;
           const { settlementDate, feeAmount, method } =
             await calculatePaymentSettlementAndFee({
               prismaClient: tx,
@@ -601,7 +628,7 @@ export async function processReceivablePayment(
               grossAmount: remainingAmount,
               paymentMethodId: paymentMethodId || null,
               paymentMethodEnum: paymentMethod as PaymentMethod,
-              baseDate: pendingRevenueTx.date || appt.date_time || new Date(),
+              baseDate: paymentDate,
             });
 
           await tx.transaction.update({
@@ -609,8 +636,9 @@ export async function processReceivablePayment(
             data: {
               amount: remainingAmount,
               status: "PAGO",
-              settlement_date: settlementDate, // Guarda a data em que o valor compensará na conta
-              // OBS: Preserva pendingRevenueTx.date original para garantir o regime de competência
+              date: paymentDate, // Data do efetivo pagamento no caixa
+              due_date: originalDueDate, // Preserva o vencimento original para controle de inadimplência/pontualidade
+              settlement_date: settlementDate, // Guarda a data em que o valor compensará na conta (D+X)
               payment_method_id: method?.id || paymentMethodId || null,
               admin_id: admin.id,
             },
@@ -623,7 +651,7 @@ export async function processReceivablePayment(
                 type: "DESPESA",
                 description: `Taxa Cartão - Serviço: ${apptName}`,
                 amount: feeAmount,
-                date: pendingRevenueTx.date || new Date(), // Competência da venda original
+                date: paymentDate,
                 settlement_date: settlementDate, // Liquidação bancária
                 status: "PAGO",
                 organization_id: admin.organizationId,
@@ -636,6 +664,26 @@ export async function processReceivablePayment(
             });
             triggerZibeeSyncById(feeTx.id).catch(console.error);
           }
+
+          if (appt.client_id) {
+            const dueTime = new Date(originalDueDate).setHours(0, 0, 0, 0);
+            const payTime = new Date(paymentDate).setHours(0, 0, 0, 0);
+            const diffDays = Math.floor((payTime - dueTime) / (1000 * 60 * 60 * 24));
+            const methodLabel = method?.name || paymentMethod;
+            const noteText =
+              diffDays > 0
+                ? `Ação: Serviço quitado com ${diffDays} ${diffDays === 1 ? "dia" : "dias"} de atraso: ${apptName} (R$ ${remainingAmount.toFixed(2)}) via ${methodLabel}. Vencimento original: ${new Intl.DateTimeFormat("pt-BR").format(originalDueDate)}. Quitado por: ${admin.name || admin.email}.`
+                : `Ação: Serviço quitado em dia: ${apptName} (R$ ${remainingAmount.toFixed(2)}) via ${methodLabel}. Vencimento original: ${new Intl.DateTimeFormat("pt-BR").format(originalDueDate)}. Quitado por: ${admin.name || admin.email}.`;
+
+            await tx.clientNote.create({
+              data: {
+                client_id: appt.client_id,
+                organization_id: admin.organizationId,
+                text: noteText,
+                date: paymentDate,
+              },
+            });
+          }
         }
       });
 
@@ -647,23 +695,29 @@ export async function processReceivablePayment(
     } else {
       const manualTx = await prisma.transaction.findUnique({
         where: { id, organization_id: admin.organizationId },
+        include: { client: true, package: true },
       });
 
       if (manualTx) {
+        const paymentDate = new Date();
+        const originalDueDate = manualTx.due_date || manualTx.date;
+
         const { settlementDate, feeAmount, method } =
           await calculatePaymentSettlementAndFee({
             organizationId: admin.organizationId,
             grossAmount: Number(manualTx.amount),
             paymentMethodId: paymentMethodId || null,
             paymentMethodEnum: paymentMethod as PaymentMethod,
-            baseDate: new Date(),
+            baseDate: paymentDate,
           });
 
         await prisma.transaction.update({
           where: { id, organization_id: admin.organizationId },
           data: {
             status: "PAGO",
-            settlement_date: settlementDate, // Guarda a data de liquidação sem sobrescrever a competência nem o vencimento original!
+            date: paymentDate, // Data do efetivo pagamento no caixa
+            due_date: originalDueDate, // Preserva a data de vencimento original sem sobrescrever!
+            settlement_date: settlementDate, // Guarda a data de liquidação bancária D+X
             payment_method_id: method?.id || paymentMethodId || null,
             admin_id: admin.id, // Assina quem quitou a pendência
           },
@@ -675,7 +729,7 @@ export async function processReceivablePayment(
               type: "DESPESA",
               description: `Taxa - ${manualTx.description}`,
               amount: feeAmount,
-              date: manualTx.date || new Date(), // Competência original
+              date: paymentDate,
               settlement_date: settlementDate, // Liquidação
               status: "PAGO",
               organization_id: admin.organizationId,
@@ -686,6 +740,32 @@ export async function processReceivablePayment(
             },
           });
           triggerZibeeSyncById(feeTx.id).catch(console.error);
+        }
+
+        // Histórico de pontualidade/inadimplência do cliente
+        if (manualTx.client_id) {
+          const dueTime = new Date(originalDueDate).setHours(0, 0, 0, 0);
+          const payTime = new Date(paymentDate).setHours(0, 0, 0, 0);
+          const diffDays = Math.floor((payTime - dueTime) / (1000 * 60 * 60 * 24));
+          const methodLabel = method?.name || paymentMethod;
+          const isInstallment = !!manualTx.installment;
+          const labelType = isInstallment
+            ? `Parcela (${manualTx.installment}) de pacote`
+            : "Cobrança avulsa";
+
+          const noteText =
+            diffDays > 0
+              ? `Ação: ${labelType} quitada com ${diffDays} ${diffDays === 1 ? "dia" : "dias"} de atraso: ${manualTx.description} (R$ ${Number(manualTx.amount).toFixed(2)}) via ${methodLabel}. Vencimento original: ${new Intl.DateTimeFormat("pt-BR").format(originalDueDate)}. Quitado por: ${admin.name || admin.email}.`
+              : `Ação: ${labelType} quitada em dia: ${manualTx.description} (R$ ${Number(manualTx.amount).toFixed(2)}) via ${methodLabel}. Vencimento original: ${new Intl.DateTimeFormat("pt-BR").format(originalDueDate)}. Quitado por: ${admin.name || admin.email}.`;
+
+          await prisma.clientNote.create({
+            data: {
+              client_id: manualTx.client_id,
+              organization_id: admin.organizationId,
+              text: noteText,
+              date: paymentDate,
+            },
+          });
         }
       }
 
@@ -752,6 +832,8 @@ export async function processAllReceivablesPayment(
 
     const createdOrUpdatedTxIds: string[] = [];
 
+    const paymentDate = new Date();
+
     await prisma.$transaction(async (tx) => {
       // Baixa nos agendamentos
       for (const appt of pendingAppointments) {
@@ -787,6 +869,7 @@ export async function processAllReceivablesPayment(
             : `Serviço Realizado: ${apptName} (${appt.client.name})`;
 
         if (!pendingRevenueTx) {
+          const originalDueDate = appt.date_time || paymentDate;
           const result = await createSettledRevenueWithFee({
             prismaClient: tx,
             organizationId: admin.organizationId,
@@ -797,14 +880,35 @@ export async function processAllReceivablesPayment(
             appointmentId: appt.id,
             clientId: appt.client_id,
             adminId: admin.id,
-            baseDate: appt.date_time || new Date(),
+            baseDate: paymentDate,
+            dueDate: originalDueDate, // Preserva a data original do agendamento como vencimento
             feeDescription: `Taxa Cartão - Serviço: ${apptName}`,
           });
           createdOrUpdatedTxIds.push(result.revenueTx.id);
           if (result.feeTx) {
             createdOrUpdatedTxIds.push(result.feeTx.id);
           }
+
+          if (appt.client_id) {
+            const dueTime = new Date(originalDueDate).setHours(0, 0, 0, 0);
+            const payTime = new Date(paymentDate).setHours(0, 0, 0, 0);
+            const diffDays = Math.floor((payTime - dueTime) / (1000 * 60 * 60 * 24));
+            const noteText =
+              diffDays > 0
+                ? `Ação: Serviço quitado em lote com ${diffDays} ${diffDays === 1 ? "dia" : "dias"} de atraso: ${apptName} (R$ ${remainingAmount.toFixed(2)}) via ${paymentMethod}. Vencimento original: ${new Intl.DateTimeFormat("pt-BR").format(originalDueDate)}. Quitado por: ${admin.name || admin.email}.`
+                : `Ação: Serviço quitado em lote em dia: ${apptName} (R$ ${remainingAmount.toFixed(2)}) via ${paymentMethod}. Vencimento original: ${new Intl.DateTimeFormat("pt-BR").format(originalDueDate)}. Quitado por: ${admin.name || admin.email}.`;
+
+            await tx.clientNote.create({
+              data: {
+                client_id: appt.client_id,
+                organization_id: admin.organizationId,
+                text: noteText,
+                date: paymentDate,
+              },
+            });
+          }
         } else {
+          const originalDueDate = pendingRevenueTx.due_date || pendingRevenueTx.date || appt.date_time || paymentDate;
           const { settlementDate, feeAmount, method } =
             await calculatePaymentSettlementAndFee({
               prismaClient: tx,
@@ -812,7 +916,7 @@ export async function processAllReceivablesPayment(
               grossAmount: remainingAmount,
               paymentMethodId: paymentMethodId || null,
               paymentMethodEnum: paymentMethod as PaymentMethod,
-              baseDate: pendingRevenueTx.date || appt.date_time || new Date(),
+              baseDate: paymentDate,
             });
 
           await tx.transaction.update({
@@ -820,6 +924,8 @@ export async function processAllReceivablesPayment(
             data: {
               amount: remainingAmount,
               status: "PAGO",
+              date: paymentDate, // Data do efetivo pagamento no caixa
+              due_date: originalDueDate, // Preserva a data de vencimento original
               settlement_date: settlementDate, // Guarda compensação sem alterar competência
               payment_method_id: method?.id || paymentMethodId || null,
               admin_id: admin.id,
@@ -833,7 +939,7 @@ export async function processAllReceivablesPayment(
                 type: "DESPESA",
                 description: `Taxa Cartão - Serviço: ${apptName}`,
                 amount: feeAmount,
-                date: pendingRevenueTx.date || new Date(),
+                date: paymentDate,
                 settlement_date: settlementDate,
                 status: "PAGO",
                 organization_id: admin.organizationId,
@@ -846,6 +952,26 @@ export async function processAllReceivablesPayment(
             });
             createdOrUpdatedTxIds.push(feeTx.id);
           }
+
+          if (appt.client_id) {
+            const dueTime = new Date(originalDueDate).setHours(0, 0, 0, 0);
+            const payTime = new Date(paymentDate).setHours(0, 0, 0, 0);
+            const diffDays = Math.floor((payTime - dueTime) / (1000 * 60 * 60 * 24));
+            const methodLabel = method?.name || paymentMethod;
+            const noteText =
+              diffDays > 0
+                ? `Ação: Serviço quitado em lote com ${diffDays} ${diffDays === 1 ? "dia" : "dias"} de atraso: ${apptName} (R$ ${remainingAmount.toFixed(2)}) via ${methodLabel}. Vencimento original: ${new Intl.DateTimeFormat("pt-BR").format(originalDueDate)}. Quitado por: ${admin.name || admin.email}.`
+                : `Ação: Serviço quitado em lote em dia: ${apptName} (R$ ${remainingAmount.toFixed(2)}) via ${methodLabel}. Vencimento original: ${new Intl.DateTimeFormat("pt-BR").format(originalDueDate)}. Quitado por: ${admin.name || admin.email}.`;
+
+            await tx.clientNote.create({
+              data: {
+                client_id: appt.client_id,
+                organization_id: admin.organizationId,
+                text: noteText,
+                date: paymentDate,
+              },
+            });
+          }
         }
       }
 
@@ -856,9 +982,13 @@ export async function processAllReceivablesPayment(
             id: { in: pendingTransactions.map((t) => t.id) },
             organization_id: admin.organizationId,
           },
+          include: {
+            client: true,
+          },
         });
 
         for (const mTx of fullPendingTxs) {
+          const originalDueDate = mTx.due_date || mTx.date;
           const { settlementDate, feeAmount, method } =
             await calculatePaymentSettlementAndFee({
               prismaClient: tx,
@@ -866,14 +996,16 @@ export async function processAllReceivablesPayment(
               grossAmount: Number(mTx.amount),
               paymentMethodId: paymentMethodId || null,
               paymentMethodEnum: paymentMethod as PaymentMethod,
-              baseDate: new Date(),
+              baseDate: paymentDate,
             });
 
           await tx.transaction.update({
             where: { id: mTx.id },
             data: {
               status: "PAGO",
-              settlement_date: settlementDate, // Preserva competência e vencimento
+              date: paymentDate, // Data do efetivo pagamento no caixa
+              due_date: originalDueDate, // Preserva a data de vencimento original da parcela/cobrança!
+              settlement_date: settlementDate, // Guarda a data de liquidação bancária D+X
               payment_method_id: method?.id || paymentMethodId || null,
               admin_id: admin.id,
             },
@@ -886,7 +1018,7 @@ export async function processAllReceivablesPayment(
                 type: "DESPESA",
                 description: `Taxa - ${mTx.description}`,
                 amount: feeAmount,
-                date: mTx.date || new Date(),
+                date: paymentDate,
                 settlement_date: settlementDate,
                 status: "PAGO",
                 organization_id: admin.organizationId,
@@ -897,6 +1029,31 @@ export async function processAllReceivablesPayment(
               },
             });
             createdOrUpdatedTxIds.push(feeTx.id);
+          }
+
+          if (mTx.client_id) {
+            const dueTime = new Date(originalDueDate).setHours(0, 0, 0, 0);
+            const payTime = new Date(paymentDate).setHours(0, 0, 0, 0);
+            const diffDays = Math.floor((payTime - dueTime) / (1000 * 60 * 60 * 24));
+            const methodLabel = method?.name || paymentMethod;
+            const isInstallment = !!mTx.installment;
+            const labelType = isInstallment
+              ? `Parcela (${mTx.installment}) de pacote`
+              : "Cobrança avulsa";
+
+            const noteText =
+              diffDays > 0
+                ? `Ação: ${labelType} quitada em lote com ${diffDays} ${diffDays === 1 ? "dia" : "dias"} de atraso: ${mTx.description} (R$ ${Number(mTx.amount).toFixed(2)}) via ${methodLabel}. Vencimento original: ${new Intl.DateTimeFormat("pt-BR").format(originalDueDate)}. Quitado por: ${admin.name || admin.email}.`
+                : `Ação: ${labelType} quitada em lote em dia: ${mTx.description} (R$ ${Number(mTx.amount).toFixed(2)}) via ${methodLabel}. Vencimento original: ${new Intl.DateTimeFormat("pt-BR").format(originalDueDate)}. Quitado por: ${admin.name || admin.email}.`;
+
+            await tx.clientNote.create({
+              data: {
+                client_id: mTx.client_id,
+                organization_id: admin.organizationId,
+                text: noteText,
+                date: paymentDate,
+              },
+            });
           }
         }
       }

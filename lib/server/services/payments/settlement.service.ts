@@ -128,6 +128,7 @@ export interface CreateSettledRevenueParams {
   paymentMethodId?: string | null;
   paymentMethodEnum?: PaymentMethod | string | null;
   baseDate?: Date;
+  dueDate?: Date | null;
   status?: "PAGO" | "PENDENTE";
   feeDescription?: string;
 }
@@ -171,6 +172,7 @@ export async function createSettledRevenueWithFee(params: CreateSettledRevenuePa
       amount: grossAmount,
       date: occurrenceDate, // Data do fato gerador (competência)
       settlement_date: settlementDate, // Previsão/liquidação real no fluxo de caixa (D+X)
+      due_date: params.dueDate !== undefined ? params.dueDate : (params.status === "PENDENTE" ? occurrenceDate : null),
       status: params.status || "PAGO",
       organization_id: params.organizationId,
       client_id: clientId,
