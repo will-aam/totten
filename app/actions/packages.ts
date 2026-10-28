@@ -607,7 +607,7 @@ export async function createManualPackageCheckIn(
     });
 
     for (const txId of createdTxIds) {
-      triggerZibeeSyncById(txId);
+      triggerZibeeSyncById(txId, admin.organizationId).catch(console.error);
     }
 
     revalidatePath("/admin/packages");

@@ -77,7 +77,11 @@ export async function createTransaction(data: {
           where: { recurrence_id: recurrenceId, organization_id: admin.organizationId },
           select: { id: true },
         })
-        .then((txs) => txs.forEach((t) => triggerZibeeSyncById(t.id)))
+        .then((txs) =>
+          txs.forEach((t) =>
+            triggerZibeeSyncById(t.id, admin.organizationId).catch(console.error),
+          ),
+        )
         .catch(console.error);
     } else {
       let txDate = parseDateToBrasilia(data.date);
@@ -115,7 +119,7 @@ export async function createTransaction(data: {
       });
 
       // Disparo automático imediato para o Zibee (assíncrono e não-bloqueante)
-      triggerZibeeSyncById(createdTx.id).catch(console.error);
+      triggerZibeeSyncById(createdTx.id, admin.organizationId).catch(console.error);
 
       if (feeAmount > 0) {
         const feeTx = await prisma.transaction.create({
@@ -132,7 +136,7 @@ export async function createTransaction(data: {
             parent_transaction_id: createdTx.id,
           },
         });
-        triggerZibeeSyncById(feeTx.id).catch(console.error);
+        triggerZibeeSyncById(feeTx.id, admin.organizationId).catch(console.error);
       }
     }
 
@@ -220,10 +224,14 @@ export async function updateTransaction(
           },
           select: { id: true },
         })
-        .then((txs) => txs.forEach((t) => triggerZibeeSyncById(t.id)))
+        .then((txs) =>
+          txs.forEach((t) =>
+            triggerZibeeSyncById(t.id, admin.organizationId).catch(console.error),
+          ),
+        )
         .catch(console.error);
     } else {
-      triggerZibeeSyncById(id).catch(console.error);
+      triggerZibeeSyncById(id, admin.organizationId).catch(console.error);
     }
 
     revalidatePath("/admin/finance/dashboard");
@@ -604,7 +612,7 @@ export async function processReceivablePayment(
           });
           txIdToSync = result.revenueTx.id;
           if (result.feeTx) {
-            triggerZibeeSyncById(result.feeTx.id).catch(console.error);
+            triggerZibeeSyncById(result.feeTx.id, admin.organizationId).catch(console.error);
           }
 
           if (appt.client_id) {
@@ -668,7 +676,7 @@ export async function processReceivablePayment(
                 parent_transaction_id: pendingRevenueTx.id,
               },
             });
-            triggerZibeeSyncById(feeTx.id).catch(console.error);
+            triggerZibeeSyncById(feeTx.id, admin.organizationId).catch(console.error);
           }
 
           if (appt.client_id) {
@@ -694,7 +702,7 @@ export async function processReceivablePayment(
       });
 
       if (txIdToSync) {
-        triggerZibeeSyncById(txIdToSync).catch(console.error);
+        triggerZibeeSyncById(txIdToSync, admin.organizationId).catch(console.error);
       }
 
       revalidatePath("/admin/agenda");
@@ -745,7 +753,7 @@ export async function processReceivablePayment(
               parent_transaction_id: manualTx.id,
             },
           });
-          triggerZibeeSyncById(feeTx.id).catch(console.error);
+          triggerZibeeSyncById(feeTx.id, admin.organizationId).catch(console.error);
         }
 
         // Histórico de pontualidade/inadimplência do cliente
@@ -776,7 +784,7 @@ export async function processReceivablePayment(
       }
 
       // Sincroniza a liquidação no Zibee
-      triggerZibeeSyncById(id).catch(console.error);
+      triggerZibeeSyncById(id, admin.organizationId).catch(console.error);
     }
 
     revalidatePath("/admin/finance/dashboard");
@@ -1070,7 +1078,7 @@ export async function processAllReceivablesPayment(
 
     // Sincroniza Zibee em background
     createdOrUpdatedTxIds.forEach((txId) => {
-      triggerZibeeSyncById(txId).catch(console.error);
+      triggerZibeeSyncById(txId, admin.organizationId).catch(console.error);
     });
 
     revalidatePath("/admin/finance/dashboard");

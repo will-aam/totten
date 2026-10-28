@@ -241,7 +241,7 @@ export async function createAppointment(
     });
 
     for (const txId of createdTxIds) {
-      triggerZibeeSyncById(txId);
+      triggerZibeeSyncById(txId, admin.organizationId).catch(console.error);
     }
 
     revalidatePath("/admin/agenda");
@@ -837,7 +837,7 @@ export async function updateAppointment(
     });
 
     for (const txId of createdTxIds) {
-      triggerZibeeSyncById(txId);
+      triggerZibeeSyncById(txId, admin.organizationId).catch(console.error);
     }
 
     for (const txId of deletedTxIds) {

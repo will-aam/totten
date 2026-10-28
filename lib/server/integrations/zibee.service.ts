@@ -261,8 +261,17 @@ export async function syncAllHistoricTransactionsToZibee(organizationId: string)
 
 /**
  * Disparo automático não-bloqueante por ID da transação
+ * Possui Tenant Gating antecipado: se organizationId for fornecido e não for o da clínica autorizada,
+ * aborta imediatamente sem realizar nenhuma consulta ao banco de dados.
  */
-export async function triggerZibeeSyncById(transactionId: string) {
+export async function triggerZibeeSyncById(
+  transactionId: string,
+  organizationId?: string,
+) {
+  if (organizationId && organizationId !== ZIBEE_ENABLED_ORG_ID) {
+    return;
+  }
+
   try {
     const tx = await prisma.transaction.findUnique({
       where: { id: transactionId },

@@ -83,7 +83,7 @@ export async function createStockItem(data: {
     });
 
     if (txResult) {
-      triggerZibeeSyncById(txResult);
+      triggerZibeeSyncById(txResult, orgId).catch(console.error);
     }
 
     revalidatePath("/admin/stock");

@@ -285,7 +285,7 @@ export async function createManualCheckIn(data: {
     });
 
     for (const txId of createdTxIds) {
-      triggerZibeeSyncById(txId);
+      triggerZibeeSyncById(txId, admin.organizationId).catch(console.error);
     }
 
     revalidatePath("/admin/agenda");
