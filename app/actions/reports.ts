@@ -2,7 +2,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth";
+import { requireFinancePermission } from "@/lib/auth";
 import { sendClosingReportEmail } from "@/lib/email";
 import {
   getBrasiliaDateParts,
@@ -11,7 +11,7 @@ import {
 
 export async function getReportsData() {
   try {
-    const admin = await requireAuth();
+    const admin = await requireFinancePermission();
     const organizationId = admin.organizationId;
     const nowParts = getBrasiliaDateParts();
 
@@ -161,7 +161,7 @@ export async function getReportsData() {
 // Busca os anos e meses que realmente possuem dados financeiros (transações ou atendimentos)
 export async function getClosingReportAvailablePeriods() {
   try {
-    const admin = await requireAuth();
+    const admin = await requireFinancePermission();
     const organizationId = admin.organizationId;
 
     const [transactions, appointments] = await Promise.all([
@@ -256,7 +256,7 @@ export async function sendMonthlyReport(
   emailTo: string,
 ) {
   try {
-    const admin = await requireAuth();
+    const admin = await requireFinancePermission();
     const organizationId = admin.organizationId;
 
     // Pega o início e o fim exato do mês selecionado no fuso de Brasília
@@ -326,8 +326,11 @@ export async function sendMonthlyReport(
     }
 
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro no envio do fechamento:", error);
-    return { success: false, error: "Falha na geração do relatório." };
+    return {
+      success: false,
+      error: error?.message || "Falha na geração do relatório.",
+    };
   }
 }

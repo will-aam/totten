@@ -2,7 +2,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth";
+import { requireFinancePermission } from "@/lib/auth";
 
 export type TimeframeOption = "4h" | "1d" | "1w" | "1m" | "1y";
 
@@ -32,7 +32,7 @@ export interface FinanceChartData {
 export async function getFinanceChartData(
   timeframe: TimeframeOption = "1y",
 ): Promise<FinanceChartData> {
-  const admin = await requireAuth();
+  const admin = await requireFinancePermission();
   const organizationId = admin.organizationId;
 
   // 1. Busca nome da empresa

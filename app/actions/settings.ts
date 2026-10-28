@@ -1,7 +1,7 @@
 // app/actions/settings.ts
 "use server";
 
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, requireFinancePermission } from "@/lib/auth";
 import { SettingsService } from "@/lib/server/services/settings/settings.service";
 import { revalidatePath } from "next/cache";
 
@@ -52,7 +52,7 @@ export async function updateSettingsAction(data: {
 
 export async function getFinancialSettingsAction() {
   try {
-    const admin = await requireAuth();
+    const admin = await requireFinancePermission();
     const settings = await SettingsService.getSettings(admin.organizationId);
     return {
       success: true,
@@ -63,7 +63,10 @@ export async function getFinancialSettingsAction() {
     };
   } catch (error: any) {
     console.error("[ACTION getFinancialSettingsAction]", error);
-    return { success: false, error: "Erro ao buscar configurações financeiras." };
+    return {
+      success: false,
+      error: error?.message || "Erro ao buscar configurações financeiras.",
+    };
   }
 }
 
@@ -72,7 +75,7 @@ export async function updateFinancialSettingsAction(data: {
   defaultPaymentMethodId?: string;
 }) {
   try {
-    const admin = await requireAuth();
+    const admin = await requireFinancePermission();
     await SettingsService.updateSettings(admin.organizationId, data);
     revalidatePath("/admin/finance/settings");
     revalidatePath("/admin/finance/receivables");
@@ -81,7 +84,10 @@ export async function updateFinancialSettingsAction(data: {
     return { success: true };
   } catch (error: any) {
     console.error("[ACTION updateFinancialSettingsAction]", error);
-    return { success: false, error: "Erro ao salvar configurações financeiras." };
+    return {
+      success: false,
+      error: error?.message || "Erro ao salvar configurações financeiras.",
+    };
   }
 }
 

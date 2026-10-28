@@ -2,7 +2,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth"; //  Substituído pela sua função robusta
+import { requireFinancePermission } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import {
   TransactionType,
@@ -38,7 +38,7 @@ export async function createTransaction(data: {
   duration?: number;
 }) {
   try {
-    const admin = await requireAuth();
+    const admin = await requireFinancePermission();
 
     if (data.isRecurring && data.duration && data.duration > 1) {
       const recurrenceId = `rec_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -139,9 +139,12 @@ export async function createTransaction(data: {
     revalidatePath("/admin/finance/dashboard");
     revalidatePath("/admin/finance/transactions");
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro ao criar transação:", error);
-    return { success: false, error: "Falha ao registrar movimentação." };
+    return {
+      success: false,
+      error: error?.message || "Falha ao registrar movimentação.",
+    };
   }
 }
 
@@ -159,7 +162,7 @@ export async function updateTransaction(
   },
 ) {
   try {
-    const admin = await requireAuth();
+    const admin = await requireFinancePermission();
 
     const currentTx = await prisma.transaction.findUnique({
       where: { id, organization_id: admin.organizationId },
@@ -238,7 +241,7 @@ export async function updateTransaction(
 // --- 3. EXCLUIR TRANSAÇÃO MANUAL ---
 export async function deleteTransaction(id: string, deleteFuture?: boolean) {
   try {
-    const admin = await requireAuth();
+    const admin = await requireFinancePermission();
 
     const currentTx = await prisma.transaction.findUnique({
       where: { id, organization_id: admin.organizationId },
@@ -306,7 +309,7 @@ export async function deleteTransaction(id: string, deleteFuture?: boolean) {
 // --- 4. BUSCAR EXTRATO COMPLETO DO MÊS ---
 export async function getFullTransactions(month: number, year: number) {
   try {
-    const admin = await requireAuth();
+    const admin = await requireFinancePermission();
 
     const { monthStart, monthEnd } = getBrasiliaMonthRange(year, month);
 
@@ -390,7 +393,7 @@ export async function updateTransactionStatus(
   status: TransactionStatus,
 ) {
   try {
-    const admin = await requireAuth();
+    const admin = await requireFinancePermission();
 
     await prisma.transaction.update({
       where: { id, organization_id: admin.organizationId },
@@ -400,16 +403,19 @@ export async function updateTransactionStatus(
     revalidatePath("/admin/finance/dashboard");
     revalidatePath("/admin/finance/transactions");
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro ao atualizar status:", error);
-    return { success: false, error: "Falha ao atualizar o status." };
+    return {
+      success: false,
+      error: error?.message || "Falha ao atualizar o status.",
+    };
   }
 }
 
 // --- 6. BUSCAR CONTAS A RECEBER (PENDENTES) ---
 export async function getPendingReceivables() {
   try {
-    const admin = await requireAuth();
+    const admin = await requireFinancePermission();
 
     const pendingAppointments = await prisma.appointment.findMany({
       where: {
@@ -526,7 +532,7 @@ export async function processReceivablePayment(
   paymentMethodId?: string,
 ) {
   try {
-    const admin = await requireAuth();
+    const admin = await requireFinancePermission();
 
     if (sourceType === "APPOINTMENT") {
       const appt = await prisma.appointment.findUnique({
@@ -778,9 +784,12 @@ export async function processReceivablePayment(
     revalidatePath("/admin/finance/receivables");
 
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro ao dar baixa em recebimento:", error);
-    return { success: false, error: "Falha ao processar pagamento." };
+    return {
+      success: false,
+      error: error?.message || "Falha ao processar pagamento.",
+    };
   }
 }
 
@@ -790,7 +799,7 @@ export async function processAllReceivablesPayment(
   paymentMethodId?: string,
 ) {
   try {
-    const admin = await requireAuth();
+    const admin = await requireFinancePermission();
 
     // 1. Busca todos os agendamentos pendentes da organização (excluindo pacotes)
     const pendingAppointments = await prisma.appointment.findMany({
@@ -1073,9 +1082,12 @@ export async function processAllReceivablesPayment(
       success: true,
       count: pendingAppointments.length + pendingTransactions.length,
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro ao dar baixa em todos os recebimentos:", error);
-    return { success: false, error: "Falha ao processar pagamentos em lote." };
+    return {
+      success: false,
+      error: error?.message || "Falha ao processar pagamentos em lote.",
+    };
   }
 }
 
@@ -1094,7 +1106,7 @@ export async function getPaginatedTransactions(params: {
   search?: string;
 }) {
   try {
-    const admin = await requireAuth();
+    const admin = await requireFinancePermission();
 
     const andConditions: any[] = [
       {

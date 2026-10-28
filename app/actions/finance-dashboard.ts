@@ -2,7 +2,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth";
+import { requireFinancePermission } from "@/lib/auth";
 import { PaymentMethod } from "@prisma/client";
 import {
   getBrasiliaDateParts,
@@ -14,7 +14,7 @@ import {
 // Tipagem de retorno inferida para garantir contrato com o Frontend
 export async function getFinanceDashboardData(month?: number, year?: number) {
   try {
-    const admin = await requireAuth();
+    const admin = await requireFinancePermission();
     const organizationId = admin.organizationId;
 
     // Trabalhando com datas no fuso oficial de Brasília para evitar bugs de UTC no servidor
@@ -230,7 +230,10 @@ export async function getFinanceDashboardData(month?: number, year?: number) {
       },
       recentTransactions: allHistory,
     };
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.name === "ForbiddenError" || error?.name === "AuthError") {
+      throw error;
+    }
     console.error("[FINANCE_DASHBOARD_ACTION_ERROR]:", error);
     throw new Error(
       "Não foi possível carregar os dados financeiros. Tente novamente.",

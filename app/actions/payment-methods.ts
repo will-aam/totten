@@ -2,37 +2,18 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth-options";
+import { requireAuth, requireFinancePermission } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { PaymentMethod } from "@prisma/client";
 
-async function getAdminOrg() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) throw new Error("NÃ£o autorizado");
-
-  //  OTIMIZAÃ‡ÃƒO EXTREMA: O Select puxa APENAS o ID da organizaÃ§Ã£o,
-  // ignorando senhas, nomes, configuraÃ§Ãµes e dados inÃºteis para esta validaÃ§Ã£o.
-  const admin = await prisma.admin.findUnique({
-    where: { email: session.user.email },
-    select: {
-      organizations: {
-        select: { id: true },
-        take: 1,
-      },
-    },
-  });
-
-  if (!admin || admin.organizations.length === 0) {
-    throw new Error("OrganizaÃ§Ã£o nÃ£o encontrada");
-  }
-
-  return admin.organizations[0].id;
-}
-
+/**
+ * 💳 Leitura dos Meios de Pagamento
+ * Aberto para qualquer usuário autenticado da organização (ex: atendentes criando agendamentos na agenda)
+ */
 export async function getPaymentMethods() {
   try {
-    const organizationId = await getAdminOrg();
+    const admin = await requireAuth();
+    const organizationId = admin.organizationId;
 
     let methods = await prisma.organizationPaymentMethod.findMany({
       where: { organization_id: organizationId },
@@ -41,7 +22,10 @@ export async function getPaymentMethods() {
 
     // Se a organização não possuir nenhum meio de pagamento ainda, ou não tiver "À Vista",
     // garantimos a criação do meio padrão "À Vista"
-    const hasAVista = methods.some((m) => m.name.toLowerCase() === "à vista" || m.name.toLowerCase() === "a vista");
+    const hasAVista = methods.some(
+      (m) =>
+        m.name.toLowerCase() === "à vista" || m.name.toLowerCase() === "a vista",
+    );
     if (!hasAVista) {
       const defaultAVista = await prisma.organizationPaymentMethod.create({
         data: {
@@ -68,6 +52,10 @@ export async function getPaymentMethods() {
   }
 }
 
+/**
+ * 🔒 Salvar/Editar Meio de Pagamento
+ * Restrito ao setor financeiro (OWNER ou permissão FINANCE)
+ */
 export async function upsertPaymentMethod(data: {
   id?: string;
   name: string;
@@ -78,7 +66,8 @@ export async function upsertPaymentMethod(data: {
   daysToReceive: number;
 }) {
   try {
-    const organizationId = await getAdminOrg();
+    const admin = await requireFinancePermission();
+    const organizationId = admin.organizationId;
 
     const payload = {
       name: data.name,
@@ -103,15 +92,23 @@ export async function upsertPaymentMethod(data: {
 
     revalidatePath("/admin/finance/payment-methods");
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro ao salvar meio de pagamento:", error);
-    return { success: false, error: "Falha ao salvar os dados." };
+    return {
+      success: false,
+      error: error?.message || "Falha ao salvar os dados.",
+    };
   }
 }
 
+/**
+ * 🔒 Excluir/Desativar Meio de Pagamento
+ * Restrito ao setor financeiro (OWNER ou permissão FINANCE)
+ */
 export async function deletePaymentMethod(id: string) {
   try {
-    const organizationId = await getAdminOrg();
+    const admin = await requireFinancePermission();
+    const organizationId = admin.organizationId;
 
     const existing = await prisma.organizationPaymentMethod.findUnique({
       where: { id, organization_id: organizationId },
@@ -183,9 +180,11 @@ export async function deletePaymentMethod(id: string) {
     revalidatePath("/admin/finance/receivables");
 
     return { success: true, softDeleted: false };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro ao deletar:", error);
-    return { success: false, error: "Não foi possível excluir." };
+    return {
+      success: false,
+      error: error?.message || "Não foi possível excluir.",
+    };
   }
 }
-

@@ -2,16 +2,26 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth-options";
 
+export interface AuthenticatedAdmin {
+  id: string;
+  email?: string | null;
+  name?: string | null;
+  role: string;
+  permissions: string[];
+  organizationId: string;
+  organizationName?: string | null;
+}
+
 /**
- * Ã°Å¸â€Â ObtÃƒÂ©m a sessÃƒÂ£o do usuÃƒÂ¡rio logado (usar em Server Components e API Routes)
+ * 🔑 Obtém a sessão do usuário logado (usar em Server Components e API Routes)
  */
 export async function getSession() {
   return await getServerSession(authOptions);
 }
 
 /**
- * Ã°Å¸Â§â€˜Ã¢â‚¬ÂÃ°Å¸â€™Â¼ Retorna os dados do Admin logado (incluindo organization_id, role e permissions)
- * Retorna null se nÃƒÂ£o houver sessÃƒÂ£o ativa
+ * 🧑‍💼 Retorna os dados do Admin logado (incluindo organization_id, role e permissions)
+ * Retorna null se não houver sessão ativa
  */
 export async function getCurrentAdmin() {
   const session = await getSession();
@@ -25,31 +35,65 @@ export async function getCurrentAdmin() {
     email: session.user.email,
     name: session.user.name,
     role: (session.user as any).role || "OWNER",
-    permissions: (session.user as any).permissions || [], //  ADICIONADO
+    permissions: ((session.user as any).permissions as string[]) || [],
     organizationId: session.user.organizationId,
     organizationName: session.user.organizationName,
   };
 }
 
-// Adicione esta classe no arquivo para ajudar as rotas API a identificarem o 401
+// Classe de erro para identificar falhas de autenticação (401)
 export class AuthError extends Error {
-  constructor(message = "NÃƒÂ£o autorizado") {
+  constructor(message = "Não autorizado") {
     super(message);
     this.name = "AuthError";
   }
 }
 
+// Classe de erro para identificar acessos proibidos por RBAC (403)
+export class ForbiddenError extends Error {
+  constructor(message = "Acesso negado: permissão financeira necessária") {
+    super(message);
+    this.name = "ForbiddenError";
+  }
+}
+
 /**
- * Ã°Å¸â€ºÂ¡Ã¯Â¸Â Garante que hÃƒÂ¡ um admin logado ou lanÃƒÂ§a erro AuthError (401)
- * Use em Server Actions e API Routes que exigem autenticaÃƒÂ§ÃƒÂ£o
+ * 🛡️ Verifica se o usuário possui acesso ao módulo financeiro (OWNER ou permissão FINANCE)
  */
-export async function requireAuth() {
+export function hasFinancePermission(admin: {
+  role?: string;
+  permissions?: string[];
+}): boolean {
+  if (admin.role === "OWNER") {
+    return true;
+  }
+  return Array.isArray(admin.permissions) && admin.permissions.includes("FINANCE");
+}
+
+/**
+ * 🛡️ Garante que há um admin logado ou lança erro AuthError (401)
+ * Use em Server Actions e API Routes que exigem autenticação
+ */
+export async function requireAuth(): Promise<AuthenticatedAdmin> {
   const admin = await getCurrentAdmin();
 
-  if (!admin) {
-    throw new AuthError();
+  if (!admin || !admin.organizationId) {
+    throw new AuthError("Não autorizado ou organização não selecionada");
+  }
+
+  return admin as AuthenticatedAdmin;
+}
+
+/**
+ * 🔒 Garante que há um admin logado COM permissão financeira (OWNER ou permissão FINANCE).
+ * Lança AuthError (401) se não autenticado ou ForbiddenError (403) se não autorizado.
+ */
+export async function requireFinancePermission(): Promise<AuthenticatedAdmin> {
+  const admin = await requireAuth();
+
+  if (!hasFinancePermission(admin)) {
+    throw new ForbiddenError("Acesso negado: permissão financeira necessária");
   }
 
   return admin;
 }
-
