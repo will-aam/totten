@@ -102,6 +102,119 @@ export async function updateStockItem(
     quantity?: number;
     unit_cost?: number;
     isAutoDeduct?: boolean;
+    createExpense?: boolean;
+  },
+) {
+  try {
+    const orgId = await getOrgId();
+    const prisma = getTenantPrisma(orgId);
+
+    const txResult = await prisma.$transaction(async (tx) => {
+      const existing = await tx.stockItem.findFirst({
+        where: { id, organization_id: orgId },
+      });
+
+      if (!existing) {
+        throw new Error("Insumo não encontrado.");
+      }
+
+      const oldQty = Number(existing.quantity);
+      const newQty =
+        data.quantity !== undefined ? Number(data.quantity) : oldQty;
+      const addedQty = newQty - oldQty;
+      const unitCost =
+        data.unit_cost !== undefined
+          ? Number(data.unit_cost)
+          : Number(existing.unit_cost);
+
+      // Decisão contábil de despesa no reabastecimento:
+      // Se data.createExpense foi explicitamente informado, respeita a escolha do usuário.
+      // Se não foi informado, preserva a política do insumo (existing.was_expensed).
+      const shouldCreateExpense =
+        addedQty > 0 &&
+        (data.createExpense === true ||
+          (data.createExpense === undefined && existing.was_expensed));
+
+      let createdExpenseTxId: string | null = null;
+      let totalExpenseCost = 0;
+
+      if (shouldCreateExpense) {
+        totalExpenseCost = addedQty * unitCost;
+
+        if (totalExpenseCost > 0) {
+          const expTx = await tx.transaction.create({
+            data: {
+              type: "DESPESA",
+              description: `Reabastecimento de Insumo: ${data.name || existing.name} (+${addedQty} un)`,
+              amount: totalExpenseCost,
+              date: new Date(),
+              status: "PAGO",
+              organization_id: orgId,
+              stock_item_id: existing.id,
+            },
+          });
+          createdExpenseTxId = expTx.id;
+        }
+      }
+
+      // Atualiza o insumo com os novos valores e política contábil
+      await tx.stockItem.update({
+        where: { id },
+        data: {
+          name: data.name,
+          quantity: data.quantity !== undefined ? data.quantity : undefined,
+          unit_cost: data.unit_cost !== undefined ? data.unit_cost : undefined,
+          isAutoDeduct:
+            data.isAutoDeduct !== undefined ? data.isAutoDeduct : undefined,
+          was_expensed:
+            data.createExpense !== undefined
+              ? data.createExpense
+              : existing.was_expensed,
+        },
+      });
+
+      return {
+        createdExpenseTxId,
+        expenseCreated: shouldCreateExpense,
+        addedQuantity: addedQty > 0 ? addedQty : 0,
+        expenseAmount: totalExpenseCost,
+      };
+    });
+
+    if (txResult.createdExpenseTxId) {
+      triggerZibeeSyncById(txResult.createdExpenseTxId, orgId).catch(
+        console.error,
+      );
+    }
+
+    revalidatePath("/admin/stock");
+    if (txResult.expenseCreated) {
+      revalidatePath("/admin/finance/dashboard");
+      revalidatePath("/admin/finance/transactions");
+    }
+
+    return {
+      success: true,
+      expenseCreated: txResult.expenseCreated,
+      addedQuantity: txResult.addedQuantity,
+      expenseAmount: txResult.expenseAmount,
+    };
+  } catch (error: any) {
+    console.error("Erro ao atualizar insumo:", error);
+    return {
+      success: false,
+      error: error?.message || "Erro ao atualizar insumo.",
+    };
+  }
+}
+
+// 3.1. REABASTECER INSUMO (Helper com incremento explícito)
+export async function restockStockItem(
+  id: string,
+  addedQuantity: number,
+  options?: {
+    unit_cost?: number;
+    createExpense?: boolean;
   },
 ) {
   try {
@@ -116,22 +229,20 @@ export async function updateStockItem(
       return { success: false, error: "Insumo não encontrado." };
     }
 
-    await prisma.stockItem.update({
-      where: { id },
-      data: {
-        name: data.name,
-        quantity: data.quantity !== undefined ? data.quantity : undefined,
-        unit_cost: data.unit_cost !== undefined ? data.unit_cost : undefined,
-        isAutoDeduct:
-          data.isAutoDeduct !== undefined ? data.isAutoDeduct : undefined,
-      },
-    });
+    const currentQty = Number(existing.quantity);
+    const newQty = currentQty + addedQuantity;
 
-    revalidatePath("/admin/stock");
-    return { success: true };
-  } catch (error) {
-    console.error("Erro ao atualizar insumo:", error);
-    return { success: false, error: "Erro ao atualizar insumo." };
+    return await updateStockItem(id, {
+      quantity: newQty,
+      unit_cost: options?.unit_cost,
+      createExpense: options?.createExpense,
+    });
+  } catch (error: any) {
+    console.error("Erro ao reabastecer insumo:", error);
+    return {
+      success: false,
+      error: error?.message || "Erro ao reabastecer insumo.",
+    };
   }
 }
 

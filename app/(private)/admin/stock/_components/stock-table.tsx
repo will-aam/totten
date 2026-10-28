@@ -20,6 +20,8 @@ export type StockItem = {
   name: string;
   quantity: number;
   unit_cost: number;
+  was_expensed?: boolean;
+  isAutoDeduct?: boolean;
 };
 
 interface StockTableProps {

@@ -130,7 +130,16 @@ function StockPageContent() {
       toast.error(res.error || "Erro ao atualizar insumo.");
       fetchItems();
     } else {
-      toast.success("Estoque atualizado com sucesso!");
+      if (res.expenseCreated && res.expenseAmount) {
+        toast.success(
+          `Estoque reabastecido! Despesa de ${new Intl.NumberFormat("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+          }).format(res.expenseAmount)} lançada no caixa.`
+        );
+      } else {
+        toast.success("Estoque atualizado com sucesso!");
+      }
     }
   };
 
