@@ -51,6 +51,21 @@ export async function getReportsData() {
           },
         },
       },
+      include: {
+        appointment: {
+          select: {
+            snapshot_service_name: true,
+            service: { select: { name: true } },
+          },
+        },
+        package: {
+          select: {
+            snapshot_service_name: true,
+            name: true,
+            service: { select: { name: true } },
+          },
+        },
+      },
     });
 
     const monthlyDataMap = new Map();
@@ -87,6 +102,9 @@ export async function getReportsData() {
       });
     }
 
+    // Mapa de sessões/atendimentos realizados por serviço
+    const serviceSessionsMap = new Map<string, number>();
+
     appointments.forEach((a) => {
       const p = getBrasiliaDateParts(a.date_time);
       const key = `${p.year}-${p.month}`;
@@ -94,6 +112,9 @@ export async function getReportsData() {
         const entry = monthlyDataMap.get(key);
         entry.agendamentos += 1; // Conta 1 agendamento realizado
       }
+
+      const sName = a.snapshot_service_name || a.service?.name || "Serviço";
+      serviceSessionsMap.set(sName, (serviceSessionsMap.get(sName) || 0) + 1);
     });
 
     paidTransactions.forEach((t) => {
@@ -106,37 +127,52 @@ export async function getReportsData() {
       }
     });
 
-    const serviceMap = new Map();
-    appointments.forEach((a) => {
-      const sName = a.snapshot_service_name || a.service?.name || "Serviço";
-      if (!serviceMap.has(sName)) {
-        serviceMap.set(sName, { name: sName, faturamento: 0, sessoes: 0 });
-      }
-      const sData = serviceMap.get(sName);
-      sData.sessoes += 1;
+    // REGIME DE CAIXA UNIFICADO:
+    // O faturamento do Top Serviços utiliza as transações de receitas reais pagas no período,
+    // garantindo total coerência contábil com o gráfico mensal e extratos financeiros.
+    const serviceMap = new Map<
+      string,
+      { name: string; faturamento: number; sessoes: number }
+    >();
 
-      if (a.package_id) {
-        // Atendimento coberto por pacote: computa a receita proporcional da sessão
-        const sessionValue =
-          a.package && a.package.total_sessions > 0
-            ? Number(a.package.price) / a.package.total_sessions
-            : Number(a.snapshot_service_price ?? a.service?.price ?? 0);
-        sData.faturamento += sessionValue;
-      } else {
-        // Atendimento avulso: soma as receitas pagas vinculadas ao agendamento
-        const paidRevenues = (a.transactions || [])
-          .filter((t) => t.type === "RECEITA" && t.status === "PAGO")
-          .reduce((acc, t) => acc + Number(t.amount), 0);
+    // Inicializa com as sessões realizadas de cada serviço
+    serviceSessionsMap.forEach((sessoes, sName) => {
+      serviceMap.set(sName, { name: sName, faturamento: 0, sessoes });
+    });
 
-        if (paidRevenues > 0) {
-          sData.faturamento += paidRevenues;
-        } else if (a.payment_method !== null && !a.has_charge) {
-          // Atendimento avulso realizado com pagamento confirmado (sem cobrança pendente)
-          sData.faturamento += Number(
-            a.snapshot_service_price ?? a.service?.price ?? 0,
-          );
-        }
+    // Computa as receitas pagas que deram entrada no caixa
+    paidTransactions.forEach((t) => {
+      if (t.type !== "RECEITA") return;
+      const amount = Number(t.amount);
+      if (amount <= 0) return;
+
+      let serviceName = "Outros Serviços";
+
+      if (t.appointment) {
+        serviceName =
+          t.appointment.snapshot_service_name ||
+          t.appointment.service?.name ||
+          "Serviço Avulso";
+      } else if (t.package) {
+        serviceName =
+          t.package.snapshot_service_name ||
+          t.package.service?.name ||
+          t.package.name ||
+          "Pacote de Serviço";
+      } else if (t.description) {
+        serviceName = t.description;
       }
+
+      if (!serviceMap.has(serviceName)) {
+        serviceMap.set(serviceName, {
+          name: serviceName,
+          faturamento: 0,
+          sessoes: 0,
+        });
+      }
+
+      const sData = serviceMap.get(serviceName)!;
+      sData.faturamento += amount;
     });
 
     const topServices = Array.from(serviceMap.values())

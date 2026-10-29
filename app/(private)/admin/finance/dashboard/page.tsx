@@ -165,7 +165,7 @@ function FinanceDashboardContent() {
         }
       />
 
-      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-[1600px] mx-auto w-full pb-24 md:pb-6 relative animate-in fade-in duration-300">
+      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative animate-in fade-in duration-300">
         {/* KPIs no padrão idêntico ao dashboard principal */}
         <FinanceKpiCards />
 

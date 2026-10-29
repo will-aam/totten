@@ -3,6 +3,11 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireFinancePermission } from "@/lib/auth";
+import {
+  getBrasiliaDateParts,
+  getBrasiliaDayRange,
+  getBrasiliaMonthRange,
+} from "@/lib/date-utils";
 
 export type TimeframeOption = "4h" | "1d" | "1w" | "1m" | "1y";
 
@@ -43,6 +48,7 @@ export async function getFinanceChartData(
   const companyName = org?.settings?.company_name || org?.name || "Minha Empresa";
 
   const now = new Date();
+  const nowParts = getBrasiliaDateParts(now);
   let startDate: Date;
   let prevStartDate: Date;
   let comparisonLabel = "Período anterior";
@@ -53,11 +59,13 @@ export async function getFinanceChartData(
       prevStartDate = new Date(now.getTime() - 8 * 60 * 60 * 1000);
       comparisonLabel = "4h anteriores";
       break;
-    case "1d":
-      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    case "1d": {
+      const { startOfDay } = getBrasiliaDayRange(now);
+      startDate = startOfDay;
       prevStartDate = new Date(startDate.getTime() - 24 * 60 * 60 * 1000);
       comparisonLabel = "Dia anterior";
       break;
+    }
     case "1w":
       startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       prevStartDate = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
@@ -69,11 +77,27 @@ export async function getFinanceChartData(
       comparisonLabel = "Mês anterior";
       break;
     case "1y":
-    default:
-      startDate = new Date(now.getFullYear(), now.getMonth() - 11, 1, 0, 0, 0);
-      prevStartDate = new Date(now.getFullYear(), now.getMonth() - 23, 1, 0, 0, 0);
+    default: {
+      let startM = nowParts.month - 11;
+      let startY = nowParts.year;
+      while (startM < 1) {
+        startM += 12;
+        startY -= 1;
+      }
+      const { monthStart } = getBrasiliaMonthRange(startY, startM);
+      startDate = monthStart;
+
+      let prevM = nowParts.month - 23;
+      let prevY = nowParts.year;
+      while (prevM < 1) {
+        prevM += 12;
+        prevY -= 1;
+      }
+      const { monthStart: prevStart } = getBrasiliaMonthRange(prevY, prevM);
+      prevStartDate = prevStart;
       comparisonLabel = "Ano anterior";
       break;
+    }
   }
 
   // 2. Busca transações do período atual e anterior
@@ -239,14 +263,19 @@ export async function getFinanceChartData(
       }
     });
   } else {
-    // 1 Ano: 12 meses
+    // 1 Ano: 12 meses no fuso oficial de Brasília (America/Sao_Paulo)
     for (let i = 11; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const label = monthNames[d.getMonth()];
+      let m = nowParts.month - i;
+      let y = nowParts.year;
+      while (m < 1) {
+        m += 12;
+        y -= 1;
+      }
+      const label = monthNames[m - 1];
       pointsList.push({
         label,
-        fullDate: `${monthNames[d.getMonth()]} de ${d.getFullYear()}`,
-        monthIndex: d.getMonth(),
+        fullDate: `${monthNames[m - 1]} de ${y}`,
+        monthIndex: m - 1,
         revenue: 0,
         previousRevenue: 0,
         expenses: 0,
@@ -255,9 +284,10 @@ export async function getFinanceChartData(
 
     currentTransactions.forEach((tx) => {
       if (tx.status !== "PAGO") return;
-      const d = new Date(tx.date);
-      // Mapear pelo mês
-      const diffMonths = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
+      const txParts = getBrasiliaDateParts(tx.date);
+      // Mapear pelo mês e ano de Brasília
+      const diffMonths =
+        (nowParts.year - txParts.year) * 12 + (nowParts.month - txParts.month);
       const idx = 11 - diffMonths;
       if (idx >= 0 && idx < pointsList.length) {
         if (tx.type === "RECEITA") pointsList[idx].revenue += Number(tx.amount);
@@ -266,9 +296,12 @@ export async function getFinanceChartData(
     });
 
     previousTransactions.forEach((tx) => {
-      const d = new Date(tx.date);
-      // O ano anterior é deslocado em 12 meses
-      const diffMonths = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth()) - 12;
+      const txParts = getBrasiliaDateParts(tx.date);
+      // O ano anterior é deslocado em 12 meses no fuso de Brasília
+      const diffMonths =
+        (nowParts.year - txParts.year) * 12 +
+        (nowParts.month - txParts.month) -
+        12;
       const idx = 11 - diffMonths;
       if (idx >= 0 && idx < pointsList.length) {
         pointsList[idx].previousRevenue += Number(tx.amount);
