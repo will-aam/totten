@@ -41,6 +41,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { useIsMobile } from "@/components/ui/use-mobile";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Pagination,
@@ -65,7 +72,6 @@ import {
   InfoCircle,
   X,
   CreditCard,
-  Wallet,
   Tag,
 } from "@boxicons/react";
 import { cn } from "@/lib/utils";
@@ -125,6 +131,20 @@ export default function TransactionsPage() {
   const [editingTransaction, setEditingTransaction] = useState<any | null>(null);
   const [isDeletingLoading, setIsDeletingLoading] = useState(false);
   const [viewingTx, setViewingTx] = useState<any | null>(null);
+  const [collapsedDates, setCollapsedDates] = useState<Set<string>>(new Set());
+  const isMobile = useIsMobile();
+
+  const toggleCollapseDate = (dateKey: string) => {
+    setCollapsedDates((prev) => {
+      const next = new Set(prev);
+      if (next.has(dateKey)) {
+        next.delete(dateKey);
+      } else {
+        next.add(dateKey);
+      }
+      return next;
+    });
+  };
 
   const currentYear = new Date().getFullYear();
   const startYear = 2026;
@@ -276,6 +296,21 @@ export default function TransactionsPage() {
 
     return groups;
   }, [transactions]);
+
+  const allCollapsed = useMemo(() => {
+    return (
+      groupedTransactions.length > 0 &&
+      groupedTransactions.every((g) => collapsedDates.has(g.dateKey))
+    );
+  }, [groupedTransactions, collapsedDates]);
+
+  const toggleCollapseAll = () => {
+    if (allCollapsed) {
+      setCollapsedDates(new Set());
+    } else {
+      setCollapsedDates(new Set(groupedTransactions.map((g) => g.dateKey)));
+    }
+  };
 
   const confirmDelete = async () => {
     if (!deletingTx) return;
@@ -518,6 +553,167 @@ export default function TransactionsPage() {
     );
   };
 
+  const renderTransactionDetails = (tx: any) => {
+    const parsed = parseTransactionDescription(
+      tx.description,
+      tx.type,
+      tx.clientName,
+    );
+
+    return (
+      <div className="space-y-4 sm:space-y-5 py-2">
+        <div className="flex items-center justify-between bg-linear-to-br from-muted/30 to-muted/10 p-4 sm:p-5 rounded-2xl sm:rounded-3xl border border-border/50 shadow-sm">
+          <div className="flex flex-col">
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">
+              Valor
+            </span>
+            <span
+              className={cn(
+                "text-2xl sm:text-3xl font-black tracking-tighter",
+                tx.type === "RECEITA"
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : "text-rose-600 dark:text-rose-400",
+              )}
+            >
+              {formatCurrency(tx.amount)}
+            </span>
+          </div>
+          <StatusBadge transaction={tx} />
+        </div>
+
+        <div className="space-y-2">
+          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
+            Descrição
+          </span>
+          <div className="bg-muted/20 p-4 sm:p-5 rounded-2xl border border-border/40 text-sm font-medium leading-relaxed text-foreground shadow-inner">
+            {parsed.title}
+          </div>
+        </div>
+
+        {parsed.details && (
+          <div className="space-y-2">
+            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
+              Itens / Detalhes dos Insumos
+            </span>
+            <div className="bg-muted/20 p-3 sm:p-4 rounded-2xl border border-border/40 text-xs font-semibold leading-relaxed text-muted-foreground shadow-inner flex items-center gap-2">
+              <Tag className="h-4 w-4 text-primary shrink-0" />
+              <span>{parsed.details}</span>
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="flex flex-col gap-1.5 bg-muted/10 p-3.5 sm:p-4 rounded-2xl border border-border/40">
+            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+              Data e Hora (Competência)
+            </span>
+            <span className="text-xs sm:text-sm font-bold">
+              {formatDateFull(tx.date)}
+            </span>
+          </div>
+          <div className="flex flex-col gap-1.5 bg-muted/10 p-3.5 sm:p-4 rounded-2xl border border-border/40">
+            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+              Origem
+            </span>
+            <span className="text-xs sm:text-sm font-bold truncate">
+              {tx.package_id
+                ? "Venda de Pacote"
+                : tx.appointment_id
+                  ? "Atendimento / Totem"
+                  : tx.stock_item_id
+                    ? "Controle de Estoque"
+                    : "Lançamento Manual"}
+            </span>
+          </div>
+
+          {tx.settlementDate &&
+            new Date(tx.settlementDate).toDateString() !==
+              new Date(tx.date).toDateString() && (
+              <div className="flex flex-col gap-1.5 bg-amber-500/10 p-3.5 sm:p-4 rounded-2xl border border-amber-500/20 col-span-2">
+                <span className="text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5" />
+                  Previsão de Compensação Líquida (D+X)
+                </span>
+                <span className="text-xs sm:text-sm font-bold text-amber-900 dark:text-amber-200">
+                  {formatDateFull(tx.settlementDate)}
+                </span>
+                <span className="text-[11px] text-amber-700/80 dark:text-amber-300/80">
+                  O lançamento foi registrado no dia da venda ({formatDateFull(tx.date)}), e o crédito compensará na conta no prazo da operadora.
+                </span>
+              </div>
+            )}
+
+          {tx.dueDate && (
+            <div className="flex flex-col gap-1.5 bg-muted/10 p-3.5 sm:p-4 rounded-2xl border border-border/40 col-span-2">
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5" />
+                Vencimento Original e Pontualidade
+              </span>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-1">
+                <span className="text-xs sm:text-sm font-bold text-foreground">
+                  {formatDateFull(tx.dueDate)}
+                </span>
+                {(() => {
+                  const punctuality = getPaymentPunctuality(
+                    tx.date,
+                    tx.dueDate,
+                    tx.status,
+                  );
+                  if (!punctuality) return null;
+                  return (
+                    <Badge
+                      variant="secondary"
+                      className={cn(
+                        "text-xs px-2.5 py-1 font-bold border",
+                        punctuality.className,
+                      )}
+                    >
+                      {punctuality.fullLabel}
+                    </Badge>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-1.5 bg-muted/10 p-3.5 sm:p-4 rounded-2xl border border-border/40 col-span-2">
+            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+              Forma de Pagamento
+            </span>
+            <span className="text-xs sm:text-sm font-bold truncate">
+              {tx.paymentMethodName ||
+                (tx.paymentMethod &&
+                  paymentMethodMap[tx.paymentMethod]) ||
+                tx.paymentMethod ||
+                "Não informada"}
+            </span>
+          </div>
+
+          {tx.clientName && (
+            <div className="flex flex-col gap-1.5 bg-muted/10 p-3.5 sm:p-4 rounded-2xl border border-border/40 col-span-2">
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                Cliente
+              </span>
+              <span className="text-xs sm:text-sm font-bold truncate">
+                {tx.clientName}
+              </span>
+              {(tx.clientCpf || tx.clientPhone) && (
+                <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                  {tx.clientCpf && (
+                    <span>CPF: {tx.clientCpf}</span>
+                  )}
+                  {tx.clientPhone && (
+                    <span>Telefone: {tx.clientPhone}</span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       <AdminHeader title="Extrato de Movimentações" />
@@ -527,22 +723,21 @@ export default function TransactionsPage() {
         <div className="flex flex-col gap-3 sm:gap-4 bg-background/60 backdrop-blur-md p-3 sm:p-5 rounded-2xl sm:rounded-3xl border border-border/40 shadow-sm relative overflow-hidden">
           <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 blur-3xl rounded-full -z-10 pointer-events-none" />
 
-          {/* LINHA 1: MODOS DE DATA (Tabs em Pills com scroll horizontal suave) */}
+          {/* LINHA 1: MODOS DE DATA (Tabs responsivas sem ícones) */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 sm:pb-3 border-b border-border/30">
             {/* Seletor de Modo de Data em Pills */}
-            <div className="flex items-center gap-1 p-1 bg-muted/30 rounded-xl sm:rounded-2xl border border-border/40 overflow-x-auto no-scrollbar w-full sm:w-fit">
+            <div className="grid grid-cols-4 sm:flex items-center gap-1 p-1 bg-muted/30 rounded-xl sm:rounded-2xl border border-border/40 w-full sm:w-fit">
               <Button
                 variant={dateMode === "month" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setDateMode("month")}
                 className={cn(
-                  "rounded-lg sm:rounded-xl text-xs font-bold h-7 sm:h-8 px-2.5 sm:px-3.5 shrink-0 transition-all",
+                  "rounded-lg sm:rounded-xl text-xs font-bold h-8 px-2 sm:px-3.5 transition-all text-center justify-center",
                   dateMode === "month"
                     ? "shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                <Calendar className="h-3.5 w-3.5 mr-1" />
                 Mês
               </Button>
               <Button
@@ -555,13 +750,12 @@ export default function TransactionsPage() {
                   }
                 }}
                 className={cn(
-                  "rounded-lg sm:rounded-xl text-xs font-bold h-7 sm:h-8 px-2.5 sm:px-3.5 shrink-0 transition-all",
+                  "rounded-lg sm:rounded-xl text-xs font-bold h-8 px-2 sm:px-3.5 transition-all text-center justify-center",
                   dateMode === "day"
                     ? "shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                <Tag className="h-3.5 w-3.5 mr-1" />
                 Dia
               </Button>
               <Button
@@ -569,13 +763,12 @@ export default function TransactionsPage() {
                 size="sm"
                 onClick={() => setDateMode("range")}
                 className={cn(
-                  "rounded-lg sm:rounded-xl text-xs font-bold h-7 sm:h-8 px-2.5 sm:px-3.5 shrink-0 transition-all",
+                  "rounded-lg sm:rounded-xl text-xs font-bold h-8 px-2 sm:px-3.5 transition-all text-center justify-center",
                   dateMode === "range"
                     ? "shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                <Filter className="h-3.5 w-3.5 mr-1" />
                 Período
               </Button>
               <Button
@@ -583,7 +776,7 @@ export default function TransactionsPage() {
                 size="sm"
                 onClick={() => setDateMode("all")}
                 className={cn(
-                  "rounded-lg sm:rounded-xl text-xs font-bold h-7 sm:h-8 px-2.5 sm:px-3.5 shrink-0 transition-all",
+                  "rounded-lg sm:rounded-xl text-xs font-bold h-8 px-2 sm:px-3.5 transition-all text-center justify-center",
                   dateMode === "all"
                     ? "shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
@@ -601,7 +794,7 @@ export default function TransactionsPage() {
                     value={selectedMonth.toString()}
                     onValueChange={(val) => setSelectedMonth(Number(val))}
                   >
-                    <SelectTrigger className="h-8 sm:h-9 w-full sm:w-32 font-bold bg-muted/20 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 rounded-xl sm:rounded-2xl shadow-inner text-xs sm:text-sm">
+                    <SelectTrigger className="h-9 w-full sm:w-32 font-bold bg-muted/20 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 rounded-xl sm:rounded-2xl shadow-inner text-xs sm:text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="border-border/50 shadow-xl rounded-2xl max-h-56">
@@ -609,7 +802,7 @@ export default function TransactionsPage() {
                         <SelectItem
                           key={m.value}
                           value={m.value.toString()}
-                          className="rounded-full font-medium text-xs sm:text-sm"
+                          className="rounded-xl font-medium text-xs sm:text-sm"
                         >
                           {m.label}
                         </SelectItem>
@@ -620,7 +813,7 @@ export default function TransactionsPage() {
                     value={selectedYear.toString()}
                     onValueChange={(val) => setSelectedYear(Number(val))}
                   >
-                    <SelectTrigger className="h-8 sm:h-9 w-full sm:w-24 font-bold bg-muted/20 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 rounded-xl sm:rounded-2xl shadow-inner text-xs sm:text-sm">
+                    <SelectTrigger className="h-9 w-full sm:w-24 font-bold bg-muted/20 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 rounded-xl sm:rounded-2xl shadow-inner text-xs sm:text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="border-border/50 shadow-xl rounded-2xl">
@@ -628,7 +821,7 @@ export default function TransactionsPage() {
                         <SelectItem
                           key={y}
                           value={y.toString()}
-                          className="rounded-full font-medium text-xs sm:text-sm"
+                          className="rounded-xl font-medium text-xs sm:text-sm"
                         >
                           {y}
                         </SelectItem>
@@ -639,12 +832,12 @@ export default function TransactionsPage() {
               )}
 
               {dateMode === "day" && (
-                <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
                   <Input
                     type="date"
                     value={specificDate}
                     onChange={(e) => setSpecificDate(e.target.value)}
-                    className="h-8 sm:h-9 rounded-xl sm:rounded-2xl bg-muted/20 border-border/40 font-bold focus-visible:ring-primary/30 shadow-inner px-2.5 text-xs sm:text-sm flex-1 sm:flex-none"
+                    className="h-9 rounded-xl sm:rounded-2xl bg-muted/20 border-border/40 font-bold focus-visible:ring-primary/30 shadow-inner px-2.5 text-xs sm:text-sm flex-1 sm:w-auto"
                   />
                   <Button
                     variant="outline"
@@ -652,7 +845,7 @@ export default function TransactionsPage() {
                     onClick={() =>
                       setSpecificDate(new Date().toISOString().split("T")[0])
                     }
-                    className="h-8 sm:h-9 rounded-xl sm:rounded-2xl font-bold bg-muted/20 border-border/40 hover:bg-muted/40 px-2.5 text-[11px] sm:text-xs shrink-0"
+                    className="h-9 rounded-xl sm:rounded-2xl font-bold bg-muted/20 border-border/40 hover:bg-muted/40 px-3 text-xs shrink-0"
                   >
                     Hoje
                   </Button>
@@ -665,21 +858,21 @@ export default function TransactionsPage() {
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="h-8 sm:h-9 rounded-xl sm:rounded-2xl bg-muted/20 border-border/40 font-bold focus-visible:ring-primary/30 shadow-inner px-2.5 text-xs sm:text-sm"
+                    className="h-9 rounded-xl sm:rounded-2xl bg-muted/20 border-border/40 font-bold focus-visible:ring-primary/30 shadow-inner px-2.5 text-xs sm:text-sm w-full sm:w-36"
                     title="Data Inicial"
                   />
                   <Input
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="h-8 sm:h-9 rounded-xl sm:rounded-2xl bg-muted/20 border-border/40 font-bold focus-visible:ring-primary/30 shadow-inner px-2.5 text-xs sm:text-sm"
+                    className="h-9 rounded-xl sm:rounded-2xl bg-muted/20 border-border/40 font-bold focus-visible:ring-primary/30 shadow-inner px-2.5 text-xs sm:text-sm w-full sm:w-36"
                     title="Data Final"
                   />
                 </div>
               )}
 
               {dateMode === "all" && (
-                <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground italic">
+                <span className="text-xs font-semibold text-muted-foreground italic py-1 sm:py-0">
                   Todo o histórico
                 </span>
               )}
@@ -707,147 +900,137 @@ export default function TransactionsPage() {
             )}
           </div>
 
-          {/* LINHA 3: CHIPS DE FILTRO HORIZONTAIS (Single-row no mobile, sem poluir a tela) */}
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 w-full">
-            {/* Chip: Tipo */}
+          {/* LINHA 3: FILTROS PADRONIZADOS E RESPONSIVOS (SEM ÍCONES) */}
+          <div className="flex flex-wrap items-center gap-2 w-full">
+            {/* Filtro: Tipo */}
             <Select
               value={filterType}
               onValueChange={(val: any) => setFilterType(val)}
             >
               <SelectTrigger
                 className={cn(
-                  "h-8 sm:h-9 text-xs font-bold rounded-full px-3 w-auto min-w-[100px] border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 shadow-sm shrink-0 transition-all",
+                  "h-9 text-xs sm:text-sm font-bold rounded-xl sm:rounded-2xl px-3 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 shadow-sm transition-all flex-1 min-w-[120px] sm:flex-none sm:w-auto",
                   filterType !== "ALL"
                     ? "bg-primary/10 text-primary border-primary/30"
                     : "bg-muted/20 text-muted-foreground",
                 )}
               >
-                <div className="flex items-center gap-1.5 truncate">
-                  <Wallet className="h-3.5 w-3.5 shrink-0" />
-                  <SelectValue placeholder="Tipo" />
-                </div>
+                <SelectValue placeholder="Tipo" />
               </SelectTrigger>
               <SelectContent className="border-border/50 shadow-xl rounded-2xl">
-                <SelectItem value="ALL" className="rounded-full font-medium text-xs">
+                <SelectItem value="ALL" className="rounded-xl font-medium text-xs sm:text-sm">
                   Todos os Tipos
                 </SelectItem>
                 <SelectItem
                   value="RECEITA"
-                  className="rounded-full font-bold text-emerald-600 text-xs"
+                  className="rounded-xl font-bold text-emerald-600 text-xs sm:text-sm"
                 >
                   Receitas
                 </SelectItem>
                 <SelectItem
                   value="DESPESA"
-                  className="rounded-full font-bold text-rose-600 text-xs"
+                  className="rounded-xl font-bold text-rose-600 text-xs sm:text-sm"
                 >
                   Despesas
                 </SelectItem>
               </SelectContent>
             </Select>
 
-            {/* Chip: Status */}
+            {/* Filtro: Status */}
             <Select
               value={statusFilter}
               onValueChange={(val: any) => setStatusFilter(val)}
             >
               <SelectTrigger
                 className={cn(
-                  "h-8 sm:h-9 text-xs font-bold rounded-full px-3 w-auto min-w-[105px] border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 shadow-sm shrink-0 transition-all",
+                  "h-9 text-xs sm:text-sm font-bold rounded-xl sm:rounded-2xl px-3 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 shadow-sm transition-all flex-1 min-w-[120px] sm:flex-none sm:w-auto",
                   statusFilter !== "ALL"
                     ? "bg-primary/10 text-primary border-primary/30"
                     : "bg-muted/20 text-muted-foreground",
                 )}
               >
-                <div className="flex items-center gap-1.5 truncate">
-                  <Tag className="h-3.5 w-3.5 shrink-0" />
-                  <SelectValue placeholder="Status" />
-                </div>
+                <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent className="border-border/50 shadow-xl rounded-2xl">
-                <SelectItem value="ALL" className="rounded-full font-medium text-xs">
+                <SelectItem value="ALL" className="rounded-xl font-medium text-xs sm:text-sm">
                   Todos os Status
                 </SelectItem>
                 <SelectItem
                   value="PAGO"
-                  className="rounded-full font-bold text-emerald-600 text-xs"
+                  className="rounded-xl font-bold text-emerald-600 text-xs sm:text-sm"
                 >
                   Pago
                 </SelectItem>
                 <SelectItem
                   value="PENDENTE"
-                  className="rounded-full font-bold text-amber-600 text-xs"
+                  className="rounded-xl font-bold text-amber-600 text-xs sm:text-sm"
                 >
                   Pendente
                 </SelectItem>
                 <SelectItem
                   value="ATRASADO"
-                  className="rounded-full font-bold text-rose-600 text-xs"
+                  className="rounded-xl font-bold text-rose-600 text-xs sm:text-sm"
                 >
                   Atrasado
                 </SelectItem>
               </SelectContent>
             </Select>
 
-            {/* Chip: Forma de Pagamento */}
+            {/* Filtro: Forma de Pagamento */}
             <Select
               value={paymentMethodFilter}
               onValueChange={(val: any) => setPaymentMethodFilter(val)}
             >
               <SelectTrigger
                 className={cn(
-                  "h-8 sm:h-9 text-xs font-bold rounded-full px-3 w-auto min-w-[115px] border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 shadow-sm shrink-0 transition-all",
+                  "h-9 text-xs sm:text-sm font-bold rounded-xl sm:rounded-2xl px-3 border-border/40 hover:bg-muted/30 focus-visible:ring-primary/30 shadow-sm transition-all flex-1 min-w-[140px] sm:flex-none sm:w-auto",
                   paymentMethodFilter !== "ALL"
                     ? "bg-primary/10 text-primary border-primary/30"
                     : "bg-muted/20 text-muted-foreground",
                 )}
               >
-                <div className="flex items-center gap-1.5 truncate">
-                  <CreditCard className="h-3.5 w-3.5 shrink-0" />
-                  <SelectValue placeholder="Pagamento" />
-                </div>
+                <SelectValue placeholder="Pagamento" />
               </SelectTrigger>
               <SelectContent className="border-border/50 shadow-xl rounded-2xl">
-                <SelectItem value="ALL" className="rounded-full font-medium text-xs">
+                <SelectItem value="ALL" className="rounded-xl font-medium text-xs sm:text-sm">
                   Todas as Formas
                 </SelectItem>
-                <SelectItem value="PIX" className="rounded-full font-semibold text-xs">
+                <SelectItem value="PIX" className="rounded-xl font-semibold text-xs sm:text-sm">
                   Pix
                 </SelectItem>
                 <SelectItem
                   value="CARTAO_CREDITO"
-                  className="rounded-full font-semibold text-xs"
+                  className="rounded-xl font-semibold text-xs sm:text-sm"
                 >
                   Cartão de Crédito
                 </SelectItem>
                 <SelectItem
                   value="CARTAO_DEBITO"
-                  className="rounded-full font-semibold text-xs"
+                  className="rounded-xl font-semibold text-xs sm:text-sm"
                 >
                   Cartão de Débito
                 </SelectItem>
                 <SelectItem
                   value="DINHEIRO"
-                  className="rounded-full font-semibold text-xs"
+                  className="rounded-xl font-semibold text-xs sm:text-sm"
                 >
                   Dinheiro
                 </SelectItem>
-                <SelectItem value="OUTRO" className="rounded-full font-semibold text-xs">
+                <SelectItem value="OUTRO" className="rounded-xl font-semibold text-xs sm:text-sm">
                   Outros
                 </SelectItem>
               </SelectContent>
             </Select>
 
-            {/* Chip: Botão Limpar Filtros */}
+            {/* Botão Limpar Filtros */}
             {isFiltersActive && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={resetFilters}
-                className="h-8 sm:h-9 text-xs font-bold rounded-full px-2.5 text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 shrink-0 transition-colors"
+                className="h-9 text-xs sm:text-sm font-bold rounded-xl sm:rounded-2xl px-3 text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 shrink-0 transition-colors"
                 title="Limpar todos os filtros"
               >
-                <X className="h-3.5 w-3.5 mr-1" />
                 Limpar
               </Button>
             )}
@@ -856,6 +1039,31 @@ export default function TransactionsPage() {
 
         {/* LISTAGEM DE TRANSAÇÕES AGRUPADA POR DIA */}
         <div className="flex flex-col w-full gap-3 sm:gap-5">
+          {groupedTransactions.length > 0 && !isLoading && (
+            <div className="flex items-center justify-between px-1 -mb-1">
+              <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                {groupedTransactions.length}{" "}
+                {groupedTransactions.length === 1 ? "dia listado" : "dias listados"}
+              </span>
+              {groupedTransactions.length > 1 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleCollapseAll}
+                  className="h-7 text-xs font-bold text-muted-foreground hover:text-foreground rounded-lg px-2 gap-1.5 hover:bg-muted/30 transition-colors"
+                >
+                  <ChevronDown
+                    className={cn(
+                      "h-3.5 w-3.5 transition-transform duration-200",
+                      allCollapsed ? "-rotate-90" : "rotate-0",
+                    )}
+                  />
+                  {allCollapsed ? "Expandir todos os dias" : "Recolher todos os dias"}
+                </Button>
+              )}
+            </div>
+          )}
+
           {isLoading ? (
             <div className="flex justify-center items-center py-20 bg-background/40 backdrop-blur-sm rounded-2xl sm:rounded-3xl border border-border/40">
               <LoaderDots className="h-8 w-8 animate-spin text-primary/40" />
@@ -883,13 +1091,22 @@ export default function TransactionsPage() {
             </div>
           ) : (
             groupedTransactions.map((group) => {
+              const isCollapsed = collapsedDates.has(group.dateKey);
+
               return (
                 <div
                   key={group.dateKey}
-                  className="flex flex-col bg-background/40 backdrop-blur-sm rounded-2xl sm:rounded-3xl border border-border/40 overflow-hidden shadow-sm"
+                  className="flex flex-col bg-background/40 backdrop-blur-sm rounded-2xl sm:rounded-3xl border border-border/40 overflow-hidden shadow-sm transition-all"
                 >
-                  {/* CABEÇALHO DO DIA ELEGANTE E COMPACTO NO MOBILE */}
-                  <div className="flex items-center justify-between gap-2 px-3 py-2 sm:px-5 sm:py-3 bg-muted/25 border-b border-border/30">
+                  {/* CABEÇALHO DO DIA - CLICÁVEL PARA RECOLHER / EXPANDIR */}
+                  <div
+                    onClick={() => toggleCollapseDate(group.dateKey)}
+                    className={cn(
+                      "flex items-center justify-between gap-2 px-3 py-2.5 sm:px-5 sm:py-3.5 bg-muted/25 cursor-pointer hover:bg-muted/40 active:bg-muted/50 transition-colors select-none group/header",
+                      !isCollapsed && "border-b border-border/30",
+                    )}
+                    title={isCollapsed ? "Clique para expandir" : "Clique para recolher"}
+                  >
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="p-1 sm:p-1.5 bg-primary/10 rounded-lg text-primary shrink-0">
                         <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -912,7 +1129,7 @@ export default function TransactionsPage() {
                       </div>
                     </div>
 
-                    {/* Resumo Financeiro do Dia */}
+                    {/* Resumo Financeiro do Dia + Indicador Chevron */}
                     <div className="flex items-center gap-2 sm:gap-3 shrink-0 text-xs font-bold">
                       <Badge
                         variant="secondary"
@@ -933,12 +1150,22 @@ export default function TransactionsPage() {
                           - {formatCurrency(group.totalExpense)}
                         </span>
                       )}
+
+                      <div className="p-0.5 rounded-md text-muted-foreground group-hover/header:text-foreground transition-all">
+                        <ChevronDown
+                          className={cn(
+                            "h-4 w-4 transition-transform duration-200",
+                            isCollapsed ? "-rotate-90 text-muted-foreground/70" : "rotate-0 text-foreground",
+                          )}
+                        />
+                      </div>
                     </div>
                   </div>
 
                   {/* ITENS DO DIA COM DESIGN MOBILE-FIRST */}
-                  <div className="flex flex-col divide-y divide-border/20 px-1 sm:px-2">
-                    {group.items.map((transaction) => {
+                  {!isCollapsed && (
+                    <div className="flex flex-col divide-y divide-border/20 px-1 sm:px-2 animate-in fade-in duration-200">
+                      {group.items.map((transaction) => {
                       const isIncome = transaction.type === "RECEITA";
                       const displayTitle = getCleanDescription(
                         transaction.description,
@@ -949,7 +1176,7 @@ export default function TransactionsPage() {
                       return (
                         <div
                           key={transaction.id}
-                          className="flex items-center justify-between py-2.5 sm:py-3.5 px-2 sm:px-3 hover:bg-muted/40 transition-all duration-200 rounded-xl sm:rounded-2xl group cursor-pointer"
+                          className="flex items-center justify-between py-2.5 sm:py-3.5 px-2 sm:px-3 transition-all duration-200 rounded-xl sm:rounded-2xl group cursor-pointer"
                           onClick={() => setViewingTx(transaction)}
                         >
                           {/* LADO ESQUERDO: Ícone + Título + Subtítulo */}
@@ -1113,7 +1340,8 @@ export default function TransactionsPage() {
                       );
                     })}
                   </div>
-                </div>
+                )}
+              </div>
               );
             })
           )}
@@ -1121,89 +1349,104 @@ export default function TransactionsPage() {
 
         {/* PAGINAÇÃO PADRÃO DO SISTEMA (SHADCN PAGINATION) */}
         {totalPages > 1 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-2 bg-background/50 backdrop-blur-md p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-border/40 shadow-sm">
-            <p className="text-[11px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider text-center sm:text-left w-full sm:w-auto">
-              Página {page} de {totalPages} ({totalCount}{" "}
-              {totalCount === 1 ? "movimentação" : "movimentações"})
-            </p>
+          <div className="mt-8">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (page > 1) setPage(page - 1);
+                    }}
+                    className={
+                      page === 1
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
+                  />
+                </PaginationItem>
 
-            <div className="w-full sm:w-auto flex justify-center sm:justify-end">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (page > 1) setPage(page - 1);
-                      }}
-                      className={
-                        page === 1
-                          ? "pointer-events-none opacity-50"
-                          : "cursor-pointer"
-                      }
-                    />
-                  </PaginationItem>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (p) => {
+                    if (
+                      p === 1 ||
+                      p === totalPages ||
+                      (p >= page - 1 && p <= page + 1)
+                    ) {
+                      return (
+                        <PaginationItem key={p}>
+                          <PaginationLink
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setPage(p);
+                            }}
+                            isActive={page === p}
+                            className="cursor-pointer font-bold"
+                          >
+                            {p}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    }
 
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                    (p) => {
-                      if (
-                        p === 1 ||
-                        p === totalPages ||
-                        (p >= page - 1 && p <= page + 1)
-                      ) {
-                        return (
-                          <PaginationItem key={p}>
-                            <PaginationLink
-                              href="#"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                setPage(p);
-                              }}
-                              isActive={page === p}
-                              className="cursor-pointer font-bold"
-                            >
-                              {p}
-                            </PaginationLink>
-                          </PaginationItem>
-                        );
-                      }
+                    if (p === page - 2 || p === page + 2) {
+                      return (
+                        <PaginationItem key={p}>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      );
+                    }
+                    return null;
+                  },
+                )}
 
-                      if (p === page - 2 || p === page + 2) {
-                        return (
-                          <PaginationItem key={p}>
-                            <PaginationEllipsis />
-                          </PaginationItem>
-                        );
-                      }
-                      return null;
-                    },
-                  )}
-
-                  <PaginationItem>
-                    <PaginationNext
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (page < totalPages) setPage(page + 1);
-                      }}
-                      className={
-                        page === totalPages
-                          ? "pointer-events-none opacity-50"
-                          : "cursor-pointer"
-                      }
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (page < totalPages) setPage(page + 1);
+                    }}
+                    className={
+                      page === totalPages
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
           </div>
         )}
       </div>
 
-      {/* MODAL DE DETALHES RÁPIDOS - PREMIUM GLASSMORPHISM */}
+      {/* SHEET NO MOBILE (SLIDE DE BAIXO COM SOBREPOSIÇÃO TOTAL) */}
+      <Sheet
+        open={Boolean(viewingTx && isMobile)}
+        onOpenChange={(open) => !open && setViewingTx(null)}
+      >
+        <SheetContent
+          side="bottom"
+          className="z-[80] rounded-t-3xl max-h-[85vh] overflow-y-auto px-4 py-5 pb-8 border-t border-border/40 shadow-2xl bg-background/95 backdrop-blur-2xl"
+        >
+          <div className="mx-auto w-12 h-1.5 rounded-full bg-muted-foreground/30 -mt-2 mb-3 shrink-0" />
+          <SheetHeader className="text-left">
+            <SheetTitle className="text-lg font-black flex items-center gap-2.5">
+              <div className="p-1.5 bg-primary/10 rounded-full text-primary">
+                <InfoCircle className="h-4 w-4" />
+              </div>
+              Detalhes da Movimentação
+            </SheetTitle>
+          </SheetHeader>
+          {viewingTx && renderTransactionDetails(viewingTx)}
+        </SheetContent>
+      </Sheet>
+
+      {/* MODAL DIALOG NO DESKTOP */}
       <Dialog
-        open={!!viewingTx}
+        open={Boolean(viewingTx && !isMobile)}
         onOpenChange={(open) => !open && setViewingTx(null)}
       >
         <DialogContent className="rounded-4xl sm:max-w-md border-border/40 shadow-2xl bg-background/80 backdrop-blur-2xl">
@@ -1215,170 +1458,7 @@ export default function TransactionsPage() {
               Detalhes da Movimentação
             </DialogTitle>
           </DialogHeader>
-
-          {viewingTx && (
-            <div className="space-y-5 py-2">
-              <div className="flex items-center justify-between bg-linear-to-br from-muted/30 to-muted/10 p-5 rounded-3xl border border-border/50 shadow-sm">
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">
-                    Valor
-                  </span>
-                  <span
-                    className={cn(
-                      "text-3xl font-black tracking-tighter",
-                      viewingTx.type === "RECEITA"
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-rose-600 dark:text-rose-400",
-                    )}
-                  >
-                    {formatCurrency(viewingTx.amount)}
-                  </span>
-                </div>
-                <StatusBadge transaction={viewingTx} />
-              </div>
-
-              {(() => {
-                const parsed = parseTransactionDescription(
-                  viewingTx.description,
-                  viewingTx.type,
-                  viewingTx.clientName,
-                );
-                return (
-                  <>
-                    <div className="space-y-2">
-                      <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
-                        Descrição
-                      </span>
-                      <div className="bg-muted/20 p-5 rounded-2xl border border-border/40 text-sm font-medium leading-relaxed text-foreground shadow-inner">
-                        {parsed.title}
-                      </div>
-                    </div>
-
-                    {parsed.details && (
-                      <div className="space-y-2">
-                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
-                          Itens / Detalhes dos Insumos
-                        </span>
-                        <div className="bg-muted/20 p-4 rounded-2xl border border-border/40 text-xs font-semibold leading-relaxed text-muted-foreground shadow-inner flex items-center gap-2">
-                          <Tag className="h-4 w-4 text-primary shrink-0" />
-                          <span>{parsed.details}</span>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                );
-              })()}
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5 bg-muted/10 p-4 rounded-2xl border border-border/40">
-                  <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                    Data e Hora (Competência)
-                  </span>
-                  <span className="text-sm font-bold">
-                    {formatDateFull(viewingTx.date)}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-1.5 bg-muted/10 p-4 rounded-2xl border border-border/40">
-                  <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                    Origem
-                  </span>
-                  <span className="text-sm font-bold truncate">
-                    {viewingTx.package_id
-                      ? "Venda de Pacote"
-                      : viewingTx.appointment_id
-                        ? "Atendimento / Totem"
-                        : viewingTx.stock_item_id
-                          ? "Controle de Estoque"
-                          : "Lançamento Manual"}
-                  </span>
-                </div>
-
-                {viewingTx.settlementDate &&
-                  new Date(viewingTx.settlementDate).toDateString() !==
-                    new Date(viewingTx.date).toDateString() && (
-                    <div className="flex flex-col gap-1.5 bg-amber-500/10 p-4 rounded-2xl border border-amber-500/20 col-span-2">
-                      <span className="text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
-                        <Calendar className="h-3.5 w-3.5" />
-                        Previsão de Compensação Líquida (D+X)
-                      </span>
-                      <span className="text-sm font-bold text-amber-900 dark:text-amber-200">
-                        {formatDateFull(viewingTx.settlementDate)}
-                      </span>
-                      <span className="text-xs text-amber-700/80 dark:text-amber-300/80">
-                        O lançamento foi registrado no dia da venda ({formatDateFull(viewingTx.date)}), e o crédito compensará na conta no prazo da operadora.
-                      </span>
-                    </div>
-                  )}
-
-                {viewingTx.dueDate && (
-                  <div className="flex flex-col gap-1.5 bg-muted/10 p-4 rounded-2xl border border-border/40 col-span-2">
-                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
-                      <Calendar className="h-3.5 w-3.5" />
-                      Vencimento Original e Pontualidade
-                    </span>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-1">
-                      <span className="text-sm font-bold text-foreground">
-                        {formatDateFull(viewingTx.dueDate)}
-                      </span>
-                      {(() => {
-                        const punctuality = getPaymentPunctuality(
-                          viewingTx.date,
-                          viewingTx.dueDate,
-                          viewingTx.status,
-                        );
-                        if (!punctuality) return null;
-                        return (
-                          <Badge
-                            variant="secondary"
-                            className={cn(
-                              "text-xs px-2.5 py-1 font-bold border",
-                              punctuality.className,
-                            )}
-                          >
-                            {punctuality.fullLabel}
-                          </Badge>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex flex-col gap-1.5 bg-muted/10 p-4 rounded-2xl border border-border/40 col-span-2">
-                  <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                    Forma de Pagamento
-                  </span>
-                  <span className="text-sm font-bold truncate">
-                    {viewingTx.paymentMethodName ||
-                      (viewingTx.paymentMethod &&
-                        paymentMethodMap[viewingTx.paymentMethod]) ||
-                      viewingTx.paymentMethod ||
-                      "Não informada"}
-                  </span>
-                </div>
-
-                {viewingTx.clientName && (
-                  <div className="flex flex-col gap-1.5 bg-muted/10 p-4 rounded-2xl border border-border/40 col-span-2">
-                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                      Cliente
-                    </span>
-                    <span className="text-sm font-bold truncate">
-                      {viewingTx.clientName}
-                    </span>
-                    {(viewingTx.clientCpf || viewingTx.clientPhone) && (
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-0.5">
-                        {viewingTx.clientCpf && (
-                          <span>CPF: {viewingTx.clientCpf}</span>
-                        )}
-                        {viewingTx.clientPhone && (
-                          <span>Telefone: {viewingTx.clientPhone}</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+          {viewingTx && renderTransactionDetails(viewingTx)}
         </DialogContent>
       </Dialog>
 
@@ -1476,7 +1556,9 @@ export default function TransactionsPage() {
       )}
 
       {/* Speed Dial Flutuante para Lançamento Rápido de Receita e Despesa */}
-      <FinanceSpeedDial onSuccess={refreshData} />
+      <div className={cn(viewingTx ? "hidden" : "block")}>
+        <FinanceSpeedDial onSuccess={refreshData} />
+      </div>
     </>
   );
 }
