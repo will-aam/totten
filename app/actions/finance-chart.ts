@@ -100,50 +100,124 @@ export async function getFinanceChartData(
     }
   }
 
-  // 2. Busca transações do período atual e anterior
-  const [currentTransactions, previousTransactions] = await Promise.all([
-    prisma.transaction.findMany({
-      where: {
-        organization_id: organizationId,
-        date: { gte: startDate, lte: now },
-        NOT: {
-          type: "RECEITA",
-          appointment: {
-            package_id: { not: null },
-          },
-        },
-      },
-      select: {
-        type: true,
-        status: true,
-        amount: true,
-        date: true,
-      },
-      orderBy: { date: "asc" },
-    }),
-    prisma.transaction.findMany({
-      where: {
-        organization_id: organizationId,
-        date: { gte: prevStartDate, lt: startDate },
-        type: "RECEITA",
-        status: "PAGO",
-        NOT: {
-          appointment: {
-            package_id: { not: null },
-          },
-        },
-      },
-      select: {
-        amount: true,
-        date: true,
-      },
-      orderBy: { date: "asc" },
-    }),
-  ]);
+  // 2. Agregações nativas no banco de dados (zero hydration de dezenas de milhares de transações)
+  let currentAgg: Array<{ bucket: string; type: string; total: number | null }> = [];
+  let previousAgg: Array<{ bucket: string; total: number | null }> = [];
+
+  if (timeframe === "4h" || timeframe === "1d") {
+    [currentAgg, previousAgg] = await Promise.all([
+      prisma.$queryRaw<Array<{ bucket: string; type: string; total: number | null }>>`
+        SELECT 
+          TO_CHAR(t.date AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD HH24:00') AS bucket,
+          t.type::text AS type,
+          COALESCE(SUM(t.amount), 0)::float AS total
+        FROM transactions t
+        LEFT JOIN appointments a ON t.appointment_id = a.id
+        WHERE t.organization_id = ${organizationId}
+          AND t.status = 'PAGO'
+          AND t.date >= ${startDate}
+          AND t.date <= ${now}
+          AND NOT (t.type = 'RECEITA' AND a.package_id IS NOT NULL)
+        GROUP BY bucket, t.type
+      `,
+      prisma.$queryRaw<Array<{ bucket: string; total: number | null }>>`
+        SELECT 
+          TO_CHAR(t.date AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD HH24:00') AS bucket,
+          COALESCE(SUM(t.amount), 0)::float AS total
+        FROM transactions t
+        LEFT JOIN appointments a ON t.appointment_id = a.id
+        WHERE t.organization_id = ${organizationId}
+          AND t.status = 'PAGO'
+          AND t.type = 'RECEITA'
+          AND t.date >= ${prevStartDate}
+          AND t.date < ${startDate}
+          AND NOT (a.package_id IS NOT NULL)
+        GROUP BY bucket
+      `,
+    ]);
+  } else if (timeframe === "1w" || timeframe === "1m") {
+    [currentAgg, previousAgg] = await Promise.all([
+      prisma.$queryRaw<Array<{ bucket: string; type: string; total: number | null }>>`
+        SELECT 
+          TO_CHAR(t.date AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') AS bucket,
+          t.type::text AS type,
+          COALESCE(SUM(t.amount), 0)::float AS total
+        FROM transactions t
+        LEFT JOIN appointments a ON t.appointment_id = a.id
+        WHERE t.organization_id = ${organizationId}
+          AND t.status = 'PAGO'
+          AND t.date >= ${startDate}
+          AND t.date <= ${now}
+          AND NOT (t.type = 'RECEITA' AND a.package_id IS NOT NULL)
+        GROUP BY bucket, t.type
+      `,
+      prisma.$queryRaw<Array<{ bucket: string; total: number | null }>>`
+        SELECT 
+          TO_CHAR(t.date AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') AS bucket,
+          COALESCE(SUM(t.amount), 0)::float AS total
+        FROM transactions t
+        LEFT JOIN appointments a ON t.appointment_id = a.id
+        WHERE t.organization_id = ${organizationId}
+          AND t.status = 'PAGO'
+          AND t.type = 'RECEITA'
+          AND t.date >= ${prevStartDate}
+          AND t.date < ${startDate}
+          AND NOT (a.package_id IS NOT NULL)
+        GROUP BY bucket
+      `,
+    ]);
+  } else {
+    // 1y (Ano)
+    [currentAgg, previousAgg] = await Promise.all([
+      prisma.$queryRaw<Array<{ bucket: string; type: string; total: number | null }>>`
+        SELECT 
+          TO_CHAR(t.date AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM') AS bucket,
+          t.type::text AS type,
+          COALESCE(SUM(t.amount), 0)::float AS total
+        FROM transactions t
+        LEFT JOIN appointments a ON t.appointment_id = a.id
+        WHERE t.organization_id = ${organizationId}
+          AND t.status = 'PAGO'
+          AND t.date >= ${startDate}
+          AND t.date <= ${now}
+          AND NOT (t.type = 'RECEITA' AND a.package_id IS NOT NULL)
+        GROUP BY bucket, t.type
+      `,
+      prisma.$queryRaw<Array<{ bucket: string; total: number | null }>>`
+        SELECT 
+          TO_CHAR(t.date AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM') AS bucket,
+          COALESCE(SUM(t.amount), 0)::float AS total
+        FROM transactions t
+        LEFT JOIN appointments a ON t.appointment_id = a.id
+        WHERE t.organization_id = ${organizationId}
+          AND t.status = 'PAGO'
+          AND t.type = 'RECEITA'
+          AND t.date >= ${prevStartDate}
+          AND t.date < ${startDate}
+          AND NOT (a.package_id IS NOT NULL)
+        GROUP BY bucket
+      `,
+    ]);
+  }
+
+  // Mapear os resultados agregados em Maps rápidos para O(1) lookup
+  const currentMap = new Map<string, { revenue: number; expenses: number }>();
+  currentAgg.forEach((row) => {
+    const existing = currentMap.get(row.bucket) || { revenue: 0, expenses: 0 };
+    const val = Number(row.total || 0);
+    if (row.type === "RECEITA") existing.revenue += val;
+    if (row.type === "DESPESA") existing.expenses += val;
+    currentMap.set(row.bucket, existing);
+  });
+
+  const prevMap = new Map<string, number>();
+  previousAgg.forEach((row) => {
+    prevMap.set(row.bucket, (prevMap.get(row.bucket) || 0) + Number(row.total || 0));
+  });
 
   const monthNames = [
     "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
-    "Jul", "Ago", "Set", "Out", "Nov", "Dez"
+    "Jul", "Ago", "Set", "Out", "Nov", "Dez",
   ];
 
   type PointDraft = {
@@ -159,109 +233,95 @@ export async function getFinanceChartData(
 
   if (timeframe === "4h" || timeframe === "1d") {
     const hoursCount = timeframe === "4h" ? 4 : 24;
+    const shiftMs = (timeframe === "4h" ? 4 : 24) * 60 * 60 * 1000;
+
     for (let i = hoursCount; i >= 0; i--) {
       const d = new Date(now.getTime() - i * 60 * 60 * 1000);
       const label = `${String(d.getHours()).padStart(2, "0")}:00`;
+      const p = getBrasiliaDateParts(d);
+      const bucketKey = `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")} ${label}`;
+
+      const prevD = new Date(d.getTime() - shiftMs);
+      const prevP = getBrasiliaDateParts(prevD);
+      const prevLabel = `${String(prevD.getHours()).padStart(2, "0")}:00`;
+      const prevBucketKey = `${prevP.year}-${String(prevP.month).padStart(2, "0")}-${String(prevP.day).padStart(2, "0")} ${prevLabel}`;
+
+      const currentVals = currentMap.get(bucketKey) || { revenue: 0, expenses: 0 };
+      const prevRevenue = prevMap.get(prevBucketKey) || 0;
+
       pointsList.push({
         label,
         fullDate: `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")} às ${label}`,
-        revenue: 0,
-        previousRevenue: 0,
-        expenses: 0,
+        revenue: currentVals.revenue,
+        previousRevenue: prevRevenue,
+        expenses: currentVals.expenses,
       });
     }
-
-    currentTransactions.forEach((tx) => {
-      if (tx.status !== "PAGO") return;
-      const txTime = new Date(tx.date).getTime();
-      const diffHours = Math.floor((now.getTime() - txTime) / (60 * 60 * 1000));
-      const idx = pointsList.length - 1 - diffHours;
-      if (idx >= 0 && idx < pointsList.length) {
-        if (tx.type === "RECEITA") pointsList[idx].revenue += Number(tx.amount);
-        if (tx.type === "DESPESA") pointsList[idx].expenses += Number(tx.amount);
-      }
-    });
-
-    // Mapear transações do período anterior (deslocado em 24h ou 4h)
-    const shiftMs = (timeframe === "4h" ? 4 : 24) * 60 * 60 * 1000;
-    previousTransactions.forEach((tx) => {
-      const txTime = new Date(tx.date).getTime() + shiftMs;
-      const diffHours = Math.floor((now.getTime() - txTime) / (60 * 60 * 1000));
-      const idx = pointsList.length - 1 - diffHours;
-      if (idx >= 0 && idx < pointsList.length) {
-        pointsList[idx].previousRevenue += Number(tx.amount);
-      }
-    });
   } else if (timeframe === "1w") {
     const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+    const shiftMs = 7 * 24 * 60 * 60 * 1000;
+
     for (let i = 6; i >= 0; i--) {
       const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
       const label = `${dayNames[d.getDay()]} (${String(d.getDate()).padStart(2, "0")})`;
+      const p = getBrasiliaDateParts(d);
+      const bucketKey = `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`;
+
+      const prevD = new Date(d.getTime() - shiftMs);
+      const prevP = getBrasiliaDateParts(prevD);
+      const prevBucketKey = `${prevP.year}-${String(prevP.month).padStart(2, "0")}-${String(prevP.day).padStart(2, "0")}`;
+
+      const currentVals = currentMap.get(bucketKey) || { revenue: 0, expenses: 0 };
+      const prevRevenue = prevMap.get(prevBucketKey) || 0;
+
       pointsList.push({
         label,
         fullDate: `${String(d.getDate()).padStart(2, "0")} de ${monthNames[d.getMonth()]}`,
-        revenue: 0,
-        previousRevenue: 0,
-        expenses: 0,
+        revenue: currentVals.revenue,
+        previousRevenue: prevRevenue,
+        expenses: currentVals.expenses,
       });
     }
-
-    currentTransactions.forEach((tx) => {
-      if (tx.status !== "PAGO") return;
-      const txTime = new Date(tx.date).getTime();
-      const diffDays = Math.floor((now.getTime() - txTime) / (24 * 60 * 60 * 1000));
-      const idx = pointsList.length - 1 - diffDays;
-      if (idx >= 0 && idx < pointsList.length) {
-        if (tx.type === "RECEITA") pointsList[idx].revenue += Number(tx.amount);
-        if (tx.type === "DESPESA") pointsList[idx].expenses += Number(tx.amount);
-      }
-    });
-
-    const shiftMs = 7 * 24 * 60 * 60 * 1000;
-    previousTransactions.forEach((tx) => {
-      const txTime = new Date(tx.date).getTime() + shiftMs;
-      const diffDays = Math.floor((now.getTime() - txTime) / (24 * 60 * 60 * 1000));
-      const idx = pointsList.length - 1 - diffDays;
-      if (idx >= 0 && idx < pointsList.length) {
-        pointsList[idx].previousRevenue += Number(tx.amount);
-      }
-    });
   } else if (timeframe === "1m") {
     // 30 dias em 6 blocos de 5 dias
+    const shiftMs = 30 * 24 * 60 * 60 * 1000;
+
     for (let i = 5; i >= 0; i--) {
       const dayOffsetEnd = i * 5;
       const dEnd = new Date(now.getTime() - dayOffsetEnd * 24 * 60 * 60 * 1000);
       const dStart = new Date(dEnd.getTime() - 4 * 24 * 60 * 60 * 1000);
       const label = `${String(dStart.getDate()).padStart(2, "0")}-${String(dEnd.getDate()).padStart(2, "0")} ${monthNames[dEnd.getMonth()]}`;
+
+      let blockRevenue = 0;
+      let blockExpenses = 0;
+      let blockPrevRevenue = 0;
+
+      // Soma os 5 dias do bloco
+      for (let dayStep = 0; dayStep < 5; dayStep++) {
+        const curDay = new Date(dStart.getTime() + dayStep * 24 * 60 * 60 * 1000);
+        const curParts = getBrasiliaDateParts(curDay);
+        const curKey = `${curParts.year}-${String(curParts.month).padStart(2, "0")}-${String(curParts.day).padStart(2, "0")}`;
+
+        const vals = currentMap.get(curKey);
+        if (vals) {
+          blockRevenue += vals.revenue;
+          blockExpenses += vals.expenses;
+        }
+
+        const prevDay = new Date(curDay.getTime() - shiftMs);
+        const prevParts = getBrasiliaDateParts(prevDay);
+        const prevKey = `${prevParts.year}-${String(prevParts.month).padStart(2, "0")}-${String(prevParts.day).padStart(2, "0")}`;
+        blockPrevRevenue += prevMap.get(prevKey) || 0;
+      }
+
       pointsList.push({
         label,
         fullDate: `De ${String(dStart.getDate()).padStart(2, "0")} a ${String(dEnd.getDate()).padStart(2, "0")} de ${monthNames[dEnd.getMonth()]}`,
-        revenue: 0,
-        previousRevenue: 0,
-        expenses: 0,
+        revenue: blockRevenue,
+        previousRevenue: blockPrevRevenue,
+        expenses: blockExpenses,
       });
     }
-
-    currentTransactions.forEach((tx) => {
-      if (tx.status !== "PAGO") return;
-      const txTime = new Date(tx.date).getTime();
-      const diffDays = Math.floor((now.getTime() - txTime) / (24 * 60 * 60 * 1000));
-      const blockIndex = Math.min(5, Math.max(0, 5 - Math.floor(diffDays / 5)));
-      if (pointsList[blockIndex]) {
-        if (tx.type === "RECEITA") pointsList[blockIndex].revenue += Number(tx.amount);
-        if (tx.type === "DESPESA") pointsList[blockIndex].expenses += Number(tx.amount);
-      }
-    });
-
-    const shiftMs = 30 * 24 * 60 * 60 * 1000;
-    previousTransactions.forEach((tx) => {
-      const txTime = new Date(tx.date).getTime() + shiftMs;
-      const diffDays = Math.floor((now.getTime() - txTime) / (24 * 60 * 60 * 1000));
-      const blockIndex = Math.min(5, Math.max(0, 5 - Math.floor(diffDays / 5)));
-      if (pointsList[blockIndex]) {
-        pointsList[blockIndex].previousRevenue += Number(tx.amount);
-      }
-    });
   } else {
     // 1 Ano: 12 meses no fuso oficial de Brasília (America/Sao_Paulo)
     for (let i = 11; i >= 0; i--) {
@@ -272,41 +332,21 @@ export async function getFinanceChartData(
         y -= 1;
       }
       const label = monthNames[m - 1];
+      const curKey = `${y}-${String(m).padStart(2, "0")}`;
+      const prevKey = `${y - 1}-${String(m).padStart(2, "0")}`;
+
+      const currentVals = currentMap.get(curKey) || { revenue: 0, expenses: 0 };
+      const prevRevenue = prevMap.get(prevKey) || 0;
+
       pointsList.push({
         label,
         fullDate: `${monthNames[m - 1]} de ${y}`,
         monthIndex: m - 1,
-        revenue: 0,
-        previousRevenue: 0,
-        expenses: 0,
+        revenue: currentVals.revenue,
+        previousRevenue: prevRevenue,
+        expenses: currentVals.expenses,
       });
     }
-
-    currentTransactions.forEach((tx) => {
-      if (tx.status !== "PAGO") return;
-      const txParts = getBrasiliaDateParts(tx.date);
-      // Mapear pelo mês e ano de Brasília
-      const diffMonths =
-        (nowParts.year - txParts.year) * 12 + (nowParts.month - txParts.month);
-      const idx = 11 - diffMonths;
-      if (idx >= 0 && idx < pointsList.length) {
-        if (tx.type === "RECEITA") pointsList[idx].revenue += Number(tx.amount);
-        if (tx.type === "DESPESA") pointsList[idx].expenses += Number(tx.amount);
-      }
-    });
-
-    previousTransactions.forEach((tx) => {
-      const txParts = getBrasiliaDateParts(tx.date);
-      // O ano anterior é deslocado em 12 meses no fuso de Brasília
-      const diffMonths =
-        (nowParts.year - txParts.year) * 12 +
-        (nowParts.month - txParts.month) -
-        12;
-      const idx = 11 - diffMonths;
-      if (idx >= 0 && idx < pointsList.length) {
-        pointsList[idx].previousRevenue += Number(tx.amount);
-      }
-    });
   }
 
   const points: FinanceChartPoint[] = pointsList.map((p) => ({
@@ -319,20 +359,23 @@ export async function getFinanceChartData(
     balance: Math.round((p.revenue - p.expenses) * 100) / 100,
   }));
 
-  // Totais
+  // Totais agregados calculados a partir dos blocos pré-somados
   let totalRevenue = 0;
   let totalExpenses = 0;
-  currentTransactions.forEach((tx) => {
-    if (tx.status === "PAGO") {
-      if (tx.type === "RECEITA") totalRevenue += Number(tx.amount);
-      if (tx.type === "DESPESA") totalExpenses += Number(tx.amount);
-    }
+  currentAgg.forEach((row) => {
+    const val = Number(row.total || 0);
+    if (row.type === "RECEITA") totalRevenue += val;
+    if (row.type === "DESPESA") totalExpenses += val;
   });
 
-  const previousRevenue = previousTransactions.reduce(
-    (acc, curr) => acc + Number(curr.amount),
-    0,
-  );
+  let previousRevenue = 0;
+  previousAgg.forEach((row) => {
+    previousRevenue += Number(row.total || 0);
+  });
+
+  totalRevenue = Math.round(totalRevenue * 100) / 100;
+  totalExpenses = Math.round(totalExpenses * 100) / 100;
+  previousRevenue = Math.round(previousRevenue * 100) / 100;
 
   const absoluteChange = totalRevenue - previousRevenue;
   const percentChange =
@@ -342,17 +385,6 @@ export async function getFinanceChartData(
         ? 100
         : 0;
   const isPositive = absoluteChange >= 0;
-
-  // Cálculo de destaque
-  const midIndex = Math.floor(points.length / 2);
-  const endIndex = points.length - 1;
-  const highlightVal1 = points[midIndex]?.revenue || 0;
-  const highlightVal2 = points[endIndex]?.revenue || 0;
-  const highlightDiff = highlightVal2 - highlightVal1;
-  const highlightLabel =
-    points[midIndex] && points[endIndex]
-      ? `${points[midIndex].date} → ${points[endIndex].date}`
-      : "Variação recente";
 
   return {
     companyName,

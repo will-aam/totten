@@ -56,14 +56,14 @@ export default async function AutoDashboardPage() {
         status: { in: [AppointmentStatus.CONFIRMADO, AppointmentStatus.REALIZADO] },
       },
     }),
-    // Agendamentos pagos com Pix Mercado Pago neste mês
-    prisma.appointment.findMany({
+    // Agendamentos pagos com Pix Mercado Pago neste mês (Agregação nativa)
+    prisma.appointment.aggregate({
       where: {
         organization_id: admin.organizationId,
         created_at: { gte: startOfMonth },
         mp_payment_status: "approved",
       },
-      select: {
+      _sum: {
         snapshot_service_price: true,
       },
     }),
@@ -93,10 +93,8 @@ export default async function AutoDashboardPage() {
     }),
   ]);
 
-  const totalPixDepositsMonth = paidPixAppointments.reduce((acc: number, appt: { snapshot_service_price: any }) => {
-    const price = Number(appt.snapshot_service_price || 0);
-    return acc + (price / 2);
-  }, 0);
+  const totalPixDepositsMonth =
+    Number(paidPixAppointments._sum.snapshot_service_price || 0) / 2;
 
   const conversionRate = totalSelfService > 0
     ? Math.round((approvedSelfService / totalSelfService) * 100)

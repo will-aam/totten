@@ -107,10 +107,18 @@ export class TotemCheckInService {
             total: appt.package.total_sessions,
           };
 
-          await tx.appointment.update({
-            where: { id: appt.id, organization_id: organizationId },
+          const apptUpdate = await tx.appointment.updateMany({
+            where: {
+              id: appt.id,
+              organization_id: organizationId,
+              status: { not: "REALIZADO" },
+            },
             data: { status: "REALIZADO", has_charge: false },
           });
+
+          if (apptUpdate.count === 0) {
+            throw new Error("AGENDAMENTO_JA_PROCESSADO");
+          }
         } else {
           // Fluxo para agendamento avulso (sem pacote)
           let paymentMethodEnum: any = null;
@@ -152,14 +160,22 @@ export class TotemCheckInService {
           const apptPrice = Number(appt.snapshot_service_price ?? appt.service.price);
           const remainingAmount = Math.max(0, Number((apptPrice - totalPaid).toFixed(2)));
 
-          await tx.appointment.update({
-            where: { id: appt.id, organization_id: organizationId },
+          const apptUpdate = await tx.appointment.updateMany({
+            where: {
+              id: appt.id,
+              organization_id: organizationId,
+              status: { not: "REALIZADO" },
+            },
             data: {
               status: "REALIZADO",
               has_charge: remainingAmount > 0.01 && !autoSettle,
               payment_method: paymentMethodEnum || appt.payment_method,
             },
           });
+
+          if (apptUpdate.count === 0) {
+            throw new Error("AGENDAMENTO_JA_PROCESSADO");
+          }
 
           // Se autoSettle estiver ativo e ainda houver saldo a quitar, gera a RECEITA do saldo restante
           if (autoSettle && remainingAmount > 0.01) {

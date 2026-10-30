@@ -26,62 +26,99 @@ export async function getReportsData() {
       startMonth,
     );
 
-    const appointments = await prisma.appointment.findMany({
-      where: {
-        organization_id: organizationId,
-        status: "REALIZADO",
-        date_time: { gte: sixMonthsAgo },
-      },
-      include: {
-        service: true,
-        package: true,
-        transactions: true,
-      },
-    });
+    // 1. Agregações nativas no PostgreSQL em paralelo (Zero Hydration de milhares de objetos)
+    const [monthlyTxAgg, monthlyApptsAgg, topServicesRaw, serviceSessionsRaw] =
+      await Promise.all([
+        // Receitas e Despesas agrupadas por mês nos últimos 6 meses
+        prisma.$queryRaw<
+          Array<{
+            month_key: string;
+            type: string;
+            total: number | null;
+          }>
+        >`
+          SELECT 
+            TO_CHAR(t.date AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM') AS month_key,
+            t.type::text AS type,
+            COALESCE(SUM(t.amount), 0)::float AS total
+          FROM transactions t
+          LEFT JOIN appointments a ON t.appointment_id = a.id
+          WHERE t.organization_id = ${organizationId}
+            AND t.status = 'PAGO'
+            AND t.date >= ${sixMonthsAgo}
+            AND NOT (t.type = 'RECEITA' AND a.package_id IS NOT NULL)
+          GROUP BY month_key, t.type
+        `,
 
-    const paidTransactions = await prisma.transaction.findMany({
-      where: {
-        organization_id: organizationId,
-        status: "PAGO",
-        date: { gte: sixMonthsAgo },
-        NOT: {
-          type: "RECEITA",
-          appointment: {
-            package_id: { not: null },
-          },
-        },
-      },
-      include: {
-        appointment: {
-          select: {
-            snapshot_service_name: true,
-            service: { select: { name: true } },
-          },
-        },
-        package: {
-          select: {
-            snapshot_service_name: true,
-            name: true,
-            service: { select: { name: true } },
-          },
-        },
-      },
-    });
+        // Agendamentos realizados agrupados por mês nos últimos 6 meses
+        prisma.$queryRaw<
+          Array<{
+            month_key: string;
+            count: number;
+          }>
+        >`
+          SELECT 
+            TO_CHAR(date_time AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM') AS month_key,
+            COUNT(id)::int AS count
+          FROM appointments
+          WHERE organization_id = ${organizationId}
+            AND status = 'REALIZADO'
+            AND date_time >= ${sixMonthsAgo}
+          GROUP BY month_key
+        `,
 
-    const monthlyDataMap = new Map();
+        // Faturamento por serviço/pacote pago no período
+        prisma.$queryRaw<
+          Array<{
+            name: string;
+            faturamento: number | null;
+          }>
+        >`
+          SELECT 
+            COALESCE(a.snapshot_service_name, s.name, p.snapshot_service_name, p.name, t.description, 'Outros Serviços') AS name,
+            COALESCE(SUM(t.amount), 0)::float AS faturamento
+          FROM transactions t
+          LEFT JOIN appointments a ON t.appointment_id = a.id
+          LEFT JOIN services s ON a.service_id = s.id
+          LEFT JOIN packages p ON t.package_id = p.id
+          WHERE t.organization_id = ${organizationId}
+            AND t.status = 'PAGO'
+            AND t.type = 'RECEITA'
+            AND t.date >= ${sixMonthsAgo}
+            AND NOT (a.package_id IS NOT NULL)
+          GROUP BY name
+          ORDER BY faturamento DESC
+          LIMIT 15
+        `,
+
+        // Sessões realizadas agrupadas por serviço
+        prisma.$queryRaw<
+          Array<{
+            name: string;
+            sessoes: number;
+          }>
+        >`
+          SELECT 
+            COALESCE(a.snapshot_service_name, s.name, 'Serviço') AS name,
+            COUNT(a.id)::int AS sessoes
+          FROM appointments a
+          LEFT JOIN services s ON a.service_id = s.id
+          WHERE a.organization_id = ${organizationId}
+            AND a.status = 'REALIZADO'
+            AND a.date_time >= ${sixMonthsAgo}
+          GROUP BY name
+        `,
+      ]);
+
+    // Monta o mapa dos 6 meses
+    const monthlyDataMap = new Map<
+      string,
+      { month: string; receitas: number; despesas: number; agendamentos: number }
+    >();
+
     const monthNames = [
-      "Jan",
-      "Fev",
-      "Mar",
-      "Abr",
-      "Mai",
-      "Jun",
-      "Jul",
-      "Ago",
-      "Set",
-      "Out",
-      "Nov",
-      "Dez",
+      "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+      "Jul", "Ago", "Set", "Out", "Nov", "Dez",
     ];
 
     for (let i = 5; i >= 0; i--) {
@@ -91,9 +128,8 @@ export async function getReportsData() {
         m += 12;
         y -= 1;
       }
-      const key = `${y}-${m}`;
+      const key = `${y}-${String(m).padStart(2, "0")}`;
       const label = `${monthNames[m - 1]}/${String(y).slice(-2)}`;
-      //  Adicionamos 'agendamentos' aqui para o novo gráfico de desempenho
       monthlyDataMap.set(key, {
         month: label,
         receitas: 0,
@@ -102,86 +138,40 @@ export async function getReportsData() {
       });
     }
 
-    // Mapa de sessões/atendimentos realizados por serviço
-    const serviceSessionsMap = new Map<string, number>();
-
-    appointments.forEach((a) => {
-      const p = getBrasiliaDateParts(a.date_time);
-      const key = `${p.year}-${p.month}`;
-      if (monthlyDataMap.has(key)) {
-        const entry = monthlyDataMap.get(key);
-        entry.agendamentos += 1; // Conta 1 agendamento realizado
-      }
-
-      const sName = a.snapshot_service_name || a.service?.name || "Serviço";
-      serviceSessionsMap.set(sName, (serviceSessionsMap.get(sName) || 0) + 1);
-    });
-
-    paidTransactions.forEach((t) => {
-      const p = getBrasiliaDateParts(t.date);
-      const key = `${p.year}-${p.month}`;
-      if (monthlyDataMap.has(key)) {
-        const entry = monthlyDataMap.get(key);
-        if (t.type === "RECEITA") entry.receitas += Number(t.amount);
-        if (t.type === "DESPESA") entry.despesas += Number(t.amount);
+    // Preenche receitas e despesas
+    monthlyTxAgg.forEach((row) => {
+      if (monthlyDataMap.has(row.month_key)) {
+        const entry = monthlyDataMap.get(row.month_key)!;
+        const total = Number(row.total || 0);
+        if (row.type === "RECEITA") entry.receitas += total;
+        if (row.type === "DESPESA") entry.despesas += total;
       }
     });
 
-    // REGIME DE CAIXA UNIFICADO:
-    // O faturamento do Top Serviços utiliza as transações de receitas reais pagas no período,
-    // garantindo total coerência contábil com o gráfico mensal e extratos financeiros.
-    const serviceMap = new Map<
-      string,
-      { name: string; faturamento: number; sessoes: number }
-    >();
-
-    // Inicializa com as sessões realizadas de cada serviço
-    serviceSessionsMap.forEach((sessoes, sName) => {
-      serviceMap.set(sName, { name: sName, faturamento: 0, sessoes });
+    // Preenche agendamentos
+    monthlyApptsAgg.forEach((row) => {
+      if (monthlyDataMap.has(row.month_key)) {
+        const entry = monthlyDataMap.get(row.month_key)!;
+        entry.agendamentos += Number(row.count || 0);
+      }
     });
 
-    // Computa as receitas pagas que deram entrada no caixa
-    paidTransactions.forEach((t) => {
-      if (t.type !== "RECEITA") return;
-      const amount = Number(t.amount);
-      if (amount <= 0) return;
-
-      let serviceName = "Outros Serviços";
-
-      if (t.appointment) {
-        serviceName =
-          t.appointment.snapshot_service_name ||
-          t.appointment.service?.name ||
-          "Serviço Avulso";
-      } else if (t.package) {
-        serviceName =
-          t.package.snapshot_service_name ||
-          t.package.service?.name ||
-          t.package.name ||
-          "Pacote de Serviço";
-      } else if (t.description) {
-        serviceName = t.description;
-      }
-
-      if (!serviceMap.has(serviceName)) {
-        serviceMap.set(serviceName, {
-          name: serviceName,
-          faturamento: 0,
-          sessoes: 0,
-        });
-      }
-
-      const sData = serviceMap.get(serviceName)!;
-      sData.faturamento += amount;
+    // Sessões por serviço
+    const sessionsMap = new Map<string, number>();
+    serviceSessionsRaw.forEach((row) => {
+      sessionsMap.set(row.name, Number(row.sessoes || 0));
     });
 
-    const topServices = Array.from(serviceMap.values())
-      .map((s) => ({
-        ...s,
-        faturamento: Number(s.faturamento.toFixed(2)),
-      }))
-      .sort((a, b) => b.faturamento - a.faturamento)
-      .slice(0, 10); // Pegamos os Top 10 agora
+    // Top Serviços
+    const topServices = topServicesRaw.slice(0, 10).map((row) => {
+      const faturamento = Number(Number(row.faturamento || 0).toFixed(2));
+      const sessoes = sessionsMap.get(row.name) || 0;
+      return {
+        name: row.name,
+        faturamento,
+        sessoes,
+      };
+    });
 
     return {
       success: true,
@@ -194,40 +184,45 @@ export async function getReportsData() {
   }
 }
 
-// Busca os anos e meses que realmente possuem dados financeiros (transações ou atendimentos)
+// Busca os anos e meses que realmente possuem dados financeiros com agregação DISTINCT no Postgres
 export async function getClosingReportAvailablePeriods() {
   try {
     const admin = await requireFinancePermission();
     const organizationId = admin.organizationId;
 
-    const [transactions, appointments] = await Promise.all([
-      prisma.transaction.findMany({
-        where: { organization_id: organizationId },
-        select: { date: true },
-      }),
-      prisma.appointment.findMany({
-        where: {
-          organization_id: organizationId,
-          status: "REALIZADO",
-        },
-        select: { date_time: true },
-      }),
-    ]);
+    // Busca apenas os pares únicos (ano, mês) no Postgres sem transferir todas as linhas históricas
+    const distinctPeriodsRaw = await prisma.$queryRaw<
+      Array<{
+        year: number;
+        month: number;
+      }>
+    >`
+      SELECT DISTINCT 
+        EXTRACT(YEAR FROM date AT TIME ZONE 'America/Sao_Paulo')::int AS year,
+        EXTRACT(MONTH FROM date AT TIME ZONE 'America/Sao_Paulo')::int AS month
+      FROM transactions
+      WHERE organization_id = ${organizationId}
+      UNION
+      SELECT DISTINCT 
+        EXTRACT(YEAR FROM date_time AT TIME ZONE 'America/Sao_Paulo')::int AS year,
+        EXTRACT(MONTH FROM date_time AT TIME ZONE 'America/Sao_Paulo')::int AS month
+      FROM appointments
+      WHERE organization_id = ${organizationId}
+        AND status = 'REALIZADO'
+      ORDER BY year DESC, month ASC
+    `;
 
-    // Mapeia ano -> Set de meses
-    // REGRA DE FECHAMENTO: Apenas meses que já fecharam (anteriores ao mês atual no fuso de Brasília)
     const nowParts = getBrasiliaDateParts();
     const currentYear = nowParts.year;
     const currentMonth = nowParts.month; // 1 a 12
 
     const periodsMap = new Map<number, Set<number>>();
 
-    const addPeriod = (dateInput: Date | string) => {
-      const p = getBrasiliaDateParts(dateInput);
-      const year = p.year;
-      const month = p.month; // 1 a 12
+    distinctPeriodsRaw.forEach((row) => {
+      const year = Number(row.year);
+      const month = Number(row.month);
 
-      // Ignora datas futuras ou do mês atual que ainda está em andamento
+      // Apenas meses que já fecharam (anteriores ao mês atual no fuso de Brasília)
       if (year > currentYear || (year === currentYear && month >= currentMonth)) {
         return;
       }
@@ -236,10 +231,7 @@ export async function getClosingReportAvailablePeriods() {
         periodsMap.set(year, new Set<number>());
       }
       periodsMap.get(year)!.add(month);
-    };
-
-    transactions.forEach((t) => addPeriod(t.date));
-    appointments.forEach((a) => addPeriod(a.date_time));
+    });
 
     // Se ainda não houver nenhum mês fechado com dados históricos, sugere o mês anterior imediato como padrão
     if (periodsMap.size === 0) {
@@ -285,7 +277,7 @@ export async function getClosingReportAvailablePeriods() {
   }
 }
 
-// Envia relatório de fechamento por e-mail
+// Envia relatório de fechamento por e-mail com cálculos consolidados no Postgres
 export async function sendMonthlyReport(
   month: number,
   year: number,
@@ -295,61 +287,51 @@ export async function sendMonthlyReport(
     const admin = await requireFinancePermission();
     const organizationId = admin.organizationId;
 
-    // Pega o início e o fim exato do mês selecionado no fuso de Brasília
+    // Início e fim exato do mês selecionado no fuso de Brasília
     const { monthStart, monthEnd } = getBrasiliaMonthRange(year, month);
 
-    const appointments = await prisma.appointment.findMany({
-      where: {
-        organization_id: organizationId,
-        status: "REALIZADO",
-        date_time: { gte: monthStart, lte: monthEnd },
-      },
-      include: { service: true, transactions: true },
-    });
-
-    const transactions = await prisma.transaction.findMany({
-      where: {
-        organization_id: organizationId,
-        status: "PAGO",
-        date: { gte: monthStart, lte: monthEnd },
-        NOT: {
-          type: "RECEITA",
-          appointment: {
-            package_id: { not: null },
+    // Contagem de agendamentos e agrupamento nativo de receitas e despesas
+    const [apptCount, txTotals] = await Promise.all([
+      prisma.appointment.count({
+        where: {
+          organization_id: organizationId,
+          status: "REALIZADO",
+          date_time: { gte: monthStart, lte: monthEnd },
+        },
+      }),
+      prisma.transaction.groupBy({
+        by: ["type"],
+        where: {
+          organization_id: organizationId,
+          status: "PAGO",
+          date: { gte: monthStart, lte: monthEnd },
+          NOT: {
+            type: "RECEITA",
+            appointment: {
+              package_id: { not: null },
+            },
           },
         },
-      },
-    });
+        _sum: { amount: true },
+      }),
+    ]);
 
-    // Calcula os totais do mês exato
-    let receitas = 0;
-    let despesas = 0;
-    const agendamentos = appointments.length;
-
-    // Transações registradas no caixa (Fonte da Verdade)
-    transactions.forEach((t) => {
-      if (t.type === "RECEITA") receitas += Number(t.amount);
-      if (t.type === "DESPESA") despesas += Number(t.amount);
-    });
-
+    const receitas = Number(
+      txTotals.find((t) => t.type === "RECEITA")?._sum.amount || 0,
+    );
+    const despesas = Number(
+      txTotals.find((t) => t.type === "DESPESA")?._sum.amount || 0,
+    );
     const saldo = receitas - despesas;
+    const agendamentos = apptCount;
+
     const monthNames = [
-      "Janeiro",
-      "Fevereiro",
-      "Março",
-      "Abril",
-      "Maio",
-      "Junho",
-      "Julho",
-      "Agosto",
-      "Setembro",
-      "Outubro",
-      "Novembro",
-      "Dezembro",
+      "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+      "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
     ];
     const monthStr = monthNames[month - 1];
 
-    // Dispara o e-mail usando o Resend!
+    // Dispara o e-mail usando o Resend
     const res = await sendClosingReportEmail(emailTo, monthStr, String(year), {
       receitas,
       despesas,

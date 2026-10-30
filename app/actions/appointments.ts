@@ -565,15 +565,37 @@ export async function updateAppointment(
           }
         }
       } else {
-        await tx.appointment.update({
-          where: { id, organization_id: admin.organizationId },
-          data: {
-            status: finalStatus,
-            observations: data.observations,
-            payment_method: finalPaymentMethod,
-            has_charge: finalHasCharge,
-          },
-        });
+        if (isMarkingAsDone) {
+          const updateResult = await tx.appointment.updateMany({
+            where: {
+              id,
+              organization_id: admin.organizationId,
+              status: { not: AppointmentStatus.REALIZADO },
+            },
+            data: {
+              status: finalStatus,
+              observations: data.observations,
+              payment_method: finalPaymentMethod,
+              has_charge: finalHasCharge,
+            },
+          });
+
+          if (updateResult.count === 0) {
+            throw new Error(
+              "Este agendamento já foi finalizado simultaneamente (por outro usuário ou no totem).",
+            );
+          }
+        } else {
+          await tx.appointment.update({
+            where: { id, organization_id: admin.organizationId },
+            data: {
+              status: finalStatus,
+              observations: data.observations,
+              payment_method: finalPaymentMethod,
+              has_charge: finalHasCharge,
+            },
+          });
+        }
 
         if (isMarkingAsDone && currentAppt.package_id && currentAppt.package) {
           // Trava atômica condicional no banco contra concorrência e race condition (evita > total_sessions)
@@ -703,12 +725,15 @@ export async function updateAppointment(
                 Number(usedQty) * Number(stockData.unit_cost);
 
               if (costOfUsedQty > 0) {
+                const now = new Date();
                 const expTx = await tx.transaction.create({
                   data: {
                     type: "DESPESA",
                     description: `Custo de Insumo: ${stockData.name}`,
                     amount: costOfUsedQty,
-                    date: new Date(),
+                    date: now,
+                    due_date: now,
+                    settlement_date: now,
                     status: "PAGO",
                     organization_id: admin.organizationId,
                     appointment_id: currentAppt.id,
@@ -723,12 +748,15 @@ export async function updateAppointment(
           service.material_cost &&
           Number(service.material_cost) > 0
         ) {
+          const now = new Date();
           const expTx = await tx.transaction.create({
             data: {
               type: "DESPESA",
               description: `Custo de Material: ${service.name}`,
               amount: service.material_cost,
-              date: new Date(),
+              date: now,
+              due_date: now,
+              settlement_date: now,
               status: "PAGO",
               organization_id: admin.organizationId,
               appointment_id: currentAppt.id,

@@ -32,52 +32,112 @@ export async function getPackagesDashboardData(params?: {
     const isEndingSoonFilter = params?.search === "...";
     const isExpiringFilter = params?.search === "expiring";
 
-    if (params?.search && !isEndingSoonFilter && !isExpiringFilter) {
-      const searchLower = params.search.toLowerCase();
-      baseWhere.OR = [
-        { client: { name: { contains: searchLower, mode: "insensitive" } } },
-        { service: { name: { contains: searchLower, mode: "insensitive" } } },
-      ];
-    }
-
-    const allActivePackages = await prisma.package.findMany({
-      where: { organization_id: admin.organizationId, active: true },
-      include: {
-        client: { select: { name: true } },
-        service: { select: { name: true } },
-        package_template: { select: { name: true, validity_days: true } }, // <--- ADICIONE ESTA LINHA
-      },
-      orderBy: { created_at: "desc" },
-    });
-
-    let filteredPackages = allActivePackages;
+    let totalPackages = 0;
+    let paginatedPackages: any[] = [];
 
     if (isEndingSoonFilter) {
-      filteredPackages = allActivePackages.filter(
-        (p) =>
-          p.used_sessions >= p.total_sessions - 2 &&
-          p.used_sessions < p.total_sessions,
-      );
-    } else if (isExpiringFilter) {
-      const now = new Date();
-      const in7Days = new Date();
-      in7Days.setDate(now.getDate() + 7);
-      
-      filteredPackages = allActivePackages.filter((p) => {
-        if (!p.expires_at) return false;
-        return p.expires_at > now && p.expires_at <= in7Days;
-      });
-    } else if (params?.search) {
-      const searchLower = params.search.toLowerCase();
-      filteredPackages = allActivePackages.filter(
-        (p) =>
-          p.client.name.toLowerCase().includes(searchLower) ||
-          p.service.name.toLowerCase().includes(searchLower),
-      );
+      const matchingIdsRaw = await prisma.$queryRaw<Array<{ id: string }>>`
+        SELECT id FROM packages
+        WHERE organization_id = ${admin.organizationId}
+          AND active = true
+          AND used_sessions >= total_sessions - 2
+          AND used_sessions < total_sessions
+        ORDER BY created_at DESC
+      `;
+      totalPackages = matchingIdsRaw.length;
+      const pagedIds = matchingIdsRaw.slice(skip, skip + limit).map((r) => r.id);
+
+      paginatedPackages =
+        pagedIds.length > 0
+          ? await prisma.package.findMany({
+              where: { id: { in: pagedIds } },
+              include: {
+                client: { select: { name: true } },
+                service: { select: { name: true } },
+                package_template: { select: { name: true, validity_days: true } },
+              },
+              orderBy: { created_at: "desc" },
+            })
+          : [];
+    } else {
+      const where: any = {
+        organization_id: admin.organizationId,
+        active: true,
+      };
+
+      if (isExpiringFilter) {
+        const now = new Date();
+        const in7Days = new Date();
+        in7Days.setDate(now.getDate() + 7);
+        where.expires_at = {
+          gt: now,
+          lte: in7Days,
+        };
+      } else if (params?.search) {
+        const searchLower = params.search.toLowerCase();
+        where.OR = [
+          { client: { name: { contains: searchLower, mode: "insensitive" } } },
+          { service: { name: { contains: searchLower, mode: "insensitive" } } },
+        ];
+      }
+
+      const [count, items] = await Promise.all([
+        prisma.package.count({ where }),
+        prisma.package.findMany({
+          where,
+          include: {
+            client: { select: { name: true } },
+            service: { select: { name: true } },
+            package_template: { select: { name: true, validity_days: true } },
+          },
+          orderBy: { created_at: "desc" },
+          skip,
+          take: limit,
+        }),
+      ]);
+
+      totalPackages = count;
+      paginatedPackages = items;
     }
 
-    const totalPackages = filteredPackages.length;
-    const paginatedPackages = filteredPackages.slice(skip, skip + limit);
+    // KPIs calculados nativamente no Postgres
+    const [kpiActive, kpiEndingSoonRaw, kpiExpiringSoon, kpiTotalPendingRaw] =
+      await Promise.all([
+        prisma.package.count({
+          where: { organization_id: admin.organizationId, active: true },
+        }),
+        prisma.$queryRaw<Array<{ count: number }>>`
+          SELECT COUNT(id)::int AS count FROM packages
+          WHERE organization_id = ${admin.organizationId}
+            AND active = true
+            AND used_sessions >= total_sessions - 2
+            AND used_sessions < total_sessions
+        `,
+        (() => {
+          const now = new Date();
+          const in7Days = new Date();
+          in7Days.setDate(now.getDate() + 7);
+          return prisma.package.count({
+            where: {
+              organization_id: admin.organizationId,
+              active: true,
+              expires_at: {
+                gt: now,
+                lte: in7Days,
+              },
+            },
+          });
+        })(),
+        prisma.$queryRaw<Array<{ pending: number }>>`
+          SELECT COALESCE(SUM(total_sessions - used_sessions), 0)::int AS pending
+          FROM packages
+          WHERE organization_id = ${admin.organizationId}
+            AND active = true
+        `,
+      ]);
+
+    const kpiEndingSoon = Number(kpiEndingSoonRaw[0]?.count || 0);
+    const kpiTotalPending = Number(kpiTotalPendingRaw[0]?.pending || 0);
 
     return {
       success: true,
@@ -105,23 +165,10 @@ export async function getPackagesDashboardData(params?: {
         };
       }),
       kpis: {
-        active: allActivePackages.length,
-        endingSoon: allActivePackages.filter(
-          (p) => p.used_sessions >= p.total_sessions - 2,
-        ).length,
-        expiringSoon: allActivePackages.filter((p) => {
-          if (!p.package_template?.validity_days) return false;
-          const now = new Date();
-          const in7Days = new Date();
-          in7Days.setDate(now.getDate() + 7);
-          const expirationDate = new Date(p.created_at);
-          expirationDate.setDate(expirationDate.getDate() + p.package_template.validity_days);
-          return expirationDate > now && expirationDate <= in7Days;
-        }).length,
-        totalPending: allActivePackages.reduce(
-          (acc, p) => acc + (p.total_sessions - p.used_sessions),
-          0,
-        ),
+        active: kpiActive,
+        endingSoon: kpiEndingSoon,
+        expiringSoon: kpiExpiringSoon,
+        totalPending: kpiTotalPending,
       },
       total: totalPackages,
       page,

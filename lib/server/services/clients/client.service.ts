@@ -216,26 +216,44 @@ export class ClientService {
   static async getBirthdayClients(organizationId: string) {
     const prisma = getTenantPrisma(organizationId);
 
-    const clients = await prisma.client.findMany({
-      where: {
-        organization_id: organizationId,
-        active: true,
-        birth_date: {
-          not: null,
-        },
-      },
-      select: {
-        id: true,
-        name: true,
-        phone_whatsapp: true,
-        birth_date: true,
-      },
-      orderBy: {
-        name: "asc",
-      },
-    });
+    const now = new Date();
+    const curMonth = now.getMonth() + 1; // 1-12
+    let prevMonth = curMonth - 1;
+    if (prevMonth < 1) prevMonth = 12;
+    let nextMonth = curMonth + 1;
+    if (nextMonth > 12) nextMonth = 1;
+    let nextMonth2 = nextMonth + 1;
+    if (nextMonth2 > 12) nextMonth2 = 1;
 
-    return clients;
+    const relevantMonths = [prevMonth, curMonth, nextMonth, nextMonth2];
+
+    const clientsRaw = await prisma.$queryRaw<
+      Array<{
+        id: string;
+        name: string;
+        phone_whatsapp: string | null;
+        birth_date: Date | null;
+      }>
+    >`
+      SELECT 
+        id, 
+        name, 
+        phone_whatsapp, 
+        birth_date
+      FROM clients
+      WHERE organization_id = ${organizationId}
+        AND active = true
+        AND birth_date IS NOT NULL
+        AND EXTRACT(MONTH FROM birth_date)::int = ANY(${relevantMonths}::int[])
+      ORDER BY name ASC
+    `;
+
+    return clientsRaw.map((c) => ({
+      id: c.id,
+      name: c.name,
+      phone_whatsapp: c.phone_whatsapp,
+      birth_date: c.birth_date ? c.birth_date.toISOString() : null,
+    }));
   }
 
   static async getPaginatedClients(
@@ -341,21 +359,33 @@ export class ClientService {
     };
 
     if (multiplePackages) {
-      const allClients = await prisma.client.findMany({
-        where: whereClause,
-        orderBy: { name: "asc" },
-        select: clientSelect,
-      });
+      const candidateClientIdsRaw = await prisma.$queryRaw<
+        Array<{ client_id: string }>
+      >`
+        SELECT client_id
+        FROM packages
+        WHERE organization_id = ${organizationId}
+          AND active = true
+          AND used_sessions < total_sessions
+        GROUP BY client_id
+        HAVING COUNT(id) > 1
+      `;
+      const clientIds = candidateClientIdsRaw.map((r) => r.client_id);
+      whereClause.id = { in: clientIds };
 
-      const filteredClients = allClients.filter((client) => {
-        const activePackages = client.packages.filter(
-          (pkg) => pkg.used_sessions < pkg.total_sessions,
-        );
-        return activePackages.length > 1;
-      });
+      const [count, paginatedClients] = await Promise.all([
+        prisma.client.count({ where: whereClause }),
+        prisma.client.findMany({
+          where: whereClause,
+          orderBy: { name: "asc" },
+          skip,
+          take: limit,
+          select: clientSelect,
+        }),
+      ]);
 
-      totalCount = filteredClients.length;
-      finalClientsList = filteredClients.slice(skip, skip + limit);
+      totalCount = count;
+      finalClientsList = paginatedClients;
     } else {
       const [count, paginatedClients] = await Promise.all([
         prisma.client.count({ where: whereClause }),

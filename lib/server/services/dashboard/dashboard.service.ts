@@ -166,8 +166,8 @@ export class DashboardService {
       },
     });
 
-    // 7. Sinais Recebidos Hoje via Mercado Pago
-    const mpPaidAppointmentsToday = await prisma.appointment.findMany({
+    // 7. Sinais Recebidos Hoje via Mercado Pago (Agregação nativa)
+    const mpPaidAppointmentsToday = await prisma.appointment.aggregate({
       where: {
         organization_id: organizationId,
         created_at: {
@@ -176,15 +176,13 @@ export class DashboardService {
         },
         mp_payment_status: "approved",
       },
-      select: {
+      _sum: {
         snapshot_service_price: true,
       },
     });
 
-    const totalPixDepositsToday = mpPaidAppointmentsToday.reduce((acc, appt) => {
-      const price = Number(appt.snapshot_service_price || 0);
-      return acc + (price / 2);
-    }, 0);
+    const totalPixDepositsToday =
+      Number(mpPaidAppointmentsToday._sum.snapshot_service_price || 0) / 2;
 
     // 8. Autoatendimento no Mês e Status de Ativação
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
