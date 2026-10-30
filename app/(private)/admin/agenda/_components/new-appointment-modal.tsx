@@ -58,6 +58,8 @@ type ActivePackage = {
   total_sessions: number;
   used_sessions: number;
   service_id: string;
+  scheduled_sessions?: number;
+  available_sessions?: number;
   active?: boolean;
 };
 
@@ -173,8 +175,8 @@ export const NewAppointmentModal = memo(
           let validPkgs: ActivePackage[] = [];
           
           if (pkgs && pkgs.length > 0) {
-            validPkgs = pkgs.filter((p: any) => p.active !== false && p.used_sessions < p.total_sessions);
-          } else if (legacyPkg && legacyPkg.active !== false && legacyPkg.used_sessions < legacyPkg.total_sessions) {
+            validPkgs = pkgs.filter((p: any) => p.active !== false && (p.available_sessions !== undefined ? p.available_sessions > 0 : p.used_sessions < p.total_sessions));
+          } else if (legacyPkg && legacyPkg.active !== false && (legacyPkg.available_sessions !== undefined ? legacyPkg.available_sessions > 0 : legacyPkg.used_sessions < legacyPkg.total_sessions)) {
             validPkgs = [legacyPkg];
           }
 
@@ -235,7 +237,7 @@ export const NewAppointmentModal = memo(
     }, [open, session?.user?.id, selectedProfessionalId]);
 
     const saldoDisponivel = activePackage
-      ? activePackage.total_sessions - activePackage.used_sessions
+      ? (activePackage.available_sessions ?? (activePackage.total_sessions - activePackage.used_sessions))
       : 0;
 
     const handleSave = async () => {
@@ -425,7 +427,7 @@ export const NewAppointmentModal = memo(
                           const firstPkg = availablePackages[0];
                           setActivePackage(firstPkg);
                           setSelectedServiceId(firstPkg.service_id);
-                          const saldo = firstPkg.total_sessions - firstPkg.used_sessions;
+                          const saldo = firstPkg.available_sessions ?? (firstPkg.total_sessions - firstPkg.used_sessions);
                           if (saldo > 1) {
                             setIsRecurring(true);
                             setRepeatCount(saldo);
@@ -452,7 +454,7 @@ export const NewAppointmentModal = memo(
                       if (pkg) {
                         setActivePackage(pkg);
                         setSelectedServiceId(pkg.service_id);
-                        const saldo = pkg.total_sessions - pkg.used_sessions;
+                        const saldo = pkg.available_sessions ?? (pkg.total_sessions - pkg.used_sessions);
                         if (saldo > 1) {
                           setIsRecurring(true);
                           setRepeatCount(saldo);
@@ -472,7 +474,7 @@ export const NewAppointmentModal = memo(
                           value={pkg.id}
                           className="rounded-2xl py-2 font-medium"
                         >
-                          {pkg.name} (Saldo: {pkg.total_sessions - pkg.used_sessions})
+                          {pkg.name} (Disponível: {pkg.available_sessions ?? (pkg.total_sessions - pkg.used_sessions)})
                         </SelectItem>
                       ))}
                     </SelectContent>

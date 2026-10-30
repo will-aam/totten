@@ -82,7 +82,7 @@ export function NewWalkInModal({ open, onOpenChange, onCreated }: NewWalkInModal
       try {
         const data = await apiClient<any>(`clients/${selectedClientId}`);
         const pkgs = data.activePackages || data.client?.activePackages || data.data?.activePackages || [];
-        const validPkgs = pkgs.filter((p: any) => p.active !== false && p.used_sessions < p.total_sessions);
+        const validPkgs = pkgs.filter((p: any) => p.active !== false && (p.available_sessions !== undefined ? p.available_sessions > 0 : p.used_sessions < p.total_sessions));
         setAvailablePackages(validPkgs);
 
         if (validPkgs.length > 0) {
@@ -249,7 +249,7 @@ export function NewWalkInModal({ open, onOpenChange, onCreated }: NewWalkInModal
                 <SelectContent className="border border-border/50 bg-background shadow-xl rounded-2xl">
                   {availablePackages.map((p: any) => (
                     <SelectItem key={p.id} value={p.id} className="rounded-xl font-medium py-2">
-                      {p.name} ({p.total_sessions - p.used_sessions} restantes)
+                      {p.name} ({p.available_sessions ?? (p.total_sessions - p.used_sessions)} disponíveis)
                     </SelectItem>
                   ))}
                 </SelectContent>

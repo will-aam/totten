@@ -1,5 +1,5 @@
 import { getTenantPrisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma, AppointmentStatus } from "@prisma/client";
 import { ClientHistoryService } from "./client-history.service";
 
 function getSearchVariations(searchQuery: string) {
@@ -502,6 +502,21 @@ export class ClientService {
           where: {
             active: true,
           },
+          include: {
+            appointments: {
+              where: {
+                status: {
+                  in: [
+                    AppointmentStatus.PENDENTE,
+                    AppointmentStatus.CONFIRMADO,
+                    AppointmentStatus.SOLICITADO,
+                  ],
+                },
+                package_deducted: false,
+              },
+              select: { id: true },
+            },
+          },
         },
       },
     });
@@ -510,9 +525,10 @@ export class ClientService {
       throw new Error("CLIENT_NOT_FOUND");
     }
 
-    const activePkgs = client.packages.filter(
-      (pkg) => pkg.used_sessions < pkg.total_sessions,
-    );
+    const activePkgs = client.packages.filter((pkg) => {
+      const scheduledCount = pkg.appointments?.length || 0;
+      return (pkg.used_sessions + scheduledCount) < pkg.total_sessions;
+    });
 
     return {
       client: {
@@ -529,13 +545,19 @@ export class ClientService {
         created_at: client.created_at,
         active: client.active,
       },
-      activePackages: activePkgs.map((pkg) => ({
-        id: pkg.id,
-        name: pkg.name,
-        total_sessions: pkg.total_sessions,
-        used_sessions: pkg.used_sessions,
-        service_id: pkg.service_id,
-      })),
+      activePackages: activePkgs.map((pkg) => {
+        const scheduledSessions = pkg.appointments?.length || 0;
+        const availableSessions = Math.max(0, pkg.total_sessions - (pkg.used_sessions + scheduledSessions));
+        return {
+          id: pkg.id,
+          name: pkg.name,
+          total_sessions: pkg.total_sessions,
+          used_sessions: pkg.used_sessions,
+          scheduled_sessions: scheduledSessions,
+          available_sessions: availableSessions,
+          service_id: pkg.service_id,
+        };
+      }),
     };
   }
 

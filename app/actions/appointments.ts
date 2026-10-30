@@ -157,19 +157,78 @@ export async function createAppointment(
         }
       }
 
-      const sessionsAvailable = pkg.total_sessions - pkg.used_sessions;
+      // NOVO: Cálculo estrito contra over-booking (V-02)
+      // Considera tanto as sessões já realizadas quanto agendamentos futuros ativos que ainda não foram concluídos
+      const scheduledActiveAppointmentsCount = await prisma.appointment.count({
+        where: {
+          package_id: pkg.id,
+          organization_id: admin.organizationId,
+          status: {
+            in: [
+              AppointmentStatus.PENDENTE,
+              AppointmentStatus.CONFIRMADO,
+              AppointmentStatus.SOLICITADO,
+            ],
+          },
+          package_deducted: false,
+        },
+      });
+
+      const totalBookedSessions = pkg.used_sessions + scheduledActiveAppointmentsCount;
+      const sessionsAvailable = Math.max(0, pkg.total_sessions - totalBookedSessions);
+
       if (sessionsAvailable < totalSessionsToCreate) {
         return {
           success: false,
-          error: `Saldo insuficiente. O pacote tem apenas ${sessionsAvailable} sessões disponíveis.`,
+          error: `Saldo insuficiente no pacote. O pacote possui ${pkg.total_sessions} sessões no total (${pkg.used_sessions} realizadas e ${scheduledActiveAppointmentsCount} já agendadas). Restam apenas ${sessionsAvailable} vaga(s) para novo agendamento.`,
         };
       }
-      startSessionNumber = pkg.used_sessions;
+      startSessionNumber = totalBookedSessions;
     }
 
     const createdTxIds: string[] = [];
 
     const appointments = await prisma.$transaction(async (tx) => {
+      let currentSessionNumber = startSessionNumber;
+
+      if (packageId) {
+        // Trava atômica serializada no banco para evitar race condition de overbooking simultâneo
+        const activeScheduledCount = await tx.appointment.count({
+          where: {
+            package_id: packageId,
+            organization_id: admin.organizationId,
+            status: {
+              in: [
+                AppointmentStatus.PENDENTE,
+                AppointmentStatus.CONFIRMADO,
+                AppointmentStatus.SOLICITADO,
+              ],
+            },
+            package_deducted: false,
+          },
+        });
+
+        const txPkg = await tx.package.findUnique({
+          where: { id: packageId },
+          select: { total_sessions: true, used_sessions: true, active: true },
+        });
+
+        if (!txPkg || !txPkg.active) {
+          throw new Error("Pacote não encontrado ou arquivado.");
+        }
+
+        const totalBooked = txPkg.used_sessions + activeScheduledCount;
+        const availableInTx = Math.max(0, txPkg.total_sessions - totalBooked);
+
+        if (availableInTx < totalSessionsToCreate) {
+          throw new Error(
+            `Saldo insuficiente no pacote. O pacote possui ${txPkg.total_sessions} sessões no total (${txPkg.used_sessions} realizadas e ${activeScheduledCount} já agendadas). Restam apenas ${availableInTx} sessão(ões) disponível(is).`
+          );
+        }
+
+        currentSessionNumber = totalBooked;
+      }
+
       const created: any[] = [];
       for (let i = 0; i < appointmentDates.length; i++) {
         const appt = await tx.appointment.create({
@@ -181,7 +240,7 @@ export async function createAppointment(
             package_id: packageId || null,
             organization_id: admin.organizationId,
             recurrence_id: recurrenceId,
-            session_number: packageId ? startSessionNumber + i + 1 : null,
+            session_number: packageId ? currentSessionNumber + i + 1 : null,
             professional_id: targetProfessional,
             payment_method: (!packageId && isPaid && finalPaymentMethod) ? finalPaymentMethod : null,
             has_charge: !packageId && !isPaid,
@@ -262,9 +321,9 @@ export async function createAppointment(
     }));
 
     return { success: true, appointments: sanitizedAppointments };
-  } catch (error) {
-    console.error(error);
-    return { success: false, error: "Erro ao criar agendamento." };
+  } catch (error: any) {
+    console.error("Erro ao criar agendamento:", error);
+    return { success: false, error: error?.message || "Erro ao criar agendamento." };
   }
 }
 
