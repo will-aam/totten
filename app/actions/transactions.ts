@@ -430,6 +430,11 @@ export async function getPendingReceivables() {
         organization_id: admin.organizationId,
         status: "REALIZADO",
         package_id: null, // Sessões de pacote já são quitadas na venda do pacote
+        transactions: {
+          none: {
+            status: "PENDENTE", // Assegura exclusão mútua: se já gerou transação PENDENTE, ela é tratada em pendingTransactions
+          },
+        },
         OR: [
           { payment_method: null },
           { has_charge: true },
@@ -816,6 +821,11 @@ export async function processAllReceivablesPayment(
         organization_id: admin.organizationId,
         status: "REALIZADO",
         package_id: null,
+        transactions: {
+          none: {
+            status: "PENDENTE", // Assegura exclusão mútua contra duplicidade na baixa em lote
+          },
+        },
         OR: [
           { payment_method: null },
           { has_charge: true },
