@@ -710,59 +710,68 @@ export async function updateAppointment(
           data: { auto_processed: true, completed_at: new Date() },
         });
 
-        if (service.track_stock && service.stock_items.length > 0) {
-          for (const item of service.stock_items) {
-            const stockData = item.stock_item;
-            const usedQty = item.quantity_used;
+        // Trava de idempotência: só desconta estoque e gera despesa se ainda não foi debitado
+        if (!currentAppt.stock_deducted) {
+          if (service.track_stock && service.stock_items.length > 0) {
+            for (const item of service.stock_items) {
+              const stockData = item.stock_item;
+              const usedQty = item.quantity_used;
 
-            await tx.stockItem.update({
-              where: { id: stockData.id },
-              data: { quantity: { decrement: usedQty } },
-            });
+              await tx.stockItem.update({
+                where: { id: stockData.id },
+                data: { quantity: { decrement: usedQty } },
+              });
 
-            if (!stockData.was_expensed) {
-              const costOfUsedQty =
-                Number(usedQty) * Number(stockData.unit_cost);
+              if (!stockData.was_expensed) {
+                const costOfUsedQty =
+                  Number(usedQty) * Number(stockData.unit_cost);
 
-              if (costOfUsedQty > 0) {
-                const now = new Date();
-                const expTx = await tx.transaction.create({
-                  data: {
-                    type: "DESPESA",
-                    description: `Custo de Insumo: ${stockData.name}`,
-                    amount: costOfUsedQty,
-                    date: now,
-                    due_date: now,
-                    settlement_date: now,
-                    status: "PAGO",
-                    organization_id: admin.organizationId,
-                    appointment_id: currentAppt.id,
-                  },
-                });
-                createdTxIds.push(expTx.id);
+                if (costOfUsedQty > 0) {
+                  const now = new Date();
+                  const expTx = await tx.transaction.create({
+                    data: {
+                      type: "DESPESA",
+                      description: `Custo de Insumo: ${stockData.name}`,
+                      amount: costOfUsedQty,
+                      date: now,
+                      due_date: now,
+                      settlement_date: now,
+                      status: "PAGO",
+                      organization_id: admin.organizationId,
+                      appointment_id: currentAppt.id,
+                    },
+                  });
+                  createdTxIds.push(expTx.id);
+                }
               }
             }
+          } else if (
+            !service.track_stock &&
+            service.material_cost &&
+            Number(service.material_cost) > 0
+          ) {
+            const now = new Date();
+            const expTx = await tx.transaction.create({
+              data: {
+                type: "DESPESA",
+                description: `Custo de Material: ${service.name}`,
+                amount: service.material_cost,
+                date: now,
+                due_date: now,
+                settlement_date: now,
+                status: "PAGO",
+                organization_id: admin.organizationId,
+                appointment_id: currentAppt.id,
+              },
+            });
+            createdTxIds.push(expTx.id);
           }
-        } else if (
-          !service.track_stock &&
-          service.material_cost &&
-          Number(service.material_cost) > 0
-        ) {
-          const now = new Date();
-          const expTx = await tx.transaction.create({
-            data: {
-              type: "DESPESA",
-              description: `Custo de Material: ${service.name}`,
-              amount: service.material_cost,
-              date: now,
-              due_date: now,
-              settlement_date: now,
-              status: "PAGO",
-              organization_id: admin.organizationId,
-              appointment_id: currentAppt.id,
-            },
+
+          // Marca o agendamento como insumos debitados
+          await tx.appointment.update({
+            where: { id: currentAppt.id },
+            data: { stock_deducted: true },
           });
-          createdTxIds.push(expTx.id);
         }
       }
 
@@ -773,17 +782,24 @@ export async function updateAppointment(
           data: { auto_processed: false, completed_at: null },
         });
 
-        // 2. Devolve ao estoque os insumos consumidos na realização
-        if (service.track_stock && service.stock_items.length > 0) {
-          for (const item of service.stock_items) {
-            const stockData = item.stock_item;
-            const usedQty = item.quantity_used;
+        // 2. Se o estoque havia sido debitado, devolve ao estoque e reseta a flag
+        if (currentAppt.stock_deducted) {
+          if (service.track_stock && service.stock_items.length > 0) {
+            for (const item of service.stock_items) {
+              const stockData = item.stock_item;
+              const usedQty = item.quantity_used;
 
-            await tx.stockItem.update({
-              where: { id: stockData.id },
-              data: { quantity: { increment: usedQty } },
-            });
+              await tx.stockItem.update({
+                where: { id: stockData.id },
+                data: { quantity: { increment: usedQty } },
+              });
+            }
           }
+
+          await tx.appointment.update({
+            where: { id: currentAppt.id },
+            data: { stock_deducted: false },
+          });
         }
 
         // 3. Estorno financeiro: busca transações vinculadas à realização deste agendamento

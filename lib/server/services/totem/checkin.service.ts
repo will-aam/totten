@@ -204,61 +204,70 @@ export class TotemCheckInService {
         // --- O CORAÇÃO DO SISTEMA FINANCEIRO E DE ESTOQUE ---
         const service = appt.service;
 
-        if (service.track_stock && service.stock_items.length > 0) {
-          for (const item of service.stock_items) {
-            const stockData = item.stock_item;
-            const usedQty = item.quantity_used;
+        // Trava de idempotência: só desconta estoque e gera despesa se ainda não foi debitado
+        if (!appt.stock_deducted) {
+          if (service.track_stock && service.stock_items.length > 0) {
+            for (const item of service.stock_items) {
+              const stockData = item.stock_item;
+              const usedQty = item.quantity_used;
 
-            // a) Baixa a quantidade física da prateleira
-            await tx.stockItem.update({
-              where: { id: stockData.id, organization_id: organizationId },
-              data: { quantity: { decrement: usedQty } },
-            });
+              // a) Baixa a quantidade física da prateleira
+              await tx.stockItem.update({
+                where: { id: stockData.id, organization_id: organizationId },
+                data: { quantity: { decrement: usedQty } },
+              });
 
-            // b) Regra de Caixa
-            if (!stockData.was_expensed) {
-              const costOfUsedQty = Number(usedQty) * Number(stockData.unit_cost);
+              // b) Regra de Caixa
+              if (!stockData.was_expensed) {
+                const costOfUsedQty = Number(usedQty) * Number(stockData.unit_cost);
 
-              if (costOfUsedQty > 0) {
-                const now = new Date();
-                const expTx = await tx.transaction.create({
-                  data: {
-                    type: "DESPESA",
-                    description: `Custo de Insumo: ${stockData.name}`,
-                    amount: costOfUsedQty,
-                    date: now,
-                    due_date: now,
-                    settlement_date: now,
-                    status: "PAGO",
-                    organization_id: organizationId,
-                    appointment_id: appt.id,
-                  },
-                });
-                createdTxIds.push(expTx.id);
+                if (costOfUsedQty > 0) {
+                  const now = new Date();
+                  const expTx = await tx.transaction.create({
+                    data: {
+                      type: "DESPESA",
+                      description: `Custo de Insumo: ${stockData.name}`,
+                      amount: costOfUsedQty,
+                      date: now,
+                      due_date: now,
+                      settlement_date: now,
+                      status: "PAGO",
+                      organization_id: organizationId,
+                      appointment_id: appt.id,
+                    },
+                  });
+                  createdTxIds.push(expTx.id);
+                }
               }
             }
+          } else if (
+            !service.track_stock &&
+            service.material_cost &&
+            Number(service.material_cost) > 0
+          ) {
+            // Fluxo de Custo Fixo de Material
+            const now = new Date();
+            const expTx = await tx.transaction.create({
+              data: {
+                type: "DESPESA",
+                description: `Custo de Material: ${service.name}`,
+                amount: service.material_cost,
+                date: now,
+                due_date: now,
+                settlement_date: now,
+                status: "PAGO",
+                organization_id: organizationId,
+                appointment_id: appt.id,
+              },
+            });
+            createdTxIds.push(expTx.id);
           }
-        } else if (
-          !service.track_stock &&
-          service.material_cost &&
-          Number(service.material_cost) > 0
-        ) {
-          // Fluxo de Custo Fixo de Material
-          const now = new Date();
-          const expTx = await tx.transaction.create({
-            data: {
-              type: "DESPESA",
-              description: `Custo de Material: ${service.name}`,
-              amount: service.material_cost,
-              date: now,
-              due_date: now,
-              settlement_date: now,
-              status: "PAGO",
-              organization_id: organizationId,
-              appointment_id: appt.id,
-            },
+
+          // Marca o agendamento como já debitado no estoque
+          await tx.appointment.update({
+            where: { id: appt.id, organization_id: organizationId },
+            data: { stock_deducted: true },
           });
-          createdTxIds.push(expTx.id);
         }
       }
 
@@ -455,6 +464,7 @@ export class TotemCheckInService {
             activePackage.snapshot_service_price ?? service?.price,
           snapshot_service_duration:
             activePackage.snapshot_service_duration ?? service?.duration,
+          stock_deducted: true,
           observations: "Check-in avulso via Totem (Autoatendimento CPF).",
         },
       });

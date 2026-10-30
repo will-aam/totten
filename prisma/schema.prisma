@@ -392,6 +392,9 @@ model Appointment {
   snapshot_service_price    Decimal? @db.Decimal(10, 2)
   snapshot_service_duration Int?
 
+  // Controle de Idempotência de Baixa de Insumos/Estoque
+  stock_deducted            Boolean           @default(false)
+
   // Mercado Pago PIX Payment Info
   mp_payment_id             String?
   mp_payment_status         String?

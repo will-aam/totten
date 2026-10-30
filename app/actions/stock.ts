@@ -66,12 +66,15 @@ export async function createStockItem(data: {
       let createdExpenseTxId: string | null = null;
       if (data.createExpense) {
         const totalCost = data.quantity * data.unit_cost;
+        const now = new Date();
         const expTx = await tx.transaction.create({
           data: {
             type: "DESPESA",
             description: `Compra de Insumo: ${data.name}`,
             amount: totalCost,
-            date: new Date(),
+            date: now,
+            due_date: now,
+            settlement_date: now,
             status: "PAGO",
             organization_id: orgId,
             stock_item_id: newItem.id,
@@ -142,12 +145,15 @@ export async function updateStockItem(
         totalExpenseCost = addedQty * unitCost;
 
         if (totalExpenseCost > 0) {
+          const now = new Date();
           const expTx = await tx.transaction.create({
             data: {
               type: "DESPESA",
               description: `Reabastecimento de Insumo: ${data.name || existing.name} (+${addedQty} un)`,
               amount: totalExpenseCost,
-              date: new Date(),
+              date: now,
+              due_date: now,
+              settlement_date: now,
               status: "PAGO",
               organization_id: orgId,
               stock_item_id: existing.id,

@@ -237,12 +237,15 @@ export async function createManualCheckIn(data: {
             if (!stockData.was_expensed) {
               const costOfUsedQty = Number(usedQty) * Number(stockData.unit_cost);
               if (costOfUsedQty > 0) {
+                const now = new Date();
                 const expTx = await tx.transaction.create({
                   data: {
                     type: "DESPESA",
                     description: `Custo de Insumo: ${stockData.name}`,
                     amount: costOfUsedQty,
-                    date: new Date(),
+                    date: now,
+                    due_date: now,
+                    settlement_date: now,
                     status: "PAGO",
                     organization_id: organizationId,
                     appointment_id: newAppointmentId,
@@ -253,12 +256,15 @@ export async function createManualCheckIn(data: {
             }
           }
         } else if (!service.track_stock && service.material_cost && Number(service.material_cost) > 0) {
+          const now = new Date();
           const expTx = await tx.transaction.create({
             data: {
               type: "DESPESA",
               description: `Custo de Material: ${service.name}`,
               amount: service.material_cost,
-              date: new Date(),
+              date: now,
+              due_date: now,
+              settlement_date: now,
               status: "PAGO",
               organization_id: organizationId,
               appointment_id: newAppointmentId,
