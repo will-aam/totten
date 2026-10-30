@@ -165,6 +165,8 @@ export async function createManualCheckIn(data: {
           status: targetStatus,
           payment_method: data.paymentMethod ? (data.paymentMethod as any) : null,
           has_charge: !data.packageId && !data.isPaid,
+          package_deducted: autoComplete && Boolean(data.packageId),
+          stock_deducted: autoComplete && Boolean(service && (service.track_stock || (service.material_cost && Number(service.material_cost) > 0))),
         },
       });
 

@@ -472,7 +472,7 @@ export async function updateAppointment(
       }
     }
 
-    if (isMarkingAsDone && currentAppt.package) {
+    if (isMarkingAsDone && currentAppt.package && !currentAppt.package_deducted) {
       if (!currentAppt.package.active) {
         return {
           success: false,
@@ -565,6 +565,17 @@ export async function updateAppointment(
               },
             });
           }
+
+          if (recurrenceId) {
+            await tx.appointment.updateMany({
+              where: {
+                recurrence_id: recurrenceId,
+                organization_id: admin.organizationId,
+                status: AppointmentStatus.REALIZADO,
+              },
+              data: { package_deducted: true },
+            });
+          }
         }
       } else {
         if (isMarkingAsDone) {
@@ -599,7 +610,7 @@ export async function updateAppointment(
           });
         }
 
-        if (isMarkingAsDone && currentAppt.package_id && currentAppt.package) {
+        if (isMarkingAsDone && currentAppt.package_id && currentAppt.package && !currentAppt.package_deducted) {
           // Trava atômica condicional no banco contra concorrência e race condition (evita > total_sessions)
           const pacoteUpdate = await tx.package.updateMany({
             where: {
@@ -644,9 +655,14 @@ export async function updateAppointment(
               },
             });
           }
+
+          await tx.appointment.update({
+            where: { id: currentAppt.id },
+            data: { package_deducted: true },
+          });
         }
 
-        if (isUnmarkingAsDone && currentAppt.package_id && currentAppt.package) {
+        if (isUnmarkingAsDone && currentAppt.package_id && currentAppt.package && currentAppt.package_deducted) {
           const isManuallyArchived =
             !currentAppt.package.active &&
             currentAppt.package.used_sessions < currentAppt.package.total_sessions;
@@ -661,6 +677,11 @@ export async function updateAppointment(
               },
             });
           }
+
+          await tx.appointment.update({
+            where: { id: currentAppt.id },
+            data: { package_deducted: false },
+          });
         }
       }
 

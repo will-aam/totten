@@ -113,7 +113,7 @@ export class TotemCheckInService {
               organization_id: organizationId,
               status: { not: "REALIZADO" },
             },
-            data: { status: "REALIZADO", has_charge: false },
+            data: { status: "REALIZADO", has_charge: false, package_deducted: true },
           });
 
           if (apptUpdate.count === 0) {
@@ -465,6 +465,7 @@ export class TotemCheckInService {
           snapshot_service_duration:
             activePackage.snapshot_service_duration ?? service?.duration,
           stock_deducted: true,
+          package_deducted: true,
           observations: "Check-in avulso via Totem (Autoatendimento CPF).",
         },
       });

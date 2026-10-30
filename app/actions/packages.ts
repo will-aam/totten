@@ -677,6 +677,15 @@ export async function createManualPackageCheckIn(
             },
           });
         }
+
+        // Garante que o agendamento foi flagrado como pacote e estoque debitados
+        await tx.appointment.update({
+          where: { id: appt.id },
+          data: {
+            package_deducted: true,
+            stock_deducted: stockProcessed,
+          },
+        });
       }
     });
 
