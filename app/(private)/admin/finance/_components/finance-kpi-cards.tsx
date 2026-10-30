@@ -91,11 +91,11 @@ function FinanceKpiCard({
 }
 
 export function FinanceKpiCards() {
-  const { hideValues } = useFinanceVisibility();
+  const { hideValues, viewMode } = useFinanceVisibility();
   const { data: res, isLoading } = useSWR(
-    "finance-dashboard-action-data",
+    ["finance-dashboard-action-data", viewMode],
     async () => {
-      return await getFinanceDashboardData();
+      return await getFinanceDashboardData(undefined, undefined, viewMode);
     },
     { keepPreviousData: true },
   );
@@ -113,6 +113,8 @@ export function FinanceKpiCards() {
 
   const summary = res?.summary || {
     receivedMonth: 0,
+    grossRevenueMonth: 0,
+    feesMonth: 0,
     pendingMonth: 0,
     expensesMonth: 0,
     balanceMonth: 0,
@@ -121,12 +123,19 @@ export function FinanceKpiCards() {
   const formatVal = (num: number) =>
     hideValues ? "••••••" : currencyFormatter.format(num);
 
+  const hasFees = (summary.feesMonth ?? 0) > 0;
+  const feesLabel = hasFees ? ` • Taxas: -${formatVal(summary.feesMonth!)}` : "";
+
   return (
     <div className="flex overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scroll-smooth md:grid md:grid-cols-4 md:overflow-visible md:pb-0 md:px-0 md:mx-0 gap-4 [&::-webkit-scrollbar]:hidden">
       <FinanceKpiCard
-        title="Recebido no Mês"
+        title={viewMode === "CAIXA" ? "Recebido no Mês (Caixa D+X)" : "Recebido no Mês (Vendas)"}
         value={formatVal(summary.receivedMonth)}
-        description="Valores liquidados"
+        description={
+          viewMode === "CAIXA"
+            ? `Compensado em conta${feesLabel}`
+            : `Valores faturados${feesLabel}`
+        }
         icon={ArrowUpCircle}
       />
       <FinanceKpiCard
@@ -148,7 +157,7 @@ export function FinanceKpiCards() {
       <FinanceKpiCard
         title="Saldo do Mês"
         value={formatVal(summary.balanceMonth)}
-        description="Resultado líquido"
+        description={`Resultado ${viewMode === "CAIXA" ? "líquido em caixa" : "por competência"}`}
         icon={Wallet}
       />
     </div>

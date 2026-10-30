@@ -246,29 +246,93 @@ export async function updateTransaction(
   }
 }
 
-// --- 3. EXCLUIR TRANSAÇÃO MANUAL ---
+// --- 3. EXCLUIR TRANSAÇÃO MANUAL OU ESTORNAR TRANSAÇÃO VINCULADA (HOOK REVERSO) ---
 export async function deleteTransaction(id: string, deleteFuture?: boolean) {
   try {
     const admin = await requireFinancePermission();
 
     const currentTx = await prisma.transaction.findUnique({
       where: { id, organization_id: admin.organizationId },
-      select: {
-        recurrence_id: true,
-        date: true,
-        package_id: true,
-        appointment_id: true,
-        stock_item_id: true,
+      include: {
+        appointment: {
+          include: {
+            client: true,
+            service: true,
+            transactions: true,
+          },
+        },
+        child_transactions: true,
       },
     });
 
     if (!currentTx) throw new Error("Transação não encontrada.");
 
-    if (currentTx.package_id || currentTx.appointment_id || currentTx.stock_item_id) {
+    if (currentTx.package_id || currentTx.stock_item_id) {
       return {
         success: false,
-        error: "Esta movimentação foi gerada automaticamente pelo sistema e não pode ser excluída diretamente pelo extrato financeiro.",
+        error:
+          "Esta movimentação está vinculada a pacotes ou estoque e deve ser gerenciada pelo respectivo módulo.",
       };
+    }
+
+    // Se estiver vinculada a um agendamento, aplica o Hook Reverso de Estorno
+    if (currentTx.appointment_id && currentTx.appointment) {
+      const appt = currentTx.appointment;
+
+      await prisma.$transaction(async (tx) => {
+        // 1. Deleta taxas filhas atreladas a esta transação
+        await tx.transaction.deleteMany({
+          where: { parent_transaction_id: currentTx.id },
+        });
+
+        // 2. Deleta a transação em si
+        await tx.transaction.delete({
+          where: { id: currentTx.id },
+        });
+
+        // 3. Atualiza o agendamento correspondente
+        if (currentTx.type === "RECEITA" && currentTx.status === "PAGO") {
+          const otherPaidRevenues = appt.transactions.filter(
+            (t) =>
+              t.id !== currentTx.id &&
+              t.type === "RECEITA" &&
+              t.status === "PAGO",
+          );
+
+          const stillHasPayment = otherPaidRevenues.length > 0;
+          const isCancelled = appt.status === "CANCELADO";
+
+          await tx.appointment.update({
+            where: { id: appt.id },
+            data: {
+              payment_method: stillHasPayment ? appt.payment_method : null,
+              has_charge: !stillHasPayment && !isCancelled,
+              mp_payment_status: stillHasPayment ? appt.mp_payment_status : null,
+            },
+          });
+
+          // Registra nota de auditoria reversa no prontuário do cliente
+          if (appt.client_id) {
+            await tx.clientNote.create({
+              data: {
+                client_id: appt.client_id,
+                organization_id: admin.organizationId,
+                text: `Estorno Financeiro: O pagamento de R$ ${Number(currentTx.amount).toFixed(2)} referente ao agendamento de ${appt.snapshot_service_name || appt.service?.name || "serviço"} foi excluído/estornado por ${admin.name || admin.email}. Status financeiro do agendamento revertido.`,
+                date: new Date(),
+              },
+            });
+          }
+        }
+      });
+
+      // Remove do Zibee se aplicável
+      deleteTransactionFromZibee(id, admin.organizationId).catch(console.error);
+
+      revalidatePath("/admin/finance/dashboard");
+      revalidatePath("/admin/finance/transactions");
+      revalidatePath("/admin/finance/receivables");
+      revalidatePath("/admin/agenda");
+      return { success: true };
     }
 
     if (deleteFuture && currentTx.recurrence_id) {
@@ -294,6 +358,11 @@ export async function deleteTransaction(id: string, deleteFuture?: boolean) {
         deleteTransactionFromZibee(t.id, admin.organizationId).catch(console.error),
       );
     } else {
+      // Deleta quaisquer taxas filhas antes de deletar a transação
+      await prisma.transaction.deleteMany({
+        where: { parent_transaction_id: id },
+      });
+
       await prisma.transaction.delete({
         where: { id },
       });
@@ -304,6 +373,7 @@ export async function deleteTransaction(id: string, deleteFuture?: boolean) {
 
     revalidatePath("/admin/finance/dashboard");
     revalidatePath("/admin/finance/transactions");
+    revalidatePath("/admin/finance/receivables");
     return { success: true };
   } catch (error: any) {
     console.error("Erro ao excluir transação:", error);
@@ -1111,6 +1181,300 @@ export async function processAllReceivablesPayment(
   }
 }
 
+// --- 7.2. DAR BAIXA EM SELEÇÃO ESPECÍFICA / CLIENTES RECORRENTES (EM LOTE) ---
+export async function processBatchReceivablesPayment(
+  items: Array<{ id: string; sourceType: "APPOINTMENT" | "TRANSACTION" }>,
+  paymentMethod: string,
+  paymentMethodId?: string,
+) {
+  try {
+    const admin = await requireFinancePermission();
+
+    if (!items || items.length === 0) {
+      return { success: false, error: "Nenhum item selecionado para quitação." };
+    }
+
+    const appointmentIds = items
+      .filter((i) => i.sourceType === "APPOINTMENT")
+      .map((i) => i.id);
+    const transactionIds = items
+      .filter((i) => i.sourceType === "TRANSACTION")
+      .map((i) => i.id);
+
+    const pendingAppointments =
+      appointmentIds.length > 0
+        ? await prisma.appointment.findMany({
+            where: {
+              id: { in: appointmentIds },
+              organization_id: admin.organizationId,
+              package_id: null,
+            },
+            include: {
+              client: true,
+              service: true,
+              transactions: true,
+            },
+          })
+        : [];
+
+    const pendingTransactions =
+      transactionIds.length > 0
+        ? await prisma.transaction.findMany({
+            where: {
+              id: { in: transactionIds },
+              organization_id: admin.organizationId,
+              type: "RECEITA",
+              status: "PENDENTE",
+            },
+            include: {
+              client: true,
+            },
+          })
+        : [];
+
+    const createdOrUpdatedTxIds: string[] = [];
+    const paymentDate = new Date();
+
+    await prisma.$transaction(async (tx) => {
+      // Baixa nos agendamentos selecionados
+      for (const appt of pendingAppointments) {
+        const fullPrice = Number(appt.snapshot_service_price ?? appt.service.price);
+        const apptName = appt.snapshot_service_name ?? appt.service.name;
+
+        const paidRevenue = appt.transactions
+          .filter((t) => t.type === "RECEITA" && t.status === "PAGO")
+          .reduce((acc, t) => acc + Number(t.amount), 0);
+
+        const remainingAmount = Math.max(0, Number((fullPrice - paidRevenue).toFixed(2)));
+
+        if (remainingAmount <= 0.01) {
+          continue;
+        }
+
+        await tx.appointment.update({
+          where: { id: appt.id },
+          data: {
+            payment_method: paymentMethod as PaymentMethod,
+            has_charge: false,
+          },
+        });
+
+        const pendingRevenueTx = appt.transactions.find(
+          (t) => t.type === "RECEITA" && t.status === "PENDENTE",
+        );
+
+        const desc =
+          paidRevenue > 0
+            ? `Serviço Quitado (Saldo Restante): ${apptName} (${appt.client.name})`
+            : `Serviço Realizado: ${apptName} (${appt.client.name})`;
+
+        if (!pendingRevenueTx) {
+          const originalDueDate = appt.date_time || paymentDate;
+          const result = await createSettledRevenueWithFee({
+            prismaClient: tx,
+            organizationId: admin.organizationId,
+            grossAmount: remainingAmount,
+            description: desc,
+            paymentMethodId: paymentMethodId || null,
+            paymentMethodEnum: paymentMethod as PaymentMethod,
+            appointmentId: appt.id,
+            clientId: appt.client_id,
+            adminId: admin.id,
+            baseDate: paymentDate,
+            dueDate: originalDueDate,
+            feeDescription: `Taxa Cartão - Serviço: ${apptName}`,
+          });
+          createdOrUpdatedTxIds.push(result.revenueTx.id);
+          if (result.feeTx) {
+            createdOrUpdatedTxIds.push(result.feeTx.id);
+          }
+
+          if (appt.client_id) {
+            const dueTime = new Date(originalDueDate).setHours(0, 0, 0, 0);
+            const payTime = new Date(paymentDate).setHours(0, 0, 0, 0);
+            const diffDays = Math.floor((payTime - dueTime) / (1000 * 60 * 60 * 24));
+            const noteText =
+              diffDays > 0
+                ? `Ação: Serviço quitado em lote com ${diffDays} ${diffDays === 1 ? "dia" : "dias"} de atraso: ${apptName} (R$ ${remainingAmount.toFixed(2)}) via ${paymentMethod}. Vencimento original: ${new Intl.DateTimeFormat("pt-BR").format(originalDueDate)}. Quitado por: ${admin.name || admin.email}.`
+                : `Ação: Serviço quitado em lote em dia: ${apptName} (R$ ${remainingAmount.toFixed(2)}) via ${paymentMethod}. Vencimento original: ${new Intl.DateTimeFormat("pt-BR").format(originalDueDate)}. Quitado por: ${admin.name || admin.email}.`;
+
+            await tx.clientNote.create({
+              data: {
+                client_id: appt.client_id,
+                organization_id: admin.organizationId,
+                text: noteText,
+                date: paymentDate,
+              },
+            });
+          }
+        } else {
+          const originalDueDate =
+            pendingRevenueTx.due_date ||
+            pendingRevenueTx.date ||
+            appt.date_time ||
+            paymentDate;
+
+          const { settlementDate, feeAmount, method } =
+            await calculatePaymentSettlementAndFee({
+              prismaClient: tx,
+              organizationId: admin.organizationId,
+              grossAmount: remainingAmount,
+              paymentMethodId: paymentMethodId || null,
+              paymentMethodEnum: paymentMethod as PaymentMethod,
+              baseDate: paymentDate,
+            });
+
+          await tx.transaction.update({
+            where: { id: pendingRevenueTx.id },
+            data: {
+              amount: remainingAmount,
+              status: "PAGO",
+              date: paymentDate,
+              due_date: originalDueDate,
+              settlement_date: settlementDate,
+              payment_method_id: method?.id || paymentMethodId || null,
+              admin_id: admin.id,
+            },
+          });
+          createdOrUpdatedTxIds.push(pendingRevenueTx.id);
+
+          if (feeAmount > 0) {
+            const feeTx = await tx.transaction.create({
+              data: {
+                type: "DESPESA",
+                description: `Taxa Cartão - Serviço: ${apptName}`,
+                amount: feeAmount,
+                date: paymentDate,
+                settlement_date: settlementDate,
+                status: "PAGO",
+                organization_id: admin.organizationId,
+                appointment_id: appt.id,
+                client_id: appt.client_id,
+                payment_method_id: method?.id || paymentMethodId || null,
+                admin_id: admin.id,
+                parent_transaction_id: pendingRevenueTx.id,
+              },
+            });
+            createdOrUpdatedTxIds.push(feeTx.id);
+          }
+
+          if (appt.client_id) {
+            const dueTime = new Date(originalDueDate).setHours(0, 0, 0, 0);
+            const payTime = new Date(paymentDate).setHours(0, 0, 0, 0);
+            const diffDays = Math.floor((payTime - dueTime) / (1000 * 60 * 60 * 24));
+            const methodLabel = method?.name || paymentMethod;
+            const noteText =
+              diffDays > 0
+                ? `Ação: Serviço quitado em lote com ${diffDays} ${diffDays === 1 ? "dia" : "dias"} de atraso: ${apptName} (R$ ${remainingAmount.toFixed(2)}) via ${methodLabel}. Vencimento original: ${new Intl.DateTimeFormat("pt-BR").format(originalDueDate)}. Quitado por: ${admin.name || admin.email}.`
+                : `Ação: Serviço quitado em lote em dia: ${apptName} (R$ ${remainingAmount.toFixed(2)}) via ${methodLabel}. Vencimento original: ${new Intl.DateTimeFormat("pt-BR").format(originalDueDate)}. Quitado por: ${admin.name || admin.email}.`;
+
+            await tx.clientNote.create({
+              data: {
+                client_id: appt.client_id,
+                organization_id: admin.organizationId,
+                text: noteText,
+                date: paymentDate,
+              },
+            });
+          }
+        }
+      }
+
+      // Baixa nas transações selecionadas
+      for (const mTx of pendingTransactions) {
+        const originalDueDate = mTx.due_date || mTx.date;
+        const { settlementDate, feeAmount, method } =
+          await calculatePaymentSettlementAndFee({
+            prismaClient: tx,
+            organizationId: admin.organizationId,
+            grossAmount: Number(mTx.amount),
+            paymentMethodId: paymentMethodId || null,
+            paymentMethodEnum: paymentMethod as PaymentMethod,
+            baseDate: paymentDate,
+          });
+
+        await tx.transaction.update({
+          where: { id: mTx.id },
+          data: {
+            status: "PAGO",
+            date: paymentDate,
+            due_date: originalDueDate,
+            settlement_date: settlementDate,
+            payment_method_id: method?.id || paymentMethodId || null,
+            admin_id: admin.id,
+          },
+        });
+        createdOrUpdatedTxIds.push(mTx.id);
+
+        if (feeAmount > 0) {
+          const feeTx = await tx.transaction.create({
+            data: {
+              type: "DESPESA",
+              description: `Taxa - ${mTx.description}`,
+              amount: feeAmount,
+              date: paymentDate,
+              settlement_date: settlementDate,
+              status: "PAGO",
+              organization_id: admin.organizationId,
+              client_id: mTx.client_id,
+              payment_method_id: method?.id || paymentMethodId || null,
+              admin_id: admin.id,
+              parent_transaction_id: mTx.id,
+            },
+          });
+          createdOrUpdatedTxIds.push(feeTx.id);
+        }
+
+        if (mTx.client_id) {
+          const dueTime = new Date(originalDueDate).setHours(0, 0, 0, 0);
+          const payTime = new Date(paymentDate).setHours(0, 0, 0, 0);
+          const diffDays = Math.floor((payTime - dueTime) / (1000 * 60 * 60 * 24));
+          const methodLabel = method?.name || paymentMethod;
+          const isInstallment = !!mTx.installment;
+          const labelType = isInstallment
+            ? `Parcela (${mTx.installment}) de pacote`
+            : "Cobrança avulsa";
+
+          const noteText =
+            diffDays > 0
+              ? `Ação: ${labelType} quitada em lote com ${diffDays} ${diffDays === 1 ? "dia" : "dias"} de atraso: ${mTx.description} (R$ ${Number(mTx.amount).toFixed(2)}) via ${methodLabel}. Vencimento original: ${new Intl.DateTimeFormat("pt-BR").format(originalDueDate)}. Quitado por: ${admin.name || admin.email}.`
+              : `Ação: ${labelType} quitada em lote em dia: ${mTx.description} (R$ ${Number(mTx.amount).toFixed(2)}) via ${methodLabel}. Vencimento original: ${new Intl.DateTimeFormat("pt-BR").format(originalDueDate)}. Quitado por: ${admin.name || admin.email}.`;
+
+          await tx.clientNote.create({
+            data: {
+              client_id: mTx.client_id,
+              organization_id: admin.organizationId,
+              text: noteText,
+              date: paymentDate,
+            },
+          });
+        }
+      }
+    });
+
+    // Sincroniza Zibee em background
+    createdOrUpdatedTxIds.forEach((txId) => {
+      triggerZibeeSyncById(txId, admin.organizationId).catch(console.error);
+    });
+
+    revalidatePath("/admin/finance/dashboard");
+    revalidatePath("/admin/finance/transactions");
+    revalidatePath("/admin/finance/receivables");
+    revalidatePath("/admin/agenda");
+
+    return {
+      success: true,
+      count: pendingAppointments.length + pendingTransactions.length,
+    };
+  } catch (error: any) {
+    console.error("Erro ao dar baixa nos recebimentos selecionados:", error);
+    return {
+      success: false,
+      error: error?.message || "Falha ao processar pagamentos selecionados.",
+    };
+  }
+}
+
 // --- 8. HISTÓRICO PAGINADO E BUSCA SERVER-SIDE ---
 export async function getPaginatedTransactions(params: {
   month?: number;
@@ -1124,6 +1488,7 @@ export async function getPaginatedTransactions(params: {
   page: number;
   limit: number;
   search?: string;
+  viewMode?: "COMPETENCIA" | "CAIXA";
 }) {
   try {
     const admin = await requireFinancePermission();
@@ -1140,12 +1505,24 @@ export async function getPaginatedTransactions(params: {
       },
     ];
 
+    const isCaixa = params.viewMode === "CAIXA";
+
+    const buildDateFilter = (range: { gte?: Date; lte?: Date }) => {
+      if (isCaixa) {
+        return {
+          OR: [
+            { settlement_date: range },
+            { settlement_date: null, date: range },
+          ],
+        };
+      }
+      return { date: range };
+    };
+
     // 1. Filtro de Data (Fuso Oficial de Brasília America/Sao_Paulo)
     if (params.specificDate) {
       const { startOfDay, endOfDay } = getBrasiliaDayRange(params.specificDate);
-      andConditions.push({
-        date: { gte: startOfDay, lte: endOfDay },
-      });
+      andConditions.push(buildDateFilter({ gte: startOfDay, lte: endOfDay }));
     } else if (params.startDate || params.endDate) {
       const dateRange: any = {};
       if (params.startDate) {
@@ -1154,15 +1531,13 @@ export async function getPaginatedTransactions(params: {
       if (params.endDate) {
         dateRange.lte = getBrasiliaDayRange(params.endDate).endOfDay;
       }
-      andConditions.push({ date: dateRange });
+      andConditions.push(buildDateFilter(dateRange));
     } else if (params.month && params.year) {
       const { monthStart, monthEnd } = getBrasiliaMonthRange(
         params.year,
         params.month,
       );
-      andConditions.push({
-        date: { gte: monthStart, lte: monthEnd },
-      });
+      andConditions.push(buildDateFilter({ gte: monthStart, lte: monthEnd }));
     }
 
     // 2. Filtro de Tipo (RECEITA / DESPESA)
@@ -1245,6 +1620,9 @@ export async function getPaginatedTransactions(params: {
     };
 
     const skip = (params.page - 1) * params.limit;
+    const orderBy: any = isCaixa
+      ? [{ settlement_date: "desc" }, { date: "desc" }]
+      : { date: "desc" };
 
     const [total, rawTxs] = await Promise.all([
       prisma.transaction.count({ where }),
@@ -1252,7 +1630,7 @@ export async function getPaginatedTransactions(params: {
         where,
         skip,
         take: params.limit,
-        orderBy: { date: "desc" },
+        orderBy,
         select: {
           id: true,
           type: true,
@@ -1267,6 +1645,15 @@ export async function getPaginatedTransactions(params: {
           package_id: true,
           appointment_id: true,
           stock_item_id: true,
+          parent_transaction_id: true,
+          child_transactions: {
+            select: {
+              id: true,
+              amount: true,
+              type: true,
+              description: true,
+            },
+          },
           package: { select: { id: true, name: true } },
           client: {
             select: {
@@ -1298,13 +1685,27 @@ export async function getPaginatedTransactions(params: {
 
     const data = rawTxs.map((t) => {
       const isManual = !t.package_id && !t.appointment_id && !t.stock_item_id;
+      const isAppointmentLinked = !!t.appointment_id;
+      const grossAmount = Number(t.amount);
+      const feeChilds = (t.child_transactions || []).filter(
+        (c) => c.type === "DESPESA",
+      );
+      const feeAmount = feeChilds.reduce((acc, c) => acc + Number(c.amount), 0);
+      const netAmount =
+        t.type === "RECEITA" ? Math.max(0, grossAmount - feeAmount) : grossAmount;
+
       return {
         id: t.id,
         originalId: t.id,
         isManual,
+        isAppointmentLinked,
+        parent_transaction_id: t.parent_transaction_id,
         type: t.type,
         description: t.description,
         amount: Number(t.amount),
+        grossAmount,
+        feeAmount,
+        netAmount,
         date: t.date.toISOString(),
         settlementDate: t.settlement_date ? t.settlement_date.toISOString() : null,
         dueDate: t.due_date ? t.due_date.toISOString() : null,

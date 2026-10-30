@@ -30,6 +30,7 @@ import {
   PaginationEllipsis,
 } from "@/components/ui/pagination";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   LoaderDots,
   Dollar,
@@ -38,10 +39,12 @@ import {
   ArrowDownRight,
   CheckCircle,
 } from "@boxicons/react";
+import { Zap, X, CheckCheck } from "lucide-react";
 import {
   getPendingReceivables,
   processReceivablePayment,
   processAllReceivablesPayment,
+  processBatchReceivablesPayment,
 } from "@/app/actions/transactions";
 import { getPaymentMethods } from "@/app/actions/payment-methods";
 import useSWR from "swr";
@@ -75,14 +78,123 @@ export default function ReceivablesPage() {
 
   const isLoading = isLoadingReceivables && receivables.length === 0;
 
+  // Forma de pagamento padrão para "Baixa Rápida" em 1 clique
+  const defaultPaymentMethod =
+    paymentMethods.find((pm) => pm.type === "PIX") ||
+    paymentMethods.find((pm) => pm.type === "DINHEIRO") ||
+    paymentMethods[0] ||
+    null;
+
+  // Seleção múltipla para baixa em lote
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
   // Paginação Client-side para fluidez e escalabilidade
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
-  // Controle do Modal de Pagamento - aceita o item ou a chave "ALL" para dar baixa em todos
-  const [selectedItem, setSelectedItem] = useState<any | "ALL" | null>(null);
+  // Controle do Modal de Pagamento - aceita o item, a chave "ALL" ou "SELECTED_BATCH"
+  const [selectedItem, setSelectedItem] = useState<
+    any | "ALL" | "SELECTED_BATCH" | null
+  >(null);
   const [paymentMethodId, setPaymentMethodId] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const selectedTotalAmount = receivables
+    .filter((r) => selectedIds.has(r.id))
+    .reduce((acc, r) => acc + r.amount, 0);
+
+  const toggleSelectItem = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const selectAllFromClient = (clientName: string) => {
+    const clientItems = receivables.filter((r) => r.clientName === clientName);
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      clientItems.forEach((item) => next.add(item.id));
+      return next;
+    });
+    toast.info(`${clientItems.length} lançamentos de ${clientName} selecionados.`);
+  };
+
+  // Baixa Rápida em 1 único clique (assume método padrão da clínica e data de hoje)
+  const handleQuickSinglePayment = async (item: any) => {
+    if (!defaultPaymentMethod) {
+      setSelectedItem(item);
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const res = await processReceivablePayment(
+        item.id,
+        item.sourceType,
+        defaultPaymentMethod.type,
+        defaultPaymentMethod.id,
+      );
+
+      if (res.success) {
+        toast.success(
+          `Baixa rápida efetuada via ${defaultPaymentMethod.name || defaultPaymentMethod.type}!`,
+        );
+        setSelectedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(item.id);
+          return next;
+        });
+        await mutateReceivables();
+        invalidateFinanceCaches();
+      } else {
+        toast.error(res.error || "Erro ao processar baixa rápida.");
+      }
+    } catch {
+      toast.error("Erro na conexão ao processar baixa rápida.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Baixa Rápida em lote para os selecionados (1 clique)
+  const handleQuickBatchPayment = async () => {
+    if (selectedIds.size === 0) return;
+    if (!defaultPaymentMethod) {
+      setSelectedItem("SELECTED_BATCH");
+      return;
+    }
+
+    const selectedItems = receivables.filter((r) => selectedIds.has(r.id));
+    setIsProcessing(true);
+    try {
+      const res = await processBatchReceivablesPayment(
+        selectedItems.map((r) => ({ id: r.id, sourceType: r.sourceType })),
+        defaultPaymentMethod.type,
+        defaultPaymentMethod.id,
+      );
+
+      if (res.success) {
+        toast.success(
+          `Baixa rápida de ${res.count ?? selectedItems.length} recebimentos efetuada via ${defaultPaymentMethod.name || defaultPaymentMethod.type}!`,
+        );
+        setSelectedIds(new Set());
+        await mutateReceivables();
+        invalidateFinanceCaches();
+      } else {
+        toast.error(res.error || "Erro ao processar baixa em lote.");
+      }
+    } catch {
+      toast.error("Erro na conexão ao processar baixa em lote.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const handleConfirmPayment = async () => {
     if (!selectedItem) return;
@@ -110,11 +222,32 @@ export default function ReceivablesPage() {
             `Todos os recebimentos foram quitados com sucesso! (${res.count ?? receivables.length} itens)`,
           );
           handleCloseModal();
+          setSelectedIds(new Set());
           setCurrentPage(1);
           await mutateReceivables();
           invalidateFinanceCaches();
         } else {
           toast.error(res.error || "Erro ao quitar todos os recebimentos.");
+        }
+      } else if (selectedItem === "SELECTED_BATCH") {
+        // Fluxo Lote Selecionado: Baixa em lote nos itens marcados
+        const selectedItems = receivables.filter((r) => selectedIds.has(r.id));
+        const res = await processBatchReceivablesPayment(
+          selectedItems.map((r) => ({ id: r.id, sourceType: r.sourceType })),
+          selectedMethod.type,
+          selectedMethod.id,
+        );
+
+        if (res.success) {
+          toast.success(
+            `${res.count ?? selectedItems.length} recebimentos quitados com sucesso!`,
+          );
+          handleCloseModal();
+          setSelectedIds(new Set());
+          await mutateReceivables();
+          invalidateFinanceCaches();
+        } else {
+          toast.error(res.error || "Erro ao quitar recebimentos selecionados.");
         }
       } else {
         // Fluxo original: Baixa em um único item
@@ -128,6 +261,11 @@ export default function ReceivablesPage() {
         if (res.success) {
           toast.success("Pagamento registrado com sucesso!");
           handleCloseModal();
+          setSelectedIds((prev) => {
+            const next = new Set(prev);
+            next.delete(selectedItem.id);
+            return next;
+          });
           await mutateReceivables();
           invalidateFinanceCaches();
         } else {
@@ -216,6 +354,65 @@ export default function ReceivablesPage() {
       <AdminHeader title="Contas a Receber" />
 
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 animate-in fade-in duration-700 min-h-[calc(100vh-100px)]">
+        {/* BARRA DE AÇÃO EM LOTE STICKY QUANDO HÁ SELEÇÃO */}
+        {selectedIds.size > 0 && (
+          <div className="sticky top-4 z-40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-3xl bg-emerald-600 text-white shadow-xl shadow-emerald-600/30 border border-emerald-500/40 animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className="flex items-center gap-3">
+              <div className="h-11 w-11 bg-white/20 rounded-2xl flex items-center justify-center shrink-0">
+                <CheckCheck className="h-6 w-6 text-white" />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-black text-sm">
+                  {selectedIds.size}{" "}
+                  {selectedIds.size === 1
+                    ? "lançamento selecionado"
+                    : "lançamentos selecionados"}
+                </span>
+                <span className="text-xs text-white/90 font-semibold">
+                  Total a Receber: {formatCurrency(selectedTotalAmount)}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+              <Button
+                type="button"
+                onClick={handleQuickBatchPayment}
+                disabled={isProcessing}
+                className="flex-1 sm:flex-initial font-bold bg-white text-emerald-700 hover:bg-white/90 shadow-sm rounded-xl h-10 px-4 gap-1.5 transition-all active:scale-95 cursor-pointer"
+              >
+                <Zap className="h-4 w-4 fill-emerald-600 text-emerald-600" />
+                Baixa Rápida (
+                {defaultPaymentMethod?.name ||
+                  defaultPaymentMethod?.type ||
+                  "PIX"}
+                )
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setSelectedItem("SELECTED_BATCH")}
+                disabled={isProcessing}
+                className="flex-1 sm:flex-initial bg-emerald-700/60 hover:bg-emerald-700 text-white border-white/30 font-bold rounded-xl h-10 px-4 transition-all cursor-pointer"
+              >
+                Escolher Forma...
+              </Button>
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setSelectedIds(new Set())}
+                className="h-10 w-10 text-white hover:bg-white/20 rounded-xl cursor-pointer"
+                title="Desmarcar todos"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* RESUMO PREMIUM GLASSMORPHISM */}
         {!isLoading && receivables.length > 0 && (
           <div className="relative overflow-hidden bg-background/50 backdrop-blur-md border border-emerald-500/20 rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 shadow-sm">
@@ -249,6 +446,46 @@ export default function ReceivablesPage() {
 
         {/* LISTA DE PENDÊNCIAS */}
         <div className="flex flex-col w-full bg-background/40 backdrop-blur-sm rounded-3xl border border-border/40 p-2 sm:p-4 shadow-sm">
+          {/* BARRA SUPERIOR DE SELEÇÃO DA PÁGINA */}
+          {!isLoading && paginatedReceivables.length > 0 && (
+            <div className="flex items-center justify-between px-3 py-2 border-b border-border/30 text-xs font-bold text-muted-foreground">
+              <div className="flex items-center gap-2.5">
+                <Checkbox
+                  checked={
+                    paginatedReceivables.length > 0 &&
+                    paginatedReceivables.every((r) => selectedIds.has(r.id))
+                  }
+                  onCheckedChange={() => {
+                    const allPageSelected = paginatedReceivables.every((r) =>
+                      selectedIds.has(r.id),
+                    );
+                    setSelectedIds((prev) => {
+                      const next = new Set(prev);
+                      if (allPageSelected) {
+                        paginatedReceivables.forEach((r) => next.delete(r.id));
+                      } else {
+                        paginatedReceivables.forEach((r) => next.add(r.id));
+                      }
+                      return next;
+                    });
+                  }}
+                  className="data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
+                />
+                <span>
+                  Selecionar página ({paginatedReceivables.length} itens)
+                </span>
+              </div>
+              {selectedIds.size > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedIds(new Set())}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
+                  Limpar Seleção ({selectedIds.size})
+                </button>
+              )}
+            </div>
+          )}
           {isLoading ? (
             <div className="flex flex-col gap-3 p-2 sm:p-4 animate-in fade-in duration-300">
               {Array.from({ length: 6 }).map((_, idx) => (
@@ -287,9 +524,17 @@ export default function ReceivablesPage() {
               {paginatedReceivables.map((item) => (
                 <div
                   key={item.id}
-                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b border-border/40 last:border-0 hover:bg-muted/40 transition-all duration-300 rounded-2xl group gap-4"
+                  className={cn(
+                    "flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b border-border/40 last:border-0 hover:bg-muted/40 transition-all duration-300 rounded-2xl group gap-4",
+                    selectedIds.has(item.id) && "bg-emerald-500/5 border-emerald-500/20",
+                  )}
                 >
-                  <div className="flex items-center gap-4 w-full sm:w-auto">
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <Checkbox
+                      checked={selectedIds.has(item.id)}
+                      onCheckedChange={() => toggleSelectItem(item.id)}
+                      className="shrink-0 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
+                    />
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400 font-bold shadow-sm transition-transform duration-300 group-hover:scale-110">
                       <ArrowDownRight className="h-6 w-6" />
                     </div>
@@ -324,9 +569,17 @@ export default function ReceivablesPage() {
                       <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px] font-medium text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <User className="h-3.5 w-3.5" />
-                          <span className="truncate max-w-30 sm:max-w-xs">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              selectAllFromClient(item.clientName);
+                            }}
+                            className="truncate max-w-30 sm:max-w-xs hover:text-emerald-600 hover:underline transition-colors text-left font-semibold cursor-pointer"
+                            title="Clique para selecionar todos os lançamentos deste cliente"
+                          >
                             {item.clientName}
-                          </span>
+                          </button>
                         </span>
                         <span className="w-1 h-1 rounded-full bg-border mx-0.5"></span>
                         <span className="flex items-center gap-1 font-semibold">
@@ -352,17 +605,31 @@ export default function ReceivablesPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4 border-t border-border/30 sm:border-none pt-3 sm:pt-0">
+                  <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3 border-t border-border/30 sm:border-none pt-3 sm:pt-0">
                     <span className="text-lg font-black tracking-tight text-amber-600 dark:text-amber-500">
                       {formatCurrency(item.amount)}
                     </span>
-                    <Button
-                      onClick={() => setSelectedItem(item)}
-                      variant="outline"
-                      className="font-bold bg-background border-border/40 hover:bg-emerald-500/10 hover:text-emerald-600 hover:border-emerald-500/30 transition-all shadow-sm h-10"
-                    >
-                      Dar Baixa
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        onClick={() => handleQuickSinglePayment(item)}
+                        disabled={isProcessing}
+                        size="sm"
+                        className="font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs rounded-xl h-10 px-3.5 gap-1.5 active:scale-95 transition-all cursor-pointer"
+                        title={`Baixa Rápida em 1 clique via ${defaultPaymentMethod?.name || defaultPaymentMethod?.type || "PIX"}`}
+                      >
+                        <Zap className="h-3.5 w-3.5 fill-white text-white" />
+                        Rápida
+                      </Button>
+                      <Button
+                        onClick={() => setSelectedItem(item)}
+                        disabled={isProcessing}
+                        variant="outline"
+                        size="sm"
+                        className="font-bold bg-background border-border/40 hover:bg-muted transition-all shadow-xs h-10 px-3 cursor-pointer"
+                      >
+                        Dar Baixa...
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -451,7 +718,9 @@ export default function ReceivablesPage() {
             <DialogTitle className="text-xl font-black text-foreground">
               {selectedItem === "ALL"
                 ? "Registrar Todos os Recebimentos"
-                : "Registrar Recebimento"}
+                : selectedItem === "SELECTED_BATCH"
+                  ? `Registrar ${selectedIds.size} Recebimentos Selecionados`
+                  : "Registrar Recebimento"}
             </DialogTitle>
             <DialogDescription className="font-medium text-muted-foreground text-sm leading-relaxed pt-1">
               Selecione a forma de pagamento utilizada para dar baixa{" "}
@@ -467,12 +736,25 @@ export default function ReceivablesPage() {
                   </strong>
                   .
                 </>
+              ) : selectedItem === "SELECTED_BATCH" ? (
+                <>
+                  nos{" "}
+                  <strong className="text-foreground font-black">
+                    {selectedIds.size} lançamentos selecionados
+                  </strong>
+                  , totalizando{" "}
+                  <strong className="text-foreground font-black">
+                    {formatCurrency(selectedTotalAmount)}
+                  </strong>
+                  .
+                </>
               ) : (
                 <>
                   no valor de{" "}
                   <strong className="text-foreground font-black">
                     {selectedItem &&
                       selectedItem !== "ALL" &&
+                      selectedItem !== "SELECTED_BATCH" &&
                       formatCurrency(selectedItem.amount)}
                   </strong>
                   .
@@ -482,7 +764,9 @@ export default function ReceivablesPage() {
           </DialogHeader>
 
           <div className="py-4 space-y-4">
-            {selectedItem && selectedItem !== "ALL" && (
+            {selectedItem &&
+              selectedItem !== "ALL" &&
+              selectedItem !== "SELECTED_BATCH" && (
               <div className="p-3.5 bg-muted/30 border border-border/40 rounded-2xl space-y-2 text-xs">
                 <div className="flex justify-between items-center text-muted-foreground">
                   <span>Lançamento:</span>
@@ -549,6 +833,27 @@ export default function ReceivablesPage() {
                   <span>Valor a Quitar:</span>
                   <span className="text-amber-600 dark:text-amber-500 font-black text-sm">
                     {formatCurrency(selectedItem.amount)}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {selectedItem === "SELECTED_BATCH" && (
+              <div className="p-4 bg-emerald-500/10 border border-emerald-500/25 rounded-2xl space-y-2.5 text-xs">
+                <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold">
+                  <CheckCheck className="h-4 w-4 shrink-0" />
+                  <span>Baixa em Lote Selecionado</span>
+                </div>
+                <div className="flex justify-between items-center text-muted-foreground">
+                  <span>Lançamentos Selecionados:</span>
+                  <span className="font-bold text-foreground">
+                    {selectedIds.size} itens
+                  </span>
+                </div>
+                <div className="border-t border-emerald-500/20 pt-2 flex justify-between items-center font-bold text-foreground">
+                  <span>Valor Total a Quitar:</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-black text-base">
+                    {formatCurrency(selectedTotalAmount)}
                   </span>
                 </div>
               </div>

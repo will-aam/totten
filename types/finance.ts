@@ -6,16 +6,21 @@ export { PaymentMethod };
 
 export type TransactionType = "RECEITA" | "DESPESA";
 export type TransactionStatus = "PAGO" | "PENDENTE" | "ATRASADO";
+export type FinanceViewMode = "COMPETENCIA" | "CAIXA";
 
 export interface Transaction {
   id: string;
   type: TransactionType;
   description: string;
   amount: number;
+  grossAmount?: number;
+  feeAmount?: number;
+  netAmount?: number;
   date: string;
   settlementDate?: string | null;
   dueDate?: string | null;
   paymentMethod?: PaymentMethod;
+  paymentMethodName?: string;
   status: TransactionStatus;
   clientId?: string;
   clientName?: string;
@@ -27,6 +32,9 @@ export interface FinanceSummary {
   expensesMonth: number;
   balanceMonth: number;
   profitMargin?: number;
+  grossRevenueMonth?: number;
+  feesMonth?: number;
+  viewMode?: FinanceViewMode;
 }
 
 export interface SecondaryIndicators {
@@ -79,7 +87,11 @@ export interface FinanceDashboardData {
     type: TransactionType;
     description: string;
     amount: number;
+    grossAmount?: number;
+    feeAmount?: number;
+    netAmount?: number;
     date: string;
+    settlementDate?: string | null;
     status: TransactionStatus;
     clientName?: string;
     paymentMethod?: string;

@@ -36,6 +36,9 @@ const FINANCE_WIDGET_COMPONENTS: Record<string, React.ComponentType<any>> = {
   recent_transactions: FinanceRecentTransactionsWidget,
 };
 
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+
 import {
   FinanceVisibilityProvider,
   useFinanceVisibility,
@@ -70,6 +73,7 @@ export default function FinanceDashboardPage() {
 }
 
 function FinanceDashboardContent() {
+  const { viewMode, setViewMode } = useFinanceVisibility();
   const [widgets, setWidgets] = useState<FinanceWidgetConfig[]>([]);
   const [mounted, setMounted] = useState(false);
   const [cols, setCols] = useState(1);
@@ -166,6 +170,47 @@ function FinanceDashboardContent() {
       />
 
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative animate-in fade-in duration-300">
+        {/* CHAVE DE ALTERNÂNCIA: COMPETÊNCIA VS CAIXA D+X */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card/60 backdrop-blur-md p-3 sm:p-4 rounded-2xl border border-border/50 shadow-xs">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              Regime Contábil:
+            </span>
+            <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider">
+              {viewMode === "COMPETENCIA"
+                ? "Competência (Faturamento / Vendas)"
+                : "Caixa (Compensação Líquida D+X)"}
+            </Badge>
+          </div>
+
+          <div className="flex items-center bg-muted/40 p-1 rounded-xl border border-border/40 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => setViewMode("COMPETENCIA")}
+              className={cn(
+                "flex-1 sm:flex-initial px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                viewMode === "COMPETENCIA"
+                  ? "bg-background text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              Visão Competência (Vendas)
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("CAIXA")}
+              className={cn(
+                "flex-1 sm:flex-initial px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                viewMode === "CAIXA"
+                  ? "bg-background text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              Visão Caixa (Depósitos D+X)
+            </button>
+          </div>
+        </div>
+
         {/* KPIs no padrão idêntico ao dashboard principal */}
         <FinanceKpiCards />
 

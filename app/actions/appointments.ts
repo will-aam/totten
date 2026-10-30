@@ -99,12 +99,14 @@ export async function createAppointment(
     const targetProfessional = professionalId || admin.id;
 
     let startSessionNumber = 0;
+    let selectedPackage: any = null;
 
     if (packageId) {
       const pkg = await prisma.package.findUnique({ where: { id: packageId } });
       if (!pkg || pkg.organization_id !== admin.organizationId) {
         return { success: false, error: "Pacote não encontrado." };
       }
+      selectedPackage = pkg;
 
       if (!pkg.active) {
         return {
@@ -184,7 +186,7 @@ export async function createAppointment(
             payment_method: (!packageId && isPaid && finalPaymentMethod) ? finalPaymentMethod : null,
             has_charge: !packageId && !isPaid,
             snapshot_service_name: service.name,
-            snapshot_service_price: service.price,
+            snapshot_service_price: packageId && selectedPackage ? selectedPackage.snapshot_service_price ?? (Number(selectedPackage.total_price) / Math.max(1, selectedPackage.total_sessions)) : service.price,
             snapshot_service_duration: service.duration,
           },
           include: {

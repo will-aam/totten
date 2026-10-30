@@ -38,13 +38,13 @@ const TIMEFRAMES: { key: TimeframeOption; label: string }[] = [
 import { useFinanceVisibility } from "./finance-visibility-context";
 
 export function FinanceHeroChart() {
-  const { hideValues } = useFinanceVisibility();
+  const { hideValues, viewMode } = useFinanceVisibility();
   const [timeframe, setTimeframe] = useState<TimeframeOption>("1m");
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading } = useSWR<FinanceChartData>(
-    ["finance-hero-chart", timeframe],
-    ([, tf]: [string, TimeframeOption]) => getFinanceChartData(tf),
+    ["finance-hero-chart", timeframe, viewMode],
+    ([, tf, vm]: [string, TimeframeOption, any]) => getFinanceChartData(tf, vm),
     {
       keepPreviousData: true,
     },

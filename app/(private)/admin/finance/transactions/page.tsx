@@ -82,7 +82,7 @@ import {
 } from "@/app/actions/transactions";
 import { getPaymentMethods } from "@/app/actions/payment-methods";
 import { toast } from "sonner";
-import { TransactionStatus } from "@/types/finance";
+import { TransactionStatus, FinanceViewMode } from "@/types/finance";
 import { TransactionModal } from "../_components/transaction-modal";
 import { FinanceSpeedDial } from "../_components/finance-speed-dial";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -119,6 +119,22 @@ export default function TransactionsPage() {
   const [specificDate, setSpecificDate] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+
+  // Regime Contábil (Visão Competência vs Visão Caixa D+X)
+  const [viewMode, setViewMode] = useState<FinanceViewMode>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("totten_finance_view_mode") as FinanceViewMode | null;
+      if (saved === "COMPETENCIA" || saved === "CAIXA") return saved;
+    }
+    return "COMPETENCIA";
+  });
+
+  const handleToggleViewMode = (mode: FinanceViewMode) => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem("totten_finance_view_mode", mode);
+    } catch {}
+  };
 
   // Outros Filtros
   const [filterType, setFilterType] = useState<"ALL" | "RECEITA" | "DESPESA">("ALL");
@@ -167,6 +183,7 @@ export default function TransactionsPage() {
     statusFilter,
     paymentMethodFilter,
     debouncedSearch,
+    viewMode,
   ]);
 
   // Parâmetros memoizados para a chave do SWR
@@ -179,6 +196,7 @@ export default function TransactionsPage() {
       paymentMethod:
         paymentMethodFilter === "ALL" ? undefined : paymentMethodFilter,
       search: debouncedSearch.trim() || undefined,
+      viewMode,
     };
 
     if (dateMode === "day" && specificDate) {
@@ -204,6 +222,7 @@ export default function TransactionsPage() {
     statusFilter,
     paymentMethodFilter,
     debouncedSearch,
+    viewMode,
   ]);
 
   // Consulta otimizada com SWR (mantém dados anteriores e elimina re-buscas desnecessárias ao trocar de aba)
@@ -581,6 +600,32 @@ export default function TransactionsPage() {
           <StatusBadge transaction={tx} />
         </div>
 
+        {/* DETALHAMENTO DE TAXAS DA OPERADORA / GATEWAY */}
+        {tx.feeAmount && tx.feeAmount > 0 && (
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl sm:rounded-3xl p-4 sm:p-5 flex flex-col gap-3 shadow-xs">
+            <span className="text-xs font-black uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+              <CreditCard className="h-4 w-4" /> Detalhamento de Taxas da Operadora
+            </span>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="bg-background/80 p-3 rounded-xl border border-border/40 flex flex-col">
+                <span className="text-[10px] uppercase font-bold text-muted-foreground">Valor Bruto</span>
+                <span className="text-sm sm:text-base font-black text-foreground">{formatCurrency(tx.grossAmount || tx.amount)}</span>
+              </div>
+              <div className="bg-background/80 p-3 rounded-xl border border-rose-500/30 flex flex-col">
+                <span className="text-[10px] uppercase font-bold text-rose-600">Taxa Máquina</span>
+                <span className="text-sm sm:text-base font-black text-rose-600">-{formatCurrency(tx.feeAmount)}</span>
+              </div>
+              <div className="bg-background/80 p-3 rounded-xl border border-emerald-500/30 flex flex-col">
+                <span className="text-[10px] uppercase font-bold text-emerald-600">Líquido Previsto</span>
+                <span className="text-sm sm:text-base font-black text-emerald-600">{formatCurrency(tx.netAmount)}</span>
+              </div>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Taxa da maquininha descontada automaticamente conforme as configurações do método de pagamento.
+            </p>
+          </div>
+        )}
+
         <div className="space-y-2">
           <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
             Descrição
@@ -722,6 +767,47 @@ export default function TransactionsPage() {
         {/* BARRA DE FILTROS RESPONSIVA & MOBILE-FIRST */}
         <div className="flex flex-col gap-3 sm:gap-4 bg-background/60 backdrop-blur-md p-3 sm:p-5 rounded-2xl sm:rounded-3xl border border-border/40 shadow-sm relative overflow-hidden">
           <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 blur-3xl rounded-full -z-10 pointer-events-none" />
+
+          {/* LINHA 0: REGIME CONTÁBIL: VISÃO COMPETÊNCIA (VENDAS) VS CAIXA (DEPÓSITOS D+X) */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/30">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                Regime Contábil:
+              </span>
+              <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider">
+                {viewMode === "COMPETENCIA"
+                  ? "Competência (Data da Venda)"
+                  : "Caixa (Data de Compensação Líquida D+X)"}
+              </Badge>
+            </div>
+
+            <div className="flex items-center bg-muted/40 p-1 rounded-xl border border-border/40 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={() => handleToggleViewMode("COMPETENCIA")}
+                className={cn(
+                  "flex-1 sm:flex-initial px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                  viewMode === "COMPETENCIA"
+                    ? "bg-background text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                Visão Competência (Vendas)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleToggleViewMode("CAIXA")}
+                className={cn(
+                  "flex-1 sm:flex-initial px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                  viewMode === "CAIXA"
+                    ? "bg-background text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                Visão Caixa (Depósitos D+X)
+              </button>
+            </div>
+          </div>
 
           {/* LINHA 1: MODOS DE DATA (Tabs responsivas sem ícones) */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 sm:pb-3 border-b border-border/30">
@@ -1292,11 +1378,22 @@ export default function TransactionsPage() {
                                 {isIncome ? "+" : "-"}{" "}
                                 {formatCurrency(transaction.amount)}
                               </span>
+                              {transaction.feeAmount && transaction.feeAmount > 0 ? (
+                                <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-semibold">
+                                  <span className="text-rose-500/90 font-bold">
+                                    -{formatCurrency(transaction.feeAmount)} taxa
+                                  </span>
+                                  <span>•</span>
+                                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                                    {formatCurrency(transaction.netAmount)} líq.
+                                  </span>
+                                </div>
+                              ) : null}
                               <StatusBadge transaction={transaction} />
                             </div>
 
-                            {/* Dropdown de Ações EXCLUSIVAMENTE para lançamentos manuais */}
-                            {transaction.isManual && (
+                            {/* Dropdown de Ações para lançamentos manuais ou estorno de agendamentos vinculados */}
+                            {(transaction.isManual || transaction.isAppointmentLinked) && (
                               <div
                                 className="flex items-center justify-end"
                                 onClick={(e) => e.stopPropagation()}
@@ -1306,30 +1403,35 @@ export default function TransactionsPage() {
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="h-7 w-7 text-muted-foreground hover:bg-muted hover:text-foreground border-none transition-colors"
+                                      className="h-7 w-7 text-muted-foreground hover:bg-muted hover:text-foreground border-none transition-colors cursor-pointer"
                                     >
                                       <ChevronDown className="h-3.5 w-3.5" />
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent
                                     align="end"
-                                    className="w-36 rounded-2xl border border-border/40 shadow-xl p-1.5 bg-background/95 backdrop-blur-md"
+                                    className="w-40 rounded-2xl border border-border/40 shadow-xl p-1.5 bg-background/95 backdrop-blur-md"
                                   >
-                                    <DropdownMenuItem
-                                      className="gap-2 cursor-pointer rounded-full text-foreground focus:bg-primary/10 focus:text-primary font-bold transition-colors py-2 text-xs"
-                                      onClick={() =>
-                                        setEditingTransaction(transaction)
-                                      }
-                                    >
-                                      <Pencil className="h-3.5 w-3.5" /> Editar
-                                    </DropdownMenuItem>
+                                    {transaction.isManual && (
+                                      <DropdownMenuItem
+                                        className="gap-2 cursor-pointer rounded-full text-foreground focus:bg-primary/10 focus:text-primary font-bold transition-colors py-2 text-xs"
+                                        onClick={() =>
+                                          setEditingTransaction(transaction)
+                                        }
+                                      >
+                                        <Pencil className="h-3.5 w-3.5" /> Editar
+                                      </DropdownMenuItem>
+                                    )}
                                     <DropdownMenuItem
                                       className="gap-2 cursor-pointer rounded-full text-rose-500 focus:bg-rose-500/10 focus:text-rose-600 font-bold transition-colors mt-1 py-2 text-xs"
                                       onClick={() =>
                                         setDeletingTx(transaction)
                                       }
                                     >
-                                      <Trash className="h-3.5 w-3.5" /> Excluir
+                                      <Trash className="h-3.5 w-3.5" />{" "}
+                                      {transaction.isAppointmentLinked
+                                        ? "Estornar Pagamento"
+                                        : "Excluir"}
                                     </DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
@@ -1482,6 +1584,18 @@ export default function TransactionsPage() {
                 Você está prestes a excluir esta transação. Essa ação atualizará
                 o seu caixa e não pode ser desfeita.
               </p>
+              {deletingTx?.appointment_id && (
+                <div className="flex flex-col gap-1.5 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs">
+                  <span className="font-black flex items-center gap-1.5 uppercase tracking-wide">
+                    ⚠️ Atenção: Estorno de Agendamento
+                  </span>
+                  <span>
+                    Esta movimentação está vinculada ao atendimento de{" "}
+                    <strong>{deletingTx.clientName || "cliente"}</strong>.
+                    Ao estornar/excluir, o valor será debitado do caixa, eventuais taxas associadas de cartão serão canceladas e o agendamento retornará para o status de pagamento pendente (Contas a Receber).
+                  </span>
+                </div>
+              )}
               {deletingTx?.package_id && (
                 <div className="flex flex-col gap-1 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs">
                   <span className="font-black flex items-center gap-1.5 uppercase tracking-wide">

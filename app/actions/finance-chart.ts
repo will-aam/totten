@@ -3,11 +3,13 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireFinancePermission } from "@/lib/auth";
+import { Prisma } from "@prisma/client";
 import {
   getBrasiliaDateParts,
   getBrasiliaDayRange,
   getBrasiliaMonthRange,
 } from "@/lib/date-utils";
+import { FinanceViewMode } from "@/types/finance";
 
 export type TimeframeOption = "4h" | "1d" | "1w" | "1m" | "1y";
 
@@ -36,6 +38,7 @@ export interface FinanceChartData {
 
 export async function getFinanceChartData(
   timeframe: TimeframeOption = "1y",
+  viewMode: FinanceViewMode = "COMPETENCIA",
 ): Promise<FinanceChartData> {
   const admin = await requireFinancePermission();
   const organizationId = admin.organizationId;
@@ -100,6 +103,11 @@ export async function getFinanceChartData(
     }
   }
 
+  const dateCol =
+    viewMode === "CAIXA"
+      ? Prisma.sql`COALESCE(t.settlement_date, t.date)`
+      : Prisma.sql`t.date`;
+
   // 2. Agregações nativas no banco de dados (zero hydration de dezenas de milhares de transações)
   let currentAgg: Array<{ bucket: string; type: string; total: number | null }> = [];
   let previousAgg: Array<{ bucket: string; total: number | null }> = [];
@@ -108,29 +116,29 @@ export async function getFinanceChartData(
     [currentAgg, previousAgg] = await Promise.all([
       prisma.$queryRaw<Array<{ bucket: string; type: string; total: number | null }>>`
         SELECT 
-          TO_CHAR(t.date AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD HH24:00') AS bucket,
+          TO_CHAR(${dateCol} AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD HH24:00') AS bucket,
           t.type::text AS type,
           COALESCE(SUM(t.amount), 0)::float AS total
         FROM transactions t
         LEFT JOIN appointments a ON t.appointment_id = a.id
         WHERE t.organization_id = ${organizationId}
           AND t.status = 'PAGO'
-          AND t.date >= ${startDate}
-          AND t.date <= ${now}
+          AND ${dateCol} >= ${startDate}
+          AND ${dateCol} <= ${now}
           AND NOT (t.type = 'RECEITA' AND a.package_id IS NOT NULL)
         GROUP BY bucket, t.type
       `,
       prisma.$queryRaw<Array<{ bucket: string; total: number | null }>>`
         SELECT 
-          TO_CHAR(t.date AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD HH24:00') AS bucket,
+          TO_CHAR(${dateCol} AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD HH24:00') AS bucket,
           COALESCE(SUM(t.amount), 0)::float AS total
         FROM transactions t
         LEFT JOIN appointments a ON t.appointment_id = a.id
         WHERE t.organization_id = ${organizationId}
           AND t.status = 'PAGO'
           AND t.type = 'RECEITA'
-          AND t.date >= ${prevStartDate}
-          AND t.date < ${startDate}
+          AND ${dateCol} >= ${prevStartDate}
+          AND ${dateCol} < ${startDate}
           AND NOT (a.package_id IS NOT NULL)
         GROUP BY bucket
       `,
@@ -139,29 +147,29 @@ export async function getFinanceChartData(
     [currentAgg, previousAgg] = await Promise.all([
       prisma.$queryRaw<Array<{ bucket: string; type: string; total: number | null }>>`
         SELECT 
-          TO_CHAR(t.date AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') AS bucket,
+          TO_CHAR(${dateCol} AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') AS bucket,
           t.type::text AS type,
           COALESCE(SUM(t.amount), 0)::float AS total
         FROM transactions t
         LEFT JOIN appointments a ON t.appointment_id = a.id
         WHERE t.organization_id = ${organizationId}
           AND t.status = 'PAGO'
-          AND t.date >= ${startDate}
-          AND t.date <= ${now}
+          AND ${dateCol} >= ${startDate}
+          AND ${dateCol} <= ${now}
           AND NOT (t.type = 'RECEITA' AND a.package_id IS NOT NULL)
         GROUP BY bucket, t.type
       `,
       prisma.$queryRaw<Array<{ bucket: string; total: number | null }>>`
         SELECT 
-          TO_CHAR(t.date AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') AS bucket,
+          TO_CHAR(${dateCol} AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') AS bucket,
           COALESCE(SUM(t.amount), 0)::float AS total
         FROM transactions t
         LEFT JOIN appointments a ON t.appointment_id = a.id
         WHERE t.organization_id = ${organizationId}
           AND t.status = 'PAGO'
           AND t.type = 'RECEITA'
-          AND t.date >= ${prevStartDate}
-          AND t.date < ${startDate}
+          AND ${dateCol} >= ${prevStartDate}
+          AND ${dateCol} < ${startDate}
           AND NOT (a.package_id IS NOT NULL)
         GROUP BY bucket
       `,
@@ -171,29 +179,29 @@ export async function getFinanceChartData(
     [currentAgg, previousAgg] = await Promise.all([
       prisma.$queryRaw<Array<{ bucket: string; type: string; total: number | null }>>`
         SELECT 
-          TO_CHAR(t.date AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM') AS bucket,
+          TO_CHAR(${dateCol} AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM') AS bucket,
           t.type::text AS type,
           COALESCE(SUM(t.amount), 0)::float AS total
         FROM transactions t
         LEFT JOIN appointments a ON t.appointment_id = a.id
         WHERE t.organization_id = ${organizationId}
           AND t.status = 'PAGO'
-          AND t.date >= ${startDate}
-          AND t.date <= ${now}
+          AND ${dateCol} >= ${startDate}
+          AND ${dateCol} <= ${now}
           AND NOT (t.type = 'RECEITA' AND a.package_id IS NOT NULL)
         GROUP BY bucket, t.type
       `,
       prisma.$queryRaw<Array<{ bucket: string; total: number | null }>>`
         SELECT 
-          TO_CHAR(t.date AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM') AS bucket,
+          TO_CHAR(${dateCol} AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM') AS bucket,
           COALESCE(SUM(t.amount), 0)::float AS total
         FROM transactions t
         LEFT JOIN appointments a ON t.appointment_id = a.id
         WHERE t.organization_id = ${organizationId}
           AND t.status = 'PAGO'
           AND t.type = 'RECEITA'
-          AND t.date >= ${prevStartDate}
-          AND t.date < ${startDate}
+          AND ${dateCol} >= ${prevStartDate}
+          AND ${dateCol} < ${startDate}
           AND NOT (a.package_id IS NOT NULL)
         GROUP BY bucket
       `,

@@ -3,7 +3,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireFinancePermission } from "@/lib/auth";
-import { PaymentMethod } from "@prisma/client";
+import { PaymentMethod, Prisma } from "@prisma/client";
 import {
   getBrasiliaDateParts,
   getBrasiliaDayRange,
@@ -15,6 +15,7 @@ import {
   PaymentMethodAggregation,
   CategoryAggregation,
   FinanceDailyFlowPoint,
+  FinanceViewMode,
 } from "@/types/finance";
 
 function formatPaymentMethodLabel(type: PaymentMethod | "OUTRO"): string {
@@ -37,6 +38,7 @@ function formatPaymentMethodLabel(type: PaymentMethod | "OUTRO"): string {
 export async function getFinanceDashboardData(
   month?: number,
   year?: number,
+  viewMode: FinanceViewMode = "COMPETENCIA",
 ): Promise<FinanceDashboardData> {
   try {
     const admin = await requireFinancePermission();
@@ -57,11 +59,20 @@ export async function getFinanceDashboardData(
     const { startOfDay: todayStart, endOfDay: todayEnd } = getBrasiliaDayRange();
     const { weekStart, weekEnd } = getBrasiliaWeekRange();
 
+    // Coluna de data a ser utilizada dependendo do modo de visão:
+    // COMPETÊNCIA = t.date (dia da venda)
+    // CAIXA = COALESCE(t.settlement_date, t.date) (dia da compensação líquida D+X)
+    const dateCol =
+      viewMode === "CAIXA"
+        ? Prisma.sql`COALESCE(t.settlement_date, t.date)`
+        : Prisma.sql`t.date`;
+
     // ============================================================================
     // AGREGAÇÃO NATIVA SQL & GROUPBY (Zero Hydration de milhares de objetos)
     // ============================================================================
     const [
       monthlyTotalsGroup,
+      feesAgg,
       todayAgg,
       weekAgg,
       pendingTxAgg,
@@ -72,60 +83,68 @@ export async function getFinanceDashboardData(
       pendingApptsRaw,
       recentTx,
     ] = await Promise.all([
-      // 1. Totais de Receitas e Despesas liquidadas no mês (Agregação no Postgres via groupBy)
-      prisma.transaction.groupBy({
-        by: ["type"],
-        where: {
-          organization_id: organizationId,
-          status: "PAGO",
-          date: { gte: monthStart, lte: monthEnd },
-          NOT: {
-            type: "RECEITA",
-            appointment: {
-              package_id: { not: null },
-            },
-          },
-        },
-        _sum: {
-          amount: true,
-        },
-      }),
+      // 1. Totais de Receitas e Despesas no mês
+      prisma.$queryRaw<
+        Array<{
+          type: string;
+          total: number | string | null;
+        }>
+      >`
+        SELECT 
+          t.type::text AS type,
+          COALESCE(SUM(t.amount), 0)::float AS total
+        FROM transactions t
+        LEFT JOIN appointments a ON t.appointment_id = a.id
+        WHERE t.organization_id = ${organizationId}
+          AND t.status = 'PAGO'
+          AND ${dateCol} >= ${monthStart}
+          AND ${dateCol} <= ${monthEnd}
+          AND NOT (t.type = 'RECEITA' AND a.package_id IS NOT NULL)
+        GROUP BY t.type
+      `,
 
-      // 2. Recebido Hoje (Agregação nativa SUM se for mês atual)
-      isCurrentMonth
-        ? prisma.transaction.aggregate({
-            where: {
-              organization_id: organizationId,
-              type: "RECEITA",
-              status: "PAGO",
-              date: { gte: todayStart, lte: todayEnd },
-              NOT: {
-                appointment: {
-                  package_id: { not: null },
-                },
-              },
-            },
-            _sum: { amount: true },
-          })
-        : Promise.resolve({ _sum: { amount: null } }),
+      // 1.1 Total de Taxas de Operadoras (descontadas de cartão/gateway)
+      prisma.$queryRaw<Array<{ total_fees: number | string | null }>>`
+        SELECT 
+          COALESCE(SUM(t.amount), 0)::float AS total_fees
+        FROM transactions t
+        WHERE t.organization_id = ${organizationId}
+          AND t.status = 'PAGO'
+          AND t.type = 'DESPESA'
+          AND (t.parent_transaction_id IS NOT NULL OR t.description LIKE 'Taxa%')
+          AND ${dateCol} >= ${monthStart}
+          AND ${dateCol} <= ${monthEnd}
+      `,
 
-      // 3. Recebido na Semana (Agregação nativa SUM se for mês atual)
+      // 2. Recebido Hoje
       isCurrentMonth
-        ? prisma.transaction.aggregate({
-            where: {
-              organization_id: organizationId,
-              type: "RECEITA",
-              status: "PAGO",
-              date: { gte: weekStart, lte: weekEnd },
-              NOT: {
-                appointment: {
-                  package_id: { not: null },
-                },
-              },
-            },
-            _sum: { amount: true },
-          })
-        : Promise.resolve({ _sum: { amount: null } }),
+        ? prisma.$queryRaw<Array<{ total: number | string | null }>>`
+            SELECT COALESCE(SUM(t.amount), 0)::float AS total
+            FROM transactions t
+            LEFT JOIN appointments a ON t.appointment_id = a.id
+            WHERE t.organization_id = ${organizationId}
+              AND t.type = 'RECEITA'
+              AND t.status = 'PAGO'
+              AND ${dateCol} >= ${todayStart}
+              AND ${dateCol} <= ${todayEnd}
+              AND NOT (a.package_id IS NOT NULL)
+          `
+        : Promise.resolve([{ total: 0 }]),
+
+      // 3. Recebido na Semana
+      isCurrentMonth
+        ? prisma.$queryRaw<Array<{ total: number | string | null }>>`
+            SELECT COALESCE(SUM(t.amount), 0)::float AS total
+            FROM transactions t
+            LEFT JOIN appointments a ON t.appointment_id = a.id
+            WHERE t.organization_id = ${organizationId}
+              AND t.type = 'RECEITA'
+              AND t.status = 'PAGO'
+              AND ${dateCol} >= ${weekStart}
+              AND ${dateCol} <= ${weekEnd}
+              AND NOT (a.package_id IS NOT NULL)
+          `
+        : Promise.resolve([{ total: 0 }]),
 
       // 4. Receitas pendentes (Agregação nativa SUM e COUNT pré-calculada no Postgres)
       prisma.transaction.aggregate({
@@ -145,28 +164,28 @@ export async function getFinanceDashboardData(
         },
       }),
 
-      // 5. Agrupamento por método de pagamento (Agrupado no banco via groupBy)
-      prisma.transaction.groupBy({
-        by: ["payment_method_id"],
-        where: {
-          organization_id: organizationId,
-          status: "PAGO",
-          type: "RECEITA",
-          date: { gte: monthStart, lte: monthEnd },
-          NOT: {
-            type: "RECEITA",
-            appointment: {
-              package_id: { not: null },
-            },
-          },
-        },
-        _sum: {
-          amount: true,
-        },
-        _count: {
-          id: true,
-        },
-      }),
+      // 5. Agrupamento por método de pagamento (Agrupado no banco via SQL nativo)
+      prisma.$queryRaw<
+        Array<{
+          payment_method_id: string | null;
+          amount: number | string | null;
+          count: number | string | bigint;
+        }>
+      >`
+        SELECT 
+          t.payment_method_id,
+          COALESCE(SUM(t.amount), 0)::float AS amount,
+          COUNT(t.id)::int AS count
+        FROM transactions t
+        LEFT JOIN appointments a ON t.appointment_id = a.id
+        WHERE t.organization_id = ${organizationId}
+          AND t.status = 'PAGO'
+          AND t.type = 'RECEITA'
+          AND ${dateCol} >= ${monthStart}
+          AND ${dateCol} <= ${monthEnd}
+          AND NOT (a.package_id IS NOT NULL)
+        GROUP BY t.payment_method_id
+      `,
 
       // 6. Formas de pagamento da organização para mapeamento dos tipos/nomes
       prisma.organizationPaymentMethod.findMany({
@@ -195,8 +214,8 @@ export async function getFinanceDashboardData(
         WHERE t.organization_id = ${organizationId}
           AND t.status = 'PAGO'
           AND t.type = 'RECEITA'
-          AND t.date >= ${monthStart}
-          AND t.date <= ${monthEnd}
+          AND ${dateCol} >= ${monthStart}
+          AND ${dateCol} <= ${monthEnd}
           AND a.package_id IS NULL
         GROUP BY c.id, c.name
         ORDER BY amount DESC
@@ -211,15 +230,15 @@ export async function getFinanceDashboardData(
         }>
       >`
         SELECT 
-          TO_CHAR(t.date AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') AS day,
+          TO_CHAR(${dateCol} AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') AS day,
           t.type::text AS type,
           COALESCE(SUM(t.amount), 0)::float AS total
         FROM transactions t
         LEFT JOIN appointments a ON t.appointment_id = a.id
         WHERE t.organization_id = ${organizationId}
           AND t.status = 'PAGO'
-          AND t.date >= ${monthStart}
-          AND t.date <= ${monthEnd}
+          AND ${dateCol} >= ${monthStart}
+          AND ${dateCol} <= ${monthEnd}
           AND NOT (t.type = 'RECEITA' AND a.package_id IS NOT NULL)
         GROUP BY day, t.type
         ORDER BY day ASC
@@ -276,7 +295,16 @@ export async function getFinanceDashboardData(
           description: true,
           amount: true,
           date: true,
+          settlement_date: true,
           status: true,
+          parent_transaction_id: true,
+          child_transactions: {
+            select: {
+              id: true,
+              amount: true,
+              type: true,
+            },
+          },
           client: { select: { name: true } },
           payment_method: { select: { type: true } },
           admin: { select: { display_name: true } },
@@ -293,20 +321,22 @@ export async function getFinanceDashboardData(
     ]);
 
     // Totais do mês
-    const incomeMonth = Number(
-      monthlyTotalsGroup.find((t) => t.type === "RECEITA")?._sum.amount || 0,
+    const grossRevenueMonth = Number(
+      monthlyTotalsGroup.find((t) => t.type === "RECEITA")?.total || 0,
     );
     const expensesMonth = Number(
-      monthlyTotalsGroup.find((t) => t.type === "DESPESA")?._sum.amount || 0,
+      monthlyTotalsGroup.find((t) => t.type === "DESPESA")?.total || 0,
     );
+    const feesMonth = Number(feesAgg[0]?.total_fees || 0);
+    const incomeMonth = grossRevenueMonth;
     const balanceMonth = Number((incomeMonth - expensesMonth).toFixed(2));
     const profitMargin =
       incomeMonth > 0
         ? Number((((incomeMonth - expensesMonth) / incomeMonth) * 100).toFixed(2))
         : 0;
 
-    const receivedToday = Number(todayAgg._sum.amount || 0);
-    const receivedWeek = Number(weekAgg._sum.amount || 0);
+    const receivedToday = Number(todayAgg[0]?.total || 0);
+    const receivedWeek = Number(weekAgg[0]?.total || 0);
 
     // Contas a receber (Transações Pendentes + Fiado da Agenda)
     let pendingMonth = Number(pendingTxAgg._sum.amount || 0);
@@ -346,8 +376,8 @@ export async function getFinanceDashboardData(
       const methodId = group.payment_method_id;
       const info = methodId ? methodInfoMap.get(methodId) : null;
       const methodType: PaymentMethod | "OUTRO" = info ? info.type : "OUTRO";
-      const amount = Number(group._sum.amount || 0);
-      const count = group._count.id;
+      const amount = Number(group.amount || 0);
+      const count = Number(group.count || 0);
 
       const typeKey = methodType;
       const existing = paymentTypeMap.get(typeKey);
@@ -425,29 +455,46 @@ export async function getFinanceDashboardData(
     );
 
     // Histórico recente (take: 10)
-    const allHistory = recentTx.map((t) => ({
-      id: t.id,
-      type: t.type,
-      description: t.description,
-      amount: Number(t.amount),
-      date: t.date.toISOString(),
-      status: t.status,
-      clientName: t.client?.name || t.appointment?.client?.name || undefined,
-      paymentMethod:
-        t.payment_method?.type || t.appointment?.payment_method || undefined,
-      professionalName:
-        t.admin?.display_name ||
-        t.appointment?.professional?.display_name ||
-        undefined,
-    }));
+    const allHistory = recentTx.map((t) => {
+      const grossAmount = Number(t.amount);
+      const feeChilds = (t.child_transactions || []).filter(
+        (c) => c.type === "DESPESA",
+      );
+      const feeAmount = feeChilds.reduce((acc, c) => acc + Number(c.amount), 0);
+      const netAmount =
+        t.type === "RECEITA" ? Math.max(0, grossAmount - feeAmount) : grossAmount;
+
+      return {
+        id: t.id,
+        type: t.type,
+        description: t.description,
+        amount: Number(t.amount),
+        grossAmount,
+        feeAmount,
+        netAmount,
+        date: t.date.toISOString(),
+        settlementDate: t.settlement_date ? t.settlement_date.toISOString() : null,
+        status: t.status,
+        clientName: t.client?.name || t.appointment?.client?.name || undefined,
+        paymentMethod:
+          t.payment_method?.type || t.appointment?.payment_method || undefined,
+        professionalName:
+          t.admin?.display_name ||
+          t.appointment?.professional?.display_name ||
+          undefined,
+      };
+    });
 
     return {
       summary: {
         receivedMonth: incomeMonth,
+        grossRevenueMonth,
+        feesMonth,
         pendingMonth: pendingMonth,
         expensesMonth: expensesMonth,
         balanceMonth: balanceMonth,
         profitMargin,
+        viewMode,
       },
       secondary: {
         receivedToday,
