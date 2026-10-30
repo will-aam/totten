@@ -61,23 +61,26 @@ export function FinancePaymentMethodsChart() {
     { keepPreviousData: true },
   );
 
-  const transactions = res?.recentTransactions || [];
-
-  // Agrupar receitas por meio de pagamento
-  const methodMap: Record<string, number> = {};
-  transactions.forEach((tx) => {
-    if (tx.type === "RECEITA" && tx.status === "PAGO") {
-      const label = formatMethodName(tx.paymentMethod);
-      methodMap[label] = (methodMap[label] || 0) + tx.amount;
-    }
-  });
-
-  const chartData = Object.entries(methodMap)
-    .map(([name, value]) => ({
-      name,
-      value,
-    }))
-    .sort((a, b) => b.value - a.value);
+  // Utiliza os dados já agregados no banco pelo backend (ou fallback para transações recentes)
+  const chartData =
+    res?.byPaymentMethod && res.byPaymentMethod.length > 0
+      ? res.byPaymentMethod
+      : (() => {
+          const transactions = res?.recentTransactions || [];
+          const methodMap: Record<string, number> = {};
+          transactions.forEach((tx) => {
+            if (tx.type === "RECEITA" && tx.status === "PAGO") {
+              const label = formatMethodName(tx.paymentMethod);
+              methodMap[label] = (methodMap[label] || 0) + tx.amount;
+            }
+          });
+          return Object.entries(methodMap)
+            .map(([name, value]) => ({
+              name,
+              value,
+            }))
+            .sort((a, b) => b.value - a.value);
+        })();
 
   const total = chartData.reduce((acc, curr) => acc + curr.value, 0);
 

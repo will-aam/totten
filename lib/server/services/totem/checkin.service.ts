@@ -6,74 +6,74 @@ import { createSettledRevenueWithFee } from "@/lib/server/services/payments/sett
 export class TotemCheckInService {
   /**
    * Processa o check-in de um agendamento no Totem, realizando a baixa de pacote,
-   * dedução de estoque e registro financeiro.
+   * dedução de estoque e registro financeiro de forma estritamente atômica e transacional.
    */
   static async processCheckIn(appointmentId: string, organizationId: string) {
     const prisma = getTenantPrisma(organizationId);
 
-    // BUSCA O AGENDAMENTO COM O SERVIÇO E INSUMOS
-    const appt = await prisma.appointment.findUnique({
-      where: { id: appointmentId, organization_id: organizationId },
-      include: {
-        client: true,
-        package: true,
-        service: {
-          include: {
-            stock_items: {
-              include: { stock_item: true },
+    let packageInfo: { used: number; total: number } | null = null;
+    const createdTxIds: string[] = [];
+
+    // A GRANDE TRANSAÇÃO DO TOTEM (Isolamento total: leitura, travas e escrita atômica)
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. BUSCA O AGENDAMENTO COM O SERVIÇO E INSUMOS DENTRO DO CONTEXTO DA TRANSAÇÃO
+      const appt = await tx.appointment.findUnique({
+        where: { id: appointmentId, organization_id: organizationId },
+        include: {
+          client: true,
+          package: true,
+          service: {
+            include: {
+              stock_items: {
+                include: { stock_item: true },
+              },
             },
           },
         },
-      },
-    });
+      });
 
-    if (!appt) {
-      throw new Error("AGENDAMENTO_INVALIDO");
-    }
+      if (!appt) {
+        throw new Error("AGENDAMENTO_INVALIDO");
+      }
 
- // Trava explícita para agendamentos cancelados
-    if (appt.status === "CANCELADO") {
-      throw new Error("AGENDAMENTO_CANCELADO");
-    }
+      // Trava explícita para agendamentos cancelados
+      if (appt.status === "CANCELADO") {
+        throw new Error("AGENDAMENTO_CANCELADO");
+      }
 
-    // Trava para agendamentos que já foram feitos
-    if (appt.status === "REALIZADO") {
-      throw new Error("AGENDAMENTO_JA_PROCESSADO");
-    }
+      // Trava para agendamentos que já foram feitos
+      if (appt.status === "REALIZADO") {
+        throw new Error("AGENDAMENTO_JA_PROCESSADO");
+      }
 
-    // Trava de segurança para pacotes inativos
-    if (appt.package && appt.package.active === false) {
-      throw new Error("PACOTE_INATIVO");
-    }
+      // Trava de segurança para pacotes inativos
+      if (appt.package && appt.package.active === false) {
+        throw new Error("PACOTE_INATIVO");
+      }
 
-    const existingCheckIn = await prisma.checkIn.findFirst({
-      where: { appointment_id: appt.id, organization_id: organizationId },
-    });
+      const existingCheckIn = await tx.checkIn.findFirst({
+        where: { appointment_id: appt.id, organization_id: organizationId },
+      });
 
-    if (existingCheckIn) {
-      throw new Error("CHECKIN_JA_REGISTRADO");
-    }
+      if (existingCheckIn) {
+        throw new Error("CHECKIN_JA_REGISTRADO");
+      }
 
-    let packageInfo = null;
+      const orgSettings = await tx.settings.findUnique({
+        where: { organization_id: organizationId },
+        select: {
+          auto_complete_on_checkin: true,
+          auto_settle_on_checkin: true,
+          default_payment_method_id: true,
+        },
+      });
+      const autoComplete = orgSettings?.auto_complete_on_checkin ?? true;
+      const autoSettle = orgSettings?.auto_settle_on_checkin ?? true;
 
-    const orgSettings = await prisma.settings.findUnique({
-      where: { organization_id: organizationId },
-      select: {
-        auto_complete_on_checkin: true,
-        auto_settle_on_checkin: true,
-        default_payment_method_id: true,
-      },
-    });
-    const autoComplete = orgSettings?.auto_complete_on_checkin ?? true;
-    const autoSettle = orgSettings?.auto_settle_on_checkin ?? true;
+      const loyaltySettings = await tx.loyaltySettings.findUnique({
+        where: { organization_id: organizationId },
+      });
 
-    const loyaltySettings = await prisma.loyaltySettings.findUnique({
-      where: { organization_id: organizationId }
-    });
-
-    // A GRANDE TRANSAÇÃO DO TOTEM
-    const createdTxIds: string[] = [];
-    const result = await prisma.$transaction(async (tx) => {
       // 1. Cria o registro de Check-in
       const checkIn = await tx.checkIn.create({
         data: {
@@ -204,12 +204,15 @@ export class TotemCheckInService {
               const costOfUsedQty = Number(usedQty) * Number(stockData.unit_cost);
 
               if (costOfUsedQty > 0) {
+                const now = new Date();
                 const expTx = await tx.transaction.create({
                   data: {
                     type: "DESPESA",
                     description: `Custo de Insumo: ${stockData.name}`,
                     amount: costOfUsedQty,
-                    date: new Date(),
+                    date: now,
+                    due_date: now,
+                    settlement_date: now,
                     status: "PAGO",
                     organization_id: organizationId,
                     appointment_id: appt.id,
@@ -225,12 +228,15 @@ export class TotemCheckInService {
           Number(service.material_cost) > 0
         ) {
           // Fluxo de Custo Fixo de Material
+          const now = new Date();
           const expTx = await tx.transaction.create({
             data: {
               type: "DESPESA",
               description: `Custo de Material: ${service.name}`,
               amount: service.material_cost,
-              date: new Date(),
+              date: now,
+              due_date: now,
+              settlement_date: now,
               status: "PAGO",
               organization_id: organizationId,
               appointment_id: appt.id,
@@ -285,20 +291,23 @@ export class TotemCheckInService {
         });
       }
 
-      return checkIn;
+      return {
+        checkIn,
+        appt,
+      };
     });
 
     // Disparar sincronização com Zibee para as transações criadas no check-in
     createdTxIds.forEach((txId) => triggerZibeeSyncById(txId).catch(console.error));
 
     return {
-      clientName: appt.client.name,
-      serviceName: appt.service.name,
-      time: new Date(appt.date_time).toLocaleTimeString("pt-BR", {
+      clientName: result.appt.client.name,
+      serviceName: result.appt.service.name,
+      time: new Date(result.appt.date_time).toLocaleTimeString("pt-BR", {
         hour: "2-digit",
         minute: "2-digit",
       }),
-      checkInId: result.id,
+      checkInId: result.checkIn.id,
       package_info: packageInfo,
     };
   }
@@ -469,6 +478,8 @@ export class TotemCheckInService {
                   description: `Custo de Insumo: ${stockData.name}`,
                   amount: costOfUsedQty,
                   date: now,
+                  due_date: now,
+                  settlement_date: now,
                   status: "PAGO",
                   organization_id: organizationId,
                   appointment_id: appt.id,
@@ -491,6 +502,8 @@ export class TotemCheckInService {
             description: `Custo de Material: ${service.name}`,
             amount: service.material_cost,
             date: now,
+            due_date: now,
+            settlement_date: now,
             status: "PAGO",
             organization_id: organizationId,
             appointment_id: appt.id,

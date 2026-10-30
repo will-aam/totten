@@ -463,6 +463,7 @@ export async function getPendingReceivables() {
         organization_id: admin.organizationId,
         type: "RECEITA",
         status: "PENDENTE",
+        appointment_id: null, // Evita duplicidade com agendamentos já computados acima
       },
       select: {
         id: true,
@@ -841,6 +842,7 @@ export async function processAllReceivablesPayment(
         organization_id: admin.organizationId,
         type: "RECEITA",
         status: "PENDENTE",
+        appointment_id: null, // Evita duplicidade com agendamentos já computados acima
       },
       select: {
         id: true,

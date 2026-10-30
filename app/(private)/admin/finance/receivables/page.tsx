@@ -29,8 +29,8 @@ import {
   PaginationNext,
   PaginationEllipsis,
 } from "@/components/ui/pagination";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
-  LoaderDots,
   Dollar,
   Calendar,
   User,
@@ -235,13 +235,13 @@ export default function ReceivablesPage() {
               </div>
             </div>
 
-            {/* BOTÃO MASTER: DAR BAIXA EM TODOS */}
+            {/* BOTÃO MASTER: DAR BAIXA EM TODOS (CONCEBE TODAS AS PÁGINAS) */}
             <Button
               onClick={() => setSelectedItem("ALL")}
               className="w-full sm:w-auto font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 rounded-2xl h-12 px-6 transition-all gap-2 relative z-10 active:scale-95"
             >
               <CheckCircle className="h-5 w-5" />
-              Dar Baixa em Todos
+              Dar Baixa em Todos ({receivables.length})
             </Button>
           </div>
         )}
@@ -249,8 +249,25 @@ export default function ReceivablesPage() {
         {/* LISTA DE PENDÊNCIAS */}
         <div className="flex flex-col w-full bg-background/40 backdrop-blur-sm rounded-3xl border border-border/40 p-2 sm:p-4 shadow-sm">
           {isLoading ? (
-            <div className="flex justify-center items-center py-24">
-              <LoaderDots className="h-10 w-10 animate-spin text-primary/40" />
+            <div className="flex flex-col gap-3 p-2 sm:p-4 animate-in fade-in duration-300">
+              {Array.from({ length: 6 }).map((_, idx) => (
+                <div
+                  key={idx}
+                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b border-border/40 last:border-0 rounded-2xl gap-4"
+                >
+                  <div className="flex items-center gap-4 w-full sm:w-auto">
+                    <Skeleton className="h-12 w-12 rounded-2xl shrink-0" />
+                    <div className="flex flex-col gap-2 w-full max-w-sm">
+                      <Skeleton className="h-4 w-3/4 rounded-md" />
+                      <Skeleton className="h-3 w-1/2 rounded-md" />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4 pt-3 sm:pt-0">
+                    <Skeleton className="h-6 w-24 rounded-md" />
+                    <Skeleton className="h-10 w-28 rounded-xl" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : receivables.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 text-center bg-muted/10 rounded-2xl border border-dashed border-border/60 mx-2">
@@ -349,7 +366,7 @@ export default function ReceivablesPage() {
                 </div>
               ))}
 
-              {/* PAGINAÇÃO */}
+              {/* PAGINAÇÃO PADRÃO */}
               {totalPages > 1 && (
                 <div className="pt-6 pb-2 border-t border-border/30 mt-2">
                   <Pagination>
@@ -416,10 +433,6 @@ export default function ReceivablesPage() {
                       </PaginationItem>
                     </PaginationContent>
                   </Pagination>
-                  <p className="text-center text-[11px] font-semibold text-muted-foreground mt-2">
-                    Página {safeCurrentPage} de {totalPages} ({receivables.length}{" "}
-                    pendências no total)
-                  </p>
                 </div>
               )}
             </div>
@@ -535,6 +548,33 @@ export default function ReceivablesPage() {
                   <span>Valor a Quitar:</span>
                   <span className="text-amber-600 dark:text-amber-500 font-black text-sm">
                     {formatCurrency(selectedItem.amount)}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {selectedItem === "ALL" && (
+              <div className="p-4 bg-emerald-500/10 border border-emerald-500/25 rounded-2xl space-y-2.5 text-xs">
+                <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold">
+                  <CheckCircle className="h-4 w-4 shrink-0" />
+                  <span>Liquidação Completa (Todas as Páginas)</span>
+                </div>
+                <div className="flex justify-between items-center text-muted-foreground">
+                  <span>Total de Lançamentos:</span>
+                  <span className="font-bold text-foreground">
+                    {receivables.length} {receivables.length === 1 ? "lançamento" : "lançamentos"} em {totalPages} {totalPages === 1 ? "página" : "páginas"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-muted-foreground">
+                  <span>Abrangência:</span>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                    Todas as páginas do sistema
+                  </span>
+                </div>
+                <div className="border-t border-emerald-500/20 pt-2 flex justify-between items-center font-bold text-foreground">
+                  <span>Valor Total a Quitar:</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-black text-base">
+                    {formatCurrency(totalReceivables)}
                   </span>
                 </div>
               </div>

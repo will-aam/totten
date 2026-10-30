@@ -26,6 +26,7 @@ export interface FinanceSummary {
   pendingMonth: number;
   expensesMonth: number;
   balanceMonth: number;
+  profitMargin?: number;
 }
 
 export interface SecondaryIndicators {
@@ -43,4 +44,45 @@ export interface OrganizationPaymentMethod {
   feePercentage: number;
   feeFixed: number;
   daysToReceive: number;
+}
+
+export interface PaymentMethodAggregation {
+  name: string;
+  method: PaymentMethod | "OUTRO";
+  value: number;
+  count: number;
+  percentage: number;
+}
+
+export interface CategoryAggregation {
+  id: string;
+  name: string;
+  amount: number;
+  count: number;
+}
+
+export interface FinanceDailyFlowPoint {
+  date: string;
+  income: number;
+  expenses: number;
+  balance: number;
+}
+
+export interface FinanceDashboardData {
+  summary: FinanceSummary;
+  secondary: SecondaryIndicators;
+  byPaymentMethod: PaymentMethodAggregation[];
+  byCategory: CategoryAggregation[];
+  chartData: FinanceDailyFlowPoint[];
+  recentTransactions: Array<{
+    id: string;
+    type: TransactionType;
+    description: string;
+    amount: number;
+    date: string;
+    status: TransactionStatus;
+    clientName?: string;
+    paymentMethod?: string;
+    professionalName?: string;
+  }>;
 }
