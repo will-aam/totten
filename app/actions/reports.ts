@@ -86,7 +86,7 @@ export async function getReportsData() {
             AND t.type = 'RECEITA'
             AND t.date >= ${sixMonthsAgo}
             AND NOT (a.package_id IS NOT NULL)
-          GROUP BY name
+          GROUP BY COALESCE(a.snapshot_service_name, s.name, p.snapshot_service_name, p.name, t.description, 'Outros Serviços')
           ORDER BY faturamento DESC
           LIMIT 15
         `,
@@ -106,7 +106,7 @@ export async function getReportsData() {
           WHERE a.organization_id = ${organizationId}
             AND a.status = 'REALIZADO'
             AND a.date_time >= ${sixMonthsAgo}
-          GROUP BY name
+          GROUP BY COALESCE(a.snapshot_service_name, s.name, 'Serviço')
         `,
       ]);
 

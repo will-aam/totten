@@ -87,6 +87,7 @@ import { toast } from "sonner";
 import { TransactionStatus, FinanceViewMode } from "@/types/finance";
 import { TransactionModal } from "../_components/transaction-modal";
 import { FinanceSpeedDial } from "../_components/finance-speed-dial";
+import { FinanceRegimeToggle } from "../_components/finance-regime-toggle";
 import { useDebounce } from "@/hooks/use-debounce";
 
 const MONTHS = [
@@ -135,7 +136,7 @@ export default function TransactionsPage() {
     setViewMode(mode);
     try {
       localStorage.setItem("totten_finance_view_mode", mode);
-    } catch {}
+    } catch { }
   };
 
   // Outros Filtros
@@ -742,7 +743,7 @@ export default function TransactionsPage() {
 
           {tx.settlementDate &&
             new Date(tx.settlementDate).toDateString() !==
-              new Date(tx.date).toDateString() && (
+            new Date(tx.date).toDateString() && (
               <div className="flex flex-col gap-1.5 bg-amber-500/10 p-3.5 sm:p-4 rounded-2xl border border-amber-500/20 col-span-2">
                 <span className="text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
                   <Calendar className="h-3.5 w-3.5" />
@@ -833,50 +834,21 @@ export default function TransactionsPage() {
       <AdminHeader title="Extrato de Movimentações" />
 
       <div className="flex flex-col gap-4 sm:gap-6 p-3 sm:p-6 max-w-400 mx-auto w-full pb-36 md:pb-6 animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
+        {/* REGIME CONTÁBIL: CHAPADO NA TELA & MINIMALISTA */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5 -mb-1">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Regime Contábil
+          </span>
+
+          <FinanceRegimeToggle
+            viewMode={viewMode}
+            onViewModeChange={handleToggleViewMode}
+          />
+        </div>
+
         {/* BARRA DE FILTROS RESPONSIVA & MOBILE-FIRST */}
         <div className="flex flex-col gap-3 sm:gap-4 bg-background/60 backdrop-blur-md p-3 sm:p-5 rounded-2xl sm:rounded-3xl border border-border/40 shadow-sm relative overflow-hidden">
           <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 blur-3xl rounded-full -z-10 pointer-events-none" />
-
-          {/* LINHA 0: REGIME CONTÁBIL: VISÃO COMPETÊNCIA (VENDAS) VS CAIXA (DEPÓSITOS D+X) */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/30">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                Regime Contábil:
-              </span>
-              <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider">
-                {viewMode === "COMPETENCIA"
-                  ? "Competência (Data da Venda)"
-                  : "Caixa (Data de Compensação Líquida D+X)"}
-              </Badge>
-            </div>
-
-            <div className="flex items-center bg-muted/40 p-1 rounded-xl border border-border/40 w-full sm:w-auto">
-              <button
-                type="button"
-                onClick={() => handleToggleViewMode("COMPETENCIA")}
-                className={cn(
-                  "flex-1 sm:flex-initial px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer",
-                  viewMode === "COMPETENCIA"
-                    ? "bg-background text-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                Visão Competência (Vendas)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleToggleViewMode("CAIXA")}
-                className={cn(
-                  "flex-1 sm:flex-initial px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer",
-                  viewMode === "CAIXA"
-                    ? "bg-background text-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                Visão Caixa (Depósitos D+X)
-              </button>
-            </div>
-          </div>
 
           {/* LINHA 1: MODOS DE DATA (Tabs responsivas sem ícones) */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 sm:pb-3 border-b border-border/30">
@@ -1327,239 +1299,239 @@ export default function TransactionsPage() {
                   {!isCollapsed && (
                     <div className="flex flex-col divide-y divide-border/20 px-1 sm:px-2 animate-in fade-in duration-200">
                       {group.items.map((transaction) => {
-                      const isIncome = transaction.type === "RECEITA";
-                      const isCanceled = transaction.status === "CANCELADO";
-                      const displayTitle = getCleanDescription(
-                        transaction.description,
-                        transaction.type,
-                        transaction.clientName,
-                      );
+                        const isIncome = transaction.type === "RECEITA";
+                        const isCanceled = transaction.status === "CANCELADO";
+                        const displayTitle = getCleanDescription(
+                          transaction.description,
+                          transaction.type,
+                          transaction.clientName,
+                        );
 
-                      return (
-                        <div
-                          key={transaction.id}
-                          className={cn(
-                            "flex items-center justify-between py-2.5 sm:py-3.5 px-2 sm:px-3 transition-all duration-200 rounded-xl sm:rounded-2xl group cursor-pointer",
-                            isCanceled
-                              ? "opacity-50 bg-muted/20 hover:opacity-75 border border-dashed border-border/40"
-                              : "hover:bg-muted/40",
-                          )}
-                          onClick={() => setViewingTx(transaction)}
-                        >
-                          {/* LADO ESQUERDO: Ícone + Título + Subtítulo */}
-                          <div className="flex items-center gap-2.5 sm:gap-3.5 flex-1 min-w-0 pr-2">
-                            <div
-                              className={cn(
-                                "flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full font-bold shadow-sm transition-all duration-200 group-hover:scale-105",
-                                isCanceled
-                                  ? "bg-muted/40 text-muted-foreground"
-                                  : isIncome
-                                    ? "bg-emerald-500/10 text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white"
-                                    : "bg-rose-500/10 text-rose-600 group-hover:bg-rose-500 group-hover:text-white",
-                              )}
-                            >
-                              {isIncome ? (
-                                <ArrowUpRight className="h-4 w-4 sm:h-5 sm:w-5" />
-                              ) : (
-                                <ArrowDownRight className="h-4 w-4 sm:h-5 sm:w-5" />
-                              )}
-                            </div>
-
-                            <div className="flex flex-col min-w-0 flex-1">
-                              <span
+                        return (
+                          <div
+                            key={transaction.id}
+                            className={cn(
+                              "flex items-center justify-between py-2.5 sm:py-3.5 px-2 sm:px-3 transition-all duration-200 rounded-xl sm:rounded-2xl group cursor-pointer",
+                              isCanceled
+                                ? "opacity-50 bg-muted/20 hover:opacity-75 border border-dashed border-border/40"
+                                : "hover:bg-muted/40",
+                            )}
+                            onClick={() => setViewingTx(transaction)}
+                          >
+                            {/* LADO ESQUERDO: Ícone + Título + Subtítulo */}
+                            <div className="flex items-center gap-2.5 sm:gap-3.5 flex-1 min-w-0 pr-2">
+                              <div
                                 className={cn(
-                                  "text-xs sm:text-sm font-bold text-foreground leading-tight truncate flex items-center gap-1.5 group-hover:text-primary transition-colors",
-                                  isCanceled && "line-through text-muted-foreground",
+                                  "flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full font-bold shadow-sm transition-all duration-200 group-hover:scale-105",
+                                  isCanceled
+                                    ? "bg-muted/40 text-muted-foreground"
+                                    : isIncome
+                                      ? "bg-emerald-500/10 text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white"
+                                      : "bg-rose-500/10 text-rose-600 group-hover:bg-rose-500 group-hover:text-white",
                                 )}
-                                title={transaction.description}
                               >
-                                {displayTitle}
-                                {transaction.installment && (
-                                  <Badge
-                                    variant="secondary"
-                                    className="text-[9px] h-4 px-1 py-0 flex items-center gap-0.5 bg-primary/10 text-primary border-none font-bold tracking-wider shrink-0"
-                                  >
-                                    <Repeat className="h-2 w-2" />{" "}
-                                    {transaction.installment}
-                                  </Badge>
+                                {isIncome ? (
+                                  <ArrowUpRight className="h-4 w-4 sm:h-5 sm:w-5" />
+                                ) : (
+                                  <ArrowDownRight className="h-4 w-4 sm:h-5 sm:w-5" />
                                 )}
-                              </span>
-                              <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground leading-none flex items-center gap-1.5 mt-1 truncate">
-                                <span className="font-semibold text-foreground/75 shrink-0">
-                                  {formatTime(transaction.date)}
+                              </div>
+
+                              <div className="flex flex-col min-w-0 flex-1">
+                                <span
+                                  className={cn(
+                                    "text-xs sm:text-sm font-bold text-foreground leading-tight truncate flex items-center gap-1.5 group-hover:text-primary transition-colors",
+                                    isCanceled && "line-through text-muted-foreground",
+                                  )}
+                                  title={transaction.description}
+                                >
+                                  {displayTitle}
+                                  {transaction.installment && (
+                                    <Badge
+                                      variant="secondary"
+                                      className="text-[9px] h-4 px-1 py-0 flex items-center gap-0.5 bg-primary/10 text-primary border-none font-bold tracking-wider shrink-0"
+                                    >
+                                      <Repeat className="h-2 w-2" />{" "}
+                                      {transaction.installment}
+                                    </Badge>
+                                  )}
                                 </span>
-                                {(transaction.paymentMethodName ||
-                                  transaction.paymentMethod) && (
-                                  <>
-                                    <span className="w-1 h-1 rounded-full bg-border shrink-0"></span>
-                                    <span className="uppercase text-[9px] sm:text-[10px] font-semibold text-foreground/70 shrink-0">
-                                      {transaction.paymentMethodName ||
-                                        (transaction.paymentMethod
-                                          ? paymentMethodMap[
+                                <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground leading-none flex items-center gap-1.5 mt-1 truncate">
+                                  <span className="font-semibold text-foreground/75 shrink-0">
+                                    {formatTime(transaction.date)}
+                                  </span>
+                                  {(transaction.paymentMethodName ||
+                                    transaction.paymentMethod) && (
+                                      <>
+                                        <span className="w-1 h-1 rounded-full bg-border shrink-0"></span>
+                                        <span className="uppercase text-[9px] sm:text-[10px] font-semibold text-foreground/70 shrink-0">
+                                          {transaction.paymentMethodName ||
+                                            (transaction.paymentMethod
+                                              ? paymentMethodMap[
                                               transaction.paymentMethod
-                                            ] || transaction.paymentMethod
-                                          : "")}
-                                    </span>
-                                  </>
-                                )}
-                                {transaction.settlementDate &&
-                                  new Date(transaction.settlementDate).toDateString() !==
+                                              ] || transaction.paymentMethod
+                                              : "")}
+                                        </span>
+                                      </>
+                                    )}
+                                  {transaction.settlementDate &&
+                                    new Date(transaction.settlementDate).toDateString() !==
                                     new Date(transaction.date).toDateString() && (
+                                      <>
+                                        <span className="w-1 h-1 rounded-full bg-border shrink-0"></span>
+                                        <span className="text-[9px] sm:text-[10px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-1">
+                                          <Calendar className="h-2.5 w-2.5" />
+                                          Compensa em{" "}
+                                          {new Intl.DateTimeFormat("pt-BR", {
+                                            day: "2-digit",
+                                            month: "2-digit",
+                                          }).format(new Date(transaction.settlementDate))}
+                                        </span>
+                                      </>
+                                    )}
+                                  {transaction.dueDate && (() => {
+                                    const punctuality = getPaymentPunctuality(
+                                      transaction.date,
+                                      transaction.dueDate,
+                                      transaction.status,
+                                    );
+                                    if (!punctuality) return null;
+                                    return (
+                                      <>
+                                        <span className="w-1 h-1 rounded-full bg-border shrink-0"></span>
+                                        <span
+                                          className={cn(
+                                            "text-[9px] sm:text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-1 border",
+                                            punctuality.className,
+                                          )}
+                                        >
+                                          {punctuality.label}
+                                        </span>
+                                      </>
+                                    );
+                                  })()}
+                                  {transaction.clientName && (
                                     <>
                                       <span className="w-1 h-1 rounded-full bg-border shrink-0"></span>
-                                      <span className="text-[9px] sm:text-[10px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-1">
-                                        <Calendar className="h-2.5 w-2.5" />
-                                        Compensa em{" "}
-                                        {new Intl.DateTimeFormat("pt-BR", {
-                                          day: "2-digit",
-                                          month: "2-digit",
-                                        }).format(new Date(transaction.settlementDate))}
+                                      <span className="truncate text-foreground/80 font-medium">
+                                        {transaction.clientName}
                                       </span>
                                     </>
                                   )}
-                                {transaction.dueDate && (() => {
-                                  const punctuality = getPaymentPunctuality(
-                                    transaction.date,
-                                    transaction.dueDate,
-                                    transaction.status,
-                                  );
-                                  if (!punctuality) return null;
-                                  return (
-                                    <>
-                                      <span className="w-1 h-1 rounded-full bg-border shrink-0"></span>
-                                      <span
-                                        className={cn(
-                                          "text-[9px] sm:text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-1 border",
-                                          punctuality.className,
-                                        )}
-                                      >
-                                        {punctuality.label}
-                                      </span>
-                                    </>
-                                  );
-                                })()}
-                                {transaction.clientName && (
-                                  <>
-                                    <span className="w-1 h-1 rounded-full bg-border shrink-0"></span>
-                                    <span className="truncate text-foreground/80 font-medium">
-                                      {transaction.clientName}
-                                    </span>
-                                  </>
-                                )}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* LADO DIREITO: Valor + Status Badge + Ações */}
-                          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-                            <div className="flex flex-col items-end gap-1">
-                              <span
-                                className={cn(
-                                  "text-xs sm:text-sm font-black tracking-tight",
-                                  isCanceled
-                                    ? "line-through text-muted-foreground"
-                                    : isIncome
-                                      ? "text-emerald-600 dark:text-emerald-400"
-                                      : "text-foreground",
-                                )}
-                              >
-                                {isIncome ? "+" : "-"}{" "}
-                                {formatCurrency(transaction.amount)}
-                              </span>
-                              {transaction.feeAmount && transaction.feeAmount > 0 && !isCanceled ? (
-                                <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-semibold">
-                                  <span className="text-rose-500/90 font-bold">
-                                    -{formatCurrency(transaction.feeAmount)} taxa
-                                  </span>
-                                  <span>•</span>
-                                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">
-                                    {formatCurrency(transaction.netAmount)} líq.
-                                  </span>
-                                </div>
-                              ) : null}
-                              <StatusBadge transaction={transaction} />
-                            </div>
-
-                            {/* Dropdown de Ações */}
-                            {(transaction.isManual ||
-                              transaction.isAppointmentLinked ||
-                              transaction.isPackageLinked) && (
-                              <div
-                                className="flex items-center justify-end"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-7 w-7 text-muted-foreground hover:bg-muted hover:text-foreground border-none transition-colors cursor-pointer"
-                                    >
-                                      <ChevronDown className="h-3.5 w-3.5" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent
-                                    align="end"
-                                    className="w-48 rounded-2xl border border-border/40 shadow-xl p-1.5 bg-background/95 backdrop-blur-md"
-                                  >
-                                    {transaction.isManual && !isCanceled && (
-                                      <DropdownMenuItem
-                                        className="gap-2 cursor-pointer rounded-full text-foreground focus:bg-primary/10 focus:text-primary font-bold transition-colors py-2 text-xs"
-                                        onClick={() =>
-                                          setEditingTransaction(transaction)
-                                        }
-                                      >
-                                        <Pencil className="h-3.5 w-3.5" /> Editar
-                                      </DropdownMenuItem>
-                                    )}
-
-                                    {/* Opção para Inativar Parcela */}
-                                    {!isCanceled && transaction.status !== "PAGO" && (
-                                      <DropdownMenuItem
-                                        className="gap-2 cursor-pointer rounded-full text-amber-600 focus:bg-amber-500/10 focus:text-amber-700 font-bold transition-colors py-2 text-xs"
-                                        onClick={() =>
-                                          setInactivatingTx(transaction)
-                                        }
-                                      >
-                                        <X className="h-3.5 w-3.5" /> Inativar Parcela
-                                      </DropdownMenuItem>
-                                    )}
-
-                                    {/* Opção para Reativar Parcela */}
-                                    {isCanceled && (
-                                      <DropdownMenuItem
-                                        className="gap-2 cursor-pointer rounded-full text-emerald-600 focus:bg-emerald-500/10 focus:text-emerald-700 font-bold transition-colors py-2 text-xs"
-                                        onClick={() =>
-                                          setReactivatingTx(transaction)
-                                        }
-                                      >
-                                        <Repeat className="h-3.5 w-3.5" /> Reativar Parcela
-                                      </DropdownMenuItem>
-                                    )}
-
-                                    {/* Excluir Definitivamente ou Estornar */}
-                                    <DropdownMenuItem
-                                      className="gap-2 cursor-pointer rounded-full text-rose-500 focus:bg-rose-500/10 focus:text-rose-600 font-bold transition-colors mt-1 py-2 text-xs"
-                                      onClick={() =>
-                                        setDeletingTx(transaction)
-                                      }
-                                    >
-                                      <Trash className="h-3.5 w-3.5" />{" "}
-                                      {transaction.isAppointmentLinked
-                                        ? "Estornar Pagamento"
-                                        : "Excluir Definitivamente"}
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
+                                </span>
                               </div>
-                            )}
+                            </div>
+
+                            {/* LADO DIREITO: Valor + Status Badge + Ações */}
+                            <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+                              <div className="flex flex-col items-end gap-1">
+                                <span
+                                  className={cn(
+                                    "text-xs sm:text-sm font-black tracking-tight",
+                                    isCanceled
+                                      ? "line-through text-muted-foreground"
+                                      : isIncome
+                                        ? "text-emerald-600 dark:text-emerald-400"
+                                        : "text-foreground",
+                                  )}
+                                >
+                                  {isIncome ? "+" : "-"}{" "}
+                                  {formatCurrency(transaction.amount)}
+                                </span>
+                                {transaction.feeAmount && transaction.feeAmount > 0 && !isCanceled ? (
+                                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-semibold">
+                                    <span className="text-rose-500/90 font-bold">
+                                      -{formatCurrency(transaction.feeAmount)} taxa
+                                    </span>
+                                    <span>•</span>
+                                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                                      {formatCurrency(transaction.netAmount)} líq.
+                                    </span>
+                                  </div>
+                                ) : null}
+                                <StatusBadge transaction={transaction} />
+                              </div>
+
+                              {/* Dropdown de Ações */}
+                              {(transaction.isManual ||
+                                transaction.isAppointmentLinked ||
+                                transaction.isPackageLinked) && (
+                                  <div
+                                    className="flex items-center justify-end"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-7 w-7 text-muted-foreground hover:bg-muted hover:text-foreground border-none transition-colors cursor-pointer"
+                                        >
+                                          <ChevronDown className="h-3.5 w-3.5" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent
+                                        align="end"
+                                        className="w-48 rounded-2xl border border-border/40 shadow-xl p-1.5 bg-background/95 backdrop-blur-md"
+                                      >
+                                        {transaction.isManual && !isCanceled && (
+                                          <DropdownMenuItem
+                                            className="gap-2 cursor-pointer rounded-full text-foreground focus:bg-primary/10 focus:text-primary font-bold transition-colors py-2 text-xs"
+                                            onClick={() =>
+                                              setEditingTransaction(transaction)
+                                            }
+                                          >
+                                            <Pencil className="h-3.5 w-3.5" /> Editar
+                                          </DropdownMenuItem>
+                                        )}
+
+                                        {/* Opção para Inativar Parcela */}
+                                        {!isCanceled && transaction.status !== "PAGO" && (
+                                          <DropdownMenuItem
+                                            className="gap-2 cursor-pointer rounded-full text-amber-600 focus:bg-amber-500/10 focus:text-amber-700 font-bold transition-colors py-2 text-xs"
+                                            onClick={() =>
+                                              setInactivatingTx(transaction)
+                                            }
+                                          >
+                                            <X className="h-3.5 w-3.5" /> Inativar Parcela
+                                          </DropdownMenuItem>
+                                        )}
+
+                                        {/* Opção para Reativar Parcela */}
+                                        {isCanceled && (
+                                          <DropdownMenuItem
+                                            className="gap-2 cursor-pointer rounded-full text-emerald-600 focus:bg-emerald-500/10 focus:text-emerald-700 font-bold transition-colors py-2 text-xs"
+                                            onClick={() =>
+                                              setReactivatingTx(transaction)
+                                            }
+                                          >
+                                            <Repeat className="h-3.5 w-3.5" /> Reativar Parcela
+                                          </DropdownMenuItem>
+                                        )}
+
+                                        {/* Excluir Definitivamente ou Estornar */}
+                                        <DropdownMenuItem
+                                          className="gap-2 cursor-pointer rounded-full text-rose-500 focus:bg-rose-500/10 focus:text-rose-600 font-bold transition-colors mt-1 py-2 text-xs"
+                                          onClick={() =>
+                                            setDeletingTx(transaction)
+                                          }
+                                        >
+                                          <Trash className="h-3.5 w-3.5" />{" "}
+                                          {transaction.isAppointmentLinked
+                                            ? "Estornar Pagamento"
+                                            : "Excluir Definitivamente"}
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
+                                )}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               );
             })
           )}
