@@ -101,6 +101,8 @@ export async function POST(request: NextRequest) {
             description: `Sinal Online: ${serviceName}`,
             amount: grossAmount,
             date: approvalDate,
+            settlement_date: approvalDate,
+            due_date: approvalDate,
             status: "PAGO",
             organization_id: appointment.organization_id,
             appointment_id: appointment.id,
@@ -119,7 +121,7 @@ export async function POST(request: NextRequest) {
           console.error("[ZIBEE_SYNC_ERROR]", zibeeErr);
         }
 
-        // Se o Mercado Pago cobrou taxa, cria a DESPESA correspondente
+        // Se o Mercado Pago cobrou taxa, cria a DESPESA correspondente vinculada à receita
         if (feeAmount > 0) {
           const feeTx = await prisma.transaction.create({
             data: {
@@ -127,11 +129,14 @@ export async function POST(request: NextRequest) {
               description: `Taxa Mercado Pago: ${serviceName}`,
               amount: feeAmount,
               date: approvalDate,
+              settlement_date: approvalDate,
+              due_date: approvalDate,
               status: "PAGO",
               organization_id: appointment.organization_id,
               appointment_id: appointment.id,
               client_id: appointment.client_id,
               payment_method_id: pixMethod?.id || null,
+              parent_transaction_id: revenueTx.id,
             },
           });
 
