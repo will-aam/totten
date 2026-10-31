@@ -1,38 +1,54 @@
 # 🏪 Totten - Visão geral
 
-> **Plataforma SaaS Multi-tenant de Gestão** para empresas de beleza, bem-estar e serviços
+> **Plataforma modular de gestão** para empresas de beleza, bem-estar e serviços
 
-**Totten** é uma plataforma SaaS multi-tenant de gestão, criada especificamente para **empresas de beleza, bem-estar e serviços**. Ela combina agendamento de consultas, controle de pacotes de sessões, controle financeiro, totens de autoatendimento e um portal do cliente em uma única **Progressive Web Application (PWA)** — tudo rodando em **Next.js 16** com **Prisma + PostgreSQL** e uma rica biblioteca de componentes **Radix UI / shadcn/ui**.
+**Totten** reúne ferramentas para organizar a operação e o relacionamento com clientes de empresas de beleza, bem-estar e serviços. O produto está sendo pensado em módulos que podem ser compreendidos e, futuramente, precificados separadamente. A agenda é o núcleo operacional: recebe ferramentas de gestão que dão suporte ao atendimento e se integra a módulos que também podem funcionar como ofertas próprias.
 
-Se você é um desenvolvedor que está se juntando a este projeto, esta página oferece uma visão geral: **o que o sistema faz, como ele está organizado arquiteturalmente e para onde ir a seguir na documentação.**
+Este documento apresenta primeiro o conceito funcional do produto e, depois, sua organização técnica. A divisão abaixo é uma **estrutura de produto para discussão**, não uma definição de planos ou preços.
 
 > **Fontes:** `package.json`, `app/layout.tsx`, `prisma/schema.prisma`
 
 ---
 
-### 🎯 O que a Totten Resolve
+### 🎯 Conceito do produto
 
-A Totten resolve **quatro problemas interconectados** que os proprietários de negócios de serviços enfrentam diariamente:
+A Totten ajuda negócios de serviços a conduzir o atendimento do primeiro agendamento ao retorno do cliente. Seu produto pode ser entendido em três camadas: um núcleo de operação, ferramentas que ampliam esse núcleo e módulos de operação complementares.
 
-| Problema                              | Solução Totten                                                                   | Rota Principal    |
-| ------------------------------------- | -------------------------------------------------------------------------------- | ----------------- |
-| 📅 **Caos no agendamento manual**     | Agenda com visualizações diárias/semanais/mensais e agendamentos recorrentes     | `/admin/agenda`   |
-| 📦 **Controle de pacotes de sessões** | Modelos de pacotes → pacotes vendidos → dedução por sessão                       | `/admin/packages` |
-| 💰 **Pontos cegos no fluxo de caixa** | Painel financeiro com receitas/despesas, métodos de pagamento e contas a receber | `/admin/finance`  |
-| 🚶 **Gargalo na recepção**            | Totem de autoatendimento onde os clientes fazem check-in sozinhos                | `/totem/idle`     |
+### 🧩 Núcleo operacional: Agenda
 
-### ✨ Funcionalidades Adicionais
+A **Agenda** organiza horários, profissionais, serviços e atendimentos. É o ponto central da operação e reúne os recursos necessários para preparar, acompanhar e concluir cada atendimento.
 
-Além desses fluxos principais, a Totten oferece:
+| Ferramentas de gestão ligadas à agenda | Papel no fluxo |
+| --- | --- |
+| Confirmações manuais e acompanhamento de solicitações | Apoiar a comunicação e a organização dos horários |
+| Gestão de pacotes e sessões | Relacionar os atendimentos aos pacotes vendidos e às sessões utilizadas |
+| Auditoria e histórico de registros | Consultar alterações e eventos ligados à operação |
+| Cadastros de clientes, serviços e profissionais | Manter os dados usados no agendamento e atendimento |
+| Mapa de aniversários | Ajudar a equipe a manter o relacionamento com clientes |
+| Dashboard operacional | Resumir indicadores e atividades da agenda |
 
-- 👥 **Gestão de clientes** (com CPF, fichas de anamnese e observações)
-- 📊 **Controle de estoque** com dedução automática ao concluir serviços
-- 🎫 **Geração de vouchers** para pacotes vendidos
-- 🔗 **Página Link-in-Bio personalizável**
-- 🎂 **Sistema de lembretes de aniversário**
-- 🏢 **Isolamento total por organização** (tenant isolation)
+Essas ferramentas são complementos do fluxo de agenda e podem ser agrupadas como **Gestão da Agenda**. O dashboard funciona como uma visão transversal da operação, em vez de representar necessariamente um módulo independente.
 
-> **Fontes:** `app/(private)/admin/page.tsx`, `app/totem/page.tsx`, `app/page.tsx`
+### 🧱 Módulos complementares
+
+Além do núcleo de agenda, a Totten possui áreas com objetivos próprios, que podem ser avaliadas como módulos independentes na futura composição dos planos:
+
+| Módulo | O que organiza | Exemplos de recursos |
+| --- | --- | --- |
+| **Financeiro** | Movimentações e visão financeira do negócio | Receitas, despesas, recebimentos, métodos de pagamento e relatórios |
+| **Autoatendimento** | Ações que o cliente pode realizar sem depender da recepção | Totem e experiência de autoatendimento |
+| **Check-in** | Registro da chegada e encaminhamento do cliente para o atendimento | Busca do cliente, confirmação de presença e acompanhamento dos check-ins |
+| **Fidelidade** | Incentivos para recorrência e relacionamento com clientes | Programa de fidelidade e benefícios associados |
+
+O **Autoatendimento** e o **Check-in** se relacionam na experiência do totem, mas representam capacidades diferentes: um é o canal de autoatendimento; o outro é o processo de confirmar a chegada. Essa distinção permite avaliar se serão ofertados juntos ou separadamente.
+
+### 🌱 Capacidades transversais e extensões
+
+Cadastro e histórico de clientes, estoque, anamnese, vouchers, página pública personalizável e notificações apoiam diferentes partes da operação. Nesta etapa, são tratados como capacidades do sistema, sem decisão prévia sobre quais formarão módulos ou itens de cada plano.
+
+### 🧭 Princípio para a futura precificação
+
+Organizar o produto por módulos significa primeiro explicitar **qual problema cada módulo resolve**, **quais recursos pertencem a ele** e **de quais outros módulos depende**. A definição de pacotes, limites e preços fica para uma etapa posterior, com essa estrutura funcional como base.
 
 ---
 

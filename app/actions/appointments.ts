@@ -408,6 +408,9 @@ export async function updateAppointment(
         transactions: {
           select: { id: true, status: true, amount: true, description: true },
         },
+        check_in: {
+          select: { id: true, deleted_at: true },
+        },
       },
     });
 
@@ -936,7 +939,60 @@ export async function updateAppointment(
         }
       }
 
-      // 4. Auditoria Unificada no Histórico do Cliente (ClientNote)
+      // 4. Fidelidade: conceder pontos por agendamento realizado ou estornar
+      const loyaltySettings = await tx.loyaltySettings.findUnique({
+        where: { organization_id: admin.organizationId },
+      });
+
+      // Se a regra de check-in estiver ativa com pontuação e o agendamento já tiver um check-in válido (não deletado),
+      // a visita já foi ou será pontuada pelo check-in. Evitamos duplicidade na mesma visita não concedendo pontos duplicados.
+      const hasActiveCheckIn = Boolean(
+        currentAppt.check_in && !currentAppt.check_in.deleted_at
+      );
+      const shouldAwardSchedulePoints = !(
+        loyaltySettings?.check_in_active &&
+        loyaltySettings.check_in_points > 0 &&
+        hasActiveCheckIn
+      );
+
+      if (
+        loyaltySettings?.is_active &&
+        loyaltySettings?.schedule_active &&
+        loyaltySettings.schedule_points > 0 &&
+        currentAppt.client_id &&
+        shouldAwardSchedulePoints
+      ) {
+        const clientCurrent = await tx.client.findUnique({
+          where: { id: currentAppt.client_id },
+          select: { loyalty_points: true, loyalty_enrolled_at: true },
+        });
+
+        const isEnrolled = loyaltySettings.scope === "global" || clientCurrent?.loyalty_enrolled_at !== null;
+
+        if (isEnrolled && clientCurrent) {
+          if (isMarkingAsDone) {
+            const newPoints = Math.min(
+              (clientCurrent.loyalty_points || 0) + loyaltySettings.schedule_points,
+              loyaltySettings.max_points,
+            );
+            await tx.client.update({
+              where: { id: currentAppt.client_id },
+              data: { loyalty_points: newPoints },
+            });
+          } else if (isUnmarkingAsDone) {
+            const newPoints = Math.max(
+              (clientCurrent.loyalty_points || 0) - loyaltySettings.schedule_points,
+              0,
+            );
+            await tx.client.update({
+              where: { id: currentAppt.client_id },
+              data: { loyalty_points: newPoints },
+            });
+          }
+        }
+      }
+
+      // 5. Auditoria Unificada no Histórico do Cliente (ClientNote)
       if (currentAppt.client_id) {
         const serviceName =
           currentAppt.snapshot_service_name ||

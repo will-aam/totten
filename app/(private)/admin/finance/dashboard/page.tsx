@@ -172,8 +172,8 @@ function FinanceDashboardContent() {
 
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative animate-in fade-in duration-300">
         {/* REGIME CONTÁBIL: CHAPADO NA TELA & MINIMALISTA */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5 -mb-2">
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+        <div className="flex flex-wrap items-center justify-end sm:justify-between gap-2.5 -mb-2">
+          <span className="hidden sm:inline-block text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Regime Contábil
           </span>
 

@@ -185,6 +185,18 @@ export async function updateLoyaltySettings(
     const { rewards, points_per_checkin, points_per_appointment, ...otherData } = data;
     
     const mappedData: any = { ...otherData };
+    if (data.is_active !== undefined) {
+      mappedData.is_active = data.is_active;
+      if (data.is_active) {
+        const current = await prisma.loyaltySettings.findUnique({
+          where: { organization_id: organizationId },
+          select: { activated_at: true },
+        });
+        if (!current?.activated_at) {
+          mappedData.activated_at = new Date();
+        }
+      }
+    }
     if (points_per_checkin !== undefined) {
       mappedData.check_in_points = points_per_checkin;
       mappedData.check_in_active = points_per_checkin > 0;
@@ -315,48 +327,13 @@ export async function calculateClientPoints(
   const enrolled = settings.scope === "global" || enrolledAt !== null;
   if (!enrolled) return 0;
 
-  // Se escopo for global e não tiver enrolledAt, conta a partir da criação da regra de fidelidade
-  const startDate = enrolledAt || (settings.created_at ? new Date(settings.created_at) : new Date(0));
-
-  let checkInPoints = 0;
-  if (settings.check_in_active && settings.check_in_points > 0) {
-    const checkInsCount = await prisma.checkIn.count({
-      where: {
-        client_id: clientId,
-        date_time: { gte: startDate },
-        deleted_at: null,
-      }
-    });
-    checkInPoints = checkInsCount * settings.check_in_points;
-  }
-
-  let schedulePoints = 0;
-  if (settings.schedule_active && settings.schedule_points > 0) {
-    const appointmentsCount = await prisma.appointment.count({
-      where: {
-        client_id: clientId,
-        date_time: { gte: startDate },
-        status: "REALIZADO",
-      }
-    });
-    schedulePoints = appointmentsCount * settings.schedule_points;
-  }
-
-  const grossPoints = Math.min(checkInPoints + schedulePoints, settings.max_points);
-
-  // Subtrai apenas os vouchers resgatados dentro do ciclo atual de matrícula (>= startDate)
-  const vouchers = await prisma.clientVoucher.findMany({
-    where: {
-      client_id: clientId,
-      created_at: { gte: startDate },
-    },
-    select: { points_spent: true }
+  // Pontos não são retroativos: o saldo real é o acumulado transacionalmente em client.loyalty_points
+  const client = await prisma.client.findUnique({
+    where: { id: clientId },
+    select: { loyalty_points: true }
   });
 
-  const totalSpentPoints = vouchers.reduce((acc: number, v: { points_spent: number }) => acc + v.points_spent, 0);
-
-  // Garante que o saldo nunca seja negativo
-  return Math.max(0, grossPoints - totalSpentPoints);
+  return Math.min(Math.max(0, client?.loyalty_points || 0), settings.max_points);
 }
 
 export async function getClientLoyaltyInfo(clientId: string) {
@@ -394,21 +371,14 @@ export async function getClientLoyaltyInfo(clientId: string) {
       return { success: true, enrolled: false, active: true, points: 0, rewards: settings.rewards };
     }
 
-    // Calcula saldo líquido real disponível
-    const currentPoints = await calculateClientPoints(clientId, client.loyalty_enrolled_at, settings);
+    // Saldo real e não retroativo do cliente
+    const currentPoints = Math.min(Math.max(0, client.loyalty_points || 0), settings.max_points);
 
     // Busca todos os vouchers do cliente para a carteira
     const vouchers = await prisma.clientVoucher.findMany({
       where: { client_id: clientId },
       orderBy: { created_at: "desc" }
     });
-
-    if (currentPoints !== client.loyalty_points) {
-      await prisma.client.update({
-        where: { id: clientId },
-        data: { loyalty_points: currentPoints }
-      });
-    }
 
     return {
       success: true,
@@ -468,8 +438,8 @@ export async function redeemLoyaltyReward(clientId: string, rewardId: string) {
       return { success: false, error: "Custo de pontuação da recompensa inválido." };
     }
 
-    // Calcula saldo real líquido disponível
-    const availablePoints = await calculateClientPoints(clientId, client.loyalty_enrolled_at, settings);
+    // Saldo real líquido disponível (não retroativo)
+    const availablePoints = Math.min(Math.max(0, client.loyalty_points || 0), settings.max_points);
 
     if (availablePoints < reward.points_cost) {
       return { success: false, error: "Pontos insuficientes para resgatar esta recompensa." };
@@ -563,7 +533,16 @@ export async function getClientLoyaltyHistory(clientId: string) {
       return { success: true, history: [] };
     }
 
-    const startDate = client.loyalty_enrolled_at || (settings.created_at ? new Date(settings.created_at) : new Date(0));
+    // A data de início dos pontos nunca deve ser 1970 (new Date(0)).
+    // Se o cliente foi matriculado especificamente, conta a partir de loyalty_enrolled_at.
+    // Se a abrangência for global, conta a partir da data de ativação (activated_at ou created_at) do programa.
+    const programActivationDate = settings.activated_at 
+      ? new Date(settings.activated_at) 
+      : (settings.created_at ? new Date(settings.created_at) : new Date());
+
+    const startDate = client.loyalty_enrolled_at 
+      ? new Date(client.loyalty_enrolled_at) 
+      : programActivationDate;
     const history = [];
 
     // Busca check-ins
@@ -586,13 +565,21 @@ export async function getClientLoyaltyHistory(clientId: string) {
       })));
     }
 
-    // Busca agendamentos
+    // Busca agendamentos (se o check-in estiver ativo e pontuando, desconsidera agendamentos que já possuem check-in para não duplicar no histórico)
     if (settings.schedule_active && settings.schedule_points > 0) {
       const appointments = await prisma.appointment.findMany({
         where: {
           client_id: client.id,
           date_time: { gte: startDate },
           status: "REALIZADO",
+          ...(settings.check_in_active && settings.check_in_points > 0
+            ? {
+                OR: [
+                  { check_in: null },
+                  { check_in: { is: { deleted_at: { not: null } } } },
+                ],
+              }
+            : {}),
         },
         include: {
           service: { select: { name: true } }

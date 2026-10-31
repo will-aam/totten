@@ -835,8 +835,8 @@ export default function TransactionsPage() {
 
       <div className="flex flex-col gap-4 sm:gap-6 p-3 sm:p-6 max-w-400 mx-auto w-full pb-36 md:pb-6 animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
         {/* REGIME CONTÁBIL: CHAPADO NA TELA & MINIMALISTA */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5 -mb-1">
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+        <div className="flex flex-wrap items-center justify-end sm:justify-between gap-2.5 -mb-1">
+          <span className="hidden sm:inline-block text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Regime Contábil
           </span>
 

@@ -688,8 +688,9 @@ model LoyaltySettings {
   organization_id String       @unique
   organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
-  is_active  Boolean @default(false)
-  scope      String  @default("specific")
+  is_active    Boolean   @default(false)
+  activated_at DateTime?
+  scope        String    @default("specific")
   max_points Int     @default(500)
 
   check_in_active Boolean @default(true)
