@@ -726,7 +726,7 @@ model LoyaltyReward {
 model ClientVoucher {
   id           String @id @default(cuid())
   client_id    String
-  reward_id    String
+  reward_id    String?
   points_spent Int
   title        String
   status       String @default("DISPONIVEL")
@@ -735,8 +735,8 @@ model ClientVoucher {
   expires_at DateTime?
   used_at    DateTime?
 
-  client Client        @relation(fields: [client_id], references: [id], onDelete: Cascade)
-  reward LoyaltyReward @relation(fields: [reward_id], references: [id], onDelete: Cascade)
+  client Client         @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  reward LoyaltyReward? @relation(fields: [reward_id], references: [id], onDelete: SetNull)
 
   @@map("client_vouchers")
 }

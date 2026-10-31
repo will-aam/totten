@@ -52,7 +52,13 @@ export async function updateLoyaltySettings(
     max_points?: number;
     points_per_checkin?: number;
     points_per_appointment?: number;
-    rewards?: { title: string; points_cost: number; conditions?: string }[];
+    rewards?: {
+      id?: string | number;
+      title: string;
+      points_cost: number;
+      conditions?: string;
+      validity_days?: number | null;
+    }[];
   }
 ) {
   try {
@@ -73,25 +79,74 @@ export async function updateLoyaltySettings(
       data: mappedData,
     });
 
-    if (rewards) {
-      await prisma.loyaltyReward.deleteMany({
-        where: { settings_id: settings.id }
+    if (rewards !== undefined) {
+      const existingRewards = await prisma.loyaltyReward.findMany({
+        where: { settings_id: settings.id },
       });
-      
-      if (rewards.length > 0) {
-        await prisma.loyaltyReward.createMany({
-          data: rewards.map(r => ({
-            settings_id: settings.id,
-            title: r.title,
-            points_cost: r.points_cost,
-            conditions: r.conditions
-          }))
+      const existingRewardMap = new Map(existingRewards.map(r => [r.id, r]));
+
+      const keepRewardIds = new Set<string>();
+
+      for (const r of rewards) {
+        const rewardId = typeof r.id === "string" ? r.id : undefined;
+        const validityDays = r.validity_days !== undefined ? r.validity_days : 30;
+
+        if (rewardId && existingRewardMap.has(rewardId)) {
+          // Atualiza recompensa existente mantendo o ID e sem deletar vouchers
+          await prisma.loyaltyReward.update({
+            where: { id: rewardId },
+            data: {
+              title: r.title,
+              points_cost: r.points_cost,
+              conditions: r.conditions,
+              validity_days: validityDays,
+            },
+          });
+          keepRewardIds.add(rewardId);
+        } else {
+          // Cria nova recompensa
+          const created = await prisma.loyaltyReward.create({
+            data: {
+              settings_id: settings.id,
+              title: r.title,
+              points_cost: r.points_cost,
+              conditions: r.conditions,
+              validity_days: validityDays,
+            },
+          });
+          keepRewardIds.add(created.id);
+        }
+      }
+
+      // Recompensas excluídas pelo usuário
+      const rewardsToDelete = existingRewards.filter(r => !keepRewardIds.has(r.id));
+      if (rewardsToDelete.length > 0) {
+        const deleteIds = rewardsToDelete.map(r => r.id);
+
+        // Desvincula os vouchers existentes antes de deletar a recompensa,
+        // garantindo que NENHUM voucher ou histórico do cliente seja perdido!
+        await prisma.clientVoucher.updateMany({
+          where: { reward_id: { in: deleteIds } },
+          data: { reward_id: null },
+        });
+
+        await prisma.loyaltyReward.deleteMany({
+          where: { id: { in: deleteIds } },
         });
       }
     }
 
+    const updatedSettings = await prisma.loyaltySettings.findUnique({
+      where: { organization_id: organizationId },
+      include: {
+        rewards: {
+          orderBy: { points_cost: "asc" },
+        },
+      },
+    });
+
     revalidatePath("/(private)/admin/loyalty", "page");
-    return { success: true, settings };
+    return { success: true, settings: updatedSettings };
   } catch (error) {
     console.error("Erro ao atualizar configurações de fidelidade:", error);
     return { success: false, error: "Erro ao atualizar configurações" };

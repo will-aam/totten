@@ -99,7 +99,7 @@ export function LoyaltySettingsTab({
 
   const handleSaveReward = async (reward: Reward) => {
     const exists = rewards.find((r) => r.id === reward.id);
-    let newRewards;
+    let newRewards: Reward[];
     if (exists) {
       newRewards = rewards.map((r) => (r.id === reward.id ? reward : r));
     } else {
@@ -115,12 +115,23 @@ export function LoyaltySettingsTab({
         points_per_checkin: checkInActive ? pointsPerCheckin : 0,
         points_per_appointment: scheduleActive ? pointsPerAppointment : 0,
         rewards: newRewards.map(r => ({
+          id: typeof r.id === "string" ? r.id : undefined,
           title: r.title,
           points_cost: r.pointsCost,
-          conditions: r.conditions
+          conditions: r.conditions,
+          validity_days: r.validityDays
         }))
       };
-      await updateLoyaltySettings(organizationId, data);
+      const res = await updateLoyaltySettings(organizationId, data);
+      if (res.success && res.settings?.rewards) {
+        setRewards(res.settings.rewards.map((r: any) => ({
+          id: r.id,
+          title: r.title,
+          pointsCost: r.points_cost,
+          conditions: r.conditions,
+          validityDays: r.validity_days
+        })));
+      }
     } catch (e) {
       console.error(e);
     }
@@ -138,13 +149,23 @@ export function LoyaltySettingsTab({
         points_per_checkin: checkInActive ? pointsPerCheckin : 0,
         points_per_appointment: scheduleActive ? pointsPerAppointment : 0,
         rewards: newRewards.map(r => ({
+          id: typeof r.id === "string" ? r.id : undefined,
           title: r.title,
           points_cost: r.pointsCost,
           conditions: r.conditions,
           validity_days: r.validityDays
         }))
       };
-      await updateLoyaltySettings(organizationId, data);
+      const res = await updateLoyaltySettings(organizationId, data);
+      if (res.success && res.settings?.rewards) {
+        setRewards(res.settings.rewards.map((r: any) => ({
+          id: r.id,
+          title: r.title,
+          pointsCost: r.points_cost,
+          conditions: r.conditions,
+          validityDays: r.validity_days
+        })));
+      }
     } catch (e) {
       console.error(e);
     }
@@ -159,6 +180,7 @@ export function LoyaltySettingsTab({
         points_per_checkin: checkInActive ? pointsPerCheckin : 0,
         points_per_appointment: scheduleActive ? pointsPerAppointment : 0,
         rewards: rewards.map(r => ({
+          id: typeof r.id === "string" ? r.id : undefined,
           title: r.title,
           points_cost: r.pointsCost,
           conditions: r.conditions,
@@ -168,6 +190,15 @@ export function LoyaltySettingsTab({
 
       const res = await updateLoyaltySettings(organizationId, data);
       if (res.success) {
+        if (res.settings?.rewards) {
+          setRewards(res.settings.rewards.map((r: any) => ({
+            id: r.id,
+            title: r.title,
+            pointsCost: r.points_cost,
+            conditions: r.conditions,
+            validityDays: r.validity_days
+          })));
+        }
         toast.success("Configurações salvas com sucesso!");
       } else {
         toast.error("Erro ao salvar as configurações.");
