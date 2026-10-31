@@ -667,14 +667,15 @@ export async function createManualPackageCheckIn(
           data: { active: willRemainActive },
         });
 
-        // Se encerrou o pacote, limpa agendamentos futuros não realizados
+        // Se encerrou o pacote, converte agendamentos futuros em avulsos com auditoria
         if (!willRemainActive) {
-          await tx.appointment.deleteMany({
-            where: {
-              package_id: pkg.id,
-              organization_id: admin.organizationId,
-              status: { not: "REALIZADO" },
-            },
+          await PackageService.handleExhaustedPackageFutureAppointments({
+            tx,
+            packageId: pkg.id,
+            organizationId: admin.organizationId,
+            packageName: pkg.name,
+            excludeAppointmentId: appt.id,
+            adminName: admin.name || "Administrador",
           });
         }
 

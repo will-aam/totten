@@ -18,6 +18,7 @@ import {
   recordAppointmentMove,
 } from "@/lib/server/security/appointment-throttle";
 import { createSettledRevenueWithFee } from "@/lib/server/services/payments/settlement.service";
+import { PackageService } from "@/lib/server/services/packages/package.service";
 
 
 export type CreateAppointmentInput = {
@@ -616,12 +617,13 @@ export async function updateAppointment(
           });
 
           if (!finalActive) {
-            await tx.appointment.deleteMany({
-              where: {
-                package_id: currentAppt.package_id,
-                organization_id: admin.organizationId,
-                status: { not: AppointmentStatus.REALIZADO },
-              },
+            await PackageService.handleExhaustedPackageFutureAppointments({
+              tx,
+              packageId: currentAppt.package_id,
+              organizationId: admin.organizationId,
+              packageName: currentAppt.package.name,
+              excludeAppointmentId: currentAppt.id,
+              adminName: admin.name || "Administrador",
             });
           }
 
@@ -706,12 +708,13 @@ export async function updateAppointment(
           });
 
           if (!finalActive) {
-            await tx.appointment.deleteMany({
-              where: {
-                package_id: currentAppt.package_id,
-                organization_id: admin.organizationId,
-                status: { not: "REALIZADO" },
-              },
+            await PackageService.handleExhaustedPackageFutureAppointments({
+              tx,
+              packageId: currentAppt.package_id,
+              organizationId: admin.organizationId,
+              packageName: currentAppt.package.name,
+              excludeAppointmentId: currentAppt.id,
+              adminName: admin.name || "Administrador",
             });
           }
 
@@ -1509,12 +1512,13 @@ export async function registerManualNoShow(
         });
 
         if (!finalActive) {
-          await tx.appointment.deleteMany({
-            where: {
-              package_id: appt.package_id,
-              organization_id: admin.organizationId,
-              status: { not: "REALIZADO" },
-            },
+          await PackageService.handleExhaustedPackageFutureAppointments({
+            tx,
+            packageId: appt.package_id,
+            organizationId: admin.organizationId,
+            packageName: appt.package.name,
+            excludeAppointmentId: appt.id,
+            adminName: admin.name || "Administrador",
           });
         }
       }

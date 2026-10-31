@@ -49,6 +49,7 @@ import {
   deleteAppointment,
   undoNoShow,
   registerManualNoShow, //  A nova action manual importada
+  updateAppointmentDateTime,
 } from "@/app/actions/appointments";
 import { ThermalReceipt } from "./thermal-receipt";
 import { getPaymentMethods } from "@/app/actions/payment-methods";
@@ -87,6 +88,10 @@ export const AppointmentDetailsModal = memo(
       OrganizationPaymentMethod[]
     >([]);
     const [showSaveOptions, setShowSaveOptions] = useState(false);
+    const [isRescheduling, setIsRescheduling] = useState(false);
+    const [rescheduleDate, setRescheduleDate] = useState("");
+    const [rescheduleTime, setRescheduleTime] = useState("");
+    const [isSavingReschedule, setIsSavingReschedule] = useState(false);
 
     const componentRef = useRef<HTMLDivElement>(null);
 
@@ -167,6 +172,7 @@ export const AppointmentDetailsModal = memo(
         setObs(appointment.observations || "");
         setHasCharge(appointment.hasCharge ?? appointment.has_charge ?? false);
         setShowSaveOptions(false);
+        setIsRescheduling(false);
       }
     }, [appointment, paymentMethods]);
 
@@ -235,6 +241,30 @@ export const AppointmentDetailsModal = memo(
     const isAnyNoShow = isAutoNoShow || isManualNoShow;
 
     // Função que chama a Action de Estorno Unificada
+    const handleConfirmReschedule = async () => {
+      if (!appointment?.id || !rescheduleDate || !rescheduleTime) {
+        toast.error("Selecione a data e o horário para remarcar.");
+        return;
+      }
+      setIsSavingReschedule(true);
+      try {
+        const newDateTimeIso = `${rescheduleDate}T${rescheduleTime}:00.000-03:00`;
+        const res = await updateAppointmentDateTime(appointment.id, newDateTimeIso);
+        if (res.success) {
+          toast.success("Agendamento remarcado com sucesso!");
+          setIsRescheduling(false);
+          onRefresh?.();
+          onOpenChange(false);
+        } else {
+          toast.error(res.error || "Erro ao remarcar agendamento.");
+        }
+      } catch (err: any) {
+        toast.error(err?.message || "Falha na conexão ao remarcar.");
+      } finally {
+        setIsSavingReschedule(false);
+      }
+    };
+
     const handleUndoNoShow = async () => {
       setIsUndoing(true);
       try {
@@ -648,6 +678,80 @@ export const AppointmentDetailsModal = memo(
                 {endTime}
               </div>
             </div>
+
+            {!isLocked && status !== "realizado" && status !== "cancelado" && (
+              <div className="pt-2 border-t border-border/40">
+                {!isRescheduling ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (appointment?.date_time) {
+                        const d = new Date(appointment.date_time);
+                        const yr = d.getFullYear();
+                        const mo = String(d.getMonth() + 1).padStart(2, "0");
+                        const da = String(d.getDate()).padStart(2, "0");
+                        const hr = String(d.getHours()).padStart(2, "0");
+                        const mi = String(d.getMinutes()).padStart(2, "0");
+                        setRescheduleDate(`${yr}-${mo}-${da}`);
+                        setRescheduleTime(`${hr}:${mi}`);
+                      }
+                      setIsRescheduling(true);
+                    }}
+                    className="w-full text-xs font-bold border-dashed border-primary/40 text-primary hover:bg-primary/5 h-8 gap-1.5 rounded-xl"
+                  >
+                    <CalendarAlt className="h-3.5 w-3.5" /> Remarcar Data / Horário
+                  </Button>
+                ) : (
+                  <div className="flex flex-col gap-2.5 p-3 bg-primary/5 border border-primary/20 rounded-xl animate-in fade-in zoom-in-95">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-primary">
+                      Selecione o novo dia e horário:
+                    </span>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-[10px] font-bold text-muted-foreground block mb-1">Nova Data</Label>
+                        <input
+                          type="date"
+                          value={rescheduleDate}
+                          onChange={(e) => setRescheduleDate(e.target.value)}
+                          className="w-full h-8 px-2 text-xs font-semibold bg-background border border-border rounded-lg outline-none focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] font-bold text-muted-foreground block mb-1">Novo Horário</Label>
+                        <input
+                          type="time"
+                          value={rescheduleTime}
+                          onChange={(e) => setRescheduleTime(e.target.value)}
+                          className="w-full h-8 px-2 text-xs font-semibold bg-background border border-border rounded-lg outline-none focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2 justify-end pt-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsRescheduling(false)}
+                        className="h-7 text-xs rounded-lg"
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleConfirmReschedule}
+                        disabled={isSavingReschedule || !rescheduleDate || !rescheduleTime}
+                        className="h-7 text-xs font-bold rounded-lg"
+                      >
+                        {isSavingReschedule ? <LoaderDots className="h-3 w-3 animate-spin" /> : "Confirmar"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col gap-4">

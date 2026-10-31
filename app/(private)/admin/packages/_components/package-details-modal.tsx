@@ -52,6 +52,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/components/ui/use-toast";
 import { useSWRConfig } from "swr";
+import { updateAppointmentDateTime } from "@/app/actions/appointments";
 
 interface PackageDetailsModalProps {
   open: boolean;
@@ -79,6 +80,36 @@ export function PackageDetailsModal({
   // Estados para o Dialog de Prorrogação (VISUAL)
   const [isProrrogarDialogOpen, setIsProrrogarDialogOpen] = useState(false);
   const [newExpirationDate, setNewExpirationDate] = useState<Date | undefined>(undefined);
+
+  // Estados para Remarcação Rápida de Sessão
+  const [rescheduleItem, setRescheduleItem] = useState<any | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState("");
+  const [rescheduleTime, setRescheduleTime] = useState("");
+  const [isRescheduling, setIsRescheduling] = useState(false);
+
+  const handleSaveReschedule = async () => {
+    if (!rescheduleItem?.id || !rescheduleDate || !rescheduleTime) {
+      toast({ title: "Selecione a data e o horário.", variant: "destructive" });
+      return;
+    }
+    setIsRescheduling(true);
+    try {
+      const newDateTimeIso = `${rescheduleDate}T${rescheduleTime}:00.000-03:00`;
+      const res = await updateAppointmentDateTime(rescheduleItem.id, newDateTimeIso);
+      if (res.success) {
+        toast({ title: "Sessão remarcada com sucesso!" });
+        setRescheduleItem(null);
+        await loadHistory();
+        mutate("/api/packages");
+      } else {
+        toast({ title: res.error || "Erro ao remarcar.", variant: "destructive" });
+      }
+    } catch (err) {
+      toast({ title: "Erro de conexão ao remarcar.", variant: "destructive" });
+    } finally {
+      setIsRescheduling(false);
+    }
+  };
 
   const loadHistory = async () => {
     if (!packageData?.id) return;
@@ -352,6 +383,28 @@ export function PackageDetailsModal({
                               ? "INVALIDADA"
                               : item.status}
                           </Badge>
+
+                          {packageData.active && item.status !== "REALIZADO" && item.status !== "VENCIDO" && item.session !== null && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                const d = item.date ? new Date(item.date) : new Date();
+                                const yr = d.getFullYear();
+                                const mo = String(d.getMonth() + 1).padStart(2, "0");
+                                const da = String(d.getDate()).padStart(2, "0");
+                                const hr = String(d.getHours()).padStart(2, "0");
+                                const mi = String(d.getMinutes()).padStart(2, "0");
+                                setRescheduleDate(`${yr}-${mo}-${da}`);
+                                setRescheduleTime(`${hr}:${mi}`);
+                                setRescheduleItem(item);
+                              }}
+                              className="h-5 w-5 bg-primary/10 text-primary hover:bg-primary hover:text-white"
+                              title="Remarcar esta sessão"
+                            >
+                              <CalendarDetail className="h-3 w-3" />
+                            </Button>
+                          )}
 
                           {packageData.active && (
                             <Button

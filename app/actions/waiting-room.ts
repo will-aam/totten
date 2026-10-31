@@ -3,6 +3,7 @@
 import { prisma as db } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { createAppointment, updateAppointment } from "./appointments";
+import { PackageService } from "@/lib/server/services/packages/package.service";
 import { triggerZibeeSyncById } from "@/lib/server/integrations/zibee.service";
 import { revalidatePath } from "next/cache";
 
@@ -214,12 +215,13 @@ export async function createManualCheckIn(data: {
         });
 
         if (!willRemainActive) {
-          await tx.appointment.deleteMany({
-            where: {
-              package_id: data.packageId,
-              organization_id: organizationId,
-              status: { not: "REALIZADO" },
-            },
+          await PackageService.handleExhaustedPackageFutureAppointments({
+            tx,
+            packageId: data.packageId,
+            organizationId,
+            packageName: pkg.name,
+            excludeAppointmentId: newAppointmentId,
+            adminName: admin.name || "Recepção / Sala de Espera",
           });
         }
       }

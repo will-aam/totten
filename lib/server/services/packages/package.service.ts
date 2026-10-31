@@ -479,4 +479,78 @@ export class PackageService {
       }
     }
   }
+
+  /**
+   * Trata agendamentos futuros quando um pacote tem suas sessões esgotadas:
+   * Em vez de deletar silenciosamente do banco (o que causaria perda de agendamentos e apagaria no-shows),
+   * os agendamentos futuros não realizados são convertidos para avulsos a cobrar e um log de auditoria
+   * é gravado na tabela ClientNote (Histórico de Ações do Cliente / Logs do Sistema).
+   */
+  static async handleExhaustedPackageFutureAppointments({
+    tx,
+    packageId,
+    organizationId,
+    packageName,
+    excludeAppointmentId,
+    adminName,
+  }: {
+    tx: any;
+    packageId: string;
+    organizationId: string;
+    packageName?: string;
+    excludeAppointmentId?: string;
+    adminName?: string;
+  }) {
+    const whereClause: any = {
+      package_id: packageId,
+      organization_id: organizationId,
+      status: {
+        in: ["PENDENTE", "CONFIRMADO", "SOLICITADO"],
+      },
+    };
+
+    if (excludeAppointmentId) {
+      whereClause.id = { not: excludeAppointmentId };
+    }
+
+    const pendingAppointments = await tx.appointment.findMany({
+      where: whereClause,
+      include: {
+        service: { select: { name: true } },
+      },
+    });
+
+    if (pendingAppointments.length === 0) return;
+
+    await tx.appointment.updateMany({
+      where: {
+        id: { in: pendingAppointments.map((a: any) => a.id) },
+      },
+      data: {
+        package_id: null,
+        has_charge: true,
+      },
+    });
+
+    for (const appt of pendingAppointments) {
+      const dateStr = new Intl.DateTimeFormat("pt-BR", {
+        dateStyle: "short",
+        timeStyle: "short",
+      }).format(appt.date_time);
+
+      const serviceName =
+        appt.snapshot_service_name || appt.service?.name || "Serviço";
+
+      const noteText = `Ação: O agendamento futuro de ${serviceName} do dia ${dateStr} foi convertido para avulso a cobrar porque o pacote "${packageName || "Pacote"}" esgotou todas as sessões.${adminName ? ` (Operado por ${adminName})` : ""}`;
+
+      await tx.clientNote.create({
+        data: {
+          client_id: appt.client_id,
+          organization_id: organizationId,
+          text: noteText,
+          date: new Date(),
+        },
+      });
+    }
+  }
 }

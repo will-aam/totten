@@ -170,12 +170,8 @@ export async function updateTransaction(
 
     const currentTx = await prisma.transaction.findUnique({
       where: { id, organization_id: admin.organizationId },
-      select: {
-        recurrence_id: true,
-        date: true,
-        package_id: true,
-        appointment_id: true,
-        stock_item_id: true,
+      include: {
+        child_transactions: true,
       },
     });
 
@@ -188,39 +184,155 @@ export async function updateTransaction(
       };
     }
 
-    await prisma.transaction.update({
-      where: { id },
-      data: {
-        type: data.type,
-        description: data.description,
-        amount: data.amount,
-        date: data.date ? parseDateToBrasilia(data.date) : undefined,
-        status: data.status,
-        payment_method_id: data.paymentMethodId || null,
-      },
-    });
+    const txDate = data.date ? parseDateToBrasilia(data.date) : currentTx.date;
+    const finalAmount = Number(data.amount);
+    const finalType = data.type;
+    const finalStatus = data.status;
+    const finalPaymentMethodId =
+      data.paymentMethodId !== undefined
+        ? data.paymentMethodId || null
+        : currentTx.payment_method_id;
 
-    if (data.updateFuture && currentTx.recurrence_id) {
-      await prisma.transaction.updateMany({
-        where: {
-          organization_id: admin.organizationId,
-          recurrence_id: currentTx.recurrence_id,
-          date: { gt: currentTx.date },
-        },
+    let settlementDate: Date | null = null;
+    let feeAmount = 0;
+    let appliedMethodId = finalPaymentMethodId;
+
+    if (finalStatus === "PAGO") {
+      if (finalType === "RECEITA") {
+        if (finalPaymentMethodId) {
+          const calculation = await calculatePaymentSettlementAndFee({
+            organizationId: admin.organizationId,
+            grossAmount: finalAmount,
+            paymentMethodId: finalPaymentMethodId,
+            baseDate: txDate,
+          });
+          settlementDate = calculation.settlementDate;
+          feeAmount = calculation.feeAmount;
+          if (calculation.method?.id) {
+            appliedMethodId = calculation.method.id;
+          }
+        } else {
+          settlementDate = txDate;
+        }
+      } else {
+        // DESPESA PAGA: liquidação ocorre na data de competência
+        settlementDate = txDate;
+      }
+    }
+
+    const syncedTxIds: string[] = [];
+    const deletedFeeTxIds: string[] = [];
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Atualiza a transação principal com o D+X correto
+      await tx.transaction.update({
+        where: { id },
         data: {
+          type: finalType,
           description: data.description,
-          amount: data.amount,
-          payment_method_id: data.paymentMethodId || null,
+          amount: finalAmount,
+          date: txDate,
+          settlement_date: settlementDate,
+          due_date:
+            finalStatus === "PENDENTE"
+              ? currentTx.due_date || txDate
+              : currentTx.due_date,
+          status: finalStatus,
+          payment_method_id: appliedMethodId,
         },
       });
+      syncedTxIds.push(id);
 
-      // Sincronizar futuras também no Zibee
+      // 2. Gestão das despesas filhas de taxa (parent_transaction_id)
+      const existingFeeTxs = currentTx.child_transactions.filter(
+        (c) => c.type === "DESPESA",
+      );
+
+      if (finalStatus === "PAGO" && finalType === "RECEITA" && feeAmount > 0) {
+        if (existingFeeTxs.length > 0) {
+          // Atualiza a primeira taxa existente e remove duplicadas caso haja
+          const [primaryFee, ...redundantFees] = existingFeeTxs;
+          await tx.transaction.update({
+            where: { id: primaryFee.id },
+            data: {
+              amount: feeAmount,
+              description: `Taxa - ${data.description}`,
+              date: txDate,
+              settlement_date: settlementDate || txDate,
+              status: "PAGO",
+              payment_method_id: appliedMethodId,
+            },
+          });
+          syncedTxIds.push(primaryFee.id);
+
+          if (redundantFees.length > 0) {
+            const redundantIds = redundantFees.map((f) => f.id);
+            await tx.transaction.deleteMany({
+              where: { id: { in: redundantIds } },
+            });
+            deletedFeeTxIds.push(...redundantIds);
+          }
+        } else {
+          // Cria uma nova taxa vinculada com parent_transaction_id
+          const createdFee = await tx.transaction.create({
+            data: {
+              type: "DESPESA",
+              description: `Taxa - ${data.description}`,
+              amount: feeAmount,
+              date: txDate,
+              settlement_date: settlementDate || txDate,
+              status: "PAGO",
+              payment_method_id: appliedMethodId,
+              organization_id: admin.organizationId,
+              admin_id: admin.id,
+              parent_transaction_id: id,
+            },
+          });
+          syncedTxIds.push(createdFee.id);
+        }
+      } else {
+        // Se a movimentação não for PAGA, ou não for RECEITA, ou não tiver taxa, remove taxas filhas
+        if (existingFeeTxs.length > 0) {
+          const idsToDelete = existingFeeTxs.map((f) => f.id);
+          await tx.transaction.deleteMany({
+            where: { id: { in: idsToDelete } },
+          });
+          deletedFeeTxIds.push(...idsToDelete);
+        }
+      }
+
+      // 3. Atualizar futuras na recorrência se solicitado
+      if (data.updateFuture && currentTx.recurrence_id) {
+        await tx.transaction.updateMany({
+          where: {
+            organization_id: admin.organizationId,
+            recurrence_id: currentTx.recurrence_id,
+            date: { gt: currentTx.date },
+          },
+          data: {
+            description: data.description,
+            amount: finalAmount,
+            payment_method_id: appliedMethodId,
+          },
+        });
+      }
+    });
+
+    // 4. Sincronização externa (Zibee) não-bloqueante
+    for (const txId of syncedTxIds) {
+      triggerZibeeSyncById(txId, admin.organizationId).catch(console.error);
+    }
+    for (const delId of deletedFeeTxIds) {
+      deleteTransactionFromZibee(delId, admin.organizationId).catch(console.error);
+    }
+
+    if (data.updateFuture && currentTx.recurrence_id) {
       prisma.transaction
         .findMany({
           where: {
             organization_id: admin.organizationId,
             recurrence_id: currentTx.recurrence_id,
-            date: { gte: currentTx.date },
+            date: { gt: currentTx.date },
           },
           select: { id: true },
         })
@@ -230,12 +342,11 @@ export async function updateTransaction(
           ),
         )
         .catch(console.error);
-    } else {
-      triggerZibeeSyncById(id, admin.organizationId).catch(console.error);
     }
 
     revalidatePath("/admin/finance/dashboard");
     revalidatePath("/admin/finance/transactions");
+    revalidatePath("/admin/finance/receivables");
     return { success: true };
   } catch (error: any) {
     console.error("Erro ao atualizar transação:", error);
@@ -394,6 +505,7 @@ export async function getFullTransactions(month: number, year: number) {
     const transactions = await prisma.transaction.findMany({
       where: {
         organization_id: admin.organizationId,
+        parent_transaction_id: null,
         date: { gte: monthStart, lte: monthEnd },
         NOT: {
           type: "RECEITA",
@@ -473,13 +585,152 @@ export async function updateTransactionStatus(
   try {
     const admin = await requireFinancePermission();
 
-    await prisma.transaction.update({
+    const currentTx = await prisma.transaction.findUnique({
       where: { id, organization_id: admin.organizationId },
-      data: { status },
+      include: {
+        child_transactions: true,
+      },
     });
+
+    if (!currentTx) throw new Error("Transação não encontrada.");
+
+    if (currentTx.status === status) {
+      return { success: true };
+    }
+
+    const txDate = currentTx.date;
+    const finalAmount = Number(currentTx.amount);
+    const finalType = currentTx.type;
+    const paymentMethodId = currentTx.payment_method_id;
+
+    let settlementDate: Date | null = null;
+    let feeAmount = 0;
+    let appliedMethodId = paymentMethodId;
+
+    if (status === "PAGO") {
+      if (finalType === "RECEITA") {
+        if (paymentMethodId) {
+          const calculation = await calculatePaymentSettlementAndFee({
+            organizationId: admin.organizationId,
+            grossAmount: finalAmount,
+            paymentMethodId,
+            baseDate: txDate,
+          });
+          settlementDate = calculation.settlementDate;
+          feeAmount = calculation.feeAmount;
+          if (calculation.method?.id) {
+            appliedMethodId = calculation.method.id;
+          }
+        } else {
+          settlementDate = txDate;
+        }
+      } else {
+        settlementDate = txDate;
+      }
+    }
+
+    const syncedTxIds: string[] = [];
+    const deletedFeeTxIds: string[] = [];
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Atualiza a transação com data de liquidação calculada
+      await tx.transaction.update({
+        where: { id },
+        data: {
+          status,
+          settlement_date: settlementDate,
+          due_date:
+            status === "PENDENTE"
+              ? currentTx.due_date || txDate
+              : currentTx.due_date,
+          payment_method_id: appliedMethodId,
+        },
+      });
+      syncedTxIds.push(id);
+
+      // 2. Se a transação estiver atrelada a um agendamento, sincroniza a cobrança pendente
+      if (currentTx.appointment_id) {
+        if (status === "PAGO") {
+          await tx.appointment.update({
+            where: { id: currentTx.appointment_id },
+            data: { has_charge: false },
+          });
+        } else if (status === "PENDENTE") {
+          await tx.appointment.update({
+            where: { id: currentTx.appointment_id },
+            data: { has_charge: true },
+          });
+        }
+      }
+
+      // 3. Gestão das despesas de taxa (child_transactions)
+      const existingFeeTxs = currentTx.child_transactions.filter(
+        (c) => c.type === "DESPESA",
+      );
+
+      if (status === "PAGO" && finalType === "RECEITA" && feeAmount > 0) {
+        if (existingFeeTxs.length > 0) {
+          const [primaryFee, ...redundantFees] = existingFeeTxs;
+          await tx.transaction.update({
+            where: { id: primaryFee.id },
+            data: {
+              amount: feeAmount,
+              description: `Taxa - ${currentTx.description}`,
+              date: txDate,
+              settlement_date: settlementDate || txDate,
+              status: "PAGO",
+              payment_method_id: appliedMethodId,
+            },
+          });
+          syncedTxIds.push(primaryFee.id);
+
+          if (redundantFees.length > 0) {
+            const redundantIds = redundantFees.map((f) => f.id);
+            await tx.transaction.deleteMany({
+              where: { id: { in: redundantIds } },
+            });
+            deletedFeeTxIds.push(...redundantIds);
+          }
+        } else {
+          const createdFee = await tx.transaction.create({
+            data: {
+              type: "DESPESA",
+              description: `Taxa - ${currentTx.description}`,
+              amount: feeAmount,
+              date: txDate,
+              settlement_date: settlementDate || txDate,
+              status: "PAGO",
+              payment_method_id: appliedMethodId,
+              organization_id: admin.organizationId,
+              admin_id: admin.id,
+              parent_transaction_id: id,
+            },
+          });
+          syncedTxIds.push(createdFee.id);
+        }
+      } else {
+        // Se mudou para status diferente de PAGO ou não há taxa, remove taxas filhas
+        if (existingFeeTxs.length > 0) {
+          const idsToDelete = existingFeeTxs.map((f) => f.id);
+          await tx.transaction.deleteMany({
+            where: { id: { in: idsToDelete } },
+          });
+          deletedFeeTxIds.push(...idsToDelete);
+        }
+      }
+    });
+
+    // 4. Sincronização externa Zibee
+    for (const txId of syncedTxIds) {
+      triggerZibeeSyncById(txId, admin.organizationId).catch(console.error);
+    }
+    for (const delId of deletedFeeTxIds) {
+      deleteTransactionFromZibee(delId, admin.organizationId).catch(console.error);
+    }
 
     revalidatePath("/admin/finance/dashboard");
     revalidatePath("/admin/finance/transactions");
+    revalidatePath("/admin/finance/receivables");
     return { success: true };
   } catch (error: any) {
     console.error("Erro ao atualizar status:", error);
@@ -1496,6 +1747,7 @@ export async function getPaginatedTransactions(params: {
     const andConditions: any[] = [
       {
         organization_id: admin.organizationId,
+        parent_transaction_id: null,
         NOT: {
           type: "RECEITA",
           appointment: {
