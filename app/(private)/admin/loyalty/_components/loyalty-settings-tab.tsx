@@ -66,6 +66,7 @@ export function LoyaltySettingsTab({
   const [maxPoints, setMaxPoints] = useState(settings?.max_points || 500);
 
   const [isSaving, setIsSaving] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const handleScopeChange = (value: "global" | "specific") => {
     if (value !== programScope) {
@@ -77,6 +78,7 @@ export function LoyaltySettingsTab({
   const confirmScopeChange = () => {
     if (pendingScope) {
       setProgramScope(pendingScope);
+      setHasUnsavedChanges(true);
     }
     setIsAlertOpen(false);
   };
@@ -87,6 +89,7 @@ export function LoyaltySettingsTab({
       return;
     }
     setCheckInActive(checked);
+    setHasUnsavedChanges(true);
   };
 
   const handleScheduleToggle = (checked: boolean) => {
@@ -95,80 +98,27 @@ export function LoyaltySettingsTab({
       return;
     }
     setScheduleActive(checked);
+    setHasUnsavedChanges(true);
   };
 
-  const handleSaveReward = async (reward: Reward) => {
+  const handleSaveReward = (reward: Reward) => {
     const exists = rewards.find((r) => r.id === reward.id);
     let newRewards: Reward[];
     if (exists) {
       newRewards = rewards.map((r) => (r.id === reward.id ? reward : r));
     } else {
-      newRewards = [...rewards, reward];
+      newRewards = [...rewards, { ...reward, id: reward.id || `temp-${Date.now()}` }];
     }
     setRewards(newRewards);
-    
-    // Auto-save
-    try {
-      const data = {
-        scope: programScope,
-        max_points: maxPoints,
-        points_per_checkin: checkInActive ? pointsPerCheckin : 0,
-        points_per_appointment: scheduleActive ? pointsPerAppointment : 0,
-        rewards: newRewards.map(r => ({
-          id: typeof r.id === "string" ? r.id : undefined,
-          title: r.title,
-          points_cost: r.pointsCost,
-          conditions: r.conditions,
-          validity_days: r.validityDays
-        }))
-      };
-      const res = await updateLoyaltySettings(organizationId, data);
-      if (res.success && res.settings?.rewards) {
-        setRewards(res.settings.rewards.map((r: any) => ({
-          id: r.id,
-          title: r.title,
-          pointsCost: r.points_cost,
-          conditions: r.conditions,
-          validityDays: r.validity_days
-        })));
-      }
-    } catch (e) {
-      console.error(e);
-    }
+    setHasUnsavedChanges(true);
+    toast.success("Recompensa atualizada na lista! Clique em 'Salvar Configurações' para gravar.");
   };
 
-  const handleRemoveReward = async (rewardId: string | number) => {
+  const handleRemoveReward = (rewardId: string | number) => {
     const newRewards = rewards.filter(r => r.id !== rewardId);
     setRewards(newRewards);
-    
-    // Auto-save
-    try {
-      const data = {
-        scope: programScope,
-        max_points: maxPoints,
-        points_per_checkin: checkInActive ? pointsPerCheckin : 0,
-        points_per_appointment: scheduleActive ? pointsPerAppointment : 0,
-        rewards: newRewards.map(r => ({
-          id: typeof r.id === "string" ? r.id : undefined,
-          title: r.title,
-          points_cost: r.pointsCost,
-          conditions: r.conditions,
-          validity_days: r.validityDays
-        }))
-      };
-      const res = await updateLoyaltySettings(organizationId, data);
-      if (res.success && res.settings?.rewards) {
-        setRewards(res.settings.rewards.map((r: any) => ({
-          id: r.id,
-          title: r.title,
-          pointsCost: r.points_cost,
-          conditions: r.conditions,
-          validityDays: r.validity_days
-        })));
-      }
-    } catch (e) {
-      console.error(e);
-    }
+    setHasUnsavedChanges(true);
+    toast.info("Recompensa removida da lista! Clique em 'Salvar Configurações' para gravar.");
   };
 
   const handleSaveSettings = async () => {
@@ -200,6 +150,7 @@ export function LoyaltySettingsTab({
           })));
         }
         toast.success("Configurações salvas com sucesso!");
+        setHasUnsavedChanges(false);
       } else {
         toast.error("Erro ao salvar as configurações.");
       }
@@ -294,7 +245,10 @@ export function LoyaltySettingsTab({
               <Input
                 type="number"
                 value={maxPoints}
-                onChange={(e) => setMaxPoints(Number(e.target.value))}
+                onChange={(e) => {
+                  setMaxPoints(Number(e.target.value));
+                  setHasUnsavedChanges(true);
+                }}
                 className="w-20 text-center rounded-2xl bg-card"
               />
             </div>
@@ -323,7 +277,10 @@ export function LoyaltySettingsTab({
                 <Input
                   type="number"
                   value={pointsPerCheckin}
-                  onChange={(e) => setPointsPerCheckin(Number(e.target.value))}
+                  onChange={(e) => {
+                    setPointsPerCheckin(Number(e.target.value));
+                    setHasUnsavedChanges(true);
+                  }}
                   disabled={!checkInActive}
                   className="w-16 sm:w-20 text-center rounded-2xl bg-card disabled:opacity-50"
                 />
@@ -345,7 +302,10 @@ export function LoyaltySettingsTab({
                 <Input
                   type="number"
                   value={pointsPerAppointment}
-                  onChange={(e) => setPointsPerAppointment(Number(e.target.value))}
+                  onChange={(e) => {
+                    setPointsPerAppointment(Number(e.target.value));
+                    setHasUnsavedChanges(true);
+                  }}
                   disabled={!scheduleActive}
                   className="w-16 sm:w-20 text-center rounded-2xl bg-card disabled:opacity-50"
                 />
@@ -446,12 +406,20 @@ export function LoyaltySettingsTab({
           onSave={handleSaveReward}
         />
 
-        <div className="fixed bottom-6 right-6 z-40">
+        <div className="fixed bottom-6 right-6 z-40 flex items-center gap-3">
+          {hasUnsavedChanges && (
+            <div className="bg-amber-500/10 border border-amber-500/30 text-amber-600 text-xs font-semibold px-3 py-2 rounded-full shadow-lg backdrop-blur-md">
+              Alterações não salvas
+            </div>
+          )}
           <Button
             size="lg"
             onClick={handleSaveSettings}
             disabled={isSaving}
-            className="rounded-full shadow-xl flex items-center gap-2"
+            className={cn(
+              "rounded-full shadow-xl flex items-center gap-2",
+              hasUnsavedChanges ? "ring-2 ring-primary ring-offset-2" : ""
+            )}
           >
             <Save size="sm" />
             {isSaving ? "Salvando..." : "Salvar Configurações"}

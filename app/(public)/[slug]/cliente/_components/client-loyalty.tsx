@@ -22,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { getClientLoyaltyHistory, redeemLoyaltyReward } from "@/app/actions/loyalty";
+import { ClientVoucherCard } from "./client-voucher-card";
 
 interface RewardItem {
   id: string;
@@ -242,60 +243,26 @@ export function ClientLoyalty({ loyaltyInfo, clientName, clientId }: { loyaltyIn
 
       {/* VOUCHERS RESGATADOS */}
       {hasVouchers && (
-        <div className="bg-white border rounded-3xl p-6 shadow-sm">
-          <h4 className="font-bold text-lg flex items-center gap-2 mb-4 text-slate-800">
-            <CheckCircle className="h-5 w-5 text-emerald-500" /> Seus Vouchers Resgatados
-          </h4>
-
-          <div className="space-y-4">
-            {vouchers.map(voucher => {
-              const isUsed = voucher.status === "UTILIZADO";
-              const isExpired = !isUsed && voucher.expires_at && new Date(voucher.expires_at) < new Date();
-              const isAvailable = !isUsed && !isExpired;
-
-              return (
-                <div 
-                  key={voucher.id} 
-                  className={cn(
-                    "relative border p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4",
-                    isAvailable ? "bg-emerald-50/70 border-emerald-200" : "bg-slate-50 border-slate-200 opacity-70"
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={cn("p-2 rounded-full", isAvailable ? "bg-emerald-100 text-emerald-600" : "bg-slate-200 text-slate-500")}>
-                      <CheckCircle className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h5 className={cn("font-bold", isAvailable ? "text-emerald-950" : "text-slate-700")}>{voucher.title}</h5>
-                      <p className={cn("text-xs mt-0.5", isAvailable ? "text-emerald-700/80" : "text-slate-500")}>
-                        Emitido em: {new Date(voucher.created_at).toLocaleDateString('pt-BR')}
-                      </p>
-                      {voucher.expires_at && isAvailable && (
-                        <p className="text-xs mt-0.5 font-semibold text-orange-600 flex items-center gap-1">
-                          <Clock className="w-3 h-3" /> Válido até: {new Date(voucher.expires_at).toLocaleDateString('pt-BR')}
-                        </p>
-                      )}
-                      {isExpired && (
-                        <p className="text-xs mt-0.5 font-semibold text-red-600 flex items-center gap-1">
-                          <AlertCircle className="w-3 h-3" /> Expirado em: {new Date(voucher.expires_at).toLocaleDateString('pt-BR')}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className={cn(
-                    "text-xs font-bold px-3 py-1.5 rounded-full whitespace-nowrap shrink-0", 
-                    isUsed ? "bg-slate-200 text-slate-600" : isExpired ? "bg-red-100 text-red-700" : "bg-emerald-600 text-white"
-                  )}>
-                    {isUsed ? "Utilizado" : isExpired ? "Expirado" : "Disponível!"}
-                  </div>
-                </div>
-              );
-            })}
+        <div className="bg-white border rounded-3xl p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-bold text-lg flex items-center gap-2 text-slate-800">
+                <CheckCircle className="h-5 w-5 text-emerald-500" /> Seus Vouchers Resgatados
+              </h4>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Apresente o PIN do voucher na recepção para utilizar seu benefício.
+              </p>
+            </div>
+            <span className="bg-emerald-50 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-full border border-emerald-200">
+              {vouchers.length} {vouchers.length === 1 ? "voucher" : "vouchers"}
+            </span>
           </div>
 
-          <p className="text-xs text-muted-foreground text-center mt-6">
-            Apresente a sua tela do celular na recepção para utilizar o seu benefício resgatado.
-          </p>
+          <div className="space-y-3">
+            {vouchers.map((voucher) => (
+              <ClientVoucherCard key={voucher.id} voucher={voucher} />
+            ))}
+          </div>
         </div>
       )}
 
@@ -361,104 +328,50 @@ export function ClientLoyalty({ loyaltyInfo, clientName, clientId }: { loyaltyIn
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* DRAWER / MODAL DE HISTÓRICO */}
+      {/* DRAWER / MODAL DE HISTÓRICO DE PONTOS */}
       {isMobile ? (
         <Drawer open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
           <DrawerContent className="bg-white text-slate-900 border-t border-slate-200">
             <div className="mx-auto w-full max-w-sm">
               <DrawerHeader>
-                <DrawerTitle className="text-slate-900">Histórico de Pontos</DrawerTitle>
+                <DrawerTitle className="text-slate-900">Extrato de Pontos</DrawerTitle>
                 <DrawerDescription className="text-slate-500">
-                  {clientName}
+                  {clientName} &bull; Histórico detalhado de movimentações
                 </DrawerDescription>
               </DrawerHeader>
 
-              <div className="px-4 pb-4">
+              <div className="px-4 pb-6">
                 {isLoadingHistory ? (
                   <div className="flex justify-center p-8">
                     <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                   </div>
+                ) : clientHistory.length === 0 ? (
+                  <div className="text-center p-8 text-slate-500 bg-slate-50 rounded-2xl border">
+                    Nenhuma pontuação registrada.
+                  </div>
                 ) : (
-                  <Tabs defaultValue="history" className="w-full mt-2">
-                    <TabsList className="grid w-full grid-cols-2 bg-slate-100 rounded-full p-1">
-                      <TabsTrigger value="history" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm">
-                        Histórico
-                      </TabsTrigger>
-                      <TabsTrigger value="vouchers" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm">
-                        Vouchers
-                      </TabsTrigger>
-                    </TabsList>
-                    
-                    <TabsContent value="history" className="mt-4">
-                      {clientHistory.length === 0 ? (
-                        <div className="text-center p-8 text-slate-500 bg-slate-50 rounded-xl">
-                          Nenhuma pontuação registrada.
-                        </div>
-                      ) : (
-                        <ScrollArea className="h-[40vh] pr-4">
-                          <div className="space-y-4">
-                            {clientHistory.map((item, idx) => (
-                              <div key={idx} className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-white">
-                                <div className="flex flex-col gap-1">
-                                  <span className="font-medium text-sm text-slate-800">{item.description}</span>
-                                  <span className="text-xs text-slate-500">
-                                    {new Date(item.date).toLocaleDateString('pt-BR')} às {new Date(item.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1 text-blue-700 font-bold bg-blue-50 px-2 py-1 rounded-full text-xs shrink-0">
-                                  +{item.points} pts
-                                </div>
-                              </div>
-                            ))}
+                  <ScrollArea className="h-[45vh] pr-3 mt-2">
+                    <div className="space-y-3">
+                      {clientHistory.map((item, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-white">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-medium text-sm text-slate-800">{item.description}</span>
+                            <span className="text-xs text-slate-400">
+                              {new Date(item.date).toLocaleDateString('pt-BR')} às {new Date(item.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
                           </div>
-                        </ScrollArea>
-                      )}
-                    </TabsContent>
-
-                    <TabsContent value="vouchers" className="mt-4">
-                      {vouchers.length === 0 ? (
-                        <div className="text-center p-8 text-slate-500 bg-slate-50 rounded-xl">
-                          Você ainda não possui vouchers.
-                        </div>
-                      ) : (
-                        <ScrollArea className="h-[40vh] pr-4">
-                          <div className="space-y-4">
-                            {vouchers.map((voucher) => {
-                              const isUsed = voucher.status === "UTILIZADO";
-                              const isExpired = !isUsed && voucher.expires_at && new Date(voucher.expires_at) < new Date();
-                              const displayStatus = isUsed ? "Utilizado" : isExpired ? "Expirado" : "Disponível";
-                              const isInactive = isUsed || isExpired;
-                              return (
-                                <div key={voucher.id} className={cn("flex flex-col p-3 rounded-xl border gap-2", isInactive ? "bg-slate-50 border-slate-200 opacity-70" : "bg-white border-blue-200")}>
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex flex-col gap-1">
-                                      <span className="font-medium text-sm text-slate-800">{voucher.title}</span>
-                                      <span className="text-xs text-slate-500">
-                                        Custo: {voucher.points_spent} pts
-                                      </span>
-                                    </div>
-                                    <div className={cn("px-2 py-1 rounded-full text-xs font-bold shrink-0", isInactive ? "bg-slate-200 text-slate-600" : "bg-blue-100 text-blue-700")}>
-                                      {displayStatus}
-                                    </div>
-                                  </div>
-                                  {!isUsed && voucher.expires_at && (
-                                    <div className="text-xs text-slate-500 border-t border-slate-100 pt-2 mt-1">
-                                      Válido até: {new Date(voucher.expires_at).toLocaleDateString('pt-BR')}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
+                          <div className="flex items-center gap-1 text-blue-700 font-bold bg-blue-50 px-2.5 py-1 rounded-full text-xs shrink-0">
+                            +{item.points} pts
                           </div>
-                        </ScrollArea>
-                      )}
-                    </TabsContent>
-                  </Tabs>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
                 )}
 
                 <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-200 text-sm">
-                  <span className="text-slate-500">Saldo Total:</span>
-                  <span className="font-bold text-lg text-blue-700">{currentPoints} pts</span>
+                  <span className="text-slate-500">Saldo Atual:</span>
+                  <span className="font-black text-xl text-blue-700">{currentPoints} pts</span>
                 </div>
               </div>
             </div>
@@ -468,9 +381,9 @@ export function ClientLoyalty({ loyaltyInfo, clientName, clientId }: { loyaltyIn
         <Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
           <DialogContent className="rounded-2xl max-w-md bg-white text-slate-900">
             <DialogHeader>
-              <DialogTitle className="text-slate-900">Histórico de Pontos</DialogTitle>
+              <DialogTitle className="text-slate-900">Extrato de Pontos</DialogTitle>
               <DialogDescription className="text-slate-500">
-                {clientName}
+                {clientName} &bull; Histórico detalhado de movimentações
               </DialogDescription>
             </DialogHeader>
 
@@ -478,87 +391,33 @@ export function ClientLoyalty({ loyaltyInfo, clientName, clientId }: { loyaltyIn
               <div className="flex justify-center p-8">
                 <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
               </div>
+            ) : clientHistory.length === 0 ? (
+              <div className="text-center p-8 text-slate-500 bg-slate-50 rounded-2xl border">
+                Nenhuma pontuação registrada.
+              </div>
             ) : (
-              <Tabs defaultValue="history" className="w-full mt-2">
-                <TabsList className="grid w-full grid-cols-2 bg-slate-100 rounded-full p-1">
-                  <TabsTrigger value="history" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm">
-                    Histórico
-                  </TabsTrigger>
-                  <TabsTrigger value="vouchers" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm">
-                    Vouchers
-                  </TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="history" className="mt-4">
-                  {clientHistory.length === 0 ? (
-                    <div className="text-center p-8 text-slate-500 bg-slate-50 rounded-xl">
-                      Nenhuma pontuação registrada.
-                    </div>
-                  ) : (
-                    <ScrollArea className="h-[350px] pr-4">
-                      <div className="space-y-4">
-                        {clientHistory.map((item, idx) => (
-                          <div key={idx} className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-white">
-                            <div className="flex flex-col gap-1">
-                              <span className="font-medium text-sm text-slate-800">{item.description}</span>
-                              <span className="text-xs text-slate-500">
-                                {new Date(item.date).toLocaleDateString('pt-BR')} às {new Date(item.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1 text-blue-700 font-bold bg-blue-50 px-2 py-1 rounded-full text-xs shrink-0">
-                              +{item.points} pts
-                            </div>
-                          </div>
-                        ))}
+              <ScrollArea className="h-[350px] pr-3 mt-2">
+                <div className="space-y-3">
+                  {clientHistory.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-white">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-medium text-sm text-slate-800">{item.description}</span>
+                        <span className="text-xs text-slate-400">
+                          {new Date(item.date).toLocaleDateString('pt-BR')} às {new Date(item.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
                       </div>
-                    </ScrollArea>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="vouchers" className="mt-4">
-                  {vouchers.length === 0 ? (
-                    <div className="text-center p-8 text-slate-500 bg-slate-50 rounded-xl">
-                      Você ainda não possui vouchers.
-                    </div>
-                  ) : (
-                    <ScrollArea className="h-[350px] pr-4">
-                      <div className="space-y-4">
-                        {vouchers.map((voucher) => {
-                          const isUsed = voucher.status === "UTILIZADO";
-                          const isExpired = !isUsed && voucher.expires_at && new Date(voucher.expires_at) < new Date();
-                          const displayStatus = isUsed ? "Utilizado" : isExpired ? "Expirado" : "Disponível";
-                          const isInactive = isUsed || isExpired;
-                          return (
-                            <div key={voucher.id} className={cn("flex flex-col p-3 rounded-xl border gap-2", isInactive ? "bg-slate-50 border-slate-200 opacity-70" : "bg-white border-blue-200")}>
-                              <div className="flex items-center justify-between">
-                                <div className="flex flex-col gap-1">
-                                  <span className="font-medium text-sm text-slate-800">{voucher.title}</span>
-                                  <span className="text-xs text-slate-500">
-                                    Custo: {voucher.points_spent} pts
-                                  </span>
-                                </div>
-                                <div className={cn("px-2 py-1 rounded-full text-xs font-bold shrink-0", isInactive ? "bg-slate-200 text-slate-600" : "bg-blue-100 text-blue-700")}>
-                                  {displayStatus}
-                                </div>
-                              </div>
-                              {!isUsed && voucher.expires_at && (
-                                <div className="text-xs text-slate-500 border-t border-slate-100 pt-2 mt-1">
-                                  Válido até: {new Date(voucher.expires_at).toLocaleDateString('pt-BR')}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
+                      <div className="flex items-center gap-1 text-blue-700 font-bold bg-blue-50 px-2.5 py-1 rounded-full text-xs shrink-0">
+                        +{item.points} pts
                       </div>
-                    </ScrollArea>
-                  )}
-                </TabsContent>
-              </Tabs>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
             )}
 
             <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-200 text-sm">
-              <span className="text-slate-500">Saldo Total:</span>
-              <span className="font-bold text-lg text-blue-700">{currentPoints} pts</span>
+              <span className="text-slate-500">Saldo Atual:</span>
+              <span className="font-black text-xl text-blue-700">{currentPoints} pts</span>
             </div>
           </DialogContent>
         </Dialog>

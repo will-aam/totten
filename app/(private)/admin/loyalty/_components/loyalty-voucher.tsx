@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ArrowToBottom, Share, LoaderDots } from "@boxicons/react";
 import { Lock, CheckCircle2 } from "lucide-react";
@@ -59,21 +59,21 @@ export function LoyaltyVoucher({
 
       const today = new Date();
       const dateStr = today.toISOString().split("T")[0];
-      const filename = `voucher-fidelidade-${clientName.replace(/\s+/g, "-").toLowerCase()}-${dateStr}.png`;
+      const filename = `cartao-fidelidade-${clientName.replace(/\s+/g, "-").toLowerCase()}-${dateStr}.png`;
 
       if (action === "download") {
         const link = document.createElement("a");
         link.download = filename;
         link.href = dataUrl;
         link.click();
-        toast.success("Voucher baixado com sucesso!");
+        toast.success("Cartão baixado com sucesso!");
       } else if (action === "share") {
         const blob = await (await fetch(dataUrl)).blob();
         const file = new File([blob], filename, { type: "image/png" });
         if (navigator.share && navigator.canShare({ files: [file] })) {
           await navigator.share({
-            title: `Voucher Fidelidade - ${clientName}`,
-            text: "Confira seu voucher do programa de fidelidade Totten!",
+            title: `Cartão de Fidelidade - ${clientName}`,
+            text: "Confira seu saldo de pontos no programa de fidelidade!",
             files: [file],
           });
           toast.success("Pronto para compartilhar!");
@@ -82,8 +82,8 @@ export function LoyaltyVoucher({
         }
       }
     } catch (error) {
-      console.error("Erro ao gerar voucher:", error);
-      toast.error("Erro ao gerar voucher. Tente novamente.");
+      console.error("Erro ao gerar cartão:", error);
+      toast.error("Erro ao gerar cartão. Tente novamente.");
     } finally {
       setIsExporting(false);
     }
@@ -92,7 +92,12 @@ export function LoyaltyVoucher({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] sm:max-w-2xl bg-background p-4 sm:p-6 rounded-3xl overflow-y-auto max-h-[90dvh] border-border flex flex-col items-center">
-        <DialogTitle className="sr-only">Voucher de Fidelidade</DialogTitle>
+        <DialogHeader className="text-center sm:text-center w-full">
+          <DialogTitle className="text-lg font-bold text-foreground">Cartão de Fidelidade Digital</DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground text-center">
+            Extrato visual informativo para acompanhamento ou envio ao cliente. Não debita pontos nem emite vouchers de resgate.
+          </DialogDescription>
+        </DialogHeader>
 
         <div className="w-full overflow-x-auto py-4 flex justify-center scrollbar-hide">
           {/* TICKET CONTAINER */}
@@ -208,7 +213,7 @@ export function LoyaltyVoucher({
             ) : (
               <ArrowToBottom className="h-5 w-5 mr-2" />
             )}
-            Baixar
+            Baixar Cartão (PNG)
           </Button>
         </div>
       </DialogContent>

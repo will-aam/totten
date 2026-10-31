@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { TermsOfUseBox } from "@/components/terms-of-use-box";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, LogOut, Calendar, History, User, CheckCircle, Store, FileText, Plus } from "lucide-react";
+import { ArrowLeft, LogOut, Calendar, History, User, CheckCircle, Store, FileText, Plus, Trophy } from "lucide-react";
 import { Whatsapp } from "@boxicons/react";
 import { logoutClientSession } from "@/app/actions/client-auth";
 import { cancelPendingAppointment } from "@/app/actions/public-client";
@@ -14,6 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientLoyalty } from "./_components/client-loyalty";
+import { ClientVoucherCard } from "./_components/client-voucher-card";
 import {
   Pagination,
   PaginationContent,
@@ -23,7 +24,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 
-type TabType = "upcoming" | "history" | "profile" | "terms";
+type TabType = "upcoming" | "loyalty" | "history" | "profile" | "terms";
 
 export function ClientAreaView({
   org,
@@ -62,6 +63,7 @@ export function ClientAreaView({
   const historyVouchers = data.historyVouchers || [];
   const clinicPhone = data.clinicPhone;
   const termsText = org?.settings?.clinic_terms_of_use || org?.settings?.terms_of_use || DEFAULT_CLINIC_TERMS;
+  const isLoyaltyActive = !!(data.loyaltyInfo && data.loyaltyInfo.success && data.loyaltyInfo.active && data.loyaltyInfo.enrolled);
 
   const now = new Date();
   const activePackages = historyPackages.filter((pkg: any) => {
@@ -164,13 +166,21 @@ export function ClientAreaView({
       <div className="flex-1 w-full max-w-3xl mx-auto flex flex-col gap-6 p-4 md:p-8">
 
         <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)} className="w-full">
-          <TabsList className="hidden md:grid w-full grid-cols-4 h-auto gap-1 bg-slate-100 p-1 rounded-full mb-8">
+          <TabsList className={cn("hidden md:grid w-full h-auto gap-1 bg-slate-100 p-1 rounded-full mb-8", isLoyaltyActive ? "grid-cols-5" : "grid-cols-4")}>
             <TabsTrigger
               value="upcoming"
               className="flex items-center justify-center gap-2 py-2 rounded-full data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm text-sm font-semibold text-slate-500"
             >
               <Calendar className="mr-1 h-4 w-4" /> Início
             </TabsTrigger>
+            {isLoyaltyActive && (
+              <TabsTrigger
+                value="loyalty"
+                className="flex items-center justify-center gap-2 py-2 rounded-full data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm text-sm font-semibold text-slate-500"
+              >
+                <Trophy className="mr-1 h-4 w-4 text-yellow-500" /> Fidelidade
+              </TabsTrigger>
+            )}
             <TabsTrigger
               value="history"
               className="flex items-center justify-center gap-2 py-2 rounded-full data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm text-sm font-semibold text-slate-500"
@@ -216,6 +226,31 @@ export function ClientAreaView({
 
             {!error && activeTab === "upcoming" && (
               <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
+                {isLoyaltyActive && (
+                  <div
+                    onClick={() => setActiveTab("loyalty")}
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-5 text-white shadow-sm hover:shadow-md transition-all cursor-pointer relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                  >
+                    <Trophy className="absolute -right-3 -bottom-3 w-28 h-28 opacity-10 pointer-events-none" />
+                    <div className="space-y-1 z-10">
+                      <div className="flex items-center gap-1.5 text-yellow-300 font-bold text-xs uppercase tracking-wider">
+                        <Trophy className="w-4 h-4" /> Programa de Fidelidade
+                      </div>
+                      <p className="text-2xl font-black">
+                        {data.loyaltyInfo.points} <span className="text-sm font-semibold text-blue-100">pontos disponíveis</span>
+                      </p>
+                      <p className="text-xs text-blue-100">
+                        Toque para resgatar suas recompensas e visualizar seus vouchers de desconto.
+                      </p>
+                    </div>
+                    <div className="z-10 shrink-0">
+                      <span className="bg-white/20 hover:bg-white/30 text-white font-bold text-xs px-4 py-2 rounded-full backdrop-blur-sm transition-colors inline-flex items-center gap-1">
+                        Ver Recompensas &rarr;
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 {activePackages.length > 0 && (
                   <div className="space-y-4">
                     <h3 className="font-bold text-lg flex items-center gap-2">
@@ -378,6 +413,21 @@ export function ClientAreaView({
               </div>
             )}
 
+            {!error && activeTab === "loyalty" && isLoyaltyActive && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-lg flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-yellow-500" /> Programa de Fidelidade
+                  </h3>
+                </div>
+                <ClientLoyalty
+                  loyaltyInfo={data.loyaltyInfo}
+                  clientName={client.name}
+                  clientId={client.id}
+                />
+              </div>
+            )}
+
             {!error && activeTab === "history" && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
                 <h3 className="font-bold text-lg flex items-center gap-2">
@@ -405,23 +455,10 @@ export function ClientAreaView({
                           <p className="font-medium text-muted-foreground">Você ainda não possui nenhum voucher.</p>
                         </div>
                       ) : (
-                        <div className="space-y-4">
-                          {historyVouchers.map((voucher: any) => {
-                            const isUsed = voucher.status === "UTILIZADO";
-                            return (
-                              <div key={voucher.id} className={cn("p-4 border rounded-2xl flex items-center justify-between", isUsed ? "bg-slate-50 opacity-70" : "bg-white border-blue-200")}>
-                                <div>
-                                  <h4 className="font-bold text-slate-800">{voucher.title}</h4>
-                                  <p className="text-xs text-muted-foreground mt-1">Custo: {voucher.points_spent} pontos</p>
-                                </div>
-                                <div>
-                                  <span className={cn("text-[10px] font-bold uppercase px-2 py-1 rounded-full", isUsed ? "bg-slate-200 text-slate-600" : "bg-blue-100 text-blue-700")}>
-                                    {isUsed ? "Utilizado" : "Disponível"}
-                                  </span>
-                                </div>
-                              </div>
-                            );
-                          })}
+                        <div className="space-y-3">
+                          {historyVouchers.map((voucher: any) => (
+                            <ClientVoucherCard key={voucher.id} voucher={voucher} />
+                          ))}
                         </div>
                       )}
                     </div>
@@ -643,10 +680,6 @@ export function ClientAreaView({
                   <User className="h-5 w-5 opacity-70" /> Meus Dados
                 </h3>
 
-                {data.loyaltyInfo && (
-                  <ClientLoyalty loyaltyInfo={data.loyaltyInfo} clientName={client.name} clientId={client.id} />
-                )}
-
                 <div className="bg-white border rounded-3xl p-6 space-y-6 shadow-sm">
                   <div className="space-y-1">
                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Nome Completo</p>
@@ -697,53 +730,60 @@ export function ClientAreaView({
       {/* Bottom Navigation Mobile */}
       <div className="md:hidden fixed bottom-6 left-4 right-4 z-50">
         <div className="flex h-[72px] bg-card border border-border/50 rounded-[24px] shadow-2xl relative overflow-hidden">
+          {(() => {
+            const navItems = [
+              { id: "upcoming", label: "Início", icon: Calendar },
+              ...(isLoyaltyActive ? [{ id: "loyalty", label: "Pontos", icon: Trophy }] : []),
+              { id: "history", label: "Histórico", icon: History },
+              { id: "profile", label: "Perfil", icon: User },
+              { id: "terms", label: "Termos", icon: FileText }
+            ];
+            const activeIndex = navItems.findIndex((i) => i.id === activeTab);
+            const itemWidthPercent = 100 / navItems.length;
 
-          {/* Indicador Deslizante */}
-          <div
-            className="absolute top-0 h-[3px] transition-transform duration-300 ease-out pointer-events-none z-20"
-            style={{
-              width: "25%",
-              transform: `translateX(${activeTab === "upcoming" ? 0 :
-                activeTab === "history" ? 100 :
-                  activeTab === "profile" ? 200 : 300
-                }%)`,
-              left: 0,
-            }}
-          >
-            <div className="mx-auto w-1/2 h-full rounded-b-md shadow-[0_2px_12px_hsl(var(--primary))] bg-primary" />
-          </div>
-
-          {[
-            { id: "upcoming", label: "Início", icon: Calendar },
-            { id: "history", label: "Histórico", icon: History },
-            { id: "profile", label: "Perfil", icon: User },
-            { id: "terms", label: "Termos", icon: FileText }
-          ].map((item) => {
-            const isActive = activeTab === item.id;
-            const Icon = item.icon;
             return (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id as TabType)}
-                className={cn(
-                  "relative flex-1 flex flex-col items-center justify-center h-full space-y-1 transition-all duration-300 active:scale-95 z-10",
-                  isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <div className="relative z-10 p-1">
-                  <Icon className={cn("h-5 w-5 transition-all duration-300", isActive ? "scale-110" : "scale-100")} />
-                </div>
-                <span
-                  className={cn(
-                    "relative z-10 text-[10px] tracking-wide transition-all duration-300",
-                    isActive ? "font-bold" : "font-medium"
-                  )}
+              <>
+                {/* Indicador Deslizante */}
+                <div
+                  className="absolute top-0 h-[3px] transition-transform duration-300 ease-out pointer-events-none z-20"
+                  style={{
+                    width: `${itemWidthPercent}%`,
+                    transform: `translateX(${(activeIndex >= 0 ? activeIndex : 0) * 100}%)`,
+                    left: 0,
+                  }}
                 >
-                  {item.label}
-                </span>
-              </button>
+                  <div className="mx-auto w-1/2 h-full rounded-b-md shadow-[0_2px_12px_hsl(var(--primary))] bg-primary" />
+                </div>
+
+                {navItems.map((item) => {
+                  const isActive = activeTab === item.id;
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveTab(item.id as TabType)}
+                      className={cn(
+                        "relative flex-1 flex flex-col items-center justify-center h-full space-y-1 transition-all duration-300 active:scale-95 z-10",
+                        isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      <div className="relative z-10 p-1">
+                        <Icon className={cn("h-5 w-5 transition-all duration-300", isActive ? "scale-110" : "scale-100")} />
+                      </div>
+                      <span
+                        className={cn(
+                          "relative z-10 text-[10px] tracking-wide transition-all duration-300",
+                          isActive ? "font-bold" : "font-medium"
+                        )}
+                      >
+                        {item.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </>
             );
-          })}
+          })()}
         </div>
       </div>
     </div>

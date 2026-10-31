@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Search, Trophy, Plus, Star } from "@boxicons/react";
-import { Download } from "lucide-react";
+import { Download, CreditCard, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -407,15 +407,16 @@ export function LoyaltyOverviewTab({
                 <div className="flex items-center gap-2 mt-4 w-full pt-4 border-t border-border/50">
                   <Button 
                     variant="outline" 
-                    className="rounded-xl flex-1 flex flex-col gap-1 h-auto py-2 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50 z-20 relative"
+                    className="rounded-xl flex-1 flex items-center justify-center gap-1.5 h-9 text-xs text-muted-foreground hover:text-foreground hover:border-primary/50 transition-all z-20 relative font-medium"
                     onClick={(e) => {
                       e.stopPropagation();
                       onOpenVoucher(client);
                     }}
                     disabled={!client.points}
+                    title="Visualizar ou compartilhar extrato/cartão digital do cliente"
                   >
-                    <Download size={16} />
-                    Baixar
+                    <CreditCard size={15} />
+                    Cartão Digital
                   </Button>
                 </div>
               </CardContent>
@@ -491,7 +492,13 @@ export function LoyaltyOverviewTab({
       )}
 
       {/* Modal: Incluir Cliente */}
-      <Dialog open={isAddClientOpen} onOpenChange={setIsAddClientOpen}>
+      <Dialog 
+        open={isAddClientOpen} 
+        onOpenChange={(open) => {
+          setIsAddClientOpen(open);
+          if (!open) setModalSearchQuery("");
+        }}
+      >
         <DialogContent className="rounded-2xl max-w-md">
           <DialogHeader>
             <DialogTitle>Incluir Cliente</DialogTitle>
@@ -631,7 +638,12 @@ export function LoyaltyOverviewTab({
                               return (
                                 <div key={voucher.id} className="flex flex-col gap-2 p-3 rounded-xl border border-border/50 bg-background">
                                   <div className="flex items-center justify-between">
-                                    <span className="font-medium text-sm">{voucher.title}</span>
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium text-sm">{voucher.title}</span>
+                                      <span className="font-mono text-[10px] font-bold bg-muted px-1.5 py-0.5 rounded text-muted-foreground border">
+                                        #VCH-{voucher.id.slice(-6).toUpperCase()}
+                                      </span>
+                                    </div>
                                     <span className={cn(
                                       "px-2 py-1 rounded-full text-xs font-bold",
                                       displayStatus === "DISPONÍVEL" ? "bg-green-100 text-green-700" : 
@@ -746,7 +758,12 @@ export function LoyaltyOverviewTab({
                           return (
                             <div key={voucher.id} className="flex flex-col gap-2 p-3 rounded-xl border border-border/50 bg-background">
                               <div className="flex items-center justify-between">
-                                <span className="font-medium text-sm">{voucher.title}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-sm">{voucher.title}</span>
+                                  <span className="font-mono text-[10px] font-bold bg-muted px-1.5 py-0.5 rounded text-muted-foreground border">
+                                    #VCH-{voucher.id.slice(-6).toUpperCase()}
+                                  </span>
+                                </div>
                                 <span className={cn(
                                   "px-2 py-1 rounded-full text-xs font-bold",
                                   displayStatus === "DISPONÍVEL" ? "bg-green-100 text-green-700" : 
