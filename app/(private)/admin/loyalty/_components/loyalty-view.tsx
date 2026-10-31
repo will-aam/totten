@@ -20,7 +20,21 @@ interface ClientData {
   enrolledAt: Date | null;
 }
 
-export function LoyaltyView({ organizationId, initialSettings, clients }: { organizationId: string, initialSettings: any, clients: ClientData[] }) {
+interface LoyaltyViewProps {
+  organizationId: string;
+  initialSettings: any;
+  initialClients: ClientData[];
+  initialTotal: number;
+  initialTotalPages: number;
+}
+
+export function LoyaltyView({ 
+  organizationId, 
+  initialSettings, 
+  initialClients,
+  initialTotal,
+  initialTotalPages,
+}: LoyaltyViewProps) {
   const [activeTab, setActiveTab] = useState("overview");
   
   const [settings, setSettings] = useState(initialSettings);
@@ -74,7 +88,9 @@ export function LoyaltyView({ organizationId, initialSettings, clients }: { orga
               isProgramActive={isProgramActive}
               setIsProgramActive={handleActivateProgram}
               programScope={programScope}
-              clients={clients}
+              initialClients={initialClients}
+              initialTotal={initialTotal}
+              initialTotalPages={initialTotalPages}
               rewards={rewards}
               onOpenVoucher={setSelectedClientForVoucher}
             />

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Search, Trophy, Plus, Star } from "@boxicons/react";
-import { Download, ExternalLink } from "lucide-react";
+import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { 
   AlertDialog, 
@@ -19,19 +20,24 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { enrollClientInLoyalty, getClientLoyaltyHistory, markVoucherAsUsed } from "@/app/actions/loyalty";
+import { 
+  enrollClientInLoyalty, 
+  getClientLoyaltyHistory, 
+  markVoucherAsUsed,
+  getPaginatedLoyaltyClients,
+  getUnenrolledClients
+} from "@/app/actions/loyalty";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsMobile } from "@/components/ui/use-mobile";
+import { useDebounce } from "@/hooks/use-debounce";
 import {
   Drawer,
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
   DrawerDescription,
-  DrawerFooter,
-  DrawerClose,
 } from "@/components/ui/drawer";
 import {
   Pagination,
@@ -62,7 +68,9 @@ interface LoyaltyOverviewTabProps {
   isProgramActive: boolean;
   setIsProgramActive: (active: boolean) => void;
   programScope: "global" | "specific";
-  clients: Client[];
+  initialClients: Client[];
+  initialTotal: number;
+  initialTotalPages: number;
   rewards: Reward[];
   onOpenVoucher: (client: Client) => void;
 }
@@ -71,34 +79,107 @@ export function LoyaltyOverviewTab({
   isProgramActive,
   setIsProgramActive,
   programScope,
-  clients,
+  initialClients,
+  initialTotal,
+  initialTotalPages,
   rewards,
   onOpenVoucher,
 }: LoyaltyOverviewTabProps) {
-  const [isAddClientOpen, setIsAddClientOpen] = useState(false);
+  const [clients, setClients] = useState<Client[]>(initialClients || []);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(initialTotalPages || 1);
+  const [, setTotalCount] = useState(initialTotal || 0);
+  const [isLoadingClients, setIsLoadingClients] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery, 400);
+
+  // Modal para incluir cliente
+  const [isAddClientOpen, setIsAddClientOpen] = useState(false);
+  const [modalSearchQuery, setModalSearchQuery] = useState("");
+  const debouncedModalSearch = useDebounce(modalSearchQuery, 300);
+  const [unenrolledClients, setUnenrolledClients] = useState<{ id: string; name: string }[]>([]);
+  const [isLoadingUnenrolled, setIsLoadingUnenrolled] = useState(false);
+
   const [addingClient, setAddingClient] = useState<string | null>(null);
   const [clientToRemove, setClientToRemove] = useState<string | null>(null);
+
+  // Histórico
   const [selectedClientForHistory, setSelectedClientForHistory] = useState<Client | null>(null);
   const [clientHistory, setClientHistory] = useState<any[]>([]);
   const [clientVouchers, setClientVouchers] = useState<any[]>([]);
-  const [historyCache, setHistoryCache] = useState<Record<string, { history: any[], vouchers: any[] }>>({});
+  const [historyCache, setHistoryCache] = useState<Record<string, { history: any[], vouchers: any[], points?: number }>>({});
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+
   const itemsPerPage = 8;
   const isMobile = useIsMobile();
+  const isFirstRender = useRef(true);
 
-  const filteredClients = programScope === "global" ? clients : clients.filter(c => c.enrolledAt !== null);
-  
-  // Filter by search query and sort by points descending
-  const searchedClients = filteredClients
-    .filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    .sort((a, b) => b.points - a.points);
+  // Busca clientes paginados no servidor
+  const fetchClients = useCallback(async (page: number, search: string, scope: "global" | "specific") => {
+    setIsLoadingClients(true);
+    try {
+      const res = await getPaginatedLoyaltyClients({
+        page,
+        limit: itemsPerPage,
+        search,
+        scope,
+      });
 
-  const totalPages = Math.max(1, Math.ceil(searchedClients.length / itemsPerPage));
-  const displayedClients = searchedClients.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+      if (res.success) {
+        setClients(res.clients);
+        setTotalPages(res.totalPages);
+        setTotalCount(res.total);
+        setCurrentPage(res.page);
+      } else {
+        toast.error(res.error || "Erro ao carregar clientes.");
+      }
+    } catch (e) {
+      toast.error("Erro na comunicação com o servidor.");
+    } finally {
+      setIsLoadingClients(false);
+    }
+  }, [itemsPerPage]);
 
-  const unenrolledClients = clients.filter(c => c.enrolledAt === null && c.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  // Recarrega quando busca ou escopo mudam
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    fetchClients(1, debouncedSearch, programScope);
+  }, [debouncedSearch, programScope, fetchClients]);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages || newPage === currentPage) return;
+    fetchClients(newPage, debouncedSearch, programScope);
+  };
+
+  // Carrega clientes não matriculados sob demanda
+  useEffect(() => {
+    if (!isAddClientOpen) return;
+    let isCancelled = false;
+
+    const loadUnenrolled = async () => {
+      setIsLoadingUnenrolled(true);
+      try {
+        const res = await getUnenrolledClients(debouncedModalSearch, 20);
+        if (!isCancelled && res.success && res.clients) {
+          setUnenrolledClients(res.clients);
+        }
+      } catch (e) {
+        if (!isCancelled) toast.error("Erro ao carregar lista de clientes.");
+      } finally {
+        if (!isCancelled) setIsLoadingUnenrolled(false);
+      }
+    };
+
+    loadUnenrolled();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isAddClientOpen, debouncedModalSearch]);
 
   const handleEnroll = async (clientId: string) => {
     setAddingClient(clientId);
@@ -106,6 +187,8 @@ export function LoyaltyOverviewTab({
     setAddingClient(null);
     if (res.success) {
       toast.success("Cliente adicionado ao programa com sucesso!");
+      setUnenrolledClients((prev) => prev.filter((c) => c.id !== clientId));
+      fetchClients(currentPage, debouncedSearch, programScope);
     } else {
       toast.error(res.error || "Erro ao adicionar cliente.");
     }
@@ -118,6 +201,7 @@ export function LoyaltyOverviewTab({
     const res = await enrollClientInLoyalty(clientId, false);
     if (res.success) {
       toast.success("Cliente removido do programa.");
+      fetchClients(currentPage, debouncedSearch, programScope);
     } else {
       toast.error(res.error || "Erro ao remover cliente.");
     }
@@ -126,10 +210,13 @@ export function LoyaltyOverviewTab({
   const openHistory = async (client: Client) => {
     setSelectedClientForHistory(client);
     
-    // Use cached history if available
+    // Cache de histórico se disponível
     if (historyCache[client.id]) {
       setClientHistory(historyCache[client.id].history);
       setClientVouchers(historyCache[client.id].vouchers);
+      if (historyCache[client.id].points !== undefined) {
+        setSelectedClientForHistory((prev) => prev ? { ...prev, points: historyCache[client.id].points! } : null);
+      }
       return;
     }
 
@@ -138,7 +225,17 @@ export function LoyaltyOverviewTab({
     if (res.success && res.history) {
       setClientHistory(res.history);
       setClientVouchers(res.vouchers || []);
-      setHistoryCache(prev => ({ ...prev, [client.id]: { history: res.history, vouchers: res.vouchers || [] } }));
+      if (res.points !== undefined) {
+        setSelectedClientForHistory((prev) => prev ? { ...prev, points: res.points } : null);
+      }
+      setHistoryCache((prev) => ({ 
+        ...prev, 
+        [client.id]: { 
+          history: res.history, 
+          vouchers: res.vouchers || [],
+          points: res.points 
+        } 
+      }));
     } else {
       toast.error(res.error || "Erro ao carregar histórico.");
       setClientHistory([]);
@@ -151,17 +248,16 @@ export function LoyaltyOverviewTab({
     const res = await markVoucherAsUsed(voucherId);
     if (res.success) {
       toast.success("Voucher marcado como utilizado!");
-      // Update local state
-      setClientVouchers(prev => prev.map(v => v.id === voucherId ? { ...v, status: "UTILIZADO" } : v));
+      setClientVouchers((prev) => prev.map((v) => v.id === voucherId ? { ...v, status: "UTILIZADO" } : v));
       if (selectedClientForHistory) {
-        setHistoryCache(prev => {
+        setHistoryCache((prev) => {
           const cache = prev[selectedClientForHistory.id];
           if (!cache) return prev;
           return {
             ...prev,
             [selectedClientForHistory.id]: {
               ...cache,
-              vouchers: cache.vouchers.map(v => v.id === voucherId ? { ...v, status: "UTILIZADO" } : v)
+              vouchers: cache.vouchers.map((v) => v.id === voucherId ? { ...v, status: "UTILIZADO" } : v)
             }
           };
         });
@@ -200,17 +296,17 @@ export function LoyaltyOverviewTab({
             placeholder="Buscar cliente por nome..."
             className="pl-10 rounded-full bg-card"
             value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
 
         {programScope === "specific" && (
           <Button 
             className="rounded-full w-full sm:w-auto flex items-center gap-2"
-            onClick={() => setIsAddClientOpen(true)}
+            onClick={() => {
+              setModalSearchQuery("");
+              setIsAddClientOpen(true);
+            }}
           >
             <Plus size="xs" />
             Incluir Cliente
@@ -218,102 +314,115 @@ export function LoyaltyOverviewTab({
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {displayedClients.map((client) => (
-          <Card 
-            key={client.id} 
-            className="rounded-2xl shadow-sm border-border/50 relative overflow-hidden cursor-pointer hover:border-primary/50 transition-colors group"
-            onClick={() => openHistory(client)}
-          >
-            <Star
-              aria-hidden="true"
-              type="solid"
-              width={100}
-              height={100}
-              rotate={-15}
-              className="pointer-events-none absolute -right-6 top-1/2 -translate-y-1/2 text-foreground/5"
-            />
-            <Star
-              aria-hidden="true"
-              type="solid"
-              width={40}
-              height={40}
-              rotate={20}
-              className="pointer-events-none absolute right-12 -bottom-4 text-foreground/5"
-            />
+      {isLoadingClients ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: itemsPerPage }).map((_, i) => (
+            <Card key={i} className="rounded-2xl shadow-sm border-border/50 p-5 flex flex-col items-center text-center gap-3">
+              <Skeleton className="h-6 w-32 rounded-full mt-2" />
+              <Skeleton className="h-4 w-24 rounded-full" />
+              <Skeleton className="h-6 w-16 rounded-full mt-2" />
+              <Skeleton className="h-2 w-full rounded-full mt-4" />
+              <Skeleton className="h-9 w-full rounded-xl mt-4" />
+            </Card>
+          ))}
+        </div>
+      ) : clients.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {clients.map((client) => (
+            <Card 
+              key={client.id} 
+              className="rounded-2xl shadow-sm border-border/50 relative overflow-hidden cursor-pointer hover:border-primary/50 transition-colors group"
+              onClick={() => openHistory(client)}
+            >
+              <Star
+                aria-hidden="true"
+                type="solid"
+                width={100}
+                height={100}
+                rotate={-15}
+                className="pointer-events-none absolute -right-6 top-1/2 -translate-y-1/2 text-foreground/5"
+              />
+              <Star
+                aria-hidden="true"
+                type="solid"
+                width={40}
+                height={40}
+                rotate={20}
+                className="pointer-events-none absolute right-12 -bottom-4 text-foreground/5"
+              />
 
-            <CardContent className="relative z-10 p-5 flex flex-col items-center text-center gap-2">
-              {programScope === "specific" && (
-                <div className="absolute top-2 right-2 z-20">
+              <CardContent className="relative z-10 p-5 flex flex-col items-center text-center gap-2">
+                {programScope === "specific" && (
+                  <div className="absolute top-2 right-2 z-20">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setClientToRemove(client.id);
+                      }}
+                    >
+                      &times;
+                    </Button>
+                  </div>
+                )}
+                <div className="space-y-1 mt-2 pointer-events-none">
+                  <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">{client.name}</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Último Check-in: {client.lastCheckIn}
+                  </p>
+                </div>
+                <div className="mt-2 inline-flex items-center gap-1.5 bg-secondary/50 px-3 py-1 rounded-full text-sm font-medium pointer-events-none">
+                  <span className="text-primary font-bold">{client.points}</span> 
+                  <span>pts</span>
+                </div>
+
+                {/* Barra de progresso para a próxima recompensa */}
+                {(() => {
+                  const currentPoints = client.points || 0;
+                  const nextReward = rewards.slice().sort((a, b) => a.pointsCost - b.pointsCost).find((r) => currentPoints < r.pointsCost);
+                  const percentage = nextReward ? Math.min(100, Math.round((currentPoints / nextReward.pointsCost) * 100)) : (rewards.length > 0 ? 100 : 0);
+                  
+                  if (rewards.length === 0) return null;
+                  
+                  return (
+                    <div className="w-full mt-3 px-2">
+                      {nextReward ? (
+                        <div className="flex justify-between items-center mb-1 text-[10px] text-muted-foreground">
+                          <span>Faltam {nextReward.pointsCost - currentPoints} pts para {nextReward.title}</span>
+                          <span className="font-bold">{percentage}%</span>
+                        </div>
+                      ) : (
+                        <div className="flex justify-between items-center mb-1 text-[10px] text-primary">
+                          <span className="font-bold">Todas as recompensas alcançadas!</span>
+                          <span className="font-bold">100%</span>
+                        </div>
+                      )}
+                      <Progress value={percentage} className="h-1.5 bg-secondary" indicatorColor="bg-primary" />
+                    </div>
+                  );
+                })()}
+
+                <div className="flex items-center gap-2 mt-4 w-full pt-4 border-t border-border/50">
                   <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                    variant="outline" 
+                    className="rounded-xl flex-1 flex flex-col gap-1 h-auto py-2 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50 z-20 relative"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setClientToRemove(client.id);
+                      onOpenVoucher(client);
                     }}
+                    disabled={!client.points}
                   >
-                    &times;
+                    <Download size={16} />
+                    Baixar
                   </Button>
                 </div>
-              )}
-              <div className="space-y-1 mt-2 pointer-events-none">
-                <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">{client.name}</h3>
-                <p className="text-xs text-muted-foreground">
-                  Último Check-in: {client.lastCheckIn}
-                </p>
-              </div>
-              <div className="mt-2 inline-flex items-center gap-1.5 bg-secondary/50 px-3 py-1 rounded-full text-sm font-medium pointer-events-none">
-                <span className="text-primary font-bold">{client.points}</span> 
-                <span>pts</span>
-              </div>
-
-              {/* Progress bar to next reward */}
-              {(() => {
-                const currentPoints = client.points || 0;
-                const nextReward = rewards.slice().sort((a,b) => a.pointsCost - b.pointsCost).find(r => currentPoints < r.pointsCost);
-                const percentage = nextReward ? Math.min(100, Math.round((currentPoints / nextReward.pointsCost) * 100)) : (rewards.length > 0 ? 100 : 0);
-                
-                if (rewards.length === 0) return null;
-                
-                return (
-                  <div className="w-full mt-3 px-2">
-                    {nextReward ? (
-                      <div className="flex justify-between items-center mb-1 text-[10px] text-muted-foreground">
-                        <span>Faltam {nextReward.pointsCost - currentPoints} pts para {nextReward.title}</span>
-                        <span className="font-bold">{percentage}%</span>
-                      </div>
-                    ) : (
-                      <div className="flex justify-between items-center mb-1 text-[10px] text-primary">
-                        <span className="font-bold">Todas as recompensas alcançadas!</span>
-                        <span className="font-bold">100%</span>
-                      </div>
-                    )}
-                    <Progress value={percentage} className="h-1.5 bg-secondary" indicatorColor="bg-primary" />
-                  </div>
-                );
-              })()}
-
-              <div className="flex items-center gap-2 mt-4 w-full pt-4 border-t border-border/50">
-                <Button 
-                  variant="outline" 
-                  className="rounded-xl flex-1 flex flex-col gap-1 h-auto py-2 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50 z-20 relative"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onOpenVoucher(client);
-                  }}
-                  disabled={!client.points}
-                >
-                  <Download size={16} />
-                  Baixar
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      {displayedClients.length === 0 && (
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
         <div className="flex flex-col items-center justify-center py-12 text-center border border-dashed rounded-2xl bg-card">
           <div className="bg-primary/10 p-4 rounded-full text-primary mb-4">
             <Trophy size="md" />
@@ -335,41 +444,53 @@ export function LoyaltyOverviewTab({
                 href="#" 
                 onClick={(e) => {
                   e.preventDefault();
-                  if (currentPage > 1) setCurrentPage(p => p - 1);
+                  handlePageChange(currentPage - 1);
                 }}
-                className={cn("rounded-full", currentPage === 1 && "pointer-events-none opacity-50")} 
+                className={cn("rounded-full", (currentPage <= 1 || isLoadingClients) && "pointer-events-none opacity-50")} 
               />
             </PaginationItem>
             
-            {Array.from({ length: totalPages }).map((_, i) => (
-              <PaginationItem key={i}>
-                <PaginationLink 
-                  href="#" 
-                  isActive={currentPage === i + 1}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setCurrentPage(i + 1);
-                  }}
-                  className="rounded-full"
-                >
-                  {i + 1}
-                </PaginationLink>
-              </PaginationItem>
-            ))}
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter((page) => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 2)
+              .map((page, idx, array) => {
+                const prev = array[idx - 1];
+                return (
+                  <div key={page} className="flex items-center">
+                    {prev && page - prev > 1 && (
+                      <span className="px-2 text-muted-foreground text-sm">...</span>
+                    )}
+                    <PaginationItem>
+                      <PaginationLink 
+                        href="#" 
+                        isActive={currentPage === page}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handlePageChange(page);
+                        }}
+                        className="rounded-full"
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  </div>
+                );
+              })}
 
             <PaginationItem>
               <PaginationNext 
                 href="#" 
                 onClick={(e) => {
                   e.preventDefault();
-                  if (currentPage < totalPages) setCurrentPage(p => p + 1);
+                  handlePageChange(currentPage + 1);
                 }}
-                className={cn("rounded-full", currentPage === totalPages && "pointer-events-none opacity-50")}
+                className={cn("rounded-full", (currentPage >= totalPages || isLoadingClients) && "pointer-events-none opacity-50")}
               />
             </PaginationItem>
           </PaginationContent>
         </Pagination>
       )}
+
+      {/* Modal: Incluir Cliente */}
       <Dialog open={isAddClientOpen} onOpenChange={setIsAddClientOpen}>
         <DialogContent className="rounded-2xl max-w-md">
           <DialogHeader>
@@ -381,17 +502,23 @@ export function LoyaltyOverviewTab({
           <div className="space-y-4 pt-4">
             <Input 
               placeholder="Buscar cliente..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={modalSearchQuery}
+              onChange={(e) => setModalSearchQuery(e.target.value)}
               className="rounded-full"
             />
             <div className="max-h-64 overflow-y-auto space-y-2 pr-2">
-              {unenrolledClients.length === 0 ? (
+              {isLoadingUnenrolled ? (
+                <div className="space-y-2 py-2">
+                  <Skeleton className="h-12 w-full rounded-xl" />
+                  <Skeleton className="h-12 w-full rounded-xl" />
+                  <Skeleton className="h-12 w-full rounded-xl" />
+                </div>
+              ) : unenrolledClients.length === 0 ? (
                 <div className="text-center text-muted-foreground text-sm py-4">
-                  Nenhum cliente encontrado.
+                  Nenhum cliente disponível encontrado.
                 </div>
               ) : (
-                unenrolledClients.map(client => (
+                unenrolledClients.map((client) => (
                   <div key={client.id} className="flex items-center justify-between p-3 border rounded-xl">
                     <span className="font-medium text-sm">{client.name}</span>
                     <Button 
@@ -410,6 +537,7 @@ export function LoyaltyOverviewTab({
         </DialogContent>
       </Dialog>
 
+      {/* Confirmação de Remoção */}
       <AlertDialog open={!!clientToRemove} onOpenChange={(open) => !open && setClientToRemove(null)}>
         <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
@@ -430,26 +558,7 @@ export function LoyaltyOverviewTab({
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={!!clientToRemove} onOpenChange={(open) => !open && setClientToRemove(null)}>
-        <AlertDialogContent className="rounded-2xl">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remover do programa?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja remover este cliente do programa de fidelidade? Ele parará de acumular pontos a partir de agora.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-full">Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmRemove}
-              className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Sim, Remover
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
+      {/* Histórico Mobile (Drawer) */}
       {isMobile ? (
         <Drawer open={!!selectedClientForHistory} onOpenChange={(open) => {
           if (!open) {
@@ -468,8 +577,10 @@ export function LoyaltyOverviewTab({
 
               <div className="px-4 pb-4">
                 {isLoadingHistory ? (
-                  <div className="flex justify-center p-8">
-                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                  <div className="space-y-3 py-4">
+                    <Skeleton className="h-14 w-full rounded-xl" />
+                    <Skeleton className="h-14 w-full rounded-xl" />
+                    <Skeleton className="h-14 w-full rounded-xl" />
                   </div>
                 ) : (
                   <Tabs defaultValue="history" className="w-full">
@@ -565,6 +676,7 @@ export function LoyaltyOverviewTab({
           </DrawerContent>
         </Drawer>
       ) : (
+        /* Histórico Desktop (Dialog) */
         <Dialog open={!!selectedClientForHistory} onOpenChange={(open) => {
           if (!open) {
             setSelectedClientForHistory(null);
@@ -580,8 +692,10 @@ export function LoyaltyOverviewTab({
             </DialogHeader>
 
             {isLoadingHistory ? (
-              <div className="flex justify-center p-8">
-                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+              <div className="space-y-3 py-4">
+                <Skeleton className="h-14 w-full rounded-xl" />
+                <Skeleton className="h-14 w-full rounded-xl" />
+                <Skeleton className="h-14 w-full rounded-xl" />
               </div>
             ) : (
               <Tabs defaultValue="history" className="w-full">

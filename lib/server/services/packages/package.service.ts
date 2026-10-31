@@ -139,16 +139,19 @@ export class PackageService {
         ) {
           const clientCurrent = await tx.client.findUnique({
             where: { id: appointment.client_id },
-            select: { loyalty_points: true },
+            select: { loyalty_points: true, loyalty_enrolled_at: true },
           });
-          const newPoints = Math.max(
-            (clientCurrent?.loyalty_points || 0) - loyaltySettings.check_in_points,
-            0
-          );
-          await tx.client.update({
-            where: { id: appointment.client_id },
-            data: { loyalty_points: newPoints },
-          });
+          const isEnrolled = loyaltySettings.scope === "global" || clientCurrent?.loyalty_enrolled_at !== null;
+          if (isEnrolled && clientCurrent) {
+            const newPoints = Math.max(
+              (clientCurrent?.loyalty_points || 0) - loyaltySettings.check_in_points,
+              0
+            );
+            await tx.client.update({
+              where: { id: appointment.client_id },
+              data: { loyalty_points: newPoints },
+            });
+          }
         }
       }
 

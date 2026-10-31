@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { requireAuth } from "@/lib/auth";
 
 export async function getLoyaltySettings(organizationId: string) {
   try {
@@ -41,6 +42,125 @@ export async function getLoyaltySettings(organizationId: string) {
   } catch (error) {
     console.error("Erro ao buscar configurações de fidelidade:", error);
     return { success: false, error: "Erro ao buscar configurações" };
+  }
+}
+
+export async function getPaginatedLoyaltyClients({
+  page = 1,
+  limit = 8,
+  search = "",
+  scope = "specific",
+}: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  scope?: "global" | "specific";
+} = {}) {
+  try {
+    const admin = await requireAuth();
+    const organizationId = admin.organizationId;
+
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.max(1, Math.min(100, limit));
+    const skip = (safePage - 1) * safeLimit;
+
+    const where: any = {
+      organization_id: organizationId,
+    };
+
+    if (scope === "specific") {
+      where.loyalty_enrolled_at = { not: null };
+    }
+
+    if (search && search.trim()) {
+      where.name = {
+        contains: search.trim(),
+        mode: "insensitive",
+      };
+    }
+
+    const [clients, total] = await Promise.all([
+      prisma.client.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          loyalty_points: true,
+          loyalty_enrolled_at: true,
+          check_ins: {
+            orderBy: { date_time: "desc" },
+            take: 1,
+            select: { date_time: true },
+          },
+        },
+        orderBy: [{ loyalty_points: "desc" }, { name: "asc" }],
+        skip,
+        take: safeLimit,
+      }),
+      prisma.client.count({ where }),
+    ]);
+
+    const formattedClients = clients.map((c) => ({
+      id: c.id,
+      name: c.name,
+      points: c.loyalty_points,
+      tier: c.loyalty_points >= 500 ? "Ouro" : c.loyalty_points >= 200 ? "Prata" : "Bronze",
+      lastCheckIn: c.check_ins[0]
+        ? new Date(c.check_ins[0].date_time).toLocaleDateString("pt-BR")
+        : "Nunca",
+      enrolledAt: c.loyalty_enrolled_at,
+    }));
+
+    return {
+      success: true,
+      clients: formattedClients,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / safeLimit)),
+      page: safePage,
+    };
+  } catch (error) {
+    console.error("Erro ao buscar clientes da fidelidade:", error);
+    return {
+      success: false,
+      error: "Erro ao buscar clientes da fidelidade",
+      clients: [],
+      total: 0,
+      totalPages: 1,
+      page: 1,
+    };
+  }
+}
+
+export async function getUnenrolledClients(search = "", limit = 20) {
+  try {
+    const admin = await requireAuth();
+
+    const where: any = {
+      organization_id: admin.organizationId,
+      loyalty_enrolled_at: null,
+    };
+
+    if (search && search.trim()) {
+      where.name = {
+        contains: search.trim(),
+        mode: "insensitive",
+      };
+    }
+
+    const clients = await prisma.client.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+      },
+      orderBy: { name: "asc" },
+      take: Math.min(50, limit),
+    });
+
+    return { success: true, clients };
+  } catch (error) {
+    console.error("Erro ao buscar clientes não matriculados:", error);
+    return { success: false, error: "Erro ao buscar clientes não cadastrados", clients: [] };
   }
 }
 
@@ -195,7 +315,8 @@ export async function calculateClientPoints(
   const enrolled = settings.scope === "global" || enrolledAt !== null;
   if (!enrolled) return 0;
 
-  const startDate = enrolledAt || new Date(0);
+  // Se escopo for global e não tiver enrolledAt, conta a partir da criação da regra de fidelidade
+  const startDate = enrolledAt || (settings.created_at ? new Date(settings.created_at) : new Date(0));
 
   let checkInPoints = 0;
   if (settings.check_in_active && settings.check_in_points > 0) {
@@ -215,13 +336,27 @@ export async function calculateClientPoints(
       where: {
         client_id: clientId,
         date_time: { gte: startDate },
-        status: { in: ["REALIZADO", "CONFIRMADO"] },
+        status: "REALIZADO",
       }
     });
     schedulePoints = appointmentsCount * settings.schedule_points;
   }
 
-  return Math.min(checkInPoints + schedulePoints, settings.max_points);
+  const grossPoints = Math.min(checkInPoints + schedulePoints, settings.max_points);
+
+  // Subtrai apenas os vouchers resgatados dentro do ciclo atual de matrícula (>= startDate)
+  const vouchers = await prisma.clientVoucher.findMany({
+    where: {
+      client_id: clientId,
+      created_at: { gte: startDate },
+    },
+    select: { points_spent: true }
+  });
+
+  const totalSpentPoints = vouchers.reduce((acc: number, v: { points_spent: number }) => acc + v.points_spent, 0);
+
+  // Garante que o saldo nunca seja negativo
+  return Math.max(0, grossPoints - totalSpentPoints);
 }
 
 export async function getClientLoyaltyInfo(clientId: string) {
@@ -255,16 +390,18 @@ export async function getClientLoyaltyInfo(clientId: string) {
     }
 
     const enrolled = settings.scope === "global" || client.loyalty_enrolled_at !== null;
-    const totalEarnedPoints = await calculateClientPoints(clientId, client.loyalty_enrolled_at, settings);
+    if (!enrolled) {
+      return { success: true, enrolled: false, active: true, points: 0, rewards: settings.rewards };
+    }
 
-    // Fetch spent points
+    // Calcula saldo líquido real disponível
+    const currentPoints = await calculateClientPoints(clientId, client.loyalty_enrolled_at, settings);
+
+    // Busca todos os vouchers do cliente para a carteira
     const vouchers = await prisma.clientVoucher.findMany({
       where: { client_id: clientId },
       orderBy: { created_at: "desc" }
     });
-    const totalSpentPoints = vouchers.reduce((acc: any, v: any) => acc + v.points_spent, 0);
-
-    const currentPoints = Math.max(0, totalEarnedPoints - totalSpentPoints);
 
     if (currentPoints !== client.loyalty_points) {
       await prisma.client.update({
@@ -331,14 +468,8 @@ export async function redeemLoyaltyReward(clientId: string, rewardId: string) {
       return { success: false, error: "Custo de pontuação da recompensa inválido." };
     }
 
-    // Calcula saldo real disponível
-    const totalEarnedPoints = await calculateClientPoints(clientId, client.loyalty_enrolled_at, settings);
-    const vouchers = await prisma.clientVoucher.findMany({
-      where: { client_id: clientId },
-      select: { points_spent: true }
-    });
-    const totalSpentPoints = vouchers.reduce((acc: any, v: any) => acc + v.points_spent, 0);
-    const availablePoints = Math.max(0, totalEarnedPoints - totalSpentPoints);
+    // Calcula saldo real líquido disponível
+    const availablePoints = await calculateClientPoints(clientId, client.loyalty_enrolled_at, settings);
 
     if (availablePoints < reward.points_cost) {
       return { success: false, error: "Pontos insuficientes para resgatar esta recompensa." };
@@ -389,7 +520,10 @@ export async function enrollClientInLoyalty(clientId: string, enroll: boolean) {
   try {
     await prisma.client.update({
       where: { id: clientId },
-      data: { loyalty_enrolled_at: enroll ? new Date() : null }
+      data: { 
+        loyalty_enrolled_at: enroll ? new Date() : null,
+        loyalty_points: 0
+      }
     });
     revalidatePath("/(private)/admin/loyalty", "page");
     return { success: true };
@@ -405,6 +539,7 @@ export async function getClientLoyaltyHistory(clientId: string) {
       where: { id: clientId },
       select: {
         id: true,
+        loyalty_points: true,
         loyalty_enrolled_at: true,
         organization: {
           select: {
@@ -428,7 +563,7 @@ export async function getClientLoyaltyHistory(clientId: string) {
       return { success: true, history: [] };
     }
 
-    const startDate = client.loyalty_enrolled_at || new Date(0);
+    const startDate = client.loyalty_enrolled_at || (settings.created_at ? new Date(settings.created_at) : new Date(0));
     const history = [];
 
     // Busca check-ins
@@ -457,7 +592,7 @@ export async function getClientLoyaltyHistory(clientId: string) {
         where: {
           client_id: client.id,
           date_time: { gte: startDate },
-          status: { in: ["REALIZADO", "CONFIRMADO"] },
+          status: "REALIZADO",
         },
         include: {
           service: { select: { name: true } }
@@ -482,7 +617,7 @@ export async function getClientLoyaltyHistory(clientId: string) {
       orderBy: { created_at: 'desc' }
     });
 
-    return { success: true, history, vouchers };
+    return { success: true, history, vouchers, points: client.loyalty_points };
   } catch (error) {
     console.error("Erro ao buscar histórico do cliente:", error);
     return { success: false, error: "Erro ao buscar histórico." };

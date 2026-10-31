@@ -294,19 +294,22 @@ export async function createManualCheckIn(data: {
         where: { organization_id: organizationId },
       });
 
-      if (loyaltySettings?.is_active && loyaltySettings?.check_in_active) {
+      if (loyaltySettings?.is_active && loyaltySettings?.check_in_active && data.clientId) {
         const clientCurrent = await tx.client.findUnique({
           where: { id: data.clientId },
-          select: { loyalty_points: true },
+          select: { loyalty_points: true, loyalty_enrolled_at: true },
         });
-        const newPoints = Math.min(
-          (clientCurrent?.loyalty_points || 0) + loyaltySettings.check_in_points,
-          loyaltySettings.max_points,
-        );
-        await tx.client.update({
-          where: { id: data.clientId },
-          data: { loyalty_points: newPoints },
-        });
+        const isEnrolled = loyaltySettings.scope === "global" || clientCurrent?.loyalty_enrolled_at !== null;
+        if (isEnrolled && clientCurrent) {
+          const newPoints = Math.min(
+            (clientCurrent?.loyalty_points || 0) + loyaltySettings.check_in_points,
+            loyaltySettings.max_points,
+          );
+          await tx.client.update({
+            where: { id: data.clientId },
+            data: { loyalty_points: newPoints },
+          });
+        }
       }
 
       // f) Auditoria no Histórico do Cliente (ClientNote)

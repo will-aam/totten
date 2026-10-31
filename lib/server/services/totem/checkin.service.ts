@@ -278,19 +278,22 @@ export class TotemCheckInService {
       }
 
       // 3. Adicionar pontos de fidelidade
-      if (loyaltySettings?.is_active && loyaltySettings?.check_in_active) {
+      if (loyaltySettings?.is_active && loyaltySettings?.check_in_active && appt.client_id) {
         const clientCurrent = await tx.client.findUnique({
           where: { id: appt.client_id },
-          select: { loyalty_points: true }
+          select: { loyalty_points: true, loyalty_enrolled_at: true }
         });
-        const newPoints = Math.min(
-          (clientCurrent?.loyalty_points || 0) + loyaltySettings.check_in_points,
-          loyaltySettings.max_points
-        );
-        await tx.client.update({
-          where: { id: appt.client_id },
-          data: { loyalty_points: newPoints }
-        });
+        const isEnrolled = loyaltySettings.scope === "global" || clientCurrent?.loyalty_enrolled_at !== null;
+        if (isEnrolled && clientCurrent) {
+          const newPoints = Math.min(
+            (clientCurrent?.loyalty_points || 0) + loyaltySettings.check_in_points,
+            loyaltySettings.max_points
+          );
+          await tx.client.update({
+            where: { id: appt.client_id },
+            data: { loyalty_points: newPoints }
+          });
+        }
       }
 
       // 4. Auditoria no Histórico do Cliente (ClientNote)
@@ -546,20 +549,23 @@ export class TotemCheckInService {
       }
 
       // 5. Adicionar pontos de fidelidade
-      if (loyaltySettings?.is_active && loyaltySettings?.check_in_active) {
+      if (loyaltySettings?.is_active && loyaltySettings?.check_in_active && client?.id) {
         const clientCurrent = await tx.client.findUnique({
           where: { id: client.id },
-          select: { loyalty_points: true },
+          select: { loyalty_points: true, loyalty_enrolled_at: true },
         });
-        const newPoints = Math.min(
-          (clientCurrent?.loyalty_points || 0) +
-            loyaltySettings.check_in_points,
-          loyaltySettings.max_points,
-        );
-        await tx.client.update({
-          where: { id: client.id },
-          data: { loyalty_points: newPoints },
-        });
+        const isEnrolled = loyaltySettings.scope === "global" || clientCurrent?.loyalty_enrolled_at !== null;
+        if (isEnrolled && clientCurrent) {
+          const newPoints = Math.min(
+            (clientCurrent?.loyalty_points || 0) +
+              loyaltySettings.check_in_points,
+            loyaltySettings.max_points,
+          );
+          await tx.client.update({
+            where: { id: client.id },
+            data: { loyalty_points: newPoints },
+          });
+        }
       }
 
       return {

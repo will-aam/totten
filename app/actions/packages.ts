@@ -621,16 +621,19 @@ export async function createManualPackageCheckIn(
       if (loyaltySettings?.is_active && loyaltySettings?.check_in_active) {
         const clientCurrent = await tx.client.findUnique({
           where: { id: pkg.client_id },
-          select: { loyalty_points: true },
+          select: { loyalty_points: true, loyalty_enrolled_at: true },
         });
-        const newPoints = Math.min(
-          (clientCurrent?.loyalty_points || 0) + loyaltySettings.check_in_points,
-          loyaltySettings.max_points,
-        );
-        await tx.client.update({
-          where: { id: pkg.client_id },
-          data: { loyalty_points: newPoints },
-        });
+        const isEnrolled = loyaltySettings.scope === "global" || clientCurrent?.loyalty_enrolled_at !== null;
+        if (isEnrolled && clientCurrent) {
+          const newPoints = Math.min(
+            (clientCurrent?.loyalty_points || 0) + loyaltySettings.check_in_points,
+            loyaltySettings.max_points,
+          );
+          await tx.client.update({
+            where: { id: pkg.client_id },
+            data: { loyalty_points: newPoints },
+          });
+        }
       }
 
       // 5. Desconto de pacote (SOMENTE SE markAsCompleted for TRUE)
@@ -828,16 +831,19 @@ export async function deleteCheckIn(checkInId: string) {
       if (loyaltySettings?.is_active && loyaltySettings?.check_in_active && checkIn.client_id) {
         const clientCurrent = await tx.client.findUnique({
           where: { id: checkIn.client_id },
-          select: { loyalty_points: true },
+          select: { loyalty_points: true, loyalty_enrolled_at: true },
         });
-        const newPoints = Math.max(
-          (clientCurrent?.loyalty_points || 0) - loyaltySettings.check_in_points,
-          0,
-        );
-        await tx.client.update({
-          where: { id: checkIn.client_id },
-          data: { loyalty_points: newPoints },
-        });
+        const isEnrolled = loyaltySettings.scope === "global" || clientCurrent?.loyalty_enrolled_at !== null;
+        if (isEnrolled && clientCurrent) {
+          const newPoints = Math.max(
+            (clientCurrent?.loyalty_points || 0) - loyaltySettings.check_in_points,
+            0,
+          );
+          await tx.client.update({
+            where: { id: checkIn.client_id },
+            data: { loyalty_points: newPoints },
+          });
+        }
       }
 
       // E. Soft delete do check-in (desvincula appointment_id para evitar cascade hard delete do Postgres)
