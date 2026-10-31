@@ -88,6 +88,7 @@ export async function updateLoyaltySettings(
       const keepRewardIds = new Set<string>();
 
       for (const r of rewards) {
+        if (!r.title?.trim() || r.points_cost <= 0) continue;
         const rewardId = typeof r.id === "string" ? r.id : undefined;
         const validityDays = r.validity_days !== undefined ? r.validity_days : 30;
 
@@ -257,60 +258,18 @@ export async function getClientLoyaltyInfo(clientId: string) {
     const totalEarnedPoints = await calculateClientPoints(clientId, client.loyalty_enrolled_at, settings);
 
     // Fetch spent points
-    let vouchers = await prisma.clientVoucher.findMany({
+    const vouchers = await prisma.clientVoucher.findMany({
       where: { client_id: clientId },
       orderBy: { created_at: "desc" }
     });
     const totalSpentPoints = vouchers.reduce((acc: any, v: any) => acc + v.points_spent, 0);
 
-    let currentPoints = totalEarnedPoints - totalSpentPoints;
+    const currentPoints = Math.max(0, totalEarnedPoints - totalSpentPoints);
 
-    // Auto-generate voucher if we have enough points
-    let newlyGenerated = false;
-    if (settings.rewards && settings.rewards.length > 0) {
-      const sortedRewards = [...settings.rewards].sort((a, b) => a.points_cost - b.points_cost);
-      let canAfford = true;
-      while (canAfford) {
-        const affordable = sortedRewards.find(r => currentPoints >= r.points_cost);
-        if (affordable) {
-          let expires_at = null;
-          // @ts-ignore
-          if (affordable.validity_days) {
-            const date = new Date();
-            // @ts-ignore
-            date.setDate(date.getDate() + affordable.validity_days);
-            expires_at = date;
-          }
-
-          await prisma.clientVoucher.create({
-            data: {
-              client_id: clientId,
-              reward_id: affordable.id,
-              points_spent: affordable.points_cost,
-              title: affordable.title,
-              // @ts-ignore
-              expires_at: expires_at
-            }
-          });
-          currentPoints -= affordable.points_cost;
-          newlyGenerated = true;
-        } else {
-          canAfford = false;
-        }
-      }
-    }
-
-    if (currentPoints !== client.loyalty_points || newlyGenerated) {
+    if (currentPoints !== client.loyalty_points) {
       await prisma.client.update({
         where: { id: clientId },
         data: { loyalty_points: currentPoints }
-      });
-    }
-
-    if (newlyGenerated) {
-      vouchers = await prisma.clientVoucher.findMany({
-        where: { client_id: clientId },
-        orderBy: { created_at: "desc" }
       });
     }
 
@@ -326,6 +285,103 @@ export async function getClientLoyaltyInfo(clientId: string) {
   } catch (error) {
     console.error("Erro ao buscar informações de fidelidade do cliente:", error);
     return { success: false, error: "Erro ao buscar informações" };
+  }
+}
+
+export async function redeemLoyaltyReward(clientId: string, rewardId: string) {
+  try {
+    const client = await prisma.client.findUnique({
+      where: { id: clientId },
+      select: {
+        id: true,
+        loyalty_points: true,
+        loyalty_enrolled_at: true,
+        organization: {
+          select: {
+            loyalty_settings: {
+              include: {
+                rewards: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!client || !client.organization.loyalty_settings) {
+      return { success: false, error: "Cliente ou programa de fidelidade não encontrado." };
+    }
+
+    const settings = client.organization.loyalty_settings;
+    if (!settings.is_active) {
+      return { success: false, error: "O programa de fidelidade está inativo no momento." };
+    }
+
+    const enrolled = settings.scope === "global" || client.loyalty_enrolled_at !== null;
+    if (!enrolled) {
+      return { success: false, error: "Cliente não está cadastrado no programa de fidelidade." };
+    }
+
+    const reward = settings.rewards.find((r) => r.id === rewardId);
+    if (!reward) {
+      return { success: false, error: "Recompensa não encontrada." };
+    }
+
+    if (reward.points_cost <= 0) {
+      return { success: false, error: "Custo de pontuação da recompensa inválido." };
+    }
+
+    // Calcula saldo real disponível
+    const totalEarnedPoints = await calculateClientPoints(clientId, client.loyalty_enrolled_at, settings);
+    const vouchers = await prisma.clientVoucher.findMany({
+      where: { client_id: clientId },
+      select: { points_spent: true }
+    });
+    const totalSpentPoints = vouchers.reduce((acc: any, v: any) => acc + v.points_spent, 0);
+    const availablePoints = Math.max(0, totalEarnedPoints - totalSpentPoints);
+
+    if (availablePoints < reward.points_cost) {
+      return { success: false, error: "Pontos insuficientes para resgatar esta recompensa." };
+    }
+
+    let expiresAt: Date | null = null;
+    if (reward.validity_days && reward.validity_days > 0) {
+      expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + reward.validity_days);
+    }
+
+    const newPoints = availablePoints - reward.points_cost;
+
+    const voucher = await prisma.$transaction(async (tx) => {
+      const createdVoucher = await tx.clientVoucher.create({
+        data: {
+          client_id: clientId,
+          reward_id: reward.id,
+          points_spent: reward.points_cost,
+          title: reward.title,
+          expires_at: expiresAt,
+          status: "DISPONIVEL"
+        }
+      });
+
+      await tx.client.update({
+        where: { id: clientId },
+        data: { loyalty_points: newPoints }
+      });
+
+      return createdVoucher;
+    });
+
+    revalidatePath("/(private)/admin/loyalty", "page");
+
+    return {
+      success: true,
+      voucher,
+      newPoints
+    };
+  } catch (error) {
+    console.error("Erro ao resgatar recompensa:", error);
+    return { success: false, error: "Erro interno ao resgatar recompensa." };
   }
 }
 
