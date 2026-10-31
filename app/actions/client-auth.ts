@@ -3,6 +3,7 @@
 import { prisma as db } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import * as jose from "jose";
+import { normalizeBrazilPhone, normalizeCpf } from "@/lib/phone-utils";
 import nodemailer from "nodemailer";
 
 const JWT_SECRET = process.env.JWT_SECRET || "totten-super-secret-key-123";
@@ -63,16 +64,22 @@ export async function sendClientOtp(email: string, orgSlug: string) {
       `,
     };
 
-    // No ambiente local sem SMTP configurado, o envio vai falhar.
-    // Você pode logar no console para facilitar o teste:
-    console.log(`[OTP EMAIL GERADO]: ${code} para ${email}`);
+    // Log útil para rastreio em desenvolvimento
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[OTP EMAIL GERADO]: ${code} para ${email}`);
+    }
 
     try {
       await transporter.sendMail(mailOptions);
-    } catch (err) {
-      console.error("Erro ao enviar email, verifique o SMTP:", err);
-      // Para fins de teste/desenvolvimento, se falhar o SMTP, não vamos travar o fluxo caso vc queira pegar o código no console.
-      // return { success: false, message: "Erro ao enviar o e-mail de segurança." };
+    } catch (err: any) {
+      console.error("[sendClientOtp] Erro ao enviar email via SMTP:", err);
+      const isDev = process.env.NODE_ENV !== "production";
+      return {
+        success: false,
+        message: isDev
+          ? `Falha no envio de e-mail (SMTP): ${err?.message || "Verifique o serviço e as credenciais no .env"}`
+          : "Não foi possível enviar o código por e-mail no momento. Verifique se o endereço está correto ou tente novamente em instantes.",
+      };
     }
 
     return { success: true };
@@ -158,17 +165,20 @@ export async function loginWithCpfPhone(cpf: string, phone: string, orgSlug: str
     const org = await db.organization.findUnique({ where: { slug: orgSlug } });
     if (!org) return { success: false, message: "Organização não encontrada" };
 
-    // Limpar formatação
-    const rawCpf = cpf.replace(/\D/g, "");
-    const rawPhone = phone.replace(/\D/g, "");
+    // Limpar e normalizar dados seguindo estritamente as regras de telefonia e CPF do Brasil
+    const cleanCpf = normalizeCpf(cpf);
+    const cleanPhone = normalizeBrazilPhone(phone);
 
-    if (!rawCpf || !rawPhone) {
-      return { success: false, message: "Preencha o CPF e o WhatsApp corretamente." };
+    if (cleanCpf.length !== 11) {
+      return { success: false, message: "CPF inválido. Deve conter 11 dígitos." };
+    }
+    if (cleanPhone.length < 10) {
+      return { success: false, message: "WhatsApp/Telefone inválido. Informe o DDD e o número." };
     }
 
-    // Buscar clientes potenciais (para ser robusto contra variações de formatação)
-    const last4Phone = rawPhone.slice(-4);
-    const last2Cpf = rawCpf.slice(-2);
+    // Buscar clientes potenciais (para ser robusto contra variações históricas de formatação)
+    const last4Phone = cleanPhone.slice(-4);
+    const last2Cpf = cleanCpf.slice(-2);
 
     const potentialClients = await db.client.findMany({
       where: {
@@ -178,10 +188,12 @@ export async function loginWithCpfPhone(cpf: string, phone: string, orgSlug: str
       },
     });
 
-    const client = potentialClients.find(c =>
-      c.cpf?.replace(/\D/g, "") === rawCpf &&
-      c.phone_whatsapp?.replace(/\D/g, "") === rawPhone
-    );
+    // Comparação padronizada: normaliza o registro do banco para os mesmos dígitos do Brasil
+    const client = potentialClients.find((c) => {
+      const dbCpf = normalizeCpf(c.cpf);
+      const dbPhone = normalizeBrazilPhone(c.phone_whatsapp);
+      return dbCpf === cleanCpf && dbPhone === cleanPhone;
+    });
 
     if (!client) {
       return { success: false, message: "Nenhum cadastro encontrado com este CPF e WhatsApp." };

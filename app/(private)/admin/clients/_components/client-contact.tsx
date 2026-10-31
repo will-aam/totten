@@ -22,6 +22,7 @@ import { format } from "date-fns";
 import { formatName } from "@/lib/utils";
 //  IMPORTANTE: Importando a Action nativa de atualização de cliente
 import { updateClientAction } from "@/app/actions/clients";
+import { formatBrazilPhone, validateBrazilPhone, formatCpf as formatCpfUtils, validateCpf } from "@/lib/phone-utils";
 import { WhatsAppQuickDropdown } from "@/app/(private)/admin/_components/whatsapp/whatsapp-quick-dropdown";
 
 export type ClientContactType = {
@@ -43,18 +44,11 @@ interface ClientContactProps {
 
 //  Máscaras
 function formatCpf(value: string) {
-  const d = value.replace(/\D/g, "").slice(0, 11);
-  if (d.length <= 3) return d;
-  if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
-  if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`;
-  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+  return formatCpfUtils(value);
 }
 
 function formatPhoneInput(value: string) {
-  const d = value.replace(/\D/g, "").slice(0, 11);
-  if (d.length <= 2) return `(${d}`;
-  if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
-  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  return formatBrazilPhone(value);
 }
 
 function formatCepInput(value: string) {
@@ -145,13 +139,17 @@ export function ClientContact({ client }: ClientContactProps) {
     if (!editName.trim()) return toast.error("O nome é obrigatório.");
 
     // Valida o CPF apenas se o usuário tiver digitado algo
-    const cpfLimpo = editCpf.replace(/\D/g, "");
-    if (cpfLimpo.length > 0 && cpfLimpo.length !== 11) {
-      return toast.error("O CPF deve ter 11 dígitos.");
+    if (editCpf && editCpf.trim() !== "") {
+      const cpfVal = validateCpf(editCpf);
+      if (!cpfVal.isValid) {
+        return toast.error(cpfVal.error || "CPF inválido.");
+      }
     }
 
-    if (editPhone.replace(/\D/g, "").length < 10)
-      return toast.error("WhatsApp inválido.");
+    const phoneVal = validateBrazilPhone(editPhone);
+    if (!phoneVal.isValid) {
+      return toast.error(phoneVal.error || "WhatsApp inválido.");
+    }
     if (editEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editEmail))
       return toast.error("E-mail inválido.");
 

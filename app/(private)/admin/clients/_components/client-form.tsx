@@ -48,21 +48,15 @@ import { apiClient } from "@/lib/api-client";
 //  IMPORTANTE: Importando as Actions nativas
 import { createPackageAction } from "@/app/actions/packages";
 import { createClientAction } from "@/app/actions/clients";
+import { formatBrazilPhone, validateBrazilPhone, formatCpf, validateCpf } from "@/lib/phone-utils";
 
 // Máscaras
 function formatCpfInput(value: string) {
-  const d = value.replace(/\D/g, "").slice(0, 11);
-  if (d.length <= 3) return d;
-  if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
-  if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`;
-  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+  return formatCpf(value);
 }
 
 function formatPhoneInput(value: string) {
-  const d = value.replace(/\D/g, "").slice(0, 11);
-  if (d.length <= 2) return `(${d}`;
-  if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
-  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  return formatBrazilPhone(value);
 }
 
 function formatCepInput(value: string) {
@@ -199,13 +193,17 @@ export function ClientForm({ onSuccess, onCancel }: { onSuccess?: () => void, on
     const errs: Record<string, string> = {};
     if (!form.name.trim()) errs.name = "Nome é obrigatório";
 
-    const cpfLimpo = form.cpf.replace(/\D/g, "");
-    if (cpfLimpo.length > 0 && cpfLimpo.length !== 11) {
-      errs.cpf = "CPF incompleto";
+    if (form.cpf && form.cpf.trim() !== "") {
+      const cpfVal = validateCpf(form.cpf);
+      if (!cpfVal.isValid) {
+        errs.cpf = cpfVal.error || "CPF inválido";
+      }
     }
 
-    if (form.phone_whatsapp.replace(/\D/g, "").length < 10)
-      errs.phone_whatsapp = "WhatsApp inválido";
+    const phoneVal = validateBrazilPhone(form.phone_whatsapp);
+    if (!phoneVal.isValid) {
+      errs.phone_whatsapp = phoneVal.error || "WhatsApp inválido";
+    }
 
     // Validações extras se vender pacote
     if (form.package_template_id !== "none") {

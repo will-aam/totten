@@ -1,6 +1,7 @@
 import { getTenantPrisma } from "@/lib/prisma";
 import { Prisma, AppointmentStatus } from "@prisma/client";
 import { ClientHistoryService } from "./client-history.service";
+import { formatBrazilPhone, formatCpf, normalizeBrazilPhone, normalizeCpf } from "@/lib/phone-utils";
 
 function getSearchVariations(searchQuery: string) {
   const variations = [searchQuery];
@@ -10,35 +11,15 @@ function getSearchVariations(searchQuery: string) {
     variations.push(onlyNumbers);
 
     if (onlyNumbers.length >= 3 && onlyNumbers.length <= 11) {
-      let cpfFormatted = onlyNumbers.replace(/(\d{3})(\d)/, "$1.$2");
-      cpfFormatted = cpfFormatted.replace(/(\d{3})(\d)/, "$1.$2");
-      cpfFormatted = cpfFormatted.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-      variations.push(cpfFormatted);
+      variations.push(formatCpf(onlyNumbers));
     }
 
     if (onlyNumbers.length >= 2) {
-      let phoneFormatted = onlyNumbers.replace(/^(\d{2})(\d)/g, "($1) $2");
-      phoneFormatted = phoneFormatted.replace(/(\d)(\d{4})$/, "$1-$2");
-      variations.push(phoneFormatted);
+      variations.push(formatBrazilPhone(onlyNumbers));
     }
   }
 
   return variations;
-}
-
-function formatCpfInput(value: string) {
-  const d = value.replace(/\D/g, "").slice(0, 11);
-  if (d.length <= 3) return d;
-  if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
-  if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`;
-  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
-}
-
-function formatPhoneInput(value: string) {
-  const d = value.replace(/\D/g, "").slice(0, 11);
-  if (d.length <= 2) return `(${d}`;
-  if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
-  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
 }
 
 export class ClientService {
@@ -453,11 +434,14 @@ export class ClientService {
   ) {
     const prisma = getTenantPrisma(organizationId);
 
-    if (data.cpf && data.cpf.trim() !== "") {
+    const standardizedPhone = formatBrazilPhone(data.phone_whatsapp);
+    const standardizedCpf = data.cpf && data.cpf.trim() !== "" ? formatCpf(data.cpf) : null;
+
+    if (standardizedCpf) {
       const existingClient = await prisma.client.findUnique({
         where: {
           cpf_organization_id: {
-            cpf: data.cpf,
+            cpf: standardizedCpf,
             organization_id: organizationId,
           },
         },
@@ -475,8 +459,8 @@ export class ClientService {
     return await prisma.client.create({
       data: {
         name: data.name,
-        cpf: data.cpf && data.cpf.trim() !== "" ? data.cpf : null,
-        phone_whatsapp: data.phone_whatsapp,
+        cpf: standardizedCpf,
+        phone_whatsapp: standardizedPhone,
         email: data.email || null,
         birth_date: formattedBirthDate,
         zip_code: data.zip_code || null,
@@ -576,7 +560,7 @@ export class ClientService {
 
     if (data.name !== undefined) updateData.name = data.name;
     if (data.phone_whatsapp !== undefined)
-      updateData.phone_whatsapp = data.phone_whatsapp;
+      updateData.phone_whatsapp = formatBrazilPhone(data.phone_whatsapp);
     if (data.email !== undefined) updateData.email = data.email;
     if (data.zip_code !== undefined) updateData.zip_code = data.zip_code;
     if (data.city !== undefined) updateData.city = data.city;
@@ -585,7 +569,7 @@ export class ClientService {
     if (data.active !== undefined) updateData.active = data.active;
 
     if (data.cpf !== undefined) {
-      const cpfLimpo = data.cpf && data.cpf.trim() !== "" ? data.cpf : null;
+      const cpfLimpo = data.cpf && data.cpf.trim() !== "" ? formatCpf(data.cpf) : null;
 
       if (cpfLimpo) {
         const cpfEmUso = await prisma.client.findFirst({
@@ -677,8 +661,8 @@ export class ClientService {
         organization_id: organizationId,
         active: true,
         name: client.name || "Cliente Sem Nome",
-        cpf: formatCpfInput(client.cpf || ""),
-        phone_whatsapp: formatPhoneInput(client.phone_whatsapp || ""),
+        cpf: formatCpf(client.cpf || ""),
+        phone_whatsapp: formatBrazilPhone(client.phone_whatsapp || ""),
         email: client.email || null,
         zip_code: client.zip_code || null,
         city: client.city || null,

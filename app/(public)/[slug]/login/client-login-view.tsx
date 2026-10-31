@@ -6,9 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { Lock, Mail, ArrowLeft, ArrowRight, Phone, User } from "lucide-react";
+import { Lock, Mail, ArrowLeft, ArrowRight, Phone, User, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { sendClientOtp, verifyClientOtp, loginWithCpfPhone } from "@/app/actions/client-auth";
+import { 
+  formatBrazilPhone, 
+  validateBrazilPhone, 
+  formatCpf, 
+  validateCpf 
+} from "@/lib/phone-utils";
 
 export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
   const [loginMethod, setLoginMethod] = useState<"EMAIL" | "CPF_PHONE">("CPF_PHONE");
@@ -21,27 +27,46 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
   // States for CPF + Phone login
   const [cpf, setCpf] = useState("");
   const [phone, setPhone] = useState("");
+  const [cpfError, setCpfError] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [cpfTouched, setCpfTouched] = useState(false);
+  const [phoneTouched, setPhoneTouched] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  // MASK HELPERS
+  // MASK & VALIDATION HELPERS
   const handleCpfChange = (val: string) => {
-    let v = val.replace(/\D/g, "");
-    if (v.length <= 11) {
-      v = v.replace(/(\d{3})(\d)/, "$1.$2");
-      v = v.replace(/(\d{3})(\d)/, "$1.$2");
-      v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-      setCpf(v);
+    const formatted = formatCpf(val);
+    setCpf(formatted);
+    if (cpfTouched) {
+      const res = validateCpf(formatted);
+      setCpfError(res.isValid ? null : res.error || "CPF inválido.");
     }
   };
 
   const handlePhoneChange = (val: string) => {
-    let v = val.replace(/\D/g, "");
-    if (v.length <= 11) {
-      v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
-      v = v.replace(/(\d)(\d{4})$/, "$1-$2");
-      setPhone(v);
+    const formatted = formatBrazilPhone(val);
+    setPhone(formatted);
+    if (phoneTouched) {
+      const res = validateBrazilPhone(formatted);
+      setPhoneError(res.isValid ? null : res.error || "WhatsApp inválido.");
+    }
+  };
+
+  const handleCpfBlur = () => {
+    setCpfTouched(true);
+    if (cpf) {
+      const res = validateCpf(cpf);
+      setCpfError(res.isValid ? null : res.error || "CPF inválido.");
+    }
+  };
+
+  const handlePhoneBlur = () => {
+    setPhoneTouched(true);
+    if (phone) {
+      const res = validateBrazilPhone(phone);
+      setPhoneError(res.isValid ? null : res.error || "WhatsApp inválido.");
     }
   };
 
@@ -96,15 +121,20 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
 
   const handleCpfPhoneLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const rawCpf = cpf.replace(/\D/g, "");
-    const rawPhone = phone.replace(/\D/g, "");
+    setCpfTouched(true);
+    setPhoneTouched(true);
 
-    if (rawCpf.length !== 11) {
-      toast.error("CPF inválido.");
+    const cpfValidation = validateCpf(cpf);
+    if (!cpfValidation.isValid) {
+      setCpfError(cpfValidation.error || "CPF inválido.");
+      toast.error(cpfValidation.error || "CPF inválido.");
       return;
     }
-    if (rawPhone.length < 10) {
-      toast.error("Telefone inválido.");
+
+    const phoneValidation = validateBrazilPhone(phone);
+    if (!phoneValidation.isValid) {
+      setPhoneError(phoneValidation.error || "WhatsApp inválido.");
+      toast.error(phoneValidation.error || "WhatsApp inválido.");
       return;
     }
 
@@ -128,7 +158,7 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
     }
   };
 
-  const isCpfPhoneValid = cpf.replace(/\D/g, "").length === 11 && phone.replace(/\D/g, "").length >= 10;
+  const isCpfPhoneValid = validateCpf(cpf).isValid && validateBrazilPhone(phone).isValid;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative font-sans bg-slate-50 text-slate-900">
@@ -147,7 +177,7 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
 
       <div className="w-full max-w-md p-8 rounded-2xl shadow-xl flex flex-col items-center text-center bg-white border border-black/5">
 
-        <div className="h-16 w-16  flex items-center justify-center mb-6">
+        <div className="h-16 w-16 flex items-center justify-center mb-6">
           {loginMethod === "CPF_PHONE" ? (
             <img width="48" height="48" src="https://img.icons8.com/parakeet/48/user-male-circle.png" alt="user-male-circle" />
           ) : step === "INPUT_EMAIL" ? (
@@ -169,7 +199,7 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
         {/* METHOD 1: CPF + PHONE */}
         {loginMethod === "CPF_PHONE" && (
           <form onSubmit={handleCpfPhoneLogin} className="w-full space-y-5">
-            <div className="space-y-2 text-left">
+            <div className="space-y-1.5 text-left">
               <Label htmlFor="cpf" className="font-medium opacity-80">CPF</Label>
               <Input
                 id="cpf"
@@ -177,13 +207,23 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
                 placeholder="000.000.000-00"
                 value={cpf}
                 onChange={e => handleCpfChange(e.target.value)}
-                className="h-12 text-base rounded-2xl focus-visible:ring-1 bg-black/5 border-black/10"
+                onBlur={handleCpfBlur}
+                className={cn(
+                  "h-12 text-base rounded-2xl focus-visible:ring-1 bg-black/5 border-black/10",
+                  cpfError && cpfTouched && "border-red-500/80 bg-red-50/30"
+                )}
                 required
                 disabled={isLoading}
               />
+              {cpfError && cpfTouched && (
+                <p className="text-xs text-red-500 font-medium flex items-center gap-1 pl-1">
+                  <AlertCircle className="w-3.5 h-3.5 inline shrink-0" />
+                  {cpfError}
+                </p>
+              )}
             </div>
 
-            <div className="space-y-2 text-left">
+            <div className="space-y-1.5 text-left">
               <Label htmlFor="phone" className="font-medium opacity-80">WhatsApp</Label>
               <Input
                 id="phone"
@@ -191,10 +231,20 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
                 placeholder="(00) 00000-0000"
                 value={phone}
                 onChange={e => handlePhoneChange(e.target.value)}
-                className="h-12 text-base rounded-2xl focus-visible:ring-1 bg-black/5 border-black/10"
+                onBlur={handlePhoneBlur}
+                className={cn(
+                  "h-12 text-base rounded-2xl focus-visible:ring-1 bg-black/5 border-black/10",
+                  phoneError && phoneTouched && "border-red-500/80 bg-red-50/30"
+                )}
                 required
                 disabled={isLoading}
               />
+              {phoneError && phoneTouched && (
+                <p className="text-xs text-red-500 font-medium flex items-center gap-1 pl-1">
+                  <AlertCircle className="w-3.5 h-3.5 inline shrink-0" />
+                  {phoneError}
+                </p>
+              )}
             </div>
 
             <button
@@ -261,22 +311,20 @@ export function ClientLoginView({ org, theme }: { org: any, theme: any }) {
           </>
         )}
 
-        {/* TOGGLE LOGIN METHOD */}
-        {!isLoading && step !== "CODE" && (
-          <div className="mt-8 pt-6 border-t border-black/5 w-full flex flex-col gap-2">
-            <p className="text-xs text-muted-foreground font-medium">Ou tente outra forma de acesso:</p>
-            <Button
-              variant="outline"
-              className="w-full h-10 rounded-full font-bold"
-              onClick={() => {
-                setLoginMethod(prev => prev === "CPF_PHONE" ? "EMAIL" : "CPF_PHONE");
-                setStep("INPUT_EMAIL");
-              }}
-            >
-              {loginMethod === "CPF_PHONE" ? "Acessar usando E-mail" : "Acessar usando CPF e WhatsApp"}
-            </Button>
-          </div>
-        )}
+        <div className="mt-8 pt-6 border-t border-black/5 w-full flex flex-col items-center gap-3">
+          <button
+            onClick={() => {
+              setLoginMethod(prev => prev === "CPF_PHONE" ? "EMAIL" : "CPF_PHONE");
+              setStep("INPUT_EMAIL");
+            }}
+            className="text-xs opacity-60 hover:opacity-100 transition-opacity font-medium"
+          >
+            {loginMethod === "CPF_PHONE"
+              ? "Prefere entrar usando seu e-mail?"
+              : "Prefere entrar com seu CPF e WhatsApp?"}
+          </button>
+        </div>
+
       </div>
     </div>
   );

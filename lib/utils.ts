@@ -52,3 +52,5 @@ export function formatName(name: string | null | undefined): string {
     .join(" ")
     .trim();
 }
+
+export * from "./phone-utils";
