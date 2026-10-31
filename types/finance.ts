@@ -5,7 +5,7 @@ import { PaymentMethod } from "@prisma/client";
 export { PaymentMethod };
 
 export type TransactionType = "RECEITA" | "DESPESA";
-export type TransactionStatus = "PAGO" | "PENDENTE" | "ATRASADO";
+export type TransactionStatus = "PAGO" | "PENDENTE" | "ATRASADO" | "CANCELADO";
 export type FinanceViewMode = "COMPETENCIA" | "CAIXA";
 
 export interface Transaction {

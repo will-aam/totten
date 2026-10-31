@@ -60,12 +60,14 @@ function getPaymentMethodLabel(method: string | null | undefined): string {
 }
 
 const StatusBadge = ({ status }: { status: TransactionStatus }) => {
-  const styles = {
+  const styles: Record<TransactionStatus, string> = {
     PAGO: "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400 ring-1 ring-emerald-500/20",
     PENDENTE:
       "bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400 ring-1 ring-amber-500/20",
     ATRASADO:
       "bg-rose-500/10 text-rose-600 dark:bg-rose-500/15 dark:text-rose-400 ring-1 ring-rose-500/20",
+    CANCELADO:
+      "bg-muted/40 text-muted-foreground ring-1 ring-border/40",
   };
   return (
     <Badge
@@ -79,7 +81,9 @@ const StatusBadge = ({ status }: { status: TransactionStatus }) => {
         ? "Pago"
         : status === "PENDENTE"
           ? "Pendente"
-          : "Atrasado"}
+          : status === "ATRASADO"
+            ? "Atrasado"
+            : "Inativo"}
     </Badge>
   );
 };

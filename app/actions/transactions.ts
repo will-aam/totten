@@ -378,11 +378,19 @@ export async function deleteTransaction(id: string, deleteFuture?: boolean) {
 
     if (!currentTx) throw new Error("Transação não encontrada.");
 
-    if (currentTx.package_id || currentTx.stock_item_id) {
+    if (currentTx.stock_item_id) {
       return {
         success: false,
         error:
-          "Esta movimentação está vinculada a pacotes ou estoque e deve ser gerenciada pelo respectivo módulo.",
+          "Esta movimentação está vinculada ao controle de estoque e deve ser gerenciada pelo respectivo módulo.",
+      };
+    }
+
+    if (currentTx.package_id && currentTx.status === "PAGO") {
+      return {
+        success: false,
+        error:
+          "Não é possível excluir uma parcela de pacote que já foi paga. Para cancelar o pacote completo, utilize a gestão de pacotes.",
       };
     }
 
@@ -428,7 +436,7 @@ export async function deleteTransaction(id: string, deleteFuture?: boolean) {
               data: {
                 client_id: appt.client_id,
                 organization_id: admin.organizationId,
-                text: `Estorno Financeiro: O pagamento de R$ ${Number(currentTx.amount).toFixed(2)} referente ao agendamento de ${appt.snapshot_service_name || appt.service?.name || "serviço"} foi excluído/estornado por ${admin.name || admin.email}. Status financeiro do agendamento revertido.`,
+                text: `Estorno Financeiro: O pagamento de R$ ${Number(currentTx.amount).toFixed(2)} referente ao agendamento de ${appt.snapshot_service_name || appt.service?.name || "serviço"} foi estornado por ${admin.name || admin.email}. Status financeiro do agendamento revertido.`,
                 date: new Date(),
               },
             });
@@ -478,6 +486,18 @@ export async function deleteTransaction(id: string, deleteFuture?: boolean) {
         where: { id },
       });
 
+      // Se for parcela de pacote, registra nota de auditoria no prontuário do cliente
+      if (currentTx.package_id && currentTx.client_id) {
+        await prisma.clientNote.create({
+          data: {
+            client_id: currentTx.client_id,
+            organization_id: admin.organizationId,
+            text: `Exclusão de Parcela: A movimentação "${currentTx.description}" no valor de R$ ${Number(currentTx.amount).toFixed(2)} vinculada a pacote foi excluída definitivamente por ${admin.name || admin.email}.`,
+            date: new Date(),
+          },
+        });
+      }
+
       // Remove do Zibee
       deleteTransactionFromZibee(id, admin.organizationId).catch(console.error);
     }
@@ -491,6 +511,163 @@ export async function deleteTransaction(id: string, deleteFuture?: boolean) {
     return {
       success: false,
       error: error?.message || "Falha ao excluir movimentação.",
+    };
+  }
+}
+
+// --- 3.1. INATIVAR TRANSAÇÃO (SOFT DELETE / PERDOAR PARCELA) ---
+export async function inactivateTransaction(id: string) {
+  try {
+    const admin = await requireFinancePermission();
+
+    const currentTx = await prisma.transaction.findUnique({
+      where: { id, organization_id: admin.organizationId },
+      include: {
+        child_transactions: true,
+      },
+    });
+
+    if (!currentTx) throw new Error("Transação não encontrada.");
+
+    if (currentTx.status === "CANCELADO") {
+      return { success: true };
+    }
+
+    if (currentTx.stock_item_id) {
+      return {
+        success: false,
+        error:
+          "Esta movimentação está vinculada ao controle de estoque e deve ser gerenciada pelo respectivo módulo.",
+      };
+    }
+
+    const deletedFeeTxIds: string[] = [];
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Remove taxas filhas vinculadas a esta transação
+      const childFeeIds = currentTx.child_transactions.map((c) => c.id);
+      if (childFeeIds.length > 0) {
+        await tx.transaction.deleteMany({
+          where: { id: { in: childFeeIds } },
+        });
+        deletedFeeTxIds.push(...childFeeIds);
+      }
+
+      // 2. Atualiza o status para CANCELADO (não entra em receitas, despesas nem recebíveis)
+      await tx.transaction.update({
+        where: { id },
+        data: {
+          status: "CANCELADO",
+          settlement_date: null,
+        },
+      });
+
+      // 3. Se estiver vinculada a um agendamento, desmarca cobrança pendente
+      if (currentTx.appointment_id) {
+        await tx.appointment.update({
+          where: { id: currentTx.appointment_id },
+          data: { has_charge: false },
+        });
+      }
+
+      // 4. Se houver cliente vinculado, registra nota no prontuário
+      if (currentTx.client_id) {
+        const itemType = currentTx.package_id
+          ? "Parcela de Pacote"
+          : currentTx.appointment_id
+            ? "Cobrança de Atendimento"
+            : "Movimentação";
+        await tx.clientNote.create({
+          data: {
+            client_id: currentTx.client_id,
+            organization_id: admin.organizationId,
+            text: `Inativação Financeira: O registro "${currentTx.description}" (${itemType}) no valor de R$ ${Number(currentTx.amount).toFixed(2)} foi inativado por ${admin.name || admin.email}. O valor não será contabilizado no caixa nem cobrado no Contas a Receber.`,
+            date: new Date(),
+          },
+        });
+      }
+    });
+
+    // Sincroniza remoção no Zibee para taxas e para a transação inativada
+    for (const delId of deletedFeeTxIds) {
+      deleteTransactionFromZibee(delId, admin.organizationId).catch(console.error);
+    }
+    deleteTransactionFromZibee(id, admin.organizationId).catch(console.error);
+
+    revalidatePath("/admin/finance/dashboard");
+    revalidatePath("/admin/finance/transactions");
+    revalidatePath("/admin/finance/receivables");
+    revalidatePath("/admin/packages");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Erro ao inativar transação:", error);
+    return {
+      success: false,
+      error: error?.message || "Falha ao inativar a movimentação.",
+    };
+  }
+}
+
+// --- 3.2. REATIVAR TRANSAÇÃO INATIVADA ---
+export async function reactivateTransaction(id: string) {
+  try {
+    const admin = await requireFinancePermission();
+
+    const currentTx = await prisma.transaction.findUnique({
+      where: { id, organization_id: admin.organizationId },
+    });
+
+    if (!currentTx) throw new Error("Transação não encontrada.");
+
+    if (currentTx.status !== "CANCELADO") {
+      return { success: true };
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Retorna o status para PENDENTE
+      await tx.transaction.update({
+        where: { id },
+        data: {
+          status: "PENDENTE",
+          settlement_date: null,
+          due_date: currentTx.due_date || currentTx.date,
+        },
+      });
+
+      // 2. Se estiver vinculada a um agendamento, restabelece a cobrança pendente
+      if (currentTx.appointment_id) {
+        await tx.appointment.update({
+          where: { id: currentTx.appointment_id },
+          data: { has_charge: true },
+        });
+      }
+
+      // 3. Auditoria no prontuário do cliente
+      if (currentTx.client_id) {
+        await tx.clientNote.create({
+          data: {
+            client_id: currentTx.client_id,
+            organization_id: admin.organizationId,
+            text: `Reativação Financeira: O registro "${currentTx.description}" no valor de R$ ${Number(currentTx.amount).toFixed(2)} foi reativado por ${admin.name || admin.email} e voltou a ser cobrado no Contas a Receber.`,
+            date: new Date(),
+          },
+        });
+      }
+    });
+
+    // Dispara sincronização com o Zibee
+    triggerZibeeSyncById(id, admin.organizationId).catch(console.error);
+
+    revalidatePath("/admin/finance/dashboard");
+    revalidatePath("/admin/finance/transactions");
+    revalidatePath("/admin/finance/receivables");
+    revalidatePath("/admin/packages");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Erro ao reativar transação:", error);
+    return {
+      success: false,
+      error: error?.message || "Falha ao reativar a movimentação.",
     };
   }
 }
@@ -545,10 +722,14 @@ export async function getFullTransactions(month: number, year: number) {
 
     return transactions.map((t) => {
       const isManual = !t.package_id && !t.appointment_id && !t.stock_item_id;
+      const isAppointmentLinked = !!t.appointment_id;
+      const isPackageLinked = !!t.package_id;
       return {
         id: t.id,
         originalId: t.id,
         isManual,
+        isAppointmentLinked,
+        isPackageLinked,
         type: t.type,
         description: t.description,
         amount: Number(t.amount),
@@ -1938,6 +2119,7 @@ export async function getPaginatedTransactions(params: {
     const data = rawTxs.map((t) => {
       const isManual = !t.package_id && !t.appointment_id && !t.stock_item_id;
       const isAppointmentLinked = !!t.appointment_id;
+      const isPackageLinked = !!t.package_id;
       const grossAmount = Number(t.amount);
       const feeChilds = (t.child_transactions || []).filter(
         (c) => c.type === "DESPESA",
@@ -1951,6 +2133,7 @@ export async function getPaginatedTransactions(params: {
         originalId: t.id,
         isManual,
         isAppointmentLinked,
+        isPackageLinked,
         parent_transaction_id: t.parent_transaction_id,
         type: t.type,
         description: t.description,

@@ -79,6 +79,8 @@ import {
   getPaginatedTransactions,
   deleteTransaction,
   updateTransactionStatus,
+  inactivateTransaction,
+  reactivateTransaction,
 } from "@/app/actions/transactions";
 import { getPaymentMethods } from "@/app/actions/payment-methods";
 import { toast } from "sonner";
@@ -144,6 +146,10 @@ export default function TransactionsPage() {
   // Modais e Ações
   const [deletingTx, setDeletingTx] = useState<any | null>(null);
   const [deleteFuture, setDeleteFuture] = useState(false);
+  const [inactivatingTx, setInactivatingTx] = useState<any | null>(null);
+  const [isInactivatingLoading, setIsInactivatingLoading] = useState(false);
+  const [reactivatingTx, setReactivatingTx] = useState<any | null>(null);
+  const [isReactivatingLoading, setIsReactivatingLoading] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<any | null>(null);
   const [isDeletingLoading, setIsDeletingLoading] = useState(false);
   const [viewingTx, setViewingTx] = useState<any | null>(null);
@@ -339,8 +345,8 @@ export default function TransactionsPage() {
       if (res.success) {
         toast.success(
           deleteFuture
-            ? "Parcelas excluídas com sucesso!"
-            : "Movimentação excluída com sucesso!",
+            ? "Parcelas excluídas com sucesso."
+            : "Movimentação excluída com sucesso.",
         );
         refreshData();
       } else {
@@ -352,6 +358,44 @@ export default function TransactionsPage() {
       setIsDeletingLoading(false);
       setDeletingTx(null);
       setDeleteFuture(false);
+    }
+  };
+
+  const confirmInactivate = async () => {
+    if (!inactivatingTx) return;
+    setIsInactivatingLoading(true);
+    try {
+      const res = await inactivateTransaction(inactivatingTx.originalId);
+      if (res.success) {
+        toast.success("Parcela inativada com sucesso. Ela não será contabilizada no caixa.");
+        refreshData();
+      } else {
+        toast.error(res.error || "Erro ao inativar a parcela.");
+      }
+    } catch (error) {
+      toast.error("Erro de conexão ao inativar a parcela.");
+    } finally {
+      setIsInactivatingLoading(false);
+      setInactivatingTx(null);
+    }
+  };
+
+  const confirmReactivate = async () => {
+    if (!reactivatingTx) return;
+    setIsReactivatingLoading(true);
+    try {
+      const res = await reactivateTransaction(reactivatingTx.originalId);
+      if (res.success) {
+        toast.success("Parcela reativada com sucesso. Ela voltou a constar nas cobranças pendentes.");
+        refreshData();
+      } else {
+        toast.error(res.error || "Erro ao reativar a parcela.");
+      }
+    } catch (error) {
+      toast.error("Erro de conexão ao reativar a parcela.");
+    } finally {
+      setIsReactivatingLoading(false);
+      setReactivatingTx(null);
     }
   };
 
@@ -520,12 +564,18 @@ export default function TransactionsPage() {
       badgeClasses =
         "bg-rose-500/10 text-rose-600 dark:bg-rose-500/15 dark:text-rose-400 ring-1 ring-rose-500/20";
       label = "Atrasado";
+    } else if (status === "CANCELADO") {
+      badgeClasses =
+        "bg-muted/40 text-muted-foreground ring-1 ring-border/40";
+      label = "Inativo";
     } else return null;
 
     const baseClasses =
       "text-[9px] sm:text-[10px] px-1.5 py-0 h-4.5 uppercase font-bold tracking-wider transition-all select-none border-none shrink-0";
 
-    if (!isManual) {
+    const canChangeStatus = isManual || transaction.isPackageLinked;
+
+    if (!canChangeStatus) {
       return (
         <Badge variant="secondary" className={cn(baseClasses, badgeClasses)}>
           {label}
@@ -550,22 +600,41 @@ export default function TransactionsPage() {
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            className="min-w-32 rounded-2xl border border-border/40 shadow-xl p-1.5 bg-background/95 backdrop-blur-md"
+            className="min-w-36 rounded-2xl border border-border/40 shadow-xl p-1.5 bg-background/95 backdrop-blur-md"
           >
-            <DropdownMenuItem
-              className="text-xs font-bold justify-center cursor-pointer rounded-full text-emerald-600 focus:bg-emerald-500/10 focus:text-emerald-700 dark:focus:bg-emerald-900/20 dark:text-emerald-400 py-2"
-              onClick={() => handleStatusChange(transaction.originalId, "PAGO")}
-            >
-              Marcar como Pago
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-xs font-bold justify-center cursor-pointer rounded-full text-amber-600 focus:bg-amber-500/10 focus:text-amber-700 dark:focus:bg-amber-900/20 dark:text-amber-400 mt-1 py-2"
-              onClick={() =>
-                handleStatusChange(transaction.originalId, "PENDENTE")
-              }
-            >
-              Marcar Pendente
-            </DropdownMenuItem>
+            {status === "CANCELADO" ? (
+              <DropdownMenuItem
+                className="text-xs font-bold justify-center cursor-pointer rounded-full text-emerald-600 focus:bg-emerald-500/10 focus:text-emerald-700 dark:focus:bg-emerald-900/20 dark:text-emerald-400 py-2"
+                onClick={() => setReactivatingTx(transaction)}
+              >
+                Reativar Parcela
+              </DropdownMenuItem>
+            ) : (
+              <>
+                <DropdownMenuItem
+                  className="text-xs font-bold justify-center cursor-pointer rounded-full text-emerald-600 focus:bg-emerald-500/10 focus:text-emerald-700 dark:focus:bg-emerald-900/20 dark:text-emerald-400 py-2"
+                  onClick={() => handleStatusChange(transaction.originalId, "PAGO")}
+                >
+                  Marcar como Pago
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-xs font-bold justify-center cursor-pointer rounded-full text-amber-600 focus:bg-amber-500/10 focus:text-amber-700 dark:focus:bg-amber-900/20 dark:text-amber-400 mt-1 py-2"
+                  onClick={() =>
+                    handleStatusChange(transaction.originalId, "PENDENTE")
+                  }
+                >
+                  Marcar Pendente
+                </DropdownMenuItem>
+                {transaction.status !== "PAGO" && (
+                  <DropdownMenuItem
+                    className="text-xs font-bold justify-center cursor-pointer rounded-full text-muted-foreground focus:bg-muted focus:text-foreground mt-1 py-2"
+                    onClick={() => setInactivatingTx(transaction)}
+                  >
+                    Inativar Parcela
+                  </DropdownMenuItem>
+                )}
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -1059,6 +1128,12 @@ export default function TransactionsPage() {
                 >
                   Atrasado
                 </SelectItem>
+                <SelectItem
+                  value="CANCELADO"
+                  className="rounded-xl font-bold text-muted-foreground text-xs sm:text-sm"
+                >
+                  Inativo
+                </SelectItem>
               </SelectContent>
             </Select>
 
@@ -1253,6 +1328,7 @@ export default function TransactionsPage() {
                     <div className="flex flex-col divide-y divide-border/20 px-1 sm:px-2 animate-in fade-in duration-200">
                       {group.items.map((transaction) => {
                       const isIncome = transaction.type === "RECEITA";
+                      const isCanceled = transaction.status === "CANCELADO";
                       const displayTitle = getCleanDescription(
                         transaction.description,
                         transaction.type,
@@ -1262,7 +1338,12 @@ export default function TransactionsPage() {
                       return (
                         <div
                           key={transaction.id}
-                          className="flex items-center justify-between py-2.5 sm:py-3.5 px-2 sm:px-3 transition-all duration-200 rounded-xl sm:rounded-2xl group cursor-pointer"
+                          className={cn(
+                            "flex items-center justify-between py-2.5 sm:py-3.5 px-2 sm:px-3 transition-all duration-200 rounded-xl sm:rounded-2xl group cursor-pointer",
+                            isCanceled
+                              ? "opacity-50 bg-muted/20 hover:opacity-75 border border-dashed border-border/40"
+                              : "hover:bg-muted/40",
+                          )}
                           onClick={() => setViewingTx(transaction)}
                         >
                           {/* LADO ESQUERDO: Ícone + Título + Subtítulo */}
@@ -1270,9 +1351,11 @@ export default function TransactionsPage() {
                             <div
                               className={cn(
                                 "flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full font-bold shadow-sm transition-all duration-200 group-hover:scale-105",
-                                isIncome
-                                  ? "bg-emerald-500/10 text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white"
-                                  : "bg-rose-500/10 text-rose-600 group-hover:bg-rose-500 group-hover:text-white",
+                                isCanceled
+                                  ? "bg-muted/40 text-muted-foreground"
+                                  : isIncome
+                                    ? "bg-emerald-500/10 text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white"
+                                    : "bg-rose-500/10 text-rose-600 group-hover:bg-rose-500 group-hover:text-white",
                               )}
                             >
                               {isIncome ? (
@@ -1284,7 +1367,10 @@ export default function TransactionsPage() {
 
                             <div className="flex flex-col min-w-0 flex-1">
                               <span
-                                className="text-xs sm:text-sm font-bold text-foreground leading-tight truncate flex items-center gap-1.5 group-hover:text-primary transition-colors"
+                                className={cn(
+                                  "text-xs sm:text-sm font-bold text-foreground leading-tight truncate flex items-center gap-1.5 group-hover:text-primary transition-colors",
+                                  isCanceled && "line-through text-muted-foreground",
+                                )}
                                 title={transaction.description}
                               >
                                 {displayTitle}
@@ -1370,15 +1456,17 @@ export default function TransactionsPage() {
                               <span
                                 className={cn(
                                   "text-xs sm:text-sm font-black tracking-tight",
-                                  isIncome
-                                    ? "text-emerald-600 dark:text-emerald-400"
-                                    : "text-foreground",
+                                  isCanceled
+                                    ? "line-through text-muted-foreground"
+                                    : isIncome
+                                      ? "text-emerald-600 dark:text-emerald-400"
+                                      : "text-foreground",
                                 )}
                               >
                                 {isIncome ? "+" : "-"}{" "}
                                 {formatCurrency(transaction.amount)}
                               </span>
-                              {transaction.feeAmount && transaction.feeAmount > 0 ? (
+                              {transaction.feeAmount && transaction.feeAmount > 0 && !isCanceled ? (
                                 <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-semibold">
                                   <span className="text-rose-500/90 font-bold">
                                     -{formatCurrency(transaction.feeAmount)} taxa
@@ -1392,8 +1480,10 @@ export default function TransactionsPage() {
                               <StatusBadge transaction={transaction} />
                             </div>
 
-                            {/* Dropdown de Ações para lançamentos manuais ou estorno de agendamentos vinculados */}
-                            {(transaction.isManual || transaction.isAppointmentLinked) && (
+                            {/* Dropdown de Ações */}
+                            {(transaction.isManual ||
+                              transaction.isAppointmentLinked ||
+                              transaction.isPackageLinked) && (
                               <div
                                 className="flex items-center justify-end"
                                 onClick={(e) => e.stopPropagation()}
@@ -1410,9 +1500,9 @@ export default function TransactionsPage() {
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent
                                     align="end"
-                                    className="w-40 rounded-2xl border border-border/40 shadow-xl p-1.5 bg-background/95 backdrop-blur-md"
+                                    className="w-48 rounded-2xl border border-border/40 shadow-xl p-1.5 bg-background/95 backdrop-blur-md"
                                   >
-                                    {transaction.isManual && (
+                                    {transaction.isManual && !isCanceled && (
                                       <DropdownMenuItem
                                         className="gap-2 cursor-pointer rounded-full text-foreground focus:bg-primary/10 focus:text-primary font-bold transition-colors py-2 text-xs"
                                         onClick={() =>
@@ -1422,6 +1512,32 @@ export default function TransactionsPage() {
                                         <Pencil className="h-3.5 w-3.5" /> Editar
                                       </DropdownMenuItem>
                                     )}
+
+                                    {/* Opção para Inativar Parcela */}
+                                    {!isCanceled && transaction.status !== "PAGO" && (
+                                      <DropdownMenuItem
+                                        className="gap-2 cursor-pointer rounded-full text-amber-600 focus:bg-amber-500/10 focus:text-amber-700 font-bold transition-colors py-2 text-xs"
+                                        onClick={() =>
+                                          setInactivatingTx(transaction)
+                                        }
+                                      >
+                                        <X className="h-3.5 w-3.5" /> Inativar Parcela
+                                      </DropdownMenuItem>
+                                    )}
+
+                                    {/* Opção para Reativar Parcela */}
+                                    {isCanceled && (
+                                      <DropdownMenuItem
+                                        className="gap-2 cursor-pointer rounded-full text-emerald-600 focus:bg-emerald-500/10 focus:text-emerald-700 font-bold transition-colors py-2 text-xs"
+                                        onClick={() =>
+                                          setReactivatingTx(transaction)
+                                        }
+                                      >
+                                        <Repeat className="h-3.5 w-3.5" /> Reativar Parcela
+                                      </DropdownMenuItem>
+                                    )}
+
+                                    {/* Excluir Definitivamente ou Estornar */}
                                     <DropdownMenuItem
                                       className="gap-2 cursor-pointer rounded-full text-rose-500 focus:bg-rose-500/10 focus:text-rose-600 font-bold transition-colors mt-1 py-2 text-xs"
                                       onClick={() =>
@@ -1431,7 +1547,7 @@ export default function TransactionsPage() {
                                       <Trash className="h-3.5 w-3.5" />{" "}
                                       {transaction.isAppointmentLinked
                                         ? "Estornar Pagamento"
-                                        : "Excluir"}
+                                        : "Excluir Definitivamente"}
                                     </DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
@@ -1577,35 +1693,35 @@ export default function TransactionsPage() {
         <AlertDialogContent className="rounded-4xl sm:max-w-md border-border/40 shadow-2xl bg-background/95 backdrop-blur-xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-2xl font-black text-foreground">
-              Excluir Movimentação?
+              {deletingTx?.isAppointmentLinked
+                ? "Estornar Pagamento do Atendimento?"
+                : "Excluir Registro Permanentemente?"}
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-4 text-muted-foreground font-medium text-sm leading-relaxed">
               <p>
-                Você está prestes a excluir esta transação. Essa ação atualizará
-                o seu caixa e não pode ser desfeita.
+                Você está prestes a excluir esta movimentação de forma definitiva. Essa ação atualizará o caixa e não poderá ser desfeita.
               </p>
               {deletingTx?.appointment_id && (
                 <div className="flex flex-col gap-1.5 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs">
                   <span className="font-black flex items-center gap-1.5 uppercase tracking-wide">
-                    ⚠️ Atenção: Estorno de Agendamento
+                    Atenção: Estorno de Atendimento
                   </span>
                   <span>
                     Esta movimentação está vinculada ao atendimento de{" "}
                     <strong>{deletingTx.clientName || "cliente"}</strong>.
-                    Ao estornar/excluir, o valor será debitado do caixa, eventuais taxas associadas de cartão serão canceladas e o agendamento retornará para o status de pagamento pendente (Contas a Receber).
+                    Ao estornar o atendimento, o valor será debitado do caixa, eventuais taxas associadas de cartão serão canceladas e o agendamento retornará para o status de pagamento pendente no Contas a Receber.
                   </span>
                 </div>
               )}
               {deletingTx?.package_id && (
                 <div className="flex flex-col gap-1 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs">
                   <span className="font-black flex items-center gap-1.5 uppercase tracking-wide">
-                    ⚠️ Atenção: Parcela de Pacote
+                    Atenção: Parcela de Pacote
                   </span>
                   <span>
                     Esta movimentação está vinculada ao pacote{" "}
                     <strong>{deletingTx.packageName || "do cliente"}</strong>.
-                    Excluir esta parcela apenas removerá o lançamento
-                    financeiro, mantendo o pacote ativo para o cliente.
+                    Excluir esta parcela apagará o lançamento financeiro permanentemente, mantendo o pacote ativo para o cliente.
                   </span>
                 </div>
               )}
@@ -1640,8 +1756,92 @@ export default function TransactionsPage() {
             >
               {isDeletingLoading ? (
                 <LoaderDots className="h-5 w-5 animate-spin" />
+              ) : deletingTx?.isAppointmentLinked ? (
+                "Estornar Pagamento"
               ) : (
-                "Sim, excluir"
+                "Excluir Definitivamente"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ALERT DIALOG DE INATIVAÇÃO DA PARCELA */}
+      <AlertDialog
+        open={!!inactivatingTx}
+        onOpenChange={(open) => {
+          if (!open) setInactivatingTx(null);
+        }}
+      >
+        <AlertDialogContent className="rounded-4xl sm:max-w-md border-border/40 shadow-2xl bg-background/95 backdrop-blur-xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-2xl font-black text-foreground">
+              Inativar Parcela?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4 text-muted-foreground font-medium text-sm leading-relaxed">
+              <p>
+                Esta parcela será inativada e deixará de constar no faturamento e nas cobranças do Contas a Receber.
+              </p>
+              <div className="flex flex-col gap-1.5 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs">
+                <span className="font-black flex items-center gap-1.5 uppercase tracking-wide">
+                  Aviso Importante
+                </span>
+                <span>
+                  O registro continuará visível no extrato com status inativo para preservar o histórico contábil. Você poderá reativá-la a qualquer momento.
+                </span>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-2">
+            <AlertDialogCancel className="rounded-2xl h-12 font-bold border-border/40 bg-muted/30 hover:bg-muted/50 px-6">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmInactivate}
+              disabled={isInactivatingLoading}
+              className="rounded-2xl h-12 font-bold bg-amber-600 text-white hover:bg-amber-700 shadow-md transition-all px-6"
+            >
+              {isInactivatingLoading ? (
+                <LoaderDots className="h-5 w-5 animate-spin" />
+              ) : (
+                "Confirmar Inativação"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ALERT DIALOG DE REATIVAÇÃO DA PARCELA */}
+      <AlertDialog
+        open={!!reactivatingTx}
+        onOpenChange={(open) => {
+          if (!open) setReactivatingTx(null);
+        }}
+      >
+        <AlertDialogContent className="rounded-4xl sm:max-w-md border-border/40 shadow-2xl bg-background/95 backdrop-blur-xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-2xl font-black text-foreground">
+              Reativar Parcela?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4 text-muted-foreground font-medium text-sm leading-relaxed">
+              <p>
+                Esta parcela voltará ao status pendente e será incluída novamente no Contas a Receber para cobrança.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-2">
+            <AlertDialogCancel className="rounded-2xl h-12 font-bold border-border/40 bg-muted/30 hover:bg-muted/50 px-6">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmReactivate}
+              disabled={isReactivatingLoading}
+              className="rounded-2xl h-12 font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-md transition-all px-6"
+            >
+              {isReactivatingLoading ? (
+                <LoaderDots className="h-5 w-5 animate-spin" />
+              ) : (
+                "Reativar Parcela"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

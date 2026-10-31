@@ -635,6 +635,7 @@ enum TransactionStatus {
   PAGO
   PENDENTE
   ATRASADO
+  CANCELADO
 }
 
 model ProfessionalLike {

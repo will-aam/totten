@@ -34,7 +34,7 @@ export interface ZibeeTransactionInput {
   amount: number | string;
   type: "RECEITA" | "DESPESA";
   date: string | Date;
-  status: "PAGO" | "PENDENTE" | "ATRASADO";
+  status: "PAGO" | "PENDENTE" | "ATRASADO" | "CANCELADO" | string;
   paymentMethod?: string | null;
   clientName?: string | null;
   category?: string | null;
@@ -227,9 +227,12 @@ export async function syncAllHistoricTransactionsToZibee(organizationId: string)
     throw new Error("Integração com Zibee não disponível para esta organização.");
   }
 
-  // 1. Buscar todas as transações gravadas no banco do Totten
+  // 1. Buscar todas as transações ativas gravadas no banco do Totten
   const txs = await prisma.transaction.findMany({
-    where: { organization_id: organizationId },
+    where: {
+      organization_id: organizationId,
+      status: { not: "CANCELADO" },
+    },
     include: {
       client: { select: { name: true } },
       payment_method: { select: { type: true, name: true } },
@@ -282,6 +285,11 @@ export async function triggerZibeeSyncById(
     });
 
     if (!tx || tx.organization_id !== ZIBEE_ENABLED_ORG_ID) return;
+
+    if (tx.status === "CANCELADO") {
+      await deleteTransactionFromZibee(tx.id, tx.organization_id);
+      return;
+    }
 
     await syncTransactionToZibee({
       id: tx.id,
