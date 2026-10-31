@@ -153,10 +153,16 @@ export class TotemCheckInService {
             },
           });
 
-          const totalPaid = paidRevenues.reduce(
-            (acc: number, t: any) => acc + Number(t.amount),
-            0
-          );
+          const isSignalRefunded =
+            appt.mp_payment_status === "refunded" ||
+            appt.mp_payment_status === "charged_back";
+
+          const totalPaid = isSignalRefunded
+            ? 0
+            : paidRevenues.reduce(
+                (acc: number, t: any) => acc + Number(t.amount),
+                0
+              );
           const apptPrice = Number(appt.snapshot_service_price ?? appt.service.price);
           const remainingAmount = Math.max(0, Number((apptPrice - totalPaid).toFixed(2)));
 

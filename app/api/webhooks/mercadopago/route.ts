@@ -161,16 +161,66 @@ export async function POST(request: NextRequest) {
       status === "refunded" ||
       status === "charged_back"
     ) {
-      // Diretriz Totten: O sistema NÃO realiza estornos financeiros automáticos nem remove
-      // transações do caixa. Apenas atualiza o status de pagamento para visibilidade da clínica.
+      const isReversal = status === "refunded" || status === "charged_back";
+
+      // 1. Atualiza status do agendamento (has_charge = true para exigir cobrança do valor integral)
       await prisma.appointment.update({
         where: { id: appointment.id },
         data: {
           mp_payment_status: status,
+          has_charge: true,
         },
       });
+
+      // 2. Se foi estorno ou chargeback externo, cancela contabilmente as transações do sinal online no caixa
+      if (isReversal && appointment.transactions.length > 0) {
+        const mpTransactions = appointment.transactions.filter(
+          (t) =>
+            t.status === "PAGO" &&
+            ((t.type === "RECEITA" && t.description?.includes("Sinal Online")) ||
+              (t.type === "DESPESA" && t.description?.includes("Taxa Mercado Pago"))),
+        );
+
+        for (const t of mpTransactions) {
+          const updatedTx = await prisma.transaction.update({
+            where: { id: t.id },
+            data: {
+              status: "CANCELADO",
+              description: `${t.description} (Cancelado: ${status === "refunded" ? "Estorno" : "Contestação/Chargeback"} no Mercado Pago)`,
+            },
+          });
+
+          // Sincroniza cancelamento no Zibee se aplicável
+          try {
+            const { triggerZibeeSyncById } = await import(
+              "@/lib/server/integrations/zibee.service"
+            );
+            triggerZibeeSyncById(updatedTx.id, appointment.organization_id).catch(console.error);
+          } catch (zibeeErr) {
+            console.error("[ZIBEE_SYNC_ERROR]", zibeeErr);
+          }
+        }
+
+        // 3. Registra no Histórico de Ações do Cliente (ClientNote / Log do Sistema em /admin/notes)
+        const serviceName =
+          appointment.snapshot_service_name || appointment.service?.name || "Serviço";
+        const reasonText =
+          status === "refunded"
+            ? "Estorno de Sinal"
+            : "Contestação / Chargeback de Sinal";
+
+        await prisma.clientNote.create({
+          data: {
+            client_id: appointment.client_id,
+            organization_id: appointment.organization_id,
+            text: `Alerta Financeiro (${reasonText}): O pagamento do sinal online via Mercado Pago foi desfeito na instituição bancária (${status}). As transações de sinal foram canceladas no caixa e o valor integral de ${serviceName} deverá ser cobrado na recepção/totem.`,
+            date: new Date(),
+          },
+        });
+      }
+
       console.log(
-        `[WEBHOOK_MP] Pagamento ${paymentId} do agendamento ${appointment.id} atualizado para status '${status}'. Diretriz do sistema: sem estorno automático de caixa.`,
+        `[WEBHOOK_MP] Pagamento ${paymentId} do agendamento ${appointment.id} atualizado para status '${status}'. Transações de sinal canceladas contabilmente.`,
       );
     }
 
