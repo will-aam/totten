@@ -14,6 +14,7 @@ import {
 } from "@boxicons/react";
 import { SidebarFooter, useSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import { HelpCircle } from "lucide-react";
 
 interface SidebarUserFooterProps {
   isOwner: boolean;
@@ -84,10 +85,10 @@ export function SidebarUserFooter({
       show: isOwner,
     },
     {
-      name: "Suporte",
-      icon: <HeadphoneMic size="sm" />,
-      onClick: () => window.open(whatsappUrl, "_blank"),
-      show: isOwner,
+      name: "Ajuda",
+      icon: <HelpCircle className="w-4 h-4 text-primary" />,
+      onClick: () => go("/admin/help"),
+      show: true,
     },
     {
       name: isDark ? "Modo Claro" : "Modo Escuro",

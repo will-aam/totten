@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { UserCircle, Cog } from "@boxicons/react";
-import { Receipt } from "lucide-react";
+import { Receipt, HelpCircle } from "lucide-react";
 
 import { LoyaltyVoucher } from "./loyalty-voucher";
 import { LoyaltyOverviewTab } from "./loyalty-overview-tab";
