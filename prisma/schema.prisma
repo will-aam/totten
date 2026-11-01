@@ -701,6 +701,8 @@ model LoyaltySettings {
   schedule_active Boolean @default(true)
   schedule_points Int     @default(5)
 
+  auto_financial_discount Boolean @default(false)
+
   rewards LoyaltyReward[]
 
   created_at DateTime @default(now())
@@ -718,6 +720,8 @@ model LoyaltyReward {
   points_cost Int
   conditions  String? @db.Text
   validity_days Int?  @default(30)
+  reward_type   String  @default("GIFT") // GIFT | PERCENTAGE | FIXED_AMOUNT
+  discount_value Decimal? @db.Decimal(10, 2)
 
   created_at    DateTime        @default(now())
   updated_at    DateTime        @updatedAt
@@ -733,6 +737,10 @@ model ClientVoucher {
   points_spent Int
   title        String
   status       String @default("DISPONIVEL")
+  reward_type  String? @default("GIFT") // GIFT | PERCENTAGE | FIXED_AMOUNT
+  discount_value Decimal? @db.Decimal(10, 2)
+  discount_applied Decimal? @db.Decimal(10, 2)
+  transaction_id String?
 
   created_at DateTime  @default(now())
   expires_at DateTime?

@@ -30,6 +30,8 @@ interface RewardItem {
   points_cost: number;
   conditions?: string;
   validity_days?: number;
+  reward_type?: string;
+  discount_value?: number | null;
 }
 
 interface LoyaltyInfo {
@@ -187,10 +189,20 @@ export function ClientLoyalty({ loyaltyInfo, clientName, clientId }: { loyaltyIn
                   )}
                 >
                   <div className="space-y-1 flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-slate-900 text-sm sm:text-base">
                         {reward.title}
                       </span>
+                      {reward.reward_type === "PERCENTAGE" && (
+                        <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                          {reward.discount_value}% OFF
+                        </span>
+                      )}
+                      {reward.reward_type === "FIXED_AMOUNT" && (
+                        <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                          R$ {Number(reward.discount_value || 0).toFixed(2)} OFF
+                        </span>
+                      )}
                       {canAfford && (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
                           Disponível

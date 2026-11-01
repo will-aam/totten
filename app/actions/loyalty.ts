@@ -177,12 +177,15 @@ export async function updateLoyaltySettings(
     max_points?: number;
     points_per_checkin?: number;
     points_per_appointment?: number;
+    auto_financial_discount?: boolean;
     rewards?: {
       id?: string | number;
       title: string;
       points_cost: number;
       conditions?: string;
       validity_days?: number | null;
+      reward_type?: string;
+      discount_value?: number | null;
     }[];
   }
 ) {
@@ -201,6 +204,9 @@ export async function updateLoyaltySettings(
           mappedData.activated_at = new Date();
         }
       }
+    }
+    if (data.auto_financial_discount !== undefined) {
+      mappedData.auto_financial_discount = data.auto_financial_discount;
     }
     if (points_per_checkin !== undefined) {
       mappedData.check_in_points = points_per_checkin;
@@ -228,6 +234,8 @@ export async function updateLoyaltySettings(
         if (!r.title?.trim() || r.points_cost <= 0) continue;
         const rewardId = typeof r.id === "string" ? r.id : undefined;
         const validityDays = r.validity_days !== undefined ? r.validity_days : 30;
+        const rewardType = r.reward_type || "GIFT";
+        const discountVal = r.discount_value !== undefined && r.discount_value !== null ? Number(r.discount_value) : null;
 
         if (rewardId && existingRewardMap.has(rewardId)) {
           // Atualiza recompensa existente mantendo o ID e sem deletar vouchers
@@ -238,6 +246,8 @@ export async function updateLoyaltySettings(
               points_cost: r.points_cost,
               conditions: r.conditions,
               validity_days: validityDays,
+              reward_type: rewardType,
+              discount_value: discountVal,
             },
           });
           keepRewardIds.add(rewardId);
@@ -250,6 +260,8 @@ export async function updateLoyaltySettings(
               points_cost: r.points_cost,
               conditions: r.conditions,
               validity_days: validityDays,
+              reward_type: rewardType,
+              discount_value: discountVal,
             },
           });
           keepRewardIds.add(created.id);
@@ -474,7 +486,7 @@ export async function redeemLoyaltyReward(clientId: string, rewardId: string) {
         select: { loyalty_points: true },
       });
 
-      // 3. Emite o voucher de resgate
+      // 3. Emite o voucher de resgate com a tipificação
       const createdVoucher = await tx.clientVoucher.create({
         data: {
           client_id: clientId,
@@ -483,6 +495,8 @@ export async function redeemLoyaltyReward(clientId: string, rewardId: string) {
           title: reward.title,
           expires_at: expiresAt,
           status: "DISPONIVEL",
+          reward_type: reward.reward_type,
+          discount_value: reward.discount_value,
         },
       });
 
@@ -911,32 +925,42 @@ export async function findVoucherByPin(pin: string) {
     // Atualiza vouchers vencidos da organização em background
     await expireOverdueVouchers(admin.organizationId);
 
-    const vouchers = await prisma.clientVoucher.findMany({
-      where: {
-        id: { endsWith: cleanPin, mode: "insensitive" },
-        client: { organization_id: admin.organizationId },
-      },
-      include: {
-        client: {
-          select: {
-            id: true,
-            name: true,
-            phone_whatsapp: true,
-            loyalty_points: true,
-          },
+    const [vouchers, settings] = await Promise.all([
+      prisma.clientVoucher.findMany({
+        where: {
+          id: { endsWith: cleanPin, mode: "insensitive" },
+          client: { organization_id: admin.organizationId },
         },
-        reward: true,
-      },
-      take: 5,
-    });
+        include: {
+          client: {
+            select: {
+              id: true,
+              name: true,
+              phone_whatsapp: true,
+              loyalty_points: true,
+            },
+          },
+          reward: true,
+        },
+        take: 5,
+      }),
+      prisma.loyaltySettings.findUnique({
+        where: { organization_id: admin.organizationId },
+        select: { auto_financial_discount: true },
+      }),
+    ]);
 
     if (vouchers.length === 0) {
       return { success: false, error: `Nenhum voucher encontrado com o PIN "${pin}".` };
     }
 
+    const autoFinancialDiscount = settings?.auto_financial_discount ?? false;
+
     const formattedVouchers = vouchers.map((v) => {
       const isExpired = v.status === "EXPIRADO" || (!v.used_at && v.expires_at && new Date(v.expires_at) < new Date());
       const effectiveStatus = v.status === "UTILIZADO" ? "UTILIZADO" : isExpired ? "EXPIRADO" : "DISPONIVEL";
+      const rewardType = v.reward_type || v.reward?.reward_type || "GIFT";
+      const discountValue = v.discount_value !== null ? Number(v.discount_value) : (v.reward?.discount_value ? Number(v.reward.discount_value) : null);
 
       return {
         id: v.id,
@@ -944,6 +968,9 @@ export async function findVoucherByPin(pin: string) {
         title: v.title,
         pointsSpent: v.points_spent,
         status: effectiveStatus,
+        rewardType,
+        discountValue,
+        autoFinancialDiscount,
         createdAt: v.created_at,
         expiresAt: v.expires_at,
         usedAt: v.used_at,
@@ -952,7 +979,7 @@ export async function findVoucherByPin(pin: string) {
       };
     });
 
-    return { success: true, vouchers: formattedVouchers };
+    return { success: true, vouchers: formattedVouchers, autoFinancialDiscount };
   } catch (error: any) {
     console.error("Erro ao buscar voucher por PIN:", error);
     return { success: false, error: "Erro ao localizar voucher." };
@@ -1062,3 +1089,91 @@ export async function reactivateVoucher(voucherId: string, additionalDays: numbe
     return { success: false, error: "Erro interno ao reativar voucher." };
   }
 }
+
+export async function validateVoucherForAppointment(
+  pin: string,
+  servicePrice: number = 0,
+  clientId?: string
+) {
+  try {
+    const admin = await requireAuth();
+
+    const cleanPin = pin.replace(/[^a-zA-Z0-9]/g, "").trim().toUpperCase();
+    if (!cleanPin || cleanPin.length < 3) {
+      return { success: false, error: "Digite ao menos 4 caracteres do PIN." };
+    }
+
+    const voucher = await prisma.clientVoucher.findFirst({
+      where: {
+        id: { endsWith: cleanPin, mode: "insensitive" },
+        client: { organization_id: admin.organizationId },
+      },
+      include: {
+        client: { select: { id: true, name: true } },
+        reward: true,
+      },
+    });
+
+    if (!voucher) {
+      return { success: false, error: `Nenhum voucher encontrado com o PIN "${pin}".` };
+    }
+
+    if (voucher.status === "UTILIZADO") {
+      const usedDate = voucher.used_at ? new Date(voucher.used_at).toLocaleDateString("pt-BR") : "";
+      return { success: false, error: `Este voucher já foi utilizado${usedDate ? ` em ${usedDate}` : ""}.` };
+    }
+
+    const isExpired = voucher.expires_at && new Date(voucher.expires_at) < new Date();
+    if (isExpired) {
+      return {
+        success: false,
+        error: `Este voucher expirou em ${new Date(voucher.expires_at!).toLocaleDateString("pt-BR")}.`,
+        isExpired: true,
+        voucherId: voucher.id,
+      };
+    }
+
+    // Se um clientId foi passado, confere se o voucher pertence a ele
+    if (clientId && voucher.client_id !== clientId) {
+      return {
+        success: false,
+        error: `Este voucher pertence ao cliente ${voucher.client.name}, diferente do agendamento.`,
+      };
+    }
+
+    const rewardType = voucher.reward_type || voucher.reward?.reward_type || "GIFT";
+    const discountVal =
+      voucher.discount_value !== null
+        ? Number(voucher.discount_value)
+        : voucher.reward?.discount_value
+        ? Number(voucher.reward.discount_value)
+        : 0;
+
+    let calculatedDiscount = 0;
+    if (rewardType === "PERCENTAGE" && discountVal > 0) {
+      calculatedDiscount = Number(((servicePrice * discountVal) / 100).toFixed(2));
+    } else if (rewardType === "FIXED_AMOUNT" && discountVal > 0) {
+      calculatedDiscount = Math.min(servicePrice, discountVal);
+    }
+
+    const finalPrice = Math.max(0, Number((servicePrice - calculatedDiscount).toFixed(2)));
+
+    return {
+      success: true,
+      voucher: {
+        id: voucher.id,
+        pin: `#VCH-${voucher.id.slice(-6).toUpperCase()}`,
+        title: voucher.title,
+        rewardType,
+        discountValue: discountVal,
+        calculatedDiscount,
+        finalPrice,
+        clientName: voucher.client.name,
+      },
+    };
+  } catch (error) {
+    console.error("Erro ao validar voucher para agendamento:", error);
+    return { success: false, error: "Erro ao validar voucher." };
+  }
+}
+

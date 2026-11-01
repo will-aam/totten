@@ -32,6 +32,7 @@ import {
 import { LoyaltyRewardModal, type Reward } from "./loyalty-reward-modal";
 import { toast } from "sonner";
 import { updateLoyaltySettings } from "@/app/actions/loyalty";
+import { Percent, DollarSign, Gift as GiftIcon, BadgeCheck, Pencil, Trash2 } from "lucide-react";
 
 interface LoyaltySettingsTabProps {
   organizationId: string;
@@ -57,6 +58,7 @@ export function LoyaltySettingsTab({
   const [pendingScope, setPendingScope] = useState<"global" | "specific" | null>(null);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [isRewardModalOpen, setIsRewardModalOpen] = useState(false);
+  const [editingReward, setEditingReward] = useState<Reward | null>(null);
 
   const [checkInActive, setCheckInActive] = useState(settings?.check_in_active ?? (settings?.check_in_points > 0));
   const [scheduleActive, setScheduleActive] = useState(settings?.schedule_active ?? (settings?.schedule_points > 0));
@@ -64,6 +66,11 @@ export function LoyaltySettingsTab({
   const [pointsPerCheckin, setPointsPerCheckin] = useState(settings?.check_in_points || 10);
   const [pointsPerAppointment, setPointsPerAppointment] = useState(settings?.schedule_points || 5);
   const [maxPoints, setMaxPoints] = useState(settings?.max_points || 500);
+
+  // Integração com o Financeiro: Manual vs Automático
+  const [autoFinancialDiscount, setAutoFinancialDiscount] = useState<boolean>(
+    settings?.auto_financial_discount ?? false
+  );
 
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -101,6 +108,21 @@ export function LoyaltySettingsTab({
     setHasUnsavedChanges(true);
   };
 
+  const handleFinancialAutoToggle = (checked: boolean) => {
+    setAutoFinancialDiscount(checked);
+    setHasUnsavedChanges(true);
+  };
+
+  const handleOpenNewRewardModal = () => {
+    setEditingReward(null);
+    setIsRewardModalOpen(true);
+  };
+
+  const handleOpenEditRewardModal = (reward: Reward) => {
+    setEditingReward(reward);
+    setIsRewardModalOpen(true);
+  };
+
   const handleSaveReward = (reward: Reward) => {
     const exists = rewards.find((r) => r.id === reward.id);
     let newRewards: Reward[];
@@ -129,12 +151,15 @@ export function LoyaltySettingsTab({
         max_points: maxPoints,
         points_per_checkin: checkInActive ? pointsPerCheckin : 0,
         points_per_appointment: scheduleActive ? pointsPerAppointment : 0,
+        auto_financial_discount: autoFinancialDiscount,
         rewards: rewards.map(r => ({
           id: typeof r.id === "string" ? r.id : undefined,
           title: r.title,
           points_cost: r.pointsCost,
           conditions: r.conditions,
-          validity_days: r.validityDays
+          validity_days: r.validityDays,
+          reward_type: r.rewardType || "GIFT",
+          discount_value: r.discountValue ?? null,
         }))
       };
 
@@ -146,7 +171,9 @@ export function LoyaltySettingsTab({
             title: r.title,
             pointsCost: r.points_cost,
             conditions: r.conditions,
-            validityDays: r.validity_days
+            validityDays: r.validity_days,
+            rewardType: r.reward_type || "GIFT",
+            discountValue: r.discount_value !== null ? Number(r.discount_value) : null,
           })));
         }
         toast.success("Configurações salvas com sucesso!");
@@ -226,7 +253,67 @@ export function LoyaltySettingsTab({
 
         <div className="h-px bg-border/50 w-full" />
 
-        {/* Seção 2: Limites */}
+        {/* Seção 2: Integração com o Financeiro (Manual vs Automática) */}
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-semibold">Integração com o Financeiro</h3>
+                <span className={cn(
+                  "text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border",
+                  autoFinancialDiscount 
+                    ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" 
+                    : "bg-slate-500/10 text-slate-600 border-slate-500/20"
+                )}>
+                  {autoFinancialDiscount ? "Automático" : "Manual"}
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Escolha se o sistema deve abater automaticamente os descontos no financeiro ou se prefere controle manual pela recepção.
+              </p>
+            </div>
+            <Switch
+              checked={autoFinancialDiscount}
+              onCheckedChange={handleFinancialAutoToggle}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+            <div className={cn(
+              "p-4 rounded-2xl border transition-all space-y-1.5",
+              !autoFinancialDiscount 
+                ? "bg-card border-primary/40 shadow-xs ring-1 ring-primary/20" 
+                : "bg-muted/20 border-border/60 opacity-70"
+            )}>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-sm text-foreground">Modo Manual (Recepção / Conferência)</span>
+                {!autoFinancialDiscount && <BadgeCheck className="w-4 h-4 text-primary" />}
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                A recepcionista valida o PIN do voucher e dá baixa como comprovante. O lançamento de pagamentos ou eventuais descontos é cobrado manualmente no checkout ou na maquininha.
+              </p>
+            </div>
+
+            <div className={cn(
+              "p-4 rounded-2xl border transition-all space-y-1.5",
+              autoFinancialDiscount 
+                ? "bg-emerald-500/5 border-emerald-500/40 shadow-xs ring-1 ring-emerald-500/20" 
+                : "bg-muted/20 border-border/60 opacity-70"
+            )}>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-sm text-foreground">Modo Automático (Automação Integrada)</span>
+                {autoFinancialDiscount && <BadgeCheck className="w-4 h-4 text-emerald-600" />}
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Ideal para quem opera sozinho ou deseja agilidade. Vouchers com desconto (% ou R$) são reconhecidos pelo sistema, que calcula e abate o valor diretamente na fatura/agendamento.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="h-px bg-border/50 w-full" />
+
+        {/* Seção 3: Limites */}
         <div className="flex flex-col gap-4">
           <div>
             <h3 className="text-lg font-semibold">Limites de Pontuação</h3>
@@ -257,7 +344,7 @@ export function LoyaltySettingsTab({
 
         <div className="h-px bg-border/50 w-full" />
 
-        {/* Seção 3: Regras de Ganho */}
+        {/* Seção 4: Regras de Ganho */}
         <div className="flex flex-col gap-4">
           <div>
             <h3 className="text-lg font-semibold">Regras de Ganho</h3>
@@ -320,53 +407,100 @@ export function LoyaltySettingsTab({
 
         <div className="h-px bg-border/50 w-full" />
 
-        {/* Seção 4: Recompensas */}
+        {/* Seção 5: Recompensas */}
         <div className="flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="text-lg font-semibold">Recompensas e Resgates</h3>
               <p className="text-sm text-muted-foreground">
-                O que o cliente pode fazer com os pontos.
+                Cadastre os benefícios que os clientes podem resgatar utilizando pontos.
               </p>
             </div>
             <Button
               size="sm"
               className="rounded-full flex items-center gap-1 w-fit"
-              onClick={() => setIsRewardModalOpen(true)}
+              onClick={handleOpenNewRewardModal}
             >
               <Plus size="xs" />
               <span>Nova Recompensa</span>
             </Button>
           </div>
+
           <div className="space-y-3">
-            {rewards.map((reward) => (
-              <div key={reward.id} className="flex items-center justify-between p-4 rounded-2xl border border-border bg-card relative group">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-full text-primary">
-                    <Gift size="sm" />
+            {rewards.map((reward) => {
+              const rType = reward.rewardType || "GIFT";
+              return (
+                <div key={reward.id} className="flex items-center justify-between p-4 rounded-2xl border border-border bg-card relative group hover:border-primary/40 transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "p-2.5 rounded-xl flex items-center justify-center shrink-0",
+                      rType === "PERCENTAGE" 
+                        ? "bg-emerald-500/10 text-emerald-600" 
+                        : rType === "FIXED_AMOUNT" 
+                        ? "bg-blue-500/10 text-blue-600" 
+                        : "bg-purple-500/10 text-purple-600"
+                    )}>
+                      {rType === "PERCENTAGE" && <Percent className="w-5 h-5" />}
+                      {rType === "FIXED_AMOUNT" && <DollarSign className="w-5 h-5" />}
+                      {rType === "GIFT" && <GiftIcon className="w-5 h-5" />}
+                    </div>
+
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-sm sm:text-base">{reward.title}</span>
+                        {rType === "PERCENTAGE" && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 border border-emerald-500/20">
+                            {reward.discountValue ?? 0}% OFF
+                          </span>
+                        )}
+                        {rType === "FIXED_AMOUNT" && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 border border-blue-500/20">
+                            R$ {Number(reward.discountValue || 0).toFixed(2)} OFF
+                          </span>
+                        )}
+                        {rType === "GIFT" && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-700 border border-purple-500/20">
+                            Brinde / Cortesia
+                          </span>
+                        )}
+                      </div>
+                      {reward.conditions && (
+                        <p className="text-xs text-muted-foreground">{reward.conditions}</p>
+                      )}
+                      {reward.validityDays && (
+                        <p className="text-[11px] text-muted-foreground">
+                          Válido por {reward.validityDays} dias após resgate
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <span className="font-medium text-sm sm:text-base">{reward.title}</span>
-                    {reward.conditions && (
-                      <p className="text-xs text-muted-foreground">{reward.conditions}</p>
-                    )}
+
+                  <div className="flex items-center gap-2 sm:gap-4">
+                    <div className="font-bold text-primary whitespace-nowrap text-sm sm:text-base">
+                      {reward.pointsCost} pts
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-foreground"
+                      onClick={() => handleOpenEditRewardModal(reward)}
+                      title="Editar recompensa"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 rounded-lg text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => handleRemoveReward(reward.id)}
+                      title="Remover recompensa"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="font-bold text-primary whitespace-nowrap">
-                    {reward.pointsCost} pts
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => handleRemoveReward(reward.id)}
-                  >
-                    Remover
-                  </Button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
 
             {rewards.length === 0 && (
               <div className="text-center py-6 text-muted-foreground text-sm border border-dashed rounded-2xl">
@@ -404,6 +538,7 @@ export function LoyaltySettingsTab({
           open={isRewardModalOpen}
           onOpenChange={setIsRewardModalOpen}
           onSave={handleSaveReward}
+          initialData={editingReward}
         />
 
         <div className="fixed bottom-6 right-6 z-40 flex items-center gap-3">

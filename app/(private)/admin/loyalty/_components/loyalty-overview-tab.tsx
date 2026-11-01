@@ -713,13 +713,28 @@ export function LoyaltyOverviewTab({
                 <div key={v.id} className="p-4 rounded-2xl border border-border/80 bg-background space-y-4">
                   <div className="flex items-start justify-between gap-3 border-b border-border/50 pb-3">
                     <div className="space-y-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-mono font-bold text-sm bg-muted px-2 py-0.5 rounded text-foreground border">
                           {v.pin}
                         </span>
                         <span className="font-bold text-base text-foreground">
                           {v.title}
                         </span>
+                        {v.rewardType === "PERCENTAGE" && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 border border-emerald-500/20">
+                            {v.discountValue}% OFF
+                          </span>
+                        )}
+                        {v.rewardType === "FIXED_AMOUNT" && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 border border-blue-500/20">
+                            R$ {Number(v.discountValue || 0).toFixed(2)} OFF
+                          </span>
+                        )}
+                        {v.rewardType === "GIFT" && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-700 border border-purple-500/20">
+                            Brinde / Cortesia
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <User className="w-3.5 h-3.5" />
@@ -771,7 +786,48 @@ export function LoyaltyOverviewTab({
                     )}
                   </div>
 
-                  <div className="pt-2">
+                  {/* Orientação Operacional / Financeira */}
+                  {isAvailable && (
+                    <>
+                      {v.rewardType === "PERCENTAGE" && (
+                        <div className={cn(
+                          "p-2.5 rounded-xl border text-xs leading-relaxed",
+                          v.autoFinancialDiscount
+                            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-800 dark:text-emerald-300"
+                            : "bg-amber-500/10 border-amber-500/20 text-amber-800 dark:text-amber-300"
+                        )}>
+                          {v.autoFinancialDiscount ? (
+                            <span><strong>Automação Financeira Ativa:</strong> O desconto de {v.discountValue}% será vinculado diretamente ao atendimento do cliente.</span>
+                          ) : (
+                            <span><strong>Modo Manual (Recepção):</strong> Lembre-se de cobrar o cliente com o abatimento de {v.discountValue}% no caixa ou na maquininha.</span>
+                          )}
+                        </div>
+                      )}
+
+                      {v.rewardType === "FIXED_AMOUNT" && (
+                        <div className={cn(
+                          "p-2.5 rounded-xl border text-xs leading-relaxed",
+                          v.autoFinancialDiscount
+                            ? "bg-blue-500/10 border-blue-500/20 text-blue-800 dark:text-blue-300"
+                            : "bg-amber-500/10 border-amber-500/20 text-amber-800 dark:text-amber-300"
+                        )}>
+                          {v.autoFinancialDiscount ? (
+                            <span><strong>Automação Financeira Ativa:</strong> R$ {Number(v.discountValue || 0).toFixed(2)} serão abatidos automaticamente na transação.</span>
+                          ) : (
+                            <span><strong>Modo Manual (Recepção):</strong> Lembre-se de abater R$ {Number(v.discountValue || 0).toFixed(2)} no valor cobrado ao cliente.</span>
+                          )}
+                        </div>
+                      )}
+
+                      {v.rewardType === "GIFT" && (
+                        <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-800 dark:text-purple-300 leading-relaxed">
+                          <strong>Brinde / Cortesia:</strong> Entregue o brinde físico ou realize o procedimento cortesia acordado com o cliente e confirme a baixa abaixo.
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  <div className="pt-1">
                     {isAvailable ? (
                       <Button
                         onClick={() => handleUsePinVoucher(v.id)}

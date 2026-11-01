@@ -337,6 +337,8 @@ export async function updateAppointment(
     paymentMethodId?: string | null;
     observations: string;
     hasCharge: boolean;
+    voucherPin?: string | null;
+    voucherId?: string | null;
   },
   updateAll: boolean = false,
   recurrenceId?: string | null,
@@ -770,14 +772,59 @@ export async function updateAppointment(
           ? 0
           : paidRevenues.reduce((acc: number, t: any) => acc + Number(t.amount), 0);
         const apptPrice = Number(currentAppt.snapshot_service_price ?? service.price);
-        const remainingAmount = Math.max(0, Number((apptPrice - totalPaid).toFixed(2)));
+        let remainingAmount = Math.max(0, Number((apptPrice - totalPaid).toFixed(2)));
+
+        // Verificação e Abatimento de Voucher de Fidelidade
+        let appliedVoucher: any = null;
+        let voucherDiscountAmount = 0;
+
+        if (data.voucherPin || data.voucherId) {
+          const cleanPin = (data.voucherPin || "").replace(/[^a-zA-Z0-9]/g, "").trim().toUpperCase();
+          const voucher = await tx.clientVoucher.findFirst({
+            where: {
+              ...(data.voucherId ? { id: data.voucherId } : { id: { endsWith: cleanPin, mode: "insensitive" } }),
+              client: { organization_id: admin.organizationId },
+              status: "DISPONIVEL",
+            },
+            include: { reward: true },
+          });
+
+          if (voucher) {
+            const isExpired = voucher.expires_at && new Date(voucher.expires_at) < new Date();
+            if (!isExpired) {
+              const rType = voucher.reward_type || voucher.reward?.reward_type || "GIFT";
+              const rVal =
+                voucher.discount_value !== null
+                  ? Number(voucher.discount_value)
+                  : voucher.reward?.discount_value
+                  ? Number(voucher.reward.discount_value)
+                  : 0;
+
+              if (rType === "PERCENTAGE" && rVal > 0) {
+                voucherDiscountAmount = Number(((apptPrice * rVal) / 100).toFixed(2));
+              } else if (rType === "FIXED_AMOUNT" && rVal > 0) {
+                voucherDiscountAmount = Math.min(apptPrice, rVal);
+              }
+
+              if (voucherDiscountAmount > 0) {
+                remainingAmount = Math.max(0, Number((remainingAmount - voucherDiscountAmount).toFixed(2)));
+              }
+              appliedVoucher = voucher;
+            }
+          }
+        }
+
+        const apptName = currentAppt.snapshot_service_name ?? service.name;
 
         if (remainingAmount > 0.01) {
-          const apptName = currentAppt.snapshot_service_name ?? service.name;
-          const desc =
+          let desc =
             totalPaid > 0
               ? `Serviço Quitado (Saldo Restante): ${apptName} (${currentAppt.client.name})`
               : `Serviço Realizado: ${apptName} (${currentAppt.client.name})`;
+
+          if (appliedVoucher && voucherDiscountAmount > 0) {
+            desc += ` [Voucher #${appliedVoucher.id.slice(-6).toUpperCase()} -R$ ${voucherDiscountAmount.toFixed(2)}]`;
+          }
 
           const { createdTxIds: newTxIds } = await createSettledRevenueWithFee({
             tx,
@@ -793,6 +840,49 @@ export async function updateAppointment(
             baseDate: currentAppt.date_time || new Date(),
           });
           createdTxIds.push(...newTxIds);
+
+          // Baixa do voucher associando a transação
+          if (appliedVoucher) {
+            await tx.clientVoucher.update({
+              where: { id: appliedVoucher.id },
+              data: {
+                status: "UTILIZADO",
+                used_at: new Date(),
+                discount_applied: voucherDiscountAmount,
+                transaction_id: newTxIds[0] || null,
+              },
+            });
+          }
+        } else if (appliedVoucher) {
+          // Se o voucher cobriu 100% do serviço (desconto integral)
+          const now = new Date();
+          const zeroTx = await tx.transaction.create({
+            data: {
+              type: "RECEITA",
+              description: `Serviço Quitado Integralmente com Voucher Fidelidade #${appliedVoucher.id.slice(-6).toUpperCase()}: ${apptName} (${currentAppt.client.name})`,
+              amount: 0,
+              date: now,
+              due_date: now,
+              settlement_date: now,
+              status: "PAGO",
+              organization_id: admin.organizationId,
+              appointment_id: currentAppt.id,
+              client_id: currentAppt.client_id,
+              admin_id: admin.id,
+              payment_method_id: finalPaymentMethodId,
+            },
+          });
+          createdTxIds.push(zeroTx.id);
+
+          await tx.clientVoucher.update({
+            where: { id: appliedVoucher.id },
+            data: {
+              status: "UTILIZADO",
+              used_at: now,
+              discount_applied: voucherDiscountAmount || apptPrice,
+              transaction_id: zeroTx.id,
+            },
+          });
         }
       }
 

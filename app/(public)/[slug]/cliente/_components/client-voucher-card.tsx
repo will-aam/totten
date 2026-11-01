@@ -13,6 +13,8 @@ export interface VoucherItem {
   created_at: string | Date;
   expires_at?: string | Date | null;
   used_at?: string | Date | null;
+  reward_type?: string | null;
+  discount_value?: number | null;
 }
 
 export function ClientVoucherCard({ voucher }: { voucher: VoucherItem }) {
@@ -54,9 +56,21 @@ export function ClientVoucherCard({ voucher }: { voucher: VoucherItem }) {
             <Ticket className="w-5 h-5" />
           </div>
           <div>
-            <h5 className="font-bold text-slate-900 text-base leading-tight">
-              {voucher.title}
-            </h5>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h5 className="font-bold text-slate-900 text-base leading-tight">
+                {voucher.title}
+              </h5>
+              {voucher.reward_type === "PERCENTAGE" && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  {voucher.discount_value}% OFF
+                </span>
+              )}
+              {voucher.reward_type === "FIXED_AMOUNT" && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                  R$ {Number(voucher.discount_value || 0).toFixed(2)} OFF
+                </span>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground mt-0.5">
               Emitido em {new Date(voucher.created_at).toLocaleDateString("pt-BR")} &bull; {voucher.points_spent} pts
             </p>

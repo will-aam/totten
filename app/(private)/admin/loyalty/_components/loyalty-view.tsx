@@ -45,7 +45,9 @@ export function LoyaltyView({
     title: r.title,
     pointsCost: r.points_cost,
     conditions: r.conditions,
-    validityDays: r.validity_days
+    validityDays: r.validity_days,
+    rewardType: r.reward_type || "GIFT",
+    discountValue: r.discount_value !== null ? Number(r.discount_value) : null,
   }));
   const [rewards, setRewards] = useState(initialRewards);
   const [isProgramActive, setIsProgramActive] = useState(initialSettings.is_active || false);
