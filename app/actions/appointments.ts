@@ -1229,6 +1229,51 @@ export async function deleteAppointment(
         await tx.checkIn.deleteMany({
           where: { appointment_id: appt.id },
         });
+
+        // D. Estorno de pontos do Programa de Fidelidade (caso o agendamento estivesse realizado ou tivesse check-in ativo)
+        const loyaltySettings = await tx.loyaltySettings.findUnique({
+          where: { organization_id: admin.organizationId },
+        });
+
+        if (loyaltySettings?.is_active && appt.client_id) {
+          let pointsToDeduct = 0;
+
+          // Se estava realizado e pontuou por agendamento
+          if (
+            appt.status === AppointmentStatus.REALIZADO &&
+            loyaltySettings.schedule_active &&
+            loyaltySettings.schedule_points > 0
+          ) {
+            pointsToDeduct += loyaltySettings.schedule_points;
+          }
+
+          // Se possuía check-in ativo que foi deletado e pontuou por check-in
+          if (
+            appt.check_in &&
+            !appt.check_in.deleted_at &&
+            loyaltySettings.check_in_active &&
+            loyaltySettings.check_in_points > 0
+          ) {
+            pointsToDeduct += loyaltySettings.check_in_points;
+          }
+
+          if (pointsToDeduct > 0) {
+            await tx.client.update({
+              where: { id: appt.client_id },
+              data: {
+                loyalty_points: {
+                  decrement: pointsToDeduct,
+                },
+              },
+            });
+
+            // Garante que o saldo nunca fique negativo
+            await tx.client.updateMany({
+              where: { id: appt.client_id, loyalty_points: { lt: 0 } },
+              data: { loyalty_points: 0 },
+            });
+          }
+        }
       }
 
       // 3. Executa a exclusão propriamente dita

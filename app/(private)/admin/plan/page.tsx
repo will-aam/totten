@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Zap } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function PlanPage() {
@@ -14,56 +13,55 @@ export default function PlanPage() {
       name: "Plano Básico",
       priceMonthly: "29,90",
       priceYearly: "299,00",
-      tagline: "A partir de",
-      description: "Tudo que você precisa para organizar sua agenda e atender seus clientes com facilidade.",
+      tagline: "Para começar com organização",
+      description: "A estrutura essencial para uma profissional conduzir a própria rotina.",
       gradient: "linear-gradient(180deg, #eaddff 0%, #d8b4fe 40%, rgba(255,255,255,0) 100%)",
       buttonStyle: "bg-white text-gray-900 shadow-[0_4px_14px_0_rgba(0,0,0,0.05)]",
-      current: true,
       popular: false,
       features: [
-        "Gestão de agenda inteligente",
-        "Cadastro de clientes ilimitado",
+        "Dashboard, Agenda, confirmações manuais e check-in",
+        "Clientes, fichas, serviços, pacotes e estoque sem limite de itens",
+        "Aniversariantes, notas, gestão de pacotes e todos os Registros",
+        "1 profissional",
         "Até 1 pacote ativo por cliente",
-        "Lembretes básicos",
-        "Acesso pelo celular e computador",
       ],
     },
     {
       id: "pro",
-      name: "Plano Pro",
+      name: "Plano Médio",
       priceMonthly: "49,90",
       priceYearly: "499,00",
-      tagline: "A partir de",
-      description: "Ferramentas avançadas para empresas e profissionais que precisam de mais poder e flexibilidade.",
+      tagline: "Mais controle e recorrência",
+      description: "Para quem quer acompanhar as finanças, incentivar retornos e crescer com uma equipe pequena.",
       gradient: "linear-gradient(180deg, #c4b5fd 0%, #fed7aa 70%, rgba(255,255,255,0) 100%)",
       buttonStyle: "bg-[#27272a] text-white shadow-[0_8px_20px_-6px_rgba(0,0,0,0.4)]",
-      current: false,
       popular: true,
       features: [
         "Tudo do Plano Básico",
-        "Pacotes simultâneos ilimitados",
-        "Múltiplos profissionais (até 3)",
-        "Relatórios e métricas de vendas",
-        "Suporte prioritário",
+        "Até 2 profissionais",
+        "Até 3 pacotes ativos por cliente",
+        "Módulo Financeiro",
+        "Programa de Fidelidade",
+        "Cobrança de sinal online via Mercado Pago (recurso do Autoatendimento)",
+        "Taxa da Totten por pagamento confirmado via Mercado Pago (valor a definir)",
       ],
     },
     {
-      id: "pro_plus",
-      name: "Plano Pro+",
+      id: "advanced",
+      name: "Plano Avançado",
       priceMonthly: "89,90",
       priceYearly: "899,00",
-      tagline: "A partir de",
-      description: "A solução definitiva para grandes empresas com múltiplos profissionais e alto volume.",
+      tagline: "Operação completa",
+      description: "Autoatendimento e capacidade ampliada para operações com mais profissionais.",
       gradient: "linear-gradient(180deg, #a7f3d0 0%, #34d399 40%, rgba(255,255,255,0) 100%)",
       buttonStyle: "bg-white text-gray-900 border border-gray-200 shadow-[0_4px_14px_0_rgba(0,0,0,0.05)] hover:bg-gray-50",
-      current: false,
       popular: false,
       features: [
-        "Tudo do Plano Pro",
-        "Profissionais ilimitados",
-        "Controle financeiro completo",
-        "Automações de marketing avançadas",
-        "Gestor de conta dedicado (VIP)",
+        "Tudo do Plano Médio",
+        "Autoatendimento completo",
+        "De 3 até 30 profissionais",
+        "Pacotes ativos sem limite por cliente",
+        "Suporte humano prioritário (proposta)",
       ],
     },
   ];
@@ -73,17 +71,19 @@ export default function PlanPage() {
       {/* Header */}
       <div className="flex flex-col items-center text-center space-y-3 mb-10 mt-4 max-w-2xl">
 
+        <div className="rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-xs font-semibold text-violet-700 dark:text-violet-300">
+          Estrutura de planos em teste
+        </div>
         <h1 className="text-3xl md:text-4xl font-black tracking-tight">
-          Escolha o plano{" "}
+          Conheça os planos{" "}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-indigo-500">
-            ideal para você
+            ideais para você
           </span>
         </h1>
         <p className="text-muted-foreground text-sm font-medium">
-          Você está no <strong>Plano Básico</strong>. Faça upgrade para desbloquear mais recursos.
+          Esta estrutura está em avaliação. No teste gratuito de 14 dias, você pode experimentar todos os recursos.
         </p>
 
-        {/* Toggle */}
         <div className="flex items-center gap-1 mt-4 bg-muted/40 p-1.5 rounded-full border border-border/50">
           <button
             onClick={() => setBillingCycle("monthly")}
@@ -107,7 +107,7 @@ export default function PlanPage() {
           >
             Anual
             <span className="bg-emerald-500 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full">
-              -15%
+              2 meses grátis
             </span>
           </button>
         </div>
@@ -155,21 +155,15 @@ export default function PlanPage() {
                   {plan.description}
                 </p>
 
-                <button
+                <div
                   className={cn(
-                    "w-full py-4 rounded-[1.25rem] font-semibold text-[15px] transition-all duration-300 active:scale-95",
+                    "w-full py-4 rounded-[1.25rem] text-center font-semibold text-[15px]",
                     plan.buttonStyle,
-                    plan.current && "opacity-70 cursor-default"
+                    "opacity-75",
                   )}
                 >
-                  {plan.current ? (
-                    "Plano Atual"
-                  ) : (
-                    <span className="flex items-center justify-center gap-2">
-                      Fazer Upgrade <Zap className="w-4 h-4 fill-current" />
-                    </span>
-                  )}
-                </button>
+                  Plano em avaliação
+                </div>
               </div>
 
               {/* Features Section */}

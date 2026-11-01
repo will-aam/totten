@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Search, Trophy, Plus, Star } from "@boxicons/react";
-import { Download, CreditCard, Ticket } from "lucide-react";
+import { Download, CreditCard, Ticket, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -102,7 +102,7 @@ export function LoyaltyOverviewTab({
   const [isLoadingUnenrolled, setIsLoadingUnenrolled] = useState(false);
 
   const [addingClient, setAddingClient] = useState<string | null>(null);
-  const [clientToRemove, setClientToRemove] = useState<string | null>(null);
+  const [clientToRemove, setClientToRemove] = useState<Client | null>(null);
 
   // Histórico
   const [selectedClientForHistory, setSelectedClientForHistory] = useState<Client | null>(null);
@@ -196,7 +196,7 @@ export function LoyaltyOverviewTab({
 
   const confirmRemove = async () => {
     if (!clientToRemove) return;
-    const clientId = clientToRemove;
+    const clientId = clientToRemove.id;
     setClientToRemove(null);
     const res = await enrollClientInLoyalty(clientId, false);
     if (res.success) {
@@ -360,7 +360,7 @@ export function LoyaltyOverviewTab({
                       className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setClientToRemove(client.id);
+                        setClientToRemove(client);
                       }}
                     >
                       &times;
@@ -544,22 +544,39 @@ export function LoyaltyOverviewTab({
         </DialogContent>
       </Dialog>
 
-      {/* Confirmação de Remoção */}
+      {/* Confirmação de Remoção com Alerta Explícito de Pontos Zerados */}
       <AlertDialog open={!!clientToRemove} onOpenChange={(open) => !open && setClientToRemove(null)}>
-        <AlertDialogContent className="rounded-2xl">
+        <AlertDialogContent className="rounded-3xl max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle>Remover do programa?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja remover este cliente do programa de fidelidade? Ele parará de acumular pontos a partir de agora.
+            <div className="w-12 h-12 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center mb-2 mx-auto sm:mx-0">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <AlertDialogTitle className="text-xl font-bold text-foreground">
+              Remover cliente do programa?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3 pt-2 text-sm text-muted-foreground" asChild>
+              <div>
+                <p>
+                  Tem certeza que deseja remover <strong>{clientToRemove?.name}</strong> do programa de fidelidade?
+                </p>
+                <div className="p-3.5 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-xs space-y-1.5">
+                  <p className="font-bold flex items-center gap-1.5">
+                    ⚠️ Atenção: Ação Irreversível!
+                  </p>
+                  <p className="leading-relaxed">
+                    O saldo atual de <strong>{clientToRemove?.points || 0} pontos</strong> deste cliente será <strong>zerado permanentemente</strong> e ele não poderá mais utilizá-los.
+                  </p>
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="mt-4 gap-2">
             <AlertDialogCancel className="rounded-full">Cancelar</AlertDialogCancel>
             <AlertDialogAction 
               onClick={confirmRemove}
-              className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 font-bold"
             >
-              Sim, Remover
+              Sim, Zerar Pontos e Remover
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

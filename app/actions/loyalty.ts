@@ -438,22 +438,36 @@ export async function redeemLoyaltyReward(clientId: string, rewardId: string) {
       return { success: false, error: "Custo de pontuação da recompensa inválido." };
     }
 
-    // Saldo real líquido disponível (não retroativo)
-    const availablePoints = Math.min(Math.max(0, client.loyalty_points || 0), settings.max_points);
-
-    if (availablePoints < reward.points_cost) {
-      return { success: false, error: "Pontos insuficientes para resgatar esta recompensa." };
-    }
-
     let expiresAt: Date | null = null;
     if (reward.validity_days && reward.validity_days > 0) {
       expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + reward.validity_days);
     }
 
-    const newPoints = availablePoints - reward.points_cost;
+    // Executa transação atômica com validação a nível de banco
+    const transactionResult = await prisma.$transaction(async (tx) => {
+      // 1. Decremento atômico condicional: bloqueia a linha e só debita se o saldo for suficiente
+      const updateResult = await tx.client.updateMany({
+        where: {
+          id: clientId,
+          loyalty_points: { gte: reward.points_cost },
+        },
+        data: {
+          loyalty_points: { decrement: reward.points_cost },
+        },
+      });
 
-    const voucher = await prisma.$transaction(async (tx) => {
+      if (updateResult.count === 0) {
+        throw new Error("SALDO_INSUFICIENTE");
+      }
+
+      // 2. Busca o saldo resultante real após o decremento atômico
+      const updatedClient = await tx.client.findUnique({
+        where: { id: clientId },
+        select: { loyalty_points: true },
+      });
+
+      // 3. Emite o voucher de resgate
       const createdVoucher = await tx.clientVoucher.create({
         data: {
           client_id: clientId,
@@ -461,26 +475,27 @@ export async function redeemLoyaltyReward(clientId: string, rewardId: string) {
           points_spent: reward.points_cost,
           title: reward.title,
           expires_at: expiresAt,
-          status: "DISPONIVEL"
-        }
+          status: "DISPONIVEL",
+        },
       });
 
-      await tx.client.update({
-        where: { id: clientId },
-        data: { loyalty_points: newPoints }
-      });
-
-      return createdVoucher;
+      return {
+        voucher: createdVoucher,
+        newPoints: updatedClient?.loyalty_points ?? 0,
+      };
     });
 
     revalidatePath("/(private)/admin/loyalty", "page");
 
     return {
       success: true,
-      voucher,
-      newPoints
+      voucher: transactionResult.voucher,
+      newPoints: transactionResult.newPoints,
     };
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.message === "SALDO_INSUFICIENTE") {
+      return { success: false, error: "Pontos insuficientes para resgatar esta recompensa." };
+    }
     console.error("Erro ao resgatar recompensa:", error);
     return { success: false, error: "Erro interno ao resgatar recompensa." };
   }
