@@ -53,7 +53,7 @@ A decisão final de preços será feita quando a integração com Stripe for imp
 - Os cards podem manter os valores de teste atuais para visualização, mas não devem ser conectados a uma cobrança real.
 - A integração com Stripe deverá definir preços mensais e anuais, recorrência, período de teste de 14 dias e comportamento após o fim do teste.
 - O seletor anual deve apresentar o valor como total por ano, não como valor mensal.
-- O valor anual de referência corresponde a 12 mensalidades, sem meses grátis. O teste de 14 dias é separado e não representa desconto no preço anual.
+- Os valores anuais de referência correspondem a 10 mensalidades, equivalentes a 2 meses de desconto. O teste gratuito de 14 dias é separado desse desconto.
 
 ## Itens ainda a confirmar
 

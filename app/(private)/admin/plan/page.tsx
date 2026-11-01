@@ -6,6 +6,7 @@ import { Check, Minus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
+import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
 
 type PlanId = "basic" | "medium" | "advanced";
 type ComparisonValue = string | boolean;
@@ -24,7 +25,7 @@ const plans: {
     id: "basic",
     name: "Plano Básico",
     priceMonthly: "29,90",
-    priceYearly: "358,80",
+    priceYearly: "299,00",
     description: "A estrutura essencial para organizar sua rotina e atender seus clientes.",
     cornerLabel: "Essencial",
     highlights: ["1 profissional", "Até 1 pacote ativo por cliente"],
@@ -33,7 +34,7 @@ const plans: {
     id: "medium",
     name: "Plano Médio",
     priceMonthly: "49,90",
-    priceYearly: "598,80",
+    priceYearly: "499,00",
     description: "Mais controle financeiro e recursos para incentivar a recorrência.",
     featured: true,
     cornerLabel: "Destaque",
@@ -43,7 +44,7 @@ const plans: {
     id: "advanced",
     name: "Plano Avançado",
     priceMonthly: "89,90",
-    priceYearly: "1.078,80",
+    priceYearly: "899,00",
     description: "Autoatendimento completo e capacidade para uma operação maior.",
     cornerLabel: "Completo",
     highlights: ["Até 30 profissionais", "Autoatendimento completo"],
@@ -220,18 +221,20 @@ function MobilePlanCarousel({
                 ))}
               </div>
 
-              <button
+              <InteractiveHoverButton
                 type="button"
                 onClick={onSubscribe}
                 className={cn(
-                  "mt-6 w-full rounded-xl px-4 py-3.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-400 focus-visible:ring-offset-2",
+                  "mt-6 min-h-12 w-full rounded-xl border px-4 py-3.5 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-400 focus-visible:ring-offset-2",
                   isFeatured
-                    ? "bg-lime-300 text-zinc-950 hover:bg-lime-200 dark:focus-visible:ring-offset-zinc-800"
-                    : "border border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-50 dark:border-border dark:bg-transparent dark:text-foreground dark:hover:bg-muted/70",
+                    ? "border-zinc-800 bg-zinc-900 text-white dark:border-zinc-700 dark:bg-zinc-900"
+                    : "border-zinc-300 bg-white text-zinc-900 dark:border-border dark:bg-transparent dark:text-foreground",
                 )}
+                fillClassName="bg-lime-300"
+                fillTextClassName="text-zinc-950"
               >
                 Assinar plano
-              </button>
+              </InteractiveHoverButton>
             </article>
           );
         })}
@@ -269,9 +272,8 @@ export default function PlanPage() {
   return (
     <>
       <AdminHeader title="Meu Plano" />
-      <div className="min-h-full bg-[#f7f7f5] px-4 py-8 text-zinc-950 dark:bg-background dark:text-foreground sm:px-6 lg:px-10 lg:py-12">
-      <div className="mx-auto w-full max-w-6xl">
-        <header className="mb-8 border-b border-zinc-200 pb-7 dark:border-border md:mb-10 md:pb-9">
+      <div className="relative mx-auto flex min-h-[calc(100vh-100px)] w-full max-w-400 flex-col gap-6 bg-[#f7f7f5] p-4 pb-24 text-zinc-950 animate-in fade-in duration-500 md:p-6 md:pb-6 dark:bg-background dark:text-foreground">
+        <header className="mb-8 pb-2 md:mb-10">
           <h1 className="max-w-2xl text-3xl font-semibold tracking-[-0.04em] sm:text-4xl lg:text-[42px]">
             Um plano para cada fase da sua operação.
           </h1>
@@ -332,6 +334,9 @@ export default function PlanPage() {
               )}
             >
               Anual
+              <span className="rounded-full bg-lime-200 px-2 py-0.5 text-[10px] font-semibold text-zinc-950">
+                2 meses grátis
+              </span>
             </button>
           </div>
         </div>
@@ -357,6 +362,9 @@ export default function PlanPage() {
               className={cn("rounded-full px-3 py-2 text-xs font-medium", billingCycle === "yearly" ? "bg-zinc-950 text-white dark:bg-white dark:text-zinc-950" : "text-zinc-500 dark:text-muted-foreground")}
             >
               Anual
+              <span className="rounded-full bg-lime-200 px-2 py-0.5 text-[10px] font-semibold text-zinc-950">
+                2 meses grátis
+              </span>
             </button>
           </div>
         </div>
@@ -405,18 +413,20 @@ export default function PlanPage() {
                   ))}
                 </ul>
 
-                <button
+                <InteractiveHoverButton
                   type="button"
                   onClick={handleSubscribe}
                   className={cn(
-                    "mt-8 w-full rounded-xl px-4 py-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-400 focus-visible:ring-offset-2",
+                    "mt-8 min-h-12 w-full rounded-xl border px-4 py-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-400 focus-visible:ring-offset-2",
                     isFeatured
-                      ? "bg-lime-300 text-zinc-950 hover:bg-lime-200 dark:focus-visible:ring-offset-zinc-800"
-                      : "border border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-50 dark:border-border dark:bg-transparent dark:text-foreground dark:hover:bg-muted/70",
+                      ? "border-zinc-800 bg-zinc-900 text-white dark:border-zinc-700 dark:bg-zinc-900"
+                      : "border-zinc-300 bg-white text-zinc-900 dark:border-border dark:bg-transparent dark:text-foreground",
                   )}
+                  fillClassName="bg-lime-300"
+                  fillTextClassName="text-zinc-950"
                 >
                   Assinar plano
-                </button>
+                </InteractiveHoverButton>
               </article>
             );
           })}
@@ -467,6 +477,31 @@ export default function PlanPage() {
                     </FragmentSection>
                   ))}
                 </tbody>
+                <tfoot>
+                  <tr className="border-t border-zinc-200 dark:border-border">
+                    <td className="px-5 py-4 text-xs font-medium text-zinc-500 dark:text-muted-foreground">
+                      Escolha seu plano
+                    </td>
+                    {plans.map((plan) => (
+                      <td key={plan.id} className="px-2 py-3 text-center">
+                        <InteractiveHoverButton
+                          type="button"
+                          onClick={handleSubscribe}
+                          className={cn(
+                            "w-full rounded-lg border px-2 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-400 focus-visible:ring-offset-2",
+                            plan.featured
+                              ? "border-zinc-800 bg-zinc-900 text-white dark:border-zinc-700 dark:bg-zinc-900"
+                              : "border-zinc-300 bg-white text-zinc-900 dark:border-border dark:bg-transparent dark:text-foreground",
+                          )}
+                          fillClassName="bg-lime-300"
+                          fillTextClassName="text-zinc-950"
+                        >
+                          Assinar plano
+                        </InteractiveHoverButton>
+                      </td>
+                    ))}
+                  </tr>
+                </tfoot>
               </table>
             </div>
           </div>
@@ -474,7 +509,6 @@ export default function PlanPage() {
             Esta comparação apresenta a proposta de planos. O controle de acesso por assinatura ainda será definido.
           </p>
         </section>
-      </div>
       </div>
     </>
   );
