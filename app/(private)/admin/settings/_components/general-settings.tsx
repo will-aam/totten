@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Card,
   CardContent,
@@ -12,18 +13,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Building,
-  InfoCircle,
   Repeat,
   LoaderDots,
   Save,
-  Search
+  Search,
 } from "@boxicons/react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { apiClient, ApiError } from "@/lib/api-client";
-// Importando a nossa Server Action nativa
 import { updateSettingsAction } from "@/app/actions/settings";
 
 interface GeneralSettingsResponse {
@@ -37,7 +34,6 @@ interface GeneralSettingsResponse {
 
 export function GeneralSettings() {
   const { data: session } = useSession();
-  const isMobile = useIsMobile();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [docType, setDocType] = useState<"CNPJ" | "CPF">("CNPJ");
@@ -75,9 +71,9 @@ export function GeneralSettings() {
       }
 
       const newAddress = `${data.logradouro},  - ${data.bairro}, ${data.localidade}/${data.uf}`;
-      setFormData(prev => ({ ...prev, address: newAddress }));
+      setFormData((prev) => ({ ...prev, address: newAddress }));
       toast.success("Endereço preenchido! Complete com o número.");
-    } catch (error) {
+    } catch {
       toast.error("Erro ao buscar CEP");
     } finally {
       setSearchingCep(false);
@@ -122,7 +118,6 @@ export function GeneralSettings() {
     fetchSettings();
   }, [session]);
 
-  //  MÁSCARA INTELIGENTE PARA TELEFONE (BR)
   const formatPhone = (value: string) => {
     let v = value.replace(/\D/g, "");
     if (v.length <= 10) {
@@ -132,7 +127,7 @@ export function GeneralSettings() {
       v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
       v = v.replace(/(\d{5})(\d)/g, "$1-$2");
     }
-    return v.slice(0, 15); // Limita ao tamanho máximo de (XX) XXXXX-XXXX
+    return v.slice(0, 15);
   };
 
   const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -176,7 +171,6 @@ export function GeneralSettings() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // 🔌 Substituímos o apiClient pela chamada direta da Server Action
       const result = await updateSettingsAction(formData);
 
       if (result.error) {
@@ -195,56 +189,85 @@ export function GeneralSettings() {
     }
   };
 
+  // Skeleton state conforme diretriz pages-standard.md
   if (loading) {
     return (
-      <Card className="border-none shadow-none py-0 sm:py-6">
-        <CardContent className="flex items-center justify-center py-12">
-          <LoaderDots className="h-8 w-8 animate-spin text-primary" />
+      <Card className="rounded-2xl md:rounded-3xl border border-border/60 bg-card shadow-xs overflow-hidden">
+        <CardHeader className="p-5 md:p-6 border-b border-border/40 bg-muted/10">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-44 rounded-lg" />
+              <Skeleton className="h-4 w-72 rounded-lg" />
+            </div>
+            <Skeleton className="hidden md:block h-11 w-36 rounded-full" />
+          </div>
+        </CardHeader>
+        <CardContent className="p-5 md:p-6 grid gap-6">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-28 rounded-md" />
+            <Skeleton className="h-10 w-full rounded-xl" />
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-36 rounded-md" />
+              <Skeleton className="h-10 w-full rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-24 rounded-md" />
+              <Skeleton className="h-10 w-full rounded-xl" />
+            </div>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-32 rounded-md" />
+              <Skeleton className="h-10 w-full rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-32 rounded-md" />
+              <Skeleton className="h-10 w-full rounded-xl" />
+            </div>
+          </div>
+          <Skeleton className="h-28 w-full rounded-2xl" />
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="border-none shadow-none py-0 sm:py-6">
-      <CardHeader className="px-0">
+    <Card className="rounded-2xl md:rounded-3xl border border-border/60 bg-card shadow-xs overflow-hidden">
+      <CardHeader className="p-5 md:p-6 border-b border-border/40 bg-muted/10">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <CardTitle className="flex items-center gap-2 text-card-foreground mb-2">
-              <Building className="h-5 w-5 text-primary" />
+            <CardTitle className="text-xl font-bold tracking-tight text-foreground">
               Dados da Empresa
             </CardTitle>
-            <CardDescription>
-              Configure as InfoCirclermações principais da sua empresa.
+            <CardDescription className="text-sm text-muted-foreground mt-1">
+              Configure as informações principais da sua empresa.
             </CardDescription>
           </div>
-          <div
-            className={`flex ${isMobile ? "hidden" : "justify-end items-center gap-2 shrink-0"}`}
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            className="hidden md:flex h-11 px-6 font-semibold rounded-full shadow-sm"
           >
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-              className="h-12 px-8 font-medium shadow-sm"
-            >
-              {saving ? (
-                <>
-                  <LoaderDots className="mr-2 h-4 w-4 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  Salvar
-                </>
-              )}
-            </Button>
-          </div>
+            {saving ? (
+              <>
+                <LoaderDots className="mr-2 h-4 w-4 animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Salvar Alterações
+              </>
+            )}
+          </Button>
         </div>
       </CardHeader>
 
-      <CardContent className="grid gap-6 px-0 pb-0 md:pb-6 md:px-6">
+      <CardContent className="p-5 md:p-6 grid gap-6">
         <div className="grid gap-2">
-          <Label htmlFor="companyName" className="font-medium">
+          <Label htmlFor="companyName" className="font-medium text-sm">
             Nome da Empresa
           </Label>
           <Input
@@ -257,13 +280,13 @@ export function GeneralSettings() {
             required
             minLength={3}
             maxLength={30}
+            className="rounded-xl h-10"
           />
-
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="responsibleName">
+            <Label htmlFor="responsibleName" className="font-medium text-sm">
               Nome Completo do Responsável
             </Label>
             <Input
@@ -273,15 +296,16 @@ export function GeneralSettings() {
                 setFormData({ ...formData, responsibleName: e.target.value })
               }
               placeholder="Ex: Maria da Silva"
+              className="rounded-xl h-10"
             />
           </div>
           <div className="grid gap-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="document">{docType}</Label>
+              <Label htmlFor="document" className="font-medium text-sm">{docType}</Label>
               <button
                 type="button"
                 onClick={toggleDocType}
-                className="text-[10px] text-primary flex items-center gap-1 hover:underline font-medium uppercase tracking-wider"
+                className="text-[11px] text-primary flex items-center gap-1 hover:underline font-semibold uppercase tracking-wider"
               >
                 <Repeat className="h-3 w-3" />
                 Mudar para {docType === "CNPJ" ? "CPF" : "CNPJ"}
@@ -294,42 +318,41 @@ export function GeneralSettings() {
               placeholder={
                 docType === "CNPJ" ? "00.000.000/0001-00" : "000.000.000-00"
               }
+              className="rounded-xl h-10"
             />
           </div>
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4">
-          {/* Telefone Fixo/Contato Secundário */}
           <div className="grid gap-2">
-            <Label htmlFor="contactPhone">Telefone Fixo / Outro</Label>
+            <Label htmlFor="contactPhone" className="font-medium text-sm">Telefone Fixo / Outro</Label>
             <Input
               id="contactPhone"
               value={formData.contactPhone}
               onChange={handlePhoneChange}
               placeholder="(00) 0000-0000"
               maxLength={15}
+              className="rounded-xl h-10"
             />
           </div>
 
-          {/* WhatsApp Principal com Prefixo Visual */}
           <div className="grid gap-2">
-            <Label htmlFor="whatsapp">WhatsApp Principal</Label>
-            <div className="flex gap-2">
-              <Input
-                id="whatsapp"
-                value={formData.whatsapp}
-                onChange={handleWhatsappChange}
-                placeholder="(00) 00000-0000"
-                maxLength={15}
-                className="flex-1"
-              />
-            </div>
+            <Label htmlFor="whatsapp" className="font-medium text-sm">WhatsApp Principal</Label>
+            <Input
+              id="whatsapp"
+              value={formData.whatsapp}
+              onChange={handleWhatsappChange}
+              placeholder="(00) 00000-0000"
+              maxLength={15}
+              className="rounded-xl h-10"
+            />
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 mt-2 p-4 rounded-2xl border border-border/50 bg-muted/10">
+        {/* Localização e Endereço */}
+        <div className="flex flex-col gap-4 p-4 md:p-5 rounded-2xl border border-border/50 bg-muted/20">
           <div className="grid gap-2">
-            <Label htmlFor="cep">Buscar por CEP</Label>
+            <Label htmlFor="cep" className="font-medium text-sm">Buscar por CEP</Label>
             <div className="flex gap-2">
               <Input
                 id="cep"
@@ -340,31 +363,50 @@ export function GeneralSettings() {
                   setCep(v.slice(0, 9));
                 }}
                 placeholder="00000-000"
-                className="max-w-[150px]"
+                className="max-w-[150px] rounded-xl h-10"
                 onKeyDown={(e) => e.key === "Enter" && handleCepSearch()}
               />
-              <Button type="button" onClick={handleCepSearch} disabled={searchingCep} variant="secondary">
-                {searchingCep ? <LoaderDots className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              <Button
+                type="button"
+                onClick={handleCepSearch}
+                disabled={searchingCep}
+                variant="secondary"
+                className="rounded-xl h-10 px-4"
+              >
+                {searchingCep ? (
+                  <LoaderDots className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Search className="h-4 w-4" />
+                )}
               </Button>
             </div>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="address">Endereço Completo</Label>
+            <Label htmlFor="address" className="font-medium text-sm">Endereço Completo</Label>
             <Input
               id="address"
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               placeholder="Ex: Rua das Flores, 123 - Centro, São Paulo/SP"
+              className="rounded-xl h-10"
             />
           </div>
         </div>
       </CardContent>
+
+      {/* Botão flutuante mobile circular padrão */}
       <button
+        type="button"
         onClick={handleSave}
-        disabled={loading}
-        className={`${!isMobile ? "hidden" : "fixed bottom-0 right-4 md:bottom-8 md:right-8 h-14 w-14 flex items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg transition-all duration-300 z-50 translate-y-16 opacity-100 hover:scale-110"} `}
+        disabled={loading || saving}
+        className="md:hidden fixed bottom-28 right-6 h-14 w-14 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-2xl transition-transform duration-300 z-50 hover:scale-105 active:scale-95"
+        aria-label="Salvar configurações"
       >
-        <Save className="h-6 w-6" strokeWidth={2.5} />
+        {saving ? (
+          <LoaderDots className="h-6 w-6 animate-spin" />
+        ) : (
+          <Save className="h-6 w-6" strokeWidth={2.5} />
+        )}
       </button>
     </Card>
   );

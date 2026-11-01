@@ -12,24 +12,26 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { SealCheck, LoaderDots, Save } from "@boxicons/react";
+import { LoaderDots, Save } from "@boxicons/react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
-import { useIsMobile } from "@/hooks/use-mobile";
-// Importamos a nova Server Action aqui:
 import { changePassword } from "@/app/actions/auth";
 
 export function SecuritySettings() {
   const { data: session } = useSession();
-  const isMobile = useIsMobile();
-  const [email, setEmail] = useState(session?.user?.email || "");
+  const [email] = useState(session?.user?.email || "");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleChangePassword = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+
+    if (!currentPassword) {
+      toast.error("Informe a senha atual");
+      return;
+    }
 
     if (newPassword !== confirmPassword) {
       toast.error("As senhas não coincidem");
@@ -37,14 +39,13 @@ export function SecuritySettings() {
     }
 
     if (newPassword.length < 6) {
-      toast.error("A senha deve ter pelo menos 6 caracteres");
+      toast.error("A nova senha deve ter pelo menos 6 caracteres");
       return;
     }
 
     setLoading(true);
 
     try {
-      // Chamada direta para a Server Action
       const result = await changePassword(currentPassword, newPassword);
 
       if (result.error) {
@@ -56,7 +57,7 @@ export function SecuritySettings() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-    } catch (error) {
+    } catch {
       toast.error("Erro de conexão. Tente novamente.");
     } finally {
       setLoading(false);
@@ -64,111 +65,111 @@ export function SecuritySettings() {
   };
 
   return (
-    <Card className="border-none shadow-none py-0 sm:py-6">
-      <CardHeader className="px-0">
+    <Card className="rounded-2xl md:rounded-3xl border border-border/60 bg-card shadow-xs overflow-hidden">
+      <CardHeader className="p-5 md:p-6 border-b border-border/40 bg-muted/10">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <CardTitle className="flex items-center gap-2 text-card-foreground mb-2">
-              <SealCheck size="sm" className="text-primary" />
+            <CardTitle className="text-xl font-bold tracking-tight text-foreground">
               Acesso e Segurança
             </CardTitle>
-            <CardDescription>
-              Faça a gestão das credenciais de acesso ao painel de
-              administração.
+            <CardDescription className="text-sm text-muted-foreground mt-1">
+              Faça a gestão das credenciais de acesso ao painel de administração.
             </CardDescription>
           </div>
-          <div className="flex items-center justify-end gap-2 shrink-0">
-            <Button
-              onClick={handleChangePassword}
-              disabled={loading}
-              className="h-12 px-8 font-medium shadow-sm"
-            >
-              {loading ? (
-                <>
-                  <LoaderDots size="sm" className="animate-spin mr-2" />
-                  Salvando...
-                </>
-              ) : (
-                <>
-                  <Save size="sm" className="mr-2" />
-                  Salvar
-                </>
-              )}
-            </Button>
-          </div>
+          <Button
+            onClick={() => handleChangePassword()}
+            disabled={loading}
+            className="hidden md:flex h-11 px-6 font-semibold rounded-full shadow-sm"
+          >
+            {loading ? (
+              <>
+                <LoaderDots className="mr-2 h-4 w-4 animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Salvar Alterações
+              </>
+            )}
+          </Button>
         </div>
       </CardHeader>
-      <CardContent className="grid gap-6 px-0">
+
+      <CardContent className="p-5 md:p-6 grid gap-6">
         <div className="grid gap-2">
-          <Label htmlFor="email">E-mail de Acesso</Label>
+          <Label htmlFor="email" className="font-medium text-sm">E-mail de Acesso</Label>
           <Input
             id="email"
             type="email"
             value={email}
             disabled
-            className="max-w-sm bg-muted"
+            className="max-w-md bg-muted/50 rounded-xl h-10"
           />
           <p className="text-xs text-muted-foreground">
-            O e-mail não pode ser alterado após o cadastro.
+            O e-mail de acesso não pode ser alterado após o cadastro.
           </p>
         </div>
 
-        <div className="grid gap-4">
-          <h3 className="font-medium text-sm">Alterar Senha</h3>
+        <div className="flex flex-col gap-4 pt-2 border-t border-border/40">
+          <h3 className="font-semibold text-base text-foreground">Alterar Senha</h3>
 
-          <div className="grid sm:grid-cols-2 gap-2 max-w-2xl">
+          <div className="grid sm:grid-cols-2 gap-4 max-w-2xl">
             <div className="grid gap-2">
-              <Label htmlFor="current-password">Senha Atual</Label>
+              <Label htmlFor="current-password" className="font-medium text-sm">Senha Atual</Label>
               <Input
                 id="current-password"
-                type="text"
+                type="password"
                 placeholder="••••••••"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                required
+                className="rounded-xl h-10"
               />
             </div>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4 max-w-2xl">
             <div className="grid gap-2">
-              <Label htmlFor="new-password">Nova Senha</Label>
+              <Label htmlFor="new-password" className="font-medium text-sm">Nova Senha</Label>
               <Input
                 id="new-password"
-                type="text"
+                type="password"
                 placeholder="••••••••"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                required
                 minLength={6}
+                className="rounded-xl h-10"
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
+              <Label htmlFor="confirm-password" className="font-medium text-sm">Confirmar Nova Senha</Label>
               <Input
                 id="confirm-password"
-                type="text"
+                type="password"
                 placeholder="••••••••"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                required
                 minLength={6}
+                className="rounded-xl h-10"
               />
             </div>
           </div>
         </div>
       </CardContent>
 
-      {/* Botão flutuante mobile */}
+      {/* Botão flutuante mobile circular padrão */}
       <button
-        onClick={handleChangePassword}
+        type="button"
+        onClick={() => handleChangePassword()}
         disabled={loading}
-        className={`${!isMobile
-            ? "hidden"
-            : "fixed bottom-0 right-4 md:bottom-8 md:right-8 h-14 w-14 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 z-50 translate-y-16 opacity-100 hover:scale-110"
-          }`}
+        className="md:hidden fixed bottom-28 right-6 h-14 w-14 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-2xl transition-transform duration-300 z-50 hover:scale-105 active:scale-95"
+        aria-label="Salvar senha"
       >
-        <Save size="sm" />
+        {loading ? (
+          <LoaderDots className="h-6 w-6 animate-spin" />
+        ) : (
+          <Save className="h-6 w-6" strokeWidth={2.5} />
+        )}
       </button>
     </Card>
   );

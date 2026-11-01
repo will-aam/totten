@@ -16,84 +16,82 @@ import {
   CheckShield,
   Bell,
 } from "@boxicons/react";
-import { Button } from "@/components/ui/button";
 
-// Definimos a lista de menus aqui, de forma limpa, para injetar no componente mobile
+// Lista de menus do MobileBottomNav
 const mobileNavItems = [
   { id: "general", label: "Geral", icon: Building },
-  { id: "messages", label: "Msg", icon: Whatsapp },
-  { id: "notifications", label: "Alertas", icon: Bell },
+  { id: "messages", label: "Mensagens", icon: Whatsapp },
+  { id: "notifications", label: "Notificações", icon: Bell },
   { id: "security", label: "Acesso", icon: CheckShield },
 ];
 
 export default function AdminSettingsPage() {
-  // Estado que controla qual aba/tela está ativa agora
   const [activeTab, setActiveTab] = useState("general");
 
   return (
     <>
       <AdminHeader title="Configurações do Sistema" />
 
-      {/* LARGURA FLUIDA: Trocamos max-w-5xl por max-w-400 para acompanhar monitores grandes */}
-      {/* Adicionado min-h para empurrar o botão de salvar sempre pro fundo */}
+      {/* Diretriz de Layout Fluido: max-w-400 com padding e espaçamentos padrão */}
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-32 md:pb-12 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
         <Tabs
           value={activeTab}
           onValueChange={setActiveTab}
           className="w-full flex-1 flex flex-col"
         >
+          {/* TabsList com design padrão arredondado (rounded-full) */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            {/*  DESIGN IGUAL AO ARQUIVO SERVICES: Grid menor, p-1 bg-muted, rounded-full e triggers com py-2 */}
-            <TabsList className="hidden md:grid w-full lg:w-200 grid-cols-4 h-auto gap-1 bg-muted p-1 rounded-full">
+            <TabsList className="hidden md:grid w-full max-w-2xl grid-cols-4 h-auto gap-1 bg-muted/60 p-1.5 rounded-full border border-border/40 shadow-xs">
               <TabsTrigger
                 value="general"
-                className="flex items-center gap-2 py-2 rounded-lg"
+                className="flex items-center justify-center gap-2 py-2.5 rounded-full font-medium text-sm transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
                 <Building size="sm" /> Geral
               </TabsTrigger>
               <TabsTrigger
                 value="messages"
-                className="flex items-center gap-2 py-2 rounded-lg"
+                className="flex items-center justify-center gap-2 py-2.5 rounded-full font-medium text-sm transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
                 <Whatsapp size="sm" /> Mensagens
               </TabsTrigger>
               <TabsTrigger
                 value="notifications"
-                className="flex items-center gap-2 py-2 rounded-lg"
+                className="flex items-center justify-center gap-2 py-2.5 rounded-full font-medium text-sm transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
                 <Bell size="sm" /> Notificações
               </TabsTrigger>
               <TabsTrigger
                 value="security"
-                className="flex items-center gap-2 py-2 rounded-lg"
+                className="flex items-center justify-center gap-2 py-2.5 rounded-full font-medium text-sm transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
                 <CheckShield size="sm" /> Acesso
               </TabsTrigger>
             </TabsList>
           </div>
 
+          {/* Conteúdo das abas sem translate para não quebrar posição fixed dos botões */}
           <div className="flex-1">
             <TabsContent
               value="general"
-              className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500"
+              className="mt-0 focus-visible:outline-none animate-in fade-in duration-300"
             >
               <GeneralSettings />
             </TabsContent>
             <TabsContent
               value="messages"
-              className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500"
+              className="mt-0 focus-visible:outline-none animate-in fade-in duration-300"
             >
               <MessageSettings />
             </TabsContent>
             <TabsContent
               value="notifications"
-              className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500"
+              className="mt-0 focus-visible:outline-none animate-in fade-in duration-300"
             >
               <NotificationsSettings />
             </TabsContent>
             <TabsContent
               value="security"
-              className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500"
+              className="mt-0 focus-visible:outline-none animate-in fade-in duration-300"
             >
               <SecuritySettings />
             </TabsContent>
@@ -101,7 +99,7 @@ export default function AdminSettingsPage() {
         </Tabs>
       </div>
 
-      {/* Menu Mobile */}
+      {/* Menu Mobile Fixo */}
       <MobileBottomNav
         items={mobileNavItems}
         activeId={activeTab}

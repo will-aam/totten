@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Bell, Volume, Devices, Envelope } from "@boxicons/react";
+import { Volume, Devices, Envelope } from "@boxicons/react";
 
 export function NotificationsSettings() {
   const [soundAlert, setSoundAlert] = useState(true);
@@ -18,77 +18,70 @@ export function NotificationsSettings() {
   const [emailSummary, setEmailSummary] = useState(false);
 
   return (
-    <div className="flex flex-col gap-6">
-      <Card className="border-none shadow-none py-0 sm:py-6">
-        <CardHeader className="px-0">
-          <CardTitle className="flex items-center gap-2 text-card-foreground">
-            <Bell className="h-5 w-5 text-primary" />
-            Alertas do Sistema
-          </CardTitle>
-          <CardDescription>
-            Escolha como você quer ser avisada quando houver atividades no
-            Totten.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-6 px-0">
-          {/* Alerta Sonoro */}
-          <div className="flex items-start sm:items-center justify-between gap-4 rounded-lg border p-4 bg-card">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-full hidden sm:block">
-                <Volume className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <Label className="text-base font-medium text-foreground">
-                  Aviso Sonoro (Campainha)
-                </Label>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Toca um "Plim!" no seu computador ou tablet quando um cliente
-                  fizer check-in.
-                </p>
-              </div>
+    <Card className="rounded-2xl md:rounded-3xl border border-border/60 bg-card shadow-xs overflow-hidden">
+      <CardHeader className="p-5 md:p-6 border-b border-border/40 bg-muted/10">
+        <CardTitle className="text-xl font-bold tracking-tight text-foreground">
+          Alertas do Sistema
+        </CardTitle>
+        <CardDescription className="text-sm text-muted-foreground mt-1">
+          Escolha como você quer ser avisada quando houver atividades no Totten.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="p-5 md:p-6 grid gap-4">
+        {/* Alerta Sonoro */}
+        <div className="flex items-start sm:items-center justify-between gap-4 rounded-2xl border border-border/50 p-4 md:p-5 bg-background/60 hover:bg-muted/20 transition-colors">
+          <div className="flex items-center gap-3.5">
+            <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+              <Volume className="h-5 w-5 text-primary" />
             </div>
-            <Switch checked={soundAlert} onCheckedChange={setSoundAlert} />
+            <div>
+              <Label className="text-sm font-semibold text-foreground">
+                Aviso Sonoro (Campainha)
+              </Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Toca um &quot;Plim!&quot; no seu computador ou tablet quando um cliente fizer check-in.
+              </p>
+            </div>
           </div>
+          <Switch checked={soundAlert} onCheckedChange={setSoundAlert} />
+        </div>
 
-          {/* Notificações no Navegador/Celular */}
-          <div className="flex items-start sm:items-center justify-between gap-4 rounded-lg border p-4 bg-card">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-full hidden sm:block">
-                <Devices className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <Label className="text-base font-medium text-foreground">
-                  Notificações na Tela (Push)
-                </Label>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Mostra um alerta no canto da tela do seu dispositivo mesmo se
-                  o sistema estiver minimizado.
-                </p>
-              </div>
+        {/* Notificações no Navegador/Celular */}
+        <div className="flex items-start sm:items-center justify-between gap-4 rounded-2xl border border-border/50 p-4 md:p-5 bg-background/60 hover:bg-muted/20 transition-colors">
+          <div className="flex items-center gap-3.5">
+            <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+              <Devices className="h-5 w-5 text-primary" />
             </div>
-            <Switch checked={pushAlert} onCheckedChange={setPushAlert} />
+            <div>
+              <Label className="text-sm font-semibold text-foreground">
+                Notificações na Tela (Push)
+              </Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Mostra um alerta no canto da tela do seu dispositivo mesmo se o sistema estiver minimizado.
+              </p>
+            </div>
           </div>
+          <Switch checked={pushAlert} onCheckedChange={setPushAlert} />
+        </div>
 
-          {/* Resumo por E-mail */}
-          <div className="flex items-start sm:items-center justify-between gap-4 rounded-lg border p-4 bg-card">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-full hidden sm:block">
-                <Envelope className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <Label className="text-base font-medium text-foreground">
-                  Resumo Diário por E-mail
-                </Label>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Receba um e-mail no final do dia com a lista de todos os
-                  clientes que compareceram.
-                </p>
-              </div>
+        {/* Resumo por E-mail */}
+        <div className="flex items-start sm:items-center justify-between gap-4 rounded-2xl border border-border/50 p-4 md:p-5 bg-background/60 hover:bg-muted/20 transition-colors">
+          <div className="flex items-center gap-3.5">
+            <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+              <Envelope className="h-5 w-5 text-primary" />
             </div>
-            <Switch checked={emailSummary} onCheckedChange={setEmailSummary} />
+            <div>
+              <Label className="text-sm font-semibold text-foreground">
+                Resumo Diário por E-mail
+              </Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Receba um e-mail no final do dia com a lista de todos os clientes que compareceram.
+              </p>
+            </div>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+          <Switch checked={emailSummary} onCheckedChange={setEmailSummary} />
+        </div>
+      </CardContent>
+    </Card>
   );
 }
