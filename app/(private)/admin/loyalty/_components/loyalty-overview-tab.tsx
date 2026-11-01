@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Search, Trophy, Plus, Star } from "@boxicons/react";
-import { Download, CreditCard, Ticket, AlertTriangle } from "lucide-react";
+import { Download, CreditCard, Ticket, AlertTriangle, Loader2, CheckCircle2, Clock, User, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,6 +24,7 @@ import {
   enrollClientInLoyalty, 
   getClientLoyaltyHistory, 
   markVoucherAsUsed,
+  findVoucherByPin,
   getPaginatedLoyaltyClients,
   getUnenrolledClients
 } from "@/app/actions/loyalty";
@@ -103,6 +104,13 @@ export function LoyaltyOverviewTab({
 
   const [addingClient, setAddingClient] = useState<string | null>(null);
   const [clientToRemove, setClientToRemove] = useState<Client | null>(null);
+
+  // Validação rápida de Voucher por PIN
+  const [pinQuery, setPinQuery] = useState("");
+  const [isSearchingPin, setIsSearchingPin] = useState(false);
+  const [foundVouchers, setFoundVouchers] = useState<any[]>([]);
+  const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+  const [isUsingPinVoucher, setIsUsingPinVoucher] = useState(false);
 
   // Histórico
   const [selectedClientForHistory, setSelectedClientForHistory] = useState<Client | null>(null);
@@ -207,6 +215,50 @@ export function LoyaltyOverviewTab({
     }
   };
 
+  const handleSearchPin = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!pinQuery.trim()) return;
+
+    setIsSearchingPin(true);
+    try {
+      const res = await findVoucherByPin(pinQuery.trim());
+      if (res.success && res.vouchers && res.vouchers.length > 0) {
+        setFoundVouchers(res.vouchers);
+        setIsPinModalOpen(true);
+      } else {
+        toast.error(res.error || "Nenhum voucher encontrado com este código PIN.");
+      }
+    } catch (err) {
+      toast.error("Erro ao localizar voucher.");
+    } finally {
+      setIsSearchingPin(false);
+    }
+  };
+
+  const handleUsePinVoucher = async (voucherId: string) => {
+    setIsUsingPinVoucher(true);
+    try {
+      const res = await markVoucherAsUsed(voucherId);
+      if (res.success) {
+        toast.success("Voucher baixado com sucesso!");
+        setFoundVouchers((prev) =>
+          prev.map((v) =>
+            v.id === voucherId
+              ? { ...v, status: "UTILIZADO", usedAt: new Date() }
+              : v
+          )
+        );
+        fetchClients(currentPage, debouncedSearch, programScope);
+      } else {
+        toast.error(res.error || "Não foi possível utilizar o voucher.");
+      }
+    } catch (err) {
+      toast.error("Erro interno ao dar baixa no voucher.");
+    } finally {
+      setIsUsingPinVoucher(false);
+    }
+  };
+
   const openHistory = async (client: Client) => {
     setSelectedClientForHistory(client);
     
@@ -289,6 +341,50 @@ export function LoyaltyOverviewTab({
 
   return (
     <>
+      {/* 1. CARD DE VALIDAÇÃO RÁPIDA DE VOUCHER POR PIN NA RECEPÇÃO */}
+      <Card className="rounded-3xl border-border/70 bg-gradient-to-r from-card via-card to-primary/5 shadow-xs overflow-hidden">
+        <CardContent className="p-4 sm:p-5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="h-11 w-11 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <Ticket className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm sm:text-base text-foreground flex items-center gap-2">
+                Validar Voucher: digite o código PIN
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Localize a recompensa do cliente e dê baixa imediata com 1 clique.
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handleSearchPin} className="flex items-center gap-2 w-full md:w-auto">
+            <div className="relative flex-1 md:w-64">
+              <Input
+                placeholder="Ex: #VCH-AB12CD ou AB12CD"
+                value={pinQuery}
+                onChange={(e) => setPinQuery(e.target.value)}
+                className="rounded-full bg-background font-mono text-xs sm:text-sm uppercase tracking-wider pl-4 pr-3 h-10"
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={isSearchingPin || !pinQuery.trim()}
+              className="rounded-full shrink-0 font-bold h-10 px-5 shadow-xs"
+            >
+              {isSearchingPin ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Validando...
+                </>
+              ) : (
+                "Validar PIN"
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
         <div className="relative w-full sm:w-96">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size="sm" />
@@ -544,6 +640,122 @@ export function LoyaltyOverviewTab({
         </DialogContent>
       </Dialog>
 
+      {/* DIÁLOGO DE RESULTADO E BAIXA RÁPIDA DE VOUCHER POR PIN */}
+      <Dialog open={isPinModalOpen} onOpenChange={setIsPinModalOpen}>
+        <DialogContent className="rounded-3xl max-w-lg bg-card">
+          <DialogHeader>
+            <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider mb-1">
+              <Ticket className="w-4 h-4" />
+              Validação de Voucher
+            </div>
+            <DialogTitle className="text-xl font-bold">
+              Resultado da Busca por PIN
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Confira os dados do cliente e da recompensa antes de confirmar a baixa.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-2">
+            {foundVouchers.map((v) => {
+              const isAvailable = v.status === "DISPONIVEL";
+              const isUsed = v.status === "UTILIZADO";
+              const isExpired = v.status === "EXPIRADO";
+
+              return (
+                <div key={v.id} className="p-4 rounded-2xl border border-border/80 bg-background space-y-4">
+                  <div className="flex items-start justify-between gap-3 border-b border-border/50 pb-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold text-sm bg-muted px-2 py-0.5 rounded text-foreground border">
+                          {v.pin}
+                        </span>
+                        <span className="font-bold text-base text-foreground">
+                          {v.title}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <User className="w-3.5 h-3.5" />
+                        Cliente: <strong>{v.client?.name}</strong>
+                        {v.client?.phone_whatsapp && (
+                          <span> &bull; {v.client.phone_whatsapp}</span>
+                        )}
+                      </p>
+                    </div>
+
+                    <span
+                      className={cn(
+                        "text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider shrink-0",
+                        isAvailable
+                          ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                          : isUsed
+                          ? "bg-slate-100 text-slate-700"
+                          : "bg-red-100 text-red-700"
+                      )}
+                    >
+                      {isAvailable ? "Disponível" : isUsed ? "Já Utilizado" : "Expirado"}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground bg-muted/30 p-3 rounded-xl">
+                    <div>
+                      <span>Pontos debitados:</span>
+                      <p className="font-bold text-foreground text-sm">{v.pointsSpent} pts</p>
+                    </div>
+                    <div>
+                      <span>Emitido em:</span>
+                      <p className="font-medium text-foreground">
+                        {new Date(v.createdAt).toLocaleDateString("pt-BR")}
+                      </p>
+                    </div>
+                    {v.expiresAt && (
+                      <div className="col-span-2 flex items-center gap-1.5 pt-1 border-t border-border/40">
+                        <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span>Validade:</span>
+                        <strong className={isExpired ? "text-destructive" : "text-foreground"}>
+                          {new Date(v.expiresAt).toLocaleDateString("pt-BR")}
+                        </strong>
+                      </div>
+                    )}
+                    {isUsed && v.usedAt && (
+                      <div className="col-span-2 text-slate-500 pt-1 border-t border-border/40">
+                        Utilizado em: {new Date(v.usedAt).toLocaleDateString("pt-BR")} às {new Date(v.usedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-2">
+                    {isAvailable ? (
+                      <Button
+                        onClick={() => handleUsePinVoucher(v.id)}
+                        disabled={isUsingPinVoucher}
+                        className="w-full rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-11 text-sm shadow-sm"
+                      >
+                        {isUsingPinVoucher ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Confirmando Baixa...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="w-4 h-4 mr-2" />
+                            Dar Baixa no Voucher Agora
+                          </>
+                        )}
+                      </Button>
+                    ) : (
+                      <Button disabled variant="outline" className="w-full rounded-2xl h-10 text-xs">
+                        {isUsed ? "Voucher já utilizado anteriormente" : "Voucher expirado - baixa não permitida"}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Confirmação de Remoção com Alerta Explícito de Pontos Zerados */}
       <AlertDialog open={!!clientToRemove} onOpenChange={(open) => !open && setClientToRemove(null)}>
         <AlertDialogContent className="rounded-3xl max-w-md">
@@ -621,19 +833,33 @@ export function LoyaltyOverviewTab({
                       ) : (
                         <ScrollArea className="h-[50vh] pr-4">
                           <div className="space-y-4">
-                            {clientHistory.map((item, idx) => (
-                              <div key={idx} className="flex items-center justify-between p-3 rounded-xl border border-border/50 bg-background">
-                                <div className="flex flex-col gap-1">
-                                  <span className="font-medium text-sm">{item.description}</span>
-                                  <span className="text-xs text-muted-foreground">
-                                    {new Date(item.date).toLocaleDateString('pt-BR')} às {new Date(item.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                  </span>
+                            {clientHistory.map((item, idx) => {
+                              const isRedeem = item.points < 0 || item.type === "redeem";
+                              return (
+                                <div key={idx} className={cn(
+                                  "flex items-center justify-between p-3 rounded-xl border",
+                                  isRedeem ? "border-destructive/20 bg-destructive/5" : "border-border/50 bg-background"
+                                )}>
+                                  <div className="flex flex-col gap-1">
+                                    <span className={cn("font-medium text-sm", isRedeem && "text-destructive font-semibold")}>
+                                      {item.description}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {new Date(item.date).toLocaleDateString('pt-BR')} às {new Date(item.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                  </div>
+                                  {isRedeem ? (
+                                    <div className="flex items-center gap-1 text-destructive font-bold bg-destructive/10 border border-destructive/20 px-2 py-1 rounded-full text-xs shrink-0">
+                                      {item.points} pts
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-1 text-primary font-bold bg-primary/10 px-2 py-1 rounded-full text-xs shrink-0">
+                                      +{item.points} pts
+                                    </div>
+                                  )}
                                 </div>
-                                <div className="flex items-center gap-1 text-primary font-bold bg-primary/10 px-2 py-1 rounded-full text-xs shrink-0">
-                                  +{item.points} pts
-                                </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </ScrollArea>
                       )}
@@ -741,19 +967,33 @@ export function LoyaltyOverviewTab({
                   ) : (
                     <ScrollArea className="h-[350px] pr-4">
                       <div className="space-y-4">
-                        {clientHistory.map((item, idx) => (
-                          <div key={idx} className="flex items-center justify-between p-3 rounded-xl border border-border/50 bg-background">
-                            <div className="flex flex-col gap-1">
-                              <span className="font-medium text-sm">{item.description}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {new Date(item.date).toLocaleDateString('pt-BR')} às {new Date(item.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                              </span>
+                        {clientHistory.map((item, idx) => {
+                          const isRedeem = item.points < 0 || item.type === "redeem";
+                          return (
+                            <div key={idx} className={cn(
+                              "flex items-center justify-between p-3 rounded-xl border",
+                              isRedeem ? "border-destructive/20 bg-destructive/5" : "border-border/50 bg-background"
+                            )}>
+                              <div className="flex flex-col gap-1">
+                                <span className={cn("font-medium text-sm", isRedeem && "text-destructive font-semibold")}>
+                                  {item.description}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {new Date(item.date).toLocaleDateString('pt-BR')} às {new Date(item.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                              {isRedeem ? (
+                                <div className="flex items-center gap-1 text-destructive font-bold bg-destructive/10 border border-destructive/20 px-2 py-1 rounded-full text-xs shrink-0">
+                                  {item.points} pts
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1 text-primary font-bold bg-primary/10 px-2 py-1 rounded-full text-xs shrink-0">
+                                  +{item.points} pts
+                                </div>
+                              )}
                             </div>
-                            <div className="flex items-center gap-1 text-primary font-bold bg-primary/10 px-2 py-1 rounded-full text-xs shrink-0">
-                              +{item.points} pts
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </ScrollArea>
                   )}

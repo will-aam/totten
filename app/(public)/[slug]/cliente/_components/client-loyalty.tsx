@@ -352,19 +352,33 @@ export function ClientLoyalty({ loyaltyInfo, clientName, clientId }: { loyaltyIn
                 ) : (
                   <ScrollArea className="h-[45vh] pr-3 mt-2">
                     <div className="space-y-3">
-                      {clientHistory.map((item, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-white">
-                          <div className="flex flex-col gap-0.5">
-                            <span className="font-medium text-sm text-slate-800">{item.description}</span>
-                            <span className="text-xs text-slate-400">
-                              {new Date(item.date).toLocaleDateString('pt-BR')} às {new Date(item.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                            </span>
+                      {clientHistory.map((item, idx) => {
+                        const isRedeem = item.points < 0 || item.type === "redeem";
+                        return (
+                          <div key={idx} className={cn(
+                            "flex items-center justify-between p-3 rounded-xl border bg-white",
+                            isRedeem ? "border-rose-100 bg-rose-50/20" : "border-slate-200"
+                          )}>
+                            <div className="flex flex-col gap-0.5">
+                              <span className={cn("font-medium text-sm", isRedeem ? "text-rose-950 font-semibold" : "text-slate-800")}>
+                                {item.description}
+                              </span>
+                              <span className="text-xs text-slate-400">
+                                {new Date(item.date).toLocaleDateString('pt-BR')} às {new Date(item.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                            {isRedeem ? (
+                              <div className="flex items-center gap-1 text-rose-700 font-bold bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-full text-xs shrink-0">
+                                {item.points} pts
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1 text-blue-700 font-bold bg-blue-50 px-2.5 py-1 rounded-full text-xs shrink-0">
+                                +{item.points} pts
+                              </div>
+                            )}
                           </div>
-                          <div className="flex items-center gap-1 text-blue-700 font-bold bg-blue-50 px-2.5 py-1 rounded-full text-xs shrink-0">
-                            +{item.points} pts
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </ScrollArea>
                 )}
@@ -398,19 +412,33 @@ export function ClientLoyalty({ loyaltyInfo, clientName, clientId }: { loyaltyIn
             ) : (
               <ScrollArea className="h-[350px] pr-3 mt-2">
                 <div className="space-y-3">
-                  {clientHistory.map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-white">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-medium text-sm text-slate-800">{item.description}</span>
-                        <span className="text-xs text-slate-400">
-                          {new Date(item.date).toLocaleDateString('pt-BR')} às {new Date(item.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                  {clientHistory.map((item, idx) => {
+                    const isRedeem = item.points < 0 || item.type === "redeem";
+                    return (
+                      <div key={idx} className={cn(
+                        "flex items-center justify-between p-3 rounded-xl border bg-white",
+                        isRedeem ? "border-rose-100 bg-rose-50/20" : "border-slate-200"
+                      )}>
+                        <div className="flex flex-col gap-0.5">
+                          <span className={cn("font-medium text-sm", isRedeem ? "text-rose-950 font-semibold" : "text-slate-800")}>
+                            {item.description}
+                          </span>
+                          <span className="text-xs text-slate-400">
+                            {new Date(item.date).toLocaleDateString('pt-BR')} às {new Date(item.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        {isRedeem ? (
+                          <div className="flex items-center gap-1 text-rose-700 font-bold bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-full text-xs shrink-0">
+                            {item.points} pts
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-blue-700 font-bold bg-blue-50 px-2.5 py-1 rounded-full text-xs shrink-0">
+                            +{item.points} pts
+                          </div>
+                        )}
                       </div>
-                      <div className="flex items-center gap-1 text-blue-700 font-bold bg-blue-50 px-2.5 py-1 rounded-full text-xs shrink-0">
-                        +{item.points} pts
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </ScrollArea>
             )}

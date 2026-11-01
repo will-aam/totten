@@ -60,6 +60,11 @@ export async function getPaginatedLoyaltyClients({
     const admin = await requireAuth();
     const organizationId = admin.organizationId;
 
+    // Atualiza vouchers vencidos em background
+    expireOverdueVouchers(organizationId).catch((err) =>
+      console.error("[getPaginatedLoyaltyClients] Erro ao expirar vouchers:", err)
+    );
+
     const safePage = Math.max(1, page);
     const safeLimit = Math.max(1, Math.min(100, limit));
     const skip = (safePage - 1) * safeLimit;
@@ -611,13 +616,25 @@ export async function getClientLoyaltyHistory(clientId: string) {
       })));
     }
 
-    // Ordena por data (mais recente primeiro)
-    history.sort((a, b) => b.date.getTime() - a.date.getTime());
-
+    // Busca resgates de vouchers (débitos de pontos no histórico)
     const vouchers = await prisma.clientVoucher.findMany({
       where: { client_id: client.id },
       orderBy: { created_at: 'desc' }
     });
+
+    // Unifica os vouchers no histórico com tipo 'redeem' e pontos negativos
+    history.push(...vouchers.map(v => ({
+      id: v.id,
+      type: 'redeem' as const,
+      date: v.created_at,
+      points: -v.points_spent,
+      description: `Resgate: ${v.title}`,
+      voucherId: v.id,
+      voucherStatus: v.status
+    })));
+
+    // Ordena toda a linha do tempo (créditos e débitos) por data decrescente
+    history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     return { success: true, history, vouchers, points: client.loyalty_points };
   } catch (error) {
@@ -626,15 +643,138 @@ export async function getClientLoyaltyHistory(clientId: string) {
   }
 }
 
+export async function expireOverdueVouchers(organizationId?: string) {
+  try {
+    await prisma.clientVoucher.updateMany({
+      where: {
+        status: "DISPONIVEL",
+        expires_at: { lt: new Date() },
+        ...(organizationId ? { client: { organization_id: organizationId } } : {}),
+      },
+      data: {
+        status: "EXPIRADO",
+      },
+    });
+  } catch (err) {
+    console.error("Erro ao expirar vouchers vencidos:", err);
+  }
+}
+
+export async function findVoucherByPin(pin: string) {
+  try {
+    const admin = await requireAuth();
+    if (!pin || !pin.trim()) {
+      return { success: false, error: "Digite o código PIN do voucher." };
+    }
+
+    const cleanPin = pin.trim().replace(/^#?VCH-/i, "").toLowerCase();
+    if (cleanPin.length < 3) {
+      return { success: false, error: "Informe ao menos 3 caracteres do PIN do voucher." };
+    }
+
+    // Atualiza vouchers vencidos da organização em background
+    await expireOverdueVouchers(admin.organizationId);
+
+    const vouchers = await prisma.clientVoucher.findMany({
+      where: {
+        id: { endsWith: cleanPin, mode: "insensitive" },
+        client: { organization_id: admin.organizationId },
+      },
+      include: {
+        client: {
+          select: {
+            id: true,
+            name: true,
+            phone_whatsapp: true,
+            loyalty_points: true,
+          },
+        },
+        reward: true,
+      },
+      take: 5,
+    });
+
+    if (vouchers.length === 0) {
+      return { success: false, error: `Nenhum voucher encontrado com o PIN "${pin}".` };
+    }
+
+    const formattedVouchers = vouchers.map((v) => {
+      const isExpired = v.status === "EXPIRADO" || (!v.used_at && v.expires_at && new Date(v.expires_at) < new Date());
+      const effectiveStatus = v.status === "UTILIZADO" ? "UTILIZADO" : isExpired ? "EXPIRADO" : "DISPONIVEL";
+
+      return {
+        id: v.id,
+        pin: `#VCH-${v.id.slice(-6).toUpperCase()}`,
+        title: v.title,
+        pointsSpent: v.points_spent,
+        status: effectiveStatus,
+        createdAt: v.created_at,
+        expiresAt: v.expires_at,
+        usedAt: v.used_at,
+        client: v.client,
+        reward: v.reward,
+      };
+    });
+
+    return { success: true, vouchers: formattedVouchers };
+  } catch (error: any) {
+    console.error("Erro ao buscar voucher por PIN:", error);
+    return { success: false, error: "Erro ao localizar voucher." };
+  }
+}
+
 export async function markVoucherAsUsed(voucherId: string) {
   try {
-    const voucher = await prisma.clientVoucher.update({
-      where: { id: voucherId },
-      data: { status: "UTILIZADO", used_at: new Date() }
+    const admin = await requireAuth();
+
+    const voucher = await prisma.clientVoucher.findFirst({
+      where: {
+        id: voucherId,
+        client: { organization_id: admin.organizationId },
+      },
+      include: {
+        client: { select: { id: true, name: true } },
+      },
     });
-    return { success: true, voucher };
+
+    if (!voucher) {
+      return { success: false, error: "Voucher não encontrado nesta clínica." };
+    }
+
+    if (voucher.status === "UTILIZADO") {
+      const usedDate = voucher.used_at
+        ? new Date(voucher.used_at).toLocaleDateString("pt-BR")
+        : "";
+      return {
+        success: false,
+        error: `Este voucher já foi utilizado${usedDate ? ` em ${usedDate}` : ""}.`,
+      };
+    }
+
+    // Checagem de expiração formal
+    if (voucher.expires_at && new Date(voucher.expires_at) < new Date()) {
+      await prisma.clientVoucher.update({
+        where: { id: voucherId },
+        data: { status: "EXPIRADO" },
+      });
+      return {
+        success: false,
+        error: "Este voucher expirou e não pode mais ser utilizado.",
+      };
+    }
+
+    const updated = await prisma.clientVoucher.update({
+      where: { id: voucherId },
+      data: { status: "UTILIZADO", used_at: new Date() },
+      include: {
+        client: { select: { id: true, name: true } },
+      },
+    });
+
+    revalidatePath("/(private)/admin/loyalty", "page");
+    return { success: true, voucher: updated };
   } catch (error) {
     console.error("Erro ao utilizar voucher:", error);
-    return { success: false, error: "Erro ao utilizar voucher" };
+    return { success: false, error: "Erro ao utilizar voucher." };
   }
 }
