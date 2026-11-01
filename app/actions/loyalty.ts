@@ -406,10 +406,12 @@ export async function redeemLoyaltyReward(clientId: string, rewardId: string) {
       where: { id: clientId },
       select: {
         id: true,
+        organization_id: true,
         loyalty_points: true,
         loyalty_enrolled_at: true,
         organization: {
           select: {
+            id: true,
             loyalty_settings: {
               include: {
                 rewards: true
@@ -484,6 +486,19 @@ export async function redeemLoyaltyReward(clientId: string, rewardId: string) {
         },
       });
 
+      // 4. Registra no Ledger Imutável (Livro-Razão)
+      await tx.loyaltyTransaction.create({
+        data: {
+          organization_id: client.organization_id,
+          client_id: clientId,
+          type: "REWARD_REDEEM",
+          points: -reward.points_cost,
+          balance_after: updatedClient?.loyalty_points ?? 0,
+          description: `Resgate de Recompensa: ${reward.title}`,
+          voucher_id: createdVoucher.id,
+        },
+      });
+
       return {
         voucher: createdVoucher,
         newPoints: updatedClient?.loyalty_points ?? 0,
@@ -508,18 +523,222 @@ export async function redeemLoyaltyReward(clientId: string, rewardId: string) {
 
 export async function enrollClientInLoyalty(clientId: string, enroll: boolean) {
   try {
-    await prisma.client.update({
+    const admin = await requireAuth();
+
+    const client = await prisma.client.findUnique({
       where: { id: clientId },
-      data: { 
-        loyalty_enrolled_at: enroll ? new Date() : null,
-        loyalty_points: 0
-      }
+      select: { loyalty_points: true, organization_id: true, name: true },
     });
+
+    await prisma.$transaction(async (tx) => {
+      // Se estiver desmatriculando e o cliente tinha pontos acumulados, registra no Ledger o estorno/reset
+      if (!enroll && client && (client.loyalty_points || 0) > 0) {
+        await tx.loyaltyTransaction.create({
+          data: {
+            organization_id: client.organization_id,
+            client_id: clientId,
+            type: "MANUAL_ADJUST",
+            points: -client.loyalty_points,
+            balance_after: 0,
+            description: `Remoção do programa de fidelidade (saldo de ${client.loyalty_points} pts zerado)`,
+            created_by_id: admin.id,
+            created_by_name: admin.name || "Administrador",
+          },
+        });
+      }
+
+      await tx.client.update({
+        where: { id: clientId },
+        data: { 
+          loyalty_enrolled_at: enroll ? new Date() : null,
+          loyalty_points: 0
+        }
+      });
+    });
+
     revalidatePath("/(private)/admin/loyalty", "page");
     return { success: true };
   } catch (error) {
     console.error("Erro ao alterar matricula do cliente:", error);
     return { success: false, error: "Erro ao alterar matrícula do cliente" };
+  }
+}
+
+export async function adjustClientLoyaltyPoints(data: {
+  clientId: string;
+  points: number;
+  reason: string;
+}) {
+  try {
+    const admin = await requireAuth();
+    const { clientId, points, reason } = data;
+
+    if (!points || points === 0) {
+      return { success: false, error: "A quantidade de pontos deve ser diferente de zero." };
+    }
+    if (!reason || !reason.trim()) {
+      return { success: false, error: "Informe o motivo ou justificativa do ajuste." };
+    }
+
+    const client = await prisma.client.findFirst({
+      where: { id: clientId, organization_id: admin.organizationId },
+      include: {
+        organization: {
+          include: { loyalty_settings: true },
+        },
+      },
+    });
+
+    if (!client) {
+      return { success: false, error: "Cliente não encontrado nesta clínica." };
+    }
+
+    const settings = client.organization?.loyalty_settings;
+    const maxPoints = settings?.max_points || 500;
+    const currentPoints = client.loyalty_points || 0;
+
+    let newPoints = currentPoints + points;
+    if (newPoints < 0) newPoints = 0;
+    if (points > 0 && newPoints > maxPoints) newPoints = maxPoints;
+
+    const actualDiff = newPoints - currentPoints;
+    if (actualDiff === 0) {
+      return {
+        success: false,
+        error: points > 0
+          ? `O cliente já atingiu o limite máximo de ${maxPoints} pontos.`
+          : "O saldo do cliente já está zerado.",
+      };
+    }
+
+    const transaction = await prisma.$transaction(async (tx) => {
+      await tx.client.update({
+        where: { id: clientId },
+        data: { loyalty_points: newPoints },
+      });
+
+      const entry = await tx.loyaltyTransaction.create({
+        data: {
+          organization_id: admin.organizationId,
+          client_id: clientId,
+          type: actualDiff > 0 ? "MANUAL_BONUS" : "MANUAL_ADJUST",
+          points: actualDiff,
+          balance_after: newPoints,
+          description: reason.trim(),
+          created_by_id: admin.id,
+          created_by_name: admin.name || "Administrador",
+        },
+      });
+
+      return entry;
+    });
+
+    revalidatePath("/(private)/admin/loyalty", "page");
+
+    return {
+      success: true,
+      newPoints,
+      transaction,
+    };
+  } catch (error) {
+    console.error("Erro ao ajustar pontos manualmente:", error);
+    return { success: false, error: "Erro interno ao realizar ajuste de pontos." };
+  }
+}
+
+export async function getPaginatedLoyaltyTransactions({
+  page = 1,
+  limit = 15,
+  search = "",
+  type = "ALL",
+}: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  type?: string;
+} = {}) {
+  try {
+    const admin = await requireAuth();
+    const organizationId = admin.organizationId;
+
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.max(1, Math.min(100, limit));
+    const skip = (safePage - 1) * safeLimit;
+
+    const where: any = {
+      organization_id: organizationId,
+    };
+
+    if (type && type !== "ALL") {
+      where.type = type;
+    }
+
+    if (search && search.trim()) {
+      where.OR = [
+        { client: { name: { contains: search.trim(), mode: "insensitive" } } },
+        { description: { contains: search.trim(), mode: "insensitive" } },
+      ];
+    }
+
+    const [transactions, total, statsCredit, statsDebit] = await Promise.all([
+      prisma.loyaltyTransaction.findMany({
+        where,
+        include: {
+          client: {
+            select: { id: true, name: true, phone_whatsapp: true },
+          },
+        },
+        orderBy: { created_at: "desc" },
+        skip,
+        take: safeLimit,
+      }),
+      prisma.loyaltyTransaction.count({ where }),
+      prisma.loyaltyTransaction.aggregate({
+        where: { organization_id: organizationId, points: { gt: 0 } },
+        _sum: { points: true },
+      }),
+      prisma.loyaltyTransaction.aggregate({
+        where: { organization_id: organizationId, points: { lt: 0 } },
+        _sum: { points: true },
+      }),
+    ]);
+
+    const formattedTransactions = transactions.map((t) => ({
+      id: t.id,
+      clientName: t.client?.name || "Cliente Desconhecido",
+      clientId: t.client_id,
+      clientPhone: t.client?.phone_whatsapp || "",
+      type: t.type,
+      points: t.points,
+      balanceAfter: t.balance_after,
+      description: t.description,
+      createdAt: t.created_at,
+      createdByName: t.created_by_name || "Sistema",
+    }));
+
+    return {
+      success: true,
+      transactions: formattedTransactions,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / safeLimit)),
+      page: safePage,
+      stats: {
+        totalGranted: statsCredit._sum.points || 0,
+        totalSpent: Math.abs(statsDebit._sum.points || 0),
+        totalTransactions: total,
+      },
+    };
+  } catch (error) {
+    console.error("Erro ao buscar extrato de transações de fidelidade:", error);
+    return {
+      success: false,
+      error: "Erro ao buscar extrato de fidelidade",
+      transactions: [],
+      total: 0,
+      totalPages: 1,
+      page: 1,
+      stats: { totalGranted: 0, totalSpent: 0, totalTransactions: 0 },
+    };
   }
 }
 
@@ -553,9 +772,32 @@ export async function getClientLoyaltyHistory(clientId: string) {
       return { success: true, history: [] };
     }
 
-    // A data de início dos pontos nunca deve ser 1970 (new Date(0)).
-    // Se o cliente foi matriculado especificamente, conta a partir de loyalty_enrolled_at.
-    // Se a abrangência for global, conta a partir da data de ativação (activated_at ou created_at) do programa.
+    // 1. Busca primeiro se existem transações no Ledger imutável
+    const ledgerEntries = await prisma.loyaltyTransaction.findMany({
+      where: { client_id: client.id },
+      orderBy: { created_at: "desc" },
+    });
+
+    const vouchers = await prisma.clientVoucher.findMany({
+      where: { client_id: client.id },
+      orderBy: { created_at: "desc" },
+    });
+
+    // Se houver transações gravadas no Ledger, usamos diretamente com fidelidade máxima!
+    if (ledgerEntries.length > 0) {
+      const history = ledgerEntries.map((item) => ({
+        id: item.id,
+        type: item.type === "REWARD_REDEEM" ? "redeem" : item.type.toLowerCase(),
+        date: item.created_at,
+        points: item.points,
+        description: item.description,
+        balanceAfter: item.balance_after,
+      }));
+
+      return { success: true, history, vouchers, points: client.loyalty_points };
+    }
+
+    // Fallback retroativo para dados pré-ledger
     const programActivationDate = settings.activated_at 
       ? new Date(settings.activated_at) 
       : (settings.created_at ? new Date(settings.created_at) : new Date());
@@ -585,7 +827,7 @@ export async function getClientLoyaltyHistory(clientId: string) {
       })));
     }
 
-    // Busca agendamentos (se o check-in estiver ativo e pontuando, desconsidera agendamentos que já possuem check-in para não duplicar no histórico)
+    // Busca agendamentos
     if (settings.schedule_active && settings.schedule_points > 0) {
       const appointments = await prisma.appointment.findMany({
         where: {
@@ -617,12 +859,6 @@ export async function getClientLoyaltyHistory(clientId: string) {
     }
 
     // Busca resgates de vouchers (débitos de pontos no histórico)
-    const vouchers = await prisma.clientVoucher.findMany({
-      where: { client_id: client.id },
-      orderBy: { created_at: 'desc' }
-    });
-
-    // Unifica os vouchers no histórico com tipo 'redeem' e pontos negativos
     history.push(...vouchers.map(v => ({
       id: v.id,
       type: 'redeem' as const,
@@ -667,9 +903,9 @@ export async function findVoucherByPin(pin: string) {
       return { success: false, error: "Digite o código PIN do voucher." };
     }
 
-    const cleanPin = pin.trim().replace(/^#?VCH-/i, "").toLowerCase();
+    const cleanPin = pin.trim().replace(/^#?VCH-/i, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
     if (cleanPin.length < 3) {
-      return { success: false, error: "Informe ao menos 3 caracteres do PIN do voucher." };
+      return { success: false, error: "Informe ao menos 3 caracteres do código do voucher." };
     }
 
     // Atualiza vouchers vencidos da organização em background
@@ -723,7 +959,7 @@ export async function findVoucherByPin(pin: string) {
   }
 }
 
-export async function markVoucherAsUsed(voucherId: string) {
+export async function markVoucherAsUsed(voucherId: string, forceIfExpired: boolean = false) {
   try {
     const admin = await requireAuth();
 
@@ -751,15 +987,18 @@ export async function markVoucherAsUsed(voucherId: string) {
       };
     }
 
-    // Checagem de expiração formal
-    if (voucher.expires_at && new Date(voucher.expires_at) < new Date()) {
+    const isExpired = voucher.expires_at && new Date(voucher.expires_at) < new Date();
+
+    // Se estiver expirado e o admin não tiver forçado a autorização por cortesia
+    if (isExpired && !forceIfExpired) {
       await prisma.clientVoucher.update({
         where: { id: voucherId },
         data: { status: "EXPIRADO" },
       });
       return {
         success: false,
-        error: "Este voucher expirou e não pode mais ser utilizado.",
+        error: "Este voucher está expirado. Deseja reativá-lo ou autorizar o uso por cortesia?",
+        isExpired: true,
       };
     }
 
@@ -776,5 +1015,50 @@ export async function markVoucherAsUsed(voucherId: string) {
   } catch (error) {
     console.error("Erro ao utilizar voucher:", error);
     return { success: false, error: "Erro ao utilizar voucher." };
+  }
+}
+
+export async function reactivateVoucher(voucherId: string, additionalDays: number = 30) {
+  try {
+    const admin = await requireAuth();
+
+    const voucher = await prisma.clientVoucher.findFirst({
+      where: {
+        id: voucherId,
+        client: { organization_id: admin.organizationId },
+      },
+      include: {
+        client: { select: { id: true, name: true } },
+      },
+    });
+
+    if (!voucher) {
+      return { success: false, error: "Voucher não encontrado nesta clínica." };
+    }
+
+    if (voucher.status === "UTILIZADO") {
+      return { success: false, error: "Vouchers já utilizados não podem ser reativados." };
+    }
+
+    // Calcula a nova data de validade a partir de hoje
+    const newExpiresAt = new Date();
+    newExpiresAt.setDate(newExpiresAt.getDate() + additionalDays);
+
+    const updated = await prisma.clientVoucher.update({
+      where: { id: voucherId },
+      data: {
+        status: "DISPONIVEL",
+        expires_at: newExpiresAt,
+      },
+      include: {
+        client: { select: { id: true, name: true } },
+      },
+    });
+
+    revalidatePath("/(private)/admin/loyalty", "page");
+    return { success: true, voucher: updated };
+  } catch (error) {
+    console.error("Erro ao reativar voucher:", error);
+    return { success: false, error: "Erro interno ao reativar voucher." };
   }
 }

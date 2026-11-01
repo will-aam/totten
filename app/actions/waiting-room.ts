@@ -309,6 +309,23 @@ export async function createManualCheckIn(data: {
             where: { id: data.clientId },
             data: { loyalty_points: newPoints },
           });
+
+          const diff = newPoints - (clientCurrent?.loyalty_points || 0);
+          if (diff > 0) {
+            await tx.loyaltyTransaction.create({
+              data: {
+                organization_id: organizationId,
+                client_id: data.clientId,
+                type: "CHECK_IN",
+                points: diff,
+                balance_after: newPoints,
+                description: `Check-in na Recepção (${service?.name || "Serviço"})`,
+                check_in_id: ci.id,
+                created_by_id: admin.id,
+                created_by_name: admin.name || "Administrador",
+              },
+            });
+          }
         }
       }
 

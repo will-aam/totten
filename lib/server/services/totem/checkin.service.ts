@@ -293,6 +293,23 @@ export class TotemCheckInService {
             where: { id: appt.client_id },
             data: { loyalty_points: newPoints }
           });
+
+          const diff = newPoints - (clientCurrent?.loyalty_points || 0);
+          if (diff > 0) {
+            await tx.loyaltyTransaction.create({
+              data: {
+                organization_id: organizationId,
+                client_id: appt.client_id,
+                type: "CHECK_IN",
+                points: diff,
+                balance_after: newPoints,
+                description: `Check-in no Totem (${appt.snapshot_service_name || appt.service?.name || "Serviço"})`,
+                check_in_id: checkIn.id,
+                appointment_id: appt.id,
+                created_by_name: "Totem Autoatendimento",
+              },
+            });
+          }
         }
       }
 
@@ -565,6 +582,22 @@ export class TotemCheckInService {
             where: { id: client.id },
             data: { loyalty_points: newPoints },
           });
+
+          const diff = newPoints - (clientCurrent?.loyalty_points || 0);
+          if (diff > 0) {
+            await tx.loyaltyTransaction.create({
+              data: {
+                organization_id: organizationId,
+                client_id: client.id,
+                type: "CHECK_IN",
+                points: diff,
+                balance_after: newPoints,
+                description: `Check-in no Totem (por CPF)`,
+                check_in_id: checkIn.id,
+                created_by_name: "Totem Autoatendimento",
+              },
+            });
+          }
         }
       }
 

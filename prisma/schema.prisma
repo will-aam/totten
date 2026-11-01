@@ -33,6 +33,7 @@ model Organization {
   transactions        Transaction[]
   admins              Admin[]                     @relation("AdminToOrganization")
   loyalty_settings    LoyaltySettings?
+  loyalty_transactions LoyaltyTransaction[]
 
   working_hours       WorkingHour[]
   schedule_exceptions ScheduleException[]
@@ -229,6 +230,7 @@ model Client {
   professional_likes   ProfessionalLike[]
   professional_reviews ProfessionalReview[]
   ClientVoucher        ClientVoucher[]
+  loyalty_transactions LoyaltyTransaction[]
 
   @@unique([cpf, organization_id])
   @@map("clients")
@@ -740,4 +742,31 @@ model ClientVoucher {
   reward LoyaltyReward? @relation(fields: [reward_id], references: [id], onDelete: SetNull)
 
   @@map("client_vouchers")
+}
+
+model LoyaltyTransaction {
+  id              String       @id @default(cuid())
+  organization_id String
+  client_id       String
+
+  // Tipo da movimentação: CHECK_IN, APPOINTMENT, REWARD_REDEEM, MANUAL_BONUS, MANUAL_ADJUST, REVERT_APPOINTMENT, REVERT_CHECK_IN
+  type            String
+  points          Int
+  balance_after   Int
+  description     String
+
+  appointment_id  String?
+  check_in_id     String?
+  voucher_id      String?
+  created_by_id   String?
+  created_by_name String?
+
+  created_at      DateTime     @default(now())
+
+  client          Client       @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@index([client_id, created_at])
+  @@index([organization_id, created_at])
+  @@map("loyalty_transactions")
 }

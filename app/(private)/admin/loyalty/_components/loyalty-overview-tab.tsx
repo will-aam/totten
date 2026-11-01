@@ -8,22 +8,23 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { 
-  AlertDialog, 
-  AlertDialogAction, 
-  AlertDialogCancel, 
-  AlertDialogContent, 
-  AlertDialogDescription, 
-  AlertDialogFooter, 
-  AlertDialogHeader, 
-  AlertDialogTitle 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { 
-  enrollClientInLoyalty, 
-  getClientLoyaltyHistory, 
+import {
+  enrollClientInLoyalty,
+  getClientLoyaltyHistory,
   markVoucherAsUsed,
+  reactivateVoucher,
   findVoucherByPin,
   getPaginatedLoyaltyClients,
   getUnenrolledClients
@@ -235,12 +236,12 @@ export function LoyaltyOverviewTab({
     }
   };
 
-  const handleUsePinVoucher = async (voucherId: string) => {
+  const handleUsePinVoucher = async (voucherId: string, forceIfExpired = false) => {
     setIsUsingPinVoucher(true);
     try {
-      const res = await markVoucherAsUsed(voucherId);
+      const res = await markVoucherAsUsed(voucherId, forceIfExpired);
       if (res.success) {
-        toast.success("Voucher baixado com sucesso!");
+        toast.success(forceIfExpired ? "Voucher autorizado e baixado como cortesia!" : "Voucher baixado com sucesso!");
         setFoundVouchers((prev) =>
           prev.map((v) =>
             v.id === voucherId
@@ -259,9 +260,33 @@ export function LoyaltyOverviewTab({
     }
   };
 
+  const handleReactivatePinVoucher = async (voucherId: string, days = 30) => {
+    setIsUsingPinVoucher(true);
+    try {
+      const res = await reactivateVoucher(voucherId, days);
+      if (res.success && res.voucher) {
+        toast.success(`Voucher reativado com sucesso por mais ${days} dias!`);
+        setFoundVouchers((prev) =>
+          prev.map((v) =>
+            v.id === voucherId
+              ? { ...v, status: "DISPONIVEL", expiresAt: res.voucher.expires_at }
+              : v
+          )
+        );
+        fetchClients(currentPage, debouncedSearch, programScope);
+      } else {
+        toast.error(res.error || "Erro ao reativar voucher.");
+      }
+    } catch (err) {
+      toast.error("Erro interno ao reativar voucher.");
+    } finally {
+      setIsUsingPinVoucher(false);
+    }
+  };
+
   const openHistory = async (client: Client) => {
     setSelectedClientForHistory(client);
-    
+
     // Cache de histórico se disponível
     if (historyCache[client.id]) {
       setClientHistory(historyCache[client.id].history);
@@ -280,13 +305,13 @@ export function LoyaltyOverviewTab({
       if (res.points !== undefined) {
         setSelectedClientForHistory((prev) => prev ? { ...prev, points: res.points } : null);
       }
-      setHistoryCache((prev) => ({ 
-        ...prev, 
-        [client.id]: { 
-          history: res.history, 
+      setHistoryCache((prev) => ({
+        ...prev,
+        [client.id]: {
+          history: res.history,
           vouchers: res.vouchers || [],
-          points: res.points 
-        } 
+          points: res.points
+        }
       }));
     } else {
       toast.error(res.error || "Erro ao carregar histórico.");
@@ -296,10 +321,10 @@ export function LoyaltyOverviewTab({
     setIsLoadingHistory(false);
   };
 
-  const handleMarkVoucherUsed = async (voucherId: string) => {
-    const res = await markVoucherAsUsed(voucherId);
+  const handleMarkVoucherUsed = async (voucherId: string, forceIfExpired = false) => {
+    const res = await markVoucherAsUsed(voucherId, forceIfExpired);
     if (res.success) {
-      toast.success("Voucher marcado como utilizado!");
+      toast.success(forceIfExpired ? "Voucher autorizado e baixado como cortesia!" : "Voucher marcado como utilizado!");
       setClientVouchers((prev) => prev.map((v) => v.id === voucherId ? { ...v, status: "UTILIZADO" } : v));
       if (selectedClientForHistory) {
         setHistoryCache((prev) => {
@@ -316,6 +341,43 @@ export function LoyaltyOverviewTab({
       }
     } else {
       toast.error(res.error || "Erro ao utilizar voucher.");
+    }
+  };
+
+  const handleReactivateVoucher = async (voucherId: string, days = 30) => {
+    try {
+      const res = await reactivateVoucher(voucherId, days);
+      if (res.success && res.voucher) {
+        toast.success(`Voucher reativado com sucesso por mais ${days} dias!`);
+        setClientVouchers((prev) =>
+          prev.map((v) =>
+            v.id === voucherId
+              ? { ...v, status: "DISPONIVEL", expires_at: res.voucher.expires_at }
+              : v
+          )
+        );
+        if (selectedClientForHistory) {
+          setHistoryCache((prev) => {
+            const cache = prev[selectedClientForHistory.id];
+            if (!cache) return prev;
+            return {
+              ...prev,
+              [selectedClientForHistory.id]: {
+                ...cache,
+                vouchers: cache.vouchers.map((v) =>
+                  v.id === voucherId
+                    ? { ...v, status: "DISPONIVEL", expires_at: res.voucher.expires_at }
+                    : v
+                ),
+              },
+            };
+          });
+        }
+      } else {
+        toast.error(res.error || "Erro ao reativar voucher.");
+      }
+    } catch (e) {
+      toast.error("Erro interno ao reativar voucher.");
     }
   };
 
@@ -341,73 +403,58 @@ export function LoyaltyOverviewTab({
 
   return (
     <>
-      {/* 1. CARD DE VALIDAÇÃO RÁPIDA DE VOUCHER POR PIN NA RECEPÇÃO */}
-      <Card className="rounded-3xl border-border/70 bg-gradient-to-r from-card via-card to-primary/5 shadow-xs overflow-hidden">
-        <CardContent className="p-4 sm:p-5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="h-11 w-11 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-              <Ticket className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-bold text-sm sm:text-base text-foreground flex items-center gap-2">
-                Validar Voucher: digite o código PIN
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                Localize a recompensa do cliente e dê baixa imediata com 1 clique.
-              </p>
-            </div>
-          </div>
-
-          <form onSubmit={handleSearchPin} className="flex items-center gap-2 w-full md:w-auto">
-            <div className="relative flex-1 md:w-64">
-              <Input
-                placeholder="Ex: #VCH-AB12CD ou AB12CD"
-                value={pinQuery}
-                onChange={(e) => setPinQuery(e.target.value)}
-                className="rounded-full bg-background font-mono text-xs sm:text-sm uppercase tracking-wider pl-4 pr-3 h-10"
-              />
-            </div>
-            <Button
-              type="submit"
-              disabled={isSearchingPin || !pinQuery.trim()}
-              className="rounded-full shrink-0 font-bold h-10 px-5 shadow-xs"
-            >
-              {isSearchingPin ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Validando...
-                </>
-              ) : (
-                "Validar PIN"
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
-        <div className="relative w-full sm:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size="sm" />
+      {/* Barra de Ações Superior (Chapada e Minimalista) */}
+      <div className="flex flex-col lg:flex-row gap-3 justify-between items-stretch lg:items-center">
+        {/* Busca de Cliente */}
+        <div className="relative w-full lg:w-80">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Buscar cliente por nome..."
-            className="pl-10 rounded-full bg-card"
+            className="pl-10 rounded-full bg-card h-10 border-border/70"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
 
-        {programScope === "specific" && (
-          <Button 
-            className="rounded-full w-full sm:w-auto flex items-center gap-2"
-            onClick={() => {
-              setModalSearchQuery("");
-              setIsAddClientOpen(true);
-            }}
-          >
-            <Plus size="xs" />
-            Incluir Cliente
-          </Button>
-        )}
+        {/* Validador Rápido de Voucher por PIN + Incluir Cliente */}
+        <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full lg:w-auto">
+          <form onSubmit={handleSearchPin} className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative w-full sm:w-60">
+              <Ticket className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder=""
+                value={pinQuery}
+                onChange={(e) => setPinQuery(e.target.value.toUpperCase())}
+                className="pl-10 rounded-full bg-card font-mono text-xs sm:text-sm uppercase tracking-wider h-10 border-border/70"
+              />
+            </div>
+            <Button
+              type="submit"
+              variant="outline"
+              disabled={isSearchingPin || !pinQuery.trim()}
+              className="rounded-full shrink-0 font-medium h-10 px-4 hover:border-primary/50 text-xs sm:text-sm"
+            >
+              {isSearchingPin ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                "Validar Voucher"
+              )}
+            </Button>
+          </form>
+
+          {programScope === "specific" && (
+            <Button
+              className="rounded-full w-full sm:w-auto flex items-center justify-center gap-1.5 h-10 px-4 text-xs sm:text-sm font-semibold shrink-0"
+              onClick={() => {
+                setModalSearchQuery("");
+                setIsAddClientOpen(true);
+              }}
+            >
+              <Plus size="xs" />
+              Incluir Cliente
+            </Button>
+          )}
+        </div>
       </div>
 
       {isLoadingClients ? (
@@ -425,8 +472,8 @@ export function LoyaltyOverviewTab({
       ) : clients.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {clients.map((client) => (
-            <Card 
-              key={client.id} 
+            <Card
+              key={client.id}
               className="rounded-2xl shadow-sm border-border/50 relative overflow-hidden cursor-pointer hover:border-primary/50 transition-colors group"
               onClick={() => openHistory(client)}
             >
@@ -450,9 +497,9 @@ export function LoyaltyOverviewTab({
               <CardContent className="relative z-10 p-5 flex flex-col items-center text-center gap-2">
                 {programScope === "specific" && (
                   <div className="absolute top-2 right-2 z-20">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -470,7 +517,7 @@ export function LoyaltyOverviewTab({
                   </p>
                 </div>
                 <div className="mt-2 inline-flex items-center gap-1.5 bg-secondary/50 px-3 py-1 rounded-full text-sm font-medium pointer-events-none">
-                  <span className="text-primary font-bold">{client.points}</span> 
+                  <span className="text-primary font-bold">{client.points}</span>
                   <span>pts</span>
                 </div>
 
@@ -479,9 +526,9 @@ export function LoyaltyOverviewTab({
                   const currentPoints = client.points || 0;
                   const nextReward = rewards.slice().sort((a, b) => a.pointsCost - b.pointsCost).find((r) => currentPoints < r.pointsCost);
                   const percentage = nextReward ? Math.min(100, Math.round((currentPoints / nextReward.pointsCost) * 100)) : (rewards.length > 0 ? 100 : 0);
-                  
+
                   if (rewards.length === 0) return null;
-                  
+
                   return (
                     <div className="w-full mt-3 px-2">
                       {nextReward ? (
@@ -501,8 +548,8 @@ export function LoyaltyOverviewTab({
                 })()}
 
                 <div className="flex items-center gap-2 mt-4 w-full pt-4 border-t border-border/50">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="rounded-xl flex-1 flex items-center justify-center gap-1.5 h-9 text-xs text-muted-foreground hover:text-foreground hover:border-primary/50 transition-all z-20 relative font-medium"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -526,7 +573,7 @@ export function LoyaltyOverviewTab({
           </div>
           <h3 className="text-lg font-semibold">Nenhum cliente no programa</h3>
           <p className="text-muted-foreground max-w-sm mt-1 text-sm">
-            {programScope === "specific" 
+            {programScope === "specific"
               ? "Clique em 'Incluir Cliente' para adicionar clientes a este programa."
               : "Não há clientes elegíveis ou cadastrados no momento."}
           </p>
@@ -537,16 +584,16 @@ export function LoyaltyOverviewTab({
         <Pagination className="mt-8">
           <PaginationContent>
             <PaginationItem>
-              <PaginationPrevious 
-                href="#" 
+              <PaginationPrevious
+                href="#"
                 onClick={(e) => {
                   e.preventDefault();
                   handlePageChange(currentPage - 1);
                 }}
-                className={cn("rounded-full", (currentPage <= 1 || isLoadingClients) && "pointer-events-none opacity-50")} 
+                className={cn("rounded-full", (currentPage <= 1 || isLoadingClients) && "pointer-events-none opacity-50")}
               />
             </PaginationItem>
-            
+
             {Array.from({ length: totalPages }, (_, i) => i + 1)
               .filter((page) => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 2)
               .map((page, idx, array) => {
@@ -557,8 +604,8 @@ export function LoyaltyOverviewTab({
                       <span className="px-2 text-muted-foreground text-sm">...</span>
                     )}
                     <PaginationItem>
-                      <PaginationLink 
-                        href="#" 
+                      <PaginationLink
+                        href="#"
                         isActive={currentPage === page}
                         onClick={(e) => {
                           e.preventDefault();
@@ -574,8 +621,8 @@ export function LoyaltyOverviewTab({
               })}
 
             <PaginationItem>
-              <PaginationNext 
-                href="#" 
+              <PaginationNext
+                href="#"
                 onClick={(e) => {
                   e.preventDefault();
                   handlePageChange(currentPage + 1);
@@ -588,8 +635,8 @@ export function LoyaltyOverviewTab({
       )}
 
       {/* Modal: Incluir Cliente */}
-      <Dialog 
-        open={isAddClientOpen} 
+      <Dialog
+        open={isAddClientOpen}
         onOpenChange={(open) => {
           setIsAddClientOpen(open);
           if (!open) setModalSearchQuery("");
@@ -603,8 +650,8 @@ export function LoyaltyOverviewTab({
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
-            <Input 
-              placeholder="Buscar cliente..." 
+            <Input
+              placeholder="Buscar cliente..."
               value={modalSearchQuery}
               onChange={(e) => setModalSearchQuery(e.target.value)}
               className="rounded-full"
@@ -624,8 +671,8 @@ export function LoyaltyOverviewTab({
                 unenrolledClients.map((client) => (
                   <div key={client.id} className="flex items-center justify-between p-3 border rounded-xl">
                     <span className="font-medium text-sm">{client.name}</span>
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       className="rounded-full"
                       onClick={() => handleEnroll(client.id)}
                       disabled={addingClient === client.id}
@@ -689,8 +736,8 @@ export function LoyaltyOverviewTab({
                         isAvailable
                           ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
                           : isUsed
-                          ? "bg-slate-100 text-slate-700"
-                          : "bg-red-100 text-red-700"
+                            ? "bg-slate-100 text-slate-700"
+                            : "bg-red-100 text-red-700"
                       )}
                     >
                       {isAvailable ? "Disponível" : isUsed ? "Já Utilizado" : "Expirado"}
@@ -743,9 +790,34 @@ export function LoyaltyOverviewTab({
                           </>
                         )}
                       </Button>
+                    ) : isExpired ? (
+                      <div className="space-y-2">
+                        <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 dark:text-amber-300">
+                          <strong>Voucher expirado:</strong> Como administrador, você pode reativar a validade para o cliente ou autorizar a baixa imediata como cortesia.
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => handleReactivatePinVoucher(v.id, 30)}
+                            disabled={isUsingPinVoucher}
+                            className="rounded-2xl h-11 text-xs font-bold"
+                          >
+                            Reativar (+30 dias)
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={() => handleUsePinVoucher(v.id, true)}
+                            disabled={isUsingPinVoucher}
+                            className="rounded-2xl h-11 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white"
+                          >
+                            Autorizar Uso Agora
+                          </Button>
+                        </div>
+                      </div>
                     ) : (
                       <Button disabled variant="outline" className="w-full rounded-2xl h-10 text-xs">
-                        {isUsed ? "Voucher já utilizado anteriormente" : "Voucher expirado - baixa não permitida"}
+                        Voucher já utilizado anteriormente
                       </Button>
                     )}
                   </div>
@@ -784,7 +856,7 @@ export function LoyaltyOverviewTab({
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-4 gap-2">
             <AlertDialogCancel className="rounded-full">Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={confirmRemove}
               className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 font-bold"
             >
@@ -824,7 +896,7 @@ export function LoyaltyOverviewTab({
                       <TabsTrigger value="history">Histórico</TabsTrigger>
                       <TabsTrigger value="vouchers">Vouchers</TabsTrigger>
                     </TabsList>
-                    
+
                     <TabsContent value="history" className="mt-2">
                       {clientHistory.length === 0 ? (
                         <div className="text-center p-8 text-muted-foreground bg-muted/30 rounded-xl">
@@ -877,7 +949,7 @@ export function LoyaltyOverviewTab({
                               const isUsed = voucher.status === "UTILIZADO";
                               const isExpired = !isUsed && voucher.expires_at && new Date(voucher.expires_at) < new Date();
                               const displayStatus = isUsed ? "UTILIZADO" : isExpired ? "EXPIRADO" : "DISPONÍVEL";
-                              
+
                               return (
                                 <div key={voucher.id} className="flex flex-col gap-2 p-3 rounded-xl border border-border/50 bg-background">
                                   <div className="flex items-center justify-between">
@@ -889,8 +961,8 @@ export function LoyaltyOverviewTab({
                                     </div>
                                     <span className={cn(
                                       "px-2 py-1 rounded-full text-xs font-bold",
-                                      displayStatus === "DISPONÍVEL" ? "bg-green-100 text-green-700" : 
-                                      displayStatus === "EXPIRADO" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700"
+                                      displayStatus === "DISPONÍVEL" ? "bg-green-100 text-green-700" :
+                                        displayStatus === "EXPIRADO" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700"
                                     )}>
                                       {displayStatus}
                                     </span>
@@ -910,6 +982,26 @@ export function LoyaltyOverviewTab({
                                       <Button size="sm" variant="outline" onClick={() => handleMarkVoucherUsed(voucher.id)}>
                                         Marcar como Usado
                                       </Button>
+                                    )}
+                                    {displayStatus === "EXPIRADO" && (
+                                      <div className="flex items-center gap-1.5">
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="text-xs h-8 rounded-xl font-semibold"
+                                          onClick={() => handleReactivateVoucher(voucher.id, 30)}
+                                        >
+                                          Reativar (+30d)
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          className="text-xs h-8 rounded-xl text-amber-700 hover:text-amber-800 hover:bg-amber-500/10 font-bold"
+                                          onClick={() => handleMarkVoucherUsed(voucher.id, true)}
+                                        >
+                                          Autorizar Uso
+                                        </Button>
+                                      </div>
                                     )}
                                   </div>
                                 </div>
@@ -1011,7 +1103,7 @@ export function LoyaltyOverviewTab({
                           const isUsed = voucher.status === "UTILIZADO";
                           const isExpired = !isUsed && voucher.expires_at && new Date(voucher.expires_at) < new Date();
                           const displayStatus = isUsed ? "UTILIZADO" : isExpired ? "EXPIRADO" : "DISPONÍVEL";
-                          
+
                           return (
                             <div key={voucher.id} className="flex flex-col gap-2 p-3 rounded-xl border border-border/50 bg-background">
                               <div className="flex items-center justify-between">
@@ -1023,8 +1115,8 @@ export function LoyaltyOverviewTab({
                                 </div>
                                 <span className={cn(
                                   "px-2 py-1 rounded-full text-xs font-bold",
-                                  displayStatus === "DISPONÍVEL" ? "bg-green-100 text-green-700" : 
-                                  displayStatus === "EXPIRADO" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700"
+                                  displayStatus === "DISPONÍVEL" ? "bg-green-100 text-green-700" :
+                                    displayStatus === "EXPIRADO" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700"
                                 )}>
                                   {displayStatus}
                                 </span>
@@ -1044,6 +1136,26 @@ export function LoyaltyOverviewTab({
                                   <Button size="sm" variant="outline" onClick={() => handleMarkVoucherUsed(voucher.id)}>
                                     Marcar como Usado
                                   </Button>
+                                )}
+                                {displayStatus === "EXPIRADO" && (
+                                  <div className="flex items-center gap-1.5">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-xs h-8 rounded-xl font-semibold"
+                                      onClick={() => handleReactivateVoucher(voucher.id, 30)}
+                                    >
+                                      Reativar (+30d)
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="text-xs h-8 rounded-xl text-amber-700 hover:text-amber-800 hover:bg-amber-500/10 font-bold"
+                                      onClick={() => handleMarkVoucherUsed(voucher.id, true)}
+                                    >
+                                      Autorizar Uso
+                                    </Button>
+                                  </div>
                                 )}
                               </div>
                             </div>

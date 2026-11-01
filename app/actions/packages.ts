@@ -633,6 +633,22 @@ export async function createManualPackageCheckIn(
             where: { id: pkg.client_id },
             data: { loyalty_points: newPoints },
           });
+
+          const diff = newPoints - (clientCurrent?.loyalty_points || 0);
+          if (diff > 0) {
+            await tx.loyaltyTransaction.create({
+              data: {
+                organization_id: admin.organizationId,
+                client_id: pkg.client_id,
+                type: "CHECK_IN",
+                points: diff,
+                balance_after: newPoints,
+                description: `Check-in de Sessão de Pacote (${pkg.name || "Pacote"})`,
+                created_by_id: admin.id,
+                created_by_name: admin.name || "Administrador",
+              },
+            });
+          }
         }
       }
 
@@ -843,6 +859,23 @@ export async function deleteCheckIn(checkInId: string) {
             where: { id: checkIn.client_id },
             data: { loyalty_points: newPoints },
           });
+
+          const diff = (clientCurrent?.loyalty_points || 0) - newPoints;
+          if (diff > 0) {
+            await tx.loyaltyTransaction.create({
+              data: {
+                organization_id: admin.organizationId,
+                client_id: checkIn.client_id,
+                type: "REVERT_CHECK_IN",
+                points: -diff,
+                balance_after: newPoints,
+                description: `Estorno de check-in cancelado`,
+                check_in_id: checkInId,
+                created_by_id: admin.id,
+                created_by_name: admin.name || "Administrador",
+              },
+            });
+          }
         }
       }
 

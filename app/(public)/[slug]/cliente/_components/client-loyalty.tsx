@@ -8,15 +8,15 @@ import { useIsMobile } from "@/components/ui/use-mobile";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
-import { 
-  AlertDialog, 
-  AlertDialogAction, 
-  AlertDialogCancel, 
-  AlertDialogContent, 
-  AlertDialogDescription, 
-  AlertDialogFooter, 
-  AlertDialogHeader, 
-  AlertDialogTitle 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -193,7 +193,7 @@ export function ClientLoyalty({ loyaltyInfo, clientName, clientId }: { loyaltyIn
                       </span>
                       {canAfford && (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                          <Sparkles className="w-3 h-3" /> Disponível
+                          Disponível
                         </span>
                       )}
                     </div>
@@ -307,7 +307,7 @@ export function ClientLoyalty({ loyaltyInfo, clientName, clientId }: { loyaltyIn
             <AlertDialogCancel disabled={isRedeeming} className="rounded-full">
               Cancelar
             </AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
                 handleConfirmRedeem();

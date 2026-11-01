@@ -4,10 +4,12 @@ import { useState } from "react";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { UserCircle, Cog } from "@boxicons/react";
+import { Receipt } from "lucide-react";
 
 import { LoyaltyVoucher } from "./loyalty-voucher";
 import { LoyaltyOverviewTab } from "./loyalty-overview-tab";
 import { LoyaltySettingsTab } from "./loyalty-settings-tab";
+import { LoyaltyTransactionsTab } from "./loyalty-transactions-tab";
 import { updateLoyaltySettings } from "@/app/actions/loyalty";
 import { toast } from "sonner";
 
@@ -71,10 +73,14 @@ export function LoyaltyView({
 
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto mb-6 rounded-full bg-muted/50 p-1">
+          <TabsList className="grid w-full grid-cols-3 max-w-lg mx-auto mb-6 rounded-full bg-muted/50 p-1">
             <TabsTrigger value="overview" className="rounded-full flex items-center gap-2">
               <UserCircle size="sm" />
               Visão Geral
+            </TabsTrigger>
+            <TabsTrigger value="transactions" className="rounded-full flex items-center gap-2">
+              <Receipt className="w-4 h-4" />
+              Extrato
             </TabsTrigger>
             <TabsTrigger value="settings" className="rounded-full flex items-center gap-2">
               <Cog size="sm" />
@@ -96,7 +102,12 @@ export function LoyaltyView({
             />
           </TabsContent>
 
-          {/* TAB 2: CONFIGURAÇÕES */}
+          {/* TAB 2: EXTRATO (LIVRO-RAZÃO IMUTÁVEL) */}
+          <TabsContent value="transactions" className="space-y-6">
+            <LoyaltyTransactionsTab organizationId={organizationId} />
+          </TabsContent>
+
+          {/* TAB 3: CONFIGURAÇÕES */}
           <TabsContent value="settings" className="flex flex-col gap-8 md:gap-6">
             <LoyaltySettingsTab 
               organizationId={organizationId}
