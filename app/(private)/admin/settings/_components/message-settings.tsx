@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import useSWR from "swr";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -21,9 +22,10 @@ import {
 } from "@/components/ui/accordion";
 import { HelpCircle, Save, LoaderDots, Plus } from "@boxicons/react";
 import { toast } from "sonner";
-import { apiClient, ApiError } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
 import { updateMessagesAction } from "@/app/actions/messages";
 import { DEFAULT_MESSAGE_TEMPLATES } from "@/lib/whatsapp-utils";
+import { FloatingSaveButton } from "./floating-save-button";
 
 interface MessageSettingsResponse {
   msgUpdate?: string;
@@ -35,11 +37,21 @@ interface MessageSettingsResponse {
 }
 
 export function MessageSettings() {
-  const [loading, setLoading] = useState(true);
+  // SWR: Cache global em memória para evitar requisições repetidas ao alternar tabs
+  const {
+    data: messagesData,
+    isLoading,
+    mutate: mutateMessages,
+  } = useSWR<MessageSettingsResponse>("settings/messages", apiClient, {
+    revalidateOnFocus: false,
+    revalidateIfStale: false,
+    dedupingInterval: 60000,
+  });
+
   const [saving, setSaving] = useState(false);
   const [showTip, setShowTip] = useState(false);
 
-  // Estados para os diferentes templates
+  // Estados locais para os templates
   const [msgUpdate, setMsgUpdate] = useState("");
   const [msgWelcome, setMsgWelcome] = useState("");
   const [msgRenewal, setMsgRenewal] = useState("");
@@ -47,49 +59,35 @@ export function MessageSettings() {
   const [msgManualConfirmation, setMsgManualConfirmation] = useState("");
   const [msgBirthday, setMsgBirthday] = useState("");
 
-  // Busca dados do banco quando carrega
+  // Sincroniza estados a partir do cache do SWR
   useEffect(() => {
-    const fetchMessages = async () => {
-      try {
-        const data =
-          await apiClient<MessageSettingsResponse>("settings/messages");
-
-        setMsgUpdate(data.msgUpdate || DEFAULT_MESSAGE_TEMPLATES.CHECK_IN);
-        setMsgWelcome(data.msgWelcome || DEFAULT_MESSAGE_TEMPLATES.WELCOME);
-        setMsgRenewal(data.msgRenewal || DEFAULT_MESSAGE_TEMPLATES.RENEWAL);
-        setMsgReminder(data.msgReminder || DEFAULT_MESSAGE_TEMPLATES.REMINDER);
-        setMsgManualConfirmation(
-          data.msgManualConfirmation ||
-          DEFAULT_MESSAGE_TEMPLATES.MANUAL_CONFIRMATION,
-        );
-        setMsgBirthday(data.msgBirthday || DEFAULT_MESSAGE_TEMPLATES.BIRTHDAY);
-      } catch (error) {
-        console.error("Erro ao buscar mensagens:", error);
-        if (error instanceof ApiError) {
-          toast.error("Erro ao carregar mensagens");
-        } else {
-          toast.error("Erro de conexão");
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMessages();
-  }, []);
+    if (messagesData) {
+      setMsgUpdate(messagesData.msgUpdate || DEFAULT_MESSAGE_TEMPLATES.CHECK_IN);
+      setMsgWelcome(messagesData.msgWelcome || DEFAULT_MESSAGE_TEMPLATES.WELCOME);
+      setMsgRenewal(messagesData.msgRenewal || DEFAULT_MESSAGE_TEMPLATES.RENEWAL);
+      setMsgReminder(messagesData.msgReminder || DEFAULT_MESSAGE_TEMPLATES.REMINDER);
+      setMsgManualConfirmation(
+        messagesData.msgManualConfirmation ||
+        DEFAULT_MESSAGE_TEMPLATES.MANUAL_CONFIRMATION,
+      );
+      setMsgBirthday(messagesData.msgBirthday || DEFAULT_MESSAGE_TEMPLATES.BIRTHDAY);
+    }
+  }, [messagesData]);
 
   const handleSaveAll = async () => {
     setSaving(true);
 
+    const payload = {
+      msgUpdate,
+      msgWelcome,
+      msgRenewal,
+      msgReminder,
+      msgManualConfirmation,
+      msgBirthday,
+    };
+
     try {
-      const result = await updateMessagesAction({
-        msgUpdate,
-        msgWelcome,
-        msgRenewal,
-        msgReminder,
-        msgManualConfirmation,
-        msgBirthday,
-      });
+      const result = await updateMessagesAction(payload);
 
       if (result.error) {
         toast.error(result.error);
@@ -97,6 +95,7 @@ export function MessageSettings() {
       }
 
       if (result.success) {
+        await mutateMessages(payload, false);
         toast.success(result.message || "Mensagens salvas com sucesso!");
       }
     } catch (error: any) {
@@ -107,11 +106,11 @@ export function MessageSettings() {
     }
   };
 
-  // Skeleton state conforme diretriz pages-standard.md
-  if (loading) {
+  // Skeleton state: apenas no primeiro carregamento
+  if (isLoading && !messagesData) {
     return (
-      <Card className="rounded-2xl md:rounded-3xl border border-border/60 bg-card shadow-xs overflow-hidden">
-        <CardHeader className="p-5 md:p-6 border-b border-border/40 bg-muted/10">
+      <Card className="border-none shadow-none bg-transparent rounded-none md:rounded-3xl md:border md:border-border/60 md:bg-card md:shadow-xs overflow-hidden">
+        <CardHeader className="px-0 pt-0 pb-4 md:p-6 md:pb-2">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
               <Skeleton className="h-6 w-48 rounded-lg" />
@@ -123,7 +122,7 @@ export function MessageSettings() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-5 md:p-6 grid gap-4">
+        <CardContent className="px-0 pb-0 md:p-6 md:pt-4 grid gap-4">
           <Skeleton className="h-14 w-full rounded-2xl" />
           <Skeleton className="h-14 w-full rounded-2xl" />
           <Skeleton className="h-14 w-full rounded-2xl" />
@@ -136,8 +135,9 @@ export function MessageSettings() {
   }
 
   return (
-    <Card className="rounded-2xl md:rounded-3xl border border-border/60 bg-card shadow-xs overflow-hidden">
-      <CardHeader className="p-5 md:p-6 border-b border-border/40 bg-muted/10">
+    <Card className="border-none shadow-none bg-transparent rounded-none md:rounded-3xl md:border md:border-border/60 md:bg-card md:shadow-xs overflow-hidden">
+      {/* Header: chapado no mobile (px-0 pt-0), com padding e acabamento de card no desktop */}
+      <CardHeader className="px-0 pt-0 pb-4 md:p-6 md:pb-2">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <CardTitle className="text-xl font-bold tracking-tight text-foreground">
@@ -182,7 +182,7 @@ export function MessageSettings() {
         </div>
       </CardHeader>
 
-      <CardContent className="p-5 md:p-6 grid gap-6">
+      <CardContent className="px-0 pb-0 md:p-6 md:pt-4 grid gap-6">
         <div>
           <div className="mb-4 flex flex-col gap-2">
             <div className="flex items-center justify-between">
@@ -201,7 +201,7 @@ export function MessageSettings() {
 
             {showTip && (
               <div className="bg-primary/10 text-primary px-3.5 py-3 rounded-xl border border-primary/20 text-xs animate-in fade-in duration-300">
-                💡 <b>Dica:</b> Use as variáveis entre chaves (ex:{" "}
+                <b>Dica:</b> Use as variáveis entre chaves (ex:{" "}
                 <code className="bg-background px-1.5 py-0.5 rounded-md font-mono text-primary font-bold">
                   {"{nome}"}
                 </code>
@@ -331,20 +331,13 @@ export function MessageSettings() {
         </div>
       </CardContent>
 
-      {/* Botão flutuante mobile circular padrão */}
-      <button
-        type="button"
+      {/* Botão flutuante mobile circular padrão via Portal */}
+      <FloatingSaveButton
         onClick={handleSaveAll}
-        disabled={saving || loading}
-        className="md:hidden fixed bottom-28 right-6 h-14 w-14 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-2xl transition-transform duration-300 z-50 hover:scale-105 active:scale-95"
-        aria-label="Salvar mensagens"
-      >
-        {saving ? (
-          <LoaderDots className="h-6 w-6 animate-spin" />
-        ) : (
-          <Save className="h-6 w-6" strokeWidth={2.5} />
-        )}
-      </button>
+        disabled={saving || isLoading}
+        loading={saving}
+        ariaLabel="Salvar mensagens"
+      />
     </Card>
   );
 }

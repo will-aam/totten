@@ -69,29 +69,29 @@ export default function AdminSettingsPage() {
             </TabsList>
           </div>
 
-          {/* Conteúdo das abas sem translate para não quebrar posição fixed dos botões */}
+          {/* Conteúdo das abas sem animações de transform que afetem elementos filhos fixos */}
           <div className="flex-1">
             <TabsContent
               value="general"
-              className="mt-0 focus-visible:outline-none animate-in fade-in duration-300"
+              className="mt-0 focus-visible:outline-none"
             >
               <GeneralSettings />
             </TabsContent>
             <TabsContent
               value="messages"
-              className="mt-0 focus-visible:outline-none animate-in fade-in duration-300"
+              className="mt-0 focus-visible:outline-none"
             >
               <MessageSettings />
             </TabsContent>
             <TabsContent
               value="notifications"
-              className="mt-0 focus-visible:outline-none animate-in fade-in duration-300"
+              className="mt-0 focus-visible:outline-none"
             >
               <NotificationsSettings />
             </TabsContent>
             <TabsContent
               value="security"
-              className="mt-0 focus-visible:outline-none animate-in fade-in duration-300"
+              className="mt-0 focus-visible:outline-none"
             >
               <SecuritySettings />
             </TabsContent>

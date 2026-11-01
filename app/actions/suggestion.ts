@@ -40,10 +40,10 @@ export async function sendSuggestionAction(formData: FormData) {
     const attachments = [];
     for (const image of images) {
       if (image.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
-         return { success: false, error: `A imagem ${image.name} excede o limite de ${MAX_IMAGE_SIZE_MB}MB.` };
+        return { success: false, error: `A imagem ${image.name} excede o limite de ${MAX_IMAGE_SIZE_MB}MB.` };
       }
       if (!image.type.startsWith("image/")) {
-         return { success: false, error: `O arquivo ${image.name} não é uma imagem válida.` };
+        return { success: false, error: `O arquivo ${image.name} não é uma imagem válida.` };
       }
       const buffer = Buffer.from(await image.arrayBuffer());
       attachments.push({
@@ -62,21 +62,21 @@ export async function sendSuggestionAction(formData: FormData) {
     const transporter = nodemailer.createTransport(
       gmailPass
         ? {
-            service: "gmail",
-            auth: {
-              user: gmailUser,
-              pass: gmailPass.replace(/\s+/g, ""),
-            },
-          }
+          service: "gmail",
+          auth: {
+            user: gmailUser,
+            pass: gmailPass.replace(/\s+/g, ""),
+          },
+        }
         : {
-            host: process.env.SMTP_HOST || "smtp.gmail.com",
-            port: parseInt(process.env.SMTP_PORT || "465"),
-            secure: process.env.SMTP_SECURE === "true" || true,
-            auth: {
-              user: process.env.SMTP_USER || gmailUser,
-              pass: process.env.SMTP_PASS || "",
-            },
-          }
+          host: process.env.SMTP_HOST || "smtp.gmail.com",
+          port: parseInt(process.env.SMTP_PORT || "465"),
+          secure: process.env.SMTP_SECURE === "true" || true,
+          auth: {
+            user: process.env.SMTP_USER || gmailUser,
+            pass: process.env.SMTP_PASS || "",
+          },
+        }
     );
 
     const emailContent = `
@@ -112,7 +112,7 @@ export async function sendSuggestionAction(formData: FormData) {
       from: `"Totten Sugestões" <${gmailUser}>`,
       to: "tottenappbr@gmail.com",
       replyTo: admin.email || undefined,
-      subject: `💡 Nova Sugestão de ${admin.name || admin.organizationName || "Usuário"}`,
+      subject: ` Nova Sugestão de ${admin.name || admin.organizationName || "Usuário"}`,
       html: emailContent,
       attachments,
     };

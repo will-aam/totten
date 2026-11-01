@@ -16,6 +16,7 @@ import { LoaderDots, Save } from "@boxicons/react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { changePassword } from "@/app/actions/auth";
+import { FloatingSaveButton } from "./floating-save-button";
 
 export function SecuritySettings() {
   const { data: session } = useSession();
@@ -65,8 +66,9 @@ export function SecuritySettings() {
   };
 
   return (
-    <Card className="rounded-2xl md:rounded-3xl border border-border/60 bg-card shadow-xs overflow-hidden">
-      <CardHeader className="p-5 md:p-6 border-b border-border/40 bg-muted/10">
+    <Card className="border-none shadow-none bg-transparent rounded-none md:rounded-3xl md:border md:border-border/60 md:bg-card md:shadow-xs overflow-hidden">
+      {/* Header: chapado no mobile (px-0 pt-0), com padding e acabamento de card no desktop */}
+      <CardHeader className="px-0 pt-0 pb-4 md:p-6 md:pb-2">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <CardTitle className="text-xl font-bold tracking-tight text-foreground">
@@ -96,7 +98,7 @@ export function SecuritySettings() {
         </div>
       </CardHeader>
 
-      <CardContent className="p-5 md:p-6 grid gap-6">
+      <CardContent className="px-0 pb-0 md:p-6 md:pt-4 grid gap-6">
         <div className="grid gap-2">
           <Label htmlFor="email" className="font-medium text-sm">E-mail de Acesso</Label>
           <Input
@@ -157,20 +159,13 @@ export function SecuritySettings() {
         </div>
       </CardContent>
 
-      {/* Botão flutuante mobile circular padrão */}
-      <button
-        type="button"
+      {/* Botão flutuante mobile circular padrão via Portal */}
+      <FloatingSaveButton
         onClick={() => handleChangePassword()}
         disabled={loading}
-        className="md:hidden fixed bottom-28 right-6 h-14 w-14 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-2xl transition-transform duration-300 z-50 hover:scale-105 active:scale-95"
-        aria-label="Salvar senha"
-      >
-        {loading ? (
-          <LoaderDots className="h-6 w-6 animate-spin" />
-        ) : (
-          <Save className="h-6 w-6" strokeWidth={2.5} />
-        )}
-      </button>
+        loading={loading}
+        ariaLabel="Salvar senha"
+      />
     </Card>
   );
 }

@@ -18,8 +18,8 @@ export function NotificationsSettings() {
   const [emailSummary, setEmailSummary] = useState(false);
 
   return (
-    <Card className="rounded-2xl md:rounded-3xl border border-border/60 bg-card shadow-xs overflow-hidden">
-      <CardHeader className="p-5 md:p-6 border-b border-border/40 bg-muted/10">
+    <Card className="border-none shadow-none bg-transparent rounded-none md:rounded-3xl md:border md:border-border/60 md:bg-card md:shadow-xs overflow-hidden">
+      <CardHeader className="px-0 pt-0 pb-4 md:p-6 md:pb-2">
         <CardTitle className="text-xl font-bold tracking-tight text-foreground">
           Alertas do Sistema
         </CardTitle>
@@ -27,7 +27,7 @@ export function NotificationsSettings() {
           Escolha como você quer ser avisada quando houver atividades no Totten.
         </CardDescription>
       </CardHeader>
-      <CardContent className="p-5 md:p-6 grid gap-4">
+      <CardContent className="px-0 pb-0 md:p-6 md:pt-4 grid gap-4">
         {/* Alerta Sonoro */}
         <div className="flex items-start sm:items-center justify-between gap-4 rounded-2xl border border-border/50 p-4 md:p-5 bg-background/60 hover:bg-muted/20 transition-colors">
           <div className="flex items-center gap-3.5">
