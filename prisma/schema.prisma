@@ -788,6 +788,7 @@ model LoyaltyTransaction {
   appointment_id  String?
   check_in_id     String?
   voucher_id      String?
+  package_id      String?
   created_by_id   String?
   created_by_name String?
 

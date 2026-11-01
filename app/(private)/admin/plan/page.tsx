@@ -334,38 +334,44 @@ export default function PlanPage() {
               )}
             >
               Anual
-              <span className="rounded-full bg-lime-200 px-2 py-0.5 text-[10px] font-semibold text-zinc-950">
-                2 meses grátis
-              </span>
+              {billingCycle === "yearly" && (
+                <span className="rounded-full bg-lime-200 px-2 py-0.5 text-[10px] font-semibold text-zinc-950">
+                  2 meses grátis
+                </span>
+              )}
             </button>
           </div>
         </div>
 
-        <div className="mb-4 flex items-center justify-between gap-3 md:hidden">
+        <div className="mb-4 flex flex-col gap-3 md:hidden">
           <div>
             <h2 className="text-base font-semibold tracking-tight">Planos Totten</h2>
             <p className="mt-1 text-xs text-zinc-500 dark:text-muted-foreground">Escolha a periodicidade</p>
           </div>
-          <div className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-zinc-200 bg-white p-1 dark:border-border dark:bg-card" aria-label="Periodicidade de cobrança">
-            <button
-              type="button"
-              aria-pressed={billingCycle === "monthly"}
-              onClick={() => setBillingCycle("monthly")}
-              className={cn("rounded-full px-3 py-2 text-xs font-medium", billingCycle === "monthly" ? "bg-zinc-950 text-white dark:bg-white dark:text-zinc-950" : "text-zinc-500 dark:text-muted-foreground")}
-            >
-              Mensal
-            </button>
-            <button
-              type="button"
-              aria-pressed={billingCycle === "yearly"}
-              onClick={() => setBillingCycle("yearly")}
-              className={cn("rounded-full px-3 py-2 text-xs font-medium", billingCycle === "yearly" ? "bg-zinc-950 text-white dark:bg-white dark:text-zinc-950" : "text-zinc-500 dark:text-muted-foreground")}
-            >
-              Anual
-              <span className="rounded-full bg-lime-200 px-2 py-0.5 text-[10px] font-semibold text-zinc-950">
-                2 meses grátis
-              </span>
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="grid w-full grid-cols-2 gap-1 rounded-2xl border border-zinc-200 bg-white p-1 dark:border-border dark:bg-card" aria-label="Periodicidade de cobrança">
+              <button
+                type="button"
+                aria-pressed={billingCycle === "monthly"}
+                onClick={() => setBillingCycle("monthly")}
+                className={cn("min-h-11 rounded-xl px-4 py-2 text-xs font-medium", billingCycle === "monthly" ? "bg-zinc-950 text-white dark:bg-white dark:text-zinc-950" : "text-zinc-500 dark:text-muted-foreground")}
+              >
+                Mensal
+              </button>
+              <button
+                type="button"
+                aria-pressed={billingCycle === "yearly"}
+                onClick={() => setBillingCycle("yearly")}
+                className={cn("flex min-h-11 flex-col items-center justify-center rounded-xl px-4 py-1 text-xs font-medium", billingCycle === "yearly" ? "bg-zinc-950 text-white dark:bg-white dark:text-zinc-950" : "text-zinc-500 dark:text-muted-foreground")}
+              >
+                Anual
+                {billingCycle === "yearly" && (
+                  <span className="mt-0.5 rounded-full bg-lime-200 px-2 py-0.5 text-[9px] font-semibold leading-none text-zinc-950">
+                    2 meses grátis
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 

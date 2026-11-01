@@ -1459,7 +1459,24 @@ export async function deleteAppointment(
           where: { appointment_id: appt.id },
         });
 
-        // D. Estorno de pontos do Programa de Fidelidade (caso o agendamento estivesse realizado ou tivesse check-in ativo)
+        // D. Reversão de Voucher de Fidelidade (caso houvesse voucher aplicado a este agendamento)
+        const linkedVoucher = await tx.clientVoucher.findFirst({
+          where: { appointment_id: appt.id, status: "UTILIZADO" },
+        });
+        if (linkedVoucher) {
+          await tx.clientVoucher.update({
+            where: { id: linkedVoucher.id },
+            data: {
+              status: "DISPONIVEL",
+              used_at: null,
+              transaction_id: null,
+              appointment_id: null,
+              discount_applied: null,
+            },
+          });
+        }
+
+        // E. Estorno de pontos do Programa de Fidelidade (caso o agendamento estivesse realizado ou tivesse check-in ativo)
         const loyaltySettings = await tx.loyaltySettings.findUnique({
           where: { organization_id: admin.organizationId },
         });
@@ -1467,8 +1484,19 @@ export async function deleteAppointment(
         if (loyaltySettings?.is_active && appt.client_id) {
           let pointsToDeduct = 0;
 
-          // Se estava realizado e pontuou por agendamento
-          if (
+          // Se estava realizado, busca a transação exata de concessão (pontos fixos + por valor gasto)
+          const previousApptTx = await tx.loyaltyTransaction.findFirst({
+            where: {
+              organization_id: admin.organizationId,
+              appointment_id: appt.id,
+              type: "APPOINTMENT",
+            },
+            orderBy: { id: "desc" },
+          });
+
+          if (previousApptTx && previousApptTx.points > 0) {
+            pointsToDeduct += previousApptTx.points;
+          } else if (
             appt.status === AppointmentStatus.REALIZADO &&
             loyaltySettings.schedule_active &&
             loyaltySettings.schedule_points > 0
@@ -1498,6 +1526,7 @@ export async function deleteAppointment(
               where: { id: appt.client_id },
               data: {
                 loyalty_points: newPoints,
+                last_loyalty_activity_at: new Date(),
               },
             });
 

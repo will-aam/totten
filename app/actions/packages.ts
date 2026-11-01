@@ -858,7 +858,7 @@ export async function deleteCheckIn(checkInId: string) {
           );
           await tx.client.update({
             where: { id: checkIn.client_id },
-            data: { loyalty_points: newPoints },
+            data: { loyalty_points: newPoints, last_loyalty_activity_at: new Date() },
           });
 
           const diff = (clientCurrent?.loyalty_points || 0) - newPoints;
@@ -989,6 +989,49 @@ export async function archivePackage(packageId: string) {
         where: { id: pkg.id },
         data: { active: false },
       });
+
+      // Se o pacote for cancelado sem que nenhuma sessão tenha sido usada, estorna pontos concedidos na compra
+      if (pkg.used_sessions === 0) {
+        const packagePurchaseTx = await tx.loyaltyTransaction.findFirst({
+          where: {
+            organization_id: admin.organizationId,
+            package_id: pkg.id,
+            type: "PACKAGE_PURCHASE",
+          },
+        });
+
+        if (packagePurchaseTx && packagePurchaseTx.points > 0) {
+          const clientCurrent = await tx.client.findUnique({
+            where: { id: pkg.client_id },
+            select: { loyalty_points: true, name: true },
+          });
+
+          if (clientCurrent) {
+            const revertPoints = Math.min(clientCurrent.loyalty_points || 0, packagePurchaseTx.points);
+            const newPoints = (clientCurrent.loyalty_points || 0) - revertPoints;
+
+            await tx.client.update({
+              where: { id: pkg.client_id },
+              data: { loyalty_points: newPoints, last_loyalty_activity_at: new Date() },
+            });
+
+            await tx.loyaltyTransaction.create({
+              data: {
+                organization_id: admin.organizationId,
+                client_id: pkg.client_id,
+                client_name: clientCurrent.name,
+                type: "REVERT_PACKAGE",
+                points: -revertPoints,
+                balance_after: newPoints,
+                description: `Estorno: Pacote "${packageName}" cancelado sem uso (-${revertPoints} pts)`,
+                package_id: pkg.id,
+                created_by_id: admin.id,
+                created_by_name: admin.name || "Administrador",
+              },
+            });
+          }
+        }
+      }
 
       // 4. OTIMIZAÇÃO DE AGENDA: Exclui todos os agendamentos pendentes deste pacote (já que ele não pode mais ser usado)
       const pendingAppointments = await tx.appointment.findMany({

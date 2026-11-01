@@ -407,6 +407,61 @@ export class PackageService {
         createdTxIds.push(createdPendingTx.id);
       }
 
+      // 5. FIDELIDADE: PONTUAÇÃO POR COMPRA DE PACOTE (CASHBACK DE PONTOS)
+      if (pay_upfront && finalPrice > 0) {
+        const loyaltySettings = await tx.loyaltySettings.findUnique({
+          where: { organization_id: organizationId },
+        });
+
+        if (
+          loyaltySettings?.is_active &&
+          loyaltySettings?.spend_points_active &&
+          Number(loyaltySettings.spend_points_ratio || 0) > 0 &&
+          (loyaltySettings.spend_points_amount || 0) > 0
+        ) {
+          const clientCurrent = await tx.client.findUnique({
+            where: { id: client.id },
+            select: { loyalty_points: true, loyalty_enrolled_at: true, name: true },
+          });
+
+          const isEnrolled = loyaltySettings.scope === "global" || clientCurrent?.loyalty_enrolled_at !== null;
+
+          if (isEnrolled && clientCurrent) {
+            const ratio = Number(loyaltySettings.spend_points_ratio);
+            const amountPerRatio = loyaltySettings.spend_points_amount || 1;
+            const spendPoints = Math.floor((finalPrice / ratio) * amountPerRatio);
+
+            if (spendPoints > 0) {
+              const newPoints = Math.min(
+                (clientCurrent.loyalty_points || 0) + spendPoints,
+                loyaltySettings.max_points,
+              );
+              await tx.client.update({
+                where: { id: client.id },
+                data: { loyalty_points: newPoints, last_loyalty_activity_at: new Date() },
+              });
+
+              const diff = newPoints - (clientCurrent.loyalty_points || 0);
+              if (diff > 0) {
+                await tx.loyaltyTransaction.create({
+                  data: {
+                    organization_id: organizationId,
+                    client_id: client.id,
+                    client_name: clientCurrent.name,
+                    type: "PACKAGE_PURCHASE",
+                    points: diff,
+                    balance_after: newPoints,
+                    description: `Compra de Pacote: ${finalPackageName} (+${diff} pts por R$ ${finalPrice.toFixed(2)})`,
+                    package_id: novoPacote.id,
+                    created_by_name: "Gestão de Pacotes",
+                  },
+                });
+              }
+            }
+          }
+        }
+      }
+
       return novoPacote;
     });
 

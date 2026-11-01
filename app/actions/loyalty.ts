@@ -697,7 +697,10 @@ export async function adjustClientLoyaltyPoints(data: {
     const transaction = await prisma.$transaction(async (tx) => {
       await tx.client.update({
         where: { id: clientId },
-        data: { loyalty_points: newPoints },
+        data: {
+          loyalty_points: newPoints,
+          ...(actualDiff > 0 ? { last_loyalty_activity_at: new Date() } : {}),
+        },
       });
 
       const entry = await tx.loyaltyTransaction.create({
