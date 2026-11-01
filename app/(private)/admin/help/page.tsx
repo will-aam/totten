@@ -9,17 +9,12 @@ interface HelpTopicItem {
   title: string;
   href?: string;
   enabled?: boolean;
-  isExternal?: boolean;
 }
 
 interface HelpTopicSection {
   title: string;
   items: HelpTopicItem[];
 }
-
-const SUPPORT_WHATSAPP =
-  "https://wa.me/5579998752198?text=" +
-  encodeURIComponent("Olá! Preciso de ajuda com o sistema Totten.");
 
 const SECTIONS: HelpTopicSection[] = [
   {
@@ -63,17 +58,6 @@ const SECTIONS: HelpTopicSection[] = [
       },
     ],
   },
-  {
-    title: "Suporte",
-    items: [
-      {
-        title: "Suporte via WhatsApp",
-        href: SUPPORT_WHATSAPP,
-        enabled: true,
-        isExternal: true,
-      },
-    ],
-  },
 ];
 
 export default function HelpPage() {
@@ -101,23 +85,6 @@ export default function HelpPage() {
               <div className="bg-card rounded-2xl border divide-y divide-border/40 shadow-2xs overflow-hidden">
                 {section.items.map((item) => {
                   if (item.enabled && item.href) {
-                    if (item.isExternal) {
-                      return (
-                        <a
-                          key={item.title}
-                          href={item.href}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="group flex items-center justify-between p-4 hover:bg-muted/40 transition-colors"
-                        >
-                          <span className="text-sm font-medium text-foreground group-hover:text-primary underline-offset-4 group-hover:underline transition-all">
-                            {item.title}
-                          </span>
-                          <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
-                        </a>
-                      );
-                    }
-
                     return (
                       <Link
                         key={item.title}

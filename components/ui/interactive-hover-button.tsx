@@ -2,11 +2,18 @@ import { ArrowRight } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
+interface InteractiveHoverButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  fillClassName?: string
+  fillTextClassName?: string
+}
+
 export function InteractiveHoverButton({
   children,
   className,
+  fillClassName,
+  fillTextClassName,
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+}: InteractiveHoverButtonProps) {
   return (
     <button
       className={cn(
@@ -16,12 +23,12 @@ export function InteractiveHoverButton({
       {...props}
     >
       <div className="flex items-center justify-center gap-2">
-        <div className="bg-primary h-2 w-2 rounded-full transition-all duration-300 group-hover:scale-[100.8]"></div>
+        <div className={cn("bg-primary h-2 w-2 rounded-full transition-all duration-300 group-hover:scale-[100.8]", fillClassName)}></div>
         <span className="inline-block transition-all duration-300 group-hover:translate-x-12 group-hover:opacity-0">
           {children}
         </span>
       </div>
-      <div className="text-primary-foreground absolute top-0 z-10 flex h-full w-full translate-x-12 items-center justify-center gap-2 opacity-0 transition-all duration-300 group-hover:-translate-x-5 group-hover:opacity-100">
+      <div className={cn("text-primary-foreground absolute top-0 z-10 flex h-full w-full translate-x-12 items-center justify-center gap-2 opacity-0 transition-all duration-300 group-hover:-translate-x-5 group-hover:opacity-100", fillTextClassName)}>
         <span>{children}</span>
         <ArrowRight />
       </div>
