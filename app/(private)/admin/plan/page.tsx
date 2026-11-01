@@ -42,8 +42,6 @@ export default function PlanPage() {
         "Até 3 pacotes ativos por cliente",
         "Módulo Financeiro",
         "Programa de Fidelidade",
-        "Cobrança de sinal online via Mercado Pago (recurso do Autoatendimento)",
-        "Taxa da Totten por pagamento confirmado via Mercado Pago (valor a definir)",
       ],
     },
     {
@@ -61,7 +59,7 @@ export default function PlanPage() {
         "Autoatendimento completo",
         "De 3 até 30 profissionais",
         "Pacotes ativos sem limite por cliente",
-        "Suporte humano prioritário (proposta)",
+        "Suporte humano prioritário",
       ],
     },
   ];
@@ -107,7 +105,7 @@ export default function PlanPage() {
           >
             Anual
             <span className="bg-emerald-500 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full">
-              2 meses grátis
+              1 mês grátis
             </span>
           </button>
         </div>
@@ -147,7 +145,7 @@ export default function PlanPage() {
                     R${price}
                   </span>
                   <span className="text-[13px] font-medium text-gray-600">
-                    / mês
+                    / {billingCycle === "monthly" ? "mês" : "ano"}
                   </span>
                 </div>
 
