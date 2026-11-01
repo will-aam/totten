@@ -1,192 +1,500 @@
 "use client";
 
-import { useState } from "react";
-import { Check } from "lucide-react";
+import { useRef, useState } from "react";
+import type { ReactNode } from "react";
+import { Check, Minus } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 
-export default function PlanPage() {
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
+type PlanId = "basic" | "medium" | "advanced";
+type ComparisonValue = string | boolean;
 
-  const plans = [
-    {
-      id: "basic",
-      name: "Plano Básico",
-      priceMonthly: "29,90",
-      priceYearly: "299,00",
-      tagline: "Para começar com organização",
-      description: "A estrutura essencial para uma profissional conduzir a própria rotina.",
-      gradient: "linear-gradient(180deg, #eaddff 0%, #d8b4fe 40%, rgba(255,255,255,0) 100%)",
-      buttonStyle: "bg-white text-gray-900 shadow-[0_4px_14px_0_rgba(0,0,0,0.05)]",
-      popular: false,
-      features: [
-        "Dashboard, Agenda, confirmações manuais e check-in",
-        "Clientes, fichas, serviços, pacotes e estoque sem limite de itens",
-        "Aniversariantes, notas, gestão de pacotes e todos os Registros",
-        "1 profissional",
-        "Até 1 pacote ativo por cliente",
-      ],
-    },
-    {
-      id: "pro",
-      name: "Plano Médio",
-      priceMonthly: "49,90",
-      priceYearly: "499,00",
-      tagline: "Mais controle e recorrência",
-      description: "Para quem quer acompanhar as finanças, incentivar retornos e crescer com uma equipe pequena.",
-      gradient: "linear-gradient(180deg, #c4b5fd 0%, #fed7aa 70%, rgba(255,255,255,0) 100%)",
-      buttonStyle: "bg-[#27272a] text-white shadow-[0_8px_20px_-6px_rgba(0,0,0,0.4)]",
-      popular: true,
-      features: [
-        "Tudo do Plano Básico",
-        "Até 2 profissionais",
-        "Até 3 pacotes ativos por cliente",
-        "Módulo Financeiro",
-        "Programa de Fidelidade",
-      ],
-    },
-    {
-      id: "advanced",
-      name: "Plano Avançado",
-      priceMonthly: "89,90",
-      priceYearly: "899,00",
-      tagline: "Operação completa",
-      description: "Autoatendimento e capacidade ampliada para operações com mais profissionais.",
-      gradient: "linear-gradient(180deg, #a7f3d0 0%, #34d399 40%, rgba(255,255,255,0) 100%)",
-      buttonStyle: "bg-white text-gray-900 border border-gray-200 shadow-[0_4px_14px_0_rgba(0,0,0,0.05)] hover:bg-gray-50",
-      popular: false,
-      features: [
-        "Tudo do Plano Médio",
-        "Autoatendimento completo",
-        "De 3 até 30 profissionais",
-        "Pacotes ativos sem limite por cliente",
-        "Suporte humano prioritário",
-      ],
-    },
-  ];
+const plans: {
+  id: PlanId;
+  name: string;
+  priceMonthly: string;
+  priceYearly: string;
+  description: string;
+  featured?: boolean;
+  cornerLabel: string;
+  highlights: string[];
+}[] = [
+  {
+    id: "basic",
+    name: "Plano Básico",
+    priceMonthly: "29,90",
+    priceYearly: "358,80",
+    description: "A estrutura essencial para organizar sua rotina e atender seus clientes.",
+    cornerLabel: "Essencial",
+    highlights: ["1 profissional", "Até 1 pacote ativo por cliente"],
+  },
+  {
+    id: "medium",
+    name: "Plano Médio",
+    priceMonthly: "49,90",
+    priceYearly: "598,80",
+    description: "Mais controle financeiro e recursos para incentivar a recorrência.",
+    featured: true,
+    cornerLabel: "Destaque",
+    highlights: ["Até 2 profissionais", "Financeiro e Fidelidade"],
+  },
+  {
+    id: "advanced",
+    name: "Plano Avançado",
+    priceMonthly: "89,90",
+    priceYearly: "1.078,80",
+    description: "Autoatendimento completo e capacidade para uma operação maior.",
+    cornerLabel: "Completo",
+    highlights: ["Até 30 profissionais", "Autoatendimento completo"],
+  },
+];
+
+const comparisonSections: {
+  title: string;
+  rows: { label: string; values: Record<PlanId, ComparisonValue> }[];
+}[] = [
+  {
+    title: "Agenda e atendimento",
+    rows: [
+      { label: "Dashboard e Agenda", values: { basic: true, medium: true, advanced: true } },
+      { label: "Confirmações manuais e check-in", values: { basic: true, medium: true, advanced: true } },
+      { label: "Aniversariantes e notas", values: { basic: true, medium: true, advanced: true } },
+      { label: "Gestão de pacotes e Registros", values: { basic: true, medium: true, advanced: true } },
+    ],
+  },
+  {
+    title: "Cadastros e limites",
+    rows: [
+      {
+        label: "Clientes, anamnese, serviços, pacotes e estoque",
+        values: { basic: "Sem limite de itens", medium: "Sem limite de itens", advanced: "Sem limite de itens" },
+      },
+      { label: "Profissionais cadastrados", values: { basic: "1", medium: "Até 2", advanced: "Até 30" } },
+      { label: "Pacotes ativos por cliente", values: { basic: "Até 1", medium: "Até 3", advanced: "Sem limite" } },
+    ],
+  },
+  {
+    title: "Módulos",
+    rows: [
+      { label: "Financeiro", values: { basic: false, medium: true, advanced: true } },
+      { label: "Programa de Fidelidade", values: { basic: false, medium: true, advanced: true } },
+      { label: "Autoatendimento completo", values: { basic: false, medium: false, advanced: true } },
+    ],
+  },
+];
+
+function ComparisonCell({ value }: { value: ComparisonValue }) {
+  if (typeof value === "string") {
+    return <span className="text-sm text-zinc-600 dark:text-zinc-300">{value}</span>;
+  }
+
+  return value ? (
+    <span className="inline-flex size-6 items-center justify-center rounded-full bg-lime-200 text-zinc-950" aria-label="Incluído">
+      <Check className="size-3.5" strokeWidth={2.5} aria-hidden="true" />
+    </span>
+  ) : (
+    <span className="inline-flex size-6 items-center justify-center text-zinc-300 dark:text-zinc-600" aria-label="Não incluído">
+      <Minus className="size-4" aria-hidden="true" />
+    </span>
+  );
+}
+
+function MobilePlanCarousel({
+  billingCycle,
+  onSubscribe,
+}: {
+  billingCycle: "monthly" | "yearly";
+  onSubscribe: () => void;
+}) {
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const updateActiveCard = () => {
+    const carousel = carouselRef.current;
+    if (!carousel) return;
+
+    const center = carousel.getBoundingClientRect().left + carousel.clientWidth / 2;
+    const cards = Array.from(carousel.children) as HTMLElement[];
+    const nextIndex = cards.reduce(
+      (closestIndex, card, index) => {
+        const cardCenter = card.getBoundingClientRect().left + card.clientWidth / 2;
+        const closestCard = cards[closestIndex];
+        const closestCenter = closestCard.getBoundingClientRect().left + closestCard.clientWidth / 2;
+        return Math.abs(cardCenter - center) < Math.abs(closestCenter - center)
+          ? index
+          : closestIndex;
+      },
+      0,
+    );
+
+    setActiveIndex(nextIndex);
+  };
+
+  const goToCard = (index: number) => {
+    const card = carouselRef.current?.children[index] as HTMLElement | undefined;
+    card?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  };
 
   return (
-    <div className="w-full min-h-full p-4 md:p-10 flex flex-col items-center">
-      {/* Header */}
-      <div className="flex flex-col items-center text-center space-y-3 mb-10 mt-4 max-w-2xl">
-
-        <div className="rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-xs font-semibold text-violet-700 dark:text-violet-300">
-          Estrutura de planos em teste
-        </div>
-        <h1 className="text-3xl md:text-4xl font-black tracking-tight">
-          Conheça os planos{" "}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-indigo-500">
-            ideais para você
-          </span>
-        </h1>
-        <p className="text-muted-foreground text-sm font-medium">
-          Esta estrutura está em avaliação. No teste gratuito de 14 dias, você pode experimentar todos os recursos.
-        </p>
-
-        <div className="flex items-center gap-1 mt-4 bg-muted/40 p-1.5 rounded-full border border-border/50">
-          <button
-            onClick={() => setBillingCycle("monthly")}
-            className={cn(
-              "px-5 py-2 rounded-full text-sm font-bold transition-all duration-300",
-              billingCycle === "monthly"
-                ? "bg-background shadow-md text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            Mensal
-          </button>
-          <button
-            onClick={() => setBillingCycle("yearly")}
-            className={cn(
-              "px-5 py-2 rounded-full text-sm font-bold transition-all duration-300 flex items-center gap-2",
-              billingCycle === "yearly"
-                ? "bg-background shadow-md text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            Anual
-            <span className="bg-emerald-500 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full">
-              1 mês grátis
-            </span>
-          </button>
-        </div>
-      </div>
-
-      {/* Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-6xl pb-20 px-2 md:px-8">
+    <section className="md:hidden" aria-label="Planos em cartões deslizáveis">
+      <div
+        ref={carouselRef}
+        onScroll={updateActiveCard}
+        className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-4 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        aria-label="Deslize para comparar os planos"
+      >
         {plans.map((plan) => {
+          const isFeatured = plan.featured;
           const price = billingCycle === "monthly" ? plan.priceMonthly : plan.priceYearly;
 
           return (
-            <div
+            <article
               key={plan.id}
-              className="relative rounded-[2.5rem] bg-white p-2 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 flex flex-col"
+              className={cn(
+                "relative flex min-h-[590px] w-[calc(100vw-3.5rem)] max-w-[390px] shrink-0 snap-center flex-col overflow-hidden rounded-[28px] border px-5 pb-5 pt-12",
+                isFeatured
+                  ? "border-lime-300 bg-zinc-950 text-white shadow-[0_16px_42px_rgba(0,0,0,0.16)] dark:border-lime-300 dark:bg-zinc-800 dark:ring-1 dark:ring-lime-300/30"
+                  : "border-zinc-200 bg-white text-zinc-950 dark:border-border dark:bg-card dark:text-foreground",
+              )}
             >
-              {/* Inner Gradient Block */}
-              <div
-                className="relative rounded-[2rem] p-6 pb-10 flex flex-col"
-                style={{ background: plan.gradient }}
-              >
-                {plan.popular && (
-                  <div className="absolute top-4 right-4 bg-black/30 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full">
-                    Recomendado
-                  </div>
-                )}
+              <div className="absolute right-0 top-0 rounded-bl-2xl border-b border-l border-lime-300/60 bg-lime-200 px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-950">
+                {plan.cornerLabel}
+              </div>
 
-                <p className="text-[17px] font-semibold text-gray-900 mb-6">
-                  {plan.name}
-                </p>
-
-                <p className="text-[13px] font-medium text-gray-600 mb-1">
-                  {plan.tagline}
-                </p>
-
-                <div className="flex items-baseline gap-1.5 mb-6">
-                  <span className="text-[32px] md:text-[40px] font-medium tracking-tight text-gray-900">
-                    R${price}
-                  </span>
-                  <span className="text-[13px] font-medium text-gray-600">
-                    / {billingCycle === "monthly" ? "mês" : "ano"}
-                  </span>
-                </div>
-
-                <p className="text-[14px] text-gray-700 font-medium leading-relaxed mb-8 max-w-[280px] min-h-[60px]">
+              <div className="mt-1">
+                <h3 className="text-xl font-semibold tracking-tight">{plan.name}</h3>
+                <p className={cn("mt-1.5 max-w-[270px] text-xs leading-5", isFeatured ? "text-zinc-400" : "text-zinc-500 dark:text-muted-foreground")}>
                   {plan.description}
                 </p>
-
-                <div
-                  className={cn(
-                    "w-full py-4 rounded-[1.25rem] text-center font-semibold text-[15px]",
-                    plan.buttonStyle,
-                    "opacity-75",
-                  )}
-                >
-                  Plano em avaliação
-                </div>
               </div>
 
-              {/* Features Section */}
-              <div className="px-6 py-6 mt-2 flex flex-col flex-grow bg-white rounded-b-[2rem]">
-                <p className="text-[14px] font-bold text-gray-900 mb-6">
-                  O que está incluído:
-                </p>
-                <ul className="space-y-4">
-                  {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-3">
-                      <Check
-                        className="w-[18px] h-[18px] text-gray-800 flex-shrink-0 mt-0.5"
-                        strokeWidth={2}
-                      />
-                      <span className="text-[14px] font-medium text-gray-600 leading-tight">
-                        {feature}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+              <div className="mt-6 flex items-baseline gap-1.5">
+                <span className="text-4xl font-semibold tracking-[-0.05em]">R$ {price}</span>
+                <span className={cn("text-xs", isFeatured ? "text-zinc-400" : "text-zinc-500 dark:text-muted-foreground")}>
+                  / {billingCycle === "monthly" ? "mês" : "ano"}
+                </span>
               </div>
-            </div>
+              <p className={cn("mt-1 text-[11px]", isFeatured ? "text-zinc-400" : "text-zinc-500 dark:text-muted-foreground")}>
+                {billingCycle === "monthly" ? "Cobrança mensal" : "Valor total da cobrança anual"}
+              </p>
+
+              <div className="mt-5 flex-1 border-t border-current/10 pt-4">
+                {comparisonSections.map((section) => (
+                  <div key={section.title} className="mb-4 last:mb-0">
+                    <h4 className={cn("mb-2 text-[9px] font-semibold uppercase tracking-[0.14em]", isFeatured ? "text-zinc-400" : "text-zinc-500 dark:text-muted-foreground")}>
+                      {section.title}
+                    </h4>
+                    <ul className="space-y-2.5">
+                      {section.rows.map((row) => {
+                        const value = row.values[plan.id];
+                        const isInEvaluation = value === "Em avaliação";
+                        const included = value !== false && !isInEvaluation;
+
+                        return (
+                          <li key={row.label} className="flex items-start gap-2 text-xs leading-4">
+                            {isInEvaluation ? (
+                              <span className="mt-0.5 size-3.5 shrink-0 rounded-full border border-amber-500/50 bg-amber-100" aria-hidden="true" />
+                            ) : included ? (
+                              <Check className={cn("mt-0.5 size-3.5 shrink-0", isFeatured ? "text-lime-300" : "text-lime-700 dark:text-lime-300")} aria-hidden="true" />
+                            ) : (
+                              <Minus className="mt-0.5 size-3.5 shrink-0 text-zinc-300 dark:text-zinc-600" aria-hidden="true" />
+                            )}
+                            <span className={cn(
+                              isInEvaluation
+                                ? isFeatured ? "text-amber-200" : "text-amber-700 dark:text-amber-300"
+                                : included
+                                  ? isFeatured ? "text-zinc-200" : "text-zinc-700 dark:text-zinc-300"
+                                  : "text-zinc-400 dark:text-zinc-600",
+                            )}>
+                              {row.label}
+                              {typeof value === "string" && (
+                                <span className="ml-1 font-medium">· {value}</span>
+                              )}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={onSubscribe}
+                className={cn(
+                  "mt-6 w-full rounded-xl px-4 py-3.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-400 focus-visible:ring-offset-2",
+                  isFeatured
+                    ? "bg-lime-300 text-zinc-950 hover:bg-lime-200 dark:focus-visible:ring-offset-zinc-800"
+                    : "border border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-50 dark:border-border dark:bg-transparent dark:text-foreground dark:hover:bg-muted/70",
+                )}
+              >
+                Assinar plano
+              </button>
+            </article>
           );
         })}
       </div>
-    </div>
+
+      <div className="mt-3 flex items-center justify-center gap-2" aria-label={`Plano ${activeIndex + 1} de ${plans.length}`}>
+        {plans.map((plan, index) => (
+          <button
+            key={plan.id}
+            type="button"
+            onClick={() => goToCard(index)}
+            aria-label={`Ver ${plan.name}`}
+            aria-current={activeIndex === index ? "true" : undefined}
+            className={cn(
+              "h-1.5 rounded-full transition-all",
+              activeIndex === index ? "w-6 bg-lime-500" : "w-1.5 bg-zinc-300 dark:bg-zinc-700",
+            )}
+          />
+        ))}
+      </div>
+      <p className="mt-3 text-center text-[11px] text-zinc-500 dark:text-muted-foreground">
+        Deslize para o lado para ver os outros planos
+      </p>
+    </section>
+  );
+}
+
+export default function PlanPage() {
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
+  const handleSubscribe = () =>
+    toast.info(
+      "A assinatura online ainda não está disponível. Você pode testar todos os recursos por 14 dias.",
+    );
+
+  return (
+    <>
+      <AdminHeader title="Meu Plano" />
+      <div className="min-h-full bg-[#f7f7f5] px-4 py-8 text-zinc-950 dark:bg-background dark:text-foreground sm:px-6 lg:px-10 lg:py-12">
+      <div className="mx-auto w-full max-w-6xl">
+        <header className="mb-8 border-b border-zinc-200 pb-7 dark:border-border md:mb-10 md:pb-9">
+          <h1 className="max-w-2xl text-3xl font-semibold tracking-[-0.04em] sm:text-4xl lg:text-[42px]">
+            Um plano para cada fase da sua operação.
+          </h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-muted-foreground sm:text-base">
+            Compare os recursos e escolha como quer organizar sua rotina com a Totten.
+          </p>
+        </header>
+
+        <section
+          aria-label="Período de teste"
+          className="mb-8 flex flex-col gap-3 border-b border-zinc-200 pb-5 sm:flex-row sm:items-center sm:justify-between dark:border-border"
+        >
+          <div>
+            <p className="text-sm font-semibold">Experimente todos os recursos da Totten</p>
+            <p className="mt-1 text-sm text-zinc-500 dark:text-muted-foreground">
+              Acesso completo durante o período de teste.
+            </p>
+          </div>
+          <span className="inline-flex w-fit items-center rounded-full border border-lime-500/40 bg-lime-300 px-4 py-2 text-sm font-bold text-zinc-950 shadow-[0_4px_14px_rgba(132,204,22,0.22)]">
+            14 dias grátis
+          </span>
+        </section>
+
+        <div className="mb-5 hidden flex-col gap-4 sm:flex-row sm:items-end sm:justify-between md:flex">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight">Planos Totten</h2>
+            <p className="mt-1 text-sm text-zinc-500 dark:text-muted-foreground">
+              Valores de referência. Os planos poderão ser assinados após a integração de pagamentos.
+            </p>
+          </div>
+
+          <div
+            className="inline-flex w-fit items-center gap-1 rounded-full border border-zinc-200 bg-white p-1 dark:border-border dark:bg-card"
+            aria-label="Periodicidade de cobrança"
+          >
+            <button
+              type="button"
+              aria-pressed={billingCycle === "monthly"}
+              onClick={() => setBillingCycle("monthly")}
+              className={cn(
+                "rounded-full px-4 py-2 text-sm font-medium transition-colors",
+                billingCycle === "monthly"
+                  ? "bg-zinc-950 text-white dark:bg-white dark:text-zinc-950"
+                  : "text-zinc-500 hover:text-zinc-950 dark:text-muted-foreground dark:hover:text-foreground",
+              )}
+            >
+              Mensal
+            </button>
+            <button
+              type="button"
+              aria-pressed={billingCycle === "yearly"}
+              onClick={() => setBillingCycle("yearly")}
+              className={cn(
+                "flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors",
+                billingCycle === "yearly"
+                  ? "bg-zinc-950 text-white dark:bg-white dark:text-zinc-950"
+                  : "text-zinc-500 hover:text-zinc-950 dark:text-muted-foreground dark:hover:text-foreground",
+              )}
+            >
+              Anual
+            </button>
+          </div>
+        </div>
+
+        <div className="mb-4 flex items-center justify-between gap-3 md:hidden">
+          <div>
+            <h2 className="text-base font-semibold tracking-tight">Planos Totten</h2>
+            <p className="mt-1 text-xs text-zinc-500 dark:text-muted-foreground">Escolha a periodicidade</p>
+          </div>
+          <div className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-zinc-200 bg-white p-1 dark:border-border dark:bg-card" aria-label="Periodicidade de cobrança">
+            <button
+              type="button"
+              aria-pressed={billingCycle === "monthly"}
+              onClick={() => setBillingCycle("monthly")}
+              className={cn("rounded-full px-3 py-2 text-xs font-medium", billingCycle === "monthly" ? "bg-zinc-950 text-white dark:bg-white dark:text-zinc-950" : "text-zinc-500 dark:text-muted-foreground")}
+            >
+              Mensal
+            </button>
+            <button
+              type="button"
+              aria-pressed={billingCycle === "yearly"}
+              onClick={() => setBillingCycle("yearly")}
+              className={cn("rounded-full px-3 py-2 text-xs font-medium", billingCycle === "yearly" ? "bg-zinc-950 text-white dark:bg-white dark:text-zinc-950" : "text-zinc-500 dark:text-muted-foreground")}
+            >
+              Anual
+            </button>
+          </div>
+        </div>
+
+        <section aria-label="Opções de plano" className="hidden grid-cols-1 gap-3 md:grid md:grid-cols-3 md:gap-4">
+          {plans.map((plan) => {
+            const price = billingCycle === "monthly" ? plan.priceMonthly : plan.priceYearly;
+            const isFeatured = plan.featured;
+
+            return (
+              <article
+                key={plan.id}
+                className={cn(
+                  "relative flex min-h-[310px] flex-col overflow-hidden rounded-2xl border px-5 pb-5 pt-12 sm:px-6 sm:pb-6",
+                  isFeatured
+                    ? "border-zinc-900 bg-zinc-950 text-white dark:border-lime-300/70 dark:bg-zinc-800 dark:text-white dark:ring-1 dark:ring-lime-300/25"
+                    : "border-zinc-200 bg-white text-zinc-950 dark:border-border dark:bg-card dark:text-foreground",
+                )}
+              >
+                <span className="absolute right-0 top-0 rounded-bl-2xl border-b border-l border-lime-300/60 bg-lime-200 px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-950">
+                  {plan.cornerLabel}
+                </span>
+                <div className="pr-2">
+                  <h3 className="text-base font-semibold">{plan.name}</h3>
+                  <p className={cn("mt-1 text-xs", isFeatured ? "text-zinc-400" : "text-zinc-500 dark:text-muted-foreground")}>
+                    {plan.description}
+                  </p>
+                </div>
+
+                <div className="mt-7 flex items-baseline gap-1.5">
+                  <span className="text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">R$ {price}</span>
+                  <span className={cn("text-xs", isFeatured ? "text-zinc-400" : "text-zinc-500 dark:text-muted-foreground")}>
+                    / {billingCycle === "monthly" ? "mês" : "ano"}
+                  </span>
+                </div>
+                <p className={cn("mt-1 text-xs", isFeatured ? "text-zinc-400" : "text-zinc-500 dark:text-muted-foreground")}>
+                  {billingCycle === "monthly" ? "Cobrança mensal" : "Valor total da cobrança anual"}
+                </p>
+
+                <ul className="mt-6 space-y-3 border-t border-current/10 pt-5">
+                  {plan.highlights.map((highlight) => (
+                    <li key={highlight} className="flex items-start gap-2.5 text-sm">
+                      <Check className={cn("mt-0.5 size-4 shrink-0", isFeatured ? "text-lime-300" : "text-zinc-800 dark:text-foreground")} aria-hidden="true" />
+                      <span className={isFeatured ? "text-zinc-200" : "text-zinc-600 dark:text-muted-foreground"}>{highlight}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  type="button"
+                  onClick={handleSubscribe}
+                  className={cn(
+                    "mt-8 w-full rounded-xl px-4 py-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-400 focus-visible:ring-offset-2",
+                    isFeatured
+                      ? "bg-lime-300 text-zinc-950 hover:bg-lime-200 dark:focus-visible:ring-offset-zinc-800"
+                      : "border border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-50 dark:border-border dark:bg-transparent dark:text-foreground dark:hover:bg-muted/70",
+                  )}
+                >
+                  Assinar plano
+                </button>
+              </article>
+            );
+          })}
+        </section>
+
+        <MobilePlanCarousel billingCycle={billingCycle} onSubscribe={handleSubscribe} />
+
+        <section className="mt-12 hidden pb-12 md:block" aria-labelledby="comparison-heading">
+          <div className="mb-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-muted-foreground">
+              Comparativo
+            </p>
+            <h2 id="comparison-heading" className="mt-1 text-xl font-semibold tracking-tight">
+              Veja o que está incluído
+            </h2>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-border dark:bg-card">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px] border-collapse text-left">
+                <thead>
+                  <tr className="border-b border-zinc-200 dark:border-border">
+                    <th scope="col" className="w-[42%] px-5 py-4 text-xs font-medium text-zinc-500 dark:text-muted-foreground">
+                      Recursos
+                    </th>
+                    {plans.map((plan) => (
+                      <th key={plan.id} scope="col" className="px-4 py-4 text-center text-xs font-semibold text-zinc-900 dark:text-foreground">
+                        {plan.name}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {comparisonSections.map((section) => (
+                    <FragmentSection key={section.title} title={section.title}>
+                      {section.rows.map((row) => (
+                        <tr key={row.label} className="border-b border-zinc-100 last:border-0 dark:border-border/60">
+                          <th scope="row" className="px-5 py-3.5 text-left text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                            {row.label}
+                          </th>
+                          {plans.map((plan) => (
+                            <td key={plan.id} className="px-4 py-3.5 text-center">
+                              <ComparisonCell value={row.values[plan.id]} />
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </FragmentSection>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <p className="mt-3 text-xs leading-5 text-zinc-500 dark:text-muted-foreground">
+            Esta comparação apresenta a proposta de planos. O controle de acesso por assinatura ainda será definido.
+          </p>
+        </section>
+      </div>
+      </div>
+    </>
+  );
+}
+
+function FragmentSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <>
+      <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-border dark:bg-muted/40">
+        <th colSpan={4} className="px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-muted-foreground">
+          {title}
+        </th>
+      </tr>
+      {children}
+    </>
   );
 }

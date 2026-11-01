@@ -307,7 +307,7 @@ export async function createManualCheckIn(data: {
           );
           await tx.client.update({
             where: { id: data.clientId },
-            data: { loyalty_points: newPoints },
+            data: { loyalty_points: newPoints, last_loyalty_activity_at: new Date() },
           });
 
           const diff = newPoints - (clientCurrent?.loyalty_points || 0);

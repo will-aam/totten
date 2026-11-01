@@ -180,6 +180,9 @@ export async function updateLoyaltySettings(
     auto_financial_discount?: boolean;
     points_expiry_active?: boolean;
     points_expiry_days?: number;
+    spend_points_active?: boolean;
+    spend_points_ratio?: number;
+    spend_points_amount?: number;
     rewards?: {
       id?: string | number;
       title: string;
@@ -215,6 +218,15 @@ export async function updateLoyaltySettings(
     }
     if (data.points_expiry_days !== undefined) {
       mappedData.points_expiry_days = data.points_expiry_days;
+    }
+    if (data.spend_points_active !== undefined) {
+      mappedData.spend_points_active = data.spend_points_active;
+    }
+    if (data.spend_points_ratio !== undefined) {
+      mappedData.spend_points_ratio = Number(data.spend_points_ratio);
+    }
+    if (data.spend_points_amount !== undefined) {
+      mappedData.spend_points_amount = Number(data.spend_points_amount);
     }
     if (points_per_checkin !== undefined) {
       mappedData.check_in_points = points_per_checkin;

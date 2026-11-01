@@ -81,6 +81,17 @@ export function LoyaltySettingsTab({
   );
   const [isExpiringPoints, setIsExpiringPoints] = useState(false);
 
+  // Pontuação por Valor Gasto (Cashback em Pontos)
+  const [spendPointsActive, setSpendPointsActive] = useState<boolean>(
+    settings?.spend_points_active ?? false
+  );
+  const [spendPointsRatio, setSpendPointsRatio] = useState<number>(
+    settings?.spend_points_ratio !== undefined ? Number(settings.spend_points_ratio) : 10
+  );
+  const [spendPointsAmount, setSpendPointsAmount] = useState<number>(
+    settings?.spend_points_amount || 1
+  );
+
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
@@ -100,7 +111,7 @@ export function LoyaltySettingsTab({
   };
 
   const handleCheckInToggle = (checked: boolean) => {
-    if (!checked && !scheduleActive) {
+    if (!checked && !scheduleActive && !spendPointsActive) {
       toast.error("Ao menos uma regra de ganho deve ficar ativa!");
       return;
     }
@@ -109,11 +120,20 @@ export function LoyaltySettingsTab({
   };
 
   const handleScheduleToggle = (checked: boolean) => {
-    if (!checked && !checkInActive) {
+    if (!checked && !checkInActive && !spendPointsActive) {
       toast.error("Ao menos uma regra de ganho deve ficar ativa!");
       return;
     }
     setScheduleActive(checked);
+    setHasUnsavedChanges(true);
+  };
+
+  const handleSpendPointsToggle = (checked: boolean) => {
+    if (!checked && !checkInActive && !scheduleActive) {
+      toast.error("Ao menos uma regra de ganho deve ficar ativa!");
+      return;
+    }
+    setSpendPointsActive(checked);
     setHasUnsavedChanges(true);
   };
 
@@ -183,6 +203,9 @@ export function LoyaltySettingsTab({
         auto_financial_discount: autoFinancialDiscount,
         points_expiry_active: pointsExpiryActive,
         points_expiry_days: pointsExpiryDays,
+        spend_points_active: spendPointsActive,
+        spend_points_ratio: spendPointsRatio,
+        spend_points_amount: spendPointsAmount,
         rewards: rewards.map(r => ({
           id: typeof r.id === "string" ? r.id : undefined,
           title: r.title,
@@ -432,6 +455,69 @@ export function LoyaltySettingsTab({
                   onCheckedChange={handleScheduleToggle}
                 />
               </div>
+            </div>
+
+            {/* Pontuação por Valor Gasto (R$) */}
+            <div className="pt-4 border-t border-border/40 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-base font-medium">Pontos por Valor Gasto (Cashback em Pontos)</Label>
+                    <span className={cn(
+                      "text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border",
+                      spendPointsActive 
+                        ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" 
+                        : "bg-slate-500/10 text-slate-600 border-slate-500/20"
+                    )}>
+                      {spendPointsActive ? "Ativo" : "Desativado"}
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground max-w-[280px] sm:max-w-none">
+                    Concede pontos proporcionais ao valor financeiro líquido pago no atendimento.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Switch
+                    checked={spendPointsActive}
+                    onCheckedChange={handleSpendPointsToggle}
+                  />
+                </div>
+              </div>
+
+              {spendPointsActive && (
+                <div className="p-4 rounded-2xl border bg-muted/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-300">
+                  <div className="text-sm font-medium text-foreground">
+                    Regra de Conversão:
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap text-sm">
+                    <span className="text-muted-foreground">A cada R$</span>
+                    <Input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={spendPointsRatio}
+                      onChange={(e) => {
+                        setSpendPointsRatio(Math.max(1, Number(e.target.value)));
+                        setHasUnsavedChanges(true);
+                      }}
+                      className="w-20 text-center rounded-xl bg-card font-semibold"
+                    />
+                    <span className="text-muted-foreground">gastos, ganha</span>
+                    <Input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={spendPointsAmount}
+                      onChange={(e) => {
+                        setSpendPointsAmount(Math.max(1, Number(e.target.value)));
+                        setHasUnsavedChanges(true);
+                      }}
+                      className="w-16 text-center rounded-xl bg-card font-semibold"
+                    />
+                    <span className="text-muted-foreground">ponto(s)</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

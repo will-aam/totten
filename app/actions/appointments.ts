@@ -755,6 +755,7 @@ export async function updateAppointment(
       }
 
       const service = currentAppt.service;
+      let resolvedVoucherDiscountAmount = 0;
       const requiresRevenue =
         finalStatus === AppointmentStatus.REALIZADO &&
         !currentAppt.package_id &&
@@ -818,6 +819,7 @@ export async function updateAppointment(
 
               if (voucherDiscountAmount > 0) {
                 remainingAmount = Math.max(0, Number((remainingAmount - voucherDiscountAmount).toFixed(2)));
+                resolvedVoucherDiscountAmount = voucherDiscountAmount;
               }
               appliedVoucher = voucher;
             }
@@ -1090,12 +1092,22 @@ export async function updateAppointment(
         hasActiveCheckIn
       );
 
+      const hasFixedPointsRule = Boolean(
+        loyaltySettings?.schedule_active &&
+        (loyaltySettings.schedule_points || 0) > 0 &&
+        shouldAwardSchedulePoints
+      );
+
+      const hasSpendPointsRule = Boolean(
+        loyaltySettings?.spend_points_active &&
+        Number(loyaltySettings.spend_points_ratio || 0) > 0 &&
+        (loyaltySettings.spend_points_amount || 0) > 0
+      );
+
       if (
         loyaltySettings?.is_active &&
-        loyaltySettings?.schedule_active &&
-        loyaltySettings.schedule_points > 0 &&
-        currentAppt.client_id &&
-        shouldAwardSchedulePoints
+        (hasFixedPointsRule || hasSpendPointsRule) &&
+        currentAppt.client_id
       ) {
         const clientCurrent = await tx.client.findUnique({
           where: { id: currentAppt.client_id },
@@ -1106,58 +1118,104 @@ export async function updateAppointment(
 
         if (isEnrolled && clientCurrent) {
           if (isMarkingAsDone) {
-            const newPoints = Math.min(
-              (clientCurrent.loyalty_points || 0) + loyaltySettings.schedule_points,
-              loyaltySettings.max_points,
-            );
-            await tx.client.update({
-              where: { id: currentAppt.client_id },
-              data: { loyalty_points: newPoints, last_loyalty_activity_at: new Date() },
-            });
+            // 1. Pontos Fixos por Agendamento
+            const fixedPoints = hasFixedPointsRule ? loyaltySettings.schedule_points : 0;
 
-            const diff = newPoints - (clientCurrent.loyalty_points || 0);
-            if (diff > 0) {
-              await tx.loyaltyTransaction.create({
-                data: {
-                  organization_id: admin.organizationId,
-                  client_id: currentAppt.client_id,
-                  client_name: currentAppt.client?.name,
-                  type: "APPOINTMENT",
-                  points: diff,
-                  balance_after: newPoints,
-                  description: `Agendamento Concluído: ${currentAppt.snapshot_service_name || currentAppt.service?.name || "Serviço"}`,
-                  appointment_id: currentAppt.id,
-                  created_by_id: admin.id,
-                  created_by_name: admin.name || "Administrador",
-                },
+            // 2. Pontos por Valor Gasto (R$)
+            let spendPoints = 0;
+            let effectiveChargedPrice = 0;
+            if (hasSpendPointsRule) {
+              const fullPrice = Number(
+                currentAppt.snapshot_service_price ??
+                currentAppt.service?.price ??
+                0
+              );
+              // Desconta voucher se aplicado para não pontuar sobre o desconto
+              const discount = resolvedVoucherDiscountAmount || 0;
+              effectiveChargedPrice = Math.max(0, fullPrice - discount);
+
+              const ratio = Number(loyaltySettings.spend_points_ratio);
+              const amountPerRatio = loyaltySettings.spend_points_amount || 1;
+              spendPoints = Math.floor((effectiveChargedPrice / ratio) * amountPerRatio);
+            }
+
+            const totalPointsToAward = fixedPoints + spendPoints;
+
+            if (totalPointsToAward > 0) {
+              const newPoints = Math.min(
+                (clientCurrent.loyalty_points || 0) + totalPointsToAward,
+                loyaltySettings.max_points,
+              );
+              await tx.client.update({
+                where: { id: currentAppt.client_id },
+                data: { loyalty_points: newPoints, last_loyalty_activity_at: new Date() },
               });
+
+              const diff = newPoints - (clientCurrent.loyalty_points || 0);
+              if (diff > 0) {
+                let reason = `Agendamento Concluído: ${currentAppt.snapshot_service_name || currentAppt.service?.name || "Serviço"}`;
+                if (fixedPoints > 0 && spendPoints > 0) {
+                  reason += ` (+${fixedPoints} pts presença, +${spendPoints} pts por R$ ${effectiveChargedPrice.toFixed(2)})`;
+                } else if (spendPoints > 0) {
+                  reason += ` (+${spendPoints} pts por R$ ${effectiveChargedPrice.toFixed(2)})`;
+                }
+
+                await tx.loyaltyTransaction.create({
+                  data: {
+                    organization_id: admin.organizationId,
+                    client_id: currentAppt.client_id,
+                    client_name: currentAppt.client?.name,
+                    type: "APPOINTMENT",
+                    points: diff,
+                    balance_after: newPoints,
+                    description: reason,
+                    appointment_id: currentAppt.id,
+                    created_by_id: admin.id,
+                    created_by_name: admin.name || "Administrador",
+                  },
+                });
+              }
             }
           } else if (isUnmarkingAsDone) {
-            const newPoints = Math.max(
-              (clientCurrent.loyalty_points || 0) - loyaltySettings.schedule_points,
-              0,
-            );
-            await tx.client.update({
-              where: { id: currentAppt.client_id },
-              data: { loyalty_points: newPoints, last_loyalty_activity_at: new Date() },
+            // Na reversão, busca exatamente a última transação de APPOINTMENT desse agendamento
+            const previousTx = await tx.loyaltyTransaction.findFirst({
+              where: {
+                organization_id: admin.organizationId,
+                appointment_id: currentAppt.id,
+                type: "APPOINTMENT",
+              },
+              orderBy: { id: "desc" },
             });
 
-            const diff = (clientCurrent.loyalty_points || 0) - newPoints;
-            if (diff > 0) {
-              await tx.loyaltyTransaction.create({
-                data: {
-                  organization_id: admin.organizationId,
-                  client_id: currentAppt.client_id,
-                  client_name: currentAppt.client?.name,
-                  type: "REVERT_APPOINTMENT",
-                  points: -diff,
-                  balance_after: newPoints,
-                  description: `Estorno: agendamento desmarcado como realizado`,
-                  appointment_id: currentAppt.id,
-                  created_by_id: admin.id,
-                  created_by_name: admin.name || "Administrador",
-                },
+            const pointsToRevert = previousTx ? previousTx.points : (loyaltySettings.schedule_points || 0);
+
+            if (pointsToRevert > 0) {
+              const newPoints = Math.max(
+                (clientCurrent.loyalty_points || 0) - pointsToRevert,
+                0,
+              );
+              await tx.client.update({
+                where: { id: currentAppt.client_id },
+                data: { loyalty_points: newPoints, last_loyalty_activity_at: new Date() },
               });
+
+              const diff = (clientCurrent.loyalty_points || 0) - newPoints;
+              if (diff > 0) {
+                await tx.loyaltyTransaction.create({
+                  data: {
+                    organization_id: admin.organizationId,
+                    client_id: currentAppt.client_id,
+                    client_name: currentAppt.client?.name,
+                    type: "REVERT_APPOINTMENT",
+                    points: -diff,
+                    balance_after: newPoints,
+                    description: `Estorno: agendamento desmarcado como realizado (-${diff} pts)`,
+                    appointment_id: currentAppt.id,
+                    created_by_id: admin.id,
+                    created_by_name: admin.name || "Administrador",
+                  },
+                });
+              }
             }
           }
         }

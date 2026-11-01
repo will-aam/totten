@@ -631,7 +631,7 @@ export async function createManualPackageCheckIn(
           );
           await tx.client.update({
             where: { id: pkg.client_id },
-            data: { loyalty_points: newPoints },
+            data: { loyalty_points: newPoints, last_loyalty_activity_at: new Date() },
           });
 
           const diff = newPoints - (clientCurrent?.loyalty_points || 0);

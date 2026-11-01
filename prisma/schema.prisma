@@ -709,6 +709,11 @@ model LoyaltySettings {
   points_expiry_active Boolean @default(false)
   points_expiry_days   Int     @default(180)
 
+  // Pontuação por Valor Gasto (Cashback de Pontos)
+  spend_points_active Boolean @default(false)
+  spend_points_ratio  Decimal @default(10.00) @db.Decimal(10, 2)
+  spend_points_amount Int     @default(1)
+
   rewards LoyaltyReward[]
 
   created_at DateTime @default(now())
