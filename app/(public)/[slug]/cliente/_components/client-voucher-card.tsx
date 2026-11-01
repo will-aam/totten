@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 
 export interface VoucherItem {
   id: string;
+  pin?: string | null;
   title: string;
   points_spent: number;
   status: string;
@@ -24,7 +25,7 @@ export function ClientVoucherCard({ voucher }: { voucher: VoucherItem }) {
   const isExpired = !isUsed && voucher.expires_at && new Date(voucher.expires_at) < new Date();
   const isAvailable = !isUsed && !isExpired;
 
-  const voucherCode = `#VCH-${voucher.id.slice(-6).toUpperCase()}`;
+  const voucherCode = voucher.pin ? `#VCH-${voucher.pin}` : `#VCH-${voucher.id.slice(-6).toUpperCase()}`;
 
   const handleCopyCode = (e: React.MouseEvent) => {
     e.stopPropagation();

@@ -178,6 +178,8 @@ export async function updateLoyaltySettings(
     points_per_checkin?: number;
     points_per_appointment?: number;
     auto_financial_discount?: boolean;
+    points_expiry_active?: boolean;
+    points_expiry_days?: number;
     rewards?: {
       id?: string | number;
       title: string;
@@ -191,7 +193,7 @@ export async function updateLoyaltySettings(
 ) {
   try {
     const { rewards, points_per_checkin, points_per_appointment, ...otherData } = data;
-    
+
     const mappedData: any = { ...otherData };
     if (data.is_active !== undefined) {
       mappedData.is_active = data.is_active;
@@ -207,6 +209,12 @@ export async function updateLoyaltySettings(
     }
     if (data.auto_financial_discount !== undefined) {
       mappedData.auto_financial_discount = data.auto_financial_discount;
+    }
+    if (data.points_expiry_active !== undefined) {
+      mappedData.points_expiry_active = data.points_expiry_active;
+    }
+    if (data.points_expiry_days !== undefined) {
+      mappedData.points_expiry_days = data.points_expiry_days;
     }
     if (points_per_checkin !== undefined) {
       mappedData.check_in_points = points_per_checkin;
@@ -340,7 +348,7 @@ export async function calculateClientPoints(
   settings: any
 ) {
   if (!settings || !settings.is_active) return 0;
-  
+
   const enrolled = settings.scope === "global" || enrolledAt !== null;
   if (!enrolled) return 0;
 
@@ -358,8 +366,13 @@ export async function getClientLoyaltyInfo(clientId: string) {
     const client = await prisma.client.findUnique({
       where: { id: clientId },
       select: {
+        id: true,
+        organization_id: true,
+        name: true,
         loyalty_points: true,
         loyalty_enrolled_at: true,
+        last_loyalty_activity_at: true,
+        created_at: true,
         organization: {
           select: {
             loyalty_settings: {
@@ -388,8 +401,36 @@ export async function getClientLoyaltyInfo(clientId: string) {
       return { success: true, enrolled: false, active: true, points: 0, rewards: settings.rewards };
     }
 
-    // Saldo real e não retroativo do cliente
-    const currentPoints = Math.min(Math.max(0, client.loyalty_points || 0), settings.max_points);
+    // Just-in-Time: Checagem de Expiração por Inatividade
+    let currentPoints = Math.min(Math.max(0, client.loyalty_points || 0), settings.max_points);
+    if (settings.points_expiry_active && settings.points_expiry_days > 0 && currentPoints > 0) {
+      const refDate = client.last_loyalty_activity_at || client.loyalty_enrolled_at || client.created_at;
+      const daysInactive = Math.floor((new Date().getTime() - new Date(refDate).getTime()) / (1000 * 60 * 60 * 24));
+
+      if (daysInactive >= settings.points_expiry_days) {
+        // Expira o saldo por inatividade
+        await prisma.$transaction(async (tx) => {
+          await tx.client.update({
+            where: { id: client.id },
+            data: { loyalty_points: 0 },
+          });
+
+          await tx.loyaltyTransaction.create({
+            data: {
+              organization_id: client.organization_id,
+              client_id: client.id,
+              client_name: client.name,
+              type: "POINTS_EXPIRED",
+              points: -currentPoints,
+              balance_after: 0,
+              description: `Expiração por inatividade (${daysInactive} dias sem comparecimento)`,
+              created_by_name: "Sistema (Regra de Inatividade)",
+            },
+          });
+        });
+        currentPoints = 0;
+      }
+    }
 
     // Busca todos os vouchers do cliente para a carteira
     const vouchers = await prisma.clientVoucher.findMany({
@@ -412,6 +453,16 @@ export async function getClientLoyaltyInfo(clientId: string) {
   }
 }
 
+function generateVoucherPin(): string {
+  // 6 caracteres alfanuméricos sem caracteres ambíguos (evita 0/O e 1/I)
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let pin = "";
+  for (let i = 0; i < 6; i++) {
+    pin += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return pin;
+}
+
 export async function redeemLoyaltyReward(clientId: string, rewardId: string) {
   try {
     const client = await prisma.client.findUnique({
@@ -419,6 +470,7 @@ export async function redeemLoyaltyReward(clientId: string, rewardId: string) {
       select: {
         id: true,
         organization_id: true,
+        name: true,
         loyalty_points: true,
         loyalty_enrolled_at: true,
         organization: {
@@ -486,9 +538,12 @@ export async function redeemLoyaltyReward(clientId: string, rewardId: string) {
         select: { loyalty_points: true },
       });
 
-      // 3. Emite o voucher de resgate com a tipificação
+      // 3. Emite o voucher de resgate com a tipificação e PIN indexado
+      const generatedPin = generateVoucherPin();
       const createdVoucher = await tx.clientVoucher.create({
         data: {
+          pin: generatedPin,
+          organization_id: client.organization_id,
           client_id: clientId,
           reward_id: reward.id,
           points_spent: reward.points_cost,
@@ -505,6 +560,7 @@ export async function redeemLoyaltyReward(clientId: string, rewardId: string) {
         data: {
           organization_id: client.organization_id,
           client_id: clientId,
+          client_name: client.name,
           type: "REWARD_REDEEM",
           points: -reward.points_cost,
           balance_after: updatedClient?.loyalty_points ?? 0,
@@ -551,6 +607,7 @@ export async function enrollClientInLoyalty(clientId: string, enroll: boolean) {
           data: {
             organization_id: client.organization_id,
             client_id: clientId,
+            client_name: client.name,
             type: "MANUAL_ADJUST",
             points: -client.loyalty_points,
             balance_after: 0,
@@ -563,7 +620,7 @@ export async function enrollClientInLoyalty(clientId: string, enroll: boolean) {
 
       await tx.client.update({
         where: { id: clientId },
-        data: { 
+        data: {
           loyalty_enrolled_at: enroll ? new Date() : null,
           loyalty_points: 0
         }
@@ -635,6 +692,7 @@ export async function adjustClientLoyaltyPoints(data: {
         data: {
           organization_id: admin.organizationId,
           client_id: clientId,
+          client_name: client.name,
           type: actualDiff > 0 ? "MANUAL_BONUS" : "MANUAL_ADJUST",
           points: actualDiff,
           balance_after: newPoints,
@@ -690,6 +748,7 @@ export async function getPaginatedLoyaltyTransactions({
     if (search && search.trim()) {
       where.OR = [
         { client: { name: { contains: search.trim(), mode: "insensitive" } } },
+        { client_name: { contains: search.trim(), mode: "insensitive" } },
         { description: { contains: search.trim(), mode: "insensitive" } },
       ];
     }
@@ -719,8 +778,8 @@ export async function getPaginatedLoyaltyTransactions({
 
     const formattedTransactions = transactions.map((t) => ({
       id: t.id,
-      clientName: t.client?.name || "Cliente Desconhecido",
-      clientId: t.client_id,
+      clientName: t.client?.name || t.client_name || "Cliente Arquivado",
+      clientId: t.client_id || "",
       clientPhone: t.client?.phone_whatsapp || "",
       type: t.type,
       points: t.points,
@@ -812,12 +871,12 @@ export async function getClientLoyaltyHistory(clientId: string) {
     }
 
     // Fallback retroativo para dados pré-ledger
-    const programActivationDate = settings.activated_at 
-      ? new Date(settings.activated_at) 
+    const programActivationDate = settings.activated_at
+      ? new Date(settings.activated_at)
       : (settings.created_at ? new Date(settings.created_at) : new Date());
 
-    const startDate = client.loyalty_enrolled_at 
-      ? new Date(client.loyalty_enrolled_at) 
+    const startDate = client.loyalty_enrolled_at
+      ? new Date(client.loyalty_enrolled_at)
       : programActivationDate;
     const history = [];
 
@@ -850,11 +909,11 @@ export async function getClientLoyaltyHistory(clientId: string) {
           status: "REALIZADO",
           ...(settings.check_in_active && settings.check_in_points > 0
             ? {
-                OR: [
-                  { check_in: null },
-                  { check_in: { is: { deleted_at: { not: null } } } },
-                ],
-              }
+              OR: [
+                { check_in: null },
+                { check_in: { is: { deleted_at: { not: null } } } },
+              ],
+            }
             : {}),
         },
         include: {
@@ -928,8 +987,11 @@ export async function findVoucherByPin(pin: string) {
     const [vouchers, settings] = await Promise.all([
       prisma.clientVoucher.findMany({
         where: {
-          id: { endsWith: cleanPin, mode: "insensitive" },
-          client: { organization_id: admin.organizationId },
+          OR: [
+            { organization_id: admin.organizationId, pin: cleanPin },
+            { client: { organization_id: admin.organizationId }, pin: cleanPin },
+            { client: { organization_id: admin.organizationId }, id: { endsWith: cleanPin, mode: "insensitive" } },
+          ],
         },
         include: {
           client: {
@@ -961,10 +1023,19 @@ export async function findVoucherByPin(pin: string) {
       const effectiveStatus = v.status === "UTILIZADO" ? "UTILIZADO" : isExpired ? "EXPIRADO" : "DISPONIVEL";
       const rewardType = v.reward_type || v.reward?.reward_type || "GIFT";
       const discountValue = v.discount_value !== null ? Number(v.discount_value) : (v.reward?.discount_value ? Number(v.reward.discount_value) : null);
+      const displayPin = v.pin ? `#VCH-${v.pin}` : `#VCH-${v.id.slice(-6).toUpperCase()}`;
+
+      // Auto-cura: se voucher antigo não tinha o pin gravado, salva em background
+      if (!v.pin) {
+        prisma.clientVoucher.update({
+          where: { id: v.id },
+          data: { pin: v.id.slice(-6).toUpperCase(), organization_id: admin.organizationId },
+        }).catch(() => { });
+      }
 
       return {
         id: v.id,
-        pin: `#VCH-${v.id.slice(-6).toUpperCase()}`,
+        pin: displayPin,
         title: v.title,
         pointsSpent: v.points_spent,
         status: effectiveStatus,
@@ -1105,8 +1176,11 @@ export async function validateVoucherForAppointment(
 
     const voucher = await prisma.clientVoucher.findFirst({
       where: {
-        id: { endsWith: cleanPin, mode: "insensitive" },
-        client: { organization_id: admin.organizationId },
+        OR: [
+          { organization_id: admin.organizationId, pin: cleanPin },
+          { client: { organization_id: admin.organizationId }, pin: cleanPin },
+          { client: { organization_id: admin.organizationId }, id: { endsWith: cleanPin, mode: "insensitive" } },
+        ],
       },
       include: {
         client: { select: { id: true, name: true } },
@@ -1137,7 +1211,7 @@ export async function validateVoucherForAppointment(
     if (clientId && voucher.client_id !== clientId) {
       return {
         success: false,
-        error: `Este voucher pertence ao cliente ${voucher.client.name}, diferente do agendamento.`,
+        error: `Este voucher pertence ao cliente ${voucher.client?.name || "outro cliente"}, diferente do agendamento.`,
       };
     }
 
@@ -1146,8 +1220,8 @@ export async function validateVoucherForAppointment(
       voucher.discount_value !== null
         ? Number(voucher.discount_value)
         : voucher.reward?.discount_value
-        ? Number(voucher.reward.discount_value)
-        : 0;
+          ? Number(voucher.reward.discount_value)
+          : 0;
 
     let calculatedDiscount = 0;
     if (rewardType === "PERCENTAGE" && discountVal > 0) {
@@ -1162,18 +1236,102 @@ export async function validateVoucherForAppointment(
       success: true,
       voucher: {
         id: voucher.id,
-        pin: `#VCH-${voucher.id.slice(-6).toUpperCase()}`,
+        pin: voucher.pin ? `#VCH-${voucher.pin}` : `#VCH-${voucher.id.slice(-6).toUpperCase()}`,
         title: voucher.title,
         rewardType,
         discountValue: discountVal,
         calculatedDiscount,
         finalPrice,
-        clientName: voucher.client.name,
+        clientName: voucher.client?.name || "Cliente",
       },
     };
   } catch (error) {
     console.error("Erro ao validar voucher para agendamento:", error);
     return { success: false, error: "Erro ao validar voucher." };
+  }
+}
+
+export async function expireInactiveLoyaltyPoints(organizationId?: string) {
+  try {
+    const admin = await requireAuth();
+    const orgId = organizationId || admin.organizationId;
+
+    const settings = await prisma.loyaltySettings.findUnique({
+      where: { organization_id: orgId },
+    });
+
+    if (!settings || !settings.is_active) {
+      return { success: false, error: "O programa de fidelidade não está ativo." };
+    }
+
+    if (!settings.points_expiry_active || !settings.points_expiry_days || settings.points_expiry_days <= 0) {
+      return { success: false, error: "A regra de expiração de pontos por inatividade está desativada nas configurações." };
+    }
+
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - settings.points_expiry_days);
+
+    const inactiveClients = await prisma.client.findMany({
+      where: {
+        organization_id: orgId,
+        loyalty_points: { gt: 0 },
+        OR: [
+          { last_loyalty_activity_at: { lt: cutoffDate } },
+          { last_loyalty_activity_at: null, loyalty_enrolled_at: { lt: cutoffDate } },
+          { last_loyalty_activity_at: null, loyalty_enrolled_at: null, created_at: { lt: cutoffDate } },
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        loyalty_points: true,
+        last_loyalty_activity_at: true,
+        loyalty_enrolled_at: true,
+        created_at: true,
+      },
+    });
+
+    if (inactiveClients.length === 0) {
+      return { success: true, expiredCount: 0, totalPointsExpired: 0 };
+    }
+
+    let totalPointsExpired = 0;
+    await prisma.$transaction(async (tx) => {
+      for (const client of inactiveClients) {
+        const points = client.loyalty_points;
+        totalPointsExpired += points;
+
+        await tx.client.update({
+          where: { id: client.id },
+          data: { loyalty_points: 0 },
+        });
+
+        const refDate = client.last_loyalty_activity_at || client.loyalty_enrolled_at || client.created_at;
+        const daysInactive = Math.floor((new Date().getTime() - new Date(refDate).getTime()) / (1000 * 60 * 60 * 24));
+
+        await tx.loyaltyTransaction.create({
+          data: {
+            organization_id: orgId,
+            client_id: client.id,
+            type: "POINTS_EXPIRED",
+            points: -points,
+            balance_after: 0,
+            description: `Expiração por inatividade (${daysInactive} dias sem comparecimento à clínica)`,
+            created_by_name: "Sistema (Regra de Inatividade)",
+          },
+        });
+      }
+    });
+
+    revalidatePath("/admin/loyalty");
+    return {
+      success: true,
+      expiredCount: inactiveClients.length,
+      totalPointsExpired,
+    };
+  } catch (error) {
+    console.error("Erro ao expirar pontos por inatividade:", error);
+    return { success: false, error: "Erro interno ao processar expiração de pontos." };
   }
 }
 

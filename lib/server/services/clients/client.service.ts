@@ -610,6 +610,8 @@ export class ClientService {
         packages: true,
         transactions: true,
         anamnesis_responses: true,
+        loyalty_transactions: true,
+        ClientVoucher: true,
       },
     });
 
@@ -622,7 +624,9 @@ export class ClientService {
       client.check_ins.length > 0 ||
       client.packages.length > 0 ||
       client.transactions.length > 0 ||
-      client.anamnesis_responses.length > 0;
+      client.anamnesis_responses.length > 0 ||
+      client.loyalty_transactions.length > 0 ||
+      client.ClientVoucher.length > 0;
 
     if (hasHistory) {
       await prisma.client.update({

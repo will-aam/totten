@@ -640,6 +640,7 @@ export async function createManualPackageCheckIn(
               data: {
                 organization_id: admin.organizationId,
                 client_id: pkg.client_id,
+                client_name: pkg.client?.name,
                 type: "CHECK_IN",
                 points: diff,
                 balance_after: newPoints,
@@ -847,7 +848,7 @@ export async function deleteCheckIn(checkInId: string) {
       if (loyaltySettings?.is_active && loyaltySettings?.check_in_active && checkIn.client_id) {
         const clientCurrent = await tx.client.findUnique({
           where: { id: checkIn.client_id },
-          select: { loyalty_points: true, loyalty_enrolled_at: true },
+          select: { loyalty_points: true, loyalty_enrolled_at: true, name: true },
         });
         const isEnrolled = loyaltySettings.scope === "global" || clientCurrent?.loyalty_enrolled_at !== null;
         if (isEnrolled && clientCurrent) {
@@ -866,6 +867,7 @@ export async function deleteCheckIn(checkInId: string) {
               data: {
                 organization_id: admin.organizationId,
                 client_id: checkIn.client_id,
+                client_name: clientCurrent.name,
                 type: "REVERT_CHECK_IN",
                 points: -diff,
                 balance_after: newPoints,

@@ -123,9 +123,9 @@ export const AppointmentDetailsModal = memo(
 
     useEffect(() => {
       async function loadData() {
-        // Duas buscas independentes: uma falhar nÃ£o deve impedir a outra
+        // Duas buscas independentes: uma falhar não deve impedir a outra
         try {
-          // ðŸ”Œ ATUALIZADO: Apontando para a nova rota pÃºblica
+          // 🔌 ATUALIZADO: Apontando para a nova rota pública
           const settingsData = await apiClient<PublicSettings>(
             "public/organization",
             { safe: true }
@@ -153,8 +153,8 @@ export const AppointmentDetailsModal = memo(
         let initialStatusValue = rawStatus || "a_confirmar";
         const isNoShow =
           appointment.status === "CANCELADO" &&
-          (appointment.observations?.includes("Falta automÃ¡tica") ||
-            appointment.observations?.includes("Baixa automÃ¡tica"));
+          (appointment.observations?.includes("Falta automática") ||
+            appointment.observations?.includes("Baixa automática"));
         const isManualNoShow =
           appointment.status === "CANCELADO" &&
           appointment.observations?.includes("(Falta Registrada)");
@@ -222,7 +222,7 @@ export const AppointmentDetailsModal = memo(
 
     if (!appointment) return null;
 
-    // --- REGRAS DE NEGÃ“CIO DE ESTADO ---
+    // --- REGRAS DE NEGÓCIO DE ESTADO ---
     const isRecurrent = !!appointment.recurrence_id;
     const isFromPackage = !!appointment.package || !!appointment.package_id || !!appointment.packageId;
     const isPackageArchived =
@@ -230,7 +230,7 @@ export const AppointmentDetailsModal = memo(
     const isAlreadyCanceled = appointment.status?.toLowerCase() === "cancelado";
     const isLocked = isAlreadyCanceled;
 
-    // Dados de Sinal / PrÃ©-pagamento Pix
+    // Dados de Sinal / Pré-pagamento Pix
     const isDepositRefundedOrChargedBack =
       appointment.mp_payment_status === "refunded" ||
       appointment.mp_payment_status === "charged_back";
@@ -246,20 +246,20 @@ export const AppointmentDetailsModal = memo(
     const servicePrice = Number(appointment.snapshot_service_price || appointment.price || 0);
     const remainingBalance = Math.max(0, servicePrice - depositAmount);
 
-    //  O FARO DE FALTAS: Descobre se foi AutomÃ¡tica ou Manual
+    //  O FARO DE FALTAS: Descobre se foi Automática ou Manual
     const isAutoNoShow =
       isAlreadyCanceled &&
-      (appointment.observations?.includes("Falta automÃ¡tica") ||
-        appointment.observations?.includes("Baixa automÃ¡tica"));
+      (appointment.observations?.includes("Falta automática") ||
+        appointment.observations?.includes("Baixa automática"));
     const isManualNoShow =
       isAlreadyCanceled &&
       appointment.observations?.includes("(Falta Registrada)");
     const isAnyNoShow = isAutoNoShow || isManualNoShow;
 
-    // FunÃ§Ã£o que chama a Action de Estorno Unificada
+    // Função que chama a Action de Estorno Unificada
     const handleConfirmReschedule = async () => {
       if (!appointment?.id || !rescheduleDate || !rescheduleTime) {
-        toast.error("Selecione a data e o horÃ¡rio para remarcar.");
+        toast.error("Selecione a data e o horário para remarcar.");
         return;
       }
       setIsSavingReschedule(true);
@@ -275,7 +275,7 @@ export const AppointmentDetailsModal = memo(
           toast.error(res.error || "Erro ao remarcar agendamento.");
         }
       } catch (err: any) {
-        toast.error(err?.message || "Falha na conexÃ£o ao remarcar.");
+        toast.error(err?.message || "Falha na conexão ao remarcar.");
       } finally {
         setIsSavingReschedule(false);
       }
@@ -287,12 +287,12 @@ export const AppointmentDetailsModal = memo(
         const result = await undoNoShow(appointment.id);
         if (result.success) {
           toast.success(
-            "Falta desfeita! A sessÃ£o voltou para o status Pendente.",
+            "Falta desfeita! A sessão voltou para o status Pendente.",
           );
           onRefresh?.();
           onOpenChange(false);
         } else {
-          toast.error(result.error || "NÃ£o foi possÃ­vel estornar a falta.");
+          toast.error(result.error || "Não foi possível estornar a falta.");
         }
       } catch (error) {
         toast.error("Erro ao conectar com o servidor.");
@@ -341,19 +341,19 @@ export const AppointmentDetailsModal = memo(
         finalStatus !== "nao_compareceu_abonado"
       ) {
         toast.error(
-          "Este pacote foi arquivado. VocÃª sÃ³ pode excluir ou cancelar esta sessÃ£o.",
+          "Este pacote foi arquivado. Você só pode excluir ou cancelar esta sessão.",
         );
         return;
       }
 
       setIsSaving(true);
       try {
-        //  INTERCEPTAÃ‡ÃƒO: Se escolheu "Faltou", rodamos a nova Action Manual!
+        //  INTERCEPTAÇÃO: Se escolheu "Faltou", rodamos a nova Action Manual!
         if (finalStatus === "nao_compareceu" || finalStatus === "nao_compareceu_abonado") {
           const deduct = finalStatus === "nao_compareceu";
           const result = await registerManualNoShow(appointment.id, obs, deduct);
           if (result.success) {
-            toast.success(deduct ? "Falta registrada e sessÃ£o descontada!" : "Falta registrada e sessÃ£o abonada!");
+            toast.success(deduct ? "Falta registrada e sessão descontada!" : "Falta registrada e sessão abonada!");
             onRefresh?.();
             onOpenChange(false);
           } else {
@@ -388,7 +388,7 @@ export const AppointmentDetailsModal = memo(
 
         if (result.success) {
           toast.success(
-            updateAllSeries ? "SÃ©rie atualizada!" : "Dados salvos!",
+            updateAllSeries ? "Série atualizada!" : "Dados salvos!",
           );
           onRefresh?.();
           onOpenChange(false);
@@ -396,7 +396,7 @@ export const AppointmentDetailsModal = memo(
           toast.error(result.error || "Erro ao salvar.");
         }
       } catch (error) {
-        toast.error("Erro na conexÃ£o.");
+        toast.error("Erro na conexão.");
       } finally {
         setIsSaving(false);
       }
@@ -412,14 +412,14 @@ export const AppointmentDetailsModal = memo(
         );
 
         if (result.success) {
-          toast.success(deleteAll ? "SÃ©rie excluÃ­da!" : "Agendamento excluÃ­do!");
+          toast.success(deleteAll ? "Série excluída!" : "Agendamento excluído!");
           onRefresh?.();
           onOpenChange(false);
         } else {
           toast.error(result.error || "Erro ao excluir.");
         }
       } catch (error) {
-        toast.error("Erro na conexÃ£o.");
+        toast.error("Erro na conexão.");
       }
     };
 
@@ -441,7 +441,7 @@ export const AppointmentDetailsModal = memo(
             status: "solicitado",
             paymentMethod: finalPaymentMethodEnum,
             paymentMethodId: finalPaymentMethodId,
-            observations: obs ? `${obs}\n(Retornado para solicitaÃ§Ãµes pendentes)` : "(Retornado para solicitaÃ§Ãµes pendentes)",
+            observations: obs ? `${obs}\n(Retornado para solicitações pendentes)` : "(Retornado para solicitações pendentes)",
             hasCharge: hasCharge,
           },
           false,
@@ -449,14 +449,14 @@ export const AppointmentDetailsModal = memo(
         );
 
         if (result.success) {
-          toast.success("Agendamento retornado para SolicitaÃ§Ãµes Pendentes!");
+          toast.success("Agendamento retornado para Solicitações Pendentes!");
           onRefresh?.();
           onOpenChange(false);
         } else {
           toast.error(result.error || "Erro ao retornar agendamento.");
         }
       } catch (error) {
-        toast.error("Erro na conexÃ£o.");
+        toast.error("Erro na conexão.");
       } finally {
         setIsSaving(false);
       }
@@ -482,7 +482,7 @@ export const AppointmentDetailsModal = memo(
           {appointment.professionalName && (
             <>
               <span className="text-muted-foreground/30 hidden sm:inline">
-                â€¢
+                •
               </span>
               <Badge
                 variant="secondary"
@@ -533,12 +533,12 @@ export const AppointmentDetailsModal = memo(
                 <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
                 <div className="flex flex-col">
                   <span className="text-sm font-black text-amber-700 dark:text-amber-500 uppercase tracking-tight">
-                    {isAutoNoShow ? "Falta AutomÃ¡tica" : "Falta Registrada"}
+                    {isAutoNoShow ? "Falta Automática" : "Falta Registrada"}
                   </span>
                   <span className="text-xs font-medium text-amber-700/80 dark:text-amber-500/80 mt-1">
                     {isAutoNoShow
-                      ? "O sistema registrou falta pois nÃ£o houve check-in no totem. Se a cliente compareceu, estorne a falta abaixo."
-                      : "Esta falta foi registrada manualmente e a sessÃ£o foi descontada. Se foi um erro, estorne abaixo."}
+                      ? "O sistema registrou falta pois não houve check-in no totem. Se a cliente compareceu, estorne a falta abaixo."
+                      : "Esta falta foi registrada manualmente e a sessão foi descontada. Se foi um erro, estorne abaixo."}
                   </span>
                 </div>
               </div>
@@ -567,8 +567,8 @@ export const AppointmentDetailsModal = memo(
                   Registro Cancelado
                 </span>
                 <span className="text-xs font-medium text-muted-foreground mt-1">
-                  Esta consulta foi cancelada amigavelmente e nenhuma sessÃ£o
-                  foi descontada. Por motivos de seguranÃ§a ela nÃ£o pode ser
+                  Esta consulta foi cancelada amigavelmente e nenhuma sessão
+                  foi descontada. Por motivos de segurança ela não pode ser
                   alterada.
                 </span>
               </div>
@@ -582,11 +582,11 @@ export const AppointmentDetailsModal = memo(
               <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-2xl flex items-start gap-3 animate-in fade-in zoom-in-95">
                 <div className="flex flex-col">
                   <span className="text-sm font-black text-destructive uppercase tracking-tight">
-                    AtenÃ§Ã£o: Pacote Encerrado
+                    Atenção: Pacote Encerrado
                   </span>
                   <span className="text-xs font-medium text-destructive/80 mt-1">
                     O pacote atrelado a este agendamento foi arquivado antes
-                    da hora. Esta sessÃ£o tornou-se invÃ¡lida. Por favor,
+                    da hora. Esta sessão tornou-se inválida. Por favor,
                     cancele ou exclua.
                   </span>
                 </div>
@@ -627,10 +627,10 @@ export const AppointmentDetailsModal = memo(
                     Sinal Pago via Pix (Mercado Pago)
                   </span>
                   <p className="text-xs font-bold text-foreground mt-0.5">
-                    {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(depositAmount)} jÃ¡ pago
+                    {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(depositAmount)} já pago
                     {hasCharge && (
                       <span className="text-muted-foreground font-normal ml-1">
-                        â€¢ Restante a cobrar na recepÃ§Ã£o: {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(remainingBalance)}
+                        • Restante a cobrar na recepção: {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(remainingBalance)}
                       </span>
                     )}
                   </p>
@@ -642,7 +642,7 @@ export const AppointmentDetailsModal = memo(
             </div>
           )}
 
-          {/* SINAL ESTORNADO NO MERCADO PAGO / CONTESTAÃ‡ÃƒO */}
+          {/* SINAL ESTORNADO NO MERCADO PAGO / CONTESTAÇÃO */}
           {isDepositRefundedOrChargedBack && !isAlreadyCanceled && (
             <div className="bg-amber-500/10 border border-amber-500/30 p-3.5 rounded-2xl flex items-center justify-between animate-in fade-in zoom-in-95">
               <div className="flex items-center gap-2.5">
@@ -653,11 +653,11 @@ export const AppointmentDetailsModal = memo(
                   <span className="text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-400">
                     {appointment.mp_payment_status === "refunded"
                       ? "Sinal Estornado no Mercado Pago"
-                      : "ContestaÃ§Ã£o / Chargeback"}
+                      : "Contestação / Chargeback"}
                   </span>
                   <p className="text-xs font-medium text-foreground mt-0.5">
                     {appointment.mp_payment_status === "refunded"
-                      ? "Este sinal foi devolvido externamente pelo app do Mercado Pago. Trate diretamente com o cliente se necessÃ¡rio."
+                      ? "Este sinal foi devolvido externamente pelo app do Mercado Pago. Trate diretamente com o cliente se necessário."
                       : "Este pagamento foi contestado pelo cliente no banco."}
                   </p>
                 </div>
@@ -684,7 +684,7 @@ export const AppointmentDetailsModal = memo(
                     variant="secondary"
                     className="bg-primary/10 text-primary border-none flex gap-1 items-center rounded-lg px-2 py-0.5"
                   >
-                    <Repeat className="h-3 w-3" /> SÃ©rie
+                    <Repeat className="h-3 w-3" /> Série
                   </Badge>
                 )}
                 <Badge
@@ -717,7 +717,7 @@ export const AppointmentDetailsModal = memo(
               <div className="text-2xl font-black text-primary flex items-baseline gap-1.5">
                 {appointment.time}
                 <span className="text-xs font-bold text-muted-foreground uppercase">
-                  atÃ©
+                  até
                 </span>
                 {endTime}
               </div>
@@ -745,12 +745,12 @@ export const AppointmentDetailsModal = memo(
                     }}
                     className="w-full text-xs font-bold border-dashed border-primary/40 text-primary hover:bg-primary/5 h-8 gap-1.5 rounded-xl"
                   >
-                    <CalendarAlt className="h-3.5 w-3.5" /> Remarcar Data / HorÃ¡rio
+                    <CalendarAlt className="h-3.5 w-3.5" /> Remarcar Data / Horário
                   </Button>
                 ) : (
                   <div className="flex flex-col gap-2.5 p-3 bg-primary/5 border border-primary/20 rounded-xl animate-in fade-in zoom-in-95">
                     <span className="text-[10px] font-black uppercase tracking-wider text-primary">
-                      Selecione o novo dia e horÃ¡rio:
+                      Selecione o novo dia e horário:
                     </span>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
@@ -763,7 +763,7 @@ export const AppointmentDetailsModal = memo(
                         />
                       </div>
                       <div>
-                        <Label className="text-[10px] font-bold text-muted-foreground block mb-1">Novo HorÃ¡rio</Label>
+                        <Label className="text-[10px] font-bold text-muted-foreground block mb-1">Novo Horário</Label>
                         <input
                           type="time"
                           value={rescheduleTime}
@@ -818,7 +818,7 @@ export const AppointmentDetailsModal = memo(
                   <SelectItem value="cancelado" className="whitespace-nowrap">
                     Cancelado (Sem Cobrar)
                   </SelectItem>
-                  {/* OPÃ‡Ã•ES DE FALTA DINÃ‚MICAS */}
+                  {/* OPÇÕES DE FALTA DINÂMICAS */}
                   {isFromPackage ? (
                     <>
                       <SelectItem
@@ -846,7 +846,7 @@ export const AppointmentDetailsModal = memo(
               </Select>
             </div>
 
-            {/* CAMPO DE PAGAMENTO OU INDICAÃ‡ÃƒO DE PACOTE PAGO */}
+            {/* CAMPO DE PAGAMENTO OU INDICAÇÃO DE PACOTE PAGO */}
             {isFromPackage ? (
               <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-2xl flex items-center justify-between">
                 <div className="flex flex-col">
@@ -854,7 +854,7 @@ export const AppointmentDetailsModal = memo(
                     Pagamento
                   </span>
                   <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 mt-0.5">
-                    SessÃ£o coberta por Pacote (Pago na Venda)
+                    Sessão coberta por Pacote (Pago na Venda)
                   </span>
                 </div>
                 <Badge variant="outline" className="bg-background text-emerald-600 border-emerald-500/30 font-bold text-[10px]">
@@ -993,7 +993,7 @@ export const AppointmentDetailsModal = memo(
 
           <div className="space-y-2">
             <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-primary">
-              ObservaÃ§Ãµes do Recibo
+              Observações do Recibo
             </Label>
             <Textarea
               value={obs}
@@ -1001,14 +1001,14 @@ export const AppointmentDetailsModal = memo(
               disabled={isLocked}
               placeholder={
                 isLocked
-                  ? "IndisponÃ­vel para agendamentos cancelados"
+                  ? "Indisponível para agendamentos cancelados"
                   : "Digite detalhes..."
               }
               className="bg-muted/20 border-none resize-none h-24 p-4 disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 
-          {/* AÃ‡Ã•ES ADICIONAIS: RECIBO APENAS PARA ATENDIMENTOS REALIZADOS */}
+          {/* AÇÕES ADICIONAIS: RECIBO APENAS PARA ATENDIMENTOS REALIZADOS */}
           {status === "realizado" && (
             <div className="pt-2 flex justify-end">
               <Button
@@ -1034,32 +1034,32 @@ export const AppointmentDetailsModal = memo(
                     variant="ghost"
                     className="text-destructive hover:bg-destructive/5 font-bold w-full sm:w-auto h-12"
                   >
-                    <Trash className="mr-2 h-5 w-5" /> Excluir SessÃ£o
+                    <Trash className="mr-2 h-5 w-5" /> Excluir Sessão
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent className="rounded-3xl border border-border/50 p-6 bg-background">
                   <AlertDialogHeader>
                     <AlertDialogTitle className="text-xl font-bold">
-                      {hasDepositPaid ? "Excluir ou Retornar SolicitaÃ§Ã£o?" : "Excluir Agendamento?"}
+                      {hasDepositPaid ? "Excluir ou Retornar Solicitação?" : "Excluir Agendamento?"}
                     </AlertDialogTitle>
                     <AlertDialogDescription asChild>
                       <div className="space-y-3 mt-2 text-sm text-muted-foreground">
                         {hasDepositPaid && (
                           <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 rounded-xl text-amber-800 dark:text-amber-300 text-xs leading-relaxed text-left">
                             <p className="font-bold flex items-center gap-1.5 mb-1">
-                              <AlertTriangle className="w-4 h-4" /> Cliente jÃ¡ pagou sinal de {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(depositAmount)} via Pix Mercado Pago.
+                              <AlertTriangle className="w-4 h-4" /> Cliente já pagou sinal de {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(depositAmount)} via Pix Mercado Pago.
                             </p>
                             <p>
-                              Para liberar o horÃ¡rio na agenda sem perder o vÃ­nculo do cliente e do sinal pago, vocÃª pode <strong>mover de volta para a tela de SolicitaÃ§Ãµes Pendentes</strong>.
+                              Para liberar o horário na agenda sem perder o vínculo do cliente e do sinal pago, você pode <strong>mover de volta para a tela de Solicitações Pendentes</strong>.
                             </p>
                           </div>
                         )}
                         <p>
                           {isRecurrent
-                            ? "Este agendamento faz parte de uma sÃ©rie. Como deseja proceder?"
+                            ? "Este agendamento faz parte de uma série. Como deseja proceder?"
                             : hasDepositPaid
-                              ? "VocÃª pode retornar este agendamento para a tela de solicitaÃ§Ãµes para remarcar futuramente ou excluir permanentemente."
-                              : "Isso apagarÃ¡ este agendamento permanentemente."}
+                              ? "Você pode retornar este agendamento para a tela de solicitações para remarcar futuramente ou excluir permanentemente."
+                              : "Isso apagará este agendamento permanentemente."}
                         </p>
                       </div>
                     </AlertDialogDescription>
@@ -1074,7 +1074,7 @@ export const AppointmentDetailsModal = memo(
                         onClick={handleMoveToRequests}
                         className="rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-bold"
                       >
-                        Mover para SolicitaÃ§Ãµes
+                        Mover para Solicitações
                       </Button>
                     )}
                     {isRecurrent && (
@@ -1082,7 +1082,7 @@ export const AppointmentDetailsModal = memo(
                         onClick={() => handleDelete(true)}
                         className="bg-destructive/10 text-destructive rounded-2xl border-none font-bold hover:bg-destructive/20"
                       >
-                        Excluir Toda a SÃ©rie
+                        Excluir Toda a Série
                       </AlertDialogAction>
                     )}
                     <AlertDialogAction
@@ -1133,7 +1133,7 @@ export const AppointmentDetailsModal = memo(
                   }
                   className="h-12 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs uppercase"
                 >
-                  Toda a SÃ©rie
+                  Toda a Série
                 </Button>
                 <Button
                   onClick={() => handleSave(status, false)}
@@ -1146,7 +1146,7 @@ export const AppointmentDetailsModal = memo(
                   }
                   className="h-12 bg-primary text-white font-bold text-xs uppercase"
                 >
-                  SÃ³ Este
+                  Só Este
                 </Button>
               </div>
             )}

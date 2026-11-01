@@ -34,6 +34,7 @@ model Organization {
   admins              Admin[]                     @relation("AdminToOrganization")
   loyalty_settings    LoyaltySettings?
   loyalty_transactions LoyaltyTransaction[]
+  client_vouchers     ClientVoucher[]
 
   working_hours       WorkingHour[]
   schedule_exceptions ScheduleException[]
@@ -216,8 +217,9 @@ model Client {
   auth_code_expires_at DateTime?
 
   // Fidelidade
-  loyalty_points      Int       @default(0)
-  loyalty_enrolled_at DateTime?
+  loyalty_points           Int       @default(0)
+  loyalty_enrolled_at      DateTime?
+  last_loyalty_activity_at DateTime? @default(now())
 
   anamnesis_responses  AnamnesisResponse[]
   appointments         Appointment[]
@@ -409,6 +411,7 @@ model Appointment {
   service      Service      @relation(fields: [service_id], references: [id])
   check_in     CheckIn?
   transactions Transaction[]
+  vouchers     ClientVoucher[]
 
   @@index([organization_id, date_time])
   @@index([client_id, date_time])
@@ -703,6 +706,9 @@ model LoyaltySettings {
 
   auto_financial_discount Boolean @default(false)
 
+  points_expiry_active Boolean @default(false)
+  points_expiry_days   Int     @default(180)
+
   rewards LoyaltyReward[]
 
   created_at DateTime @default(now())
@@ -731,31 +737,42 @@ model LoyaltyReward {
 }
 
 model ClientVoucher {
-  id           String @id @default(cuid())
-  client_id    String
-  reward_id    String?
-  points_spent Int
-  title        String
-  status       String @default("DISPONIVEL")
-  reward_type  String? @default("GIFT") // GIFT | PERCENTAGE | FIXED_AMOUNT
-  discount_value Decimal? @db.Decimal(10, 2)
-  discount_applied Decimal? @db.Decimal(10, 2)
-  transaction_id String?
+  id              String         @id @default(cuid())
+  pin             String?        // Código PIN limpo indexado (ex: "ABC123")
+  organization_id String?
+  client_id       String?
+  reward_id       String?
+  appointment_id  String?
+  points_spent    Int
+  title           String
+  status          String         @default("DISPONIVEL")
+  reward_type     String?        @default("GIFT") // GIFT | PERCENTAGE | FIXED_AMOUNT
+  discount_value  Decimal?       @db.Decimal(10, 2)
+  discount_applied Decimal?      @db.Decimal(10, 2)
+  transaction_id  String?
 
   created_at DateTime  @default(now())
   expires_at DateTime?
   used_at    DateTime?
 
-  client Client         @relation(fields: [client_id], references: [id], onDelete: Cascade)
-  reward LoyaltyReward? @relation(fields: [reward_id], references: [id], onDelete: SetNull)
+  organization Organization?  @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  client       Client?        @relation(fields: [client_id], references: [id], onDelete: SetNull)
+  reward       LoyaltyReward? @relation(fields: [reward_id], references: [id], onDelete: SetNull)
+  appointment  Appointment?   @relation(fields: [appointment_id], references: [id], onDelete: SetNull)
 
+  @@index([organization_id, pin])
+  @@index([pin])
+  @@index([client_id])
+  @@index([appointment_id])
+  @@index([transaction_id])
   @@map("client_vouchers")
 }
 
 model LoyaltyTransaction {
   id              String       @id @default(cuid())
   organization_id String
-  client_id       String
+  client_id       String?
+  client_name     String?      // Snapshot do nome do cliente para integridade contábil do ledger
 
   // Tipo da movimentação: CHECK_IN, APPOINTMENT, REWARD_REDEEM, MANUAL_BONUS, MANUAL_ADJUST, REVERT_APPOINTMENT, REVERT_CHECK_IN
   type            String
@@ -771,7 +788,7 @@ model LoyaltyTransaction {
 
   created_at      DateTime     @default(now())
 
-  client          Client       @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  client          Client?      @relation(fields: [client_id], references: [id], onDelete: SetNull)
   organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@index([client_id, created_at])

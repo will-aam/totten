@@ -493,12 +493,14 @@ export async function updateAppointment(
 
         // Se o cliente foi criado via auto-agendamento (SELF_SERVICE) e só tinha essa solicitação
         if (willDeleteClient) {
-          // Trava de integridade: Só deleta o cliente se ele não tiver registros financeiros vinculados
-          const remainingTxs = await tx.transaction.count({
-            where: { client_id: currentAppt.client.id },
-          });
+          // Trava de integridade: Só deleta o cliente se ele não tiver registros financeiros ou de fidelidade vinculados
+          const [remainingTxs, remainingLoyalty, remainingVouchers] = await Promise.all([
+            tx.transaction.count({ where: { client_id: currentAppt.client.id } }),
+            tx.loyaltyTransaction.count({ where: { client_id: currentAppt.client.id } }),
+            tx.clientVoucher.count({ where: { client_id: currentAppt.client.id } }),
+          ]);
 
-          if (remainingTxs === 0) {
+          if (remainingTxs === 0 && remainingLoyalty === 0 && remainingVouchers === 0) {
             await tx.client.delete({
               where: { id: currentAppt.client.id },
             });
@@ -782,7 +784,15 @@ export async function updateAppointment(
           const cleanPin = (data.voucherPin || "").replace(/[^a-zA-Z0-9]/g, "").trim().toUpperCase();
           const voucher = await tx.clientVoucher.findFirst({
             where: {
-              ...(data.voucherId ? { id: data.voucherId } : { id: { endsWith: cleanPin, mode: "insensitive" } }),
+              ...(data.voucherId
+                ? { id: data.voucherId }
+                : {
+                    OR: [
+                      { organization_id: admin.organizationId, pin: cleanPin },
+                      { client: { organization_id: admin.organizationId }, pin: cleanPin },
+                      { client: { organization_id: admin.organizationId }, id: { endsWith: cleanPin, mode: "insensitive" } },
+                    ],
+                  }),
               client: { organization_id: admin.organizationId },
               status: "DISPONIVEL",
             },
@@ -841,7 +851,7 @@ export async function updateAppointment(
           });
           createdTxIds.push(...newTxIds);
 
-          // Baixa do voucher associando a transação
+          // Baixa do voucher associando a transação e o agendamento
           if (appliedVoucher) {
             await tx.clientVoucher.update({
               where: { id: appliedVoucher.id },
@@ -850,6 +860,7 @@ export async function updateAppointment(
                 used_at: new Date(),
                 discount_applied: voucherDiscountAmount,
                 transaction_id: newTxIds[0] || null,
+                appointment_id: currentAppt.id,
               },
             });
           }
@@ -881,6 +892,7 @@ export async function updateAppointment(
               used_at: now,
               discount_applied: voucherDiscountAmount || apptPrice,
               transaction_id: zeroTx.id,
+              appointment_id: currentAppt.id,
             },
           });
         }
@@ -1027,6 +1039,39 @@ export async function updateAppointment(
           });
           deletedTxIds.push(...idsToDelete);
         }
+
+        // 4. Reversão de Voucher de Fidelidade: restaura vouchers vinculados para DISPONÍVEL
+        const linkedVouchers = await tx.clientVoucher.findMany({
+          where: {
+            OR: [
+              { appointment_id: currentAppt.id },
+              ...(deletedTxIds.length > 0 ? [{ transaction_id: { in: deletedTxIds } }] : []),
+            ],
+            status: "UTILIZADO",
+          },
+        });
+
+        for (const v of linkedVouchers) {
+          // Se o voucher expirou enquanto estava em uso no agendamento cancelado, concede 7 dias de tolerância
+          let newExpiresAt = v.expires_at;
+          if (newExpiresAt && new Date(newExpiresAt) < new Date()) {
+            const extended = new Date();
+            extended.setDate(extended.getDate() + 7);
+            newExpiresAt = extended;
+          }
+
+          await tx.clientVoucher.update({
+            where: { id: v.id },
+            data: {
+              status: "DISPONIVEL",
+              used_at: null,
+              discount_applied: null,
+              transaction_id: null,
+              appointment_id: null,
+              expires_at: newExpiresAt,
+            },
+          });
+        }
       }
 
       // 4. Fidelidade: conceder pontos por agendamento realizado ou estornar
@@ -1067,7 +1112,7 @@ export async function updateAppointment(
             );
             await tx.client.update({
               where: { id: currentAppt.client_id },
-              data: { loyalty_points: newPoints },
+              data: { loyalty_points: newPoints, last_loyalty_activity_at: new Date() },
             });
 
             const diff = newPoints - (clientCurrent.loyalty_points || 0);
@@ -1076,6 +1121,7 @@ export async function updateAppointment(
                 data: {
                   organization_id: admin.organizationId,
                   client_id: currentAppt.client_id,
+                  client_name: currentAppt.client?.name,
                   type: "APPOINTMENT",
                   points: diff,
                   balance_after: newPoints,
@@ -1093,7 +1139,7 @@ export async function updateAppointment(
             );
             await tx.client.update({
               where: { id: currentAppt.client_id },
-              data: { loyalty_points: newPoints },
+              data: { loyalty_points: newPoints, last_loyalty_activity_at: new Date() },
             });
 
             const diff = (clientCurrent.loyalty_points || 0) - newPoints;
@@ -1102,6 +1148,7 @@ export async function updateAppointment(
                 data: {
                   organization_id: admin.organizationId,
                   client_id: currentAppt.client_id,
+                  client_name: currentAppt.client?.name,
                   type: "REVERT_APPOINTMENT",
                   points: -diff,
                   balance_after: newPoints,
@@ -1400,6 +1447,7 @@ export async function deleteAppointment(
               data: {
                 organization_id: admin.organizationId,
                 client_id: appt.client_id,
+                client_name: appt.client?.name,
                 type: "REVERT_APPOINTMENT",
                 points: -pointsToDeduct,
                 balance_after: newPoints,
@@ -1411,6 +1459,21 @@ export async function deleteAppointment(
             });
           }
         }
+
+        // E. Reversão de Voucher de Fidelidade: restaura o voucher caso estivesse vinculado a este agendamento excluído
+        await tx.clientVoucher.updateMany({
+          where: {
+            appointment_id: appt.id,
+            status: "UTILIZADO",
+          },
+          data: {
+            status: "DISPONIVEL",
+            used_at: null,
+            discount_applied: null,
+            transaction_id: null,
+            appointment_id: null,
+          },
+        });
       }
 
       // 3. Executa a exclusão propriamente dita

@@ -10,29 +10,29 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const slug = searchParams.get("slug");
 
-    // 1) Tenta pegar o ID da organizaÃ§Ã£o pela sessÃ£o do NextAuth (caso seja o Totem logado)
+    // 1) Tenta pegar o ID da organização pela sessão do NextAuth (caso seja o Totem logado)
     const session = await getServerSession(authOptions);
     const organizationId = session?.user?.organizationId;
 
-    // 2) FLEXIBILIDADE: Se nÃ£o tem sessÃ£o nem slug, retornamos 200 vazio
-    // para nÃ£o quebrar o carregamento do frontend (estado Idle).
+    // 2) FLEXIBILIDADE: Se não tem sessão nem slug, retornamos 200 vazio
+    // para não quebrar o carregamento do frontend (estado Idle).
     if (!organizationId && !slug) {
       return NextResponse.json(
-        { message: "IdentificaÃ§Ã£o da clÃ­nica pendente..." },
+        { message: "Identificação da clínica pendente..." },
         { status: 200 },
       );
     }
 
-    // 3) Delega toda a busca e resoluÃ§Ã£o de ID/Slug para a camada de ServiÃ§o
+    // 3) Delega toda a busca e resolução de ID/Slug para a camada de Serviço
     const publicInfo = await PublicOrganizationService.getPublicInfo(
       organizationId,
       slug,
     );
 
-    // Se o serviÃ§o nÃ£o encontrou a organizaÃ§Ã£o (ID invÃ¡lido ou Slug inexistente)
+    // Se o serviço não encontrou a organização (ID inválido ou Slug inexistente)
     if (!publicInfo) {
       return NextResponse.json(
-        { message: "IdentificaÃ§Ã£o da clÃ­nica pendente..." },
+        { message: "Identificação da clínica pendente..." },
         { status: 200 },
       );
     }
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
   } catch (error: any) {
     if (error.message === "SETTINGS_NOT_FOUND") {
       return NextResponse.json(
-        { error: "ConfiguraÃ§Ãµes nÃ£o encontradas." },
+        { error: "Configurações não encontradas." },
         { status: 404 },
       );
     }

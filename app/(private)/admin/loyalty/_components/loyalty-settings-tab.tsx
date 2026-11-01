@@ -31,8 +31,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { LoyaltyRewardModal, type Reward } from "./loyalty-reward-modal";
 import { toast } from "sonner";
-import { updateLoyaltySettings } from "@/app/actions/loyalty";
-import { Percent, DollarSign, Gift as GiftIcon, BadgeCheck, Pencil, Trash2 } from "lucide-react";
+import { updateLoyaltySettings, expireInactiveLoyaltyPoints } from "@/app/actions/loyalty";
+import { Percent, DollarSign, Gift as GiftIcon, BadgeCheck, Pencil, Trash2, Clock, Hourglass, RefreshCw } from "lucide-react";
 
 interface LoyaltySettingsTabProps {
   organizationId: string;
@@ -71,6 +71,15 @@ export function LoyaltySettingsTab({
   const [autoFinancialDiscount, setAutoFinancialDiscount] = useState<boolean>(
     settings?.auto_financial_discount ?? false
   );
+
+  // Expiração de Pontos por Inatividade
+  const [pointsExpiryActive, setPointsExpiryActive] = useState<boolean>(
+    settings?.points_expiry_active ?? false
+  );
+  const [pointsExpiryDays, setPointsExpiryDays] = useState<number>(
+    settings?.points_expiry_days || 180
+  );
+  const [isExpiringPoints, setIsExpiringPoints] = useState(false);
 
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -133,14 +142,34 @@ export function LoyaltySettingsTab({
     }
     setRewards(newRewards);
     setHasUnsavedChanges(true);
-    toast.success("Recompensa atualizada na lista! Clique em 'Salvar Configurações' para gravar.");
+    toast.success("Recompensa atualizada na lista! Clique em 'Salvar ConfiguraÃ§Ãµes' para gravar.");
   };
 
   const handleRemoveReward = (rewardId: string | number) => {
     const newRewards = rewards.filter(r => r.id !== rewardId);
     setRewards(newRewards);
     setHasUnsavedChanges(true);
-    toast.info("Recompensa removida da lista! Clique em 'Salvar Configurações' para gravar.");
+    toast.info("Recompensa removida da lista! Clique em 'Salvar ConfiguraÃ§Ãµes' para gravar.");
+  };
+
+  const handleRunExpiryCheck = async () => {
+    try {
+      setIsExpiringPoints(true);
+      const res = await expireInactiveLoyaltyPoints(organizationId);
+      if (res.success) {
+        if ((res.expiredCount ?? 0) > 0) {
+          toast.success(`Varredura concluída! ${res.expiredCount} cliente(s) inativo(s) tiveram seus pontos expirados (total: ${res.totalPointsExpired} pts).`);
+        } else {
+          toast.info("Varredura concluída! Nenhum cliente com saldo inativo para expirar.");
+        }
+      } else {
+        toast.error(res.error || "Erro ao executar varredura de expiração.");
+      }
+    } catch {
+      toast.error("Falha ao comunicar com o servidor.");
+    } finally {
+      setIsExpiringPoints(false);
+    }
   };
 
   const handleSaveSettings = async () => {
@@ -152,6 +181,8 @@ export function LoyaltySettingsTab({
         points_per_checkin: checkInActive ? pointsPerCheckin : 0,
         points_per_appointment: scheduleActive ? pointsPerAppointment : 0,
         auto_financial_discount: autoFinancialDiscount,
+        points_expiry_active: pointsExpiryActive,
+        points_expiry_days: pointsExpiryDays,
         rewards: rewards.map(r => ({
           id: typeof r.id === "string" ? r.id : undefined,
           title: r.title,
@@ -176,13 +207,13 @@ export function LoyaltySettingsTab({
             discountValue: r.discount_value !== null ? Number(r.discount_value) : null,
           })));
         }
-        toast.success("Configurações salvas com sucesso!");
+        toast.success("ConfiguraÃ§Ãµes salvas com sucesso!");
         setHasUnsavedChanges(false);
       } else {
-        toast.error("Erro ao salvar as configurações.");
+        toast.error("Erro ao salvar as configuraÃ§Ãµes.");
       }
     } catch (e) {
-      toast.error("Erro na comunicação com o servidor.");
+      toast.error("Erro na comunicaÃ§Ã£o com o servidor.");
     } finally {
       setIsSaving(false);
     }
@@ -211,23 +242,23 @@ export function LoyaltySettingsTab({
 
       <div className={cn("flex flex-col gap-8 md:gap-10 transition-opacity duration-300", !isProgramActive && "opacity-50 pointer-events-none")}>
 
-        {/* Seção 1: Abrangência */}
+        {/* SeÃ§Ã£o 1: AbrangÃªncia */}
         <div className="flex flex-col gap-4">
           <div>
-            <h3 className="text-lg font-semibold">Abrangência do Programa</h3>
+            <h3 className="text-lg font-semibold">AbrangÃªncia do Programa</h3>
             <p className="text-sm text-muted-foreground">
-              Defina se o sistema de pontos será aplicado a todos os clientes ou apenas a clientes selecionados.
+              Defina se o sistema de pontos serÃ¡ aplicado a todos os clientes ou apenas a clientes selecionados.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <Select value={programScope} onValueChange={handleScopeChange}>
                 <SelectTrigger className="w-full sm:w-80 rounded-2xl bg-card">
-                  <SelectValue placeholder="Selecione a abrangência" />
+                  <SelectValue placeholder="Selecione a abrangÃªncia" />
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl">
                   <SelectItem value="global" className="rounded-xl">Global (Todos os clientes participam)</SelectItem>
-                  <SelectItem value="specific" className="rounded-xl">Específico (Apenas clientes adicionados)</SelectItem>
+                  <SelectItem value="specific" className="rounded-xl">EspecÃ­fico (Apenas clientes adicionados)</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -239,10 +270,10 @@ export function LoyaltySettingsTab({
                 </PopoverTrigger>
                 <PopoverContent className="w-80 rounded-2xl text-sm leading-relaxed shadow-xl">
                   <div className="space-y-2">
-                    <p><strong>Global:</strong> Todos os clientes começam a acumular pontos automaticamente a partir do momento em que o programa é ativado.</p>
-                    <p><strong>Específico:</strong> Apenas os clientes que você adicionar manualmente irão acumular pontos.</p>
+                    <p><strong>Global:</strong> Todos os clientes comeÃ§am a acumular pontos automaticamente a partir do momento em que o programa Ã© ativado.</p>
+                    <p><strong>EspecÃ­fico:</strong> Apenas os clientes que vocÃª adicionar manualmente irÃ£o acumular pontos.</p>
                     <p className="text-xs text-muted-foreground mt-2 border-t pt-2 border-border/50">
-                      Nota: Pontos não são retroativos. Eles só passam a contar a partir da data de ativação ou adição do cliente no programa.
+                      Nota: Pontos nÃ£o sÃ£o retroativos. Eles sÃ³ passam a contar a partir da data de ativaÃ§Ã£o ou adiÃ§Ã£o do cliente no programa.
                     </p>
                   </div>
                 </PopoverContent>
@@ -253,23 +284,23 @@ export function LoyaltySettingsTab({
 
         <div className="h-px bg-border/50 w-full" />
 
-        {/* Seção 2: Integração com o Financeiro (Manual vs Automática) */}
+        {/* SeÃ§Ã£o 2: IntegraÃ§Ã£o com o Financeiro (Manual vs AutomÃ¡tica) */}
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-lg font-semibold">Integração com o Financeiro</h3>
+                <h3 className="text-lg font-semibold">IntegraÃ§Ã£o com o Financeiro</h3>
                 <span className={cn(
                   "text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border",
                   autoFinancialDiscount 
                     ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" 
                     : "bg-slate-500/10 text-slate-600 border-slate-500/20"
                 )}>
-                  {autoFinancialDiscount ? "Automático" : "Manual"}
+                  {autoFinancialDiscount ? "AutomÃ¡tico" : "Manual"}
                 </span>
               </div>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Escolha se o sistema deve abater automaticamente os descontos no financeiro ou se prefere controle manual pela recepção.
+                Escolha se o sistema deve abater automaticamente os descontos no financeiro ou se prefere controle manual pela recepÃ§Ã£o.
               </p>
             </div>
             <Switch
@@ -286,11 +317,11 @@ export function LoyaltySettingsTab({
                 : "bg-muted/20 border-border/60 opacity-70"
             )}>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-sm text-foreground">Modo Manual (Recepção / Conferência)</span>
+                <span className="font-bold text-sm text-foreground">Modo Manual (RecepÃ§Ã£o / ConferÃªncia)</span>
                 {!autoFinancialDiscount && <BadgeCheck className="w-4 h-4 text-primary" />}
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                A recepcionista valida o PIN do voucher e dá baixa como comprovante. O lançamento de pagamentos ou eventuais descontos é cobrado manualmente no checkout ou na maquininha.
+                A recepcionista valida o PIN do voucher e dÃ¡ baixa como comprovante. O lanÃ§amento de pagamentos ou eventuais descontos Ã© cobrado manualmente no checkout ou na maquininha.
               </p>
             </div>
 
@@ -301,11 +332,11 @@ export function LoyaltySettingsTab({
                 : "bg-muted/20 border-border/60 opacity-70"
             )}>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-sm text-foreground">Modo Automático (Automação Integrada)</span>
+                <span className="font-bold text-sm text-foreground">Modo AutomÃ¡tico (AutomaÃ§Ã£o Integrada)</span>
                 {autoFinancialDiscount && <BadgeCheck className="w-4 h-4 text-emerald-600" />}
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Ideal para quem opera sozinho ou deseja agilidade. Vouchers com desconto (% ou R$) são reconhecidos pelo sistema, que calcula e abate o valor diretamente na fatura/agendamento.
+                Ideal para quem opera sozinho ou deseja agilidade. Vouchers com desconto (% ou R$) sÃ£o reconhecidos pelo sistema, que calcula e abate o valor diretamente na fatura/agendamento.
               </p>
             </div>
           </div>
@@ -313,19 +344,19 @@ export function LoyaltySettingsTab({
 
         <div className="h-px bg-border/50 w-full" />
 
-        {/* Seção 3: Limites */}
+        {/* SeÃ§Ã£o 3: Limites */}
         <div className="flex flex-col gap-4">
           <div>
-            <h3 className="text-lg font-semibold">Limites de Pontuação</h3>
+            <h3 className="text-lg font-semibold">Limites de PontuaÃ§Ã£o</h3>
             <p className="text-sm text-muted-foreground">
-              Defina o limite máximo de pontos que um cliente pode acumular. Isso ajuda a controlar o resgate de recompensas.
+              Defina o limite mÃ¡ximo de pontos que um cliente pode acumular. Isso ajuda a controlar o resgate de recompensas.
             </p>
           </div>
           <div className="flex items-center justify-between">
             <div>
-              <Label className="text-base font-medium">Limite Máximo de Pontos</Label>
+              <Label className="text-base font-medium">Limite MÃ¡ximo de Pontos</Label>
               <p className="text-sm text-muted-foreground max-w-[200px] sm:max-w-none">
-                O saldo do cliente não ultrapassará este valor.
+                O saldo do cliente nÃ£o ultrapassarÃ¡ este valor.
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -344,12 +375,12 @@ export function LoyaltySettingsTab({
 
         <div className="h-px bg-border/50 w-full" />
 
-        {/* Seção 4: Regras de Ganho */}
+        {/* SeÃ§Ã£o 4: Regras de Ganho */}
         <div className="flex flex-col gap-4">
           <div>
             <h3 className="text-lg font-semibold">Regras de Ganho</h3>
             <p className="text-sm text-muted-foreground">
-              Defina quantos pontos o cliente ganha ao realizar ações no sistema. Atenção: estes valores não podem ultrapassar o limite máximo.
+              Defina quantos pontos o cliente ganha ao realizar aÃ§Ãµes no sistema. AtenÃ§Ã£o: estes valores nÃ£o podem ultrapassar o limite mÃ¡ximo.
             </p>
           </div>
           <div className="space-y-6">
@@ -407,13 +438,96 @@ export function LoyaltySettingsTab({
 
         <div className="h-px bg-border/50 w-full" />
 
-        {/* Seção 5: Recompensas */}
+        {/* Seção 5: Expiração de Pontos por Inatividade */}
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-semibold">Expiração de Pontos por Inatividade</h3>
+                <span className={cn(
+                  "text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border",
+                  pointsExpiryActive 
+                    ? "bg-amber-500/10 text-amber-600 border-amber-500/20" 
+                    : "bg-slate-500/10 text-slate-600 border-slate-500/20"
+                )}>
+                  {pointsExpiryActive ? "Ativo" : "Desativado"}
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Evita acúmulo de passivo perpétuo expirando o saldo de clientes que passarem muito tempo sem comparecer ou agendar.
+              </p>
+            </div>
+            <Switch
+              checked={pointsExpiryActive}
+              onCheckedChange={(checked) => {
+                setPointsExpiryActive(checked);
+                setHasUnsavedChanges(true);
+              }}
+            />
+          </div>
+
+          {pointsExpiryActive && (
+            <div className="p-4 rounded-2xl border bg-card/60 space-y-4 animate-in fade-in duration-300">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <Label className="text-sm font-medium">Prazo de Inatividade para Expirar</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Se o cliente ficar esse período sem visitas ou agendamentos, o saldo de pontos será zerado.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={String(pointsExpiryDays)}
+                    onValueChange={(val) => {
+                      setPointsExpiryDays(Number(val));
+                      setHasUnsavedChanges(true);
+                    }}
+                  >
+                    <SelectTrigger className="w-44 rounded-xl bg-card">
+                      <SelectValue placeholder="Selecione o prazo" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      <SelectItem value="60">60 dias (~2 meses)</SelectItem>
+                      <SelectItem value="90">90 dias (~3 meses)</SelectItem>
+                      <SelectItem value="180">180 dias (~6 meses)</SelectItem>
+                      <SelectItem value="365">365 dias (1 ano)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-border/40">
+                <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <Hourglass className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <span>
+                    A expiração é verificada automaticamente no momento do resgate, ou você pode rodar a varredura em lote agora.
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isExpiringPoints}
+                  onClick={handleRunExpiryCheck}
+                  className="rounded-xl shrink-0 gap-1.5 text-xs h-8 hover:bg-amber-500/10 hover:text-amber-600 hover:border-amber-500/30"
+                >
+                  <RefreshCw className={cn("w-3.5 h-3.5", isExpiringPoints && "animate-spin")} />
+                  {isExpiringPoints ? "Verificando..." : "Executar Varredura Agora"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="h-px bg-border/50 w-full" />
+
+        {/* SeÃ§Ã£o 5: Recompensas */}
         <div className="flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="text-lg font-semibold">Recompensas e Resgates</h3>
               <p className="text-sm text-muted-foreground">
-                Cadastre os benefícios que os clientes podem resgatar utilizando pontos.
+                Cadastre os benefÃ­cios que os clientes podem resgatar utilizando pontos.
               </p>
             </div>
             <Button
@@ -469,7 +583,7 @@ export function LoyaltySettingsTab({
                       )}
                       {reward.validityDays && (
                         <p className="text-[11px] text-muted-foreground">
-                          Válido por {reward.validityDays} dias após resgate
+                          VÃ¡lido por {reward.validityDays} dias apÃ³s resgate
                         </p>
                       )}
                     </div>
@@ -513,14 +627,14 @@ export function LoyaltySettingsTab({
         <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
           <AlertDialogContent className="rounded-2xl">
             <AlertDialogHeader>
-              <AlertDialogTitle>Tem certeza que deseja mudar a abrangência?</AlertDialogTitle>
+              <AlertDialogTitle>Tem certeza que deseja mudar a abrangÃªncia?</AlertDialogTitle>
               <AlertDialogDescription className="space-y-2" asChild>
                 <div>
                   <div>
-                    Mudar de <strong>{programScope === "global" ? "Global" : "Específico"}</strong> para <strong>{pendingScope === "global" ? "Global" : "Específico"}</strong> pode alterar quem recebe pontos.
+                    Mudar de <strong>{programScope === "global" ? "Global" : "EspecÃ­fico"}</strong> para <strong>{pendingScope === "global" ? "Global" : "EspecÃ­fico"}</strong> pode alterar quem recebe pontos.
                   </div>
                   <div className="text-destructive font-medium">
-                    Atenção: Os pontos começam a ser contabilizados apenas a partir de agora. Se você estiver restringindo o programa, clientes removidos poderão perder o acesso aos pontos atuais.
+                    AtenÃ§Ã£o: Os pontos comeÃ§am a ser contabilizados apenas a partir de agora. Se vocÃª estiver restringindo o programa, clientes removidos poderÃ£o perder o acesso aos pontos atuais.
                   </div>
                 </div>
               </AlertDialogDescription>
@@ -528,7 +642,7 @@ export function LoyaltySettingsTab({
             <AlertDialogFooter>
               <AlertDialogCancel className="rounded-full">Cancelar</AlertDialogCancel>
               <AlertDialogAction className="rounded-full" onClick={confirmScopeChange}>
-                Confirmar Mudança
+                Confirmar MudanÃ§a
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -544,7 +658,7 @@ export function LoyaltySettingsTab({
         <div className="fixed bottom-6 right-6 z-40 flex items-center gap-3">
           {hasUnsavedChanges && (
             <div className="bg-amber-500/10 border border-amber-500/30 text-amber-600 text-xs font-semibold px-3 py-2 rounded-full shadow-lg backdrop-blur-md">
-              Alterações não salvas
+              AlteraÃ§Ãµes nÃ£o salvas
             </div>
           )}
           <Button
@@ -557,7 +671,7 @@ export function LoyaltySettingsTab({
             )}
           >
             <Save size="sm" />
-            {isSaving ? "Salvando..." : "Salvar Configurações"}
+            {isSaving ? "Salvando..." : "Salvar ConfiguraÃ§Ãµes"}
           </Button>
         </div>
       </div>
