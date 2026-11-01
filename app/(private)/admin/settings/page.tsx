@@ -20,7 +20,7 @@ import {
 // Lista de menus do MobileBottomNav
 const mobileNavItems = [
   { id: "general", label: "Geral", icon: Building },
-  { id: "messages", label: "Mensagens", icon: Whatsapp },
+  { id: "messages", label: "WhatsApp", icon: Whatsapp },
   { id: "notifications", label: "Notificações", icon: Bell },
   { id: "security", label: "Acesso", icon: CheckShield },
 ];
@@ -52,7 +52,7 @@ export default function AdminSettingsPage() {
                 value="messages"
                 className="flex items-center justify-center gap-2 py-2.5 rounded-full font-medium text-sm transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                <Whatsapp size="sm" /> Mensagens
+                <Whatsapp size="sm" /> WhatsApp
               </TabsTrigger>
               <TabsTrigger
                 value="notifications"
