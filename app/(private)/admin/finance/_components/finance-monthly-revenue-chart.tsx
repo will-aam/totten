@@ -19,7 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getReportsData } from "@/app/actions/reports";
-import { TrendingUp, BarChart3, Loader2 } from "lucide-react";
+import { TrendingUp, ChartBarColumns, LoaderLines } from "@boxicons/react";
 
 const formatCurrency = (val: number) => {
   return new Intl.NumberFormat("pt-BR", {
@@ -58,7 +58,7 @@ export function FinanceMonthlyRevenueChart() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex flex-col gap-0.5">
             <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-emerald-500" />
+              <ChartBarColumns className="h-4 w-4 text-emerald-500" />
               Receita Mensal
             </CardTitle>
             <p className="text-xs text-muted-foreground">
@@ -81,7 +81,7 @@ export function FinanceMonthlyRevenueChart() {
       <CardContent className="px-4 pb-4 pt-1 flex-1 flex flex-col min-h-0">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center flex-1 py-12">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <LoaderLines className="h-5 w-5 animate-spin text-muted-foreground" />
             <span className="text-xs text-muted-foreground mt-2 font-medium">
               Carregando dados...
             </span>

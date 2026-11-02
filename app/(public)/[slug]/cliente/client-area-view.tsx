@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { TermsOfUseBox } from "@/components/terms-of-use-box";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, LogOut, Calendar, History, User, CheckCircle, Store, FileText, Plus, Trophy } from "lucide-react";
+import { ArrowLeft, ArrowOutRightSquareHalf, Calendar, History, User, CheckCircle, Store, FileDetail, Plus, Trophy } from "@boxicons/react";
 import { Whatsapp } from "@boxicons/react";
 import { logoutClientSession } from "@/app/actions/client-auth";
 import { cancelPendingAppointment } from "@/app/actions/public-client";
@@ -159,7 +159,7 @@ export function ClientAreaView({
           className="w-10 h-10 rounded-full flex items-center justify-center transition-colors bg-black/5 hover:bg-black/10 text-red-500"
           title="Sair"
         >
-          <LogOut className="h-5 w-5" />
+          <ArrowOutRightSquareHalf className="h-5 w-5" />
         </button>
       </div>
 
@@ -197,7 +197,7 @@ export function ClientAreaView({
               value="terms"
               className="flex items-center justify-center gap-2 py-2 rounded-full data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm text-sm font-semibold text-slate-500"
             >
-              <FileText className="mr-1 h-4 w-4" /> Termos
+              <FileDetail className="mr-1 h-4 w-4" /> Termos
             </TabsTrigger>
           </TabsList>
 
@@ -715,7 +715,7 @@ export function ClientAreaView({
             {!error && activeTab === "terms" && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
                 <h3 className="font-bold text-lg flex items-center gap-2">
-                  <FileText className="h-5 w-5 opacity-70" /> Termos de Uso e Políticas
+                  <FileDetail className="h-5 w-5 opacity-70" /> Termos de Uso e Políticas
                 </h3>
 
                 <div className="bg-white border rounded-2xl p-6 shadow-sm">
@@ -736,7 +736,7 @@ export function ClientAreaView({
               ...(isLoyaltyActive ? [{ id: "loyalty", label: "Pontos", icon: Trophy }] : []),
               { id: "history", label: "Histórico", icon: History },
               { id: "profile", label: "Perfil", icon: User },
-              { id: "terms", label: "Termos", icon: FileText }
+              { id: "terms", label: "Termos", icon: FileDetail }
             ];
             const activeIndex = navItems.findIndex((i) => i.id === activeTab);
             const itemWidthPercent = 100 / navItems.length;

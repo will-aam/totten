@@ -6,7 +6,7 @@ import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { updateAppointment } from "@/app/actions/appointments";
-import { User, Calendar, Clock, Briefcase, Check, X } from "lucide-react";
+import { User, Calendar, Clock, Briefcase, Check, X } from "@boxicons/react";
 import { useRouter } from "next/navigation";
 
 export function RequestsClientView({ initialRequests }: { initialRequests: any[] }) {

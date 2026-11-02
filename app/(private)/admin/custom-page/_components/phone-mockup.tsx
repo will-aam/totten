@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw } from "@boxicons/react";
 import { useState } from "react";
 import { Instagram, Facebook, Youtube, Whatsapp, Globe } from "@boxicons/react";
 

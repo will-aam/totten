@@ -14,16 +14,16 @@ import {
 import { Badge } from "@/components/ui/badge";
 import {
   Bell,
-  CheckCheck,
+  Checks,
   CheckCircle,
   Calendar,
   CalendarX,
   Package,
-  SlidersHorizontal,
+  Slider,
   Inbox,
   ArrowRight,
   Sparkles,
-} from "lucide-react";
+} from "@boxicons/react";
 import {
   getNotificationsAction,
   type NotificationItem,
@@ -230,7 +230,7 @@ export function NotificationBell() {
                 onClick={handleMarkAllAsRead}
                 className="flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline transition-all"
               >
-                <CheckCheck className="h-3.5 w-3.5" />
+                <Checks className="h-3.5 w-3.5" />
                 Marcar lidas
               </button>
             )}
@@ -349,7 +349,7 @@ export function NotificationBell() {
             onClick={() => setOpen(false)}
             className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
-            <SlidersHorizontal className="h-3.5 w-3.5" />
+            <Slider className="h-3.5 w-3.5" />
             Configurar preferências de alertas
           </Link>
         </div>

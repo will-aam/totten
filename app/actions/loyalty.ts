@@ -38,7 +38,7 @@ export async function getLoyaltySettings(organizationId: string) {
       settings.rewards = [defaultReward];
     }
 
-    return { success: true, settings };
+    return { success: true, settings: JSON.parse(JSON.stringify(settings)) };
   } catch (error) {
     console.error("Erro ao buscar configurações de fidelidade:", error);
     return { success: false, error: "Erro ao buscar configurações" };

@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, memo } from "react";
 import { useRouter } from "next/navigation";
-import { ExternalLink } from "lucide-react";
+import { ArrowOutUpLeftStrokeSquare } from "@boxicons/react";
 import {
   Sheet,
   SheetContent,
@@ -175,7 +175,7 @@ export const ScheduleSettingsModal = memo(
                   Se deixar ambas desativadas, o agendamento continuará pendente (cor laranja).
                 </p>
               </div>
-              
+
               <div className="space-y-4 pt-4 border-t border-border">
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-1 text-sm">
@@ -271,7 +271,7 @@ export const ScheduleSettingsModal = memo(
                 }}
               >
                 <span className="font-bold text-foreground">Configurar Grade de Horários</span>
-                <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                <ArrowOutUpLeftStrokeSquare flip="horizontal" className="w-4 h-4 text-muted-foreground" />
               </Button>
               <p className="text-muted-foreground text-xs mt-2 text-center">
                 Defina seus dias de folga, horário de almoço e exceções.

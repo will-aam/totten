@@ -19,7 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getReportsData } from "@/app/actions/reports";
-import { TrendingUp, ArrowDownRight, ArrowUpRight, Scale, Loader2 } from "lucide-react";
+import { LoaderLines } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { useFinanceVisibility } from "./finance-visibility-context";
 
@@ -84,7 +84,7 @@ export function FinanceComparisonChart() {
       <CardContent className="px-4 pb-4 pt-1 flex-1 flex flex-col min-h-0">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center flex-1 py-12">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <LoaderLines className="h-5 w-5 animate-spin text-muted-foreground" />
             <span className="text-xs text-muted-foreground mt-2 font-medium">
               Carregando comparativo...
             </span>

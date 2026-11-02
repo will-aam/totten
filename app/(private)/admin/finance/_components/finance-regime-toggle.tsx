@@ -12,7 +12,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Info, TrendingUp, Landmark, CalendarDays } from "lucide-react";
+import { InfoCircle, TrendingUp, Landmark, CalendarAlt } from "@boxicons/react";
 
 interface FinanceRegimeToggleProps {
   viewMode: FinanceViewMode;
@@ -88,7 +88,7 @@ export function FinanceRegimeModal({
           {/* Exemplo Prático */}
           <div className="p-3.5 rounded-xl bg-primary/5 border border-primary/20 space-y-2">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
-              <CalendarDays className="size-4" />
+              <CalendarAlt className="size-4" />
               <span>Exemplo Prático: Procedimento de R$ 1.000 em 2x no Cartão</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
@@ -158,7 +158,7 @@ export function FinanceRegimeToggle({
         className="size-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
         title="Entenda a diferença entre Competência e Caixa D+X"
       >
-        <Info className="size-4" />
+        <InfoCircle className="size-4" />
       </button>
 
       <FinanceRegimeModal open={modalOpen} onOpenChange={setModalOpen} />

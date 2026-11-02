@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight } from "@boxicons/react";
 
 interface HelpTopicItem {
   title: string;

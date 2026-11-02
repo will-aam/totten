@@ -15,11 +15,11 @@ import {
 import {
   TrendingUp,
   TrendingDown,
-  Loader2,
+  LoaderLines,
   Calendar,
   ChevronLeft,
   ChevronRight,
-} from "lucide-react";
+} from "@boxicons/react";
 import {
   getFinanceChartData,
   type TimeframeOption,
@@ -90,7 +90,7 @@ export function FinanceHeroChart() {
             <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
               {isLoading && !data ? (
                 <span className="inline-flex items-center gap-1.5 text-muted-foreground text-xl font-bold">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Carregando...
+                  <LoaderLines className="h-4 w-4 animate-spin" /> Carregando...
                 </span>
               ) : (
                 formatCurrency(data?.totalRevenue || 0)

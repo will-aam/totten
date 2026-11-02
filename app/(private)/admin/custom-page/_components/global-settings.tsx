@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { getSelfServiceSettingsAction } from "@/app/actions/settings";
 import { GlobalImagesBlock } from "./global-images-block";
-import { ChevronRight, ChevronLeft } from "lucide-react";
+import { ChevronRight, ChevronLeft } from "@boxicons/react";
 
 const StepBadge = ({ step, required }: { step: number; required?: boolean }) => (
   <div className="flex items-center gap-2 mb-2">

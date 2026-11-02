@@ -112,7 +112,7 @@ export default function ClientDetailPage({
       <button
         onClick={scrollToTop}
         className={cn(
-          "fixed bottom-24 md:bottom-8 right-4 md:right-8 p-3.5 rounded-2xl bg-primary text-primary-foreground shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 z-50",
+          "fixed bottom-24 md:bottom-8 right-4 md:right-8 p-3.5 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 z-50",
           showScrollTop
             ? "translate-y-0 opacity-100"
             : "translate-y-10 opacity-0 pointer-events-none",

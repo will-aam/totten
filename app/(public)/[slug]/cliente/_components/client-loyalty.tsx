@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Trophy, Gift, CheckCircle, Sparkles, Loader2, Clock, AlertCircle } from "lucide-react";
+import { Trophy, Gift, CheckCircle, LoaderLines, Clock } from "@boxicons/react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/components/ui/use-mobile";
@@ -18,7 +18,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from "@/components/ui/alert-dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { getClientLoyaltyHistory, redeemLoyaltyReward } from "@/app/actions/loyalty";
@@ -329,7 +328,7 @@ export function ClientLoyalty({ loyaltyInfo, clientName, clientId }: { loyaltyIn
             >
               {isRedeeming ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <LoaderLines className="w-4 h-4 mr-2 animate-spin" />
                   Resgatando...
                 </>
               ) : (

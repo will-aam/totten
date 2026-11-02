@@ -6,7 +6,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getFinanceDashboardData } from "@/app/actions/finance-dashboard";
-import { CreditCard } from "lucide-react";
+import { CreditCard } from "@boxicons/react";
 import { useFinanceVisibility } from "./finance-visibility-context";
 
 const COLORS = [
@@ -53,18 +53,18 @@ export function FinancePaymentMethodsChart() {
     res?.byPaymentMethod && res.byPaymentMethod.length > 0
       ? res.byPaymentMethod
       : (() => {
-          const transactions = res?.recentTransactions || [];
-          const methodMap: Record<string, number> = {};
-          transactions.forEach((tx) => {
-            if (tx.type === "RECEITA" && tx.status === "PAGO") {
-              const label = formatMethodName(tx.paymentMethod);
-              methodMap[label] = (methodMap[label] || 0) + tx.amount;
-            }
-          });
-          return Object.entries(methodMap)
-            .map(([name, value]) => ({ name, value }))
-            .sort((a, b) => b.value - a.value);
-        })();
+        const transactions = res?.recentTransactions || [];
+        const methodMap: Record<string, number> = {};
+        transactions.forEach((tx) => {
+          if (tx.type === "RECEITA" && tx.status === "PAGO") {
+            const label = formatMethodName(tx.paymentMethod);
+            methodMap[label] = (methodMap[label] || 0) + tx.amount;
+          }
+        });
+        return Object.entries(methodMap)
+          .map(([name, value]) => ({ name, value }))
+          .sort((a, b) => b.value - a.value);
+      })();
 
   const total = chartData.reduce((acc, curr) => acc + curr.value, 0);
 

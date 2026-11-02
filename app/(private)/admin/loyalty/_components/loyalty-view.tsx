@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { UserCircle, Cog } from "@boxicons/react";
-import { Receipt, HelpCircle } from "lucide-react";
+import { Receipt, HelpCircle } from "@boxicons/react";
 
 import { LoyaltyVoucher } from "./loyalty-voucher";
 import { LoyaltyOverviewTab } from "./loyalty-overview-tab";
@@ -31,15 +31,15 @@ interface LoyaltyViewProps {
   initialTotalPages: number;
 }
 
-export function LoyaltyView({ 
-  organizationId, 
-  initialSettings, 
+export function LoyaltyView({
+  organizationId,
+  initialSettings,
   initialClients,
   initialTotal,
   initialTotalPages,
 }: LoyaltyViewProps) {
   const [activeTab, setActiveTab] = useState("overview");
-  
+
   const [settings, setSettings] = useState(initialSettings);
   const initialRewards = (initialSettings.rewards || []).map((r: any) => ({
     id: r.id,
@@ -53,7 +53,7 @@ export function LoyaltyView({
   const [rewards, setRewards] = useState(initialRewards);
   const [isProgramActive, setIsProgramActive] = useState(initialSettings.is_active || false);
   const [programScope, setProgramScope] = useState<"global" | "specific">(initialSettings.scope || "specific");
-  
+
   const [selectedClientForVoucher, setSelectedClientForVoucher] = useState<ClientData | null>(null);
 
   const handleActivateProgram = async (active: boolean) => {
@@ -93,7 +93,7 @@ export function LoyaltyView({
 
           {/* TAB 1: VISÃO GERAL */}
           <TabsContent value="overview" className="space-y-6">
-            <LoyaltyOverviewTab 
+            <LoyaltyOverviewTab
               isProgramActive={isProgramActive}
               setIsProgramActive={handleActivateProgram}
               programScope={programScope}
@@ -112,7 +112,7 @@ export function LoyaltyView({
 
           {/* TAB 3: CONFIGURAÇÕES */}
           <TabsContent value="settings" className="flex flex-col gap-8 md:gap-6">
-            <LoyaltySettingsTab 
+            <LoyaltySettingsTab
               organizationId={organizationId}
               settings={settings}
               rewards={rewards}

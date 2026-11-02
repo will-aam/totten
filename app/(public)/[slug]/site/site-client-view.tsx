@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { cn, sanitizeUrl } from "@/lib/utils";
-import { Star, MapPin, Search, Calendar, ChevronRight, User, ArrowLeft, ArrowRight, X, Phone, UserRound, ArrowUpRight, Copy } from "lucide-react";
+import { Star, MapPin, Search, Calendar, ChevronRight, User, ArrowLeft, ArrowRight, X, Phone, UserRound, ArrowUpRight, Copy } from "@boxicons/react";
 import { TermsOfUseBox } from "@/components/terms-of-use-box";
 import {
   Briefcase, Youtube, Pin, Globe, Menu, Envelope,
@@ -1004,10 +1004,10 @@ export function SiteClientView({ org, proSiteData, theme, presentation, contact,
             <DialogTitle>Termos de Uso</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <TermsOfUseBox 
-              text={org.settings?.terms_of_use} 
-              requirePrepayment={false} 
-              className="rounded-xl border-none p-0 bg-transparent opacity-80" 
+            <TermsOfUseBox
+              text={org.settings?.terms_of_use}
+              requirePrepayment={false}
+              className="rounded-xl border-none p-0 bg-transparent opacity-80"
             />
           </div>
         </DialogContent>

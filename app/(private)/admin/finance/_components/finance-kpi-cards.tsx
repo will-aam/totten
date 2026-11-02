@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 import { useFinanceVisibility } from "./finance-visibility-context";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight } from "@boxicons/react";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",

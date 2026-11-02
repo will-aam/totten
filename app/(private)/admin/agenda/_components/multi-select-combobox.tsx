@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Check, X, ChevronDown } from "lucide-react";
+import { X, ChevronDown } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -99,14 +99,14 @@ export function MultiSelectCombobox({
             <CommandEmpty>{emptyText}</CommandEmpty>
             <CommandGroup>
               {options.map((option) => (
-                  <CommandItem
-                    key={option.value}
-                    value={option.label} // Search by label
-                    onSelect={() => handleSelect(option.value)}
-                    className="font-medium"
-                  >
-                    <span>{option.label}</span>
-                  </CommandItem>
+                <CommandItem
+                  key={option.value}
+                  value={option.label} // Search by label
+                  onSelect={() => handleSelect(option.value)}
+                  className="font-medium"
+                >
+                  <span>{option.label}</span>
+                </CommandItem>
               ))}
             </CommandGroup>
           </CommandList>

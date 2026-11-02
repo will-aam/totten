@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Plus, UserPlus, Share, ArrowOutDownSquareHalf } from "@boxicons/react";
-import { Download } from "lucide-react";
+import { ArrowToBottomStroke } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
 interface ClientsSpeedDialProps {
@@ -26,7 +26,7 @@ export function ClientsSpeedDial({
 
   const actions = [
     { name: "Novo Cliente", icon: <UserPlus className="w-5 h-5" />, onClick: onNewClient },
-    { name: "Exportar", icon: <Download className="w-5 h-5" />, onClick: onExport },
+    { name: "Exportar", icon: <ArrowToBottomStroke className="w-5 h-5" />, onClick: onExport },
     { name: "Importar", icon: <ArrowOutDownSquareHalf className="w-5 h-5" />, onClick: onImport },
     { name: "Área do Cliente", icon: <Share className="w-5 h-5" />, onClick: onCopyLink },
   ];

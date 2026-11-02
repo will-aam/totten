@@ -1,19 +1,19 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { 
-  Receipt, 
-  Search, 
-  Plus, 
-  ArrowUpRight, 
-  ArrowDownRight, 
-  Sparkles, 
-  Filter, 
-  User, 
-  Clock, 
+import {
+  Receipt,
+  Search,
+  Plus,
+  ArrowUpRight,
+  ArrowDownRight,
+  Sparkles,
+  Filter,
+  User,
+  Clock,
   Calendar,
   AlertCircle
-} from "lucide-react";
+} from "@boxicons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,8 +45,8 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useDebounce } from "@/hooks/use-debounce";
-import { 
-  getPaginatedLoyaltyTransactions, 
+import {
+  getPaginatedLoyaltyTransactions,
   adjustClientLoyaltyPoints,
   getPaginatedLoyaltyClients
 } from "@/app/actions/loyalty";

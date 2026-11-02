@@ -96,11 +96,11 @@ export default function AgendaPage() {
     const dateStr = format(date, "yyyy-MM-dd");
     const exception = exceptions.find((e: any) => e.date === dateStr);
     if (exception) return !exception.isOpen;
-    
+
     const dayOfWeek = date.getDay();
     const regular = schedule.find((s: any) => s.dayOfWeek === dayOfWeek);
     if (regular) return !regular.isOpen;
-    
+
     return false;
   };
 
@@ -460,7 +460,7 @@ export default function AgendaPage() {
                 ) : (
                   <>
                     <div className={cn("absolute inset-0", viewMode === "month" ? "hidden md:block" : "block")}>
-                        <FullCalendarAgenda
+                      <FullCalendarAgenda
                         appointments={currentViewAppointments}
                         scheduleBlocks={scheduleBlocks}
                         viewMode={viewMode}
@@ -595,7 +595,7 @@ export default function AgendaPage() {
           <DialogHeader>
             <DialogTitle>Fora do horário de funcionamento</DialogTitle>
             <DialogDescription>
-              Esse dia está marcado como fora do horário de funcionamento. 
+              Esse dia está marcado como fora do horário de funcionamento.
               Você pode editar os horários na página de configurações.
             </DialogDescription>
           </DialogHeader>

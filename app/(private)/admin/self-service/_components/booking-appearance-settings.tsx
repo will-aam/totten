@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Palette, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { Palette, Check, ChevronDown, ChevronUp } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
 // Cores pré-definidas para garantir estética e acessibilidade.

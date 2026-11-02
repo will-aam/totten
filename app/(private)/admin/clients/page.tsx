@@ -43,7 +43,7 @@ import {
   Filter,
   CalendarCheck,
 } from "@boxicons/react";
-import { Download, Info } from "lucide-react";
+import { ArrowToBottomStroke, InfoCircle } from "@boxicons/react";
 import {
   Popover,
   PopoverContent,
@@ -376,7 +376,7 @@ function AdminClientsPageContent() {
               title="Ajuda com filtros"
               onClick={() => setIsInfoOpen(true)}
             >
-              <Info className="h-5 w-5" />
+              <InfoCircle className="h-5 w-5" />
             </Button>
           </div>
 
@@ -398,7 +398,7 @@ function AdminClientsPageContent() {
               onClick={() => setIsExportModalOpen(true)}
               className="h-12 w-full sm:w-auto px-6 font-medium shadow-sm border-border/60 hover:bg-muted/50 transition-colors"
             >
-              <Download
+              <ArrowToBottomStroke
                 size="sm"
                 className="mr-2 text-muted-foreground"
               />

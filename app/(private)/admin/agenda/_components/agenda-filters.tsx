@@ -1,15 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { useSession } from "next-auth/react";
 import { Filter } from "@boxicons/react";
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+
 import {
   Sheet,
   SheetContent,
@@ -28,15 +24,7 @@ import {
 import { getTeam } from "@/app/actions/team";
 import { apiClient } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
-import { Check, ChevronDown } from "lucide-react";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
+import { ChevronDown } from "@boxicons/react";
 import { MultiSelectCombobox } from "./multi-select-combobox";
 
 export interface AgendaFiltersState {

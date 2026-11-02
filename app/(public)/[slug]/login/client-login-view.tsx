@@ -6,14 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { Lock, Mail, ArrowLeft, ArrowRight, Phone, User, AlertCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, AlertCircle } from "@boxicons/react";
 import { toast } from "sonner";
 import { sendClientOtp, verifyClientOtp, loginWithCpfPhone } from "@/app/actions/client-auth";
-import { 
-  formatBrazilPhone, 
-  validateBrazilPhone, 
-  formatCpf, 
-  validateCpf 
+import {
+  formatBrazilPhone,
+  validateBrazilPhone,
+  formatCpf,
+  validateCpf
 } from "@/lib/phone-utils";
 
 export function ClientLoginView({ org, theme }: { org: any, theme: any }) {

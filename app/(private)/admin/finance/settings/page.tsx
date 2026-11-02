@@ -48,7 +48,7 @@ import useSWR from "swr";
 import { invalidateFinanceCaches } from "../_lib/finance-cache";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw } from "@boxicons/react";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -97,7 +97,7 @@ function PaymentMethodListItem({
           className={cn(
             "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl font-bold shadow-sm border transition-transform duration-300 group-hover:scale-110",
             method.isActive
-              ? "bg-primary/10 text-primary border-primary/20 group-hover:bg-primary group-hover:text-primary-foreground group-hover:shadow-[0_4px_15px_rgb(var(--primary)/0.2)]"
+              ? "bg-primary/10 text-primary border-primary/20 group-hover:bg-primary group-hover:text-primary-foreground"
               : "bg-muted/50 text-muted-foreground border-border/50",
           )}
         >
@@ -287,11 +287,11 @@ export default function FinancialSettingsPage() {
 
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-36 md:pb-6 relative animate-in fade-in duration-700 min-h-[calc(100vh-100px)]">
         {/* CABEÇALHO DA PÁGINA */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 bg-background/50 backdrop-blur-md p-5 sm:p-6 rounded-3xl border border-border/40 shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 left-0 -mt-8 -ml-8 w-40 h-40 bg-primary/10 blur-3xl rounded-full -z-10 pointer-events-none" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 bg-card p-5 sm:p-6 rounded-3xl border border-border/60 shadow-sm relative overflow-hidden">
+          
 
           <div className="flex flex-col gap-1.5 relative z-10">
-            <h1 className="text-3xl font-black tracking-tight bg-linear-to-br from-foreground to-foreground/70 bg-clip-text text-transparent flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground flex items-center gap-3">
 
               Configurações Financeiras
             </h1>
@@ -302,9 +302,8 @@ export default function FinancialSettingsPage() {
         </div>
 
         {/* 1. SEÇÃO DE REGRAS E AUTOMAÇÃO DO CHECK-IN */}
-        <Card className="relative overflow-hidden rounded-4xl border-border/40 shadow-sm bg-background/50 backdrop-blur-md">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-3xl rounded-full -z-10 pointer-events-none" />
-          <CardHeader className="px-6 pt-6 pb-4 border-b border-border/30 relative z-10">
+        <Card className="relative overflow-hidden rounded-4xl border-border/60 shadow-sm bg-card">
+                    <CardHeader className="px-6 pt-6 pb-4 border-b border-border/30 relative z-10">
             <CardTitle className="flex items-center gap-3 text-xl font-black text-foreground">
               <div className="p-2 bg-primary/10 rounded-full text-primary">
                 <Dollar size="sm" />
@@ -409,9 +408,8 @@ export default function FinancialSettingsPage() {
 
         {/* INTEGRAÇÃO ZIBEE (CARD EXCLUSIVO SINGLE-TENANT) */}
         {zibeeStatus?.isEnabled && (
-          <Card className="relative overflow-hidden rounded-4xl border-border/40 shadow-sm bg-background/50 backdrop-blur-md border-emerald-500/30">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 blur-3xl rounded-full -z-10 pointer-events-none" />
-            <CardHeader className="px-6 pt-6 pb-4 border-b border-border/30 relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <Card className="relative overflow-hidden rounded-4xl border-border/60 shadow-sm bg-card border-emerald-500/30">
+                        <CardHeader className="px-6 pt-6 pb-4 border-b border-border/30 relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <CardTitle className="flex items-center gap-3 text-xl font-black text-foreground">
                   <div className="p-2 bg-emerald-500/15 rounded-full text-emerald-600 dark:text-emerald-400">
@@ -483,8 +481,8 @@ export default function FinancialSettingsPage() {
         )}
 
         {/* 2. SEÇÃO DE MEIOS DE PAGAMENTO (Taxas, Prazos e Bandeiras) */}
-        <Card className="relative overflow-hidden rounded-4xl border-border/40 shadow-sm bg-background/50 backdrop-blur-md">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-3xl rounded-full -z-10 pointer-events-none" />
+        <Card className="relative overflow-hidden rounded-4xl border-border/60 shadow-sm bg-card">
+          
           <CardHeader className="px-6 pt-6 pb-4 border-b border-border/30 relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <CardTitle className="flex items-center gap-3 text-xl font-black text-foreground">
@@ -497,7 +495,7 @@ export default function FinancialSettingsPage() {
             </div>
 
             <Button
-              className="h-11 px-5 font-black shadow-[0_8px_25px_rgb(var(--primary)/0.3)] hover:shadow-[0_10px_30px_rgb(var(--primary)/0.4)] active:scale-95 transition-all w-full sm:w-auto"
+              className="h-11 px-5 font-black shadow-sm hover:shadow-md active:scale-95 transition-all w-full sm:w-auto"
               onClick={handleNewPaymentMethod}
             >
               <PlusCircle size="sm" className="mr-2" />

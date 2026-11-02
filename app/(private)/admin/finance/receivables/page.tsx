@@ -39,7 +39,7 @@ import {
   ArrowDownRight,
   CheckCircle,
 } from "@boxicons/react";
-import { Zap, X, CheckCheck } from "lucide-react";
+import { Bolt, X, Checks } from "@boxicons/react";
 import {
   getPendingReceivables,
   processReceivablePayment,
@@ -359,7 +359,7 @@ export default function ReceivablesPage() {
           <div className="sticky top-4 z-40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-3xl bg-emerald-600 text-white shadow-xl shadow-emerald-600/30 border border-emerald-500/40 animate-in fade-in slide-in-from-top-4 duration-300">
             <div className="flex items-center gap-3">
               <div className="h-11 w-11 bg-white/20 rounded-2xl flex items-center justify-center shrink-0">
-                <CheckCheck className="h-6 w-6 text-white" />
+                <Checks className="h-6 w-6 text-white" />
               </div>
               <div className="flex flex-col">
                 <span className="font-black text-sm">
@@ -381,7 +381,7 @@ export default function ReceivablesPage() {
                 disabled={isProcessing}
                 className="flex-1 sm:flex-initial font-bold bg-white text-emerald-700 hover:bg-white/90 shadow-sm rounded-xl h-10 px-4 gap-1.5 transition-all active:scale-95 cursor-pointer"
               >
-                <Zap className="h-4 w-4 fill-emerald-600 text-emerald-600" />
+                <Bolt className="h-4 w-4 fill-emerald-600 text-emerald-600" />
                 Baixa Rápida (
                 {defaultPaymentMethod?.name ||
                   defaultPaymentMethod?.type ||
@@ -617,7 +617,7 @@ export default function ReceivablesPage() {
                         className="font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs rounded-xl h-10 px-3.5 gap-1.5 active:scale-95 transition-all cursor-pointer"
                         title={`Baixa Rápida em 1 clique via ${defaultPaymentMethod?.name || defaultPaymentMethod?.type || "PIX"}`}
                       >
-                        <Zap className="h-3.5 w-3.5 fill-white text-white" />
+                        <Bolt className="h-3.5 w-3.5 fill-white text-white" />
                         Rápida
                       </Button>
                       <Button
@@ -767,81 +767,81 @@ export default function ReceivablesPage() {
             {selectedItem &&
               selectedItem !== "ALL" &&
               selectedItem !== "SELECTED_BATCH" && (
-              <div className="p-3.5 bg-muted/30 border border-border/40 rounded-2xl space-y-2 text-xs">
-                <div className="flex justify-between items-center text-muted-foreground">
-                  <span>Lançamento:</span>
-                  <span className="font-semibold text-foreground truncate max-w-56 flex items-center gap-1.5">
-                    {selectedItem.description}
-                    {selectedItem.installment && (
-                      <Badge
-                        variant="secondary"
-                        className="text-[9px] px-1 py-0 h-4 bg-primary/10 text-primary border-none font-bold"
-                      >
-                        {selectedItem.installment}
-                      </Badge>
-                    )}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-muted-foreground">
-                  <span>Cliente:</span>
-                  <span className="font-semibold text-foreground">
-                    {selectedItem.clientName}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-muted-foreground">
-                  <span>Vencimento:</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-semibold text-foreground">
-                      {formatDate(selectedItem.dueDate || selectedItem.date)}
-                    </span>
-                    {(() => {
-                      const status = getDueStatus(
-                        selectedItem.dueDate || selectedItem.date,
-                      );
-                      if (!status) return null;
-                      return (
+                <div className="p-3.5 bg-muted/30 border border-border/40 rounded-2xl space-y-2 text-xs">
+                  <div className="flex justify-between items-center text-muted-foreground">
+                    <span>Lançamento:</span>
+                    <span className="font-semibold text-foreground truncate max-w-56 flex items-center gap-1.5">
+                      {selectedItem.description}
+                      {selectedItem.installment && (
                         <Badge
-                          variant="outline"
-                          className={cn(
-                            "text-[9px] px-1.5 py-0 h-4 border",
-                            status.className,
-                          )}
+                          variant="secondary"
+                          className="text-[9px] px-1 py-0 h-4 bg-primary/10 text-primary border-none font-bold"
                         >
-                          {status.label}
+                          {selectedItem.installment}
                         </Badge>
-                      );
-                    })()}
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-muted-foreground">
+                    <span>Cliente:</span>
+                    <span className="font-semibold text-foreground">
+                      {selectedItem.clientName}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-muted-foreground">
+                    <span>Vencimento:</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold text-foreground">
+                        {formatDate(selectedItem.dueDate || selectedItem.date)}
+                      </span>
+                      {(() => {
+                        const status = getDueStatus(
+                          selectedItem.dueDate || selectedItem.date,
+                        );
+                        if (!status) return null;
+                        return (
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "text-[9px] px-1.5 py-0 h-4 border",
+                              status.className,
+                            )}
+                          >
+                            {status.label}
+                          </Badge>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                  {selectedItem.hasDeposit && (
+                    <>
+                      <div className="flex justify-between items-center text-muted-foreground pt-1 border-t border-border/30">
+                        <span>Preço Total do Serviço:</span>
+                        <span className="font-semibold text-foreground">
+                          {formatCurrency(selectedItem.totalServicePrice)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-[#009EE3]">
+                        <span>Sinal Pago Online (Mercado Pago):</span>
+                        <span className="font-semibold">
+                          - {formatCurrency(selectedItem.depositPaidAmount)}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                  <div className="border-t border-border/40 pt-1.5 flex justify-between items-center font-bold text-foreground">
+                    <span>Valor a Quitar:</span>
+                    <span className="text-amber-600 dark:text-amber-500 font-black text-sm">
+                      {formatCurrency(selectedItem.amount)}
+                    </span>
                   </div>
                 </div>
-                {selectedItem.hasDeposit && (
-                  <>
-                    <div className="flex justify-between items-center text-muted-foreground pt-1 border-t border-border/30">
-                      <span>Preço Total do Serviço:</span>
-                      <span className="font-semibold text-foreground">
-                        {formatCurrency(selectedItem.totalServicePrice)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-[#009EE3]">
-                      <span>Sinal Pago Online (Mercado Pago):</span>
-                      <span className="font-semibold">
-                        - {formatCurrency(selectedItem.depositPaidAmount)}
-                      </span>
-                    </div>
-                  </>
-                )}
-                <div className="border-t border-border/40 pt-1.5 flex justify-between items-center font-bold text-foreground">
-                  <span>Valor a Quitar:</span>
-                  <span className="text-amber-600 dark:text-amber-500 font-black text-sm">
-                    {formatCurrency(selectedItem.amount)}
-                  </span>
-                </div>
-              </div>
-            )}
+              )}
 
             {selectedItem === "SELECTED_BATCH" && (
               <div className="p-4 bg-emerald-500/10 border border-emerald-500/25 rounded-2xl space-y-2.5 text-xs">
                 <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold">
-                  <CheckCheck className="h-4 w-4 shrink-0" />
+                  <Checks className="h-4 w-4 shrink-0" />
                   <span>Baixa em Lote Selecionado</span>
                 </div>
                 <div className="flex justify-between items-center text-muted-foreground">

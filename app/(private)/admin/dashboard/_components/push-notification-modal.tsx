@@ -14,15 +14,14 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   BellRing,
-  Smartphone,
-  ShieldCheck,
+  Phone,
+  Shield,
   CalendarCheck,
   UserCheck,
   AlertTriangle,
-  ExternalLink,
-  Sparkles,
-  Loader2,
-} from "lucide-react";
+  ArrowOutUpLeftStrokeSquare,
+  LoaderLines,
+} from "@boxicons/react";
 import { savePushSubscriptionAction } from "@/app/actions/push";
 
 export function PushNotificationModal() {
@@ -164,7 +163,7 @@ export function PushNotificationModal() {
               <BellRing className="h-8 w-8 animate-bounce duration-1000" />
             </div>
             <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-xs border-2 border-background">
-              <Smartphone className="h-3 w-3" />
+              <Phone className="h-3 w-3" />
             </div>
           </div>
 
@@ -235,7 +234,7 @@ export function PushNotificationModal() {
 
               <div className="flex items-start gap-3 p-3 rounded-2xl bg-muted/40 border border-border/40">
                 <div className="h-8 w-8 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 mt-0.5">
-                  <ShieldCheck className="h-4 w-4" />
+                  <Shield className="h-4 w-4" />
                 </div>
                 <div>
                   <h4 className="text-xs font-semibold text-foreground">
@@ -257,7 +256,7 @@ export function PushNotificationModal() {
                 className="w-full h-11 rounded-2xl font-bold gap-2 text-sm shadow-md"
                 onClick={handleCheckAgain}
               >
-                <ExternalLink className="h-4 w-4" />
+                <ArrowOutUpLeftStrokeSquare flip="horizontal" className="h-4 w-4" />
                 Já Desbloqueei, Verificar Novamente
               </Button>
             ) : (
@@ -269,7 +268,7 @@ export function PushNotificationModal() {
               >
                 {isRequesting ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <LoaderLines className="h-4 w-4 animate-spin" />
                     Solicitando Permissão...
                   </>
                 ) : (

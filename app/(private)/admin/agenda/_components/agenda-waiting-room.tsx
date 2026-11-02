@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { format, formatDistanceToNow, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { User, Phone, CheckCircle, Clock, Calendar as CalendarIcon, ArrowLeft } from "lucide-react";
+import { Phone, CheckCircle, Clock, Calendar as CalendarIcon, ArrowLeft } from "@boxicons/react";
 import { Couch } from "@/components/icons/couch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

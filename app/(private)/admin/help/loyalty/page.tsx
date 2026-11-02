@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
-import { ArrowLeft, Play } from "lucide-react";
+import { ArrowLeft, Play } from "@boxicons/react";
 
 export default function LoyaltyHelpPage() {
   // 💡 COLOQUE AQUI A URL DO SEU VÍDEO DO YOUTUBE (ex: "https://www.youtube.com/watch?v=XXXX" ou "https://youtu.be/XXXX")
@@ -26,7 +26,7 @@ export default function LoyaltyHelpPage() {
       <AdminHeader title="Ajuda" />
 
       <div className="flex flex-col gap-8 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
-        
+
         {/* Navegação de Retorno */}
         <div>
           <Link
@@ -79,7 +79,7 @@ export default function LoyaltyHelpPage() {
 
         {/* Conteúdo Completo do Manual */}
         <div className="space-y-10 text-foreground leading-relaxed text-sm md:text-base max-w-4xl">
-          
+
           {/* Seção 1 */}
           <section className="space-y-3">
             <h2 className="text-lg md:text-xl font-bold text-foreground border-b pb-2">

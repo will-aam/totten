@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, ArrowUpRight, ArrowDownRight, FileText } from "lucide-react";
+import { Plus, ArrowUpRight, ArrowDownRight, FileDetail } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 import { TransactionModal } from "./transaction-modal";
 import { ClosingReportModal } from "./closing-report-modal";
@@ -57,7 +57,7 @@ export function FinanceSpeedDial({
     },
     {
       name: "Exportar Fechamento",
-      icon: <FileText className="w-5 h-5" />,
+      icon: <FileDetail className="w-5 h-5" />,
       onClick: handleOpenClosingReport,
       color: "text-blue-500 bg-blue-500/10",
     },

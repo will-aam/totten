@@ -56,7 +56,7 @@ import { getPaymentMethods } from "@/app/actions/payment-methods";
 import { OrganizationPaymentMethod } from "@/types/finance";
 import { apiClient } from "@/lib/api-client";
 import { validateVoucherForAppointment } from "@/app/actions/loyalty";
-import { Ticket, X as CloseIcon } from "lucide-react";
+import { Ticket, X as CloseIcon } from "@boxicons/react";
 
 interface PublicSettings {
   companyName: string;
@@ -158,7 +158,7 @@ export const AppointmentDetailsModal = memo(
         const isManualNoShow =
           appointment.status === "CANCELADO" &&
           appointment.observations?.includes("(Falta Registrada)");
-          
+
         if (isNoShow || isManualNoShow) {
           initialStatusValue = "nao_compareceu";
         } else if (rawStatus === "pendente" || rawStatus === "solicitado") {
@@ -170,7 +170,7 @@ export const AppointmentDetailsModal = memo(
         } else if (rawStatus === "cancelado") {
           initialStatusValue = "cancelado";
         }
-        
+
         setStatus(initialStatusValue);
 
         const initialMethodId = appointment.paymentMethodId || appointment.payment_method_id;

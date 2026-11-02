@@ -999,14 +999,19 @@ const DesktopTeamMemberRow = memo(
         {/* Aceitando agendamentos */}
         <td className="px-6 py-4 align-middle text-center">
           <div className="flex flex-col gap-1 items-center justify-center">
-            <Switch
-              checked={member.active}
-              onCheckedChange={() => onToggle(member)}
-              disabled={isOwner}
-            />
-            <span className="text-[10px] text-muted-foreground uppercase font-medium">
-              {member.active ? "Ativo" : "Inativo"}
-            </span>
+            {isOwner ? (
+              <span className="text-xs text-muted-foreground font-semibold">-</span>
+            ) : (
+              <>
+                <Switch
+                  checked={member.active}
+                  onCheckedChange={() => onToggle(member)}
+                />
+                <span className="text-[10px] text-muted-foreground uppercase font-medium">
+                  {member.active ? "Ativo" : "Inativo"}
+                </span>
+              </>
+            )}
           </div>
         </td>
 

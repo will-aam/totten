@@ -99,7 +99,7 @@ function AdminHistoryPageContent() {
     data: response,
     isLoading,
     mutate,
-  } = useSWR<HistoryResponse>(`history?${query.toString()}`, apiClient);
+  } = useSWR<HistoryResponse>(`history?${query.toString()}`, apiClient, { keepPreviousData: true });
 
   const checkIns = response?.data || [];
   const total = response?.total || 0;
@@ -159,7 +159,7 @@ function AdminHistoryPageContent() {
               </p>
             </div>
           ) : (
-            <div className="animate-in slide-in-from-bottom-2 duration-500">
+            <div>
               <HistoryTable data={checkIns} onUpdate={mutate} />
 
               {totalPages > 1 && (
@@ -220,7 +220,7 @@ function AdminHistoryPageContent() {
       <button
         onClick={scrollToTop}
         className={cn(
-          "fixed bottom-20 md:bottom-8 right-4 md:right-8 p-3.5 flex items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg hover:scale-105 active:scale-95 transition-all duration-300 z-50",
+          "fixed bottom-20 md:bottom-8 right-4 md:right-8 p-3.5 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:scale-105 active:scale-95 transition-all duration-300 z-50",
           showScrollTop
             ? "translate-y-0 opacity-100"
             : "translate-y-16 opacity-0 pointer-events-none",

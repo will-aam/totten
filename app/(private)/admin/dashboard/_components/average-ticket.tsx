@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown } from "@boxicons/react";
 import { AreaChart, Area, YAxis, XAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
-import { Loader2 } from "lucide-react";
+import { LoaderLines } from "@boxicons/react";
 
 import { useFinanceVisibility } from "@/app/(private)/admin/finance/_components/finance-visibility-context";
 
@@ -56,7 +56,7 @@ export function AverageTicket({
       <CardContent className="px-4 py-4 flex-1 flex flex-col min-h-0">
         {isLoading && !backendData ? (
           <div className="flex flex-col items-center justify-center flex-1 py-12">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <LoaderLines className="h-5 w-5 animate-spin text-muted-foreground" />
             <span className="text-xs text-muted-foreground mt-2 font-medium">
               Carregando ticket médio...
             </span>
@@ -70,11 +70,10 @@ export function AverageTicket({
                 </div>
                 {!hideValues && (
                   <div
-                    className={`flex items-center gap-1 mt-1 text-xs font-medium ${
-                      isPositive
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-rose-600 dark:text-rose-400"
-                    }`}
+                    className={`flex items-center gap-1 mt-1 text-xs font-medium ${isPositive
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-rose-600 dark:text-rose-400"
+                      }`}
                   >
                     {isPositive ? <TrendingUp size="xs" /> : <TrendingDown size="xs" />}
                     <span>{Math.abs(percentageChange).toFixed(1)}% vs. mês passado</span>

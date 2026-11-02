@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import useSWR from "swr";
 import Link from "next/link";
 import { getDailyKickoffAction } from "@/app/actions/notifications";
-import { Coffee, X, ArrowRight, Calendar, Cake, Clock } from "lucide-react";
-import { DEFAULT_NOTIFICATION_PREFERENCES } from "../../settings/_components/notifications-settings";
+import { Coffee, X, ArrowRight, Calendar, BirthdayCake, Clock } from "@boxicons/react";
 
 const PREFS_KEY = "totten_notification_preferences";
 
@@ -123,7 +122,7 @@ export function DailyKickoffBanner() {
             href="/admin/birthdays"
             className="inline-flex items-center gap-1.5 h-8 sm:h-9 px-3 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 text-xs font-semibold transition-colors"
           >
-            <Cake className="h-3.5 w-3.5" />
+            <BirthdayCake className="h-3.5 w-3.5" />
             Parabenizar
           </Link>
         )}

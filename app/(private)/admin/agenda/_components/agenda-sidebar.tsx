@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import useSWR from "swr";
 import { useSession } from "next-auth/react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "@boxicons/react";
 import { format, addMonths, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -80,9 +80,8 @@ export function AgendaSidebar({
 
   return (
     <aside
-      className={`hidden md:flex flex-col shrink-0 bg-background overflow-y-auto overflow-x-hidden custom-scrollbar h-full relative z-10 p-4 gap-6 transition-[width,padding,opacity] duration-300 ease-in-out ${
-        isOpen ? "w-[17rem] xl:w-[18rem] opacity-100" : "w-0 px-0 opacity-0 pointer-events-none"
-      }`}
+      className={`hidden md:flex flex-col shrink-0 bg-background overflow-y-auto overflow-x-hidden custom-scrollbar h-full relative z-10 p-4 gap-6 transition-[width,padding,opacity] duration-300 ease-in-out ${isOpen ? "w-[17rem] xl:w-[18rem] opacity-100" : "w-0 px-0 opacity-0 pointer-events-none"
+        }`}
     >
       {/* Botão Sala de Espera no Desktop (acima do calendário) - Apenas se autoCompleteOnCheckin for false */}
       {isWaitingRoomEnabled && (
@@ -124,10 +123,10 @@ export function AgendaSidebar({
           </span>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={prevMonth}>
-              <ChevronLeft size={16} />
+              <ChevronLeft size="xs" />
             </Button>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={nextMonth}>
-              <ChevronRight size={16} />
+              <ChevronRight size="xs" />
             </Button>
           </div>
         </div>

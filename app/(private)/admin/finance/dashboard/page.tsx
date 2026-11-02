@@ -44,7 +44,7 @@ import {
   FinanceVisibilityProvider,
   useFinanceVisibility,
 } from "../_components/finance-visibility-context";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, LowVision } from "@boxicons/react";
 
 function FinanceHideValuesButton() {
   const { hideValues, toggleHideValues } = useFinanceVisibility();
@@ -57,7 +57,7 @@ function FinanceHideValuesButton() {
       aria-label={hideValues ? "Mostrar valores" : "Ocultar valores"}
     >
       {hideValues ? (
-        <EyeOff className="h-4 w-4 text-primary" />
+        <LowVision className="h-4 w-4 text-primary" />
       ) : (
         <Eye className="h-4 w-4" />
       )}

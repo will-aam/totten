@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useIsMobile } from "@/components/ui/use-mobile";
-import { Gift, Percent, DollarSign } from "lucide-react";
+import { Gift, Percentage, Dollar } from "@boxicons/react";
 
 export type RewardType = "GIFT" | "PERCENTAGE" | "FIXED_AMOUNT";
 
@@ -112,13 +112,13 @@ export function LoyaltyRewardModal({ open, onOpenChange, onSave, initialData }: 
             </SelectItem>
             <SelectItem value="PERCENTAGE">
               <div className="flex items-center gap-2">
-                <Percent className="w-4 h-4 text-emerald-600" />
+                <Percentage className="w-4 h-4 text-emerald-600" />
                 <span>Desconto em Porcentagem (%)</span>
               </div>
             </SelectItem>
             <SelectItem value="FIXED_AMOUNT">
               <div className="flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-blue-600" />
+                <Dollar className="w-4 h-4 text-blue-600" />
                 <span>Desconto em Valor Fixo (R$)</span>
               </div>
             </SelectItem>
@@ -155,21 +155,21 @@ export function LoyaltyRewardModal({ open, onOpenChange, onSave, initialData }: 
 
       <div className="space-y-2">
         <Label htmlFor="reward-title">Título da Recompensa</Label>
-        <Input 
-          id="reward-title" 
-          placeholder={rewardType === "PERCENTAGE" ? "Ex: 10% de Desconto em Qualquer Atendimento" : rewardType === "FIXED_AMOUNT" ? "Ex: R$ 30 de Desconto no Caixa" : "Ex: 1 Hidratação Facial Cortesia"} 
+        <Input
+          id="reward-title"
+          placeholder={rewardType === "PERCENTAGE" ? "Ex: 10% de Desconto em Qualquer Atendimento" : rewardType === "FIXED_AMOUNT" ? "Ex: R$ 30 de Desconto no Caixa" : "Ex: 1 Hidratação Facial Cortesia"}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           className="rounded-xl"
         />
       </div>
-      
+
       <div className="space-y-2">
         <Label htmlFor="reward-cost">Custo (em Pontos)</Label>
-        <Input 
-          id="reward-cost" 
+        <Input
+          id="reward-cost"
           type="number"
-          placeholder="Ex: 50" 
+          placeholder="Ex: 50"
           value={pointsCost}
           onChange={(e) => setPointsCost(e.target.value)}
           className="rounded-xl"
@@ -178,9 +178,9 @@ export function LoyaltyRewardModal({ open, onOpenChange, onSave, initialData }: 
 
       <div className="space-y-2">
         <Label htmlFor="reward-conditions">Regras e Condições (Opcional)</Label>
-        <Textarea 
-          id="reward-conditions" 
-          placeholder="Ex: Válido apenas de terça a quinta. Não cumulativo com outras promoções." 
+        <Textarea
+          id="reward-conditions"
+          placeholder="Ex: Válido apenas de terça a quinta. Não cumulativo com outras promoções."
           value={conditions}
           onChange={(e) => setConditions(e.target.value)}
           className="rounded-xl resize-none h-20"
@@ -192,10 +192,10 @@ export function LoyaltyRewardModal({ open, onOpenChange, onSave, initialData }: 
 
       <div className="space-y-2">
         <Label htmlFor="reward-validity">Validade do Voucher (em Dias)</Label>
-        <Input 
-          id="reward-validity" 
+        <Input
+          id="reward-validity"
           type="number"
-          placeholder="Ex: 30" 
+          placeholder="Ex: 30"
           value={validityDays}
           onChange={(e) => setValidityDays(e.target.value)}
           className="rounded-xl"
@@ -215,7 +215,7 @@ export function LoyaltyRewardModal({ open, onOpenChange, onSave, initialData }: 
               Defina o benefício, tipo e quantos pontos serão necessários para o resgate.
             </DrawerDescription>
           </DrawerHeader>
-          
+
           <div className="overflow-y-auto px-4">
             {formContent}
           </div>

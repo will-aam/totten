@@ -14,7 +14,7 @@ import {
 } from "@boxicons/react";
 import { SidebarFooter, useSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-import { HelpCircle } from "lucide-react";
+import { HelpCircle } from "@boxicons/react";
 
 interface SidebarUserFooterProps {
   isOwner: boolean;

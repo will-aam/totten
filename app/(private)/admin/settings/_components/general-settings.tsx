@@ -20,7 +20,7 @@ import {
   Search,
 } from "@boxicons/react";
 import { toast } from "sonner";
-import { Eraser } from "lucide-react";
+import { Eraser } from "@boxicons/react";
 import { apiClient } from "@/lib/api-client";
 import { updateSettingsAction } from "@/app/actions/settings";
 import { FloatingSaveButton } from "./floating-save-button";

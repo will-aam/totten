@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { Check, Minus } from "lucide-react";
+import { Check, Minus } from "@boxicons/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
@@ -21,69 +21,69 @@ const plans: {
   cornerLabel: string;
   highlights: string[];
 }[] = [
-  {
-    id: "basic",
-    name: "Plano Básico",
-    priceMonthly: "29,90",
-    priceYearly: "299,00",
-    description: "A estrutura essencial para organizar sua rotina e atender seus clientes.",
-    cornerLabel: "Essencial",
-    highlights: ["1 profissional", "Até 1 pacote ativo por cliente"],
-  },
-  {
-    id: "medium",
-    name: "Plano Médio",
-    priceMonthly: "49,90",
-    priceYearly: "499,00",
-    description: "Mais controle financeiro e recursos para incentivar a recorrência.",
-    featured: true,
-    cornerLabel: "Destaque",
-    highlights: ["Até 2 profissionais", "Financeiro e Fidelidade"],
-  },
-  {
-    id: "advanced",
-    name: "Plano Avançado",
-    priceMonthly: "89,90",
-    priceYearly: "899,00",
-    description: "Autoatendimento completo e capacidade para uma operação maior.",
-    cornerLabel: "Completo",
-    highlights: ["Até 30 profissionais", "Autoatendimento completo"],
-  },
-];
+    {
+      id: "basic",
+      name: "Plano Básico",
+      priceMonthly: "29,90",
+      priceYearly: "299,00",
+      description: "A estrutura essencial para organizar sua rotina e atender seus clientes.",
+      cornerLabel: "Essencial",
+      highlights: ["1 profissional", "Até 1 pacote ativo por cliente"],
+    },
+    {
+      id: "medium",
+      name: "Plano Médio",
+      priceMonthly: "49,90",
+      priceYearly: "499,00",
+      description: "Mais controle financeiro e recursos para incentivar a recorrência.",
+      featured: true,
+      cornerLabel: "Destaque",
+      highlights: ["Até 2 profissionais", "Financeiro e Fidelidade"],
+    },
+    {
+      id: "advanced",
+      name: "Plano Avançado",
+      priceMonthly: "89,90",
+      priceYearly: "899,00",
+      description: "Autoatendimento completo e capacidade para uma operação maior.",
+      cornerLabel: "Completo",
+      highlights: ["Até 30 profissionais", "Autoatendimento completo"],
+    },
+  ];
 
 const comparisonSections: {
   title: string;
   rows: { label: string; values: Record<PlanId, ComparisonValue> }[];
 }[] = [
-  {
-    title: "Agenda e atendimento",
-    rows: [
-      { label: "Dashboard e Agenda", values: { basic: true, medium: true, advanced: true } },
-      { label: "Confirmações manuais e check-in", values: { basic: true, medium: true, advanced: true } },
-      { label: "Aniversariantes e notas", values: { basic: true, medium: true, advanced: true } },
-      { label: "Gestão de pacotes e Registros", values: { basic: true, medium: true, advanced: true } },
-    ],
-  },
-  {
-    title: "Cadastros e limites",
-    rows: [
-      {
-        label: "Clientes, anamnese, serviços, pacotes e estoque",
-        values: { basic: "Sem limite de itens", medium: "Sem limite de itens", advanced: "Sem limite de itens" },
-      },
-      { label: "Profissionais cadastrados", values: { basic: "1", medium: "Até 2", advanced: "Até 30" } },
-      { label: "Pacotes ativos por cliente", values: { basic: "Até 1", medium: "Até 3", advanced: "Sem limite" } },
-    ],
-  },
-  {
-    title: "Módulos",
-    rows: [
-      { label: "Financeiro", values: { basic: false, medium: true, advanced: true } },
-      { label: "Programa de Fidelidade", values: { basic: false, medium: true, advanced: true } },
-      { label: "Autoatendimento completo", values: { basic: false, medium: false, advanced: true } },
-    ],
-  },
-];
+    {
+      title: "Agenda e atendimento",
+      rows: [
+        { label: "Dashboard e Agenda", values: { basic: true, medium: true, advanced: true } },
+        { label: "Confirmações manuais e check-in", values: { basic: true, medium: true, advanced: true } },
+        { label: "Aniversariantes e notas", values: { basic: true, medium: true, advanced: true } },
+        { label: "Gestão de pacotes e Registros", values: { basic: true, medium: true, advanced: true } },
+      ],
+    },
+    {
+      title: "Cadastros e limites",
+      rows: [
+        {
+          label: "Clientes, anamnese, serviços, pacotes e estoque",
+          values: { basic: "Sem limite de itens", medium: "Sem limite de itens", advanced: "Sem limite de itens" },
+        },
+        { label: "Profissionais cadastrados", values: { basic: "1", medium: "Até 2", advanced: "Até 30" } },
+        { label: "Pacotes ativos por cliente", values: { basic: "Até 1", medium: "Até 3", advanced: "Sem limite" } },
+      ],
+    },
+    {
+      title: "Módulos",
+      rows: [
+        { label: "Financeiro", values: { basic: false, medium: true, advanced: true } },
+        { label: "Programa de Fidelidade", values: { basic: false, medium: true, advanced: true } },
+        { label: "Autoatendimento completo", values: { basic: false, medium: false, advanced: true } },
+      ],
+    },
+  ];
 
 function ComparisonCell({ value }: { value: ComparisonValue }) {
   if (typeof value === "string") {

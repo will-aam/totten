@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle, Clock, AlertCircle, Copy, Check, Ticket } from "lucide-react";
+import { CheckCircle, Clock, AlertCircle, Copy, Check, Ticket } from "@boxicons/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -85,8 +85,8 @@ export function ClientVoucherCard({ voucher }: { voucher: VoucherItem }) {
               isAvailable
                 ? "bg-emerald-100 text-emerald-800 border border-emerald-300/50"
                 : isUsed
-                ? "bg-slate-200 text-slate-600"
-                : "bg-red-100 text-red-700 border border-red-300/50"
+                  ? "bg-slate-200 text-slate-600"
+                  : "bg-red-100 text-red-700 border border-red-300/50"
             )}
           >
             {isUsed ? "Utilizado" : isExpired ? "Expirado" : "Pronto para Uso"}

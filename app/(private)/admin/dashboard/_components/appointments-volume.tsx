@@ -9,7 +9,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { TrendingUp, CalendarCheck } from "lucide-react";
+import { TrendingUp, CalendarCheck } from "@boxicons/react";
 
 const chartConfig = {
   agendamentos: {
