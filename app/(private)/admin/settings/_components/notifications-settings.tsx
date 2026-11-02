@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import useSWR from "swr";
 import Link from "next/link";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -22,7 +23,6 @@ import {
   Last,
   FileDetail,
   Coffee,
-  Phone,
   CheckCircle,
 } from "@boxicons/react";
 
@@ -36,9 +36,6 @@ export interface NotificationPreferences {
 
   // Resumo Matinal
   dailyKickoff: boolean;
-
-  // Mobile / Push
-  mobilePush: boolean;
 }
 
 export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
@@ -48,7 +45,6 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   notifyLastSession: true,
   notifyLowStock: true,
   dailyKickoff: true,
-  mobilePush: false,
 };
 
 const STORAGE_KEY = "totten_notification_preferences";
@@ -58,9 +54,21 @@ export function NotificationsSettings() {
     DEFAULT_NOTIFICATION_PREFERENCES,
   );
   const [isLoaded, setIsLoaded] = useState(false);
-  const [isAutoBookingActive, setIsAutoBookingActive] = useState<boolean | null>(null);
 
-  // Carrega as preferências do navegador e checa confluência com autoagendamento
+  // SWR: Cache global em memória com dedupingInterval de 60s
+  const { data: autoBookingRes } = useSWR(
+    "admin/auto-booking-status",
+    getAutoBookingStatusAction,
+    {
+      revalidateOnFocus: false,
+      revalidateIfStale: false,
+      dedupingInterval: 60000,
+    },
+  );
+
+  const isAutoBookingActive = autoBookingRes?.success ? autoBookingRes.isActive : null;
+
+  // Carrega as preferências do navegador
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -75,14 +83,6 @@ export function NotificationsSettings() {
     } finally {
       setIsLoaded(true);
     }
-
-    getAutoBookingStatusAction().then((res) => {
-      if (res.success) {
-        setIsAutoBookingActive(res.isActive);
-      } else {
-        setIsAutoBookingActive(false);
-      }
-    });
   }, []);
 
   // Atualiza e persiste a preferência selecionada
@@ -97,16 +97,6 @@ export function NotificationsSettings() {
       toast.error("Erro ao salvar preferência no navegador");
     }
 
-    // Se ligou push mobile, verifica permissão nativa do navegador
-    if (key === "mobilePush" && value) {
-      if ("Notification" in window) {
-        Notification.requestPermission().then((permission) => {
-          if (permission !== "granted") {
-            toast.info("Permissão de notificações bloqueada no navegador.");
-          }
-        });
-      }
-    }
   };
 
   return (
@@ -367,40 +357,6 @@ export function NotificationsSettings() {
           </div>
         </div>
 
-        {/* GRUPO 3: DISPOSITIVOS MÓVEIS (PREPARADO PARA PLAY STORE) */}
-        <div className="space-y-3 pt-2 border-t border-border/40">
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-sm text-foreground uppercase tracking-wider">
-              Notificações no Celular (Push)
-            </h3>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Receba notificações diretamente na tela de bloqueio do celular (PWA e futuro aplicativo da Play Store).
-          </p>
-
-          <div className="grid gap-3 pt-1">
-            <div className="flex items-center justify-between gap-4 rounded-2xl border border-border/50 p-4 bg-background/50 hover:bg-muted/20 transition-colors">
-              <div className="flex items-center gap-3.5">
-                <div className="h-9 w-9 bg-purple-500/10 rounded-full flex items-center justify-center shrink-0 text-purple-500">
-                  <Phone className="h-4 w-4" />
-                </div>
-                <div>
-                  <Label className="text-sm font-semibold text-foreground cursor-pointer">
-                    Ativar Push no Dispositivo
-                  </Label>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Vibrar o aparelho ao receber novos agendamentos online quando estiver fora do computador.
-                  </p>
-                </div>
-              </div>
-              <Switch
-                checked={preferences.mobilePush}
-                onCheckedChange={(val) => handleToggle("mobilePush", val)}
-                disabled={!isLoaded}
-              />
-            </div>
-          </div>
-        </div>
       </CardContent>
     </Card>
   );
