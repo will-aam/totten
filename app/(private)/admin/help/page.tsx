@@ -58,6 +58,16 @@ const SECTIONS: HelpTopicSection[] = [
       },
     ],
   },
+  {
+    title: "Outros",
+    items: [
+      {
+        title: "Configurações do Sistema",
+        href: "/admin/help/settings",
+        enabled: true,
+      },
+    ],
+  },
 ];
 
 export default function HelpPage() {
