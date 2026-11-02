@@ -5,16 +5,15 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
   ChessQueen,
-  HeadphoneMic,
   Cog,
   Power,
   LoaderDots,
   Moon,
   Sun,
+  HelpCircle,
 } from "@boxicons/react";
 import { SidebarFooter, useSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-import { HelpCircle } from "@boxicons/react";
 
 interface SidebarUserFooterProps {
   isOwner: boolean;
@@ -70,13 +69,13 @@ export function SidebarUserFooter({
 
   const isDark = theme === "dark";
 
-  // Ordem: conta → ajuda → aparência → sair (o último fica colado no avatar)
+  // Ordem: plano (quando encolhido fica acessível aqui também) → configurações → ajuda → aparência → sair
   const actions: FooterAction[] = [
     {
       name: "Meu Plano",
       icon: <ChessQueen size="sm" />,
       onClick: () => go("/admin/plan"),
-      show: isOwner,
+      show: isOwner && isCollapsed, // no modo expandido já temos o Shiny Card acima
     },
     {
       name: "Configurações",
@@ -135,7 +134,7 @@ export function SidebarUserFooter({
   return (
     <SidebarFooter
       className={cn(
-        "relative border-none p-3 pb-4",
+        "relative border-none p-3 pt-1 pb-4",
         // recolhida: tudo centralizado no eixo da coluna de 3rem
         "group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0",
       )}

@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 
 import { NavIcon } from "./nav-icon";
 import { NavCollapsibleGroup } from "./nav-collapsible-group";
+import { SidebarPlanCard } from "./sidebar-plan-card";
 import { SidebarUserFooter } from "./sidebar-footer";
 import {
   navItems,
@@ -151,10 +152,10 @@ export function AdminSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="overflow-y-auto [&::-webkit-scrollbar]:hidden">
-        {/* MENU PRINCIPAL: dia a dia → cadastros → registros */}
+        {/* OPERAÇÃO (Plano Básico): dia a dia → cadastros → registros */}
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 px-2 mt-2">
-            Menu Principal
+            Operação
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -163,13 +164,20 @@ export function AdminSidebar() {
                   asChild
                   isActive={pathname.startsWith("/admin/dashboard")}
                   className="hover:bg-muted/50"
+                  tooltip="Dashboard"
                 >
-                  <Link href="/admin/dashboard" onClick={closeMobile} className="flex items-center gap-2 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto">
+                  <Link
+                    href="/admin/dashboard"
+                    onClick={closeMobile}
+                    className="flex items-center gap-2 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto"
+                  >
                     <NavIcon
                       icon={DashboardAlt}
                       isActive={pathname.startsWith("/admin/dashboard")}
                     />
-                    <span className="group-data-[collapsible=icon]:hidden">Dashboard</span>
+                    <span className="group-data-[collapsible=icon]:hidden">
+                      Dashboard
+                    </span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -183,15 +191,22 @@ export function AdminSidebar() {
                     <SidebarMenuButton
                       asChild={item.active}
                       isActive={isActive}
+                      tooltip={item.title}
                       className={cn(
                         "hover:bg-muted/50",
                         !item.active && "opacity-50 cursor-not-allowed",
                       )}
                     >
                       {item.active ? (
-                        <Link href={item.href} onClick={closeMobile} className="flex items-center gap-2 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto">
+                        <Link
+                          href={item.href}
+                          onClick={closeMobile}
+                          className="flex items-center gap-2 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto"
+                        >
                           <NavIcon icon={item.icon} isActive={isActive} />
-                          <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
+                          <span className="group-data-[collapsible=icon]:hidden">
+                            {item.title}
+                          </span>
                         </Link>
                       ) : (
                         <div className="flex items-center justify-between w-full">
@@ -242,15 +257,15 @@ export function AdminSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* MÓDULOS: financeiro → autoatendimento → fidelidade */}
+        {/* MÓDULOS DE PLANO (Plano Médio e Avançado) */}
         {hasModules && (
           <SidebarGroup className="mt-0.5">
-            <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 px-2">
-              Módulos
+            <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 px-2 flex items-center justify-between">
+              <span>Módulos</span>
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {/* Financeiro — Owner OU colaborador com permissão */}
+                {/* Financeiro — Plano Médio+ */}
                 {canViewFinance &&
                   (isMobile ? (
                     <SidebarMenuItem>
@@ -258,15 +273,17 @@ export function AdminSidebar() {
                         asChild
                         isActive={isFinanceActive}
                         className="hover:bg-muted/50"
+                        tooltip="Financeiro"
                       >
                         <Link
                           href="/admin/finance/dashboard"
                           onClick={closeMobile}
+                          className="flex items-center gap-2 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto"
                         >
-                          <div className="flex items-center gap-2">
-                            <NavIcon icon={Wallet} isActive={isFinanceActive} />
-                            <span>Financeiro</span>
-                          </div>
+                          <NavIcon icon={Wallet} isActive={isFinanceActive} />
+                          <span className="group-data-[collapsible=icon]:hidden">
+                            Financeiro
+                          </span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -285,7 +302,33 @@ export function AdminSidebar() {
                     />
                   ))}
 
-                {/* Autoatendimento — Apenas Owner */}
+                {/* Programa de Fidelidade — Plano Médio+ */}
+                {isOwner && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname.startsWith("/admin/loyalty")}
+                      className="hover:bg-muted/50"
+                      tooltip="Programa de Fidelidade"
+                    >
+                      <Link
+                        href="/admin/loyalty"
+                        onClick={closeMobile}
+                        className="flex items-center gap-2 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto"
+                      >
+                        <NavIcon
+                          icon={Trophy}
+                          isActive={pathname.startsWith("/admin/loyalty")}
+                        />
+                        <span className="group-data-[collapsible=icon]:hidden">
+                          Programa de Fidelidade
+                        </span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+
+                {/* Autoatendimento — Plano Avançado */}
                 {isOwner && (
                   <NavCollapsibleGroup
                     label="Autoatendimento"
@@ -300,32 +343,16 @@ export function AdminSidebar() {
                     onNavigate={closeMobile}
                   />
                 )}
-
-                {/* Programa de Fidelidade — Apenas Owner */}
-                {isOwner && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={pathname.startsWith("/admin/loyalty")}
-                      className="hover:bg-muted/50"
-                    >
-                      <Link href="/admin/loyalty" onClick={closeMobile} className="flex items-center gap-2 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto">
-                        <NavIcon
-                          icon={Trophy}
-                          isActive={pathname.startsWith("/admin/loyalty")}
-                        />
-                        <span className="group-data-[collapsible=icon]:hidden">Programa de Fidelidade</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         )}
       </SidebarContent>
 
-      {/* "Meu Plano" agora mora no menu do usuário (rodapé) */}
+      {/* Card "Meu Plano" em destaque antes do perfil do usuário */}
+      {isOwner && <SidebarPlanCard onNavigate={closeMobile} />}
+
+      {/* Menu do usuário (Configurações, Ajuda, Tema e Sair) */}
       <SidebarUserFooter
         isOwner={isOwner}
         whatsappUrl={whatsappUrl}

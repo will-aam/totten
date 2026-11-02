@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "./notification-bell";
+import { CommandMenu } from "./command-menu";
 
 export function AdminHeader({
   title,
@@ -41,6 +42,8 @@ export function AdminHeader({
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
+        <CommandMenu />
+
         {action && (
           <div className="flex items-center gap-2 sm:gap-3">
             {action}
