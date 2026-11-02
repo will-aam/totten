@@ -47,14 +47,14 @@ export function NavCollapsibleGroup({
       <SidebarMenuItem>
         <CollapsibleTrigger asChild>
           <SidebarMenuButton isActive={isActive} className="hover:bg-muted/50">
-            <div className="flex items-center justify-between w-full">
+            <div className="flex items-center justify-between w-full group-data-[collapsible=icon]:justify-center">
               <div className="flex items-center gap-2">
                 <NavIcon icon={icon} isActive={isActive} />
-                <span>{label}</span>
+                <span className="group-data-[collapsible=icon]:hidden">{label}</span>
               </div>
               <ChevronRight
                 size="xs"
-                className="text-muted-foreground/50 transition-transform group-data-[state=open]/collapsible:rotate-90"
+                className="text-muted-foreground/50 transition-transform group-data-[state=open]/collapsible:rotate-90 group-data-[collapsible=icon]:hidden"
               />
             </div>
           </SidebarMenuButton>

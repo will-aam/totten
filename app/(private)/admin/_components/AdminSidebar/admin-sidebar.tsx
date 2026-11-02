@@ -164,12 +164,12 @@ export function AdminSidebar() {
                   isActive={pathname.startsWith("/admin/dashboard")}
                   className="hover:bg-muted/50"
                 >
-                  <Link href="/admin/dashboard" onClick={closeMobile}>
+                  <Link href="/admin/dashboard" onClick={closeMobile} className="flex items-center gap-2 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto">
                     <NavIcon
                       icon={DashboardAlt}
                       isActive={pathname.startsWith("/admin/dashboard")}
                     />
-                    <span>Dashboard</span>
+                    <span className="group-data-[collapsible=icon]:hidden">Dashboard</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -189,9 +189,9 @@ export function AdminSidebar() {
                       )}
                     >
                       {item.active ? (
-                        <Link href={item.href} onClick={closeMobile}>
+                        <Link href={item.href} onClick={closeMobile} className="flex items-center gap-2 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto">
                           <NavIcon icon={item.icon} isActive={isActive} />
-                          <span>{item.title}</span>
+                          <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
                         </Link>
                       ) : (
                         <div className="flex items-center justify-between w-full">
@@ -309,14 +309,12 @@ export function AdminSidebar() {
                       isActive={pathname.startsWith("/admin/loyalty")}
                       className="hover:bg-muted/50"
                     >
-                      <Link href="/admin/loyalty" onClick={closeMobile}>
-                        <div className="flex items-center gap-2">
-                          <NavIcon
-                            icon={Trophy}
-                            isActive={pathname.startsWith("/admin/loyalty")}
-                          />
-                          <span>Programa de Fidelidade</span>
-                        </div>
+                      <Link href="/admin/loyalty" onClick={closeMobile} className="flex items-center gap-2 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto">
+                        <NavIcon
+                          icon={Trophy}
+                          isActive={pathname.startsWith("/admin/loyalty")}
+                        />
+                        <span className="group-data-[collapsible=icon]:hidden">Programa de Fidelidade</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
