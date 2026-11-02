@@ -2,12 +2,26 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Search, Trophy, Plus, Star } from "@boxicons/react";
-import { Download, CreditCard, Ticket, AlertTriangle, Loader2, CheckCircle2, Clock, User, QrCode } from "lucide-react";
+import {
+  CreditCard,
+  Ticket,
+  AlertTriangle,
+  LoaderLines,
+  CheckCircle,
+  Clock,
+  User,
+} from "@boxicons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,7 +30,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -27,7 +41,7 @@ import {
   reactivateVoucher,
   findVoucherByPin,
   getPaginatedLoyaltyClients,
-  getUnenrolledClients
+  getUnenrolledClients,
 } from "@/app/actions/loyalty";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -100,7 +114,9 @@ export function LoyaltyOverviewTab({
   const [isAddClientOpen, setIsAddClientOpen] = useState(false);
   const [modalSearchQuery, setModalSearchQuery] = useState("");
   const debouncedModalSearch = useDebounce(modalSearchQuery, 300);
-  const [unenrolledClients, setUnenrolledClients] = useState<{ id: string; name: string }[]>([]);
+  const [unenrolledClients, setUnenrolledClients] = useState<
+    { id: string; name: string }[]
+  >([]);
   const [isLoadingUnenrolled, setIsLoadingUnenrolled] = useState(false);
 
   const [addingClient, setAddingClient] = useState<string | null>(null);
@@ -114,10 +130,13 @@ export function LoyaltyOverviewTab({
   const [isUsingPinVoucher, setIsUsingPinVoucher] = useState(false);
 
   // Histórico
-  const [selectedClientForHistory, setSelectedClientForHistory] = useState<Client | null>(null);
+  const [selectedClientForHistory, setSelectedClientForHistory] =
+    useState<Client | null>(null);
   const [clientHistory, setClientHistory] = useState<any[]>([]);
   const [clientVouchers, setClientVouchers] = useState<any[]>([]);
-  const [historyCache, setHistoryCache] = useState<Record<string, { history: any[], vouchers: any[], points?: number }>>({});
+  const [historyCache, setHistoryCache] = useState<
+    Record<string, { history: any[]; vouchers: any[]; points?: number }>
+  >({});
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   const itemsPerPage = 8;
@@ -125,30 +144,33 @@ export function LoyaltyOverviewTab({
   const isFirstRender = useRef(true);
 
   // Busca clientes paginados no servidor
-  const fetchClients = useCallback(async (page: number, search: string, scope: "global" | "specific") => {
-    setIsLoadingClients(true);
-    try {
-      const res = await getPaginatedLoyaltyClients({
-        page,
-        limit: itemsPerPage,
-        search,
-        scope,
-      });
+  const fetchClients = useCallback(
+    async (page: number, search: string, scope: "global" | "specific") => {
+      setIsLoadingClients(true);
+      try {
+        const res = await getPaginatedLoyaltyClients({
+          page,
+          limit: itemsPerPage,
+          search,
+          scope,
+        });
 
-      if (res.success) {
-        setClients(res.clients);
-        setTotalPages(res.totalPages);
-        setTotalCount(res.total);
-        setCurrentPage(res.page);
-      } else {
-        toast.error(res.error || "Erro ao carregar clientes.");
+        if (res.success) {
+          setClients(res.clients);
+          setTotalPages(res.totalPages);
+          setTotalCount(res.total);
+          setCurrentPage(res.page);
+        } else {
+          toast.error(res.error || "Erro ao carregar clientes.");
+        }
+      } catch (e) {
+        toast.error("Erro na comunicação com o servidor.");
+      } finally {
+        setIsLoadingClients(false);
       }
-    } catch (e) {
-      toast.error("Erro na comunicação com o servidor.");
-    } finally {
-      setIsLoadingClients(false);
-    }
-  }, [itemsPerPage]);
+    },
+    [itemsPerPage],
+  );
 
   // Recarrega quando busca ou escopo mudam
   useEffect(() => {
@@ -227,7 +249,9 @@ export function LoyaltyOverviewTab({
         setFoundVouchers(res.vouchers);
         setIsPinModalOpen(true);
       } else {
-        toast.error(res.error || "Nenhum voucher encontrado com este código PIN.");
+        toast.error(
+          res.error || "Nenhum voucher encontrado com este código PIN.",
+        );
       }
     } catch (err) {
       toast.error("Erro ao localizar voucher.");
@@ -236,18 +260,25 @@ export function LoyaltyOverviewTab({
     }
   };
 
-  const handleUsePinVoucher = async (voucherId: string, forceIfExpired = false) => {
+  const handleUsePinVoucher = async (
+    voucherId: string,
+    forceIfExpired = false,
+  ) => {
     setIsUsingPinVoucher(true);
     try {
       const res = await markVoucherAsUsed(voucherId, forceIfExpired);
       if (res.success) {
-        toast.success(forceIfExpired ? "Voucher autorizado e baixado como cortesia!" : "Voucher baixado com sucesso!");
+        toast.success(
+          forceIfExpired
+            ? "Voucher autorizado e baixado como cortesia!"
+            : "Voucher baixado com sucesso!",
+        );
         setFoundVouchers((prev) =>
           prev.map((v) =>
             v.id === voucherId
               ? { ...v, status: "UTILIZADO", usedAt: new Date() }
-              : v
-          )
+              : v,
+          ),
         );
         fetchClients(currentPage, debouncedSearch, programScope);
       } else {
@@ -269,9 +300,13 @@ export function LoyaltyOverviewTab({
         setFoundVouchers((prev) =>
           prev.map((v) =>
             v.id === voucherId
-              ? { ...v, status: "DISPONIVEL", expiresAt: res.voucher.expires_at }
-              : v
-          )
+              ? {
+                  ...v,
+                  status: "DISPONIVEL",
+                  expiresAt: res.voucher.expires_at,
+                }
+              : v,
+          ),
         );
         fetchClients(currentPage, debouncedSearch, programScope);
       } else {
@@ -292,7 +327,9 @@ export function LoyaltyOverviewTab({
       setClientHistory(historyCache[client.id].history);
       setClientVouchers(historyCache[client.id].vouchers);
       if (historyCache[client.id].points !== undefined) {
-        setSelectedClientForHistory((prev) => prev ? { ...prev, points: historyCache[client.id].points! } : null);
+        setSelectedClientForHistory((prev) =>
+          prev ? { ...prev, points: historyCache[client.id].points! } : null,
+        );
       }
       return;
     }
@@ -303,15 +340,17 @@ export function LoyaltyOverviewTab({
       setClientHistory(res.history);
       setClientVouchers(res.vouchers || []);
       if (res.points !== undefined) {
-        setSelectedClientForHistory((prev) => prev ? { ...prev, points: res.points } : null);
+        setSelectedClientForHistory((prev) =>
+          prev ? { ...prev, points: res.points } : null,
+        );
       }
       setHistoryCache((prev) => ({
         ...prev,
         [client.id]: {
           history: res.history,
           vouchers: res.vouchers || [],
-          points: res.points
-        }
+          points: res.points,
+        },
       }));
     } else {
       toast.error(res.error || "Erro ao carregar histórico.");
@@ -321,11 +360,22 @@ export function LoyaltyOverviewTab({
     setIsLoadingHistory(false);
   };
 
-  const handleMarkVoucherUsed = async (voucherId: string, forceIfExpired = false) => {
+  const handleMarkVoucherUsed = async (
+    voucherId: string,
+    forceIfExpired = false,
+  ) => {
     const res = await markVoucherAsUsed(voucherId, forceIfExpired);
     if (res.success) {
-      toast.success(forceIfExpired ? "Voucher autorizado e baixado como cortesia!" : "Voucher marcado como utilizado!");
-      setClientVouchers((prev) => prev.map((v) => v.id === voucherId ? { ...v, status: "UTILIZADO" } : v));
+      toast.success(
+        forceIfExpired
+          ? "Voucher autorizado e baixado como cortesia!"
+          : "Voucher marcado como utilizado!",
+      );
+      setClientVouchers((prev) =>
+        prev.map((v) =>
+          v.id === voucherId ? { ...v, status: "UTILIZADO" } : v,
+        ),
+      );
       if (selectedClientForHistory) {
         setHistoryCache((prev) => {
           const cache = prev[selectedClientForHistory.id];
@@ -334,8 +384,10 @@ export function LoyaltyOverviewTab({
             ...prev,
             [selectedClientForHistory.id]: {
               ...cache,
-              vouchers: cache.vouchers.map((v) => v.id === voucherId ? { ...v, status: "UTILIZADO" } : v)
-            }
+              vouchers: cache.vouchers.map((v) =>
+                v.id === voucherId ? { ...v, status: "UTILIZADO" } : v,
+              ),
+            },
           };
         });
       }
@@ -352,9 +404,13 @@ export function LoyaltyOverviewTab({
         setClientVouchers((prev) =>
           prev.map((v) =>
             v.id === voucherId
-              ? { ...v, status: "DISPONIVEL", expires_at: res.voucher.expires_at }
-              : v
-          )
+              ? {
+                  ...v,
+                  status: "DISPONIVEL",
+                  expires_at: res.voucher.expires_at,
+                }
+              : v,
+          ),
         );
         if (selectedClientForHistory) {
           setHistoryCache((prev) => {
@@ -366,8 +422,12 @@ export function LoyaltyOverviewTab({
                 ...cache,
                 vouchers: cache.vouchers.map((v) =>
                   v.id === voucherId
-                    ? { ...v, status: "DISPONIVEL", expires_at: res.voucher.expires_at }
-                    : v
+                    ? {
+                        ...v,
+                        status: "DISPONIVEL",
+                        expires_at: res.voucher.expires_at,
+                      }
+                    : v,
                 ),
               },
             };
@@ -394,7 +454,11 @@ export function LoyaltyOverviewTab({
             recompensas incríveis para quem mais frequenta o seu espaço.
           </p>
         </div>
-        <Button variant="default" className="rounded-full shrink-0" onClick={() => setIsProgramActive(true)}>
+        <Button
+          variant="default"
+          className="rounded-full shrink-0"
+          onClick={() => setIsProgramActive(true)}
+        >
           Ativar Programa
         </Button>
       </div>
@@ -418,7 +482,10 @@ export function LoyaltyOverviewTab({
 
         {/* Validador Rápido de Voucher por PIN + Incluir Cliente */}
         <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full lg:w-auto">
-          <form onSubmit={handleSearchPin} className="flex items-center gap-2 w-full sm:w-auto">
+          <form
+            onSubmit={handleSearchPin}
+            className="flex items-center gap-2 w-full sm:w-auto"
+          >
             <div className="relative w-full sm:w-60">
               <Ticket className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
@@ -435,7 +502,7 @@ export function LoyaltyOverviewTab({
               className="rounded-full shrink-0 font-medium h-10 px-4 hover:border-primary/50 text-xs sm:text-sm"
             >
               {isSearchingPin ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <LoaderLines className="w-4 h-4 animate-spin" />
               ) : (
                 "Validar Voucher"
               )}
@@ -460,7 +527,10 @@ export function LoyaltyOverviewTab({
       {isLoadingClients ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: itemsPerPage }).map((_, i) => (
-            <Card key={i} className="rounded-2xl shadow-sm border-border/50 p-5 flex flex-col items-center text-center gap-3">
+            <Card
+              key={i}
+              className="rounded-2xl shadow-sm border-border/50 p-5 flex flex-col items-center text-center gap-3"
+            >
               <Skeleton className="h-6 w-32 rounded-full mt-2" />
               <Skeleton className="h-4 w-24 rounded-full" />
               <Skeleton className="h-6 w-16 rounded-full mt-2" />
@@ -511,21 +581,37 @@ export function LoyaltyOverviewTab({
                   </div>
                 )}
                 <div className="space-y-1 mt-2 pointer-events-none">
-                  <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">{client.name}</h3>
+                  <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
+                    {client.name}
+                  </h3>
                   <p className="text-xs text-muted-foreground">
                     Último Check-in: {client.lastCheckIn}
                   </p>
                 </div>
                 <div className="mt-2 inline-flex items-center gap-1.5 bg-secondary/50 px-3 py-1 rounded-full text-sm font-medium pointer-events-none">
-                  <span className="text-primary font-bold">{client.points}</span>
+                  <span className="text-primary font-bold">
+                    {client.points}
+                  </span>
                   <span>pts</span>
                 </div>
 
                 {/* Barra de progresso para a próxima recompensa */}
                 {(() => {
                   const currentPoints = client.points || 0;
-                  const nextReward = rewards.slice().sort((a, b) => a.pointsCost - b.pointsCost).find((r) => currentPoints < r.pointsCost);
-                  const percentage = nextReward ? Math.min(100, Math.round((currentPoints / nextReward.pointsCost) * 100)) : (rewards.length > 0 ? 100 : 0);
+                  const nextReward = rewards
+                    .slice()
+                    .sort((a, b) => a.pointsCost - b.pointsCost)
+                    .find((r) => currentPoints < r.pointsCost);
+                  const percentage = nextReward
+                    ? Math.min(
+                        100,
+                        Math.round(
+                          (currentPoints / nextReward.pointsCost) * 100,
+                        ),
+                      )
+                    : rewards.length > 0
+                      ? 100
+                      : 0;
 
                   if (rewards.length === 0) return null;
 
@@ -533,16 +619,25 @@ export function LoyaltyOverviewTab({
                     <div className="w-full mt-3 px-2">
                       {nextReward ? (
                         <div className="flex justify-between items-center mb-1 text-[10px] text-muted-foreground">
-                          <span>Faltam {nextReward.pointsCost - currentPoints} pts para {nextReward.title}</span>
+                          <span>
+                            Faltam {nextReward.pointsCost - currentPoints} pts
+                            para {nextReward.title}
+                          </span>
                           <span className="font-bold">{percentage}%</span>
                         </div>
                       ) : (
                         <div className="flex justify-between items-center mb-1 text-[10px] text-primary">
-                          <span className="font-bold">Todas as recompensas alcançadas!</span>
+                          <span className="font-bold">
+                            Todas as recompensas alcançadas!
+                          </span>
                           <span className="font-bold">100%</span>
                         </div>
                       )}
-                      <Progress value={percentage} className="h-1.5 bg-secondary" indicatorColor="bg-primary" />
+                      <Progress
+                        value={percentage}
+                        className="h-1.5 bg-secondary"
+                        indicatorColor="bg-primary"
+                      />
                     </div>
                   );
                 })()}
@@ -558,10 +653,10 @@ export function LoyaltyOverviewTab({
                     disabled={!client.points}
                     title="Visualizar ou compartilhar extrato/cartão digital do cliente"
                   >
-                    <CreditCard size={15} />
-                    Cartão Digital
+                    <CreditCard className="w-3.75 h-3.75" />
+                    Cartão Digital  
                   </Button>
-                </div>
+                </div>  
               </CardContent>
             </Card>
           ))}
@@ -590,18 +685,29 @@ export function LoyaltyOverviewTab({
                   e.preventDefault();
                   handlePageChange(currentPage - 1);
                 }}
-                className={cn("rounded-full", (currentPage <= 1 || isLoadingClients) && "pointer-events-none opacity-50")}
+                className={cn(
+                  "rounded-full",
+                  (currentPage <= 1 || isLoadingClients) &&
+                    "pointer-events-none opacity-50",
+                )}
               />
             </PaginationItem>
 
             {Array.from({ length: totalPages }, (_, i) => i + 1)
-              .filter((page) => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 2)
+              .filter(
+                (page) =>
+                  page === 1 ||
+                  page === totalPages ||
+                  Math.abs(page - currentPage) <= 2,
+              )
               .map((page, idx, array) => {
                 const prev = array[idx - 1];
                 return (
                   <div key={page} className="flex items-center">
                     {prev && page - prev > 1 && (
-                      <span className="px-2 text-muted-foreground text-sm">...</span>
+                      <span className="px-2 text-muted-foreground text-sm">
+                        ...
+                      </span>
                     )}
                     <PaginationItem>
                       <PaginationLink
@@ -627,7 +733,11 @@ export function LoyaltyOverviewTab({
                   e.preventDefault();
                   handlePageChange(currentPage + 1);
                 }}
-                className={cn("rounded-full", (currentPage >= totalPages || isLoadingClients) && "pointer-events-none opacity-50")}
+                className={cn(
+                  "rounded-full",
+                  (currentPage >= totalPages || isLoadingClients) &&
+                    "pointer-events-none opacity-50",
+                )}
               />
             </PaginationItem>
           </PaginationContent>
@@ -646,7 +756,8 @@ export function LoyaltyOverviewTab({
           <DialogHeader>
             <DialogTitle>Incluir Cliente</DialogTitle>
             <DialogDescription>
-              Selecione o cliente que deseja adicionar ao programa de fidelidade.
+              Selecione o cliente que deseja adicionar ao programa de
+              fidelidade.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
@@ -669,7 +780,10 @@ export function LoyaltyOverviewTab({
                 </div>
               ) : (
                 unenrolledClients.map((client) => (
-                  <div key={client.id} className="flex items-center justify-between p-3 border rounded-xl">
+                  <div
+                    key={client.id}
+                    className="flex items-center justify-between p-3 border rounded-xl"
+                  >
                     <span className="font-medium text-sm">{client.name}</span>
                     <Button
                       size="sm"
@@ -677,7 +791,9 @@ export function LoyaltyOverviewTab({
                       onClick={() => handleEnroll(client.id)}
                       disabled={addingClient === client.id}
                     >
-                      {addingClient === client.id ? "Adicionando..." : "Adicionar"}
+                      {addingClient === client.id
+                        ? "Adicionando..."
+                        : "Adicionar"}
                     </Button>
                   </div>
                 ))
@@ -699,7 +815,8 @@ export function LoyaltyOverviewTab({
               Resultado da Busca por PIN
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Confira os dados do cliente e da recompensa antes de confirmar a baixa.
+              Confira os dados do cliente e da recompensa antes de confirmar a
+              baixa.
             </DialogDescription>
           </DialogHeader>
 
@@ -710,7 +827,10 @@ export function LoyaltyOverviewTab({
               const isExpired = v.status === "EXPIRADO";
 
               return (
-                <div key={v.id} className="p-4 rounded-2xl border border-border/80 bg-background space-y-4">
+                <div
+                  key={v.id}
+                  className="p-4 rounded-2xl border border-border/80 bg-background space-y-4"
+                >
                   <div className="flex items-start justify-between gap-3 border-b border-border/50 pb-3">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -752,17 +872,23 @@ export function LoyaltyOverviewTab({
                           ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
                           : isUsed
                             ? "bg-slate-100 text-slate-700"
-                            : "bg-red-100 text-red-700"
+                            : "bg-red-100 text-red-700",
                       )}
                     >
-                      {isAvailable ? "Disponível" : isUsed ? "Já Utilizado" : "Expirado"}
+                      {isAvailable
+                        ? "Disponível"
+                        : isUsed
+                          ? "Já Utilizado"
+                          : "Expirado"}
                     </span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground bg-muted/30 p-3 rounded-xl">
                     <div>
                       <span>Pontos debitados:</span>
-                      <p className="font-bold text-foreground text-sm">{v.pointsSpent} pts</p>
+                      <p className="font-bold text-foreground text-sm">
+                        {v.pointsSpent} pts
+                      </p>
                     </div>
                     <div>
                       <span>Emitido em:</span>
@@ -774,14 +900,23 @@ export function LoyaltyOverviewTab({
                       <div className="col-span-2 flex items-center gap-1.5 pt-1 border-t border-border/40">
                         <Clock className="w-3.5 h-3.5 text-muted-foreground" />
                         <span>Validade:</span>
-                        <strong className={isExpired ? "text-destructive" : "text-foreground"}>
+                        <strong
+                          className={
+                            isExpired ? "text-destructive" : "text-foreground"
+                          }
+                        >
                           {new Date(v.expiresAt).toLocaleDateString("pt-BR")}
                         </strong>
                       </div>
                     )}
                     {isUsed && v.usedAt && (
                       <div className="col-span-2 text-slate-500 pt-1 border-t border-border/40">
-                        Utilizado em: {new Date(v.usedAt).toLocaleDateString("pt-BR")} às {new Date(v.usedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                        Utilizado em:{" "}
+                        {new Date(v.usedAt).toLocaleDateString("pt-BR")} às{" "}
+                        {new Date(v.usedAt).toLocaleTimeString("pt-BR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </div>
                     )}
                   </div>
@@ -790,38 +925,61 @@ export function LoyaltyOverviewTab({
                   {isAvailable && (
                     <>
                       {v.rewardType === "PERCENTAGE" && (
-                        <div className={cn(
-                          "p-2.5 rounded-xl border text-xs leading-relaxed",
-                          v.autoFinancialDiscount
-                            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-800 dark:text-emerald-300"
-                            : "bg-amber-500/10 border-amber-500/20 text-amber-800 dark:text-amber-300"
-                        )}>
+                        <div
+                          className={cn(
+                            "p-2.5 rounded-xl border text-xs leading-relaxed",
+                            v.autoFinancialDiscount
+                              ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-800 dark:text-emerald-300"
+                              : "bg-amber-500/10 border-amber-500/20 text-amber-800 dark:text-amber-300",
+                          )}
+                        >
                           {v.autoFinancialDiscount ? (
-                            <span><strong>Automação Financeira Ativa:</strong> O desconto de {v.discountValue}% será vinculado diretamente ao atendimento do cliente.</span>
+                            <span>
+                              <strong>Automação Financeira Ativa:</strong> O
+                              desconto de {v.discountValue}% será vinculado
+                              diretamente ao atendimento do cliente.
+                            </span>
                           ) : (
-                            <span><strong>Modo Manual (Recepção):</strong> Lembre-se de cobrar o cliente com o abatimento de {v.discountValue}% no caixa ou na maquininha.</span>
+                            <span>
+                              <strong>Modo Manual (Recepção):</strong> Lembre-se
+                              de cobrar o cliente com o abatimento de{" "}
+                              {v.discountValue}% no caixa ou na maquininha.
+                            </span>
                           )}
                         </div>
                       )}
 
                       {v.rewardType === "FIXED_AMOUNT" && (
-                        <div className={cn(
-                          "p-2.5 rounded-xl border text-xs leading-relaxed",
-                          v.autoFinancialDiscount
-                            ? "bg-blue-500/10 border-blue-500/20 text-blue-800 dark:text-blue-300"
-                            : "bg-amber-500/10 border-amber-500/20 text-amber-800 dark:text-amber-300"
-                        )}>
+                        <div
+                          className={cn(
+                            "p-2.5 rounded-xl border text-xs leading-relaxed",
+                            v.autoFinancialDiscount
+                              ? "bg-blue-500/10 border-blue-500/20 text-blue-800 dark:text-blue-300"
+                              : "bg-amber-500/10 border-amber-500/20 text-amber-800 dark:text-amber-300",
+                          )}
+                        >
                           {v.autoFinancialDiscount ? (
-                            <span><strong>Automação Financeira Ativa:</strong> R$ {Number(v.discountValue || 0).toFixed(2)} serão abatidos automaticamente na transação.</span>
+                            <span>
+                              <strong>Automação Financeira Ativa:</strong> R${" "}
+                              {Number(v.discountValue || 0).toFixed(2)} serão
+                              abatidos automaticamente na transação.
+                            </span>
                           ) : (
-                            <span><strong>Modo Manual (Recepção):</strong> Lembre-se de abater R$ {Number(v.discountValue || 0).toFixed(2)} no valor cobrado ao cliente.</span>
+                            <span>
+                              <strong>Modo Manual (Recepção):</strong> Lembre-se
+                              de abater R${" "}
+                              {Number(v.discountValue || 0).toFixed(2)} no valor
+                              cobrado ao cliente.
+                            </span>
                           )}
                         </div>
                       )}
 
                       {v.rewardType === "GIFT" && (
                         <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-800 dark:text-purple-300 leading-relaxed">
-                          <strong>Brinde / Cortesia:</strong> Entregue o brinde físico ou realize o procedimento cortesia acordado com o cliente e confirme a baixa abaixo.
+                          <strong>Brinde / Cortesia:</strong> Entregue o brinde
+                          físico ou realize o procedimento cortesia acordado com
+                          o cliente e confirme a baixa abaixo.
                         </div>
                       )}
                     </>
@@ -836,12 +994,12 @@ export function LoyaltyOverviewTab({
                       >
                         {isUsingPinVoucher ? (
                           <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            <LoaderLines className="w-4 h-4 mr-2 animate-spin" />
                             Confirmando Baixa...
                           </>
                         ) : (
                           <>
-                            <CheckCircle2 className="w-4 h-4 mr-2" />
+                            <CheckCircle className="w-4 h-4 mr-2" />
                             Dar Baixa no Voucher Agora
                           </>
                         )}
@@ -849,7 +1007,9 @@ export function LoyaltyOverviewTab({
                     ) : isExpired ? (
                       <div className="space-y-2">
                         <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 dark:text-amber-300">
-                          <strong>Voucher expirado:</strong> Como administrador, você pode reativar a validade para o cliente ou autorizar a baixa imediata como cortesia.
+                          <strong>Voucher expirado:</strong> Como administrador,
+                          você pode reativar a validade para o cliente ou
+                          autorizar a baixa imediata como cortesia.
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <Button
@@ -872,7 +1032,11 @@ export function LoyaltyOverviewTab({
                         </div>
                       </div>
                     ) : (
-                      <Button disabled variant="outline" className="w-full rounded-2xl h-10 text-xs">
+                      <Button
+                        disabled
+                        variant="outline"
+                        className="w-full rounded-2xl h-10 text-xs"
+                      >
                         Voucher já utilizado anteriormente
                       </Button>
                     )}
@@ -885,7 +1049,10 @@ export function LoyaltyOverviewTab({
       </Dialog>
 
       {/* Confirmação de Remoção com Alerta Explícito de Pontos Zerados */}
-      <AlertDialog open={!!clientToRemove} onOpenChange={(open) => !open && setClientToRemove(null)}>
+      <AlertDialog
+        open={!!clientToRemove}
+        onOpenChange={(open) => !open && setClientToRemove(null)}
+      >
         <AlertDialogContent className="rounded-3xl max-w-md">
           <AlertDialogHeader>
             <div className="w-12 h-12 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center mb-2 mx-auto sm:mx-0">
@@ -894,24 +1061,34 @@ export function LoyaltyOverviewTab({
             <AlertDialogTitle className="text-xl font-bold text-foreground">
               Remover cliente do programa?
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-3 pt-2 text-sm text-muted-foreground" asChild>
+            <AlertDialogDescription
+              className="space-y-3 pt-2 text-sm text-muted-foreground"
+              asChild
+            >
               <div>
                 <p>
-                  Tem certeza que deseja remover <strong>{clientToRemove?.name}</strong> do programa de fidelidade?
+                  Tem certeza que deseja remover{" "}
+                  <strong>{clientToRemove?.name}</strong> do programa de
+                  fidelidade?
                 </p>
                 <div className="p-3.5 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-xs space-y-1.5">
                   <p className="font-bold flex items-center gap-1.5">
                     ⚠️ Atenção: Ação Irreversível!
                   </p>
                   <p className="leading-relaxed">
-                    O saldo atual de <strong>{clientToRemove?.points || 0} pontos</strong> deste cliente será <strong>zerado permanentemente</strong> e ele não poderá mais utilizá-los.
+                    O saldo atual de{" "}
+                    <strong>{clientToRemove?.points || 0} pontos</strong> deste
+                    cliente será <strong>zerado permanentemente</strong> e ele
+                    não poderá mais utilizá-los.
                   </p>
                 </div>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-4 gap-2">
-            <AlertDialogCancel className="rounded-full">Cancelar</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-full">
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmRemove}
               className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 font-bold"
@@ -924,12 +1101,15 @@ export function LoyaltyOverviewTab({
 
       {/* Histórico Mobile (Drawer) */}
       {isMobile ? (
-        <Drawer open={!!selectedClientForHistory} onOpenChange={(open) => {
-          if (!open) {
-            setSelectedClientForHistory(null);
-            setClientHistory([]);
-          }
-        }}>
+        <Drawer
+          open={!!selectedClientForHistory}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedClientForHistory(null);
+              setClientHistory([]);
+            }
+          }}
+        >
           <DrawerContent className="bg-card">
             <div className="mx-auto w-full max-w-sm">
               <DrawerHeader>
@@ -962,18 +1142,37 @@ export function LoyaltyOverviewTab({
                         <ScrollArea className="h-[50vh] pr-4">
                           <div className="space-y-4">
                             {clientHistory.map((item, idx) => {
-                              const isRedeem = item.points < 0 || item.type === "redeem";
+                              const isRedeem =
+                                item.points < 0 || item.type === "redeem";
                               return (
-                                <div key={idx} className={cn(
-                                  "flex items-center justify-between p-3 rounded-xl border",
-                                  isRedeem ? "border-destructive/20 bg-destructive/5" : "border-border/50 bg-background"
-                                )}>
+                                <div
+                                  key={idx}
+                                  className={cn(
+                                    "flex items-center justify-between p-3 rounded-xl border",
+                                    isRedeem
+                                      ? "border-destructive/20 bg-destructive/5"
+                                      : "border-border/50 bg-background",
+                                  )}
+                                >
                                   <div className="flex flex-col gap-1">
-                                    <span className={cn("font-medium text-sm", isRedeem && "text-destructive font-semibold")}>
+                                    <span
+                                      className={cn(
+                                        "font-medium text-sm",
+                                        isRedeem &&
+                                          "text-destructive font-semibold",
+                                      )}
+                                    >
                                       {item.description}
                                     </span>
                                     <span className="text-xs text-muted-foreground">
-                                      {new Date(item.date).toLocaleDateString('pt-BR')} às {new Date(item.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                      {new Date(item.date).toLocaleDateString(
+                                        "pt-BR",
+                                      )}{" "}
+                                      às{" "}
+                                      {new Date(item.date).toLocaleTimeString(
+                                        "pt-BR",
+                                        { hour: "2-digit", minute: "2-digit" },
+                                      )}
                                     </span>
                                   </div>
                                   {isRedeem ? (
@@ -1003,39 +1202,69 @@ export function LoyaltyOverviewTab({
                           <div className="space-y-4">
                             {clientVouchers.map((voucher) => {
                               const isUsed = voucher.status === "UTILIZADO";
-                              const isExpired = !isUsed && voucher.expires_at && new Date(voucher.expires_at) < new Date();
-                              const displayStatus = isUsed ? "UTILIZADO" : isExpired ? "EXPIRADO" : "DISPONÍVEL";
+                              const isExpired =
+                                !isUsed &&
+                                voucher.expires_at &&
+                                new Date(voucher.expires_at) < new Date();
+                              const displayStatus = isUsed
+                                ? "UTILIZADO"
+                                : isExpired
+                                  ? "EXPIRADO"
+                                  : "DISPONÍVEL";
 
                               return (
-                                <div key={voucher.id} className="flex flex-col gap-2 p-3 rounded-xl border border-border/50 bg-background">
+                                <div
+                                  key={voucher.id}
+                                  className="flex flex-col gap-2 p-3 rounded-xl border border-border/50 bg-background"
+                                >
                                   <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                      <span className="font-medium text-sm">{voucher.title}</span>
+                                      <span className="font-medium text-sm">
+                                        {voucher.title}
+                                      </span>
                                       <span className="font-mono text-[10px] font-bold bg-muted px-1.5 py-0.5 rounded text-muted-foreground border">
-                                        #VCH-{voucher.id.slice(-6).toUpperCase()}
+                                        #VCH-
+                                        {voucher.id.slice(-6).toUpperCase()}
                                       </span>
                                     </div>
-                                    <span className={cn(
-                                      "px-2 py-1 rounded-full text-xs font-bold",
-                                      displayStatus === "DISPONÍVEL" ? "bg-green-100 text-green-700" :
-                                        displayStatus === "EXPIRADO" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700"
-                                    )}>
+                                    <span
+                                      className={cn(
+                                        "px-2 py-1 rounded-full text-xs font-bold",
+                                        displayStatus === "DISPONÍVEL"
+                                          ? "bg-green-100 text-green-700"
+                                          : displayStatus === "EXPIRADO"
+                                            ? "bg-red-100 text-red-700"
+                                            : "bg-gray-100 text-gray-700",
+                                      )}
+                                    >
                                       {displayStatus}
                                     </span>
                                   </div>
                                   <div className="flex items-center justify-between mt-2">
                                     <div className="flex flex-col gap-1">
                                       <span className="text-xs text-muted-foreground">
-                                        Gerado em {new Date(voucher.created_at).toLocaleDateString('pt-BR')}
+                                        Gerado em{" "}
+                                        {new Date(
+                                          voucher.created_at,
+                                        ).toLocaleDateString("pt-BR")}
                                       </span>
                                       {voucher.expires_at && !isUsed && (
                                         <span className="text-xs text-muted-foreground">
-                                          Válido até: {new Date(voucher.expires_at).toLocaleDateString('pt-BR')}
+                                          Válido até:{" "}
+                                          {new Date(
+                                            voucher.expires_at,
+                                          ).toLocaleDateString("pt-BR")}
                                         </span>
                                       )}
                                     </div>
                                     {displayStatus === "DISPONÍVEL" && (
-                                      <Button size="sm" variant="outline" onClick={() => handleMarkVoucherUsed(voucher.id)}>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() =>
+                                          handleMarkVoucherUsed(voucher.id)
+                                        }
+                                      >
                                         Marcar como Usado
                                       </Button>
                                     )}
@@ -1045,7 +1274,12 @@ export function LoyaltyOverviewTab({
                                           size="sm"
                                           variant="outline"
                                           className="text-xs h-8 rounded-xl font-semibold"
-                                          onClick={() => handleReactivateVoucher(voucher.id, 30)}
+                                          onClick={() =>
+                                            handleReactivateVoucher(
+                                              voucher.id,
+                                              30,
+                                            )
+                                          }
                                         >
                                           Reativar (+30d)
                                         </Button>
@@ -1053,7 +1287,12 @@ export function LoyaltyOverviewTab({
                                           size="sm"
                                           variant="ghost"
                                           className="text-xs h-8 rounded-xl text-amber-700 hover:text-amber-800 hover:bg-amber-500/10 font-bold"
-                                          onClick={() => handleMarkVoucherUsed(voucher.id, true)}
+                                          onClick={() =>
+                                            handleMarkVoucherUsed(
+                                              voucher.id,
+                                              true,
+                                            )
+                                          }
                                         >
                                           Autorizar Uso
                                         </Button>
@@ -1072,7 +1311,9 @@ export function LoyaltyOverviewTab({
 
                 <div className="flex justify-between items-center mt-4 pt-4 border-t border-border/50 text-sm">
                   <span className="text-muted-foreground">Saldo Total:</span>
-                  <span className="font-bold text-lg text-primary">{selectedClientForHistory?.points} pts</span>
+                  <span className="font-bold text-lg text-primary">
+                    {selectedClientForHistory?.points} pts
+                  </span>
                 </div>
               </div>
             </div>
@@ -1080,12 +1321,15 @@ export function LoyaltyOverviewTab({
         </Drawer>
       ) : (
         /* Histórico Desktop (Dialog) */
-        <Dialog open={!!selectedClientForHistory} onOpenChange={(open) => {
-          if (!open) {
-            setSelectedClientForHistory(null);
-            setClientHistory([]);
-          }
-        }}>
+        <Dialog
+          open={!!selectedClientForHistory}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedClientForHistory(null);
+              setClientHistory([]);
+            }
+          }}
+        >
           <DialogContent className="rounded-2xl max-w-md bg-card">
             <DialogHeader>
               <DialogTitle>Histórico de Pontos</DialogTitle>
@@ -1113,21 +1357,40 @@ export function LoyaltyOverviewTab({
                       Nenhuma pontuação registrada para este cliente.
                     </div>
                   ) : (
-                    <ScrollArea className="h-[350px] pr-4">
+                    <ScrollArea className="h-87.5 pr-4">
                       <div className="space-y-4">
                         {clientHistory.map((item, idx) => {
-                          const isRedeem = item.points < 0 || item.type === "redeem";
+                          const isRedeem =
+                            item.points < 0 || item.type === "redeem";
                           return (
-                            <div key={idx} className={cn(
-                              "flex items-center justify-between p-3 rounded-xl border",
-                              isRedeem ? "border-destructive/20 bg-destructive/5" : "border-border/50 bg-background"
-                            )}>
+                            <div
+                              key={idx}
+                              className={cn(
+                                "flex items-center justify-between p-3 rounded-xl border",
+                                isRedeem
+                                  ? "border-destructive/20 bg-destructive/5"
+                                  : "border-border/50 bg-background",
+                              )}
+                            >
                               <div className="flex flex-col gap-1">
-                                <span className={cn("font-medium text-sm", isRedeem && "text-destructive font-semibold")}>
+                                <span
+                                  className={cn(
+                                    "font-medium text-sm",
+                                    isRedeem &&
+                                      "text-destructive font-semibold",
+                                  )}
+                                >
                                   {item.description}
                                 </span>
                                 <span className="text-xs text-muted-foreground">
-                                  {new Date(item.date).toLocaleDateString('pt-BR')} às {new Date(item.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                  {new Date(item.date).toLocaleDateString(
+                                    "pt-BR",
+                                  )}{" "}
+                                  às{" "}
+                                  {new Date(item.date).toLocaleTimeString(
+                                    "pt-BR",
+                                    { hour: "2-digit", minute: "2-digit" },
+                                  )}
                                 </span>
                               </div>
                               {isRedeem ? (
@@ -1153,43 +1416,72 @@ export function LoyaltyOverviewTab({
                       Nenhum voucher gerado para este cliente.
                     </div>
                   ) : (
-                    <ScrollArea className="h-[350px] pr-4">
+                    <ScrollArea className="h-87.5 pr-4">
                       <div className="space-y-4">
                         {clientVouchers.map((voucher) => {
                           const isUsed = voucher.status === "UTILIZADO";
-                          const isExpired = !isUsed && voucher.expires_at && new Date(voucher.expires_at) < new Date();
-                          const displayStatus = isUsed ? "UTILIZADO" : isExpired ? "EXPIRADO" : "DISPONÍVEL";
+                          const isExpired =
+                            !isUsed &&
+                            voucher.expires_at &&
+                            new Date(voucher.expires_at) < new Date();
+                          const displayStatus = isUsed
+                            ? "UTILIZADO"
+                            : isExpired
+                              ? "EXPIRADO"
+                              : "DISPONÍVEL";
 
                           return (
-                            <div key={voucher.id} className="flex flex-col gap-2 p-3 rounded-xl border border-border/50 bg-background">
+                            <div
+                              key={voucher.id}
+                              className="flex flex-col gap-2 p-3 rounded-xl border border-border/50 bg-background"
+                            >
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                  <span className="font-medium text-sm">{voucher.title}</span>
+                                  <span className="font-medium text-sm">
+                                    {voucher.title}
+                                  </span>
                                   <span className="font-mono text-[10px] font-bold bg-muted px-1.5 py-0.5 rounded text-muted-foreground border">
                                     #VCH-{voucher.id.slice(-6).toUpperCase()}
                                   </span>
                                 </div>
-                                <span className={cn(
-                                  "px-2 py-1 rounded-full text-xs font-bold",
-                                  displayStatus === "DISPONÍVEL" ? "bg-green-100 text-green-700" :
-                                    displayStatus === "EXPIRADO" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700"
-                                )}>
+                                <span
+                                  className={cn(
+                                    "px-2 py-1 rounded-full text-xs font-bold",
+                                    displayStatus === "DISPONÍVEL"
+                                      ? "bg-green-100 text-green-700"
+                                      : displayStatus === "EXPIRADO"
+                                        ? "bg-red-100 text-red-700"
+                                        : "bg-gray-100 text-gray-700",
+                                  )}
+                                >
                                   {displayStatus}
                                 </span>
                               </div>
                               <div className="flex items-center justify-between mt-2">
                                 <div className="flex flex-col gap-1">
                                   <span className="text-xs text-muted-foreground">
-                                    Gerado em {new Date(voucher.created_at).toLocaleDateString('pt-BR')}
+                                    Gerado em{" "}
+                                    {new Date(
+                                      voucher.created_at,
+                                    ).toLocaleDateString("pt-BR")}
                                   </span>
                                   {voucher.expires_at && !isUsed && (
                                     <span className="text-xs text-muted-foreground">
-                                      Válido até: {new Date(voucher.expires_at).toLocaleDateString('pt-BR')}
+                                      Válido até:{" "}
+                                      {new Date(
+                                        voucher.expires_at,
+                                      ).toLocaleDateString("pt-BR")}
                                     </span>
                                   )}
                                 </div>
                                 {displayStatus === "DISPONÍVEL" && (
-                                  <Button size="sm" variant="outline" onClick={() => handleMarkVoucherUsed(voucher.id)}>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                      handleMarkVoucherUsed(voucher.id)
+                                    }
+                                  >
                                     Marcar como Usado
                                   </Button>
                                 )}
@@ -1199,7 +1491,9 @@ export function LoyaltyOverviewTab({
                                       size="sm"
                                       variant="outline"
                                       className="text-xs h-8 rounded-xl font-semibold"
-                                      onClick={() => handleReactivateVoucher(voucher.id, 30)}
+                                      onClick={() =>
+                                        handleReactivateVoucher(voucher.id, 30)
+                                      }
                                     >
                                       Reativar (+30d)
                                     </Button>
@@ -1207,7 +1501,9 @@ export function LoyaltyOverviewTab({
                                       size="sm"
                                       variant="ghost"
                                       className="text-xs h-8 rounded-xl text-amber-700 hover:text-amber-800 hover:bg-amber-500/10 font-bold"
-                                      onClick={() => handleMarkVoucherUsed(voucher.id, true)}
+                                      onClick={() =>
+                                        handleMarkVoucherUsed(voucher.id, true)
+                                      }
                                     >
                                       Autorizar Uso
                                     </Button>
@@ -1226,7 +1522,9 @@ export function LoyaltyOverviewTab({
 
             <div className="flex justify-between items-center mt-4 pt-4 border-t border-border/50 text-sm">
               <span className="text-muted-foreground">Saldo Total:</span>
-              <span className="font-bold text-lg text-primary">{selectedClientForHistory?.points} pts</span>
+              <span className="font-bold text-lg text-primary">
+                {selectedClientForHistory?.points} pts
+              </span>
             </div>
           </DialogContent>
         </Dialog>

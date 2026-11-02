@@ -2,10 +2,21 @@
 
 import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
-import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+  DialogHeader,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ArrowToBottom, Share, LoaderDots } from "@boxicons/react";
-import { Lock, CheckCircle2 } from "lucide-react";
+import {
+  ArrowToBottom,
+  Share,
+  Lock,
+  LoaderDots,
+  CheckCircle,
+} from "@boxicons/react";
 import { toast } from "sonner";
 
 interface Reward {
@@ -37,7 +48,7 @@ export function LoyaltyVoucher({
     setIsExporting(true);
 
     // Aguardar o React aplicar as classes de exportação (remover bordas/recortes)
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     try {
       const width = cardRef.current.offsetWidth;
@@ -93,9 +104,12 @@ export function LoyaltyVoucher({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] sm:max-w-2xl bg-background p-4 sm:p-6 rounded-3xl overflow-y-auto max-h-[90dvh] border-border flex flex-col items-center">
         <DialogHeader className="text-center sm:text-center w-full">
-          <DialogTitle className="text-lg font-bold text-foreground">Cartão de Fidelidade Digital</DialogTitle>
+          <DialogTitle className="text-lg font-bold text-foreground">
+            Cartão de Fidelidade Digital
+          </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground text-center">
-            Extrato visual informativo para acompanhamento ou envio ao cliente. Não debita pontos nem emite vouchers de resgate.
+            Extrato visual informativo para acompanhamento ou envio ao cliente.
+            Não debita pontos nem emite vouchers de resgate.
           </DialogDescription>
         </DialogHeader>
 
@@ -111,13 +125,13 @@ export function LoyaltyVoucher({
             {/* FAKE CUTOUTS (Instead of CSS Mask for better browser compatibility) */}
             {!isExporting && (
               <>
-                <div className="absolute top-0 left-[430px] w-6 h-6 -mt-3 -ml-3 bg-background rounded-full border border-border/50 z-20" />
-                <div className="absolute bottom-0 left-[430px] w-6 h-6 -mb-3 -ml-3 bg-background rounded-full border border-border/50 z-20" />
+                <div className="absolute top-0 left-107.5 w-6 h-6 -mt-3 -ml-3 bg-background rounded-full border border-border/50 z-20" />
+                <div className="absolute bottom-0 left-107.5 w-6 h-6 -mb-3 -ml-3 bg-background rounded-full border border-border/50 z-20" />
               </>
             )}
 
             {/* LEFT BODY */}
-            <div className="w-[430px] h-full p-8 flex flex-col z-10 border-r border-dashed border-border/60">
+            <div className="w-107.5 h-full p-8 flex flex-col z-10 border-r border-dashed border-border/60">
               <div className="mb-6 flex justify-between items-start">
                 <div>
                   <h1 className="font-bold text-xl tracking-wide font-philosopher text-foreground mb-1">
@@ -131,7 +145,7 @@ export function LoyaltyVoucher({
                   <p className="text-muted-foreground text-[10px] uppercase tracking-widest font-bold mb-1">
                     Cliente
                   </p>
-                  <h2 className="text-foreground text-base font-bold truncate max-w-[150px]">
+                  <h2 className="text-foreground text-base font-bold truncate max-w-37.5">
                     {clientName}
                   </h2>
                 </div>
@@ -145,25 +159,29 @@ export function LoyaltyVoucher({
                   {rewards.map((reward) => {
                     const isLocked = points < reward.pointsCost;
                     return (
-                      <div 
-                        key={reward.id} 
+                      <div
+                        key={reward.id}
                         className={`flex items-center justify-between py-1 ${
                           isLocked ? "opacity-50 grayscale" : ""
                         }`}
                       >
                         <div className="flex items-center gap-2 overflow-hidden pr-2">
                           {isLocked ? (
-                            <Lock className="text-muted-foreground shrink-0" size={14} />
+                            <Lock className="text-muted-foreground shrink-0 h-3.5 w-3.5" />
                           ) : (
-                            <CheckCircle2 className="text-primary shrink-0" size={14} />
+                            <CheckCircle className="text-primary shrink-0 h-3.5 w-3.5" />
                           )}
-                          <span className={`text-sm font-medium truncate ${isLocked ? "text-muted-foreground" : "text-foreground"}`}>
+                          <span
+                            className={`text-sm font-medium truncate ${isLocked ? "text-muted-foreground" : "text-foreground"}`}
+                          >
                             {reward.title}
                           </span>
                         </div>
-                        <span className={`text-sm font-bold whitespace-nowrap ${
-                          isLocked ? "text-muted-foreground" : "text-primary"
-                        }`}>
+                        <span
+                          className={`text-sm font-bold whitespace-nowrap ${
+                            isLocked ? "text-muted-foreground" : "text-primary"
+                          }`}
+                        >
                           {reward.pointsCost} pts
                         </span>
                       </div>

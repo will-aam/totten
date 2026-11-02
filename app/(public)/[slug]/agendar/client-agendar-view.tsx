@@ -7,17 +7,16 @@ import { Button } from "@/components/ui/button";
 import { cn, sanitizeUrl } from "@/lib/utils";
 import { detectAndFormatPixKey, getRawPixKey } from "@/lib/pix";
 import {
-  MapPin,
+  LocationAlt2,
   Clock,
   Briefcase,
   ChevronDown,
   ChevronUp,
   Calendar,
   User,
-  CheckCircle2,
+  CheckCircle,
   Copy,
-
-} from "lucide-react";
+} from "@boxicons/react";
 import { Heart, ArrowLeft, ArrowRight, Check, Instagram, Facebook, Youtube, Whatsapp, Globe } from "@boxicons/react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -196,7 +195,7 @@ export function ClientAgendarView({ org }: { org: any }) {
               localStorage.setItem(`totten_recent_booking_${org.slug}`, JSON.stringify(parsed));
               setPersistedBooking(parsed);
             }
-          } catch (err) {}
+          } catch (err) { }
 
           clearInterval(interval);
         }
@@ -405,7 +404,7 @@ export function ClientAgendarView({ org }: { org: any }) {
             <div className="mx-5 md:mx-10 mt-6 animate-in fade-in slide-in-from-top-2">
               <div className={cn(
                 "p-4 md:p-5 rounded-2xl border flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm",
-                persistedBooking.isPaid 
+                persistedBooking.isPaid
                   ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-950 dark:text-emerald-200"
                   : "bg-amber-500/10 border-amber-500/30 text-amber-950 dark:text-amber-200"
               )}>
@@ -414,7 +413,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                     "w-10 h-10 rounded-full flex items-center justify-center shrink-0 mt-0.5",
                     persistedBooking.isPaid ? "bg-emerald-500 text-white" : "bg-amber-500 text-white"
                   )}>
-                    <CheckCircle2 className="w-5 h-5" />
+                    <CheckCircle className="w-5 h-5" />
                   </div>
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-2">
@@ -452,7 +451,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                         localStorage.removeItem(`totten_recent_booking_${org.slug}`);
                         setPersistedBooking(null);
                         toast.info("Aviso de agendamento fechado.");
-                      } catch (e) {}
+                      } catch (e) { }
                     }}
                   >
                     Dispensar
@@ -827,7 +826,7 @@ export function ClientAgendarView({ org }: { org: any }) {
 
                 {globalContact.address && (
                   <div className="flex items-start gap-3 mb-4">
-                    <MapPin className={cn("w-5 h-5 mt-0.5 shrink-0", mutedTextClass)} />
+                    <LocationAlt2 className={cn("w-5 h-5 mt-0.5 shrink-0", mutedTextClass)} />
                     <div>
                       <p className="text-sm font-medium">{globalContact.address}</p>
                       {globalContact.mapUrl && sanitizeUrl(globalContact.mapUrl) && (
@@ -912,8 +911,8 @@ export function ClientAgendarView({ org }: { org: any }) {
       </Dialog>
 
       {/* Booking Wizard Modal */}
-      <Dialog 
-        open={bookingWizardOpen} 
+      <Dialog
+        open={bookingWizardOpen}
         onOpenChange={(open) => {
           if (!open) {
             // Se estiver no passo 4 de pagamento e ainda aguardando, confirma ou fecha
@@ -921,7 +920,7 @@ export function ClientAgendarView({ org }: { org: any }) {
           }
         }}
       >
-        <DialogContent 
+        <DialogContent
           onPointerDownOutside={(e) => {
             // Evita fechar acidentalmente ao clicar fora durante o pagamento
             if (bookingStep === 4) {
@@ -1061,7 +1060,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                               {isSelected && (
                                 <div className="absolute inset-0 flex items-center justify-between px-3" style={{ backgroundColor: theme.primaryColor, color: theme.btnTxt }}>
                                   <span className="flex-1 text-center font-black text-base">{time}</span>
-                                  <CheckCircle2 className="w-5 h-5 shrink-0" />
+                                  <CheckCircle className="w-5 h-5 shrink-0" />
                                 </div>
                               )}
                               <span className={cn(isSelected && "invisible")}>{time}</span>
@@ -1093,7 +1092,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                           <p className="font-bold text-sm truncate">Qualquer Profissional</p>
                           <p className="text-xs opacity-70">Escolha automática (Aleatório)</p>
                         </div>
-                        {bookingData.professionalId === "ANY" && <CheckCircle2 className="w-5 h-5 shrink-0" style={{ color: theme.primaryColor }} />}
+                        {bookingData.professionalId === "ANY" && <CheckCircle className="w-5 h-5 shrink-0" style={{ color: theme.primaryColor }} />}
                       </button>
 
                       {availableSlots[bookingData.time].map((pro: any) => {
@@ -1118,7 +1117,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                             <div className="flex-1 min-w-0">
                               <p className="font-bold text-sm truncate">{pro.name}</p>
                             </div>
-                            {isSelected && <CheckCircle2 className="w-5 h-5 shrink-0" style={{ color: theme.primaryColor }} />}
+                            {isSelected && <CheckCircle className="w-5 h-5 shrink-0" style={{ color: theme.primaryColor }} />}
                           </button>
                         );
                       })}
@@ -1273,7 +1272,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                   isPaymentConfirmed ? (
                     <div className="py-8 space-y-4 animate-in fade-in zoom-in-95 text-center">
                       <div className="w-20 h-20 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-2 dark:bg-emerald-950 dark:text-emerald-400">
-                        <CheckCircle2 className="w-10 h-10" />
+                        <CheckCircle className="w-10 h-10" />
                       </div>
                       <h3 className="font-black text-2xl text-emerald-600 dark:text-emerald-400">
                         Pagamento Confirmado!
@@ -1412,7 +1411,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                   /* FLUXO MANUAL COM CHAVE PIX E WHATSAPP */
                   <>
                     <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-2 dark:bg-emerald-900/30 dark:text-emerald-400">
-                      <CheckCircle2 className="w-8 h-8" />
+                      <CheckCircle className="w-8 h-8" />
                     </div>
 
                     <h3 className="font-bold text-xl">Quase lá!</h3>
@@ -1512,7 +1511,7 @@ export function ClientAgendarView({ org }: { org: any }) {
             {bookingStep === 6 && (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4 text-center pb-4">
                 <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-2 dark:bg-emerald-900/30 dark:text-emerald-400">
-                  <CheckCircle2 className="w-8 h-8" />
+                  <CheckCircle className="w-8 h-8" />
                 </div>
                 <h3 className="font-bold text-xl px-4">Sua solicitação foi registrada!</h3>
                 <p className="text-sm opacity-70 px-6 mt-2 mb-6">
@@ -1598,7 +1597,7 @@ export function ClientAgendarView({ org }: { org: any }) {
                       try {
                         localStorage.setItem(`totten_recent_booking_${org.slug}`, JSON.stringify(bookingSnapshot));
                         setPersistedBooking(bookingSnapshot);
-                      } catch (err) {}
+                      } catch (err) { }
                     }
 
                     if (res.pixPayment) {

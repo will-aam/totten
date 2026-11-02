@@ -265,6 +265,7 @@ export function AgendaFilterForm({ filters, onFiltersChange, isOwner, team, serv
             <SelectItem value="ALL" className="font-medium text-muted-foreground">Todos os tipos</SelectItem>
             <SelectItem value="SINGLE" className="font-medium">Avulso</SelectItem>
             <SelectItem value="PACKAGE" className="font-medium">Pacote</SelectItem>
+            <SelectItem value="LAST_SESSION" className="font-medium">Última Sessão (Renovação)</SelectItem>
           </SelectContent>
         </Select>
       </div>

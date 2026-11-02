@@ -2,11 +2,12 @@
 "use client";
 
 import { useSidebar } from "@/components/ui/sidebar";
-import { MenuLeft, CheckShield, Bell } from "@boxicons/react";
+import { MenuLeft, CheckShield } from "@boxicons/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
+import { NotificationBell } from "./notification-bell";
 
 export function AdminHeader({
   title,
@@ -46,6 +47,10 @@ export function AdminHeader({
             <div className="w-px h-5 bg-border/50" />
           </div>
         )}
+
+        {/* Sino do Feed Silencioso de Notificações */}
+        <NotificationBell />
+
         <Button
           asChild
           variant="secondary"

@@ -214,9 +214,13 @@ export async function cancelPendingAppointment(slug: string, clientId: string, a
       return { success: false, error: "Este agendamento já foi confirmado ou realizado e não pode ser cancelado por aqui." };
     }
 
+    const currentObs = appt.observations ? `${appt.observations} | ` : "";
     await prisma.appointment.update({
       where: { id: appointmentId },
-      data: { status: "CANCELADO" }
+      data: {
+        status: "CANCELADO",
+        observations: `${currentObs}[Cancelado pelo cliente via Autoatendimento]`,
+      },
     });
 
     return { success: true };

@@ -10,21 +10,20 @@ import { updateAppointment } from "@/app/actions/appointments";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  CalendarCheck2,
+  CalendarCheck,
   Clock,
-  Sparkles,
   ArrowUpRight,
-  CheckCircle2,
+  CheckCircle,
   XCircle,
-  MessageSquare,
+  MessageCircle,
   Lock,
   ChevronRight,
   TrendingUp,
   CreditCard,
   User,
-  Settings,
-  ShieldCheck,
-} from "lucide-react";
+  Cog,
+  Shield,
+} from "@boxicons/react";
 
 interface AutoDashboardClientProps {
   initialData: {
@@ -91,7 +90,7 @@ export function AutoDashboardClient({ initialData }: AutoDashboardClientProps) {
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" asChild className="gap-1.5 h-9 rounded-xl font-medium">
             <Link href="/admin/custom-page">
-              <Settings className="w-4 h-4 text-muted-foreground" />
+              <Cog className="w-4 h-4 text-muted-foreground" />
               Configurar Página
             </Link>
           </Button>
@@ -111,7 +110,7 @@ export function AutoDashboardClient({ initialData }: AutoDashboardClientProps) {
           <div className="flex items-center justify-between text-muted-foreground mb-3">
             <span className="text-xs font-medium uppercase tracking-wider">Agendamentos Totais</span>
             <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-              <CalendarCheck2 className="w-4 h-4" />
+              <CalendarCheck className="w-4 h-4" />
             </div>
           </div>
           <div>
@@ -144,7 +143,7 @@ export function AutoDashboardClient({ initialData }: AutoDashboardClientProps) {
           <div className="flex items-center justify-between text-muted-foreground mb-3">
             <span className="text-xs font-medium uppercase tracking-wider">Taxa de Conversão</span>
             <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-              <CheckCircle2 className="w-4 h-4" />
+              <CheckCircle className="w-4 h-4" />
             </div>
           </div>
           <div>
@@ -198,7 +197,7 @@ export function AutoDashboardClient({ initialData }: AutoDashboardClientProps) {
           {recentPending.length === 0 ? (
             <div className="p-8 rounded-2xl bg-card border border-border text-center space-y-2">
               <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-1">
-                <CheckCircle2 className="w-6 h-6" />
+                <CheckCircle className="w-6 h-6" />
               </div>
               <p className="text-sm font-bold text-foreground">Sem solicitações pendentes</p>
               <p className="text-xs text-muted-foreground max-w-sm mx-auto">
@@ -254,7 +253,7 @@ export function AutoDashboardClient({ initialData }: AutoDashboardClientProps) {
                       disabled={loadingId === req.id}
                       onClick={() => handleStatusChange(req.id, "aprovado")}
                     >
-                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                      <CheckCircle className="w-3.5 h-3.5 mr-1" />
                       Aprovar
                     </Button>
                   </div>
@@ -275,7 +274,7 @@ export function AutoDashboardClient({ initialData }: AutoDashboardClientProps) {
 
           <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-card to-card border border-emerald-500/20 shadow-sm space-y-4">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-              <MessageSquare className="w-5 h-5" />
+              <MessageCircle className="w-5 h-5" />
             </div>
 
             <div>
@@ -287,15 +286,15 @@ export function AutoDashboardClient({ initialData }: AutoDashboardClientProps) {
 
             <div className="space-y-2 pt-1 border-t border-border/40 text-xs text-muted-foreground">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                 <span>Confirmação com 1 clique do cliente</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                 <span>Zero faltas com lembrete inteligente</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                 <span>Envio automático de comprovante</span>
               </div>
             </div>
@@ -318,7 +317,7 @@ export function AutoDashboardClient({ initialData }: AutoDashboardClientProps) {
           <div className="p-5 rounded-2xl bg-card border border-border/80 shadow-sm space-y-3">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                <ShieldCheck className="w-4 h-4" />
+                <Shield className="w-4 h-4" />
               </div>
               <div>
                 <h3 className="text-sm font-bold text-foreground">Política de Sinal & Cancelamentos</h3>

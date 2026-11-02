@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Send, Loader2, Calendar, Mail, CheckCircle2 } from "lucide-react";
+import { LoaderLines, Calendar, Envelope } from "@boxicons/react";
 import {
   getClosingReportAvailablePeriods,
   sendMonthlyReport,
@@ -195,7 +195,7 @@ export function ClosingReportModal({
 
         {isLoadingPeriods ? (
           <div className="flex flex-col items-center justify-center py-10 gap-2">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            <LoaderLines className="w-6 h-6 animate-spin text-primary" />
             <span className="text-xs text-muted-foreground font-medium">
               Carregando períodos disponíveis...
             </span>
@@ -274,7 +274,7 @@ export function ClosingReportModal({
             {/* E-mail de Destino */}
             <div className="space-y-2">
               <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5" />
+                <Envelope className="w-3.5 h-3.5" />
                 E-mail de Destino
               </Label>
               <Input
@@ -306,7 +306,7 @@ export function ClosingReportModal({
           >
             {isSending ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <LoaderLines className="w-4 h-4 animate-spin" />
                 Enviando...
               </>
             ) : (

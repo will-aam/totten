@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { BookingAppearanceSettings } from "@/app/(private)/admin/self-service/_components/booking-appearance-settings";
 import { getSelfServiceSettingsAction, updateSelfServiceSettingsAction } from "@/app/actions/settings";
 import { detectAndFormatPixKey } from "@/lib/pix";
-import { Zap, KeyRound, CheckCircle2, ExternalLink, ShieldCheck, AlertCircle, AlertTriangle, Info } from "lucide-react";
+import { Key, CheckCircle, ArrowOutUpLeftStrokeSquare, Shield, AlertCircle, AlertTriangle, InfoCircle } from "@boxicons/react";
 import {
   Dialog,
   DialogContent,
@@ -464,7 +464,7 @@ export function BookingSiteView({ profile }: { profile?: any }) {
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 shrink-0">
-                          <KeyRound className="w-4 h-4" />
+                          <Key className="w-4 h-4" />
                         </div>
                         <div>
                           <span className="font-bold text-sm text-foreground">Chave Própria (Manual)</span>
@@ -487,33 +487,33 @@ export function BookingSiteView({ profile }: { profile?: any }) {
               {pixMode === "MERCADO_PAGO" ? (
                 <div className="rounded-2xl border border-[#009EE3]/30 bg-[#009EE3]/5 p-5 space-y-4">
                   <div className="flex items-start gap-3">
-                    <ShieldCheck className="w-5 h-5 text-[#009EE3] shrink-0 mt-0.5" />
+                    <Shield className="w-5 h-5 text-[#009EE3] shrink-0 mt-0.5" />
                     <div className="space-y-1">
                       <h5 className="font-bold text-sm text-foreground">Conexão Oficial com Mercado Pago</h5>
                       <p className="text-xs text-muted-foreground leading-relaxed">
                         Funciona tanto para autônomos com <strong>CPF comum</strong> quanto empresas com <strong>CNPJ</strong>.
                         O dinheiro do sinal cai diretamente na sua conta Mercado Pago sem intermediários.
                       </p>
-                    <div className="pt-2.5 pb-1 mt-2 border-t border-[#009EE3]/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                      <p className="text-[11px] text-muted-foreground leading-relaxed flex-1 min-w-0 pr-1">
-                        <span className="font-bold text-foreground">Taxas do Mercado Pago:</span> Taxa padrão de 0,99% por transação com liberação imediata.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setIsRatesInfoModalOpen(true)}
-                        className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#009EE3] hover:underline self-start sm:self-auto shrink-0 cursor-pointer py-0.5"
-                      >
-                        <Info className="w-3.5 h-3.5" />
-                        <span>Consultar taxas</span>
-                      </button>
-                    </div>
+                      <div className="pt-2.5 pb-1 mt-2 border-t border-[#009EE3]/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                        <p className="text-[11px] text-muted-foreground leading-relaxed flex-1 min-w-0 pr-1">
+                          <span className="font-bold text-foreground">Taxas do Mercado Pago:</span> Taxa padrão de 0,99% por transação com liberação imediata.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setIsRatesInfoModalOpen(true)}
+                          className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#009EE3] hover:underline self-start sm:self-auto shrink-0 cursor-pointer py-0.5"
+                        >
+                          <InfoCircle className="w-3.5 h-3.5" />
+                          <span>Consultar taxas</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
 
                   {mercadoPagoConnected ? (
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-xl">
                       <div className="flex items-center gap-2.5">
-                        <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
                         <div>
                           <p className="text-xs font-bold text-emerald-900 dark:text-emerald-300">Conta Mercado Pago Conectada</p>
                           <p className="text-[11px] text-emerald-700/80 dark:text-emerald-400">Pronta para gerar cobranças automáticas</p>
@@ -550,7 +550,7 @@ export function BookingSiteView({ profile }: { profile?: any }) {
                       </Button>
                       <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
                         <span>Você será redirecionado para autorizar com segurança</span>
-                        <ExternalLink className="w-3 h-3 opacity-60" />
+                        <ArrowOutUpLeftStrokeSquare flip="horizontal" className="w-3 h-3 opacity-60" />
                       </div>
                     </div>
                   )}
@@ -679,7 +679,7 @@ export function BookingSiteView({ profile }: { profile?: any }) {
             <DrawerHeader className="text-left px-5 pt-3 pb-2">
               <div className="flex items-center gap-2.5 mb-1">
                 <div className="w-8 h-8 rounded-full bg-[#009EE3]/15 text-[#009EE3] flex items-center justify-center font-bold shrink-0">
-                  <Info className="w-4 h-4" />
+                  <InfoCircle className="w-4 h-4" />
                 </div>
                 <DrawerTitle className="text-base font-bold text-foreground">
                   Como funcionam as taxas do Pix Automático?
@@ -712,19 +712,19 @@ export function BookingSiteView({ profile }: { profile?: any }) {
                   </p>
                   <div className="grid grid-cols-1 gap-2 text-[11px]">
                     <div className="flex items-start gap-2 p-2 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
                       <span className="text-muted-foreground">
                         <strong className="text-foreground">Confirmação Imediata:</strong> Seu cliente paga pelo QR Code e o sistema confirma o horário na sua agenda na mesma hora, sem você precisar conferir comprovantes no WhatsApp.
                       </span>
                     </div>
                     <div className="flex items-start gap-2 p-2 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
                       <span className="text-muted-foreground">
                         <strong className="text-foreground">Proteção contra Golpes:</strong> Fim dos comprovantes falsos ou clientes fantasmas que reservam horários e não aparecem.
                       </span>
                     </div>
                     <div className="flex items-start gap-2 p-2 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
                       <span className="text-muted-foreground">
                         <strong className="text-foreground">Financeiro Automático:</strong> O sinal recebido e a taxa operacional já são lançados sozinhos no seu financeiro do sistema.
                       </span>
@@ -748,7 +748,7 @@ export function BookingSiteView({ profile }: { profile?: any }) {
                           rel="noopener noreferrer"
                           className="text-[#009EE3] hover:underline font-semibold inline-flex items-center gap-0.5"
                         >
-                          mercadopago.com.br <ExternalLink className="w-3 h-3 inline" />
+                          mercadopago.com.br <ArrowOutUpLeftStrokeSquare flip="horizontal" className="w-3 h-3 inline" />
                         </a>.
                       </span>
                     </div>
@@ -776,7 +776,7 @@ export function BookingSiteView({ profile }: { profile?: any }) {
             <DialogHeader>
               <div className="flex items-center gap-2.5 mb-1">
                 <div className="w-8 h-8 rounded-full bg-[#009EE3]/15 text-[#009EE3] flex items-center justify-center font-bold">
-                  <Info className="w-4 h-4" />
+                  <InfoCircle className="w-4 h-4" />
                 </div>
                 <DialogTitle className="text-base font-bold text-foreground">
                   Como funcionam as taxas do Pix Automático?
@@ -809,19 +809,19 @@ export function BookingSiteView({ profile }: { profile?: any }) {
                 </p>
                 <div className="grid grid-cols-1 gap-2 text-[11px]">
                   <div className="flex items-start gap-2 p-2 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
                     <span className="text-muted-foreground">
                       <strong className="text-foreground">Confirmação Imediata:</strong> Seu cliente paga pelo QR Code e o sistema confirma o horário na sua agenda na mesma hora, sem você precisar conferir comprovantes no WhatsApp.
                     </span>
                   </div>
                   <div className="flex items-start gap-2 p-2 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
                     <span className="text-muted-foreground">
                       <strong className="text-foreground">Proteção contra Golpes:</strong> Fim dos comprovantes falsos ou clientes fantasmas que reservam horários e não aparecem.
                     </span>
                   </div>
                   <div className="flex items-start gap-2 p-2 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
                     <span className="text-muted-foreground">
                       <strong className="text-foreground">Financeiro Automático:</strong> O sinal recebido e a taxa operacional já são lançados sozinhos no seu financeiro do sistema.
                     </span>
@@ -845,7 +845,7 @@ export function BookingSiteView({ profile }: { profile?: any }) {
                         rel="noopener noreferrer"
                         className="text-[#009EE3] hover:underline font-semibold inline-flex items-center gap-0.5"
                       >
-                        mercadopago.com.br <ExternalLink className="w-3 h-3 inline" />
+                        mercadopago.com.br <ArrowOutUpLeftStrokeSquare flip="horizontal" className="w-3 h-3 inline" />
                       </a>.
                     </span>
                   </div>

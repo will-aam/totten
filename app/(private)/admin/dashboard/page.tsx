@@ -3,6 +3,8 @@
 import { useState, useEffect, Fragment } from "react";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { DashboardCards } from "./_components/dashboard-cards";
+import { DailyKickoffBanner } from "./_components/daily-kickoff-banner";
+import { PushNotificationModal } from "./_components/push-notification-modal";
 import { RecentCheckIns } from "./_components/recent-checkins";
 import { SchedulingLink } from "./_components/scheduling-link";
 import { AverageTicket } from "./_components/average-ticket";
@@ -126,6 +128,8 @@ export default function AdminDashboardPage() {
 
       {/* Container Principal */}
       <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative">
+        <PushNotificationModal />
+        <DailyKickoffBanner />
         <DashboardCards />
 
         {/* 

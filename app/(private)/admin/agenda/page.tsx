@@ -226,6 +226,13 @@ export default function AgendaPage() {
     if (filters.type === "PACKAGE") {
       list = list.filter((a) => a.isRecurring);
     }
+    if (filters.type === "LAST_SESSION") {
+      list = list.filter((a) => {
+        const total = a.package?.total_sessions ?? 0;
+        const current = a.session_number ?? 0;
+        return total > 0 && current >= total;
+      });
+    }
 
     return list;
   }, [agendaData, filters]);
