@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { TermsOfUseBox } from "@/components/terms-of-use-box";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, ArrowOutRightSquareHalf, Calendar, History, User, CheckCircle, Store, FileDetail, Plus, Trophy } from "@boxicons/react";
+import { ArrowLeft, ArrowOutRightSquareHalf, Calendar, History, User, CheckCircle, Store, FileDetail, Plus, Trophy, ShoppingBag, ChevronDown, ChevronUp } from "@boxicons/react";
 import { Whatsapp } from "@boxicons/react";
 import { logoutClientSession } from "@/app/actions/client-auth";
 import { cancelPendingAppointment } from "@/app/actions/public-client";
@@ -39,6 +39,8 @@ export function ClientAreaView({
 }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>("upcoming");
+  const [profileSubTab, setProfileSubTab] = useState<"dados" | "compras">("dados");
+  const [visiblePurchasesCount, setVisiblePurchasesCount] = useState(5);
   const [historySubTab, setHistorySubTab] = useState<"avulsas" | "pacotes" | "vouchers">("avulsas");
   const [isCancelling, setIsCancelling] = useState<string | null>(null);
   const [historyPage, setHistoryPage] = useState(1);
@@ -676,39 +678,221 @@ export function ClientAreaView({
 
             {!error && activeTab === "profile" && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 max-w-md mx-auto md:max-w-none">
-                <h3 className="font-bold text-lg flex items-center gap-2">
-                  <User className="h-5 w-5 opacity-70" /> Meus Dados
-                </h3>
-
-                <div className="bg-white border rounded-3xl p-6 space-y-6 shadow-sm">
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Nome Completo</p>
-                    <p className="font-medium text-lg">{client.name}</p>
-                  </div>
-
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">CPF</p>
-                    <p className="font-medium text-lg">{client.cpf}</p>
-                  </div>
-
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Telefone (WhatsApp)</p>
-                    <p className="font-medium text-lg">{client.phone}</p>
-                  </div>
+                {/* Seletor Minimalista: Meus Dados | Minhas Compras */}
+                <div className="flex bg-slate-100 p-1 rounded-full max-w-xs mx-auto">
+                  <button
+                    onClick={() => setProfileSubTab("dados")}
+                    className={cn(
+                      "flex-1 py-1.5 text-xs font-semibold rounded-full transition-all flex items-center justify-center gap-1.5",
+                      profileSubTab === "dados"
+                        ? "bg-white text-slate-900 shadow-sm"
+                        : "text-slate-500 hover:text-slate-900",
+                    )}
+                  >
+                    <User className="h-3.5 w-3.5" />
+                    Meus Dados
+                  </button>
+                  <button
+                    onClick={() => setProfileSubTab("compras")}
+                    className={cn(
+                      "flex-1 py-1.5 text-xs font-semibold rounded-full transition-all flex items-center justify-center gap-1.5",
+                      profileSubTab === "compras"
+                        ? "bg-white text-slate-900 shadow-sm"
+                        : "text-slate-500 hover:text-slate-900",
+                    )}
+                  >
+                    <ShoppingBag className="h-3.5 w-3.5" />
+                    Minhas Compras
+                  </button>
                 </div>
 
-                <div className="bg-blue-50 border border-blue-100 rounded-3xl p-6 text-center space-y-4">
-                  <p className="text-sm text-blue-800 font-medium">
-                    Para alterar seus dados cadastrais, por favor entre em contato com o atendimento da empresa.
-                  </p>
-                  {whatsappLink && (
-                    <Button asChild className="w-full bg-[#25D366] hover:bg-[#1DA851] text-white font-bold rounded-full h-12">
-                      <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
-                        <Whatsapp className="mr-2 h-5 w-5" /> Falar no WhatsApp
-                      </a>
-                    </Button>
-                  )}
-                </div>
+                {profileSubTab === "dados" ? (
+                  <>
+                    <h3 className="font-bold text-lg flex items-center gap-2">
+                      <User className="h-5 w-5 opacity-70" /> Meus Dados
+                    </h3>
+
+                    <div className="bg-white border rounded-3xl p-6 space-y-6 shadow-sm">
+                      <div className="space-y-1">
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Nome Completo</p>
+                        <p className="font-medium text-lg">{client.name}</p>
+                      </div>
+
+                      <div className="space-y-1">
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">CPF</p>
+                        <p className="font-medium text-lg">{client.cpf}</p>
+                      </div>
+
+                      <div className="space-y-1">
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Telefone (WhatsApp)</p>
+                        <p className="font-medium text-lg">{client.phone}</p>
+                      </div>
+                    </div>
+
+                    <div className="bg-blue-50 border border-blue-100 rounded-3xl p-6 text-center space-y-4">
+                      <p className="text-sm text-blue-800 font-medium">
+                        Para alterar seus dados cadastrais, por favor entre em contato com o atendimento da empresa.
+                      </p>
+                      {whatsappLink && (
+                        <Button asChild className="w-full bg-[#25D366] hover:bg-[#1DA851] text-white font-bold rounded-full h-12">
+                          <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
+                            <Whatsapp className="mr-2 h-5 w-5" /> Falar no WhatsApp
+                          </a>
+                        </Button>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="font-bold text-lg flex items-center gap-2">
+                      <ShoppingBag className="h-5 w-5 opacity-70" /> Histórico de Compras
+                    </h3>
+
+                    {(() => {
+                      const purchasesList = data.purchases || [];
+                      const summary = data.purchasesSummary || {
+                        totalSpent: 0,
+                        totalPurchases: 0,
+                        pendingPurchasesAmount: 0,
+                      };
+
+                      const fmt = (val: number) =>
+                        new Intl.NumberFormat("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                        }).format(val);
+
+                      const fmtDate = (iso: string) => {
+                        try {
+                          return new Intl.DateTimeFormat("pt-BR", {
+                            dateStyle: "short",
+                          }).format(new Date(iso));
+                        } catch {
+                          return iso;
+                        }
+                      };
+
+                      const visiblePurchases = purchasesList.slice(0, visiblePurchasesCount);
+                      const hasMore = visiblePurchasesCount < purchasesList.length;
+
+                      return (
+                        <div className="space-y-5">
+                          {/* Resumo Minimalista: sem cores exageradas */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="p-4 rounded-2xl bg-white border shadow-sm">
+                              <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                                Total Investido
+                              </span>
+                              <p className="text-lg sm:text-xl font-bold text-slate-900 mt-1">
+                                {fmt(summary.totalSpent)}
+                              </p>
+                            </div>
+                            <div className="p-4 rounded-2xl bg-white border shadow-sm">
+                              <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                                Compras Realizadas
+                              </span>
+                              <p className="text-lg sm:text-xl font-bold text-slate-900 mt-1">
+                                {summary.totalPurchases}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Lista Limpa */}
+                          {purchasesList.length === 0 ? (
+                            <div className="p-8 rounded-2xl border border-dashed flex flex-col items-center justify-center text-center space-y-2 bg-white/60">
+                              <ShoppingBag className="h-7 w-7 text-muted-foreground/40" />
+                              <p className="text-sm text-muted-foreground">
+                                Nenhuma compra ou pagamento registrado até o momento.
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              <div className="divide-y rounded-2xl border bg-white shadow-sm overflow-hidden">
+                                {visiblePurchases.map((item: any) => {
+                                  const isPaid = item.status === "PAGO";
+                                  const isPending = item.status === "PENDENTE" || item.status === "ATRASADO";
+
+                                  return (
+                                    <div
+                                      key={item.id}
+                                      className="flex items-center justify-between p-4 hover:bg-slate-50/80 transition-colors gap-3"
+                                    >
+                                      <div className="min-w-0">
+                                        <p className="font-semibold text-sm text-slate-900 truncate">
+                                          {item.description}
+                                          {item.installment && (
+                                            <span className="text-xs text-muted-foreground font-normal ml-1">
+                                              ({item.installment})
+                                            </span>
+                                          )}
+                                        </p>
+                                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                                          <span>{fmtDate(item.date)}</span>
+                                          {item.paymentMethodName && (
+                                            <>
+                                              <span>·</span>
+                                              <span>{item.paymentMethodName}</span>
+                                            </>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      <div className="text-right shrink-0">
+                                        <p className="font-bold text-sm text-slate-900">
+                                          {fmt(item.amount)}
+                                        </p>
+                                        <span
+                                          className={cn(
+                                            "inline-block text-[11px] font-semibold mt-0.5",
+                                            isPaid
+                                              ? "text-emerald-700"
+                                              : isPending
+                                              ? "text-amber-600"
+                                              : "text-muted-foreground",
+                                          )}
+                                        >
+                                          {isPaid ? "Pago" : isPending ? "Pendente" : item.status}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              {hasMore && (
+                                <div className="text-center pt-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setVisiblePurchasesCount((prev) => prev + 5)}
+                                    className="rounded-full text-xs"
+                                  >
+                                    Ver mais ({purchasesList.length - visiblePurchasesCount} restantes)
+                                    <ChevronDown className="ml-1 h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              )}
+
+                              {visiblePurchasesCount > 5 && (
+                                <div className="text-center pt-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setVisiblePurchasesCount(5)}
+                                    className="text-xs text-muted-foreground"
+                                  >
+                                    Recolher
+                                    <ChevronUp className="ml-1 h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </>
+                )}
               </div>
             )}
 

@@ -7,7 +7,7 @@ import Link from "next/link";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { User, ChevronUp } from "@boxicons/react";
+import { User, ChevronUp, ArrowRight } from "@boxicons/react";
 import { cn } from "@/lib/utils";
 
 import { ClientHeader } from "../_components/client-header";
@@ -102,6 +102,18 @@ export default function ClientDetailPage({
           <ClientContact client={client} />
           <ClientPackage clientId={id} clientActive={client.active} />
         </div>
+
+        {/* Resumo Financeiro & Compras do Cliente */}
+        <Link
+          href={`/admin/clients/${id}/purchases`}
+          className="flex items-center justify-between p-5 bg-card border rounded-2xl hover:bg-muted/40 transition-colors group"
+        >
+          <div>
+            <p className="font-semibold text-sm">Histórico de Compras & Financeiro</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Visualize LTV, pagamentos e compras do cliente</p>
+          </div>
+          <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+        </Link>
 
         {/*  A ORDEM EXATA QUE VOCÊ PEDIU */}
         <ClientAnamnesis clientId={id} />

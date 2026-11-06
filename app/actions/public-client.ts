@@ -162,6 +162,59 @@ export async function getClientDashboardData(slug: string, clientId: string) {
 
     const loyaltyInfo = await getClientLoyaltyInfo(client.id);
 
+    // Histórico de compras do cliente (apenas RECEITAS associadas a ele)
+    const clientTransactions = await prisma.transaction.findMany({
+      where: {
+        client_id: client.id,
+        organization_id: org.id,
+        type: "RECEITA",
+      },
+      include: {
+        payment_method: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        date: "desc",
+      },
+    });
+
+    let totalSpent = 0;
+    let pendingPurchasesAmount = 0;
+    let paidPurchasesCount = 0;
+
+    const purchases = clientTransactions.map((tx: any) => {
+      const numAmount = Number(tx.amount);
+      const isPaid = tx.status === "PAGO";
+      const isPending = tx.status === "PENDENTE" || tx.status === "ATRASADO";
+
+      if (isPaid) {
+        totalSpent += numAmount;
+        paidPurchasesCount++;
+      } else if (isPending) {
+        pendingPurchasesAmount += numAmount;
+      }
+
+      return {
+        id: tx.id,
+        date: tx.date.toISOString(),
+        description: tx.description,
+        amount: numAmount,
+        type: tx.package_id ? "PACKAGE" : tx.appointment_id ? "APPOINTMENT" : "OTHER",
+        status: tx.status,
+        paymentMethodName: tx.payment_method?.name || null,
+        installment: tx.installment || null,
+      };
+    });
+
+    const purchasesSummary = {
+      totalSpent,
+      totalPurchases: paidPurchasesCount,
+      pendingPurchasesAmount,
+    };
+
     const payload = { 
       success: true, 
       client: {
@@ -174,6 +227,8 @@ export async function getClientDashboardData(slug: string, clientId: string) {
       historyPackages,
       historyStandalone,
       historyVouchers: client.ClientVoucher || [],
+      purchases,
+      purchasesSummary,
       clinicName: org.name,
       clinicPhone,
       loyaltyInfo,
