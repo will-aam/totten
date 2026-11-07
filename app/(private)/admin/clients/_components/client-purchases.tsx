@@ -1,7 +1,7 @@
 // app/(private)/admin/clients/_components/client-purchases.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import useSWR from "swr";
 import { apiClient } from "@/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,6 +57,9 @@ export function ClientPurchases({ clientId }: ClientPurchasesProps) {
     apiClient,
   );
 
+  const [period, setPeriod] = useState<
+    "all" | "this_month" | "last_month" | "last_2_months" | "last_90_days" | "this_year" | "last_year"
+  >("all");
   const [visibleCount, setVisibleCount] = useState(5);
 
   const formatCurrency = (val: number) => {
@@ -107,6 +110,95 @@ export function ClientPurchases({ clientId }: ClientPurchasesProps) {
     }
   };
 
+  const summary = data?.summary || {
+    totalSpent: 0,
+    totalPurchases: 0,
+    averageTicket: 0,
+    pendingAmount: 0,
+    lastPurchaseDate: null,
+  };
+
+  const purchases = data?.purchases || [];
+
+  const filteredPurchases = useMemo(() => {
+    if (period === "all") return purchases;
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    return purchases.filter((item) => {
+      const itemDate = new Date(item.date);
+      if (isNaN(itemDate.getTime())) return false;
+
+      if (period === "this_month") {
+        return (
+          itemDate.getFullYear() === currentYear &&
+          itemDate.getMonth() === currentMonth
+        );
+      }
+
+      if (period === "last_month") {
+        const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+        const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+        return (
+          itemDate.getFullYear() === lastMonthYear &&
+          itemDate.getMonth() === lastMonth
+        );
+      }
+
+      if (period === "last_2_months") {
+        const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+        return itemDate >= sixtyDaysAgo && itemDate <= now;
+      }
+
+      if (period === "last_90_days") {
+        const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+        return itemDate >= ninetyDaysAgo && itemDate <= now;
+      }
+
+      if (period === "this_year") {
+        return itemDate.getFullYear() === currentYear;
+      }
+
+      if (period === "last_year") {
+        return itemDate.getFullYear() === currentYear - 1;
+      }
+
+      return true;
+    });
+  }, [purchases, period]);
+
+  const dynamicSummary = useMemo(() => {
+    if (period === "all") return summary;
+
+    let totalSpent = 0;
+    let paidCount = 0;
+    let pendingAmount = 0;
+
+    for (const item of filteredPurchases) {
+      const amount = Number(item.amount) || 0;
+      if (item.status === "PAGO") {
+        totalSpent += amount;
+        paidCount++;
+      } else if (item.status === "PENDENTE" || item.status === "ATRASADO") {
+        pendingAmount += amount;
+      }
+    }
+
+    const averageTicket = paidCount > 0 ? totalSpent / paidCount : 0;
+
+    return {
+      totalSpent,
+      totalPurchases: paidCount,
+      averageTicket,
+      pendingAmount,
+      lastPurchaseDate: summary?.lastPurchaseDate ?? null,
+    };
+  }, [filteredPurchases, period, summary]);
+
+  const visiblePurchases = filteredPurchases.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredPurchases.length;
+
   if (isLoading) {
     return (
       <Card className="rounded-3xl border shadow-sm">
@@ -126,18 +218,6 @@ export function ClientPurchases({ clientId }: ClientPurchasesProps) {
     );
   }
 
-  const summary = data?.summary || {
-    totalSpent: 0,
-    totalPurchases: 0,
-    averageTicket: 0,
-    pendingAmount: 0,
-    lastPurchaseDate: null,
-  };
-
-  const purchases = data?.purchases || [];
-  const visiblePurchases = purchases.slice(0, visibleCount);
-  const hasMore = visibleCount < purchases.length;
-
   return (
     <Card className="rounded-3xl border shadow-sm bg-card overflow-hidden">
       <CardHeader className="p-4 md:p-6 pb-4 border-b bg-muted/20">
@@ -147,21 +227,51 @@ export function ClientPurchases({ clientId }: ClientPurchasesProps) {
             Resumo Financeiro & Compras
           </CardTitle>
           <span className="text-xs text-muted-foreground">
-            Total de {purchases.length} lançamento(s) registrados
+            Total de {filteredPurchases.length} lançamento(s) registrados
           </span>
         </div>
       </CardHeader>
 
-      <CardContent className="p-4 md:p-6 space-y-6">
+      <CardContent className="p-4 md:p-6 space-y-5">
+        {/* Filtros Minimalistas de Período (com scroll horizontal no mobile) */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 no-scrollbar scroll-smooth">
+          {[
+            { id: "all", label: "Todas" },
+            { id: "this_month", label: "Este mês" },
+            { id: "last_month", label: "Mês passado" },
+            { id: "last_2_months", label: "Últimos 2 meses" },
+            { id: "last_90_days", label: "Últimos 3 meses" },
+            { id: "this_year", label: "Este ano" },
+            { id: "last_year", label: "Ano passado" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => {
+                setPeriod(tab.id as any);
+                setVisibleCount(5);
+              }}
+              className={cn(
+                "px-3 py-1.5 text-xs font-semibold rounded-full transition-all shrink-0",
+                period === tab.id
+                  ? "bg-foreground text-background shadow-xs"
+                  : "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted"
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         {/* KPI Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col justify-between">
             <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-400">
-              <span className="text-xs font-semibold uppercase tracking-wider">Total Investido</span>
+              <span className="text-xs font-semibold uppercase tracking-wider">Total Gasto</span>
               <Dollar className="h-4 w-4" />
             </div>
             <p className="text-xl md:text-2xl font-black text-emerald-950 dark:text-emerald-100 mt-2">
-              {formatCurrency(summary.totalSpent)}
+              {formatCurrency(dynamicSummary.totalSpent)}
             </p>
           </div>
 
@@ -171,7 +281,7 @@ export function ClientPurchases({ clientId }: ClientPurchasesProps) {
               <Receipt className="h-4 w-4" />
             </div>
             <p className="text-xl md:text-2xl font-black text-foreground mt-2">
-              {summary.totalPurchases}
+              {dynamicSummary.totalPurchases}
             </p>
           </div>
 
@@ -181,7 +291,7 @@ export function ClientPurchases({ clientId }: ClientPurchasesProps) {
               <CreditCard className="h-4 w-4" />
             </div>
             <p className="text-xl md:text-2xl font-black text-blue-950 dark:text-blue-100 mt-2">
-              {formatCurrency(summary.averageTicket)}
+              {formatCurrency(dynamicSummary.averageTicket)}
             </p>
           </div>
 
@@ -191,7 +301,7 @@ export function ClientPurchases({ clientId }: ClientPurchasesProps) {
               <Calendar className="h-4 w-4" />
             </div>
             <p className="text-xl md:text-2xl font-black text-amber-950 dark:text-amber-100 mt-2">
-              {formatCurrency(summary.pendingAmount)}
+              {formatCurrency(dynamicSummary.pendingAmount)}
             </p>
           </div>
         </div>
@@ -202,17 +312,30 @@ export function ClientPurchases({ clientId }: ClientPurchasesProps) {
             <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
               Histórico Transacional
             </h4>
-            {summary.lastPurchaseDate && (
+            {dynamicSummary.lastPurchaseDate && (
               <span className="text-xs text-muted-foreground">
-                Última compra paga: <strong className="text-foreground">{formatDate(summary.lastPurchaseDate)}</strong>
+                Última compra paga: <strong className="text-foreground">{formatDate(dynamicSummary.lastPurchaseDate)}</strong>
               </span>
             )}
           </div>
 
-          {purchases.length === 0 ? (
+          {filteredPurchases.length === 0 ? (
             <div className="py-8 px-4 text-center rounded-2xl border border-dashed text-muted-foreground">
               <ShoppingBag className="h-8 w-8 mx-auto mb-2 opacity-30" />
-              <p className="text-sm font-medium">Nenhuma compra ou pagamento registrado para este cliente.</p>
+              <p className="text-sm font-medium">
+                {period === "all"
+                  ? "Nenhuma compra ou pagamento registrado para este cliente."
+                  : "Nenhuma compra registrada no período selecionado."}
+              </p>
+              {period !== "all" && (
+                <button
+                  type="button"
+                  onClick={() => setPeriod("all")}
+                  className="text-xs font-semibold text-primary hover:underline mt-2 inline-block"
+                >
+                  Ver todas as compras
+                </button>
+              )}
             </div>
           ) : (
             <div className="divide-y rounded-2xl border overflow-hidden">
@@ -278,7 +401,7 @@ export function ClientPurchases({ clientId }: ClientPurchasesProps) {
                 onClick={() => setVisibleCount((prev) => prev + 5)}
                 className="rounded-full text-xs"
               >
-                Ver mais compras ({purchases.length - visibleCount} restantes)
+                Ver mais compras ({filteredPurchases.length - visibleCount} restantes)
                 <ChevronDown className="ml-1 h-3.5 w-3.5" />
               </Button>
             </div>

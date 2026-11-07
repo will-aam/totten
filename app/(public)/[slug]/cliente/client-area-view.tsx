@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { TermsOfUseBox } from "@/components/terms-of-use-box";
 import { cn } from "@/lib/utils";
@@ -40,6 +40,9 @@ export function ClientAreaView({
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>("upcoming");
   const [profileSubTab, setProfileSubTab] = useState<"dados" | "compras">("dados");
+  const [purchasePeriod, setPurchasePeriod] = useState<
+    "all" | "this_month" | "last_month" | "last_2_months" | "last_90_days" | "this_year" | "last_year"
+  >("all");
   const [visiblePurchasesCount, setVisiblePurchasesCount] = useState(5);
   const [historySubTab, setHistorySubTab] = useState<"avulsas" | "pacotes" | "vouchers">("avulsas");
   const [isCancelling, setIsCancelling] = useState<string | null>(null);
@@ -683,25 +686,23 @@ export function ClientAreaView({
                   <button
                     onClick={() => setProfileSubTab("dados")}
                     className={cn(
-                      "flex-1 py-1.5 text-xs font-semibold rounded-full transition-all flex items-center justify-center gap-1.5",
+                      "flex-1 py-1.5 text-xs font-semibold rounded-full transition-all flex items-center justify-center",
                       profileSubTab === "dados"
                         ? "bg-white text-slate-900 shadow-sm"
                         : "text-slate-500 hover:text-slate-900",
                     )}
                   >
-                    <User className="h-3.5 w-3.5" />
                     Meus Dados
                   </button>
                   <button
                     onClick={() => setProfileSubTab("compras")}
                     className={cn(
-                      "flex-1 py-1.5 text-xs font-semibold rounded-full transition-all flex items-center justify-center gap-1.5",
+                      "flex-1 py-1.5 text-xs font-semibold rounded-full transition-all flex items-center justify-center",
                       profileSubTab === "compras"
                         ? "bg-white text-slate-900 shadow-sm"
                         : "text-slate-500 hover:text-slate-900",
                     )}
                   >
-                    <ShoppingBag className="h-3.5 w-3.5" />
                     Minhas Compras
                   </button>
                 </div>
@@ -750,11 +751,6 @@ export function ClientAreaView({
 
                     {(() => {
                       const purchasesList = data.purchases || [];
-                      const summary = data.purchasesSummary || {
-                        totalSpent: 0,
-                        totalPurchases: 0,
-                        pendingPurchasesAmount: 0,
-                      };
 
                       const fmt = (val: number) =>
                         new Intl.NumberFormat("pt-BR", {
@@ -772,19 +768,128 @@ export function ClientAreaView({
                         }
                       };
 
-                      const visiblePurchases = purchasesList.slice(0, visiblePurchasesCount);
-                      const hasMore = visiblePurchasesCount < purchasesList.length;
+                      const formatCleanPurchaseDescription = (desc: string) => {
+                        if (!desc) return "Pagamento";
+                        let text = desc;
+                        text = text.replace(/\(Taxa[^)]*\)/gi, "");
+                        text = text.replace(/\(Totem(?:\s*-\s*Agend:[^)]+)?\)/gi, "");
+                        text = text.replace(/\(Baixa Manual\)/gi, "");
+                        text = text.replace(/\(Sessão\)/gi, "");
+                        text = text.replace(/\(Check-in Rápido\)/gi, "");
+                        text = text.replace(/\(\s*[A-ZÀ-Ú\s]{3,}\s*\)/g, " ");
+                        text = text.replace(/^Venda de Pacote:\s*/i, "");
+                        text = text.replace(/^Pacote:\s*/i, "");
+                        text = text.replace(/^Parcela Pacote:\s*/i, "");
+                        text = text.replace(/^Serviço Realizado\s*\/\s*Pago Antecipado:\s*/i, "");
+                        text = text.replace(/^Serviço Realizado:\s*/i, "");
+                        text = text.replace(/^Serviço:\s*/i, "");
+                        text = text.replace(/^Receita:\s*/i, "");
+                        text = text.replace(/\s{2,}/g, " ").trim();
+                        text = text.replace(/^-\s*|\s*-\s*$/g, "").trim();
+                        return text || "Pagamento";
+                      };
+
+                      // Filtro por período
+                      const now = new Date();
+                      const currentYear = now.getFullYear();
+                      const currentMonth = now.getMonth();
+
+                      const filteredPurchases = purchasesList.filter((item: any) => {
+                        if (purchasePeriod === "all") return true;
+                        const itemDate = new Date(item.date);
+                        if (isNaN(itemDate.getTime())) return false;
+
+                        if (purchasePeriod === "this_month") {
+                          return (
+                            itemDate.getFullYear() === currentYear &&
+                            itemDate.getMonth() === currentMonth
+                          );
+                        }
+
+                        if (purchasePeriod === "last_month") {
+                          const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+                          const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+                          return (
+                            itemDate.getFullYear() === lastMonthYear &&
+                            itemDate.getMonth() === lastMonth
+                          );
+                        }
+
+                        if (purchasePeriod === "last_2_months") {
+                          const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+                          return itemDate >= sixtyDaysAgo && itemDate <= now;
+                        }
+
+                        if (purchasePeriod === "last_90_days") {
+                          const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+                          return itemDate >= ninetyDaysAgo && itemDate <= now;
+                        }
+
+                        if (purchasePeriod === "this_year") {
+                          return itemDate.getFullYear() === currentYear;
+                        }
+
+                        if (purchasePeriod === "last_year") {
+                          return itemDate.getFullYear() === currentYear - 1;
+                        }
+
+                        return true;
+                      });
+
+                      // Recalcula resumo para o período filtrado
+                      let dynamicTotalSpent = 0;
+                      let dynamicPaidCount = 0;
+                      for (const item of filteredPurchases) {
+                        const amount = Number(item.amount) || 0;
+                        if (item.status === "PAGO") {
+                          dynamicTotalSpent += amount;
+                          dynamicPaidCount++;
+                        }
+                      }
+
+                      const visiblePurchases = filteredPurchases.slice(0, visiblePurchasesCount);
+                      const hasMore = visiblePurchasesCount < filteredPurchases.length;
 
                       return (
-                        <div className="space-y-5">
+                        <div className="space-y-4">
+                          {/* Filtros Minimalistas de Período (com scroll horizontal suave no mobile) */}
+                          <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 no-scrollbar scroll-smooth">
+                            {[
+                              { id: "all", label: "Todas" },
+                              { id: "this_month", label: "Este mês" },
+                              { id: "last_month", label: "Mês passado" },
+                              { id: "last_2_months", label: "Últimos 2 meses" },
+                              { id: "last_90_days", label: "Últimos 3 meses" },
+                              { id: "this_year", label: "Este ano" },
+                              { id: "last_year", label: "Ano passado" },
+                            ].map((tab) => (
+                              <button
+                                key={tab.id}
+                                type="button"
+                                onClick={() => {
+                                  setPurchasePeriod(tab.id as any);
+                                  setVisiblePurchasesCount(5);
+                                }}
+                                className={cn(
+                                  "px-3 py-1.5 text-xs font-semibold rounded-full transition-all shrink-0",
+                                  purchasePeriod === tab.id
+                                    ? "bg-slate-900 text-white shadow-xs"
+                                    : "bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70"
+                                )}
+                              >
+                                {tab.label}
+                              </button>
+                            ))}
+                          </div>
+
                           {/* Resumo Minimalista: sem cores exageradas */}
                           <div className="grid grid-cols-2 gap-3">
                             <div className="p-4 rounded-2xl bg-white border shadow-sm">
                               <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                                Total Investido
+                                Total Gasto
                               </span>
                               <p className="text-lg sm:text-xl font-bold text-slate-900 mt-1">
-                                {fmt(summary.totalSpent)}
+                                {fmt(dynamicTotalSpent)}
                               </p>
                             </div>
                             <div className="p-4 rounded-2xl bg-white border shadow-sm">
@@ -792,18 +897,29 @@ export function ClientAreaView({
                                 Compras Realizadas
                               </span>
                               <p className="text-lg sm:text-xl font-bold text-slate-900 mt-1">
-                                {summary.totalPurchases}
+                                {dynamicPaidCount}
                               </p>
                             </div>
                           </div>
 
                           {/* Lista Limpa */}
-                          {purchasesList.length === 0 ? (
+                          {filteredPurchases.length === 0 ? (
                             <div className="p-8 rounded-2xl border border-dashed flex flex-col items-center justify-center text-center space-y-2 bg-white/60">
                               <ShoppingBag className="h-7 w-7 text-muted-foreground/40" />
                               <p className="text-sm text-muted-foreground">
-                                Nenhuma compra ou pagamento registrado até o momento.
+                                {purchasePeriod === "all"
+                                  ? "Nenhuma compra ou pagamento registrado até o momento."
+                                  : "Nenhuma compra registrada no período selecionado."}
                               </p>
+                              {purchasePeriod !== "all" && (
+                                <button
+                                  type="button"
+                                  onClick={() => setPurchasePeriod("all")}
+                                  className="text-xs font-semibold text-primary hover:underline pt-1"
+                                >
+                                  Ver todas as compras
+                                </button>
+                              )}
                             </div>
                           ) : (
                             <div className="space-y-3">
@@ -819,7 +935,7 @@ export function ClientAreaView({
                                     >
                                       <div className="min-w-0">
                                         <p className="font-semibold text-sm text-slate-900 truncate">
-                                          {item.description}
+                                          {formatCleanPurchaseDescription(item.description)}
                                           {item.installment && (
                                             <span className="text-xs text-muted-foreground font-normal ml-1">
                                               ({item.installment})
@@ -867,7 +983,7 @@ export function ClientAreaView({
                                     onClick={() => setVisiblePurchasesCount((prev) => prev + 5)}
                                     className="rounded-full text-xs"
                                   >
-                                    Ver mais ({purchasesList.length - visiblePurchasesCount} restantes)
+                                    Ver mais ({filteredPurchases.length - visiblePurchasesCount} restantes)
                                     <ChevronDown className="ml-1 h-3.5 w-3.5" />
                                   </Button>
                                 </div>

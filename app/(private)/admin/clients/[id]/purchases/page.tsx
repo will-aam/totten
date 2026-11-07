@@ -1,13 +1,14 @@
 "use client";
 // app/(private)/admin/clients/[id]/purchases/page.tsx
 
-import { use } from "react";
+import { use, useState, useMemo } from "react";
 import useSWR from "swr";
 import Link from "next/link";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft } from "@boxicons/react";
 import { apiClient } from "@/lib/api-client";
+import { cn } from "@/lib/utils";
 
 interface Purchase {
   id: string;
@@ -55,11 +56,93 @@ export default function AdminClientPurchasesPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const [period, setPeriod] = useState<
+    "all" | "this_month" | "last_month" | "last_2_months" | "last_90_days" | "this_year" | "last_year"
+  >("all");
 
   const { data, isLoading } = useSWR<PurchasesData>(
     `clients/${id}/purchases`,
     apiClient,
   );
+
+  const summary = data?.summary;
+  const purchases = data?.purchases ?? [];
+
+  const filteredPurchases = useMemo(() => {
+    if (period === "all") return purchases;
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    return purchases.filter((item) => {
+      const itemDate = new Date(item.date);
+      if (isNaN(itemDate.getTime())) return false;
+
+      if (period === "this_month") {
+        return (
+          itemDate.getFullYear() === currentYear &&
+          itemDate.getMonth() === currentMonth
+        );
+      }
+
+      if (period === "last_month") {
+        const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+        const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+        return (
+          itemDate.getFullYear() === lastMonthYear &&
+          itemDate.getMonth() === lastMonth
+        );
+      }
+
+      if (period === "last_2_months") {
+        const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+        return itemDate >= sixtyDaysAgo && itemDate <= now;
+      }
+
+      if (period === "last_90_days") {
+        const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+        return itemDate >= ninetyDaysAgo && itemDate <= now;
+      }
+
+      if (period === "this_year") {
+        return itemDate.getFullYear() === currentYear;
+      }
+
+      if (period === "last_year") {
+        return itemDate.getFullYear() === currentYear - 1;
+      }
+
+      return true;
+    });
+  }, [purchases, period]);
+
+  const dynamicSummary = useMemo(() => {
+    if (period === "all" && summary) return summary;
+
+    let totalSpent = 0;
+    let paidCount = 0;
+    let pendingAmount = 0;
+
+    for (const item of filteredPurchases) {
+      const amount = Number(item.amount) || 0;
+      if (item.status === "PAGO") {
+        totalSpent += amount;
+        paidCount++;
+      } else if (item.status === "PENDENTE" || item.status === "ATRASADO") {
+        pendingAmount += amount;
+      }
+    }
+
+    const averageTicket = paidCount > 0 ? totalSpent / paidCount : 0;
+
+    return {
+      totalSpent,
+      totalPurchases: paidCount,
+      averageTicket,
+      pendingAmount,
+      lastPurchaseDate: summary?.lastPurchaseDate ?? null,
+    };
+  }, [filteredPurchases, period, summary]);
 
   if (isLoading) {
     return (
@@ -79,9 +162,6 @@ export default function AdminClientPurchasesPage({
     );
   }
 
-  const summary = data?.summary;
-  const purchases = data?.purchases ?? [];
-
   return (
     <>
       <AdminHeader title="Histórico de Compras" />
@@ -97,40 +177,80 @@ export default function AdminClientPurchasesPage({
           Voltar ao perfil
         </Link>
 
+        {/* Filtros Minimalistas de Período (com scroll horizontal no mobile) */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 no-scrollbar scroll-smooth">
+          {[
+            { id: "all", label: "Todas" },
+            { id: "this_month", label: "Este mês" },
+            { id: "last_month", label: "Mês passado" },
+            { id: "last_2_months", label: "Últimos 2 meses" },
+            { id: "last_90_days", label: "Últimos 3 meses" },
+            { id: "this_year", label: "Este ano" },
+            { id: "last_year", label: "Ano passado" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setPeriod(tab.id as any)}
+              className={cn(
+                "px-3 py-1.5 text-xs font-semibold rounded-full transition-all shrink-0",
+                period === tab.id
+                  ? "bg-foreground text-background shadow-xs"
+                  : "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted"
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         {/* Resumo */}
-        {summary && (
+        {dynamicSummary && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="border rounded-2xl p-4 space-y-1">
-              <p className="text-xs text-muted-foreground">Total investido</p>
-              <p className="text-xl font-bold">{fmt(summary.totalSpent)}</p>
+              <p className="text-xs text-muted-foreground">Total gasto</p>
+              <p className="text-xl font-bold">{fmt(dynamicSummary.totalSpent)}</p>
             </div>
             <div className="border rounded-2xl p-4 space-y-1">
               <p className="text-xs text-muted-foreground">Pagamentos</p>
-              <p className="text-xl font-bold">{summary.totalPurchases}</p>
+              <p className="text-xl font-bold">{dynamicSummary.totalPurchases}</p>
             </div>
             <div className="border rounded-2xl p-4 space-y-1">
               <p className="text-xs text-muted-foreground">Ticket médio</p>
-              <p className="text-xl font-bold">{fmt(summary.averageTicket)}</p>
+              <p className="text-xl font-bold">{fmt(dynamicSummary.averageTicket)}</p>
             </div>
             <div className="border rounded-2xl p-4 space-y-1">
               <p className="text-xs text-muted-foreground">Em aberto</p>
-              <p className="text-xl font-bold">{fmt(summary.pendingAmount)}</p>
+              <p className="text-xl font-bold">{fmt(dynamicSummary.pendingAmount)}</p>
             </div>
           </div>
         )}
 
         {/* Lista */}
-        {purchases.length === 0 ? (
-          <div className="py-16 text-center border rounded-2xl">
-            <p className="text-muted-foreground text-sm">Nenhuma compra registrada para este cliente.</p>
+        {filteredPurchases.length === 0 ? (
+          <div className="py-16 text-center border rounded-2xl bg-card">
+            <p className="text-muted-foreground text-sm">
+              {period === "all"
+                ? "Nenhuma compra registrada para este cliente."
+                : "Nenhuma compra registrada no período selecionado."}
+            </p>
+            {period !== "all" && (
+              <button
+                type="button"
+                onClick={() => setPeriod("all")}
+                className="text-xs font-semibold text-primary hover:underline mt-2 inline-block"
+              >
+                Ver todas as compras
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-1.5">
             <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium px-1 pb-1">
-              {purchases.length} lançamento{purchases.length !== 1 ? "s" : ""}
+              {filteredPurchases.length} lançamento{filteredPurchases.length !== 1 ? "s" : ""}
             </p>
             <div className="border rounded-2xl divide-y overflow-hidden">
-              {purchases.map((item) => (
+              {filteredPurchases.map((item) => (
                 <div
                   key={item.id}
                   className="flex items-center justify-between px-4 py-3.5 gap-4 hover:bg-muted/30 transition-colors"

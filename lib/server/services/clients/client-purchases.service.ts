@@ -62,6 +62,20 @@ export class ClientPurchasesService {
             name: true,
           },
         },
+        package: {
+          select: {
+            name: true,
+          },
+        },
+        appointment: {
+          select: {
+            service: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
       },
       orderBy: {
         date: "desc",
@@ -74,9 +88,47 @@ export class ClientPurchasesService {
     let lastPurchaseDate: string | null = null;
 
     const purchases: ClientPurchaseItem[] = transactions.map((tx) => {
-      const numAmount = Number(tx.amount);
+      let numAmount = Number(tx.amount);
       const isPaid = tx.status === "PAGO";
       const isPending = tx.status === "PENDENTE" || tx.status === "ATRASADO";
+
+      let rawDesc = tx.description || "";
+
+      // 1. Recompor o valor bruto pago pelo cliente caso taxa de operadora tenha sido abatida
+      const taxMatch = rawDesc.match(/\(Taxa abatida:\s*R\$\s*([\d,.]+)\)/i);
+      if (taxMatch) {
+        const feeStr = taxMatch[1].replace(/\./g, "").replace(",", ".");
+        const feeVal = parseFloat(feeStr);
+        if (!isNaN(feeVal) && feeVal > 0) {
+          numAmount = Number((numAmount + feeVal).toFixed(2));
+        }
+        rawDesc = rawDesc.replace(taxMatch[0], "").trim();
+      }
+
+      // 2. Extrair título limpo
+      let cleanTitle = "";
+      if (tx.package?.name) {
+        cleanTitle = tx.package.name;
+      } else if (tx.appointment?.service?.name) {
+        cleanTitle = tx.appointment.service.name;
+      } else {
+        rawDesc = rawDesc.replace(/\(Taxa[^)]*\)/gi, "");
+        rawDesc = rawDesc.replace(/\(Totem(?:\s*-\s*Agend:[^)]+)?\)/gi, "");
+        rawDesc = rawDesc.replace(/\(Baixa Manual\)/gi, "");
+        rawDesc = rawDesc.replace(/\(Sessão\)/gi, "");
+        rawDesc = rawDesc.replace(/\(Check-in Rápido\)/gi, "");
+        rawDesc = rawDesc.replace(/\(\s*[A-ZÀ-Ú\s]{3,}\s*\)/g, " ");
+        rawDesc = rawDesc.replace(/^Venda de Pacote:\s*/i, "");
+        rawDesc = rawDesc.replace(/^Pacote:\s*/i, "");
+        rawDesc = rawDesc.replace(/^Parcela Pacote:\s*/i, "");
+        rawDesc = rawDesc.replace(/^Serviço Realizado\s*\/\s*Pago Antecipado:\s*/i, "");
+        rawDesc = rawDesc.replace(/^Serviço Realizado:\s*/i, "");
+        rawDesc = rawDesc.replace(/^Serviço:\s*/i, "");
+        rawDesc = rawDesc.replace(/^Receita:\s*/i, "");
+        rawDesc = rawDesc.replace(/\s{2,}/g, " ").trim();
+        rawDesc = rawDesc.replace(/^-\s*|\s*-\s*$/g, "").trim();
+        cleanTitle = rawDesc || (tx.package_id ? "Pacote" : tx.appointment_id ? "Atendimento" : "Pagamento");
+      }
 
       if (isPaid) {
         totalSpent += numAmount;
@@ -98,7 +150,7 @@ export class ClientPurchasesService {
       return {
         id: tx.id,
         date: tx.date.toISOString(),
-        description: tx.description,
+        description: cleanTitle,
         amount: numAmount,
         type: itemType,
         status: tx.status as "PAGO" | "PENDENTE" | "CANCELADO" | "ATRASADO",

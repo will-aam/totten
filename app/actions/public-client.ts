@@ -175,6 +175,20 @@ export async function getClientDashboardData(slug: string, clientId: string) {
             name: true,
           },
         },
+        package: {
+          select: {
+            name: true,
+          },
+        },
+        appointment: {
+          select: {
+            service: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
       },
       orderBy: {
         date: "desc",
@@ -186,9 +200,58 @@ export async function getClientDashboardData(slug: string, clientId: string) {
     let paidPurchasesCount = 0;
 
     const purchases = clientTransactions.map((tx: any) => {
-      const numAmount = Number(tx.amount);
+      let numAmount = Number(tx.amount);
       const isPaid = tx.status === "PAGO";
       const isPending = tx.status === "PENDENTE" || tx.status === "ATRASADO";
+
+      let rawDesc = tx.description || "";
+
+      // 1. Recompor o valor bruto pago pelo cliente caso taxa de operadora tenha sido abatida
+      const taxMatch = rawDesc.match(/\(Taxa abatida:\s*R\$\s*([\d,.]+)\)/i);
+      if (taxMatch) {
+        const feeStr = taxMatch[1].replace(/\./g, "").replace(",", ".");
+        const feeVal = parseFloat(feeStr);
+        if (!isNaN(feeVal) && feeVal > 0) {
+          numAmount = Number((numAmount + feeVal).toFixed(2));
+        }
+        rawDesc = rawDesc.replace(taxMatch[0], "").trim();
+      }
+
+      // 2. Extrair título limpo e amigável (sem detalhes administrativos/taxas internas)
+      let cleanTitle = "";
+      if (tx.package?.name) {
+        cleanTitle = tx.package.name;
+      } else if (tx.appointment?.service?.name) {
+        cleanTitle = tx.appointment.service.name;
+      } else {
+        // Remove menções residuais a taxas
+        rawDesc = rawDesc.replace(/\(Taxa[^)]*\)/gi, "");
+        rawDesc = rawDesc.replace(/\(Totem(?:\s*-\s*Agend:[^)]+)?\)/gi, "");
+        rawDesc = rawDesc.replace(/\(Baixa Manual\)/gi, "");
+        rawDesc = rawDesc.replace(/\(Sessão\)/gi, "");
+        rawDesc = rawDesc.replace(/\(Check-in Rápido\)/gi, "");
+
+        // Remove o próprio nome do cliente se estiver entre parênteses
+        if (client.name) {
+          const escaped = client.name.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          rawDesc = rawDesc.replace(new RegExp(`\\s*\\(\\s*${escaped}\\s*\\)\\s*`, "gi"), " ");
+        }
+        rawDesc = rawDesc.replace(/\(\s*[A-ZÀ-Ú\s]{3,}\s*\)/g, " ");
+
+        // Remove prefixos administrativos
+        rawDesc = rawDesc.replace(/^Venda de Pacote:\s*/i, "");
+        rawDesc = rawDesc.replace(/^Pacote:\s*/i, "");
+        rawDesc = rawDesc.replace(/^Parcela Pacote:\s*/i, "");
+        rawDesc = rawDesc.replace(/^Serviço Realizado\s*\/\s*Pago Antecipado:\s*/i, "");
+        rawDesc = rawDesc.replace(/^Serviço Realizado:\s*/i, "");
+        rawDesc = rawDesc.replace(/^Serviço:\s*/i, "");
+        rawDesc = rawDesc.replace(/^Receita:\s*/i, "");
+
+        rawDesc = rawDesc.replace(/\s{2,}/g, " ").trim();
+        rawDesc = rawDesc.replace(/^-\s*|\s*-\s*$/g, "").trim();
+
+        cleanTitle = rawDesc || (tx.package_id ? "Pacote" : tx.appointment_id ? "Atendimento" : "Pagamento");
+      }
 
       if (isPaid) {
         totalSpent += numAmount;
@@ -200,7 +263,7 @@ export async function getClientDashboardData(slug: string, clientId: string) {
       return {
         id: tx.id,
         date: tx.date.toISOString(),
-        description: tx.description,
+        description: cleanTitle,
         amount: numAmount,
         type: tx.package_id ? "PACKAGE" : tx.appointment_id ? "APPOINTMENT" : "OTHER",
         status: tx.status,
