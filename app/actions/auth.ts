@@ -75,12 +75,16 @@ export async function registerAdmin(
       .replace(/(^-|-$)+/g, "");
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
     const slug = `${baseSlug || "clinica"}-${randomSuffix}`;
+    const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 dias grátis
 
     await prisma.$transaction(async (tx) => {
       const org = await tx.organization.create({
         data: {
           name: companyName,
           slug: slug,
+          subscription_status: "TRIAL",
+          plan: "TRIAL",
+          trial_ends_at: trialEndsAt,
           settings: {
             create: {
               company_name: companyName,
