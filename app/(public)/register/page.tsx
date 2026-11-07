@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { ChevronLeft, Repeat, Check, X } from "@boxicons/react";
+import { Repeat, Check, X } from "@boxicons/react";
 import { Progress } from "@/components/ui/progress";
+import { BackButton } from "@/components/ui/back-button";
 
 const initialState: ActionState = { error: "" };
 
@@ -136,15 +137,7 @@ export default function RegisterPage() {
       `,
         }}
       />
-      <Link
-        href="/login"
-        className="absolute top-4 left-4 sm:top-8 sm:left-8 flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group z-10"
-      >
-        <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-transparent sm:bg-muted/50 hover:bg-muted transition-colors">
-          <ChevronLeft removePadding className="h-5 w-5" />
-        </div>
-        <span className="hidden sm:inline font-medium">Voltar ao Login</span>
-      </Link>
+      <BackButton href="/login" label="Voltar ao Login" />
 
       <div className="w-full max-w-xl mt-8 sm:mt-0">
         <div className="text-center mb-10">

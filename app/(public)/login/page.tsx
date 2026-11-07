@@ -6,12 +6,14 @@ import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image"; //  Importação para a logo
-import { ChevronLeft, Eye, EyeClosed } from "@boxicons/react"; // Removido o Bird
+import { useTheme } from "next-themes";
+import { Eye, EyeClosed } from "@boxicons/react"; // Removido o Bird
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { resendVerificationEmail } from "@/app/actions/auth";
+import { BackButton } from "@/components/ui/back-button";
 
 //  FORÇA RENDERIZAÇÃO APENAS NO CLIENTE
 export const dynamic = "force-dynamic";
@@ -19,12 +21,18 @@ export const dynamic = "force-dynamic";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [resendingEmail, setResendingEmail] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const verified = searchParams.get("verified");
   const error = searchParams.get("error");
@@ -86,38 +94,41 @@ function LoginForm() {
       `,
         }}
       />
-      <Link
-        href="/totem/idle"
-        className="absolute top-4 left-4 sm:static sm:self-start flex w-fit items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group z-10"
-      >
-        <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-transparent sm:bg-muted/50 hover:bg-muted transition-colors">
-          <ChevronLeft removePadding className="h-5 w-5" />
-        </div>
-        <span className="hidden sm:inline font-medium">Voltar</span>
-      </Link>
+      <BackButton href="/totem/idle" label="Voltar" />
 
       <div className="flex flex-1 items-center justify-center w-full">
         <div className="w-full max-w-sm">
           <div className="text-center mb-10">
             <div className="flex items-center justify-center shrink-0">
-              {/* Logo exibida no TEMA CLARO */}
-              <Image
-                src="/totten.png"
-                alt="Totten Logo"
-                width={128}
-                height={128}
-                className="object-contain h-24 w-24 md:h-32 md:w-32 animate-pulse-slow dark:hidden block"
-                priority
-              />
-              {/* Logo exibida no TEMA ESCURO */}
-              <Image
-                src="/totten-brac.png"
-                alt="Totten Logo"
-                width={128}
-                height={128}
-                className="object-contain h-24 w-24 md:h-32 md:w-32 animate-pulse-slow hidden dark:block"
-                priority
-              />
+              {mounted ? (
+                <Image
+                  src={resolvedTheme === "dark" ? "/totten-brac.png" : "/totten.png"}
+                  alt="Totten Logo"
+                  width={128}
+                  height={128}
+                  className="object-contain h-24 w-24 md:h-32 md:w-32 animate-pulse-slow"
+                  priority
+                />
+              ) : (
+                <>
+                  <Image
+                    src="/totten.png"
+                    alt="Totten Logo"
+                    width={128}
+                    height={128}
+                    className="object-contain h-24 w-24 md:h-32 md:w-32 animate-pulse-slow dark:hidden block"
+                    priority
+                  />
+                  <Image
+                    src="/totten-brac.png"
+                    alt="Totten Logo"
+                    width={128}
+                    height={128}
+                    className="object-contain h-24 w-24 md:h-32 md:w-32 animate-pulse-slow hidden dark:block"
+                    priority
+                  />
+                </>
+              )}
             </div>
             <h1 className="font-philosopher text-3xl sm:text-4xl text-foreground mb-3">
               Totten

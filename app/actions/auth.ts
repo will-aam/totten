@@ -239,8 +239,7 @@ export async function forgotPassword(email: string) {
 
     if (!admin) {
       return {
-        success: true,
-        message: "Se o e-mail estiver cadastrado, você receberá uma nova senha.",
+        error: "Nenhuma conta encontrada com este e-mail. Verifique e tente novamente.",
       };
     }
 
