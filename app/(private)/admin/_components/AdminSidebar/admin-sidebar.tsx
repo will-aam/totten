@@ -43,7 +43,11 @@ import {
 
 type Gated = { ownerOnly?: boolean; permission?: string };
 
-export function AdminSidebar() {
+interface AdminSidebarProps {
+  isBlocked?: boolean;
+}
+
+export function AdminSidebar({ isBlocked = false }: AdminSidebarProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const { setOpenMobile, isMobile } = useSidebar();
@@ -152,8 +156,16 @@ export function AdminSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="overflow-y-auto [&::-webkit-scrollbar]:hidden">
-        {/* OPERAÇÃO (Plano Básico): dia a dia → cadastros → registros */}
-        <SidebarGroup>
+        {isBlocked ? (
+          <div className="p-4 text-center">
+            <p className="text-xs text-muted-foreground">
+              Acesso suspenso. Escolha ou regularize seu plano abaixo.
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* OPERAÇÃO (Plano Básico): dia a dia → cadastros → registros */}
+            <SidebarGroup>
           <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 px-2 mt-2">
             Operação
           </SidebarGroupLabel>
@@ -346,6 +358,8 @@ export function AdminSidebar() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+        )}
+          </>
         )}
       </SidebarContent>
 

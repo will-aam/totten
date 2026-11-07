@@ -41,6 +41,14 @@ model Organization {
   schedule_rules      ScheduleRule[]
   schedule_blocks     ScheduleBlock[]
 
+  // Assinatura Totten (SaaS)
+  plan                String?                     @default("TRIAL") // TRIAL, BASIC, MEDIUM, ADVANCED
+  billing_cycle       String?                     @default("monthly") // monthly, yearly
+  subscription_status String                      @default("TRIAL") // TRIAL, ACTIVE, PAST_DUE, SUSPENDED, CANCELLED
+  mp_subscription_id  String?                     // ID da assinatura no Mercado Pago
+  trial_ends_at       DateTime?
+  current_period_end  DateTime?
+
   @@map("organizations")
 }
 

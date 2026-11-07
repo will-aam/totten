@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useTransition } from "react";
 import type { ReactNode } from "react";
 import { Check, Minus } from "@boxicons/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
+import { createSubscriptionCheckoutAction } from "./actions";
 
 type PlanId = "basic" | "medium" | "advanced";
 type ComparisonValue = string | boolean;
@@ -104,9 +105,11 @@ function ComparisonCell({ value }: { value: ComparisonValue }) {
 function MobilePlanCarousel({
   billingCycle,
   onSubscribe,
+  loadingPlanId,
 }: {
   billingCycle: "monthly" | "yearly";
-  onSubscribe: () => void;
+  onSubscribe: (planId: PlanId) => void;
+  loadingPlanId: string | null;
 }) {
   const carouselRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -223,17 +226,19 @@ function MobilePlanCarousel({
 
               <InteractiveHoverButton
                 type="button"
-                onClick={onSubscribe}
+                onClick={() => onSubscribe(plan.id)}
+                disabled={Boolean(loadingPlanId)}
                 className={cn(
                   "mt-6 min-h-12 w-full rounded-xl border px-4 py-3.5 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-400 focus-visible:ring-offset-2",
                   isFeatured
                     ? "border-zinc-800 bg-zinc-900 text-white dark:border-zinc-700 dark:bg-zinc-900"
                     : "border-zinc-300 bg-white text-zinc-900 dark:border-border dark:bg-transparent dark:text-foreground",
+                  loadingPlanId === plan.id && "opacity-70 cursor-wait"
                 )}
                 fillClassName="bg-lime-300"
                 fillTextClassName="text-zinc-950"
               >
-                Assinar plano
+                {loadingPlanId === plan.id ? "Conectando ao Mercado Pago..." : "Assinar plano"}
               </InteractiveHoverButton>
             </article>
           );
@@ -264,10 +269,29 @@ function MobilePlanCarousel({
 
 export default function PlanPage() {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
-  const handleSubscribe = () =>
-    toast.info(
-      "A assinatura online ainda não está disponível. Você pode testar todos os recursos por 14 dias.",
-    );
+  const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
+
+  const handleSubscribe = (planId: PlanId) => {
+    setLoadingPlanId(planId);
+    toast.loading("Iniciando assinatura segura...", { id: "sub-loading" });
+
+    startTransition(async () => {
+      try {
+        const res = await createSubscriptionCheckoutAction(planId, billingCycle);
+        if (res.success && res.initPoint) {
+          toast.success("Redirecionando para o Mercado Pago...", { id: "sub-loading" });
+          window.location.href = res.initPoint;
+        } else {
+          toast.error(res.error || "Erro ao iniciar assinatura.", { id: "sub-loading" });
+          setLoadingPlanId(null);
+        }
+      } catch (err) {
+        toast.error("Ocorreu um erro inesperado ao conectar ao Mercado Pago.", { id: "sub-loading" });
+        setLoadingPlanId(null);
+      }
+    });
+  };
 
   return (
     <>
@@ -421,24 +445,30 @@ export default function PlanPage() {
 
                 <InteractiveHoverButton
                   type="button"
-                  onClick={handleSubscribe}
+                  onClick={() => handleSubscribe(plan.id)}
+                  disabled={Boolean(loadingPlanId)}
                   className={cn(
                     "mt-8 min-h-12 w-full rounded-xl border px-4 py-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-400 focus-visible:ring-offset-2",
                     isFeatured
                       ? "border-zinc-800 bg-zinc-900 text-white dark:border-zinc-700 dark:bg-zinc-900"
                       : "border-zinc-300 bg-white text-zinc-900 dark:border-border dark:bg-transparent dark:text-foreground",
+                    loadingPlanId === plan.id && "opacity-70 cursor-wait"
                   )}
                   fillClassName="bg-lime-300"
                   fillTextClassName="text-zinc-950"
                 >
-                  Assinar plano
+                  {loadingPlanId === plan.id ? "Conectando ao Mercado Pago..." : "Assinar plano"}
                 </InteractiveHoverButton>
               </article>
             );
           })}
         </section>
 
-        <MobilePlanCarousel billingCycle={billingCycle} onSubscribe={handleSubscribe} />
+        <MobilePlanCarousel
+          billingCycle={billingCycle}
+          onSubscribe={handleSubscribe}
+          loadingPlanId={loadingPlanId}
+        />
 
         <section className="mt-12 hidden pb-12 md:block" aria-labelledby="comparison-heading">
           <div className="mb-4">
@@ -492,17 +522,19 @@ export default function PlanPage() {
                       <td key={plan.id} className="px-2 py-3 text-center">
                         <InteractiveHoverButton
                           type="button"
-                          onClick={handleSubscribe}
+                          onClick={() => handleSubscribe(plan.id)}
+                          disabled={Boolean(loadingPlanId)}
                           className={cn(
                             "w-full rounded-lg border px-2 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-400 focus-visible:ring-offset-2",
                             plan.featured
                               ? "border-zinc-800 bg-zinc-900 text-white dark:border-zinc-700 dark:bg-zinc-900"
                               : "border-zinc-300 bg-white text-zinc-900 dark:border-border dark:bg-transparent dark:text-foreground",
+                            loadingPlanId === plan.id && "opacity-70 cursor-wait"
                           )}
                           fillClassName="bg-lime-300"
                           fillTextClassName="text-zinc-950"
                         >
-                          Assinar plano
+                          {loadingPlanId === plan.id ? "Aguarde..." : "Assinar plano"}
                         </InteractiveHoverButton>
                       </td>
                     ))}
