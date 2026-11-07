@@ -3,7 +3,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
-import { sanitizeUrl } from "@/lib/utils";
+import { sanitizeUrl, toTitleCase } from "@/lib/utils";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
@@ -18,6 +18,8 @@ export async function getTeam() {
       },
       select: {
         id: true,
+        first_name: true,
+        last_name: true,
         display_name: true,
         email: true,
         role: true,
@@ -116,7 +118,10 @@ export async function getTeam() {
 }
 
 export async function createCollaborator(data: {
-  name: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  displayName?: string;
   email: string;
   password?: string;
   permissions?: string[];
@@ -137,9 +142,17 @@ export async function createCollaborator(data: {
       return { success: false, error: "Sem permissão." };
     }
 
-    if (!data.name || !data.email || !data.password) {
-      return { success: false, error: "Preencha todos os campos." };
+    const firstNameInput = data.firstName || data.name?.trim().split(" ")[0] || "";
+    const lastNameInput = data.lastName || (data.name ? data.name.trim().split(" ").slice(1).join(" ") : "") || "";
+    const displayNameInput = data.displayName || data.firstName || data.name || "";
+
+    if (!displayNameInput || !data.email || !data.password) {
+      return { success: false, error: "Preencha todos os campos obrigatórios." };
     }
+
+    const formattedFirstName = firstNameInput ? toTitleCase(firstNameInput.trim()) : null;
+    const formattedLastName = lastNameInput ? toTitleCase(lastNameInput.trim()) : null;
+    const formattedDisplayName = toTitleCase(displayNameInput.trim());
 
     const cleanEmail = (data.email || "").toLowerCase().trim();
 
@@ -157,7 +170,9 @@ export async function createCollaborator(data: {
 
     await prisma.admin.create({
       data: {
-        display_name: data.name,
+        first_name: formattedFirstName,
+        last_name: formattedLastName,
+        display_name: formattedDisplayName,
         email: cleanEmail,
         password: hashedPassword,
         role: "COLLABORATOR",
@@ -192,8 +207,11 @@ export async function createCollaborator(data: {
 export async function updateCollaborator(
   id: string,
   data: {
-    name: string;
-    email: string;
+    name?: string;
+    firstName?: string;
+    lastName?: string;
+    displayName?: string;
+    email?: string;
     password?: string;
     permissions?: string[];
     profession?: string;
@@ -217,10 +235,39 @@ export async function updateCollaborator(
     const targetUser = await prisma.admin.findUnique({ where: { id } });
     const isOwner = targetUser?.role === "OWNER" && targetUser?.id === admin.id;
 
+    const firstNameInput = data.firstName !== undefined ? data.firstName : (data.name ? data.name.trim().split(" ")[0] : undefined);
+    const lastNameInput = data.lastName !== undefined ? data.lastName : (data.name ? data.name.trim().split(" ").slice(1).join(" ") : undefined);
+    const displayNameInput = data.displayName !== undefined ? data.displayName : data.name;
+
+    const formattedFirstName = firstNameInput !== undefined ? (firstNameInput.trim() ? toTitleCase(firstNameInput.trim()) : null) : undefined;
+    const formattedLastName = lastNameInput !== undefined ? (lastNameInput.trim() ? toTitleCase(lastNameInput.trim()) : null) : undefined;
+    const formattedDisplayName = displayNameInput !== undefined ? toTitleCase(displayNameInput.trim()) : undefined;
+
     //  Usando tipagem estrita do Prisma ao invés de 'any' para evitar quebras
-    const updateData: Prisma.AdminUpdateInput = {
-      display_name: data.name,
-    };
+    const updateData: Prisma.AdminUpdateInput = {};
+
+    if (formattedFirstName !== undefined) updateData.first_name = formattedFirstName;
+    if (formattedLastName !== undefined) updateData.last_name = formattedLastName;
+    if (formattedDisplayName !== undefined) updateData.display_name = formattedDisplayName;
+
+    // Se o usuário editado for o Dono da clínica, sincroniza os nomes com a tabela Settings
+    if (isOwner) {
+      const fullResponsibleName = [
+        formattedFirstName ?? targetUser?.first_name,
+        formattedLastName ?? targetUser?.last_name,
+      ].filter(Boolean).join(" ") || formattedDisplayName || targetUser?.display_name || "";
+
+      await prisma.settings.updateMany({
+        where: { organization_id: admin.organizationId },
+        data: {
+          responsible_name: fullResponsibleName,
+          ...(formattedFirstName !== undefined ? { responsible_first_name: formattedFirstName } : {}),
+          ...(formattedLastName !== undefined ? { responsible_last_name: formattedLastName } : {}),
+          ...(formattedDisplayName !== undefined ? { responsible_display_name: formattedDisplayName } : {}),
+        },
+      });
+      revalidatePath("/admin/settings");
+    }
 
     // O dono não pode alterar o próprio email, senha e permissões por aqui
     if (!isOwner) {

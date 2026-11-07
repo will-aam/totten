@@ -8,6 +8,9 @@ import { revalidatePath } from "next/cache";
 export async function updateSettingsAction(data: {
   companyName?: string;
   responsibleName?: string;
+  responsibleFirstName?: string;
+  responsibleLastName?: string;
+  responsibleDisplayName?: string;
   document?: string;
   contactPhone?: string;
   whatsapp?: string;
@@ -28,10 +31,11 @@ export async function updateSettingsAction(data: {
     // Delega a regra de negócio e o upsert para o Service
     await SettingsService.updateSettings(admin.organizationId, data);
 
-    // Revalida o cache do Next.js para as páginas de configurações
+    // Revalida o cache do Next.js para as páginas de configurações e equipe
     revalidatePath("/admin/settings");
     revalidatePath("/admin/settings/general");
     revalidatePath("/admin/finance/settings");
+    revalidatePath("/admin/team");
 
     return { success: true };
   } catch (error: any) {

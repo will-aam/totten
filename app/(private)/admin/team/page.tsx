@@ -79,6 +79,8 @@ import {
 //  Atualizamos o tipo com os novos campos
 type TeamMember = {
   id: string;
+  first_name?: string | null;
+  last_name?: string | null;
   display_name: string | null;
   email: string;
   role: string;
@@ -119,6 +121,9 @@ export default function TeamPage() {
   }>({ services: [], packages: [], scheduleRules: [] });
 
   const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    displayName: "",
     name: "",
     email: "",
     password: "",
@@ -145,14 +150,22 @@ export default function TeamPage() {
   }, [debouncedSearchTerm]);
 
   const filteredTeam = useMemo(() => {
-    if (!debouncedSearchTerm) return team;
-    const lower = debouncedSearchTerm.toLowerCase();
-    return team.filter(
-      (m) =>
-        m.display_name?.toLowerCase().includes(lower) ||
-        m.email.toLowerCase().includes(lower) ||
-        m.profession?.toLowerCase().includes(lower)
-    );
+    let list = team;
+    if (debouncedSearchTerm) {
+      const lower = debouncedSearchTerm.toLowerCase();
+      list = team.filter(
+        (m) =>
+          m.display_name?.toLowerCase().includes(lower) ||
+          m.email.toLowerCase().includes(lower) ||
+          m.profession?.toLowerCase().includes(lower)
+      );
+    }
+    // Garante que o Administrador (OWNER) sempre fique fixado no topo da lista
+    return [...list].sort((a, b) => {
+      if (a.role === "OWNER") return -1;
+      if (b.role === "OWNER") return 1;
+      return 0;
+    });
   }, [team, debouncedSearchTerm]);
 
   const totalPages = Math.ceil(filteredTeam.length / ITEMS_PER_PAGE) || 1;
@@ -195,14 +208,38 @@ export default function TeamPage() {
   // --------------------------------------------------------
   const openCreate = () => {
     const defaultRule = catalogOptions.scheduleRules.find(r => r.is_default);
-    setFormData({ name: "", email: "", password: "", permissions: [], instagram_url: "", show_instagram: true, profile_image_url: "", profession: "", bio: "", show_on_site: true, service_ids: [], package_template_ids: [], schedule_rule_id: defaultRule?.id || "" });
+    setFormData({
+      firstName: "",
+      lastName: "",
+      displayName: "",
+      name: "",
+      email: "",
+      password: "",
+      permissions: [],
+      instagram_url: "",
+      show_instagram: true,
+      profile_image_url: "",
+      profession: "",
+      bio: "",
+      show_on_site: true,
+      service_ids: [],
+      package_template_ids: [],
+      schedule_rule_id: defaultRule?.id || "",
+    });
     setSelectedMember(null);
     setModalView("create");
   };
 
   const openEdit = useCallback((member: TeamMember) => {
+    const fn = member.first_name || (member.display_name?.split(" ")[0] ?? "");
+    const ln = member.last_name || (member.display_name?.split(" ").slice(1).join(" ") ?? "");
+    const dn = member.display_name || "";
+
     setFormData({
-      name: member.display_name || "",
+      firstName: fn,
+      lastName: ln,
+      displayName: dn,
+      name: dn,
       email: member.email,
       password: "",
       permissions: member.permissions || [],
@@ -241,17 +278,23 @@ export default function TeamPage() {
   const handleSave = async () => {
     setSaving(true);
 
+    const payload = {
+      ...formData,
+      displayName: formData.displayName || formData.firstName || formData.name,
+      name: formData.displayName || formData.firstName || formData.name,
+    };
+
     let result;
     if (modalView === "create") {
-      result = await createCollaborator(formData);
+      result = await createCollaborator(payload);
     } else if (modalView === "edit" && selectedMember) {
-      result = await updateCollaborator(selectedMember.id, formData);
+      result = await updateCollaborator(selectedMember.id, payload);
     }
 
     if (result?.success) {
       toast.success(
         modalView === "create"
-          ? "Colaboradora adicionada!"
+          ? "Colaborador adicionado!"
           : "Dados atualizados!",
       );
       closeModal();
@@ -309,7 +352,7 @@ export default function TeamPage() {
     const result = await deleteCollaborator(selectedMember.id);
 
     if (result.success) {
-      toast.success("Colaboradora excluída com sucesso!");
+      toast.success("Colaborador excluído com sucesso!");
       closeModal();
       loadTeam();
     } else {
@@ -329,7 +372,7 @@ export default function TeamPage() {
               <Group size="sm" className="text-primary" /> Profissionais
             </h1>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Gerencie os acessos das suas funcionárias e parceiras.
+              Gerencie os acessos dos seus profissionais e colaboradores.
             </p>
           </div>
           <Button
@@ -358,7 +401,7 @@ export default function TeamPage() {
             <Skeleton className="h-20 w-full rounded-2xl" />
           </div>
         ) : filteredTeam.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/20 border border-dashed rounded-full">
+          <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/20 border border-dashed rounded-2xl">
             <img width="48" height="48" src="https://img.icons8.com/parakeet/48/question.png" alt="question" />
             <p className="mt-4 text-sm font-medium text-muted-foreground">
               {searchTerm.length > 0 ? "Nenhum profissional encontrado para essa busca." : "Nenhum profissional cadastrado."}
@@ -375,7 +418,7 @@ export default function TeamPage() {
                     <th className="px-6 py-4 font-bold">Dias de trabalho</th>
                     <th className="px-6 py-4 font-bold">Nível de acesso</th>
                     <th className="px-6 py-4 font-bold text-center">Aceitando agendamentos</th>
-                    <th className="px-6 py-4 font-bold">Serviços / Pacotes</th>
+                    <th className="px-6 py-4 font-bold">Serviços e Pacotes</th>
                     <th className="px-6 py-4 text-right font-bold w-[120px]">Opções</th>
                   </tr>
                 </thead>
@@ -480,11 +523,28 @@ export default function TeamPage() {
           <DialogHeader>
             <DialogTitle>
               {modalView === "create"
-                ? "Adicionar Colaborador(a)"
-                : "Editar Colaborador(a)"}
+                ? "Adicionar Colaborador"
+                : selectedMember?.role === "OWNER"
+                ? "Editar Perfil do Administrador"
+                : "Editar Colaborador"}
             </DialogTitle>
+            {selectedMember?.role === "OWNER" && (
+              <DialogDescription className="text-xs text-muted-foreground">
+                Configurações do perfil profissional do administrador (exibido na agenda, lista de equipe e site).
+              </DialogDescription>
+            )}
           </DialogHeader>
           <div className="grid gap-4 py-4">
+
+            {/* AVISO INFORMATIVO PARA O DONO */}
+            {selectedMember?.role === "OWNER" && (
+              <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-900 dark:text-amber-200">
+                <Shield className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                <span>
+                  <strong>Acesso Total (Administrador):</strong> Nome, foto e dados atualizados aqui sincronizam automaticamente com os dados da empresa. E-mail e senha de login são alterados nas Configurações Gerais.
+                </span>
+              </div>
+            )}
 
             {/* FOTO DO PROFISSIONAL */}
             <div className="flex flex-col items-center justify-center gap-3">
@@ -520,13 +580,44 @@ export default function TeamPage() {
               <span className="text-xs text-muted-foreground font-medium">Foto do Perfil (Opcional)</span>
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>Nome</Label>
+                <Input
+                  placeholder="Ex: Patrícia"
+                  value={formData.firstName}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFormData((prev) => ({
+                      ...prev,
+                      firstName: val,
+                      displayName: !prev.displayName || prev.displayName === prev.firstName ? val : prev.displayName,
+                    }));
+                  }}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>Sobrenome</Label>
+                <Input
+                  placeholder="Ex: Silva"
+                  value={formData.lastName}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, lastName: e.target.value }))
+                  }
+                />
+              </div>
+            </div>
+
             <div className="grid gap-2">
-              <Label>Nome</Label>
+              <div className="flex items-center justify-between">
+                <Label>Como gostaria de ser chamado</Label>
+                <span className="text-[11px] text-muted-foreground">Exibido na agenda e comprovantes</span>
+              </div>
               <Input
-                placeholder="Ex: Patrícia Silva"
-                value={formData.name}
+                placeholder="Ex: Dra. Patrícia ou Pati"
+                value={formData.displayName}
                 onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
+                  setFormData((prev) => ({ ...prev, displayName: e.target.value }))
                 }
               />
             </div>
@@ -823,7 +914,11 @@ export default function TeamPage() {
             </Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? <LoaderDots className="animate-spin mr-2" /> : null}
-              {modalView === "create" ? "Salvar Acesso" : "Atualizar Dados"}
+              {modalView === "create"
+                ? "Salvar Acesso"
+                : selectedMember?.role === "OWNER"
+                ? "Salvar Perfil do Administrador"
+                : "Atualizar Dados"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -955,7 +1050,11 @@ const DesktopTeamMemberRow = memo(
                 <span className={`font-semibold text-sm ${!member.active && "opacity-60"}`}>
                   {member.display_name || "Sem nome"}
                 </span>
-                {!isOwner && (
+                {isOwner ? (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1">
+                    <Shield size="xs" /> Administrador
+                  </span>
+                ) : (
                   <span
                     className={`text-[9px] px-1.5 py-[1px] rounded-sm font-bold uppercase tracking-wider ${member.active ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"}`}
                   >
@@ -1033,23 +1132,15 @@ const DesktopTeamMemberRow = memo(
         <td className="px-6 py-4 align-middle text-right">
           {isOwner ? (
             <div className="flex items-center justify-end gap-2">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
-                <Shield
-                  size="xs"
-                  className="text-amber-600 dark:text-amber-500"
-                />
-                <span className="text-xs font-bold text-amber-700 dark:text-amber-500">
-                  Admin
-                </span>
-              </div>
               <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 bg-muted/50 border border-border/50"
+                variant="outline"
+                size="sm"
+                className="h-8 px-3 text-xs font-semibold gap-1.5 border-border/80 hover:bg-muted"
                 onClick={() => onEdit(member)}
-                title="Editar Perfil"
+                title="Editar Perfil do Administrador"
               >
                 <Pencil size="xs" />
+                Editar Perfil
               </Button>
             </div>
           ) : (
@@ -1130,7 +1221,11 @@ const TeamMemberCard = memo(
               {member.display_name || "Sem nome"}
 
               {/* Badge Status */}
-              {!isOwner && (
+              {isOwner ? (
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1">
+                  <Shield size="xs" /> Administrador
+                </span>
+              ) : (
                 <span
                   className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${member.active ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"}`}
                 >
@@ -1178,23 +1273,15 @@ const TeamMemberCard = memo(
         <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto mt-2 sm:mt-0 pt-2 sm:pt-0 border-t border-border/40 sm:border-0 shrink-0">
           {isOwner ? (
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
-                <Shield
-                  size="xs"
-                  className="text-amber-600 dark:text-amber-500"
-                />
-                <span className="text-xs font-bold text-amber-700 dark:text-amber-500">
-                  Admin
-                </span>
-              </div>
               <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 bg-muted/50 border border-border/50"
+                variant="outline"
+                size="sm"
+                className="h-8 px-3 text-xs font-semibold gap-1.5 border-border/80"
                 onClick={() => onEdit(member)}
-                title="Editar Perfil"
+                title="Editar Perfil do Administrador"
               >
                 <Pencil size="xs" />
+                Editar Perfil
               </Button>
             </div>
           ) : (

@@ -54,6 +54,8 @@ model Organization {
 
 model Admin {
   id                   String               @id @default(cuid())
+  first_name           String?
+  last_name            String?
   display_name         String?
   email                String               @unique
   password             String
@@ -95,6 +97,9 @@ model Settings {
   company_name     String
   document         String?
   responsible_name String?
+  responsible_first_name String?
+  responsible_last_name  String?
+  responsible_display_name String?
   phone_landline   String?
   phone_whatsapp   String
   email_admin      String?

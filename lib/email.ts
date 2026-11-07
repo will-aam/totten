@@ -10,7 +10,7 @@ export async function sendVerificationEmail(email: string, token: string) {
     await resend.emails.send({
       from: "Totten <noreply@totten.com.br>",
       to: email,
-      subject: "✅ Confirme seu e-mail - Totten",
+      subject: "Confirme seu e-mail - Totten",
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #18181b;">Bem-vindo ao Totten! 🎉</h1>

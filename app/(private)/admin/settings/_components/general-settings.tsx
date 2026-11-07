@@ -28,6 +28,9 @@ import { FloatingSaveButton } from "./floating-save-button";
 interface GeneralSettingsResponse {
   companyName: string;
   responsibleName: string;
+  responsibleFirstName?: string;
+  responsibleLastName?: string;
+  responsibleDisplayName?: string;
   document: string;
   contactPhone: string;
   whatsapp: string;
@@ -145,6 +148,9 @@ export function GeneralSettings() {
   const [formData, setFormData] = useState({
     companyName: "",
     responsibleName: "",
+    responsibleFirstName: "",
+    responsibleLastName: "",
+    responsibleDisplayName: "",
     document: "",
     contactPhone: "",
     whatsapp: "",
@@ -162,9 +168,17 @@ export function GeneralSettings() {
   // Sincroniza formulário com o cache do SWR sem disparar requisições extras
   useEffect(() => {
     if (settingsData) {
+      const respName = settingsData.responsibleName || "";
+      const fName = settingsData.responsibleFirstName || (respName ? respName.split(" ")[0] : "");
+      const lName = settingsData.responsibleLastName || (respName ? respName.split(" ").slice(1).join(" ") : "");
+      const dName = settingsData.responsibleDisplayName || fName;
+
       setFormData({
         companyName: settingsData.companyName || "",
-        responsibleName: settingsData.responsibleName || "",
+        responsibleName: respName,
+        responsibleFirstName: fName,
+        responsibleLastName: lName,
+        responsibleDisplayName: dName,
         document: settingsData.document || "",
         contactPhone: settingsData.contactPhone || "",
         whatsapp: settingsData.whatsapp || "",
@@ -224,7 +238,11 @@ export function GeneralSettings() {
       const formattedCompanyName = toTitleCase(rawCompanyName);
 
       // 2. Responsável (pega do QSA se disponível)
+      let formattedFirstName = "";
+      let formattedLastName = "";
+      let formattedDisplayName = "";
       let formattedResponsible = "";
+
       if (data.qsa && data.qsa.length > 0) {
         const primaryAdmin =
           data.qsa.find(
@@ -234,7 +252,11 @@ export function GeneralSettings() {
           ) || data.qsa[0];
 
         if (primaryAdmin?.nome_socio) {
-          formattedResponsible = toTitleCase(primaryAdmin.nome_socio);
+          const parts = toTitleCase(primaryAdmin.nome_socio).split(/\s+/);
+          formattedFirstName = parts[0] || "";
+          formattedLastName = parts.slice(1).join(" ") || "";
+          formattedDisplayName = formattedFirstName;
+          formattedResponsible = parts.join(" ");
         }
       }
 
@@ -275,6 +297,9 @@ export function GeneralSettings() {
       setFormData((prev) => ({
         ...prev,
         companyName: formattedCompanyName || prev.companyName,
+        responsibleFirstName: formattedFirstName || prev.responsibleFirstName,
+        responsibleLastName: formattedLastName || prev.responsibleLastName,
+        responsibleDisplayName: formattedDisplayName || prev.responsibleDisplayName,
         responsibleName: formattedResponsible || prev.responsibleName,
         contactPhone: formattedPhoneValue || prev.contactPhone,
         address: formattedFullAddress || prev.address,
@@ -323,27 +348,26 @@ export function GeneralSettings() {
   };
 
   const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let v = e.target.value.replace(/\D/g, "");
     if (docType === "CPF") {
-      v = v.slice(0, 11);
+      let v = e.target.value.replace(/\D/g, "").slice(0, 11);
       v = v.replace(/(\d{3})(\d)/, "$1.$2");
       v = v.replace(/(\d{3})(\d)/, "$1.$2");
       v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
       setFormData((prev) => ({ ...prev, document: v }));
       setCpfCache(v);
     } else {
-      v = v.slice(0, 14);
-      const cleanDigits = v;
-      v = v.replace(/^(\d{2})(\d)/, "$1.$2");
-      v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
-      v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
-      v = v.replace(/(\d{4})(\d)/, "$1-$2");
+      const cleanChars = e.target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 14);
+      let v = cleanChars;
+      v = v.replace(/^([A-Z0-9]{2})([A-Z0-9])/, "$1.$2");
+      v = v.replace(/^([A-Z0-9]{2})\.([A-Z0-9]{3})([A-Z0-9])/, "$1.$2.$3");
+      v = v.replace(/^([A-Z0-9]{2})\.([A-Z0-9]{3})\.([A-Z0-9]{3})([A-Z0-9])/, "$1.$2.$3/$4");
+      v = v.replace(/\/([A-Z0-9]{4})([A-Z0-9])/, "/$1-$2");
       setFormData((prev) => ({ ...prev, document: v }));
       setCnpjCache(v);
 
-      // Dispara busca automática ao completar os 14 dígitos do CNPJ
-      if (cleanDigits.length === 14) {
-        searchCnpjData(cleanDigits);
+      // Dispara busca automática ao completar os 14 caracteres do CNPJ
+      if (cleanChars.length === 14) {
+        searchCnpjData(cleanChars);
       }
     }
   };
@@ -394,6 +418,9 @@ export function GeneralSettings() {
     setFormData({
       companyName: "",
       responsibleName: "",
+      responsibleFirstName: "",
+      responsibleLastName: "",
+      responsibleDisplayName: "",
       document: "",
       contactPhone: "",
       whatsapp: "",
@@ -411,9 +438,17 @@ export function GeneralSettings() {
         label: "Restaurar",
         onClick: () => {
           if (settingsData) {
+            const respName = settingsData.responsibleName || "";
+            const fName = settingsData.responsibleFirstName || (respName ? respName.split(" ")[0] : "");
+            const lName = settingsData.responsibleLastName || (respName ? respName.split(" ").slice(1).join(" ") : "");
+            const dName = settingsData.responsibleDisplayName || fName;
+
             setFormData({
               companyName: settingsData.companyName || "",
-              responsibleName: settingsData.responsibleName || "",
+              responsibleName: respName,
+              responsibleFirstName: fName,
+              responsibleLastName: lName,
+              responsibleDisplayName: dName,
               document: settingsData.document || "",
               contactPhone: settingsData.contactPhone || "",
               whatsapp: settingsData.whatsapp || "",
@@ -526,42 +561,25 @@ export function GeneralSettings() {
       </CardHeader>
 
       <CardContent className="px-0 pb-0 md:p-6 md:pt-4 grid gap-6">
-        <div className="grid gap-2">
-          <Label htmlFor="companyName" className="font-medium text-sm">
-            Nome da Empresa
-          </Label>
-          <Input
-            id="companyName"
-            value={formData.companyName}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, companyName: e.target.value }))
-            }
-            onBlur={(e) =>
-              setFormData((prev) => ({ ...prev, companyName: toTitleCase(e.target.value) }))
-            }
-            placeholder="Ex: Clínica Bem-Estar LTDA"
-            required
-            minLength={3}
-            maxLength={60}
-            className="rounded-xl h-10"
-          />
-        </div>
-
+        {/* Bloco 1: Informações da Empresa */}
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="responsibleName" className="font-medium text-sm">
-              Nome Completo do Responsável
+            <Label htmlFor="companyName" className="font-medium text-sm">
+              Nome Fantasia
             </Label>
             <Input
-              id="responsibleName"
-              value={formData.responsibleName}
+              id="companyName"
+              value={formData.companyName}
               onChange={(e) =>
-                setFormData((prev) => ({ ...prev, responsibleName: e.target.value }))
+                setFormData((prev) => ({ ...prev, companyName: e.target.value }))
               }
               onBlur={(e) =>
-                setFormData((prev) => ({ ...prev, responsibleName: toTitleCase(e.target.value) }))
+                setFormData((prev) => ({ ...prev, companyName: toTitleCase(e.target.value) }))
               }
-              placeholder="Ex: Maria da Silva"
+              placeholder="Ex: Totten Tecnologia"
+              required
+              minLength={3}
+              maxLength={60}
               className="rounded-xl h-10"
             />
           </div>
@@ -600,11 +618,11 @@ export function GeneralSettings() {
                 <button
                   type="button"
                   onClick={() => {
-                    const clean = formData.document.replace(/\D/g, "");
+                    const clean = formData.document.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
                     if (clean.length === 14) {
                       searchCnpjData(clean);
                     } else {
-                      toast.info("Digite os 14 dígitos do CNPJ para buscar");
+                      toast.info("Digite os 14 caracteres do CNPJ para buscar");
                     }
                   }}
                   disabled={searchingCnpj}
@@ -624,19 +642,7 @@ export function GeneralSettings() {
 
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="contactPhone" className="font-medium text-sm">Telefone Fixo / Outro</Label>
-            <Input
-              id="contactPhone"
-              value={formData.contactPhone}
-              onChange={handlePhoneChange}
-              placeholder="(00) 0000-0000"
-              maxLength={15}
-              className="rounded-xl h-10"
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="whatsapp" className="font-medium text-sm">WhatsApp Principal</Label>
+            <Label htmlFor="whatsapp" className="font-medium text-sm">WhatsApp</Label>
             <Input
               id="whatsapp"
               value={formData.whatsapp}
@@ -646,12 +652,30 @@ export function GeneralSettings() {
               className="rounded-xl h-10"
             />
           </div>
+
+          <div className="grid gap-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="contactPhone" className="font-medium text-sm">Telefone Fixo</Label>
+              <span className="text-xs text-muted-foreground font-normal">Opcional</span>
+            </div>
+            <Input
+              id="contactPhone"
+              value={formData.contactPhone}
+              onChange={handlePhoneChange}
+              placeholder="(00) 0000-0000"
+              maxLength={15}
+              className="rounded-xl h-10"
+            />
+          </div>
         </div>
 
         {/* Localização e Endereço sem excesso de cores de fundo */}
         <div className="flex flex-col gap-4 p-4 md:p-5 rounded-2xl border border-border/50">
           <div className="grid gap-2">
-            <Label htmlFor="cep" className="font-medium text-sm">Buscar por CEP</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="cep" className="font-medium text-sm">Buscar por CEP</Label>
+              <span className="text-xs text-muted-foreground font-normal">Opcional</span>
+            </div>
             <div className="flex gap-2">
               <Input
                 id="cep"
@@ -677,7 +701,10 @@ export function GeneralSettings() {
             </div>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="address" className="font-medium text-sm">Endereço Completo</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="address" className="font-medium text-sm">Endereço Completo</Label>
+              <span className="text-xs text-muted-foreground font-normal">Opcional</span>
+            </div>
             <Input
               id="address"
               value={formData.address}
@@ -686,6 +713,85 @@ export function GeneralSettings() {
               placeholder="Ex: Rua das Flores, 123 - Centro, São Paulo/SP"
               className="rounded-xl h-10"
             />
+          </div>
+        </div>
+
+        {/* Bloco 2: Dados do Responsável (Estruturado e sem barras) */}
+        <div className="flex flex-col gap-4 p-4 md:p-5 rounded-2xl border border-border/50 bg-muted/10">
+          <div>
+            <h3 className="font-bold text-sm text-foreground">
+              Dados do Responsável
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Informações do administrador da conta.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="responsibleFirstName" className="font-medium text-sm">
+                Nome
+              </Label>
+              <Input
+                id="responsibleFirstName"
+                value={formData.responsibleFirstName}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFormData((prev) => ({
+                    ...prev,
+                    responsibleFirstName: val,
+                    responsibleDisplayName: prev.responsibleDisplayName || val,
+                  }));
+                }}
+                onBlur={(e) =>
+                  setFormData((prev) => ({ ...prev, responsibleFirstName: toTitleCase(e.target.value) }))
+                }
+                placeholder="Ex: Maria"
+                className="rounded-xl h-10"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="responsibleLastName" className="font-medium text-sm">
+                Sobrenome
+              </Label>
+              <Input
+                id="responsibleLastName"
+                value={formData.responsibleLastName}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, responsibleLastName: e.target.value }))
+                }
+                onBlur={(e) =>
+                  setFormData((prev) => ({ ...prev, responsibleLastName: toTitleCase(e.target.value) }))
+                }
+                placeholder="Ex: da Silva"
+                className="rounded-xl h-10"
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-1.5">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="responsibleDisplayName" className="font-medium text-sm">
+                Como gostaria de ser chamado
+              </Label>
+              <span className="text-xs text-muted-foreground font-normal">Nome curto</span>
+            </div>
+            <Input
+              id="responsibleDisplayName"
+              value={formData.responsibleDisplayName}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, responsibleDisplayName: e.target.value }))
+              }
+              onBlur={(e) =>
+                setFormData((prev) => ({ ...prev, responsibleDisplayName: toTitleCase(e.target.value) }))
+              }
+              placeholder="Ex: Maria, Dra. Carol"
+              className="rounded-xl h-10"
+            />
+            <span className="text-xs text-muted-foreground">
+              Usado na agenda de atendimentos, nas saudações e nas notificações do sistema.
+            </span>
           </div>
         </div>
       </CardContent>

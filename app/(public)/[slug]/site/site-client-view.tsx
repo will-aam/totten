@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { cn, sanitizeUrl } from "@/lib/utils";
-import { Star, MapPin, Search, Calendar, ChevronRight, User, ArrowLeft, ArrowRight, X, Phone, UserRound, ArrowUpRight, Copy } from "@boxicons/react";
+import { Star, Search, Calendar, ChevronRight, User, ArrowLeft, ArrowRight, X, Phone, ArrowUpRight, Copy } from "@boxicons/react";
 import { TermsOfUseBox } from "@/components/terms-of-use-box";
 import {
   Briefcase, Youtube, Pin, Globe, Menu, Envelope,

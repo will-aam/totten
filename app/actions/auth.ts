@@ -8,55 +8,110 @@ import { sendVerificationEmail } from "@/lib/email";
 import { randomBytes } from "crypto";
 import { requireAuth } from "@/lib/auth";
 import { sendPasswordResetEmail, generateRandomPassword } from "@/lib/email";
+import { toTitleCase } from "@/lib/utils";
 
 export type ActionState = {
   error: string;
 };
 
+async function withDbRetry<T>(fn: () => Promise<T>, retries = 2, delayMs = 1200): Promise<T> {
+  let lastError: any;
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (err: any) {
+      lastError = err;
+      const isConnError =
+        err?.name === "PrismaClientInitializationError" ||
+        err?.message?.includes("Can't reach database server") ||
+        err?.code === "P1001";
+      if (isConnError && attempt < retries) {
+        console.warn(
+          `[registerAdmin] Banco em cold-start (tentativa ${attempt}/${retries}). Aguardando ${delayMs}ms para reconectar...`
+        );
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastError;
+}
+
 export async function registerAdmin(
   prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const displayName = ((formData.get("displayName") as string) || "").trim();
   const companyName = ((formData.get("companyName") as string) || "").trim();
+  const firstName = ((formData.get("firstName") as string) || "").trim();
+  const lastName = ((formData.get("lastName") as string) || "").trim();
+  const rawDisplayName = ((formData.get("displayName") as string) || "").trim();
+  const displayName = rawDisplayName || firstName;
+
   const document = ((formData.get("document") as string) || "").trim();
+  const whatsapp = ((formData.get("whatsapp") as string) || (formData.get("contactPhone") as string) || "").trim();
   const contactPhone = ((formData.get("contactPhone") as string) || "").trim();
+  const address = ((formData.get("address") as string) || "").trim();
+
   const email = ((formData.get("email") as string) || "").toLowerCase().trim();
+  const confirmEmail = ((formData.get("confirmEmail") as string) || "").toLowerCase().trim();
   const password = (formData.get("password") as string) || "";
 
-  if (!displayName) {
-    return { error: "Informe o seu nome completo." };
+  if (!companyName || companyName.length < 2) {
+    return { error: "O Nome Fantasia da empresa deve ter no mínimo 2 caracteres." };
   }
 
-  if (!companyName) {
-    return { error: "Informe o nome da sua empresa / clínica." };
+  // Validação estrita do primeiro nome (apenas 1 palavra, letras e acentos, sem números nem espaços)
+  const nameRegex = /^[A-Za-zÀ-ÿ'-]{2,35}$/;
+  if (!firstName || !nameRegex.test(firstName)) {
+    return { error: "O primeiro nome deve conter apenas letras (sem sobrenome, espaços ou números) e ter no mínimo 2 caracteres." };
   }
 
-  const cleanDoc = document.replace(/\D/g, "");
-  if (!cleanDoc || (cleanDoc.length !== 11 && cleanDoc.length !== 14)) {
-    return { error: "Informe um CPF (11 dígitos) ou CNPJ (14 dígitos) válido." };
+  // Validação do sobrenome (apenas letras, acentos e espaços)
+  const lastNameRegex = /^[A-Za-zÀ-ÿ' -]{2,80}$/;
+  if (!lastName || !lastNameRegex.test(lastName)) {
+    return { error: "O sobrenome deve conter apenas letras e ter no mínimo 2 caracteres." };
   }
 
-  const cleanPhone = contactPhone.replace(/\D/g, "");
-  if (!cleanPhone || cleanPhone.length < 10 || cleanPhone.length > 11) {
-    return { error: "Informe um telefone/WhatsApp de contato válido com DDD." };
+  if (!displayName || displayName.length < 2) {
+    return { error: "Informe como gostaria de ser chamado (mínimo 2 caracteres)." };
+  }
+
+  const cleanCpf = document.replace(/\D/g, "");
+  const cleanCnpj = document.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  const isCpf = cleanCpf.length === 11;
+  const isCnpj = cleanCnpj.length === 14;
+
+  if (!isCpf && !isCnpj) {
+    return { error: "Informe um CPF (11 números) ou CNPJ válido (14 caracteres numéricos ou alfanuméricos)." };
+  }
+
+  const cleanWhatsApp = whatsapp.replace(/\D/g, "");
+  if (!cleanWhatsApp || cleanWhatsApp.length !== 11) {
+    return { error: "Informe um WhatsApp válido com DDD (11 números)." };
   }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!email || !emailRegex.test(email)) {
+  if (!email || !emailRegex.test(email) || email.length > 100) {
     return { error: "Informe um endereço de e-mail válido." };
   }
 
-  if (!password || password.length < 8) {
-    return { error: "A senha deve ter no mínimo 8 caracteres." };
+  if (confirmEmail && email !== confirmEmail) {
+    return { error: "Os e-mails informados não coincidem." };
+  }
+
+  if (!password || password.length < 6) {
+    return { error: "A senha deve ter no mínimo 6 caracteres." };
   }
 
   try {
-    const existingAdmin = await prisma.admin.findFirst({
-      where: {
-        email: { equals: email, mode: "insensitive" },
-      },
-    });
+    const existingAdmin = await withDbRetry(() =>
+      prisma.admin.findFirst({
+        where: {
+          email: { equals: email, mode: "insensitive" },
+        },
+      })
+    );
 
     if (existingAdmin) {
       return { error: "Este e-mail já está em uso." };
@@ -77,55 +132,142 @@ export async function registerAdmin(
     const slug = `${baseSlug || "clinica"}-${randomSuffix}`;
     const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 dias grátis
 
-    await prisma.$transaction(async (tx) => {
-      const org = await tx.organization.create({
-        data: {
-          name: companyName,
-          slug: slug,
-          subscription_status: "TRIAL",
-          plan: "TRIAL",
-          trial_ends_at: trialEndsAt,
-          settings: {
-            create: {
-              company_name: companyName,
-              trade_name: companyName,
-              document: document,
-              responsible_name: displayName,
-              phone_landline: contactPhone,
-              phone_whatsapp: contactPhone, // Inicializa corretamente com o WhatsApp principal
-              email_admin: email,
+    const formattedCompanyName = toTitleCase(companyName);
+    const formattedFirstName = toTitleCase(firstName);
+    const formattedLastName = toTitleCase(lastName);
+    const formattedDisplayName = toTitleCase(displayName);
+    const formattedFullName = [formattedFirstName, formattedLastName].filter(Boolean).join(" ");
+    const formattedAddress = address ? toTitleCase(address) : "";
+
+    await withDbRetry(() =>
+      prisma.$transaction(async (tx: any) => {
+        // 1. Cria a Organização
+        const org = await tx.organization.create({
+          data: {
+            name: formattedCompanyName,
+            slug: slug,
+            subscription_status: "TRIAL",
+            plan: "TRIAL",
+            trial_ends_at: trialEndsAt,
+          },
+        });
+
+        // 2. Cria as Configurações da Organização
+        await tx.settings.create({
+          data: {
+            organization_id: org.id,
+            company_name: formattedCompanyName,
+            trade_name: formattedCompanyName,
+            document: document,
+            responsible_name: formattedFullName,
+            responsible_first_name: formattedFirstName,
+            responsible_last_name: formattedLastName,
+            responsible_display_name: formattedDisplayName,
+            phone_landline: contactPhone || "",
+            phone_whatsapp: whatsapp,
+            address: formattedAddress,
+            email_admin: email,
+          },
+        });
+
+        // 3. Cria Admin com Conta Inativa (aguardando ativação por e-mail)
+        await tx.admin.create({
+          data: {
+            first_name: formattedFirstName,
+            last_name: formattedLastName,
+            display_name: formattedDisplayName,
+            email: email,
+            password: hashedPassword,
+            email_verified: false,
+            verification_token: verificationToken,
+            organizations: {
+              connect: { id: org.id },
             },
           },
-        },
-      });
-
-      // CRIA ADMIN COM CONTA INATIVA
-      await tx.admin.create({
-        data: {
-          display_name: displayName,
-          email: email,
-          password: hashedPassword,
-          email_verified: false,
-          verification_token: verificationToken,
-          organizations: {
-            connect: { id: org.id },
-          },
-        },
-      });
-    });
+        });
+      })
+    );
 
     // ENVIA E-MAIL DE CONFIRMAÇÃO
     await sendVerificationEmail(email, verificationToken);
   } catch (error: any) {
+    console.error("[registerAdmin] Erro no registro:", error);
+
+    // 1. Conflito de Chave Única (P2002)
     if (error?.code === "P2002") {
-      return { error: "Este e-mail já está em uso." };
+      const target = Array.isArray(error?.meta?.target)
+        ? error.meta.target.join(", ")
+        : String(error?.meta?.target || "");
+
+      if (target.includes("email") || error?.message?.includes("email")) {
+        return {
+          error:
+            "Este e-mail já está cadastrado no sistema. Faça login ou solicite recuperação de senha caso tenha esquecido.",
+        };
+      }
+      if (target.includes("slug")) {
+        return {
+          error:
+            "Já existe uma empresa com um nome idêntico ou muito semelhante. Experimente adicionar uma palavra diferenciadora no Nome Fantasia.",
+        };
+      }
+      if (target.includes("document")) {
+        return {
+          error:
+            "Este CPF ou CNPJ já está vinculado a uma conta existente no sistema.",
+        };
+      }
+      return {
+        error: `Dado duplicado (${target || "registro já existente"}). Por favor, verifique os dados informados.`,
+      };
     }
-    console.error("Erro no registro:", error);
-    return { error: "Ocorreu um erro ao criar a conta. Tente novamente." };
+
+    // 2. Erro de Validação de Dados Prisma
+    if (error?.name === "PrismaClientValidationError") {
+      return {
+        error:
+          "Houve uma inconsistência nos campos preenchidos. Por favor, revise todos os dados da empresa e do responsável.",
+      };
+    }
+
+    // 3. Falha de Conexão ou Inicialização do Banco (Neon Cold-Start)
+    if (
+      error?.name === "PrismaClientInitializationError" ||
+      error?.message?.includes("Can't reach database server") ||
+      error?.code === "P1001"
+    ) {
+      return {
+        error:
+          "O banco de dados da nuvem estava iniciando a conexão (cold start) e demorou para responder. Por favor, clique novamente em 'Finalizar Cadastro'.",
+      };
+    }
+
+    // 4. Falha de Envio de E-mail
+    if (
+      error?.message?.toLowerCase().includes("email") ||
+      error?.message?.toLowerCase().includes("resend")
+    ) {
+      return {
+        error:
+          "A conta foi criada, mas ocorreu uma falha ao enviar o e-mail de ativação. Tente fazer login ou solicite o reenvio de confirmação.",
+      };
+    }
+
+    // 5. Mensagem amigável com detalhe caso disponível
+    const detailMessage =
+      typeof error?.message === "string" && !error.message.includes("invocation")
+        ? error.message
+        : null;
+
+    return {
+      error: detailMessage
+        ? `Não foi possível concluir o cadastro: ${detailMessage}`
+        : "Ocorreu uma falha temporária ao registrar os dados no servidor. Por favor, tente novamente em alguns instantes.",
+    };
   }
 
-  // REDIRECIONA PARA PÁGINA DE AVISO
-  redirect("/check-email");
+// REDIRECIONA PARA PÁGINA DE AVISO
+redirect("/check-email");
 }
 
 export async function resendVerificationEmail(email: string) {

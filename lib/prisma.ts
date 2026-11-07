@@ -5,6 +5,21 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
+// Se a instância em cache na memória for anterior à inclusão dos novos campos no schema, descarta e recria
+const cached = globalForPrisma.prisma;
+const isStale =
+  cached &&
+  !(cached as any)._runtimeDataModel?.models?.Settings?.fields?.some?.(
+    (f: any) => f.name === "responsible_first_name"
+  );
+
+if (isStale) {
+  try {
+    cached.$disconnect().catch(() => {});
+  } catch {}
+  globalForPrisma.prisma = undefined;
+}
+
 // O construtor vazio buscará automaticamente a DATABASE_URL no seu .env
 export const prisma = globalForPrisma.prisma ?? new PrismaClient();
 

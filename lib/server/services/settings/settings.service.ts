@@ -1,4 +1,5 @@
 import { getTenantPrisma } from "@/lib/prisma";
+import { toTitleCase } from "@/lib/utils";
 
 export class SettingsService {
   /**
@@ -15,9 +16,15 @@ export class SettingsService {
       throw new Error("SETTINGS_NOT_FOUND");
     }
 
+    const defaultFirstName = settings.responsible_name ? settings.responsible_name.split(" ")[0] : "";
+    const defaultLastName = settings.responsible_name ? settings.responsible_name.split(" ").slice(1).join(" ") : "";
+
     return {
       companyName: settings.company_name,
       responsibleName: settings.responsible_name || "",
+      responsibleFirstName: settings.responsible_first_name || defaultFirstName,
+      responsibleLastName: settings.responsible_last_name || defaultLastName,
+      responsibleDisplayName: settings.responsible_display_name || settings.responsible_first_name || defaultFirstName,
       document: settings.document || "",
       contactPhone: settings.phone_landline || "",
       whatsapp: settings.phone_whatsapp || "",
@@ -49,19 +56,42 @@ export class SettingsService {
 
     const updateData: any = {};
     if (data.companyName !== undefined) {
-      updateData.company_name = data.companyName;
+      updateData.company_name = toTitleCase(data.companyName);
       // Also update Organization name if company name is changed
       await prisma.organization.update({
         where: { id: organizationId },
-        data: { name: data.companyName }
+        data: { name: toTitleCase(data.companyName) },
       });
     }
-    if (data.responsibleName !== undefined) updateData.responsible_name = data.responsibleName;
+
+    if (data.responsibleFirstName !== undefined) {
+      updateData.responsible_first_name = toTitleCase(data.responsibleFirstName);
+    }
+    if (data.responsibleLastName !== undefined) {
+      updateData.responsible_last_name = toTitleCase(data.responsibleLastName);
+    }
+    if (data.responsibleDisplayName !== undefined) {
+      updateData.responsible_display_name = toTitleCase(data.responsibleDisplayName);
+    }
+
+    if (data.responsibleFirstName !== undefined || data.responsibleLastName !== undefined) {
+      const fName = data.responsibleFirstName !== undefined
+        ? data.responsibleFirstName
+        : (existingSettings?.responsible_first_name || "");
+      const lName = data.responsibleLastName !== undefined
+        ? data.responsibleLastName
+        : (existingSettings?.responsible_last_name || "");
+
+      updateData.responsible_name = [toTitleCase(fName), toTitleCase(lName)].filter(Boolean).join(" ");
+    } else if (data.responsibleName !== undefined) {
+      updateData.responsible_name = toTitleCase(data.responsibleName);
+    }
+
     if (data.document !== undefined) updateData.document = data.document;
     if (data.contactPhone !== undefined)
       updateData.phone_landline = data.contactPhone;
     if (data.whatsapp !== undefined) updateData.phone_whatsapp = data.whatsapp;
-    if (data.address !== undefined) updateData.address = data.address;
+    if (data.address !== undefined) updateData.address = toTitleCase(data.address);
     if (data.openingTime !== undefined)
       updateData.opening_time = data.openingTime;
     if (data.closingTime !== undefined)
@@ -83,16 +113,49 @@ export class SettingsService {
     if (data.defaultPaymentMethodId !== undefined)
       updateData.default_payment_method_id = data.defaultPaymentMethodId || null;
 
+    // Sincroniza dados com o Admin OWNER correspondente
+    try {
+      const owner = await prisma.admin.findFirst({
+        where: {
+          organizations: { some: { id: organizationId } },
+          role: "OWNER",
+        },
+      });
+
+      if (owner) {
+        const adminUpdate: any = {};
+        if (data.responsibleFirstName !== undefined) adminUpdate.first_name = toTitleCase(data.responsibleFirstName);
+        if (data.responsibleLastName !== undefined) adminUpdate.last_name = toTitleCase(data.responsibleLastName);
+        if (data.responsibleDisplayName !== undefined) {
+          adminUpdate.display_name = toTitleCase(data.responsibleDisplayName);
+        } else if (data.responsibleFirstName !== undefined) {
+          adminUpdate.display_name = toTitleCase(data.responsibleFirstName);
+        }
+
+        if (Object.keys(adminUpdate).length > 0) {
+          await prisma.admin.update({
+            where: { id: owner.id },
+            data: adminUpdate,
+          });
+        }
+      }
+    } catch (syncErr) {
+      console.error("[SettingsService.updateSettings] Falha ao sincronizar admin owner:", syncErr);
+    }
+
     return await prisma.settings.upsert({
       where: { organization_id: organizationId },
       update: updateData,
       create: {
         organization_id: organizationId,
         company_name:
-          data.companyName ||
+          toTitleCase(data.companyName) ||
           existingSettings?.organization.name ||
           "Minha Empresa",
-        responsible_name: data.responsibleName || "",
+        responsible_name: updateData.responsible_name || data.responsibleName || "",
+        responsible_first_name: updateData.responsible_first_name || "",
+        responsible_last_name: updateData.responsible_last_name || "",
+        responsible_display_name: updateData.responsible_display_name || "",
         document: data.document || "",
         phone_landline: data.contactPhone || "",
         phone_whatsapp: data.whatsapp || "",
