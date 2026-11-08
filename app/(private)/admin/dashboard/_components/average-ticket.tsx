@@ -1,13 +1,11 @@
 // app/(private)/admin/dashboard/_components/average-ticket.tsx
 "use client";
 
-import useSWR from "swr";
-import { apiClient } from "@/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { TrendingUp, TrendingDown } from "@boxicons/react";
 import { AreaChart, Area, YAxis, XAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
-import { LoaderLines } from "@boxicons/react";
 
 import { useFinanceVisibility } from "@/app/(private)/admin/finance/_components/finance-visibility-context";
 
@@ -28,16 +26,10 @@ export function AverageTicket({
   };
 }) {
   const { hideValues } = useFinanceVisibility();
-  const { data: widgetsData, isLoading } = useSWR<Record<string, any>>(
-    !propData ? "dashboard/widgets" : null,
-    apiClient,
-    { revalidateOnFocus: true, dedupingInterval: 5000 },
-  );
 
-  const backendData = propData || widgetsData?.ticket;
-  const chartData = backendData?.history || [];
-  const currentTicket = backendData?.current || 0;
-  const percentageChange = backendData?.percentageChange || 0;
+  const chartData = propData?.history || [];
+  const currentTicket = propData?.current || 0;
+  const percentageChange = propData?.percentageChange || 0;
   const isPositive = percentageChange >= 0;
 
   return (
@@ -54,12 +46,13 @@ export function AverageTicket({
       </CardHeader>
 
       <CardContent className="px-4 py-4 flex-1 flex flex-col min-h-0">
-        {isLoading && !backendData ? (
-          <div className="flex flex-col items-center justify-center flex-1 py-12">
-            <LoaderLines className="h-5 w-5 animate-spin text-muted-foreground" />
-            <span className="text-xs text-muted-foreground mt-2 font-medium">
-              Carregando ticket médio...
-            </span>
+        {!propData ? (
+          <div className="flex flex-col justify-between flex-1 gap-4">
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-32 rounded-lg" />
+              <Skeleton className="h-4 w-40 rounded-lg" />
+            </div>
+            <Skeleton className="h-40 w-full rounded-xl" />
           </div>
         ) : (
           <>
@@ -94,32 +87,29 @@ export function AverageTicket({
                     margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
                   >
                     <defs>
-                      <linearGradient id="fillValue" x1="0" y1="0" x2="0" y2="1">
-                        <stop
-                          offset="5%"
-                          stopColor="var(--color-value)"
-                          stopOpacity={0.3}
-                        />
-                        <stop
-                          offset="95%"
-                          stopColor="var(--color-value)"
-                          stopOpacity={0}
-                        />
+                      <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
                       </linearGradient>
                     </defs>
-                    <ChartTooltip
-                      cursor={false}
-                      content={<ChartTooltipContent hideLabel />}
+                    <XAxis
+                      dataKey="day"
+                      axisLine={false}
+                      tickLine={false}
+                      tickMargin={10}
                     />
-                    <YAxis domain={["dataMin - 10", "dataMax + 10"]} hide />
-                    <XAxis dataKey="day" hide />
+                    <YAxis hide domain={['dataMin - 10', 'dataMax + 10']} />
+                    <ChartTooltip
+                      cursor={{ stroke: "#10b981", strokeWidth: 1, strokeDasharray: "3 3" }}
+                      content={<ChartTooltipContent indicator="line" />}
+                    />
                     <Area
                       type="monotone"
                       dataKey="value"
-                      stroke="var(--color-value)"
-                      strokeWidth={3}
+                      stroke="#10b981"
+                      strokeWidth={2.5}
                       fillOpacity={1}
-                      fill="url(#fillValue)"
+                      fill="url(#colorValue)"
                     />
                   </AreaChart>
                 </ChartContainer>

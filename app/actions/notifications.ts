@@ -2,7 +2,7 @@
 "use server";
 
 import { requireAuth } from "@/lib/auth";
-import { getTenantPrisma } from "@/lib/prisma";
+import { getTenantPrisma, prisma } from "@/lib/prisma";
 
 export interface NotificationItem {
   id: string;
@@ -291,7 +291,10 @@ export async function getDailyKickoffAction(): Promise<{
       59,
     );
 
-    const [appointmentsToday, pendingRequests, allClients] = await Promise.all([
+    const todayDay = now.getDate();
+    const todayMonth = now.getMonth() + 1; // 1-12
+
+    const [appointmentsToday, pendingRequests, birthdaysRaw] = await Promise.all([
       // Atendimentos do dia (não cancelados)
       prisma.appointment.count({
         where: {
@@ -318,27 +321,19 @@ export async function getDailyKickoffAction(): Promise<{
             : 0,
         ),
 
-      // Clientes ativos com data de nascimento
-      prisma.client.findMany({
-        where: {
-          organization_id: admin.organizationId,
-          active: true,
-          birth_date: { not: null },
-        },
-        select: { birth_date: true },
-      }),
+      // Contagem nativa no PostgreSQL de aniversariantes do dia (evita carregar milhares de clientes na memória)
+      prisma.$queryRaw<Array<{ count: number }>>`
+        SELECT COUNT(id)::int AS count
+        FROM clients
+        WHERE organization_id = ${admin.organizationId}
+          AND active = true
+          AND birth_date IS NOT NULL
+          AND EXTRACT(DAY FROM birth_date)::int = ${todayDay}
+          AND EXTRACT(MONTH FROM birth_date)::int = ${todayMonth}
+      `,
     ]);
 
-    const todayDay = now.getDate();
-    const todayMonth = now.getMonth();
-
-    const birthdaysToday = allClients.filter((c) => {
-      if (!c.birth_date) return false;
-      const bDate = new Date(c.birth_date);
-      return (
-        bDate.getUTCDate() === todayDay && bDate.getUTCMonth() === todayMonth
-      );
-    }).length;
+    const birthdaysToday = Number(birthdaysRaw[0]?.count || 0);
 
     return {
       success: true,

@@ -92,7 +92,9 @@ function KpiCard({
 export function DashboardCards() {
   // Vamos buscar da mesma rota, mas depois ajustaremos o backend dela
   const { data, isLoading } = useSWR<KpiData>("dashboard/kpis", apiClient, {
-    refreshInterval: 15000,
+    refreshInterval: 60000,
+    dedupingInterval: 10000,
+    revalidateOnFocus: true,
   });
 
   if (isLoading) {

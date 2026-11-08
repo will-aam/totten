@@ -242,12 +242,13 @@ export function NotificationBell() {
         </div>
 
         {/* Filtros: Todas vs Não Lidas */}
-        <div className="flex gap-1.5 mt-3">
+        <div className={cn("mt-3", isSheet ? "grid grid-cols-2 gap-2" : "flex gap-1.5")}>
           <button
             type="button"
             onClick={() => setActiveFilter("all")}
             className={cn(
-              "px-3 py-1 rounded-full text-xs font-semibold transition-colors",
+              "text-xs font-semibold transition-colors flex items-center justify-center text-center",
+              isSheet ? "w-full py-2 rounded-xl" : "px-3 py-1 rounded-full",
               activeFilter === "all"
                 ? "bg-foreground text-background"
                 : "bg-muted/50 text-muted-foreground hover:text-foreground",
@@ -259,7 +260,8 @@ export function NotificationBell() {
             type="button"
             onClick={() => setActiveFilter("unread")}
             className={cn(
-              "px-3 py-1 rounded-full text-xs font-semibold transition-colors",
+              "text-xs font-semibold transition-colors flex items-center justify-center text-center",
+              isSheet ? "w-full py-2 rounded-xl" : "px-3 py-1 rounded-full",
               activeFilter === "unread"
                 ? "bg-foreground text-background"
                 : "bg-muted/50 text-muted-foreground hover:text-foreground",

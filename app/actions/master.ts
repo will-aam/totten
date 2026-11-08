@@ -17,6 +17,8 @@ export interface MasterClinicItem {
   subscription_status: string;
   trial_ends_at: string | null;
   trial_days_left: number | null;
+  current_period_end: string | null;
+  days_until_expiration: number | null;
   created_at: string;
   company_name: string;
   trade_name: string;
@@ -112,6 +114,14 @@ export async function getMasterPlatformData(): Promise<MasterPlatformData> {
       trialDaysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
     }
 
+    let currentPeriodEndStr: string | null = null;
+    let daysUntilExpiration: number | null = null;
+    if (org.current_period_end) {
+      currentPeriodEndStr = org.current_period_end.toISOString();
+      const diffMs = new Date(org.current_period_end).getTime() - now;
+      daysUntilExpiration = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    }
+
     const respFirst = settings?.responsible_first_name || owner?.first_name || "";
     const respLast = settings?.responsible_last_name || owner?.last_name || "";
     const respDisplay = settings?.responsible_display_name || owner?.display_name || "";
@@ -125,6 +135,8 @@ export async function getMasterPlatformData(): Promise<MasterPlatformData> {
       subscription_status: org.subscription_status || "TRIAL",
       trial_ends_at: org.trial_ends_at ? org.trial_ends_at.toISOString() : null,
       trial_days_left: trialDaysLeft,
+      current_period_end: currentPeriodEndStr,
+      days_until_expiration: daysUntilExpiration,
       created_at: org.created_at.toISOString(),
       company_name: settings?.company_name || org.name,
       trade_name: settings?.trade_name || org.name,
@@ -287,6 +299,152 @@ export async function extendClientTrial(organizationId: string, additionalDays: 
   } catch (error: any) {
     console.error("[extendClientTrial] Erro:", error);
     return { success: false, error: "Erro ao prorrogar o período de teste." };
+  }
+}
+
+/**
+ * 🔑 Redefine a senha de acesso do cliente pelo Dono do Sistema
+ */
+export async function updateClientPassword(adminId: string, newPassword: string) {
+  await requireSystemOwner();
+
+  if (!adminId || !newPassword) {
+    return { success: false, error: "Dados incompletos para redefinição de senha." };
+  }
+
+  if (newPassword.length < 6) {
+    return { success: false, error: "A nova senha deve ter no mínimo 6 caracteres." };
+  }
+
+  try {
+    const admin = await prisma.admin.findUnique({
+      where: { id: adminId },
+      select: { id: true, email: true },
+    });
+
+    if (!admin) {
+      return { success: false, error: "Administrador não encontrado." };
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await prisma.admin.update({
+      where: { id: admin.id },
+      data: { password: hashedPassword },
+    });
+
+    return {
+      success: true,
+      message: `Senha de ${admin.email} alterada com sucesso!`,
+    };
+  } catch (error: any) {
+    console.error("[updateClientPassword] Erro:", error);
+    return { success: false, error: "Não foi possível alterar a senha." };
+  }
+}
+
+export interface UpdateClientDetailsInput {
+  name: string;
+  trade_name?: string;
+  document?: string;
+  responsible_name?: string;
+  responsible_display_name?: string;
+  phone_whatsapp?: string;
+  phone_landline?: string;
+  email_admin?: string;
+  address?: string;
+  plan: OfficialPlan;
+  subscription_status: string;
+  current_period_end?: string | null;
+}
+
+/**
+ * ✏️ Edita informações cadastrais, plano e status da empresa cliente
+ */
+export async function updateClientDetails(
+  organizationId: string,
+  payload: UpdateClientDetailsInput
+) {
+  await requireSystemOwner();
+
+  if (!organizationId) {
+    return { success: false, error: "ID da empresa não informado." };
+  }
+
+  try {
+    const normalizedPlan = normalizePlan(payload.plan);
+
+    // 1. Atualiza dados da organização
+    const updateOrgData: any = {
+      name: payload.name.trim(),
+      plan: normalizedPlan,
+      subscription_status: payload.subscription_status,
+    };
+
+    if (payload.current_period_end !== undefined) {
+      updateOrgData.current_period_end = payload.current_period_end
+        ? new Date(payload.current_period_end)
+        : null;
+    }
+
+    await prisma.organization.update({
+      where: { id: organizationId },
+      data: updateOrgData,
+    });
+
+    // 2. Atualiza ou cria as configurações da organização
+    await prisma.settings.upsert({
+      where: { organization_id: organizationId },
+      update: {
+        company_name: payload.name.trim(),
+        trade_name: payload.trade_name?.trim() || null,
+        document: payload.document?.trim() || null,
+        responsible_name: payload.responsible_name?.trim() || null,
+        responsible_display_name: payload.responsible_display_name?.trim() || null,
+        phone_whatsapp: payload.phone_whatsapp?.trim() || "",
+        phone_landline: payload.phone_landline?.trim() || null,
+        email_admin: payload.email_admin?.trim() || null,
+        address: payload.address?.trim() || null,
+      },
+      create: {
+        organization_id: organizationId,
+        company_name: payload.name.trim(),
+        trade_name: payload.trade_name?.trim() || null,
+        document: payload.document?.trim() || null,
+        responsible_name: payload.responsible_name?.trim() || null,
+        responsible_display_name: payload.responsible_display_name?.trim() || null,
+        phone_whatsapp: payload.phone_whatsapp?.trim() || "",
+        phone_landline: payload.phone_landline?.trim() || null,
+        email_admin: payload.email_admin?.trim() || null,
+        address: payload.address?.trim() || null,
+      },
+    });
+
+    // 3. Atualiza o e-mail do admin OWNER se o email_admin tiver sido alterado
+    if (payload.email_admin) {
+      const ownerAdmin = await prisma.admin.findFirst({
+        where: {
+          organizations: { some: { id: organizationId } },
+          role: "OWNER",
+        },
+      });
+
+      if (ownerAdmin && payload.email_admin.toLowerCase() !== ownerAdmin.email.toLowerCase()) {
+        await prisma.admin.update({
+          where: { id: ownerAdmin.id },
+          data: { email: payload.email_admin.toLowerCase().trim() },
+        });
+      }
+    }
+
+    revalidatePath("/admin/master");
+    return {
+      success: true,
+      message: "Dados do cliente atualizados com sucesso!",
+    };
+  } catch (error: any) {
+    console.error("[updateClientDetails] Erro:", error);
+    return { success: false, error: "Falha ao salvar alterações do cliente." };
   }
 }
 

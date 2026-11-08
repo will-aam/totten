@@ -12,7 +12,9 @@ export class DashboardService {
     limit: number,
   ) {
     const prisma = getTenantPrisma(organizationId);
-    const skip = (page - 1) * limit;
+    const safePage = Math.max(1, page || 1);
+    const safeLimit = Math.min(50, Math.max(1, limit || 8));
+    const skip = (safePage - 1) * safeLimit;
 
     // CORREÇÃO DO FUSO HORÁRIO (Forçando o fuso do Brasil UTC-3)
     const now = new Date();
@@ -50,11 +52,11 @@ export class DashboardService {
         date_time: "desc",
       },
       skip: skip,
-      take: limit + 1, // Truque: Pede 1 a mais para saber se tem próxima página
+      take: safeLimit + 1, // Truque: Pede 1 a mais para saber se tem próxima página
     });
 
     // Verifica se pegou aquele "1 a mais"
-    const hasMore = recentCheckIns.length > limit;
+    const hasMore = recentCheckIns.length > safeLimit;
 
     // Remove aquele "1 a mais" se ele existir para devolver apenas o limite exato
     const checkInsToReturn = hasMore
@@ -72,12 +74,13 @@ export class DashboardService {
     return {
       data: formattedCheckIns,
       hasMore,
-      page,
+      page: safePage,
     };
   }
   /**
    * Busca os indicadores de performance (KPIs) do dia atual,
    * calculando a variação em relação ao dia anterior e garantindo isolamento de tenant.
+   * Executa todas as consultas em paralelo via Promise.all para máxima economia e performance.
    */
   static async getDashboardKpis(organizationId: string) {
     const prisma = getTenantPrisma(organizationId);
@@ -98,95 +101,104 @@ export class DashboardService {
       startOfDay.getTime() - 24 * 60 * 60 * 1000,
     );
 
-    // 1. Total de Agendamentos de Hoje
-    const appointmentsToday = await prisma.appointment.count({
-      where: {
-        organization_id: organizationId,
-        date_time: {
-          gte: startOfDay,
-          lt: tomorrow,
-        },
-      },
-    });
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    // 2. Total de Agendamentos de Ontem (Para cálculo da métrica)
-    const appointmentsYesterday = await prisma.appointment.count({
-      where: {
-        organization_id: organizationId,
-        date_time: {
-          gte: startOfYesterday,
-          lt: startOfDay,
+    // Executa todas as consultas simultaneamente em paralelo
+    const [
+      appointmentsToday,
+      appointmentsYesterday,
+      checkInsToday,
+      activeClients,
+      noShowsToday,
+      pendingRequestsCount,
+      mpPaidAppointmentsToday,
+      autoAppointmentsMonth,
+      settings,
+    ] = await Promise.all([
+      // 1. Total de Agendamentos de Hoje
+      prisma.appointment.count({
+        where: {
+          organization_id: organizationId,
+          date_time: {
+            gte: startOfDay,
+            lt: tomorrow,
+          },
         },
-      },
-    });
+      }),
 
-    // 3. Check-ins Realizados Hoje
-    const checkInsToday = await prisma.checkIn.count({
-      where: {
-        organization_id: organizationId,
-        date_time: {
-          gte: startOfDay,
-          lt: tomorrow,
+      // 2. Total de Agendamentos de Ontem (Para cálculo da métrica)
+      prisma.appointment.count({
+        where: {
+          organization_id: organizationId,
+          date_time: {
+            gte: startOfYesterday,
+            lt: startOfDay,
+          },
         },
-      },
-    });
+      }),
 
-    // 4. Clientes com pacotes ativos
-    const activeClients = await prisma.client.count({
-      where: {
-        organization_id: organizationId,
-        packages: {
-          some: {
-            active: true,
-            used_sessions: {
-              lt: prisma.package.fields.total_sessions,
+      // 3. Check-ins Realizados Hoje
+      prisma.checkIn.count({
+        where: {
+          organization_id: organizationId,
+          date_time: {
+            gte: startOfDay,
+            lt: tomorrow,
+          },
+        },
+      }),
+
+      // 4. Clientes com pacotes ativos
+      prisma.client.count({
+        where: {
+          organization_id: organizationId,
+          packages: {
+            some: {
+              active: true,
+              used_sessions: {
+                lt: prisma.package.fields.total_sessions,
+              },
             },
           },
         },
-      },
-    });
+      }),
 
-    // 5. Faltas e Cancelamentos de Hoje
-    const noShowsToday = await prisma.appointment.count({
-      where: {
-        organization_id: organizationId,
-        date_time: {
-          gte: startOfDay,
-          lt: tomorrow,
+      // 5. Faltas e Cancelamentos de Hoje
+      prisma.appointment.count({
+        where: {
+          organization_id: organizationId,
+          date_time: {
+            gte: startOfDay,
+            lt: tomorrow,
+          },
+          status: "CANCELADO",
         },
-        status: "CANCELADO",
-      },
-    });
+      }),
 
-    // 6. Solicitações Pendentes de Agendamento
-    const pendingRequestsCount = await prisma.appointment.count({
-      where: {
-        organization_id: organizationId,
-        status: "SOLICITADO",
-      },
-    });
-
-    // 7. Sinais Recebidos Hoje via Mercado Pago (Agregação nativa)
-    const mpPaidAppointmentsToday = await prisma.appointment.aggregate({
-      where: {
-        organization_id: organizationId,
-        created_at: {
-          gte: startOfDay,
-          lt: tomorrow,
+      // 6. Solicitações Pendentes de Agendamento
+      prisma.appointment.count({
+        where: {
+          organization_id: organizationId,
+          status: "SOLICITADO",
         },
-        mp_payment_status: "approved",
-      },
-      _sum: {
-        snapshot_service_price: true,
-      },
-    });
+      }),
 
-    const totalPixDepositsToday =
-      Number(mpPaidAppointmentsToday._sum.snapshot_service_price || 0) / 2;
+      // 7. Sinais Recebidos Hoje via Mercado Pago (Agregação nativa)
+      prisma.appointment.aggregate({
+        where: {
+          organization_id: organizationId,
+          created_at: {
+            gte: startOfDay,
+            lt: tomorrow,
+          },
+          mp_payment_status: "approved",
+        },
+        _sum: {
+          snapshot_service_price: true,
+        },
+      }),
 
-    // 8. Autoatendimento no Mês e Status de Ativação
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const [autoAppointmentsMonth, settings] = await Promise.all([
+      // 8. Autoatendimento no Mês
       prisma.appointment.count({
         where: {
           organization_id: organizationId,
@@ -197,14 +209,19 @@ export class DashboardService {
           ],
         },
       }),
+
+      // 9. Configurações de pagamento
       prisma.settings.findUnique({
         where: { organization_id: organizationId },
         select: { pix_payment_type: true, mp_access_token: true },
       }),
     ]);
 
+    const totalPixDepositsToday =
+      Number(mpPaidAppointmentsToday._sum.snapshot_service_price || 0) / 2;
+
     const hasAutoService = Boolean(
-      settings?.pix_payment_type === "MERCADO_PAGO" || autoAppointmentsMonth > 0
+      settings?.pix_payment_type === "MERCADO_PAGO" || autoAppointmentsMonth > 0,
     );
 
     // --- 🧮 CÁLCULO DOS KPIs ---

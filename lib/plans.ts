@@ -67,11 +67,24 @@ export function formatPlanShortName(plan?: string | null): string {
 /**
  * Retorna o status de assinatura formatado em português.
  */
-export function formatSubscriptionStatus(status?: string | null, trialDaysLeft?: number | null) {
+export function formatSubscriptionStatus(
+  status?: string | null,
+  trialDaysLeft?: number | null,
+  currentPeriodEnd?: string | null
+) {
   const s = (status || "TRIAL").toUpperCase().trim();
   if (s === "ACTIVE") {
+    let label = "Assinatura Ativa";
+    if (currentPeriodEnd) {
+      const d = new Date(currentPeriodEnd);
+      if (!isNaN(d.getTime())) {
+        const day = d.getUTCDate().toString().padStart(2, "0");
+        const month = (d.getUTCMonth() + 1).toString().padStart(2, "0");
+        label = `Ativa (Vence ${day}/${month})`;
+      }
+    }
     return {
-      label: "Assinatura Ativa",
+      label,
       isTrial: false,
       badgeClass: "border-emerald-500/30 text-emerald-700 dark:text-emerald-300 bg-emerald-500/10",
     };

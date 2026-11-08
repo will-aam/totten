@@ -13,6 +13,10 @@ import { BusiestHours } from "./_components/busiest-hours";
 import { AppointmentsVolume } from "./_components/appointments-volume";
 import { AppointmentsHeatmap } from "./_components/appointments-heatmap";
 import { DashboardCustomizer, type WidgetConfig } from "./_components/dashboard-customizer";
+import { Skeleton } from "@/components/ui/skeleton";
+import useSWR from "swr";
+import { apiClient } from "@/lib/api-client";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
 const WIDGET_COMPONENTS: Record<string, React.ComponentType<any>> = {
   appointments_volume: AppointmentsVolume,
@@ -34,17 +38,28 @@ const DEFAULT_WIDGETS: WidgetConfig[] = [
   { id: "checkins", name: "Check-ins Recentes", visible: true },
 ];
 
-import useSWR from "swr";
-import { apiClient } from "@/lib/api-client";
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
-
 export default function AdminDashboardPage() {
-  const [widgets, setWidgets] = useState<WidgetConfig[]>([]);
+  const [widgets, setWidgets] = useState<WidgetConfig[]>(DEFAULT_WIDGETS);
   const [mounted, setMounted] = useState(false);
   const [cols, setCols] = useState(3);
 
-  const { data: widgetsData } = useSWR<Record<string, any>>("dashboard/widgets", apiClient);
-  const { data: layoutData } = useSWR<{ layout: WidgetConfig[] | null }>("dashboard/layout", apiClient);
+  // Consultas com deduplicação inteligente e foco na economia de requisições
+  const { data: widgetsData } = useSWR<Record<string, any>>(
+    "dashboard/widgets",
+    apiClient,
+    {
+      revalidateOnFocus: true,
+      dedupingInterval: 15000,
+    },
+  );
+  const { data: layoutData } = useSWR<{ layout: WidgetConfig[] | null }>(
+    "dashboard/layout",
+    apiClient,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60000,
+    },
+  );
 
   useEffect(() => {
     setMounted(true);
@@ -54,7 +69,7 @@ export default function AdminDashboardPage() {
         const missingWidgets = DEFAULT_WIDGETS.filter((w) => !savedIds.has(w.id));
         setWidgets([...layoutData.layout, ...missingWidgets]);
       } else {
-        // Fallback for first time users
+        // Fallback para primeiro acesso
         setWidgets(DEFAULT_WIDGETS);
       }
     }
@@ -84,7 +99,27 @@ export default function AdminDashboardPage() {
     }
   };
 
-  if (!mounted) return null; // Evita hidration mismatch
+  // SSR Skeleton Fallback Progressivo (evita tela branca e layout flash)
+  if (!mounted) {
+    return (
+      <>
+        <AdminHeader title="Dashboard" />
+        <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
+          <div className="flex overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scroll-smooth md:grid md:grid-cols-4 md:overflow-visible md:pb-0 md:px-0 md:mx-0 gap-4 [&::-webkit-scrollbar]:hidden">
+            <Skeleton className="h-32 min-w-[85vw] md:min-w-0 snap-center rounded-2xl shrink-0" />
+            <Skeleton className="h-32 min-w-[85vw] md:min-w-0 snap-center rounded-2xl shrink-0" />
+            <Skeleton className="h-32 min-w-[85vw] md:min-w-0 snap-center rounded-2xl shrink-0" />
+            <Skeleton className="h-32 min-w-[85vw] md:min-w-0 snap-center rounded-2xl shrink-0" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-2 w-full">
+            <Skeleton className="h-[350px] w-full rounded-2xl" />
+            <Skeleton className="h-[350px] w-full rounded-2xl" />
+            <Skeleton className="h-[350px] w-full rounded-2xl" />
+          </div>
+        </div>
+      </>
+    );
+  }
 
   // Separar em linhas respeitando widgets que exigem linha inteira (ex: checkins)
   const visibleWidgets = widgets.filter(w => w.visible);
@@ -127,7 +162,7 @@ export default function AdminDashboardPage() {
       />
 
       {/* Container Principal */}
-      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative">
+      <div className="flex flex-col gap-6 p-4 md:p-6 max-w-400 mx-auto w-full pb-24 md:pb-6 relative animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
         <PushNotificationModal />
         <DailyKickoffBanner />
         <DashboardCards />

@@ -9,10 +9,12 @@ export async function GET(request: NextRequest) {
     // 🛡️ Validação unificada de sessão e tenant
     const admin = await requireAuth();
 
-    // Pega os parâmetros da URL para a paginação usando o NextRequest nativo
+    // 🛡️ Higienização e clamping dos parâmetros da URL para evitar sobrecarga no banco / DoS
     const { searchParams } = request.nextUrl;
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "8", 10);
+    const rawPage = parseInt(searchParams.get("page") || "1", 10);
+    const rawLimit = parseInt(searchParams.get("limit") || "8", 10);
+    const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+    const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 50) : 8;
 
     // Delega a inteligência de fuso horário, paginação e banco para o Service
     const result = await DashboardService.getTodayCheckIns(
@@ -31,4 +33,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
   }
 }
-
