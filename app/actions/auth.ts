@@ -129,7 +129,7 @@ export async function registerAdmin(
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)+/g, "");
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const slug = `${baseSlug || "clinica"}-${randomSuffix}`;
+    const slug = `${baseSlug || "empresa"}-${randomSuffix}`;
     const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 dias grátis
 
     const formattedCompanyName = toTitleCase(companyName);
@@ -147,7 +147,7 @@ export async function registerAdmin(
             name: formattedCompanyName,
             slug: slug,
             subscription_status: "TRIAL",
-            plan: "TRIAL",
+            plan: "ADVANCED",
             trial_ends_at: trialEndsAt,
           },
         });

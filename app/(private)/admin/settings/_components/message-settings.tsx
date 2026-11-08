@@ -307,7 +307,7 @@ export function MessageSettings() {
                     <b className="text-foreground">Onde é utilizada:</b> Na <b>Ficha do Cliente</b> (Menu Clientes &gt; Ver Cliente), dentro do botão <i>Enviar Mensagem</i> &gt; opção <b>Boas-vindas</b>.
                   </p>
                   <p>
-                    <b className="text-foreground">Objetivo:</b> Dar as boas-vindas logo após o cliente adquirir um novo pacote de sessões na clínica.
+                    <b className="text-foreground">Objetivo:</b> Dar as boas-vindas logo após o cliente adquirir um novo pacote de sessões no seu estabelecimento.
                   </p>
                   <p className="pt-1">
                     <b className="text-foreground">Variáveis disponíveis:</b>{" "}
@@ -459,7 +459,7 @@ export function MessageSettings() {
                     <b className="text-foreground">Onde é utilizada:</b> Na tela de <b>Aniversariantes</b> (Menu Aniversariantes), no botão de WhatsApp ao lado de cada aniversariante da semana/mês.
                   </p>
                   <p>
-                    <b className="text-foreground">Objetivo:</b> Felicitar o cliente pelo seu aniversário e fortalecer o relacionamento com a clínica.
+                    <b className="text-foreground">Objetivo:</b> Felicitar o cliente pelo seu aniversário e fortalecer o relacionamento com o seu estabelecimento.
                   </p>
                   <p className="pt-1">
                     <b className="text-foreground">Variáveis disponíveis:</b>{" "}

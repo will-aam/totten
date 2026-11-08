@@ -15,9 +15,6 @@ import { toast } from "sonner";
 import {
   BellRing,
   Phone,
-  Shield,
-  CalendarCheck,
-  UserCheck,
   AlertTriangle,
   ArrowOutUpLeftStrokeSquare,
   LoaderLines,
@@ -204,46 +201,31 @@ export function PushNotificationModal() {
           ) : (
             // Lista de Benefícios
             <div className="space-y-2.5">
-              <div className="flex items-start gap-3 p-3 rounded-2xl bg-muted/40 border border-border/40">
-                <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
-                  <CalendarCheck className="h-4 w-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-semibold text-foreground">
-                    Novos Agendamentos Online
-                  </h4>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    Saiba instantaneamente quando um cliente reservar horário pelo seu link.
-                  </p>
-                </div>
+              <div className="p-3.5 rounded-2xl bg-muted/40 border border-border/40">
+                <h4 className="text-xs font-semibold text-foreground">
+                  Novos Agendamentos Online
+                </h4>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Saiba instantaneamente quando um cliente reservar horário pelo seu link.
+                </p>
               </div>
 
-              <div className="flex items-start gap-3 p-3 rounded-2xl bg-muted/40 border border-border/40">
-                <div className="h-8 w-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                  <UserCheck className="h-4 w-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-semibold text-foreground">
-                    Check-in Presencial no Totem
-                  </h4>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    Receba um alerta na hora em que seu cliente confirmar presença na clínica.
-                  </p>
-                </div>
+              <div className="p-3.5 rounded-2xl bg-muted/40 border border-border/40">
+                <h4 className="text-xs font-semibold text-foreground">
+                  Check-in Presencial no Totem
+                </h4>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Receba um alerta na hora em que seu cliente confirmar presença no estabelecimento.
+                </p>
               </div>
 
-              <div className="flex items-start gap-3 p-3 rounded-2xl bg-muted/40 border border-border/40">
-                <div className="h-8 w-8 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 mt-0.5">
-                  <Shield className="h-4 w-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-semibold text-foreground">
-                    Alerta Discreto e Silencioso
-                  </h4>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    Notificações limpas, sem sons estridentes nem interrupções enquanto atende.
-                  </p>
-                </div>
+              <div className="p-3.5 rounded-2xl bg-muted/40 border border-border/40">
+                <h4 className="text-xs font-semibold text-foreground">
+                  Alerta Discreto e Silencioso
+                </h4>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Notificações limpas, sem sons estridentes nem interrupções enquanto atende.
+                </p>
               </div>
             </div>
           )}

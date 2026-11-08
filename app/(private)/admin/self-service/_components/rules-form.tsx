@@ -972,7 +972,7 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
                   <FormItem className="flex flex-col gap-3 p-5 rounded-2xl border border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-800/40 border-l-4 border-l-blue-500">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <FormLabel className="text-foreground font-semibold">Regras e Políticas da Clínica (Área do Cliente)</FormLabel>
+                        <FormLabel className="text-foreground font-semibold">Regras e Políticas do Estabelecimento (Área do Cliente)</FormLabel>
                         <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 rounded-2xl">Área do Cliente</span>
                       </div>
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
@@ -994,7 +994,7 @@ export function RulesAndHoursForm({ initialData }: { initialData?: any }) {
                       <Textarea
                         {...field}
                         className="resize-none h-48 bg-white dark:bg-black/20"
-                        placeholder="Insira as regras e políticas gerais da clínica..."
+                        placeholder="Insira as regras e políticas gerais do seu estabelecimento..."
                       />
                     </FormControl>
                   </FormItem>

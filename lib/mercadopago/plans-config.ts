@@ -8,7 +8,7 @@ export const MP_SUBSCRIPTION_PLANS = {
       preapprovalPlanId: "dc195b1e2c1647eea28781279b3c3d80",
     },
     medium: {
-      name: "Plano Médio",
+      name: "Plano Padrão",
       planId: "medium",
       cycle: "monthly",
       price: 49.9,
@@ -31,7 +31,7 @@ export const MP_SUBSCRIPTION_PLANS = {
       preapprovalPlanId: "3da5f8375e664650b096546dd7d2c1b7",
     },
     medium: {
-      name: "Plano Médio Anual",
+      name: "Plano Padrão Anual",
       planId: "medium",
       cycle: "yearly",
       price: 499.0,

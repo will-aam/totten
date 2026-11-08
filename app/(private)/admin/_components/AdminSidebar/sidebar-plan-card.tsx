@@ -42,9 +42,9 @@ export function SidebarPlanCard({
   const isCollapsed = state === "collapsed" && !isMobile;
   const isPlanPage = pathname.startsWith("/admin/plan");
 
-  // Se a sidebar estiver recolhida (3rem de largura), não renderizamos o botão aqui
-  // para manter a sidebar 100% limpa, sem elementos soltos ou desalinhados.
-  if (isCollapsed) {
+  // O dono do sistema não possui cartão de assinatura/plano.
+  // Se a sidebar estiver recolhida (3rem de largura), também não renderizamos o botão.
+  if (isCollapsed || isSystemOwner) {
     return null;
   }
 

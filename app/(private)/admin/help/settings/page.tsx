@@ -246,7 +246,7 @@ export default function SettingsHelpPage() {
                   <Building size="xs" />
                 </div>
                 <h2 className="text-lg md:text-xl font-bold text-foreground">
-                  Aba Geral: Identidade e Dados da Clínica
+                  Aba Geral: Identidade e Dados da Empresa
                 </h2>
               </div>
 
@@ -261,13 +261,13 @@ export default function SettingsHelpPage() {
                 </h3>
                 <ul className="list-disc list-inside space-y-2 text-xs sm:text-sm text-muted-foreground">
                   <li>
-                    <strong className="text-foreground">Consulta Automática de CNPJ:</strong> Ao digitar o CNPJ da clínica e clicar na lupa de busca, o Totten conecta-se à base da Receita Federal (BrasilAPI) e preenche instantaneamente a Razão Social, Nome Fantasia, CEP, Endereço, Bairro, Município e Estado.
+                    <strong className="text-foreground">Consulta Automática de CNPJ:</strong> Ao digitar o CNPJ da empresa e clicar na lupa de busca, o Totten conecta-se à base da Receita Federal (BrasilAPI) e preenche instantaneamente a Razão Social, Nome Fantasia, CEP, Endereço, Bairro, Município e Estado.
                   </li>
                   <li>
                     <strong className="text-foreground">Padronização de Nomes:</strong> O sistema formata automaticamente os textos para o padrão formal de capitulação (iniciais maiúsculas), preservando siglas oficiais (como LTDA, EPP, ME e siglas de estados).
                   </li>
                   <li>
-                    <strong className="text-foreground">Canais de Contato:</strong> Cadastre o telefone e o WhatsApp oficial da recepção para que seus pacientes encontrem suporte com facilidade no portal.
+                    <strong className="text-foreground">Canais de Contato:</strong> Cadastre o telefone e o WhatsApp oficial da recepção para que seus clientes encontrem suporte com facilidade no portal.
                   </li>
                 </ul>
               </div>
@@ -308,7 +308,7 @@ export default function SettingsHelpPage() {
                       Mensagem de Boas-Vindas
                     </span>
                     <p className="text-xs text-muted-foreground">
-                      Disparada no cadastro inicial do novo cliente para acolhimento e apresentação da clínica.
+                      Disparada no cadastro inicial do novo cliente para acolhimento e apresentação do seu espaço.
                     </p>
                   </div>
                   <div className="p-4 rounded-2xl border bg-card">
@@ -415,7 +415,7 @@ export default function SettingsHelpPage() {
                         Última Sessão de Pacote
                       </h4>
                       <p className="text-xs text-muted-foreground">
-                        Gera um alerta crucial no momento em que o cliente conclui a última sessão do seu pacote, permitindo que o profissional recomende a renovação antes de a cliente sair da clínica.
+                        Gera um alerta crucial no momento em que o cliente conclui a última sessão do seu pacote, permitindo que o profissional recomende a renovação antes de a cliente sair do estabelecimento.
                       </p>
                     </div>
                   </div>
@@ -467,7 +467,7 @@ export default function SettingsHelpPage() {
               </div>
 
               <p className="text-muted-foreground leading-relaxed">
-                A aba <strong>Acesso</strong> é destinada à gestão das credenciais de autenticação do usuário conectado, garantindo a proteção e a integridade de todas as informações confidenciais da clínica.
+                A aba <strong>Acesso</strong> é destinada à gestão das credenciais de autenticação do usuário conectado, garantindo a proteção e a integridade de todas as informações confidenciais da sua empresa.
               </p>
 
               <div className="bg-muted/30 border border-border/60 rounded-2xl p-4 sm:p-5 space-y-3">

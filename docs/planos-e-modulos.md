@@ -25,7 +25,7 @@ Para a profissional que conduz a própria rotina.
 - Até 1 profissional cadastrado.
 - Até 1 pacote ativo por cliente.
 
-### Plano Médio
+### Plano Padrão
 
 Para quem quer ampliar a operação e acompanhar a recorrência e as finanças.
 
@@ -39,7 +39,7 @@ Para quem quer ampliar a operação e acompanhar a recorrência e as finanças.
 
 Para operações que precisam de autoatendimento e capacidade ampliada.
 
-- Inclui tudo do Plano Médio.
+- Inclui tudo do Plano Padrão.
 - De 3 até 30 profissionais cadastrados.
 - Pacotes ativos sem limite por cliente.
 - Módulo de Autoatendimento completo: dashboard, solicitações pendentes, regras e horários, e página personalizada.

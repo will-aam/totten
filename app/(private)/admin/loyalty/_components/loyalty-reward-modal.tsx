@@ -200,7 +200,7 @@ export function LoyaltyRewardModal({ open, onOpenChange, onSave, initialData }: 
           onChange={(e) => setValidityDays(e.target.value)}
           className="rounded-xl"
         />
-        <p className="text-xs text-muted-foreground">Prazo após o resgate para utilizar na clínica (padrão: 30 dias).</p>
+        <p className="text-xs text-muted-foreground">Prazo após o resgate para utilizar no estabelecimento (padrão: 30 dias).</p>
       </div>
     </div>
   );

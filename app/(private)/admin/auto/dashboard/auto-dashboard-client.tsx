@@ -280,7 +280,7 @@ export function AutoDashboardClient({ initialData }: AutoDashboardClientProps) {
             <div>
               <h3 className="text-sm font-bold text-foreground">Disparo Automático de Lembretes</h3>
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                Envie confirmações instantâneas e lembretes 2 horas antes de cada consulta pelo WhatsApp da sua clínica sem precisar clicar em nada.
+                Envie confirmações instantâneas e lembretes 2 horas antes de cada atendimento pelo WhatsApp do seu estabelecimento sem precisar clicar em nada.
               </p>
             </div>
 

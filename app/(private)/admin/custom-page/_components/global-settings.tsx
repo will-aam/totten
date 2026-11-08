@@ -304,7 +304,7 @@ export function GlobalSettings({
               value={profile.name || ""}
               onChange={(e) => setProfile({ ...profile, name: e.target.value.slice(0, 30) })}
               className="bg-background h-11 max-w-md"
-              placeholder="Ex: Clínica Totten"
+              placeholder="Ex: Espaço Totten"
               required
               minLength={3}
               maxLength={30}

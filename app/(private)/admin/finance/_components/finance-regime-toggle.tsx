@@ -35,7 +35,7 @@ export function FinanceRegimeModal({
             Entendendo os Regimes Contábeis
           </DialogTitle>
           <DialogDescription className="text-xs sm:text-sm text-muted-foreground">
-            A diferença entre o volume de vendas da clínica e o dinheiro que realmente entra na sua conta bancária.
+            A diferença entre o volume de vendas do seu negócio e o dinheiro que realmente entra na sua conta bancária.
           </DialogDescription>
         </DialogHeader>
 
@@ -56,7 +56,7 @@ export function FinanceRegimeModal({
               independentemente se o cliente pagou à vista, no Pix ou parcelou em várias vezes.
             </p>
             <p className="text-[11px] text-muted-foreground/90 font-medium pt-1">
-              🎯 <strong>Para que serve:</strong> Medir a força de vendas, metas da clínica e volume produzido no mês.
+              🎯 <strong>Para que serve:</strong> Medir a força de vendas, metas da sua equipe e volume produzido no mês.
             </p>
           </div>
 

@@ -185,7 +185,7 @@ export function AdminSidebar({ isBlocked = false }: AdminSidebarProps) {
                             ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 font-semibold"
                             : "text-foreground"
                         )}
-                        tooltip="Clientes da Plataforma"
+                        tooltip="Gestão da Plataforma"
                       >
                         <Link
                           href="/admin/master"
@@ -194,7 +194,7 @@ export function AdminSidebar({ isBlocked = false }: AdminSidebarProps) {
                         >
                           <Crown className="h-4 w-4 text-amber-500 shrink-0" />
                           <span className="group-data-[collapsible=icon]:hidden">
-                            Clientes da Plataforma
+                            Gestão da Plataforma
                           </span>
                         </Link>
                       </SidebarMenuButton>
@@ -309,7 +309,7 @@ export function AdminSidebar({ isBlocked = false }: AdminSidebarProps) {
               </SidebarGroupContent>
             </SidebarGroup>
 
-            {/* MÓDULOS DE PLANO (Plano Médio e Avançado) */}
+            {/* MÓDULOS DE PLANO (Plano Padrão e Avançado) */}
             {hasModules && (
               <SidebarGroup className="mt-0.5">
                 <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 px-2 flex items-center justify-between">
@@ -317,7 +317,7 @@ export function AdminSidebar({ isBlocked = false }: AdminSidebarProps) {
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
-                    {/* Financeiro — Plano Médio+ */}
+                    {/* Financeiro — Plano Padrão+ */}
                     {canViewFinance &&
                       (isMobile ? (
                         <SidebarMenuItem>
@@ -354,7 +354,7 @@ export function AdminSidebar({ isBlocked = false }: AdminSidebarProps) {
                         />
                       ))}
 
-                    {/* Programa de Fidelidade — Plano Médio+ */}
+                    {/* Programa de Fidelidade — Plano Padrão+ */}
                     {isOwner && (
                       <SidebarMenuItem>
                         <SidebarMenuButton
@@ -403,10 +403,9 @@ export function AdminSidebar({ isBlocked = false }: AdminSidebarProps) {
         )}
       </SidebarContent>
 
-      {/* Card "Meu Plano" em destaque antes do perfil do usuário */}
-      {isOwner && (
+      {/* Card "Meu Plano" em destaque antes do perfil do usuário (oculto para o dono do sistema) */}
+      {isOwner && !isSystemOwner && (
         <SidebarPlanCard
-          isSystemOwner={isSystemOwner}
           onNavigate={closeMobile}
         />
       )}

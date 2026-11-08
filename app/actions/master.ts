@@ -6,12 +6,14 @@ import { requireSystemOwner } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { sendVerificationEmail } from "@/lib/email";
 import { randomBytes } from "crypto";
+import bcrypt from "bcryptjs";
+import { normalizePlan, type OfficialPlan } from "@/lib/plans";
 
 export interface MasterClinicItem {
   id: string;
   name: string;
   slug: string;
-  plan: string;
+  plan: OfficialPlan;
   subscription_status: string;
   trial_ends_at: string | null;
   trial_days_left: number | null;
@@ -47,7 +49,9 @@ export interface MasterPlatformSummary {
   pendingEmailsCount: number;
   trialCount: number;
   activeCount: number;
-  otherPlansCount: number;
+  basicCount: number;
+  mediumCount: number;
+  advancedCount: number;
 }
 
 export interface MasterPlatformData {
@@ -58,7 +62,7 @@ export interface MasterPlatformData {
 const MASTER_ORG_ID = "cmw6jrh6t0000cgxgwi7hi285";
 
 /**
- * 📊 Busca os dados consolidados de todas as clínicas clientes para o Dono do Sistema
+ * 📊 Busca os dados consolidados de todas as empresas clientes para o Dono do Sistema
  */
 export async function getMasterPlatformData(): Promise<MasterPlatformData> {
   await requireSystemOwner();
@@ -117,7 +121,7 @@ export async function getMasterPlatformData(): Promise<MasterPlatformData> {
       id: org.id,
       name: org.name,
       slug: org.slug,
-      plan: org.plan || "TRIAL",
+      plan: normalizePlan(org.plan),
       subscription_status: org.subscription_status || "TRIAL",
       trial_ends_at: org.trial_ends_at ? org.trial_ends_at.toISOString() : null,
       trial_days_left: trialDaysLeft,
@@ -153,9 +157,11 @@ export async function getMasterPlatformData(): Promise<MasterPlatformData> {
   const verifiedEmailsCount = clinics.filter((c) => c.owner?.email_verified).length;
   const pendingEmailsCount = totalClinics - verifiedEmailsCount;
   const totalProfessionals = clinics.reduce((acc, c) => acc + c.professionals_count, 0);
-  const trialCount = clinics.filter((c) => c.plan === "TRIAL" || c.subscription_status === "TRIAL").length;
+  const basicCount = clinics.filter((c) => c.plan === "BASIC").length;
+  const mediumCount = clinics.filter((c) => c.plan === "MEDIUM").length;
+  const advancedCount = clinics.filter((c) => c.plan === "ADVANCED").length;
+  const trialCount = clinics.filter((c) => c.subscription_status === "TRIAL").length;
   const activeCount = clinics.filter((c) => c.subscription_status === "ACTIVE").length;
-  const otherPlansCount = totalClinics - trialCount - activeCount;
 
   return {
     summary: {
@@ -165,7 +171,9 @@ export async function getMasterPlatformData(): Promise<MasterPlatformData> {
       pendingEmailsCount,
       trialCount,
       activeCount,
-      otherPlansCount,
+      basicCount,
+      mediumCount,
+      advancedCount,
     },
     clinics,
   };
@@ -238,7 +246,7 @@ export async function resendClientActivationEmail(adminId: string) {
 }
 
 /**
- * ⏳ Prorroga o período de Trial de uma clínica cliente
+ * ⏳ Prorroga o período de Trial de uma empresa cliente
  */
 export async function extendClientTrial(organizationId: string, additionalDays: number) {
   await requireSystemOwner();
@@ -254,7 +262,7 @@ export async function extendClientTrial(organizationId: string, additionalDays: 
     });
 
     if (!org) {
-      return { success: false, error: "Clínica não encontrada." };
+      return { success: false, error: "Empresa não encontrada." };
     }
 
     const baseDate = org.trial_ends_at && new Date(org.trial_ends_at) > new Date()

@@ -32,24 +32,22 @@ export async function checkOrganizationSubscription(organizationId: string): Pro
   }
 
   // 👑 ISENÇÃO VITALÍCIA (Dono do Sistema / Conta Master):
-  // A organização do dono possui plano FULL vitalício e isenção permanente de pagamento.
+  // A organização do dono possui acesso irrestrito e isenção permanente de pagamento.
   const isMasterExempt =
     organizationId === "cmw6jrh6t0000cgxgwi7hi285" ||
-    org.plan === "FULL" ||
-    org.plan === "MASTER" ||
     org.mp_subscription_id === "MASTER_EXEMPT_LIFETIME";
 
   if (isMasterExempt) {
     return {
       isBlocked: false,
       status: "ACTIVE",
-      plan: "FULL",
+      plan: "ADVANCED",
       daysRemaining: 99999,
     };
   }
 
   const status = (org.subscription_status || "TRIAL") as SubscriptionAccess["status"];
-  const plan = org.plan || "TRIAL";
+  const plan = org.plan || "ADVANCED";
   const now = new Date();
 
   // 1. Assinatura ativa com pagamento confirmado

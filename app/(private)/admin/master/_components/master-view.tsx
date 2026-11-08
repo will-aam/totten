@@ -19,6 +19,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Building2,
   Users,
@@ -28,7 +29,6 @@ import {
   Phone,
   Search,
   ExternalLink,
-  Crown,
   Calendar,
   Sparkles,
   MapPin,
@@ -38,10 +38,12 @@ import {
   PlusCircle,
   Send,
   Loader2,
+  BarChart3,
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { formatDocument, formatPhone } from "@/lib/utils";
+import { OFFICIAL_PLANS, formatPlanName, formatSubscriptionStatus } from "@/lib/plans";
 
 interface MasterViewProps {
   initialData: MasterPlatformData;
@@ -163,10 +165,10 @@ export function MasterView({ initialData }: MasterViewProps) {
           setSelectedClinic((prev) =>
             prev
               ? {
-                  ...prev,
-                  trial_days_left: (prev.trial_days_left ?? 0) + days,
-                  subscription_status: "TRIAL",
-                }
+                ...prev,
+                trial_days_left: (prev.trial_days_left ?? 0) + days,
+                subscription_status: "TRIAL",
+              }
               : null
           );
         }
@@ -181,127 +183,53 @@ export function MasterView({ initialData }: MasterViewProps) {
   };
 
   // Gera link do WhatsApp com mensagem amigável de suporte
-  const getWhatsAppLink = (phone: string, clinicName: string, responsibleName: string) => {
+  const getWhatsAppLink = (phone: string, businessName: string, responsibleName: string) => {
     const cleanDigits = phone.replace(/\D/g, "");
     if (!cleanDigits) return null;
     const number = cleanDigits.startsWith("55") ? cleanDigits : `55${cleanDigits}`;
     const text = encodeURIComponent(
-      `Olá ${responsibleName}! Aqui é o suporte oficial do Totten. Notamos o cadastro da ${clinicName} e estamos à disposição para ajudar com qualquer configuração inicial.`
+      `Olá ${responsibleName}! Aqui é o suporte oficial do Totten. Notamos o cadastro de ${businessName} e estamos à disposição para ajudar com qualquer configuração inicial.`
     );
     return `https://wa.me/${number}?text=${text}`;
   };
 
   return (
     <div className="flex flex-col gap-6 w-full">
-      {/* 1. Header com Badge de Super Admin */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-3xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20 shadow-sm">
-        <div className="flex items-center gap-3.5">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0">
-            <Crown className="h-6 w-6" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-                Painel do Dono do Sistema
-              </h2>
-              <Badge variant="outline" className="border-amber-500/30 text-amber-700 dark:text-amber-300 bg-amber-500/10 text-xs">
-                Exclusivo Master
-              </Badge>
-            </div>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-              Gestão estratégica e monitoramento de todas as clínicas clientes cadastradas no Totten.
-            </p>
-          </div>
+      {/* Navegação por Tabs Minimalistas */}
+      <Tabs defaultValue="clients" className="w-full flex flex-col gap-6">
+        <div className="border-b border-border/50">
+          <TabsList className="flex w-full overflow-x-auto bg-transparent border-none rounded-none p-0 h-auto gap-6 justify-start">
+            <TabsTrigger
+              value="clients"
+              className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-1 pb-3 text-sm font-medium text-muted-foreground data-[state=active]:text-foreground whitespace-nowrap flex items-center gap-2 cursor-pointer transition-colors"
+            >
+              <Building2 className="h-4 w-4" />
+              <span>Clientes</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
+                {data.clinics.length}
+              </span>
+            </TabsTrigger>
+
+            <TabsTrigger
+              value="reports"
+              className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-1 pb-3 text-sm font-medium text-muted-foreground data-[state=active]:text-foreground whitespace-nowrap flex items-center gap-2 cursor-pointer transition-colors"
+            >
+              <BarChart3 className="h-4 w-4" />
+              <span>Relatório</span>
+            </TabsTrigger>
+          </TabsList>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <Badge variant="secondary" className="px-3 py-1.5 text-xs font-medium">
-            {data.summary.totalClinics} {data.summary.totalClinics === 1 ? "Clínica Cadastrada" : "Clínicas Cadastradas"}
-          </Badge>
-        </div>
-      </div>
-
-      {/* 2. Cards de KPIs Rápidos */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Total de Clínicas */}
-        <div className="p-4 sm:p-5 rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-semibold uppercase tracking-wider">Empresas Clientes</span>
-            <Building2 className="h-4 w-4 text-primary" />
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl sm:text-3xl font-bold text-foreground">
-              {data.summary.totalClinics}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Organizações registradas na plataforma
-            </p>
-          </div>
-        </div>
-
-        {/* Card 2: E-mails Ativados */}
-        <div className="p-4 sm:p-5 rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-semibold uppercase tracking-wider">E-mails Ativados</span>
-            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400">
-              {data.summary.verifiedEmailsCount}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {data.summary.pendingEmailsCount > 0 ? (
-                <span className="text-amber-600 dark:text-amber-400 font-medium">
-                  {data.summary.pendingEmailsCount} pendente{data.summary.pendingEmailsCount > 1 ? "s" : ""} de ativação
-                </span>
-              ) : (
-                "100% dos clientes verificados"
-              )}
-            </p>
-          </div>
-        </div>
-
-        {/* Card 3: Profissionais / Colaboradores */}
-        <div className="p-4 sm:p-5 rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-semibold uppercase tracking-wider">Profissionais</span>
-            <Users className="h-4 w-4 text-blue-500" />
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">
-              {data.summary.totalProfessionals}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Equipes cadastradas pelos clientes
-            </p>
-          </div>
-        </div>
-
-        {/* Card 4: Planos / Trial */}
-        <div className="p-4 sm:p-5 rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-semibold uppercase tracking-wider">Período de Teste</span>
-            <Sparkles className="h-4 w-4 text-amber-500" />
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl sm:text-3xl font-bold text-foreground">
-              {data.summary.trialCount}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {data.summary.activeCount > 0 ? `${data.summary.activeCount} assinante(s) ativo(s)` : "Clientes em período gratuito"}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* 3. Filtros e Busca */}
+        {/* Tab 1: Clientes */}
+        <TabsContent value="clients" className="mt-0 flex flex-col gap-6 focus-visible:outline-none">
+          {/* Filtros e Busca */}
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
         <div className="relative flex-1">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por clínica, responsável, e-mail, CNPJ ou telefone..."
+            placeholder="Buscar por empresa, responsável, e-mail, CNPJ ou telefone..."
             className="pl-10 h-11 rounded-2xl bg-muted/40 border-border/60"
           />
         </div>
@@ -318,30 +246,29 @@ export function MasterView({ initialData }: MasterViewProps) {
             <option value="PENDING">Apenas Pendentes</option>
           </select>
 
-          {/* Filtro de Plano */}
+          {/* Filtro de Plano (Apenas os 3 planos oficiais) */}
           <select
             value={planFilter}
             onChange={(e) => setPlanFilter(e.target.value)}
             className="h-11 px-3 text-xs sm:text-sm rounded-2xl bg-muted/40 border border-border/60 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
           >
-            <option value="ALL">Planos: Todos</option>
-            <option value="TRIAL">Plano Trial</option>
+            <option value="ALL">Todos os Planos</option>
             <option value="BASIC">Plano Básico</option>
-            <option value="MEDIUM">Plano Médio</option>
+            <option value="MEDIUM">Plano Padrão</option>
             <option value="ADVANCED">Plano Avançado</option>
           </select>
         </div>
       </div>
 
-      {/* 4. Listagem das Clínicas Clientes */}
+      {/* 4. Listagem dos Clientes */}
       {filteredClinics.length === 0 ? (
         <div className="p-12 text-center rounded-3xl border border-dashed border-border/80 bg-muted/10 flex flex-col items-center justify-center gap-3">
           <div className="h-12 w-12 rounded-2xl bg-muted/60 flex items-center justify-center text-muted-foreground">
             <Building2 className="h-6 w-6" />
           </div>
-          <h3 className="text-base font-semibold text-foreground">Nenhuma clínica encontrada</h3>
+          <h3 className="text-base font-semibold text-foreground">Nenhuma empresa encontrada</h3>
           <p className="text-xs sm:text-sm text-muted-foreground max-w-sm">
-            Nenhum cliente corresponde aos filtros ou à busca informada.
+            Nenhum estabelecimento ou cliente corresponde aos filtros ou à busca informada.
           </p>
           {(search || statusFilter !== "ALL" || planFilter !== "ALL") && (
             <Button
@@ -385,6 +312,7 @@ export function MasterView({ initialData }: MasterViewProps) {
                           ({clinic.trade_name})
                         </span>
                       )}
+                      {/* Status de Verificação de E-mail */}
                       <Badge
                         variant="outline"
                         className={
@@ -403,8 +331,21 @@ export function MasterView({ initialData }: MasterViewProps) {
                           </span>
                         )}
                       </Badge>
-                      <Badge variant="secondary" className="text-[11px]">
-                        Plano {clinic.plan}
+
+                      {/* Nome Oficial do Plano (Básico, Padrão ou Avançado) */}
+                      <Badge
+                        variant="outline"
+                        className={`${OFFICIAL_PLANS[clinic.plan]?.badgeClass || "border-border text-foreground bg-muted/40"} text-[11px] font-medium`}
+                      >
+                        {OFFICIAL_PLANS[clinic.plan]?.name || "Plano Avançado"}
+                      </Badge>
+
+                      {/* Status da Assinatura (Ativa, Em Teste, etc.) */}
+                      <Badge
+                        variant="outline"
+                        className={`${formatSubscriptionStatus(clinic.subscription_status, clinic.trial_days_left).badgeClass} text-[11px] font-medium`}
+                      >
+                        {formatSubscriptionStatus(clinic.subscription_status, clinic.trial_days_left).label}
                       </Badge>
                     </div>
 
@@ -542,8 +483,13 @@ export function MasterView({ initialData }: MasterViewProps) {
           })}
         </div>
       )}
+        </TabsContent>
 
-      {/* 5. Modal de Detalhes da Clínica Selecionada */}
+        {/* Tab 2: Relatório (Vazia) */}
+        <TabsContent value="reports" className="mt-0 focus-visible:outline-none" />
+      </Tabs>
+
+      {/* 5. Modal de Detalhes da Empresa Selecionada */}
       {selectedClinic && (
         <Dialog open={!!selectedClinic} onOpenChange={(open) => !open && setSelectedClinic(null)}>
           <DialogContent className="max-w-xl rounded-3xl p-6 sm:p-7">
@@ -557,6 +503,20 @@ export function MasterView({ initialData }: MasterViewProps) {
                   <DialogDescription className="text-xs">
                     Identificador: <span className="font-mono text-muted-foreground">{selectedClinic.id}</span>
                   </DialogDescription>
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    <Badge
+                      variant="outline"
+                      className={`${OFFICIAL_PLANS[selectedClinic.plan]?.badgeClass || "border-border text-foreground bg-muted/40"} text-[11px] font-medium`}
+                    >
+                      {OFFICIAL_PLANS[selectedClinic.plan]?.name || "Plano Avançado"}
+                    </Badge>
+                    <Badge
+                      variant="outline"
+                      className={`${formatSubscriptionStatus(selectedClinic.subscription_status, selectedClinic.trial_days_left).badgeClass} text-[11px] font-medium`}
+                    >
+                      {formatSubscriptionStatus(selectedClinic.subscription_status, selectedClinic.trial_days_left).label}
+                    </Badge>
+                  </div>
                 </div>
               </div>
             </DialogHeader>
@@ -628,7 +588,7 @@ export function MasterView({ initialData }: MasterViewProps) {
                 </div>
               </div>
 
-              {/* Bloco 3: Métricas de Uso da Clínica */}
+              {/* Bloco 3: Métricas de Uso do Negócio */}
               <div className="grid grid-cols-3 gap-2">
                 <div className="p-3 rounded-2xl border border-border/60 bg-muted/20 text-center">
                   <span className="text-[11px] text-muted-foreground block">Profissionais</span>
@@ -639,12 +599,12 @@ export function MasterView({ initialData }: MasterViewProps) {
                   <span className="text-lg font-bold text-foreground">{selectedClinic.appointments_count}</span>
                 </div>
                 <div className="p-3 rounded-2xl border border-border/60 bg-muted/20 text-center">
-                  <span className="text-[11px] text-muted-foreground block">Clientes Totten</span>
+                  <span className="text-[11px] text-muted-foreground block">Clientes Cadastrados</span>
                   <span className="text-lg font-bold text-foreground">{selectedClinic.clients_count}</span>
                 </div>
               </div>
 
-              {/* Link para página pública da clínica */}
+              {/* Link para página pública */}
               <div className="flex items-center justify-between pt-2">
                 <Button
                   asChild
@@ -654,7 +614,7 @@ export function MasterView({ initialData }: MasterViewProps) {
                 >
                   <Link href={`/${selectedClinic.slug}`} target="_blank">
                     <ExternalLink className="h-3.5 w-3.5" />
-                    Abrir Página Pública da Clínica
+                    Abrir Página Pública
                   </Link>
                 </Button>
 

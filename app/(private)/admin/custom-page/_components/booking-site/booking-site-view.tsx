@@ -285,7 +285,7 @@ export function BookingSiteView({ profile }: { profile?: any }) {
             >
               <div className="flex-1 min-w-0 pr-2">
                 <Label className="font-semibold text-sm leading-snug cursor-pointer">Mostrar &quot;Nossa Equipe&quot;</Label>
-                <p className="text-xs text-muted-foreground mt-1 leading-normal">Exibe fotos e nomes dos profissionais da clínica.</p>
+                <p className="text-xs text-muted-foreground mt-1 leading-normal">Exibe fotos e nomes dos profissionais do estabelecimento.</p>
               </div>
               <Switch
                 className="shrink-0"

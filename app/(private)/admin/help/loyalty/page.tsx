@@ -86,7 +86,7 @@ export default function LoyaltyHelpPage() {
               1. Visão Geral e Propósito
             </h2>
             <p className="text-muted-foreground leading-relaxed">
-              O <strong>Programa de Fidelidade do Totten</strong> é uma ferramenta desenhada para impulsionar a retenção, a frequência de visitas e o ticket médio da sua clínica. Ele transforma atendimentos, pontualidade e consumo financeiro em uma moeda de relacionamento (pontos), que os clientes podem acumular e trocar por vantagens reais: <strong>brindes, cortesias, descontos em porcentagem ou abatimentos em dinheiro</strong>.
+              O <strong>Programa de Fidelidade do Totten</strong> é uma ferramenta desenhada para impulsionar a retenção, a frequência de visitas e o ticket médio do seu negócio. Ele transforma atendimentos, pontualidade e consumo financeiro em uma moeda de relacionamento (pontos), que os clientes podem acumular e trocar por vantagens reais: <strong>brindes, cortesias, descontos em porcentagem ou abatimentos em dinheiro</strong>.
             </p>
           </section>
 
@@ -105,7 +105,7 @@ export default function LoyaltyHelpPage() {
                   A. Pontos por Check-in (Presença)
                 </h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Concedidos quando o cliente comparece à clínica e faz check-in no <strong>Totem de Autoatendimento</strong>, na <strong>Sala de Espera</strong>, na recepção ou ao realizar uma <strong>sessão de pacote</strong>. Estimula a assiduidade presencial.
+                  Concedidos quando o cliente comparece ao estabelecimento e faz check-in no <strong>Totem de Autoatendimento</strong>, na <strong>Sala de Espera</strong>, na recepção ou ao realizar uma <strong>sessão de pacote</strong>. Estimula a assiduidade presencial.
                 </p>
               </div>
 
@@ -154,7 +154,7 @@ export default function LoyaltyHelpPage() {
                 <strong>• Integração com o Financeiro (Modo Automático vs. Manual):</strong> No modo automático, ao aplicar o voucher no agendamento, o sistema calcula o desconto (% ou R$) e abate a fatura na hora. No modo manual, a recepcionista dá baixa no voucher apenas como comprovante, realizando a cobrança na maquininha de cartão.
               </p>
               <p>
-                <strong>• Expiração por Inatividade:</strong> Protege o caixa da clínica contra passivos ocultos. Se o cliente passar do prazo configurado (60, 90, 180 ou 365 dias) sem realizar nenhuma visita ou check-in, seu saldo de pontos é zerado com registro de auditoria.
+                <strong>• Expiração por Inatividade:</strong> Protege o caixa do estabelecimento contra passivos ocultos. Se o cliente passar do prazo configurado (60, 90, 180 ou 365 dias) sem realizar nenhuma visita ou check-in, seu saldo de pontos é zerado com registro de auditoria.
               </p>
             </div>
           </section>
@@ -203,7 +203,7 @@ export default function LoyaltyHelpPage() {
               5. A Experiência do Cliente (Portal do Cliente)
             </h2>
             <p className="text-muted-foreground">
-              O cliente não precisa baixar aplicativo: ele acessa diretamente pelo link da clínica no celular (<code>totten.app/{'{slug}'}/cliente</code>).
+              O cliente não precisa baixar aplicativo: ele acessa diretamente pelo link do estabelecimento no celular (<code>totten.app/{'{slug}'}/cliente</code>).
             </p>
             <ol className="list-decimal pl-5 space-y-1.5 text-xs md:text-sm text-muted-foreground">
               <li>O cliente entra informando seu CPF + WhatsApp cadastrado ou via código OTP recebido por e-mail.</li>
@@ -288,7 +288,7 @@ export default function LoyaltyHelpPage() {
 
               <div className="p-4 rounded-2xl border bg-card space-y-1">
                 <span className="font-semibold text-foreground block">
-                  A clínica pode pontuar apenas por valor financeiro (R$) e desligar pontos fixos?
+                  O estabelecimento pode pontuar apenas por valor financeiro (R$) e desligar pontos fixos?
                 </span>
                 <p className="text-muted-foreground">
                   Sim. Basta desativar as chaves de "Pontos por Check-in" e "Pontos por Agendamento", mantendo ligada apenas a regra de "Pontos por Valor Gasto".
