@@ -8,6 +8,7 @@ export interface AuthenticatedAdmin {
   name?: string | null;
   role: string;
   permissions: string[];
+  isSystemOwner?: boolean;
   organizationId: string;
   organizationName?: string | null;
 }
@@ -20,7 +21,7 @@ export async function getSession() {
 }
 
 /**
- * 🧑‍💼 Retorna os dados do Admin logado (incluindo organization_id, role e permissions)
+ * 🧑‍💼 Retorna os dados do Admin logado (incluindo organization_id, role, permissions e isSystemOwner)
  * Retorna null se não houver sessão ativa
  */
 export async function getCurrentAdmin() {
@@ -36,6 +37,7 @@ export async function getCurrentAdmin() {
     name: session.user.name,
     role: (session.user as any).role || "OWNER",
     permissions: ((session.user as any).permissions as string[]) || [],
+    isSystemOwner: (session.user as any).isSystemOwner ?? false,
     organizationId: session.user.organizationId,
     organizationName: session.user.organizationName,
   };
@@ -96,4 +98,37 @@ export async function requireFinancePermission(): Promise<AuthenticatedAdmin> {
   }
 
   return admin;
+}
+
+/**
+ * 👑 Garante que há um admin logado com permissão exclusiva de Dono do Sistema (Master).
+ * Valida a sessão e realiza checagem em tempo real contra o banco de dados.
+ */
+export async function requireSystemOwner(): Promise<AuthenticatedAdmin> {
+  const admin = await requireAuth();
+
+  // 1. Verificação instantânea por ID e E-mail do Administrador Master
+  const isMasterIdentity =
+    admin.id === "cmw6jrhek0003cgxgoznhpzm6" ||
+    admin.email?.toLowerCase() === "tottenappbr@gmail.com";
+
+  if (isMasterIdentity) {
+    return { ...admin, isSystemOwner: true };
+  }
+
+  // 2. Verificação no banco de dados via consulta direta em SQL (independente de cache do cliente)
+  const { prisma } = await import("@/lib/prisma");
+  try {
+    const rows: any = await prisma.$queryRawUnsafe(
+      `SELECT is_system_owner FROM admins WHERE id = $1 LIMIT 1`,
+      admin.id
+    );
+    if (rows?.[0]?.is_system_owner === true) {
+      return { ...admin, isSystemOwner: true };
+    }
+  } catch (err) {
+    console.error("[requireSystemOwner] Erro ao validar permissão master:", err);
+  }
+
+  throw new ForbiddenError("Acesso restrito ao Administrador Geral da Plataforma.");
 }

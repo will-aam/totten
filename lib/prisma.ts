@@ -9,9 +9,12 @@ const globalForPrisma = globalThis as unknown as {
 const cached = globalForPrisma.prisma;
 const isStale =
   cached &&
-  !(cached as any)._runtimeDataModel?.models?.Settings?.fields?.some?.(
+  (!(cached as any)._runtimeDataModel?.models?.Settings?.fields?.some?.(
     (f: any) => f.name === "responsible_first_name"
-  );
+  ) ||
+    !(cached as any)._runtimeDataModel?.models?.Admin?.fields?.some?.(
+      (f: any) => f.name === "is_system_owner"
+    ));
 
 if (isStale) {
   try {

@@ -8,6 +8,7 @@ declare module "next-auth" {
     organizationSlug: string;
     role: string;
     permissions: string[];
+    isSystemOwner?: boolean;
     photoUrl?: string;
   }
 
@@ -21,6 +22,7 @@ declare module "next-auth" {
       organizationSlug: string;
       role: string;
       permissions: string[];
+      isSystemOwner?: boolean;
       photoUrl?: string;
     };
   }
@@ -34,6 +36,7 @@ declare module "next-auth/jwt" {
     organizationSlug: string;
     role: string;
     permissions: string[];
+    isSystemOwner?: boolean;
     photoUrl?: string;
   }
 }

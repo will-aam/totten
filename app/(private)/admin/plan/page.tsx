@@ -8,6 +8,9 @@ import { cn } from "@/lib/utils";
 import { AdminHeader } from "@/app/(private)/admin/_components/admin-header";
 import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
 import { createSubscriptionCheckoutAction } from "./actions";
+import { useSession } from "next-auth/react";
+import { Crown } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 type PlanId = "basic" | "medium" | "advanced";
 type ComparisonValue = string | boolean;
@@ -268,11 +271,24 @@ function MobilePlanCarousel({
 }
 
 export default function PlanPage() {
+  const { data: session } = useSession();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
+  const isSystemOwner =
+    (session?.user as any)?.isSystemOwner === true ||
+    session?.user?.id === "cmw6jrhek0003cgxgoznhpzm6" ||
+    session?.user?.email?.toLowerCase() === "tottenappbr@gmail.com";
+
   const handleSubscribe = (planId: PlanId) => {
+    if (isSystemOwner) {
+      toast.info("Você é o dono da plataforma! Sua conta já possui o plano Full Master vitalício.", {
+        icon: "👑",
+      });
+      return;
+    }
+
     setLoadingPlanId(planId);
     toast.loading("Iniciando assinatura segura...", { id: "sub-loading" });
 
@@ -297,6 +313,32 @@ export default function PlanPage() {
     <>
       <AdminHeader title="Meu Plano" />
       <div className="relative mx-auto flex min-h-[calc(100vh-100px)] w-full max-w-400 flex-col gap-6 bg-[#f7f7f5] p-4 pb-24 text-zinc-950 animate-in fade-in duration-500 md:p-6 md:pb-6 dark:bg-background dark:text-foreground">
+        {isSystemOwner && (
+          <div className="p-6 rounded-3xl bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-transparent border border-amber-500/30 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in duration-300">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0">
+                <Crown className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-foreground">
+                    Conta Master do Sistema (Plano Full Vitalício)
+                  </h3>
+                  <Badge variant="outline" className="border-amber-500/40 text-amber-700 dark:text-amber-300 bg-amber-500/10 text-xs font-semibold">
+                    Isenção Permanente
+                  </Badge>
+                </div>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                  Esta conta pertence ao dono da plataforma. Você possui acesso irrestrito a todos os recursos e módulos, sem cobrança ou expiração.
+                </p>
+              </div>
+            </div>
+            <Badge variant="secondary" className="px-3.5 py-1.5 text-xs font-semibold self-start sm:self-auto bg-amber-500/20 text-amber-800 dark:text-amber-200">
+              ✓ 100% Liberado
+            </Badge>
+          </div>
+        )}
+
         <header className="mb-8 pb-2 md:mb-10">
           <h1 className="max-w-2xl text-3xl font-semibold tracking-[-0.04em] sm:text-4xl lg:text-[42px]">
             Um plano para cada fase da sua operação.

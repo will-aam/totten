@@ -9,6 +9,7 @@ import { useSidebar } from "@/components/ui/sidebar";
 
 interface SidebarPlanCardProps {
   onNavigate?: () => void;
+  isSystemOwner?: boolean;
 }
 
 const animationProps: MotionProps = {
@@ -32,7 +33,10 @@ const animationProps: MotionProps = {
   },
 };
 
-export function SidebarPlanCard({ onNavigate }: SidebarPlanCardProps) {
+export function SidebarPlanCard({
+  onNavigate,
+  isSystemOwner = false,
+}: SidebarPlanCardProps) {
   const pathname = usePathname();
   const { state, isMobile } = useSidebar();
   const isCollapsed = state === "collapsed" && !isMobile;
@@ -50,7 +54,9 @@ export function SidebarPlanCard({ onNavigate }: SidebarPlanCardProps) {
         <motion.div
           className={cn(
             "group relative flex w-full items-center justify-between overflow-hidden rounded-xl p-2.5 backdrop-blur-xl transition-all duration-300 ease-in-out hover:shadow-xs",
-            "bg-muted/40 hover:bg-muted/70",
+            isSystemOwner
+              ? "bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20"
+              : "bg-muted/40 hover:bg-muted/70",
             "dark:bg-[radial-gradient(circle_at_50%_0%,var(--primary)/12%_0%,transparent_70%)]",
             isPlanPage && "bg-primary/10 shadow-xs",
           )}
@@ -70,14 +76,23 @@ export function SidebarPlanCard({ onNavigate }: SidebarPlanCardProps) {
               <div className="flex flex-col min-w-0 text-left">
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs font-semibold text-foreground tracking-tight">
-                    Meu Plano
+                    {isSystemOwner ? "Admin" : "Meu Plano"}
                   </span>
-                  <span className="rounded-full bg-primary/15 px-1.5 py-0.2 text-[9px] font-semibold text-primary">
-                    PRO
+                  <span
+                    className={cn(
+                      "rounded-full px-1.5 py-0.2 text-[9px] font-semibold",
+                      isSystemOwner
+                        ? "bg-amber-500/20 text-amber-700 dark:text-amber-300"
+                        : "bg-primary/15 text-primary"
+                    )}
+                  >
+                    {isSystemOwner ? "FULL" : "PRO"}
                   </span>
                 </div>
                 <span className="truncate text-[10px] text-muted-foreground">
-                  Ver detalhes e limites
+                  {isSystemOwner
+                    ? "Acesso Vitalício"
+                    : "Ver detalhes e limites"}
                 </span>
               </div>
             </div>

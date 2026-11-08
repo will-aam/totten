@@ -89,12 +89,18 @@ export class AuthService {
 
     console.log("✅ 5. Sucesso! Retornando sessão com role:", admin.role);
 
+    const isSystemOwner =
+      (admin as any).is_system_owner === true ||
+      admin.id === "cmw6jrhek0003cgxgoznhpzm6" ||
+      admin.email?.toLowerCase() === "tottenappbr@gmail.com";
+
     return {
       id: admin.id,
       email: admin.email,
       name: admin.display_name || admin.email,
       role: admin.role,
       permissions: admin.permissions || [], // PEGA DO BANCO
+      isSystemOwner,
       organizationId: admin.organizations[0].id,
       organizationName: admin.organizations[0].name,
       organizationSlug: admin.organizations[0].slug,

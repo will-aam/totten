@@ -12,11 +12,13 @@ export async function checkOrganizationSubscription(organizationId: string): Pro
   const org = await prisma.organization.findUnique({
     where: { id: organizationId },
     select: {
+      id: true,
       plan: true,
       subscription_status: true,
       current_period_end: true,
       trial_ends_at: true,
       created_at: true,
+      mp_subscription_id: true,
     },
   });
 
@@ -26,6 +28,23 @@ export async function checkOrganizationSubscription(organizationId: string): Pro
       status: "SUSPENDED",
       plan: "TRIAL",
       reason: "Organização não encontrada.",
+    };
+  }
+
+  // 👑 ISENÇÃO VITALÍCIA (Dono do Sistema / Conta Master):
+  // A organização do dono possui plano FULL vitalício e isenção permanente de pagamento.
+  const isMasterExempt =
+    organizationId === "cmw6jrh6t0000cgxgwi7hi285" ||
+    org.plan === "FULL" ||
+    org.plan === "MASTER" ||
+    org.mp_subscription_id === "MASTER_EXEMPT_LIFETIME";
+
+  if (isMasterExempt) {
+    return {
+      isBlocked: false,
+      status: "ACTIVE",
+      plan: "FULL",
+      daysRemaining: 99999,
     };
   }
 

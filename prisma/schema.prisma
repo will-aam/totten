@@ -65,6 +65,7 @@ model Admin {
   reset_token          String?              @unique
   verification_token   String?              @unique
   role                 String               @default("OWNER")
+  is_system_owner      Boolean              @default(false)
   active               Boolean              @default(true)
   permissions          String[]             @default([])
   profession           String?

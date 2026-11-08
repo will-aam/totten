@@ -1,4 +1,4 @@
-﻿import { NextAuthOptions } from "next-auth";
+import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { AuthService } from "@/lib/server/services/auth/auth.service";
 
@@ -30,6 +30,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.role = (user as any).role;
         token.permissions = (user as any).permissions; //  SALVANDO NO TOKEN
+        token.isSystemOwner = (user as any).isSystemOwner ?? false;
         token.organizationId = (user as any).organizationId;
         token.organizationName = (user as any).organizationName;
         token.organizationSlug = (user as any).organizationSlug;
@@ -41,6 +42,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
         session.user.permissions = (token.permissions as string[]) || []; //  ENVIANDO PRO FRONTEND
+        session.user.isSystemOwner = (token.isSystemOwner as boolean) ?? false;
         session.user.organizationId = token.organizationId as string;
         session.user.organizationName = token.organizationName as string;
         session.user.organizationSlug = token.organizationSlug as string;

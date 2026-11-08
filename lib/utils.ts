@@ -145,16 +145,20 @@ export function formatCep(value: string): string {
   return v;
 }
 
-export function formatDocument(value: string, type: "CPF" | "CNPJ"): string {
-  if (type === "CPF") {
-    let v = value.replace(/\D/g, "").slice(0, 11);
+export function formatDocument(value: string, type?: "CPF" | "CNPJ"): string {
+  if (!value) return "";
+  const clean = value.replace(/[^a-zA-Z0-9]/g, "");
+  const targetType = type || (clean.length > 11 ? "CNPJ" : "CPF");
+
+  if (targetType === "CPF") {
+    let v = clean.replace(/\D/g, "").slice(0, 11);
     v = v.replace(/(\d{3})(\d)/, "$1.$2");
     v = v.replace(/(\d{3})(\d)/, "$1.$2");
     v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
     return v;
   } else {
     // CNPJ pode ser numérico tradicional ou alfanumérico (letras A-Z e números)
-    let v = value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 14);
+    let v = clean.toUpperCase().slice(0, 14);
     v = v.replace(/^([A-Z0-9]{2})([A-Z0-9])/, "$1.$2");
     v = v.replace(/^([A-Z0-9]{2})\.([A-Z0-9]{3})([A-Z0-9])/, "$1.$2.$3");
     v = v.replace(/^([A-Z0-9]{2})\.([A-Z0-9]{3})\.([A-Z0-9]{3})([A-Z0-9])/, "$1.$2.$3/$4");

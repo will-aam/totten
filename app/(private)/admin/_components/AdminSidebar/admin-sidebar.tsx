@@ -27,6 +27,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import { Crown } from "lucide-react";
 
 import { NavIcon } from "./nav-icon";
 import { NavCollapsibleGroup } from "./nav-collapsible-group";
@@ -64,6 +65,10 @@ export function AdminSidebar({ isBlocked = false }: AdminSidebarProps) {
   const isOwner = session?.user?.role === "OWNER";
   const permissions: string[] = session?.user?.permissions ?? [];
   const canViewFinance = isOwner || permissions.includes("FINANCE");
+  const isSystemOwner =
+    (session?.user as any)?.isSystemOwner === true ||
+    session?.user?.id === "cmw6jrhek0003cgxgoznhpzm6" ||
+    session?.user?.email?.toLowerCase() === "tottenappbr@gmail.com";
 
   // Uma única regra de acesso para todo item de menu
   const canAccess = (item: Gated) => {
@@ -164,207 +169,247 @@ export function AdminSidebar({ isBlocked = false }: AdminSidebarProps) {
           </div>
         ) : (
           <>
-            {/* OPERAÇÃO (Plano Básico): dia a dia → cadastros → registros */}
-            <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 px-2 mt-2">
-            Operação
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname.startsWith("/admin/dashboard")}
-                  className="hover:bg-muted/50"
-                  tooltip="Dashboard"
-                >
-                  <Link
-                    href="/admin/dashboard"
-                    onClick={closeMobile}
-                    className="flex items-center gap-2 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto"
-                  >
-                    <NavIcon
-                      icon={DashboardAlt}
-                      isActive={pathname.startsWith("/admin/dashboard")}
-                    />
-                    <span className="group-data-[collapsible=icon]:hidden">
-                      Dashboard
-                    </span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+            {/* EXCLUSIVO: GESTÃO DA PLATAFORMA (Dono do Sistema) */}
+            {isSystemOwner && (
+              <SidebarGroup className="pb-1">
 
-              {/* Itens do dia a dia (Agenda, Confirmações, Aniversariantes...) */}
-              {navItems.filter(canAccess).map((item) => {
-                const isActive = pathname.startsWith(item.href) && item.active;
-
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild={item.active}
-                      isActive={isActive}
-                      tooltip={item.title}
-                      className={cn(
-                        "hover:bg-muted/50",
-                        !item.active && "opacity-50 cursor-not-allowed",
-                      )}
-                    >
-                      {item.active ? (
-                        <Link
-                          href={item.href}
-                          onClick={closeMobile}
-                          className="flex items-center gap-2 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto"
-                        >
-                          <NavIcon icon={item.icon} isActive={isActive} />
-                          <span className="group-data-[collapsible=icon]:hidden">
-                            {item.title}
-                          </span>
-                        </Link>
-                      ) : (
-                        <div className="flex items-center justify-between w-full">
-                          <div className="flex items-center gap-2">
-                            <NavIcon icon={item.icon} isActive={false} />
-                            <span>{item.title}</span>
-                          </div>
-                          <Lock size="xs" className="opacity-50" />
-                        </div>
-                      )}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-
-              {/* Cadastros */}
-              {isOwner && visibleCadastros.length > 0 && (
-                <NavCollapsibleGroup
-                  label="Cadastros"
-                  icon={ListPlus}
-                  isOpen={openModule === "cadastros"}
-                  onOpenChange={(open) =>
-                    setOpenModule(open ? "cadastros" : null)
-                  }
-                  isActive={isCadastrosActive}
-                  items={visibleCadastros}
-                  pathname={pathname}
-                  onNavigate={closeMobile}
-                />
-              )}
-
-              {/* Registros */}
-              {visibleRegistros.length > 0 && (
-                <NavCollapsibleGroup
-                  label="Registros"
-                  icon={Archive}
-                  isOpen={openModule === "registros"}
-                  onOpenChange={(open) =>
-                    setOpenModule(open ? "registros" : null)
-                  }
-                  isActive={isRegistrosActive}
-                  items={visibleRegistros}
-                  pathname={pathname}
-                  onNavigate={closeMobile}
-                />
-              )}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* MÓDULOS DE PLANO (Plano Médio e Avançado) */}
-        {hasModules && (
-          <SidebarGroup className="mt-0.5">
-            <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 px-2 flex items-center justify-between">
-              <span>Módulos</span>
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {/* Financeiro — Plano Médio+ */}
-                {canViewFinance &&
-                  (isMobile ? (
+                <SidebarGroupContent>
+                  <SidebarMenu>
                     <SidebarMenuItem>
                       <SidebarMenuButton
                         asChild
-                        isActive={isFinanceActive}
-                        className="hover:bg-muted/50"
-                        tooltip="Financeiro"
+                        isActive={pathname.startsWith("/admin/master")}
+                        className={cn(
+                          "hover:bg-amber-500/10 transition-colors font-medium",
+                          pathname.startsWith("/admin/master")
+                            ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 font-semibold"
+                            : "text-foreground"
+                        )}
+                        tooltip="Clientes da Plataforma"
                       >
                         <Link
-                          href="/admin/finance/dashboard"
+                          href="/admin/master"
                           onClick={closeMobile}
                           className="flex items-center gap-2 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto"
                         >
-                          <NavIcon icon={Wallet} isActive={isFinanceActive} />
+                          <Crown className="h-4 w-4 text-amber-500 shrink-0" />
                           <span className="group-data-[collapsible=icon]:hidden">
-                            Financeiro
+                            Clientes da Plataforma
                           </span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
-                  ) : (
-                    <NavCollapsibleGroup
-                      label="Financeiro"
-                      icon={Wallet}
-                      isOpen={openModule === "finance"}
-                      onOpenChange={(open) =>
-                        setOpenModule(open ? "finance" : null)
-                      }
-                      isActive={isFinanceActive}
-                      items={visibleFinance}
-                      pathname={pathname}
-                      onNavigate={closeMobile}
-                    />
-                  ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            )}
 
-                {/* Programa de Fidelidade — Plano Médio+ */}
-                {isOwner && (
+            {/* OPERAÇÃO (Plano Básico): dia a dia → cadastros → registros */}
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 px-2 mt-2">
+                Operação
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       asChild
-                      isActive={pathname.startsWith("/admin/loyalty")}
+                      isActive={pathname.startsWith("/admin/dashboard")}
                       className="hover:bg-muted/50"
-                      tooltip="Programa de Fidelidade"
+                      tooltip="Dashboard"
                     >
                       <Link
-                        href="/admin/loyalty"
+                        href="/admin/dashboard"
                         onClick={closeMobile}
                         className="flex items-center gap-2 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto"
                       >
                         <NavIcon
-                          icon={Trophy}
-                          isActive={pathname.startsWith("/admin/loyalty")}
+                          icon={DashboardAlt}
+                          isActive={pathname.startsWith("/admin/dashboard")}
                         />
                         <span className="group-data-[collapsible=icon]:hidden">
-                          Programa de Fidelidade
+                          Dashboard
                         </span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                )}
 
-                {/* Autoatendimento — Plano Avançado */}
-                {isOwner && (
-                  <NavCollapsibleGroup
-                    label="Autoatendimento"
-                    icon={Mobile}
-                    isOpen={openModule === "autoatendimento"}
-                    onOpenChange={(open) =>
-                      setOpenModule(open ? "autoatendimento" : null)
-                    }
-                    isActive={isAutoActive}
-                    items={visibleAuto}
-                    pathname={pathname}
-                    onNavigate={closeMobile}
-                  />
-                )}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+                  {/* Itens do dia a dia (Agenda, Confirmações, Aniversariantes...) */}
+                  {navItems.filter(canAccess).map((item) => {
+                    const isActive = pathname.startsWith(item.href) && item.active;
+
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild={item.active}
+                          isActive={isActive}
+                          tooltip={item.title}
+                          className={cn(
+                            "hover:bg-muted/50",
+                            !item.active && "opacity-50 cursor-not-allowed",
+                          )}
+                        >
+                          {item.active ? (
+                            <Link
+                              href={item.href}
+                              onClick={closeMobile}
+                              className="flex items-center gap-2 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto"
+                            >
+                              <NavIcon icon={item.icon} isActive={isActive} />
+                              <span className="group-data-[collapsible=icon]:hidden">
+                                {item.title}
+                              </span>
+                            </Link>
+                          ) : (
+                            <div className="flex items-center justify-between w-full">
+                              <div className="flex items-center gap-2">
+                                <NavIcon icon={item.icon} isActive={false} />
+                                <span>{item.title}</span>
+                              </div>
+                              <Lock size="xs" className="opacity-50" />
+                            </div>
+                          )}
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+
+                  {/* Cadastros */}
+                  {isOwner && visibleCadastros.length > 0 && (
+                    <NavCollapsibleGroup
+                      label="Cadastros"
+                      icon={ListPlus}
+                      isOpen={openModule === "cadastros"}
+                      onOpenChange={(open) =>
+                        setOpenModule(open ? "cadastros" : null)
+                      }
+                      isActive={isCadastrosActive}
+                      items={visibleCadastros}
+                      pathname={pathname}
+                      onNavigate={closeMobile}
+                    />
+                  )}
+
+                  {/* Registros */}
+                  {visibleRegistros.length > 0 && (
+                    <NavCollapsibleGroup
+                      label="Registros"
+                      icon={Archive}
+                      isOpen={openModule === "registros"}
+                      onOpenChange={(open) =>
+                        setOpenModule(open ? "registros" : null)
+                      }
+                      isActive={isRegistrosActive}
+                      items={visibleRegistros}
+                      pathname={pathname}
+                      onNavigate={closeMobile}
+                    />
+                  )}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            {/* MÓDULOS DE PLANO (Plano Médio e Avançado) */}
+            {hasModules && (
+              <SidebarGroup className="mt-0.5">
+                <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 px-2 flex items-center justify-between">
+                  <span>Módulos</span>
+                </SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {/* Financeiro — Plano Médio+ */}
+                    {canViewFinance &&
+                      (isMobile ? (
+                        <SidebarMenuItem>
+                          <SidebarMenuButton
+                            asChild
+                            isActive={isFinanceActive}
+                            className="hover:bg-muted/50"
+                            tooltip="Financeiro"
+                          >
+                            <Link
+                              href="/admin/finance/dashboard"
+                              onClick={closeMobile}
+                              className="flex items-center gap-2 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto"
+                            >
+                              <NavIcon icon={Wallet} isActive={isFinanceActive} />
+                              <span className="group-data-[collapsible=icon]:hidden">
+                                Financeiro
+                              </span>
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      ) : (
+                        <NavCollapsibleGroup
+                          label="Financeiro"
+                          icon={Wallet}
+                          isOpen={openModule === "finance"}
+                          onOpenChange={(open) =>
+                            setOpenModule(open ? "finance" : null)
+                          }
+                          isActive={isFinanceActive}
+                          items={visibleFinance}
+                          pathname={pathname}
+                          onNavigate={closeMobile}
+                        />
+                      ))}
+
+                    {/* Programa de Fidelidade — Plano Médio+ */}
+                    {isOwner && (
+                      <SidebarMenuItem>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={pathname.startsWith("/admin/loyalty")}
+                          className="hover:bg-muted/50"
+                          tooltip="Programa de Fidelidade"
+                        >
+                          <Link
+                            href="/admin/loyalty"
+                            onClick={closeMobile}
+                            className="flex items-center gap-2 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto"
+                          >
+                            <NavIcon
+                              icon={Trophy}
+                              isActive={pathname.startsWith("/admin/loyalty")}
+                            />
+                            <span className="group-data-[collapsible=icon]:hidden">
+                              Programa de Fidelidade
+                            </span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )}
+
+                    {/* Autoatendimento — Plano Avançado */}
+                    {isOwner && (
+                      <NavCollapsibleGroup
+                        label="Autoatendimento"
+                        icon={Mobile}
+                        isOpen={openModule === "autoatendimento"}
+                        onOpenChange={(open) =>
+                          setOpenModule(open ? "autoatendimento" : null)
+                        }
+                        isActive={isAutoActive}
+                        items={visibleAuto}
+                        pathname={pathname}
+                        onNavigate={closeMobile}
+                      />
+                    )}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            )}
           </>
         )}
       </SidebarContent>
 
       {/* Card "Meu Plano" em destaque antes do perfil do usuário */}
-      {isOwner && <SidebarPlanCard onNavigate={closeMobile} />}
+      {isOwner && (
+        <SidebarPlanCard
+          isSystemOwner={isSystemOwner}
+          onNavigate={closeMobile}
+        />
+      )}
 
       {/* Menu do usuário (Configurações, Ajuda, Tema e Sair) */}
       <SidebarUserFooter
