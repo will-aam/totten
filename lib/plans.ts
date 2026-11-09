@@ -34,6 +34,12 @@ export const OFFICIAL_PLANS: Record<OfficialPlan, PlanConfig> = {
   },
 };
 
+export const PLAN_PRICES: Record<OfficialPlan, { monthly: number; yearly: number }> = {
+  BASIC: { monthly: 29.9, yearly: 299.0 },
+  MEDIUM: { monthly: 49.9, yearly: 499.0 },
+  ADVANCED: { monthly: 89.9, yearly: 899.0 },
+};
+
 /**
  * Normaliza qualquer valor armazenado (inclusive valores legados como "TRIAL", "ACTIVE", "FULL")
  * para um dos três planos oficiais: "BASIC", "MEDIUM" ou "ADVANCED".

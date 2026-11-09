@@ -39,6 +39,7 @@ import { toast } from "sonner";
 import { formatPhone } from "@/lib/utils";
 import { OFFICIAL_PLANS, formatSubscriptionStatus } from "@/lib/plans";
 import { ClientProfileView } from "./client-profile-view";
+import { MasterFinancialReports } from "./master-financial-reports";
 
 interface MasterViewProps {
   initialData: MasterPlatformData;
@@ -394,8 +395,10 @@ export function MasterView({ initialData }: MasterViewProps) {
           )}
         </TabsContent>
 
-        {/* Tab 2: Relatório (Vazia) */}
-        <TabsContent value="reports" className="mt-0 focus-visible:outline-none" />
+        {/* Tab 2: Relatório Financeiro e Estratégico */}
+        <TabsContent value="reports" className="mt-0 flex flex-col gap-6 focus-visible:outline-none">
+          <MasterFinancialReports clinics={data.clinics} />
+        </TabsContent>
       </Tabs>
     </div>
   );
