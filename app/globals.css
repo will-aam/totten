@@ -138,6 +138,18 @@
   display: none; /* Oculta no Chrome, Safari e Opera */
 }
 
+/* =========================================
+   CORREÇÃO TOUCH / RADIX POINTER EVENTS (Mobile & Tablets)
+   ========================================= */
+body[data-scroll-locked] {
+  pointer-events: auto !important;
+}
+
+[data-radix-popper-content-wrapper] {
+  pointer-events: auto !important;
+  z-index: 100 !important;
+}
+
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;

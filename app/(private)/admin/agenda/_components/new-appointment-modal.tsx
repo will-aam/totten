@@ -131,15 +131,32 @@ export const NewAppointmentModal = memo(
       [openingTime, closingTime],
     );
 
-    const { data: clientsResponse, isLoading: loadingClients } = useSWR<any>(
+    const {
+      data: clientsResponse,
+      isLoading: loadingClients,
+      mutate: mutateClients,
+    } = useSWR<any>(
       open ? "clients?active=true&limit=1000" : null,
       apiClient,
+      {
+        revalidateOnFocus: true,
+        revalidateOnMount: true,
+      }
     );
     const clients = clientsResponse?.data || [];
 
-    const { data: servicesResponse, isLoading: loadingServices } = useSWR<any>(
+    const {
+      data: servicesResponse,
+      isLoading: loadingServices,
+      error: errorServices,
+      mutate: mutateServices,
+    } = useSWR<any>(
       open ? "services?active=true" : null,
       apiClient,
+      {
+        revalidateOnFocus: true,
+        revalidateOnMount: true,
+      }
     );
     const services = Array.isArray(servicesResponse)
       ? servicesResponse
@@ -164,8 +181,16 @@ export const NewAppointmentModal = memo(
         if (!selectedClientId) {
           setActivePackage(null);
           setUsePackage(false);
+          setAvailablePackages([]);
           return;
         }
+
+        // Limpa estados residuais ao trocar de cliente para não travar o select de serviços
+        setUsePackage(false);
+        setActivePackage(null);
+        setAvailablePackages([]);
+        setSelectedServiceId(undefined);
+
         try {
           const data = await apiClient<any>(`clients/${selectedClientId}`);
 
@@ -322,10 +347,10 @@ export const NewAppointmentModal = memo(
                   <User className="mr-2 h-4 w-4 text-primary" />
                   <SelectValue placeholder="Quem vai atender?" />
                 </SelectTrigger>
-                <SelectContent className="border border-border/50 bg-background shadow-xl rounded-2xl">
+                <SelectContent className="border border-border/50 bg-background shadow-xl rounded-2xl z-[100]">
                   <SelectItem
                     value={session?.user?.id || ""}
-                    className="rounded-2xl py-2 font-medium"
+                    className="rounded-2xl py-2.5 font-medium min-h-[44px]"
                   >
                     Admin
                   </SelectItem>
@@ -335,7 +360,7 @@ export const NewAppointmentModal = memo(
                       <SelectItem
                         key={member.id}
                         value={member.id}
-                        className="rounded-2xl py-2 font-medium"
+                        className="rounded-2xl py-2.5 font-medium min-h-[44px]"
                       >
                         {member.display_name}
                       </SelectItem>
@@ -362,12 +387,12 @@ export const NewAppointmentModal = memo(
                   }
                 />
               </SelectTrigger>
-              <SelectContent className="border border-border/50 bg-background shadow-xl rounded-2xl">
+              <SelectContent className="border border-border/50 bg-background shadow-xl rounded-2xl z-[100]">
                 {clients.map((c: any) => (
                   <SelectItem
                     key={c.id}
                     value={c.id}
-                    className="rounded-2xl py-2 font-medium"
+                    className="rounded-2xl py-2.5 font-medium min-h-[44px]"
                   >
                     {c.name}
                   </SelectItem>
@@ -435,6 +460,10 @@ export const NewAppointmentModal = memo(
                             setIsRecurring(false);
                           }
                         }
+                      } else {
+                        setSelectedServiceId(undefined);
+                        setIsRecurring(false);
+                        setRepeatCount(2);
                       }
                     }}
                     className="data-[state=checked]:bg-primary"
@@ -467,12 +496,12 @@ export const NewAppointmentModal = memo(
                     <SelectTrigger className="h-10 bg-muted/20 border-none font-semibold rounded-2xl">
                       <SelectValue placeholder="Selecione..." />
                     </SelectTrigger>
-                    <SelectContent className="border border-border/50 bg-background shadow-xl rounded-2xl">
+                    <SelectContent className="border border-border/50 bg-background shadow-xl rounded-2xl z-[100]">
                       {availablePackages.map((pkg) => (
                         <SelectItem
                           key={pkg.id}
                           value={pkg.id}
-                          className="rounded-2xl py-2 font-medium"
+                          className="rounded-2xl py-2.5 font-medium min-h-[44px]"
                         >
                           {pkg.name} (Disponível: {pkg.available_sessions ?? (pkg.total_sessions - pkg.used_sessions)})
                         </SelectItem>
@@ -485,32 +514,84 @@ export const NewAppointmentModal = memo(
           )}
 
           <div className="space-y-1.5">
-            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-              Serviço
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                Serviço
+              </Label>
+              {usePackage && (
+                <span className="text-[10px] text-primary font-bold">
+                  Definido pelo pacote
+                </span>
+              )}
+            </div>
             <Select
               disabled={loadingServices || usePackage}
               value={selectedServiceId}
               onValueChange={setSelectedServiceId}
             >
               <SelectTrigger
-                className={cn("rounded-2xl bg-muted/40 border-none h-12 transition-all",
+                className={cn(
+                  "rounded-2xl bg-muted/40 border-none h-12 transition-all",
                   usePackage &&
-                  "bg-primary/5 text-primary font-black opacity-100",
+                    "bg-primary/5 text-primary font-black opacity-100",
                 )}
               >
-                <SelectValue placeholder="O que será feito?" />
+                <SelectValue
+                  placeholder={
+                    usePackage && activePackage
+                      ? activePackage.name || "Serviço do pacote"
+                      : loadingServices
+                        ? "Carregando serviços..."
+                        : errorServices
+                          ? "Erro ao carregar serviços"
+                          : services.length === 0
+                            ? "Nenhum serviço disponível"
+                            : "O que será feito?"
+                  }
+                />
               </SelectTrigger>
-              <SelectContent className="border border-border/50 bg-background shadow-xl rounded-2xl">
-                {services.map((s: any) => (
-                  <SelectItem
-                    key={s.id}
-                    value={s.id}
-                    className="rounded-2xl py-2 font-medium"
-                  >
-                    {s.name}
-                  </SelectItem>
-                ))}
+              <SelectContent className="border border-border/50 bg-background shadow-xl rounded-2xl z-[100]">
+                {errorServices ? (
+                  <div className="py-3 px-4 text-xs text-destructive text-center">
+                    Erro ao carregar serviços.
+                    <button
+                      type="button"
+                      onClick={() => mutateServices()}
+                      className="block mx-auto mt-1 text-primary underline font-bold"
+                    >
+                      Tentar novamente
+                    </button>
+                  </div>
+                ) : services.length === 0 ? (
+                  <div className="py-3 px-4 text-xs text-muted-foreground text-center">
+                    {loadingServices
+                      ? "Carregando serviços..."
+                      : "Nenhum serviço ativo encontrado."}
+                  </div>
+                ) : (
+                  <>
+                    {usePackage &&
+                      activePackage &&
+                      !services.some((s: any) => s.id === activePackage.service_id) && (
+                        <SelectItem
+                          key={activePackage.service_id}
+                          value={activePackage.service_id}
+                          className="rounded-2xl py-2.5 font-medium min-h-[44px]"
+                        >
+                          {activePackage.name}
+                        </SelectItem>
+                      )}
+                    {services.map((s: any) => (
+                      <SelectItem
+                        key={s.id}
+                        value={s.id}
+                        className="rounded-2xl py-2.5 font-medium min-h-[44px]"
+                      >
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </>
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -554,12 +635,12 @@ export const NewAppointmentModal = memo(
                   <Clock className="mr-2 h-4 w-4 text-primary" />
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
-                <SelectContent className="border border-border/50 bg-background max-h-48 shadow-xl rounded-2xl">
+                <SelectContent className="border border-border/50 bg-background max-h-48 shadow-xl rounded-2xl z-[100]">
                   {TIME_SLOTS.map((slot) => (
                     <SelectItem
                       key={slot}
                       value={slot}
-                      className="rounded-lg font-medium py-2"
+                      className="rounded-lg font-medium py-2.5 min-h-[44px]"
                     >
                       {slot}
                     </SelectItem>
@@ -672,11 +753,11 @@ export const NewAppointmentModal = memo(
                     <SelectTrigger className="bg-background border-border/50 h-11 rounded-2xl font-semibold">
                       <SelectValue placeholder="Selecione o método pago..." />
                     </SelectTrigger>
-                    <SelectContent className="border border-border/50 bg-background shadow-xl rounded-2xl">
+                    <SelectContent className="border border-border/50 bg-background shadow-xl rounded-2xl z-[100]">
                       {paymentMethods
                         .filter((pm) => pm.isActive)
                         .map((pm) => (
-                          <SelectItem key={pm.id} value={pm.id} className="rounded-xl font-medium py-2">
+                          <SelectItem key={pm.id} value={pm.id} className="rounded-xl font-medium py-2.5 min-h-[44px]">
                             {pm.name}
                             {Number(pm.feePercentage) > 0 && (
                               <span className="text-muted-foreground ml-1.5 text-xs">
