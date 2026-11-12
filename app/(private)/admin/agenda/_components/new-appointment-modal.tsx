@@ -194,28 +194,52 @@ export const NewAppointmentModal = memo(
         try {
           const data = await apiClient<any>(`clients/${selectedClientId}`);
 
-          const pkgs = data.activePackages || data.client?.activePackages || data.data?.activePackages || [];
+          let pkgs = data.activePackages || data.client?.activePackages || data.data?.activePackages || [];
           const legacyPkg = data.activePackage || data.client?.activePackage || data.data?.activePackage || null;
+
+          // Fallback resiliente: se a rota do cliente não trouxer pacotes, busca direto na rota de pacotes do cliente
+          if ((!pkgs || pkgs.length === 0) && !legacyPkg) {
+            try {
+              const directPkgs = await apiClient<any[]>(`clients/${selectedClientId}/packages`);
+              if (Array.isArray(directPkgs)) {
+                pkgs = directPkgs;
+              }
+            } catch (err) {
+              console.error("Erro no fallback de pacotes:", err);
+            }
+          }
           
           let validPkgs: ActivePackage[] = [];
           
           if (pkgs && pkgs.length > 0) {
-            validPkgs = pkgs.filter((p: any) => p.active !== false && (p.available_sessions !== undefined ? p.available_sessions > 0 : p.used_sessions < p.total_sessions));
-          } else if (legacyPkg && legacyPkg.active !== false && (legacyPkg.available_sessions !== undefined ? legacyPkg.available_sessions > 0 : legacyPkg.used_sessions < legacyPkg.total_sessions)) {
+            validPkgs = pkgs.filter(
+              (p: any) => p.active !== false && p.used_sessions < p.total_sessions
+            );
+          } else if (legacyPkg && legacyPkg.active !== false && legacyPkg.used_sessions < legacyPkg.total_sessions) {
             validPkgs = [legacyPkg];
           }
 
           if (validPkgs.length > 0) {
             setAvailablePackages(validPkgs);
-            if (validPkgs.length === 1) {
-              setActivePackage(validPkgs[0]);
+            const chosenPkg = validPkgs[0];
+            setActivePackage(chosenPkg);
+            // 🎯 Ativa o pacote e seleciona o serviço automaticamente ao escolher o cliente
+            setUsePackage(true);
+            setSelectedServiceId(chosenPkg.service_id);
+
+            const saldo = chosenPkg.available_sessions ?? (chosenPkg.total_sessions - chosenPkg.used_sessions);
+            if (saldo > 1) {
+              setIsRecurring(true);
+              setRepeatCount(saldo);
             } else {
-              setActivePackage(null);
+              setIsRecurring(false);
             }
           } else {
             setAvailablePackages([]);
             setActivePackage(null);
             setUsePackage(false);
+            setSelectedServiceId(undefined);
+            setIsRecurring(false);
           }
         } catch (error) {
           console.error("Erro ao buscar pacote:", error);

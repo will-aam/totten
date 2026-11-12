@@ -509,10 +509,10 @@ export class ClientService {
       throw new Error("CLIENT_NOT_FOUND");
     }
 
-    const activePkgs = client.packages.filter((pkg) => {
-      const scheduledCount = pkg.appointments?.length || 0;
-      return (pkg.used_sessions + scheduledCount) < pkg.total_sessions;
-    });
+    // Pacotes ativos são todos aqueles em que o cliente ainda possui sessões restantes a realizar
+    const activePkgs = client.packages.filter(
+      (pkg) => pkg.active !== false && pkg.used_sessions < pkg.total_sessions
+    );
 
     return {
       client: {
@@ -529,9 +529,20 @@ export class ClientService {
         created_at: client.created_at,
         active: client.active,
       },
+      activePackage: activePkgs[0]
+        ? {
+            id: activePkgs[0].id,
+            name: activePkgs[0].name,
+            total_sessions: activePkgs[0].total_sessions,
+            used_sessions: activePkgs[0].used_sessions,
+            scheduled_sessions: activePkgs[0].appointments?.length || 0,
+            available_sessions: Math.max(0, activePkgs[0].total_sessions - activePkgs[0].used_sessions),
+            service_id: activePkgs[0].service_id,
+          }
+        : null,
       activePackages: activePkgs.map((pkg) => {
         const scheduledSessions = pkg.appointments?.length || 0;
-        const availableSessions = Math.max(0, pkg.total_sessions - (pkg.used_sessions + scheduledSessions));
+        const availableSessions = Math.max(0, pkg.total_sessions - pkg.used_sessions);
         return {
           id: pkg.id,
           name: pkg.name,
